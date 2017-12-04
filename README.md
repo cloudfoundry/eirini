@@ -7,9 +7,9 @@ using OCI images and Kube deployments.
 _But there's more!_
 
 Cube exports staged CF images as docker images. So you can schedule them
-however you'd like. AND it gives you the nice integrated `cf push` flow,
-mapped directly to kube deployments. In other words it decouples buildpack
-staging and stateless multitenant app running.
+however you'd like. *And separately* it gives you the nice integrated `cf push` flow,
+with CF Apps mapped directly to kube Deployment objects. In other words it decouples buildpack
+staging and stateless-multitenant-app running.
 
 _But there's more!_
 
