@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+
+require 'webrick'
+require 'json'
+
+server = WEBrick::HTTPServer.new :Port => ENV['PORT']
+
+server.mount_proc '/' do |request, response|
+  response.body = 'Hello from a binary'
+end
+
+server.mount_proc '/env' do |request, response|
+  response.body = JSON.dump(ENV.to_hash)
+end
+
+trap 'INT' do server.shutdown end
+
+server.start

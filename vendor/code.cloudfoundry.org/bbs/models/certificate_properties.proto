@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package models;
+
+message CertificateProperties {
+  repeated string organizational_unit = 1;
+}
+

@@ -1,0 +1,59 @@
+syntax = "proto2";
+
+package models;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "actual_lrp.proto";
+import "desired_lrp.proto";
+import "task.proto";
+
+message ActualLRPCreatedEvent  {
+  optional ActualLRPGroup actual_lrp_group = 1;
+}
+
+message ActualLRPChangedEvent {
+  optional ActualLRPGroup before = 1;
+  optional ActualLRPGroup after = 2;
+}
+
+message ActualLRPRemovedEvent {
+  optional ActualLRPGroup actual_lrp_group = 1;
+}
+
+message DesiredLRPCreatedEvent {
+  optional DesiredLRP desired_lrp = 1;
+}
+
+message DesiredLRPChangedEvent {
+  optional DesiredLRP before = 1;
+  optional DesiredLRP after = 2;
+}
+
+message DesiredLRPRemovedEvent {
+  optional DesiredLRP desired_lrp = 1;
+}
+
+message ActualLRPCrashedEvent {
+  optional ActualLRPKey actual_lrp_key = 1 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
+  optional ActualLRPInstanceKey actual_lrp_instance_key = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
+  optional int32 crash_count = 3;
+  optional string crash_reason = 4 [(gogoproto.jsontag) = "crash_reason,omitempty"];
+  optional int64 since = 5;
+}
+
+message EventsByCellId {
+   optional string cell_id  = 1;
+}
+
+message TaskCreatedEvent {
+  optional Task task = 1;
+}
+
+message TaskChangedEvent {
+  optional Task before = 1;
+  optional Task after = 2;
+}
+
+message TaskRemovedEvent {
+  optional Task task = 1;
+}

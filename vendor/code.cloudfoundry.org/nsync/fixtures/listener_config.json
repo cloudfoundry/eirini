@@ -1,0 +1,25 @@
+{
+  "bbs_api_url": "https://foobar.com",
+  "bbs_ca_cert": "/path/to/cert",
+  "bbs_client_cert": "/path/to/another/cert",
+  "bbs_client_key": "/path/to/key",
+  "bbs_client_cache_size": 1234,
+  "bbs_max_idle_conns_per_host": 10,
+  "communication_timeout": "256s",
+  "consul_cluster": "https://consul.com",
+  "debug_server_config": {
+    "debug_address": "https://debugger.com"
+  },
+  "diego_privileged_containers": true,
+  "dropsonde_port": 666,
+  "file_server_url": "https://fileserver.com",
+  "lager_config": {
+    "log_level": "debug"
+  },
+  "lifecycle_bundles": [
+    "buildpack/cflinuxfs2:/path/to/bundle",
+    "buildpack/cflinuxfs2:/path/to/another/bundle",
+    "buildpack/somethingelse:/path/to/third/bundle"
+  ],
+  "nsync_listen_addr": "https://nsync.com/listen"
+}

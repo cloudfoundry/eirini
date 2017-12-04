@@ -1,0 +1,18 @@
+{
+  "bbs_api_url": "https://foobar.com",
+  "bbs_cancel_task_pool_size": 1234,
+  "cc_bulk_batch_size": 117,
+  "cc_polling_interval": "120s",
+  "debug_server_config": {
+    "debug_address": "https://debugger.com"
+  },
+  "lager_config": {
+    "log_level": "debug"
+  },
+  "lifecycle_bundles": [
+	  "buildpack/cflinuxfs2:/path/to/bundle",
+		"buildpack/cflinuxfs2:/path/to/another/bundle",
+		"buildpack/somethingelse:/path/to/third/bundle"
+  ],
+  "skip_cert_verify": true
+}

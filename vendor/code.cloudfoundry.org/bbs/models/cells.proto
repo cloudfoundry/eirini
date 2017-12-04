@@ -1,0 +1,33 @@
+syntax = "proto2";
+
+package models;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "error.proto";
+
+message CellCapacity {
+  optional int32 memory_mb = 1;
+  optional int32 disk_mb = 2;
+  optional int32 containers = 3;
+}
+
+message CellPresence {
+  optional string cell_id = 1;
+  optional string rep_address = 2;
+  optional string zone = 3;
+  optional CellCapacity capacity = 4;
+  repeated Provider rootfs_providers = 5 [(gogoproto.jsontag) = "rootfs_provider_list,omitempty"];
+  repeated string placement_tags = 6 [(gogoproto.jsontag) = "placement_tags,omitempty"];
+  repeated string optional_placement_tags = 7 [(gogoproto.jsontag) = "optional_placement_tags,omitempty"];
+  optional string rep_url = 8;
+}
+
+message Provider {
+  optional string name = 1;
+  repeated string properties = 2 [(gogoproto.jsontag) = "properties,omitempty"];
+}
+
+message CellsResponse {
+  optional Error error = 1;
+  repeated CellPresence cells = 2;
+}
