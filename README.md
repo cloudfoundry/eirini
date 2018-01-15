@@ -20,6 +20,8 @@ can schedule to diego/kube/swarm and whatever else is cool next year.
 It uses the diego abstractions -- LRPs and Tasks -- in order to support generic
 orchestrators.
 
+An experimental BOSH release for this is available at https://github.com/andrew-edgar/cube-release
+
 # y tho, y?
 
 Partly a fun experiment, partly a proof of concept. Scheduling is increasingly
