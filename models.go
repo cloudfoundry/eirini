@@ -10,3 +10,18 @@ type AppInfo struct {
 type CfClient interface {
 	GetDropletByAppGuid(string) ([]byte, error)
 }
+
+type SyncConfig struct {
+	Properties SyncProperties `yaml:"sync"`
+}
+
+type SyncProperties struct {
+	RegistryEndpoint   string `yaml:"registry_endpoint"`
+	CcApi              string `yaml:"api_endpoint"`
+	CfUsername         string `yaml:"cf_username"`
+	CfPassword         string `yaml:"cf_password"`
+	CcUser             string `yaml:"cc_internal_user"`
+	CcPassword         string `yaml:"cc_internal_password"`
+	SkipSslValidation  bool   `yaml:"skip_ssl_validation"`
+	InsecureSkipVerify bool   `yaml:"insecure_skip_verify"`
+}

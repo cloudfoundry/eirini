@@ -49,6 +49,20 @@ func main() {
 					Name:  "backend",
 					Usage: "backend to use, currently only supported backend is k8s",
 				},
+				cli.StringFlag{
+					Name:  "adminUser",
+					Value: "admin",
+				},
+				cli.StringFlag{
+					Name: "adminPass",
+				},
+				cli.BoolFlag{
+					Name: "skipSslValidation",
+				},
+				cli.StringFlag{
+					Name:  "config",
+					Usage: "Path to cube config file",
+				},
 			},
 			Action: syncCmd,
 		},

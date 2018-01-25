@@ -3,12 +3,17 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
 
+	yaml "gopkg.in/yaml.v2"
+
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/nsync/bulk"
+	"github.com/julz/cube"
+	"github.com/julz/cube/cfclient"
 	"github.com/julz/cube/k8s"
 	"github.com/julz/cube/sink"
 	"github.com/urfave/cli"
@@ -17,35 +22,56 @@ import (
 )
 
 func syncCmd(c *cli.Context) {
+	var cfClientConfig *cfclient.Config
+	var configPath = c.String("config")
+	var conf *cube.SyncConfig
+
+	if configPath == "" {
+		conf = setConfigFromCLI(c)
+	} else {
+		conf = setConfigFromFile(configPath)
+	}
+
 	fetcher := &bulk.CCFetcher{
-		BaseURI:   c.String("ccApi"),
+		BaseURI:   conf.Properties.CcApi,
 		BatchSize: 50,
-		Username:  c.String("ccUser"),
-		Password:  c.String("ccPass"),
+		Username:  conf.Properties.CcUser,
+		Password:  conf.Properties.CcPassword,
+	}
+
+	cfClientConfig = &cfclient.Config{
+		SkipSslValidation: conf.Properties.SkipSslValidation,
+		Username:          conf.Properties.CfUsername,
+		Password:          conf.Properties.CfPassword,
+		ApiAddress:        conf.Properties.CcApi,
 	}
 
 	config, err := clientcmd.BuildConfigFromFlags("", c.String("kubeconfig"))
-	if err != nil {
-		panic(err.Error())
-	}
+	exitWithError(err)
 
 	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+	exitWithError(err)
 
-	converger := sink.Converger{
-		Converter: sink.ConvertFunc(sink.Convert),
-		Desirer:   &k8s.Desirer{Client: clientset},
-	}
+	cfClient, err := cfclient.NewClient(cfClientConfig)
+	exitWithError(err)
+
+	client := &http.Client{Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: conf.Properties.InsecureSkipVerify},
+	}}
 
 	log := lager.NewLogger("sync")
 	log.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 
+	converger := sink.Converger{
+		Converter:   sink.ConvertFunc(sink.Convert),
+		Desirer:     &k8s.Desirer{Client: clientset},
+		CfClient:    cfClient,
+		Client:      client,
+		Logger:      log,
+		RegistryUrl: "http://127.0.0.1:8080",
+	}
+
 	cancel := make(chan struct{})
-	client := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}}
 
 	fetch(fetcher, converger, log, cancel, client)
 }
@@ -72,5 +98,37 @@ func fetch(fetcher *bulk.CCFetcher, converger sink.Converger, log lager.Logger, 
 				log.Error("converge-once-failed", err)
 			}
 		}
+	}
+}
+
+func setConfigFromFile(file string) *cube.SyncConfig {
+	fileBytes, err := ioutil.ReadFile(file)
+	exitWithError(err)
+
+	var syncConf cube.SyncConfig
+	err = yaml.Unmarshal(fileBytes, &syncConf)
+	exitWithError(err)
+
+	return &syncConf
+}
+
+func setConfigFromCLI(c *cli.Context) *cube.SyncConfig {
+	return &cube.SyncConfig{
+		Properties: cube.SyncProperties{
+			RegistryEndpoint:   "http://127.0.0.1:8080",
+			CcApi:              c.String("ccApi"),
+			CfUsername:         c.String("adminUser"),
+			CfPassword:         c.String("adminPassword"),
+			CcUser:             c.String("ccUser"),
+			CcPassword:         c.String("ccPass"),
+			SkipSslValidation:  c.Bool("skipSslValidation"),
+			InsecureSkipVerify: true,
+		},
+	}
+}
+
+func exitWithError(err error) {
+	if err != nil {
+		panic(err)
 	}
 }
