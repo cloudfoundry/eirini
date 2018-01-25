@@ -2,14 +2,21 @@ package sink
 
 import (
 	"context"
+	"net/http"
 
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
+	"github.com/julz/cube"
 	"github.com/julz/cube/opi"
 )
 
 type Converger struct {
-	Converter Converter
-	Desirer   opi.Desirer
+	Converter   Converter
+	Desirer     opi.Desirer
+	CfClient    cube.CfClient
+	Client      *http.Client
+	Logger      lager.Logger
+	RegistryUrl string
 }
 
 // this is a brain-dead simple initial implementation, obviously
@@ -21,19 +28,31 @@ type Converger struct {
 func (c *Converger) ConvergeOnce(ctx context.Context, ccMessages []cc_messages.DesireAppRequestFromCC) error {
 	desire := make([]opi.LRP, 0)
 	for _, msg := range ccMessages {
-		lrp := c.Converter.Convert(msg)
+		lrp := c.convertMessage(msg)
 		desire = append(desire, lrp)
 	}
-
 	return c.Desirer.Desire(ctx, desire)
 }
 
-type Converter interface {
-	Convert(cc cc_messages.DesireAppRequestFromCC) opi.LRP
+// Convert could panic. To be able to skip this message and continue with the next,
+// the panic needs to be handled for each message.
+func (c *Converger) convertMessage(msg cc_messages.DesireAppRequestFromCC) opi.LRP {
+	defer func() {
+		if r := recover(); r != nil {
+			if err, ok := r.(error); ok {
+				c.Logger.Error("failed-to-convert-message", err)
+			}
+		}
+	}()
+	return c.Converter.Convert(msg, c.RegistryUrl, c.CfClient, c.Client, c.Logger)
 }
 
-type ConvertFunc func(cc cc_messages.DesireAppRequestFromCC) opi.LRP
+type Converter interface {
+	Convert(cc cc_messages.DesireAppRequestFromCC, registryUrl string, cfClient cube.CfClient, client *http.Client, log lager.Logger) opi.LRP
+}
 
-func (fn ConvertFunc) Convert(cc cc_messages.DesireAppRequestFromCC) opi.LRP {
-	return fn(cc)
+type ConvertFunc func(cc cc_messages.DesireAppRequestFromCC, registryUrl string, cfClient cube.CfClient, client *http.Client, log lager.Logger) opi.LRP
+
+func (fn ConvertFunc) Convert(cc cc_messages.DesireAppRequestFromCC, registryUrl string, cfClient cube.CfClient, client *http.Client, log lager.Logger) opi.LRP {
+	return fn(cc, registryUrl, cfClient, client, log)
 }

@@ -34,7 +34,7 @@
 [[projects]]
   branch = "master"
   name = "code.cloudfoundry.org/lager"
-  packages = ["."]
+  packages = [".","lagerctx","lagertest"]
   revision = "0bfa98e49e7a976af91e918d47978f07c00b081f"
 
 [[projects]]
@@ -255,7 +255,7 @@
 
 [[projects]]
   name = "github.com/onsi/gomega"
-  packages = [".","format","gbytes","gexec","internal/assertion","internal/asyncassertion","internal/oraclematcher","internal/testingtsupport","matchers","matchers/support/goraph/bipartitegraph","matchers/support/goraph/edge","matchers/support/goraph/node","matchers/support/goraph/util","types"]
+  packages = [".","format","gbytes","gexec","ghttp","internal/assertion","internal/asyncassertion","internal/oraclematcher","internal/testingtsupport","matchers","matchers/support/goraph/bipartitegraph","matchers/support/goraph/edge","matchers/support/goraph/node","matchers/support/goraph/util","types"]
   revision = "c893efa28eb45626cdaa76c9f653b62488858837"
   version = "v1.2.0"
 
@@ -370,6 +370,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c47e5961ed18e4aa0f3d05167552403305fcdea6d51e54428b0a093340e4e58f"
+  inputs-digest = "c7d930d5ddadd5a482b0c5a34da1947d63aa9cd6926e0a4657da144e2f6149fa"
   solver-name = "gps-cdcl"
   solver-version = 1

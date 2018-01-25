@@ -2,8 +2,11 @@ package sink_test
 
 import (
 	"context"
+	"net/http"
 
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
+	"github.com/julz/cube"
 	"github.com/julz/cube/opi"
 	"github.com/julz/cube/sink"
 	. "github.com/onsi/ginkgo"
@@ -15,7 +18,13 @@ var _ = Describe("Converge", func() {
 		converted := make([]cc_messages.DesireAppRequestFromCC, 0)
 		desired := make([][]opi.LRP, 0)
 		converger := sink.Converger{
-			Converter: sink.ConvertFunc(func(msg cc_messages.DesireAppRequestFromCC) opi.LRP {
+			Converter: sink.ConvertFunc(func(
+				msg cc_messages.DesireAppRequestFromCC,
+				regUrl string,
+				cfClient cube.CfClient,
+				client *http.Client,
+				log lager.Logger,
+			) opi.LRP {
 				converted = append(converted, msg)
 				return opi.LRP{Image: msg.DockerImageUrl}
 			}),
