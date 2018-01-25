@@ -5,11 +5,13 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -41,7 +43,9 @@ func NewHandler(rootfsBlob BlobRef, dropletStore DropletStore, blobs BlobStore) 
 }
 
 func Ping(w http.ResponseWriter, r *http.Request) {
-	// 200
+	w.WriteHeader(http.StatusOK)
+	fmt.Printf("[%s]\tReceived Ping\n", time.Now().Format(time.RFC3339))
+	fmt.Fprintf(w, "Pong")
 }
 
 type BlobHandler struct {
@@ -187,6 +191,8 @@ func (s Stager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Println("added droplet to Blob: ", guid, " ", digest, " ")
 
 	s.droplets.Set(guid, BlobRef{
 		Digest: digest,
