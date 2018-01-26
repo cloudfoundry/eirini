@@ -46,7 +46,7 @@ func syncCmd(c *cli.Context) {
 		ApiAddress:        conf.Properties.CcApi,
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", c.String("kubeconfig"))
+	config, err := clientcmd.BuildConfigFromFlags("", conf.Properties.KubeConfig)
 	exitWithError(err)
 
 	clientset, err := kubernetes.NewForConfig(config)
@@ -115,10 +115,12 @@ func setConfigFromFile(file string) *cube.SyncConfig {
 func setConfigFromCLI(c *cli.Context) *cube.SyncConfig {
 	return &cube.SyncConfig{
 		Properties: cube.SyncProperties{
+			KubeConfig:         c.String("kubeconfig"),
 			RegistryEndpoint:   "http://127.0.0.1:8080",
+			Backend:            c.String("backend"),
 			CcApi:              c.String("ccApi"),
 			CfUsername:         c.String("adminUser"),
-			CfPassword:         c.String("adminPassword"),
+			CfPassword:         c.String("adminPass"),
 			CcUser:             c.String("ccUser"),
 			CcPassword:         c.String("ccPass"),
 			SkipSslValidation:  c.Bool("skipSslValidation"),

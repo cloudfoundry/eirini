@@ -16,8 +16,10 @@ type SyncConfig struct {
 }
 
 type SyncProperties struct {
+	KubeConfig         string `yaml:"kube_config"`
 	RegistryEndpoint   string `yaml:"registry_endpoint"`
 	CcApi              string `yaml:"api_endpoint"`
+	Backend            string `yaml:"backend"`
 	CfUsername         string `yaml:"cf_username"`
 	CfPassword         string `yaml:"cf_password"`
 	CcUser             string `yaml:"cc_internal_user"`
