@@ -12,8 +12,8 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/nsync/bulk"
+	"github.com/JulzDiverse/cfclient"
 	"github.com/julz/cube"
-	"github.com/julz/cube/cfclient"
 	"github.com/julz/cube/k8s"
 	"github.com/julz/cube/sink"
 	"github.com/urfave/cli"
@@ -126,11 +126,5 @@ func setConfigFromCLI(c *cli.Context) *cube.SyncConfig {
 			SkipSslValidation:  c.Bool("skipSslValidation"),
 			InsecureSkipVerify: true,
 		},
-	}
-}
-
-func exitWithError(err error) {
-	if err != nil {
-		panic(err)
 	}
 }

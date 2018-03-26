@@ -32,3 +32,13 @@ type DesireFunc func(ctx context.Context, lrp []LRP) error
 func (d DesireFunc) Desire(ctx context.Context, lrp []LRP) error {
 	return d(ctx, lrp)
 }
+
+type TaskDesirer interface {
+	Desire(ctx context.Context, tasks []Task) error
+}
+
+type DesireTaskFunc func(ctx context.Context, tasks []Task) error
+
+func (d DesireTaskFunc) Desire(ctx context.Context, tasks []Task) error {
+	return d(ctx, tasks)
+}

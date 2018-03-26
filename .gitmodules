@@ -1,0 +1,3 @@
+[submodule "recipe/packs"]
+	path = recipe/packs
+	url = https://github.com/sclevine/packs.git

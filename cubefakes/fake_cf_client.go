@@ -2,6 +2,7 @@
 package cubefakes
 
 import (
+	"net/http"
 	"sync"
 
 	"github.com/julz/cube"
@@ -19,6 +20,31 @@ type FakeCfClient struct {
 	}
 	getDropletByAppGuidReturnsOnCall map[int]struct {
 		result1 []byte
+		result2 error
+	}
+	PushDropletStub        func(string, string) error
+	pushDropletMutex       sync.RWMutex
+	pushDropletArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	pushDropletReturns struct {
+		result1 error
+	}
+	pushDropletReturnsOnCall map[int]struct {
+		result1 error
+	}
+	GetAppBitsByAppGuidStub        func(string) (*http.Response, error)
+	getAppBitsByAppGuidMutex       sync.RWMutex
+	getAppBitsByAppGuidArgsForCall []struct {
+		arg1 string
+	}
+	getAppBitsByAppGuidReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	getAppBitsByAppGuidReturnsOnCall map[int]struct {
+		result1 *http.Response
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -76,11 +102,115 @@ func (fake *FakeCfClient) GetDropletByAppGuidReturnsOnCall(i int, result1 []byte
 	}{result1, result2}
 }
 
+func (fake *FakeCfClient) PushDroplet(arg1 string, arg2 string) error {
+	fake.pushDropletMutex.Lock()
+	ret, specificReturn := fake.pushDropletReturnsOnCall[len(fake.pushDropletArgsForCall)]
+	fake.pushDropletArgsForCall = append(fake.pushDropletArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	fake.recordInvocation("PushDroplet", []interface{}{arg1, arg2})
+	fake.pushDropletMutex.Unlock()
+	if fake.PushDropletStub != nil {
+		return fake.PushDropletStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.pushDropletReturns.result1
+}
+
+func (fake *FakeCfClient) PushDropletCallCount() int {
+	fake.pushDropletMutex.RLock()
+	defer fake.pushDropletMutex.RUnlock()
+	return len(fake.pushDropletArgsForCall)
+}
+
+func (fake *FakeCfClient) PushDropletArgsForCall(i int) (string, string) {
+	fake.pushDropletMutex.RLock()
+	defer fake.pushDropletMutex.RUnlock()
+	return fake.pushDropletArgsForCall[i].arg1, fake.pushDropletArgsForCall[i].arg2
+}
+
+func (fake *FakeCfClient) PushDropletReturns(result1 error) {
+	fake.PushDropletStub = nil
+	fake.pushDropletReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeCfClient) PushDropletReturnsOnCall(i int, result1 error) {
+	fake.PushDropletStub = nil
+	if fake.pushDropletReturnsOnCall == nil {
+		fake.pushDropletReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.pushDropletReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeCfClient) GetAppBitsByAppGuid(arg1 string) (*http.Response, error) {
+	fake.getAppBitsByAppGuidMutex.Lock()
+	ret, specificReturn := fake.getAppBitsByAppGuidReturnsOnCall[len(fake.getAppBitsByAppGuidArgsForCall)]
+	fake.getAppBitsByAppGuidArgsForCall = append(fake.getAppBitsByAppGuidArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("GetAppBitsByAppGuid", []interface{}{arg1})
+	fake.getAppBitsByAppGuidMutex.Unlock()
+	if fake.GetAppBitsByAppGuidStub != nil {
+		return fake.GetAppBitsByAppGuidStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getAppBitsByAppGuidReturns.result1, fake.getAppBitsByAppGuidReturns.result2
+}
+
+func (fake *FakeCfClient) GetAppBitsByAppGuidCallCount() int {
+	fake.getAppBitsByAppGuidMutex.RLock()
+	defer fake.getAppBitsByAppGuidMutex.RUnlock()
+	return len(fake.getAppBitsByAppGuidArgsForCall)
+}
+
+func (fake *FakeCfClient) GetAppBitsByAppGuidArgsForCall(i int) string {
+	fake.getAppBitsByAppGuidMutex.RLock()
+	defer fake.getAppBitsByAppGuidMutex.RUnlock()
+	return fake.getAppBitsByAppGuidArgsForCall[i].arg1
+}
+
+func (fake *FakeCfClient) GetAppBitsByAppGuidReturns(result1 *http.Response, result2 error) {
+	fake.GetAppBitsByAppGuidStub = nil
+	fake.getAppBitsByAppGuidReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCfClient) GetAppBitsByAppGuidReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.GetAppBitsByAppGuidStub = nil
+	if fake.getAppBitsByAppGuidReturnsOnCall == nil {
+		fake.getAppBitsByAppGuidReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.getAppBitsByAppGuidReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCfClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.getDropletByAppGuidMutex.RLock()
 	defer fake.getDropletByAppGuidMutex.RUnlock()
+	fake.pushDropletMutex.RLock()
+	defer fake.pushDropletMutex.RUnlock()
+	fake.getAppBitsByAppGuidMutex.RLock()
+	defer fake.getAppBitsByAppGuidMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

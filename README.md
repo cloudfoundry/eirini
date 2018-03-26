@@ -35,7 +35,7 @@ Cube has the following components, the first two are available as subcommands of
  - `Sink` provides a convergence loop that pulls desired apps from the Cloud Controller and creates corresponding Kubernetes resources. It relies on the `Registry` to serve OCI images for droplets, and `OPI` to abstract the communication with Kube. (Example: `cube sink --ccApi <api url> --ccPass <internal admin user password>`)
  - `Registry` is an OCI registry vending images based on droplets. Eventually this would be nice to move in to Cloud Controller. (Example: `cube registry --rootfs </path/to/rootfs.tar>`)
  - `OPI` or the "orchestrator provider interface" provides a declarative abstraction over multiple schedulers inspired by Diego's LRP/Task model and Bosh's CPI concept.
- - `St8ge` (not implemented yet) implements Staging by running Kubernetes/OPI one-off tasks
+ - `St8ge` implements Staging by running Kubernetes/OPI one-off tasks
  
 # Tell me more 'bout OPI
 

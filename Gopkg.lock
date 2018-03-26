@@ -68,6 +68,12 @@
   version = "v9.5.3"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/JulzDiverse/cfclient"
+  packages = ["."]
+  revision = "a4b1e377fce5f05ba1bb1d4402c1f1391deb5407"
+
+[[projects]]
   name = "github.com/PuerkitoBio/purell"
   packages = ["."]
   revision = "0bcb03f4b4d0a9428594752bd2a3b9aa0a9d4bd4"
@@ -104,12 +110,6 @@
   revision = "c48c4f0332609a0e402af4ae31595204c9f7b363"
 
 [[projects]]
-  name = "github.com/codegangsta/inject"
-  packages = ["."]
-  revision = "37d7f8432a3e684eef9b2edece76bdfa6ac85b39"
-  version = "v1.0-rc1"
-
-[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -138,12 +138,6 @@
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
   version = "v1.0.0"
-
-[[projects]]
-  name = "github.com/go-martini/martini"
-  packages = ["."]
-  revision = "49411a5b646861ad29a6ddd5351717a0a9c49b94"
-  version = "v1.0"
 
 [[projects]]
   branch = "master"
@@ -254,16 +248,22 @@
   revision = "59fac5042749a5afb9af70e813da1dd5474f0167"
 
 [[projects]]
+  name = "github.com/julienschmidt/httprouter"
+  packages = ["."]
+  revision = "8c199fb6259ffc1af525cc3ad52ee60ba8359669"
+  version = "v1.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/mailru/easyjson"
   packages = [".","buffer","jlexer","jwriter"]
   revision = "5f62e4f3afa2f576dc86531b7df4d966b19ef8f8"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/martini-contrib/render"
+  name = "github.com/mattn/go-isatty"
   packages = ["."]
-  revision = "ec18f8345a1181146728238980606fb1d6f40e8c"
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
 
 [[projects]]
   name = "github.com/onsi/ginkgo"
@@ -276,12 +276,6 @@
   packages = [".","format","gbytes","gexec","ghttp","internal/assertion","internal/asyncassertion","internal/oraclematcher","internal/testingtsupport","matchers","matchers/support/goraph/bipartitegraph","matchers/support/goraph/edge","matchers/support/goraph/node","matchers/support/goraph/util","types"]
   revision = "c893efa28eb45626cdaa76c9f653b62488858837"
   version = "v1.2.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/oxtoacart/bpool"
-  packages = ["."]
-  revision = "4e1c5567d7c2dd59fa4c7c83d34c2f3528b025d6"
 
 [[projects]]
   branch = "master"
@@ -306,6 +300,12 @@
   packages = ["."]
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
   version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/starkandwayne/goutils"
+  packages = ["ansi"]
+  revision = "64cf2cb9adc18df7cb7158a98cbd58569c7594e4"
 
 [[projects]]
   name = "github.com/tedsuo/rata"
@@ -400,6 +400,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e8ec25fe30d2482cad3dc9926d05662a8dd1e242e0ee66923ed3228e77b444f4"
+  inputs-digest = "4ff406e18639521ec5b6d5dfb209493e91f7b40d29f915b580a135e2bef05f1f"
   solver-name = "gps-cdcl"
   solver-version = 1
