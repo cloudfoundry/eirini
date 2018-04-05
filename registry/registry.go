@@ -23,6 +23,7 @@ type BlobRef struct {
 
 type BlobStore interface {
 	Put(buf io.Reader) (digest string, size int64, err error)
+	PutWithId(guid string, buf io.Reader) (digest string, size int64, err error)
 	Has(digest string) bool
 	Get(digest string, dest io.Writer) error
 }
@@ -114,7 +115,7 @@ func (b ManifestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			},
 			{
 				"digest":    droplet.Digest,
-				"mediaType": "application/vnd.docker.image.rootfs.diff.tar",
+				"mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
 				"size":      droplet.Size,
 			},
 		},
@@ -192,6 +193,12 @@ func (s Stager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, _, err = s.blobs.PutWithId(guid, layerTar)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	fmt.Println("added droplet to Blob: ", guid, " ", digest, " ")
 
 	s.droplets.Set(guid, BlobRef{
@@ -200,6 +207,8 @@ func (s Stager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 
 	w.WriteHeader(http.StatusCreated)
+
+	fmt.Fprintf(w, digest)
 }
 
 // InMemoryDropletStore exists because CC droplets aren't content-addressed
