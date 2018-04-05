@@ -21,6 +21,7 @@ var _ = Describe("Converge", func() {
 			Converter: sink.ConvertFunc(func(
 				msg cc_messages.DesireAppRequestFromCC,
 				regUrl string,
+				regIP string,
 				cfClient cube.CfClient,
 				client *http.Client,
 				log lager.Logger,

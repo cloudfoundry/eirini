@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
+	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"github.com/julz/cube"
@@ -15,6 +17,7 @@ import (
 func Convert(
 	msg cc_messages.DesireAppRequestFromCC,
 	registryUrl string,
+	registryIP string,
 	cfClient cube.CfClient,
 	client *http.Client,
 	log lager.Logger,
@@ -24,14 +27,26 @@ func Convert(
 	}
 
 	if msg.DockerImageUrl == "" {
-		msg.DockerImageUrl = dropletToImageURI(msg, cfClient, client, registryUrl, log)
+		msg.DockerImageUrl = dropletToImageURI(msg, cfClient, client, registryUrl, registryIP, log)
 	}
 
 	return opi.LRP{
 		Name:            msg.ProcessGuid,
 		Image:           msg.DockerImageUrl,
 		TargetInstances: msg.NumInstances,
+		Command: []string{
+			msg.StartCommand,
+		},
+		Env: envVarsToMap(msg.Environment),
 	}
+}
+
+func envVarsToMap(envs []*models.EnvironmentVariable) map[string]string {
+	envMap := map[string]string{}
+	for _, v := range envs {
+		envMap[v.Name] = v.Value
+	}
+	return envMap
 }
 
 func dropletToImageURI(
@@ -39,6 +54,7 @@ func dropletToImageURI(
 	cfClient cube.CfClient,
 	client *http.Client,
 	registryUrl string,
+	registryIP string,
 	log lager.Logger,
 ) string {
 	var appInfo cube.AppInfo
@@ -60,7 +76,7 @@ func dropletToImageURI(
 
 	stageRequest(client, registryUrl, appInfo, msg.DropletHash, dropletBytes, log)
 
-	return fmt.Sprintf("cube-registry.service.cf.internal/cloudfoundry/app-guid:%s", msg.DropletHash)
+	return fmt.Sprintf("%s/cloudfoundry/app-name:%s", registryIP, msg.DropletHash)
 }
 
 func stageRequest(
@@ -70,7 +86,7 @@ func stageRequest(
 	dropletHash string,
 	dropletBytes []byte,
 	log lager.Logger,
-) {
+) string {
 	registryStageUri := registryStageUri(registryUrl, appInfo.SpaceName, appInfo.AppName, dropletHash)
 
 	log.Info("sending-request-to-registry", lager.Data{"request": registryStageUri})
@@ -81,15 +97,24 @@ func stageRequest(
 		panic(err)
 	}
 
-	req.Header.Set("Content-Type", "plain/text")
+	req.Header.Set("Content-Type", "application/gzip")
 
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Error("stage-request-to-registry-failed", err, lager.Data{"request": registryStageUri})
-		return
+		return ""
 	}
 
 	log.Info("request-successful", lager.Data{"response_status": resp.StatusCode})
+
+	digest, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Error("read-response-failed", err)
+		return ""
+	}
+
+	return string(digest)
+
 }
 
 func dropletDownloadUri(baseUrl string, appGuid string) string {

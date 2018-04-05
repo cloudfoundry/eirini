@@ -17,6 +17,7 @@ type Converger struct {
 	Client      *http.Client
 	Logger      lager.Logger
 	RegistryUrl string
+	RegistryIP  string
 }
 
 // this is a brain-dead simple initial implementation, obviously
@@ -44,15 +45,15 @@ func (c *Converger) convertMessage(msg cc_messages.DesireAppRequestFromCC) opi.L
 			}
 		}
 	}()
-	return c.Converter.Convert(msg, c.RegistryUrl, c.CfClient, c.Client, c.Logger)
+	return c.Converter.Convert(msg, c.RegistryUrl, c.RegistryIP, c.CfClient, c.Client, c.Logger)
 }
 
 type Converter interface {
-	Convert(cc cc_messages.DesireAppRequestFromCC, registryUrl string, cfClient cube.CfClient, client *http.Client, log lager.Logger) opi.LRP
+	Convert(cc cc_messages.DesireAppRequestFromCC, registryUrl string, registryIP string, cfClient cube.CfClient, client *http.Client, log lager.Logger) opi.LRP
 }
 
-type ConvertFunc func(cc cc_messages.DesireAppRequestFromCC, registryUrl string, cfClient cube.CfClient, client *http.Client, log lager.Logger) opi.LRP
+type ConvertFunc func(cc cc_messages.DesireAppRequestFromCC, registryUrl string, registryIP string, cfClient cube.CfClient, client *http.Client, log lager.Logger) opi.LRP
 
-func (fn ConvertFunc) Convert(cc cc_messages.DesireAppRequestFromCC, registryUrl string, cfClient cube.CfClient, client *http.Client, log lager.Logger) opi.LRP {
-	return fn(cc, registryUrl, cfClient, client, log)
+func (fn ConvertFunc) Convert(cc cc_messages.DesireAppRequestFromCC, registryUrl string, registryIP string, cfClient cube.CfClient, client *http.Client, log lager.Logger) opi.LRP {
+	return fn(cc, registryUrl, registryIP, cfClient, client, log)
 }

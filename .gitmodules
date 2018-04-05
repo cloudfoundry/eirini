@@ -1,3 +1,6 @@
 [submodule "recipe/packs"]
 	path = recipe/packs
 	url = https://github.com/sclevine/packs.git
+[submodule "launcher/buildpackapplifecycle"]
+	path = launcher/buildpackapplifecycle
+	url = https://github.com/cloudfoundry/buildpackapplifecycle

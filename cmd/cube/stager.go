@@ -21,7 +21,10 @@ func stagingCmd(c *cli.Context) {
 	clientset, err := kubernetes.NewForConfig(config)
 	exitWithError(err)
 
-	taskDesirer := k8s.TaskDesirer{Client: clientset}
+	taskDesirer := k8s.TaskDesirer{
+		Config: k8s.JobConfig{Namespace: c.String("namespace")},
+		Client: clientset,
+	}
 
 	st8 := st8ger.St8ger{
 		taskDesirer,

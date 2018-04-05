@@ -54,3 +54,11 @@ from the details of scheduling so an operator can use whatever orchestrator he
 or she wants and higher level systems can support all of them for free.
 
 OPI uses the LRP/Task abstractions to do that.
+
+# Development
+
+* `go get github.com/julz/cube`
+* `cd` into the package you want to test
+* `ginkgo`
+
+Some integration tests require a running `[minikube](https://github.com/kubernetes/minikube#installation)`.

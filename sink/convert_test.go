@@ -21,6 +21,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 		logger     *lagertest.TestLogger
 		client     *http.Client
 		lrp        opi.LRP
+		regIP      string
 	)
 
 	BeforeEach(func() {
@@ -28,7 +29,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 		fakeServer = ghttp.NewServer()
 		logger = lagertest.NewTestLogger("test")
 		client = &http.Client{}
-
+		regIP = "cube-registry.service.cf.internal"
 		fakeServer.AppendHandlers(
 			ghttp.VerifyRequest("POST", "/v2/transformers/bumblebee/blobs/"),
 		)
@@ -42,7 +43,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 		lrp := sink.Convert(cc_messages.DesireAppRequestFromCC{
 			DockerImageUrl: "the-image-url",
 			NumInstances:   3,
-		}, fakeServer.URL(), cfClient, client, logger)
+		}, fakeServer.URL(), regIP, cfClient, client, logger)
 
 		Expect(lrp.Image).To(Equal("the-image-url"))
 		Expect(lrp.TargetInstances).To(Equal(3))
@@ -58,7 +59,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 					Value: `{"name":"bumblebee", "space_name":"transformers", "application_id":"1234"}`,
 				},
 			},
-		}, fakeServer.URL(), cfClient, client, logger)
+		}, fakeServer.URL(), regIP, cfClient, client, logger)
 	})
 
 	// a processGuid is <app-guid>-<version-guid>
@@ -67,6 +68,6 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	})
 
 	It("Converts droplet apps via the special registry URL", func() {
-		Expect(lrp.Image).To(Equal("cube-registry.service.cf.internal/cloudfoundry/app-guid:the-droplet-hash"))
+		Expect(lrp.Image).To(Equal("cube-registry.service.cf.internal:8080/cloudfoundry/app-name:the-droplet-hash"))
 	})
 })

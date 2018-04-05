@@ -19,11 +19,13 @@ type JobConfig struct {
 }
 
 type TaskDesirer struct {
+	Config JobConfig
 	Client *kubernetes.Clientset
 }
 
 func (d TaskDesirer) Desire(ctx context.Context, tasks []opi.Task) error {
-	jobs, err := d.Client.BatchV1().Jobs("default").List(av1.ListOptions{})
+	namespace := d.Config.Namespace
+	jobs, err := d.Client.BatchV1().Jobs(namespace).List(av1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -34,7 +36,7 @@ func (d TaskDesirer) Desire(ctx context.Context, tasks []opi.Task) error {
 	}
 
 	for _, task := range tasks {
-		if _, err := d.Client.BatchV1().Jobs("default").Create(toJob(task)); err != nil {
+		if _, err := d.Client.BatchV1().Jobs(namespace).Create(toJob(task)); err != nil {
 			// fixme: this should be a multi-error and deferred
 			return err
 		}
@@ -44,7 +46,8 @@ func (d TaskDesirer) Desire(ctx context.Context, tasks []opi.Task) error {
 }
 
 func (d *TaskDesirer) DeleteJob(job string) error {
-	return d.Client.BatchV1().Jobs("default").Delete(job, nil)
+	namespace := d.Config.Namespace
+	return d.Client.BatchV1().Jobs(namespace).Delete(job, nil)
 }
 
 func toJob(task opi.Task) *batch.Job {
@@ -54,10 +57,10 @@ func toJob(task opi.Task) *batch.Job {
 			Template: v1.PodTemplateSpec{
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
-						Name:            "opi-task",
-						Image:           task.Image,
-						Env:             mapToEnvVar(task.Env),
-						ImagePullPolicy: "Always",
+						Name:  "opi-task",
+						Image: task.Image,
+						Env:   mapToEnvVar(task.Env),
+						//ImagePullPolicy: "Always",
 					}},
 					RestartPolicy: "Never",
 				},

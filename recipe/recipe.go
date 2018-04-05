@@ -1,16 +1,13 @@
 package main
 
 import (
-	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/JulzDiverse/cfclient"
 	"github.com/julz/cube"
@@ -53,19 +50,12 @@ func main() {
 
 	respondWithFailureAndExit(err, stagingGuid, annotationJson)
 
-	downloader := Downloader{cfclient}
+	installer := PackageInstaller{cfclient, &Unzipper{}}
 	uploader := Uploader{cfclient}
 
-	err = downloader.Download(appId, "/workspace/appbits")
-	respondWithFailureAndExit(err, stagingGuid, annotationJson)
+	workspaceDir := "/workspace"
 
-	err = execCmd(
-		"unzip", []string{
-			"/workspace/appbits",
-		})
-	respondWithFailureAndExit(err, stagingGuid, annotationJson)
-
-	err = os.Remove("/workspace/appbits")
+	err = installer.Install(appId, workspaceDir)
 	respondWithFailureAndExit(err, stagingGuid, annotationJson)
 
 	err = execCmd(
