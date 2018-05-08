@@ -61,20 +61,12 @@ func syncCmd(c *cli.Context) {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: conf.Properties.InsecureSkipVerify},
 	}}
 
-	//natsPassword := "gjjqystmkiq89n8vrmve"
-	//natsUser := "nats"
-	//natsIp := "10.244.0.129"
-
-	//nc, err := nats.Connect(fmt.Sprintf("nats://%s:%s@%s:4222"), natsUser, natsPassword, natsIp)
-	//exitWithError(err)
-
 	log := lager.NewLogger("sync")
 	log.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 
-	desirer := &k8s.Desirer{
-		KubeNamespace: conf.Properties.KubeNamespace,
-		Client:        clientset,
-	}
+	kubeNamespace := conf.Properties.KubeNamespace
+	kubeEndpoint := conf.Properties.KubeEndpoint
+	desirer := k8s.NewDesirer(clientset, kubeEndpoint, kubeNamespace)
 
 	converger := sink.Converger{
 		Converter:   sink.ConvertFunc(sink.Convert),
@@ -132,6 +124,7 @@ func setConfigFromCLI(c *cli.Context) *cube.SyncConfig {
 		Properties: cube.SyncProperties{
 			KubeConfig:         c.String("kubeconfig"),
 			KubeNamespace:      c.String("namespace"),
+			KubeEndpoint:       c.String("kubeEndpoint"),
 			RegistryEndpoint:   "http://127.0.0.1:8080",
 			Backend:            c.String("backend"),
 			CcApi:              c.String("ccApi"),

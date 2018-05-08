@@ -3,22 +3,28 @@ package k8s
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/julz/cube/launcher"
 	"github.com/julz/cube/opi"
 	"k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
-	ext "k8s.io/api/extensions/v1beta1"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 )
 
 type Desirer struct {
-	KubeNamespace string
-	Client        *kubernetes.Clientset
+	KubeNamespace     string
+	Client            *kubernetes.Clientset
+	ingressController *IngressManager
+}
+
+func NewDesirer(client *kubernetes.Clientset, kubeEndpoint string, kubeNamespace string) *Desirer {
+	return &Desirer{
+		KubeNamespace:     kubeNamespace,
+		Client:            client,
+		ingressController: NewIngressManager(client, kubeEndpoint),
+	}
 }
 
 func (d *Desirer) Desire(ctx context.Context, lrps []opi.LRP) error {
@@ -47,89 +53,12 @@ func (d *Desirer) Desire(ctx context.Context, lrps []opi.LRP) error {
 			return err
 		}
 
-		if _, err = d.updateIngress(lrp, vcap); err != nil {
+		if err = d.ingressController.UpdateIngress(d.KubeNamespace, lrp, vcap); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func (d *Desirer) updateIngress(lrp opi.LRP, vcap VcapApp) error {
-	if ingress, err = d.Client.ExtensionsV1beta1().Ingresses("default").Get("eririni", av1.GetOptions{}); err != nil {
-		return err //TODO: if ingress not found create it
-	}
-
-	ingress.Spec.TLS[0].Hosts = append(ing.Spec.TLS[0].Hosts, fmt.Sprintf("%s.%s", vcap.AppName, "cube-kube.uk-south.containers.mybluemix.net")) //TODO parameterize and name TLS array
-	rule := createIngressRule(vcap)
-	ingress.Spec.Rules = append(ingress.Spec.Rules, rule)
-
-	if _, err = d.Client.ExtensionsV1beta1().Ingresses("default").Update(ingress); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func createIngressRule(vcap VcapApp) ext.IngressRule {
-	rule := ext.IngressRule{
-		Host: fmt.Sprintf("%s.%s", vcap.AppName, "cube-kube.uk-south.containers.mybluemix.net"), //TODO parameterize
-	}
-
-	rule.HTTP = &ext.HTTPIngressRuleValue{
-		Paths: []ext.HTTPIngressPath{
-			ext.HTTPIngressPath{
-				Path: "/",
-				Backend: ext.IngressBackend{
-					ServiceName: fmt.Sprintf("cf-%s", lrp.Name),
-					ServicePort: intstr.FromInt(8080),
-				},
-			},
-		},
-	}
-
-	return rule
-}
-
-func updateIngress(lrp opi.LRP) *ext.Ingress {
-	vcap := parseVcapApplication(lrp.Env["VCAP_APPLICATION"])
-
-	ingress := &ext.Ingress{
-		Spec: ext.IngressSpec{
-			TLS: []ext.IngressTLS{
-				ext.IngressTLS{
-					Hosts: []string{
-						vcap.AppName + ".cube-kube.uk-south.containers.mybluemix.net",
-					},
-					SecretName: "kube-cube",
-				},
-			},
-			Rules: []ext.IngressRule{
-				ext.IngressRule{
-					Host: vcap.AppName + ".cube-kube.uk-south.containers.mybluemix.net",
-				},
-			},
-		},
-	}
-
-	ingress.Spec.Rules[0].HTTP = &ext.HTTPIngressRuleValue{
-		Paths: []ext.HTTPIngressPath{
-			ext.HTTPIngressPath{
-				Path: "/",
-				Backend: ext.IngressBackend{
-					ServiceName: "cf-" + lrp.Name,
-					ServicePort: intstr.FromString("8080"),
-				},
-			},
-		},
-	}
-
-	ingress.APIVersion = "extensions/v1beta1"
-	ingress.Kind = "Ingress"
-	ingress.Name = "eirini"
-	ingress.Namespace = "default"
-
-	return ingress
 }
 
 func toDeployment(lrp opi.LRP) *v1beta1.Deployment {

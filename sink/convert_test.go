@@ -68,6 +68,6 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	})
 
 	It("Converts droplet apps via the special registry URL", func() {
-		Expect(lrp.Image).To(Equal("cube-registry.service.cf.internal:8080/cloudfoundry/app-name:the-droplet-hash"))
+		Expect(lrp.Image).To(Equal("cube-registry.service.cf.internal/cloudfoundry/app-name:the-droplet-hash"))
 	})
 })

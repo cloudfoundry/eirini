@@ -1,0 +1,7 @@
+{"data": [{
+  "type":"password",
+  "id":"some_uuid",
+  "name":"my-password",
+  "version_created_at":"idc",
+  "value":"some-password"
+}]}

@@ -1,0 +1,39 @@
+---
+credentials:
+- name: /test/password
+  type: password
+  value: test-password-value
+- name: /test/value
+  type: value
+  value: test-value
+- name: /test/certificate
+  type: certificate
+  value:
+    ca: ca-certificate
+    certificate: certificate
+    private_key: private-key
+- name: /test/rsa
+  type: rsa
+  value:
+    public_key: public-key
+    private_key: private-key
+- name: /test/ssh
+  type: ssh
+  value:
+    public_key: ssh-public-key
+    private_key: private-key
+- name: /test/user
+  type: user
+  value:
+    username: covfefe
+    password: test-user-password
+- name: /test/json
+  type: json
+  value:
+    arbitrary_object:
+      nested_array:
+      - array_val1
+      - array_object_subvalue: covfefe
+    1: key is not a string
+    3.14: pi
+    true: key is a bool

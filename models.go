@@ -41,6 +41,7 @@ type SyncConfig struct {
 type SyncProperties struct {
 	KubeConfig         string `yaml:"kube_config"`
 	KubeNamespace      string `yaml:"kube_namespace"`
+	KubeEndpoint       string `yaml:"kube_endpoint"`
 	RegistryEndpoint   string `yaml:"registry_endpoint"`
 	CcApi              string `yaml:"api_endpoint"`
 	Backend            string `yaml:"backend"`

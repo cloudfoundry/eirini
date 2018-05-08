@@ -1,46 +1,80 @@
 package route
 
 import (
-	"fmt"
-	"time"
+	"errors"
+	"strings"
 
-	"k8s.io/api/core/v1"
+	ext "k8s.io/api/extensions/v1beta1"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
+const (
+	httpPort = 80
+	tlsPort  = 443
+)
+
 type RouteCollector struct {
-	Client *kubernetes.Clientset
-	Work   chan []RegistryMessage
-	Host   string
+	Client        kubernetes.Interface
+	Scheduler     TaskScheduler
+	Work          chan<- []RegistryMessage
+	KubeNamespace string
 }
 
-func (r *RouteCollector) Start(interval int) {
-	ticker := time.NewTicker(time.Second * time.Duration(interval))
-	for range ticker.C {
-		serviceList, err := r.Client.CoreV1().Services("default").List(av1.ListOptions{})
-		if err != nil {
-			fmt.Println("could not list services:", err.Error())
-		}
+func (r *RouteCollector) Start() {
+	r.Scheduler.Schedule(r.collectRoutes)
+}
 
-		var messages []RegistryMessage
-		for _, service := range serviceList.Items {
-			if service.Name != "kubernetes" {
-				msg := createRegistryMessage(service, r.Host)
-				messages = append(messages, msg)
-			}
-		}
-
-		r.Work <- messages
+func (r *RouteCollector) collectRoutes() error {
+	ingressList, err := r.Client.ExtensionsV1beta1().Ingresses(r.KubeNamespace).List(av1.ListOptions{})
+	if err != nil {
+		return err
 	}
+
+	var messages []RegistryMessage
+	for _, ingress := range ingressList.Items {
+		for _, rule := range ingress.Spec.Rules {
+			message, err := r.createRegistryMessage(&rule)
+			if err != nil {
+				return err
+			}
+			messages = append(messages, message)
+		}
+	}
+
+	r.Work <- messages
+	return nil
 }
 
-func createRegistryMessage(service v1.Service, host string) RegistryMessage {
+func (r *RouteCollector) createRegistryMessage(rule *ext.IngressRule) (RegistryMessage, error) {
+	if len(rule.HTTP.Paths) == 0 {
+		return RegistryMessage{}, errors.New("paths must not be empty slice")
+	}
+	host := rule.Host
+	serviceName := rule.HTTP.Paths[0].Backend.ServiceName
+
+	routes, err := r.getRoutes(serviceName)
+	if err != nil {
+		return RegistryMessage{}, err
+	}
+
 	return RegistryMessage{
 		Host:    host,
-		Port:    uint32(service.Spec.Ports[0].NodePort),
-		TlsPort: uint32(service.Spec.Ports[0].NodePort),
-		URIs:    []string{service.Labels["routes"]},
-		App:     service.Name,
+		Port:    httpPort,
+		TlsPort: tlsPort,
+		URIs:    routes,
+		App:     serviceName,
+	}, nil
+}
+
+func (r *RouteCollector) getRoutes(serviceName string) ([]string, error) {
+	service, err := r.Client.CoreV1().Services(r.KubeNamespace).Get(serviceName, av1.GetOptions{})
+	if err != nil {
+		return []string{}, err
 	}
+	return splitUris(service.Labels["routes"]), nil
+}
+
+func splitUris(s string) []string {
+	return strings.Split(s, ",")
 }

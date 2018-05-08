@@ -76,6 +76,10 @@ func main() {
 					Name:  "namespace",
 					Usage: "name of the kubernetes cluster used for app staging",
 				},
+				cli.StringFlag{
+					Name:  "kubeEndpoint",
+					Usage: "endpoint of the kubernetes cluster used for app staging",
+				},
 			},
 			Action: syncCmd,
 		},
@@ -122,8 +126,16 @@ func main() {
 					Value: filepath.Join(os.Getenv("HOME"), ".kube", "config"),
 				},
 				cli.StringFlag{
-					Name:  "host",
-					Value: "158.175.95.220",
+					Name:  "namespace",
+					Usage: "name of the kubernetes cluster used for app staging",
+				},
+				cli.StringFlag{
+					Name:  "natsPass",
+					Usage: "Password for NATS messaging system used to communicate with the gorouter",
+				},
+				cli.StringFlag{
+					Name:  "natsIP",
+					Usage: "IP of NATS messaging system used to communicate with the gorouter",
 				},
 			},
 			Action: routeEmitterCmd,

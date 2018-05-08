@@ -12,11 +12,12 @@ import (
 )
 
 func routeEmitterCmd(c *cli.Context) {
-	natsPassword := "gjjqystmkiq89n8vrmve"
+	kubeNamespace := c.String("namespace")
+	natsPassword := c.String("natsPass")
+	natsIP := c.String("natsIP")
 	natsUser := "nats"
-	natsIp := "10.244.0.129"
 
-	nc, err := nats.Connect(fmt.Sprintf("nats://%s:%s@%s:4222", natsUser, natsPassword, natsIp))
+	nc, err := nats.Connect(fmt.Sprintf("nats://%s:%s@%s:4222", natsUser, natsPassword, natsIP))
 	exitWithError(err)
 
 	config, err := clientcmd.BuildConfigFromFlags("", c.String("kube-config"))
@@ -27,11 +28,16 @@ func routeEmitterCmd(c *cli.Context) {
 
 	workChan := make(chan []route.RegistryMessage)
 
-	rc := route.RouteCollector{Client: clientset, Work: workChan, Host: c.String("host")}
-	re := route.RouteEmitter{NatsClient: nc, Work: workChan}
+	rc := route.RouteCollector{
+		Client:        clientset,
+		Work:          workChan,
+		KubeNamespace: kubeNamespace,
+	}
+
+	re := route.NewRouteEmitter(nc, workChan, 15)
 
 	go re.Start()
-	go rc.Start(15)
+	go rc.Start()
 
 	select {}
 }
