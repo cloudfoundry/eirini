@@ -3,6 +3,7 @@ package k8s
 import (
 	"fmt"
 
+	"github.com/julz/cube"
 	"github.com/julz/cube/opi"
 	ext "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -17,19 +18,25 @@ const (
 	ingressKind       = "Ingress"
 )
 
-type IngressManager struct {
+//go:generate counterfeiter . IngressManager
+type IngressManager interface {
+	CreateIngress(namespace string) (*ext.Ingress, error)
+	UpdateIngress(namespace string, lrp opi.LRP, vcap VcapApp) error
+}
+
+type KubeIngressManager struct {
 	client   kubernetes.Interface
 	endpoint string
 }
 
-func NewIngressManager(client kubernetes.Interface, kubeEndpoint string) *IngressManager {
-	return &IngressManager{
+func NewIngressManager(client kubernetes.Interface, kubeEndpoint string) IngressManager {
+	return &KubeIngressManager{
 		client:   client,
 		endpoint: kubeEndpoint,
 	}
 }
 
-func (i *IngressManager) UpdateIngress(namespace string, lrp opi.LRP, vcap VcapApp) error {
+func (i *KubeIngressManager) UpdateIngress(namespace string, lrp opi.LRP, vcap VcapApp) error {
 	ingress, err := i.getIngress(namespace)
 	if err != nil {
 		return err
@@ -44,7 +51,7 @@ func (i *IngressManager) UpdateIngress(namespace string, lrp opi.LRP, vcap VcapA
 	return nil
 }
 
-func (i *IngressManager) updateSpec(ingress *ext.Ingress, lrp opi.LRP, vcap VcapApp) {
+func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrp opi.LRP, vcap VcapApp) {
 	newHost := fmt.Sprintf("%s.%s", vcap.AppName, i.endpoint)
 	ingress.Spec.TLS[0].Hosts = append(ingress.Spec.TLS[0].Hosts, newHost)
 
@@ -52,7 +59,7 @@ func (i *IngressManager) updateSpec(ingress *ext.Ingress, lrp opi.LRP, vcap Vcap
 	ingress.Spec.Rules = append(ingress.Spec.Rules, rule)
 }
 
-func (i *IngressManager) getIngress(namespace string) (*ext.Ingress, error) {
+func (i *KubeIngressManager) getIngress(namespace string) (*ext.Ingress, error) {
 	ingress, err := i.client.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 
 	if statusErr, ok := err.(*errors.StatusError); ok && statusErr.ErrStatus.Code == 404 {
@@ -71,7 +78,7 @@ func createIngressRule(lrp opi.LRP, vcap VcapApp, kubeEndpoint string) ext.Ingre
 			ext.HTTPIngressPath{
 				Path: "/",
 				Backend: ext.IngressBackend{
-					ServiceName: fmt.Sprintf("cf-%s", lrp.Name),
+					ServiceName: cube.GetInternalServiceName(lrp.Name),
 					ServicePort: intstr.FromInt(8080),
 				},
 			},
@@ -81,7 +88,7 @@ func createIngressRule(lrp opi.LRP, vcap VcapApp, kubeEndpoint string) ext.Ingre
 	return rule
 }
 
-func (i *IngressManager) CreateIngress(namespace string) (*ext.Ingress, error) {
+func (i *KubeIngressManager) CreateIngress(namespace string) (*ext.Ingress, error) {
 	ingress := &ext.Ingress{
 		TypeMeta: av1.TypeMeta{
 			Kind:       ingressKind,

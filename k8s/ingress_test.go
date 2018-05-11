@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/julz/cube"
 	. "github.com/julz/cube/k8s"
 	"github.com/julz/cube/opi"
 
@@ -20,7 +21,7 @@ var _ = Describe("Ingress", func() {
 
 	var (
 		fakeClient     kubernetes.Interface
-		ingressManager *IngressManager
+		ingressManager IngressManager
 	)
 
 	const (
@@ -83,13 +84,12 @@ var _ = Describe("Ingress", func() {
 		var err error
 
 		const (
-			ingressServiceName = "service-name"
-			ingressAppName     = "app-name"
-			lrpName            = "new-app-name"
-			vcapName           = "new-vcaapp-name"
+			ingressAppName = "app-name"
+			lrpName        = "new-app-name"
+			vcapName       = "new-vcaapp-name"
 		)
 
-		createIngressRule := func(hostName, serviceName string) ext.IngressRule {
+		createIngressRule := func(serviceName string) ext.IngressRule {
 			ingress := ext.IngressRule{
 				Host: fmt.Sprintf("%s.%s", vcapName, kubeEndpoint),
 			}
@@ -99,7 +99,7 @@ var _ = Describe("Ingress", func() {
 					ext.HTTPIngressPath{
 						Path: "/",
 						Backend: ext.IngressBackend{
-							ServiceName: fmt.Sprintf("cf-%s", serviceName),
+							ServiceName: serviceName,
 							ServicePort: intstr.FromInt(8080),
 						},
 					},
@@ -123,7 +123,7 @@ var _ = Describe("Ingress", func() {
 				},
 			}
 
-			rule := createIngressRule(ingressAppName, ingressServiceName)
+			rule := createIngressRule(cube.GetInternalServiceName(ingressAppName))
 			ingress.Spec.Rules = append(ingress.Spec.Rules, rule)
 
 			return ingress
@@ -160,8 +160,8 @@ var _ = Describe("Ingress", func() {
 				}))
 
 				Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
-					createIngressRule(ingressAppName, ingressServiceName),
-					createIngressRule(vcapName, lrpName),
+					createIngressRule(cube.GetInternalServiceName(ingressAppName)),
+					createIngressRule(cube.GetInternalServiceName(lrpName)),
 				}))
 			})
 
@@ -185,7 +185,7 @@ var _ = Describe("Ingress", func() {
 				}))
 
 				Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
-					createIngressRule(vcapName, lrpName),
+					createIngressRule(cube.GetInternalServiceName(lrpName)),
 				}))
 			})
 

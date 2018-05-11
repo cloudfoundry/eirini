@@ -66,7 +66,9 @@ func syncCmd(c *cli.Context) {
 
 	kubeNamespace := conf.Properties.KubeNamespace
 	kubeEndpoint := conf.Properties.KubeEndpoint
-	desirer := k8s.NewDesirer(clientset, kubeEndpoint, kubeNamespace)
+
+	ingressManager := k8s.NewIngressManager(clientset, kubeEndpoint)
+	desirer := k8s.NewDesirer(clientset, kubeNamespace, ingressManager)
 
 	converger := sink.Converger{
 		Converter:   sink.ConvertFunc(sink.Convert),

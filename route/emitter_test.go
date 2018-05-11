@@ -106,7 +106,7 @@ var _ = Describe("Emitter", func() {
 			assertInteractionsWithFakes()
 		})
 
-		Context("When the publisher throws an error", func() {
+		Context("When the publisher returns an error", func() {
 			BeforeEach(func() {
 				publisher.PublishReturns(errors.New("Failed to publish message"))
 			})

@@ -3,8 +3,8 @@ package k8s
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
+	"github.com/julz/cube"
 	"github.com/julz/cube/launcher"
 	"github.com/julz/cube/opi"
 	"k8s.io/api/apps/v1beta1"
@@ -14,16 +14,16 @@ import (
 )
 
 type Desirer struct {
-	KubeNamespace     string
-	Client            *kubernetes.Clientset
-	ingressController *IngressManager
+	KubeNamespace  string
+	Client         *kubernetes.Clientset
+	ingressManager IngressManager
 }
 
-func NewDesirer(client *kubernetes.Clientset, kubeEndpoint string, kubeNamespace string) *Desirer {
+func NewDesirer(client *kubernetes.Clientset, kubeNamespace string, ingressManager IngressManager) *Desirer {
 	return &Desirer{
-		KubeNamespace:     kubeNamespace,
-		Client:            client,
-		ingressController: NewIngressManager(client, kubeEndpoint),
+		KubeNamespace:  kubeNamespace,
+		Client:         client,
+		ingressManager: ingressManager,
 	}
 }
 
@@ -43,17 +43,22 @@ func (d *Desirer) Desire(ctx context.Context, lrps []opi.LRP) error {
 			continue
 		}
 
-		vcap := parseVcapApplication(lrp.Env["VCAP_APPLICATION"]) //TODO
 		if _, err := d.Client.AppsV1beta1().Deployments(d.KubeNamespace).Create(toDeployment(lrp)); err != nil {
 			// fixme: this should be a multi-error and deferred
 			return err
 		}
 
-		if _, err = d.Client.CoreV1().Services(d.KubeNamespace).Create(exposeDeployment(lrp, d.KubeNamespace)); err != nil {
+		service, err := exposeDeployment(lrp, d.KubeNamespace)
+		if err != nil {
 			return err
 		}
 
-		if err = d.ingressController.UpdateIngress(d.KubeNamespace, lrp, vcap); err != nil {
+		if _, err = d.Client.CoreV1().Services(d.KubeNamespace).Create(service); err != nil {
+			return err
+		}
+
+		vcap := parseVcapApplication(lrp.Env["VCAP_APPLICATION"])
+		if err = d.ingressManager.UpdateIngress(d.KubeNamespace, lrp, vcap); err != nil {
 			return err
 		}
 	}
@@ -100,7 +105,7 @@ func toDeployment(lrp opi.LRP) *v1beta1.Deployment {
 	return deployment
 }
 
-func exposeDeployment(lrp opi.LRP, namespace string) *v1.Service {
+func exposeDeployment(lrp opi.LRP, namespace string) (*v1.Service, error) {
 	service := &v1.Service{
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
@@ -120,20 +125,25 @@ func exposeDeployment(lrp opi.LRP, namespace string) *v1.Service {
 		},
 	}
 
-	vcap := parseVcapApplication(lrp.Env["VCAP_APPLICATION"])
-	routes := toRouteString(vcap.AppUris)
-
 	service.APIVersion = "v1"
 	service.Kind = "Service"
-	service.Name = "cf-" + lrp.Name //Prefix service as the lrp.Name could start with numerical characters, which is not allowed
+	service.Name = cube.GetInternalServiceName(lrp.Name)
 	service.Namespace = namespace
 	service.Labels = map[string]string{
-		"cube":   "cube",
-		"name":   lrp.Name,
-		"routes": routes,
+		"cube": "cube",
+		"name": lrp.Name,
 	}
 
-	return service
+	vcap := parseVcapApplication(lrp.Env["VCAP_APPLICATION"])
+	routes, err := toRouteString(vcap.AppUris)
+	if err != nil {
+		return nil, err
+	}
+	service.Annotations = map[string]string{
+		"routes": string(routes),
+	}
+
+	return service, nil
 }
 
 type VcapApp struct {
@@ -148,8 +158,8 @@ func parseVcapApplication(vcap string) VcapApp {
 	return vcapApp
 }
 
-func toRouteString(routes []string) string {
-	return strings.Join(routes, ",")
+func toRouteString(routes []string) ([]byte, error) {
+	return json.Marshal(routes)
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {

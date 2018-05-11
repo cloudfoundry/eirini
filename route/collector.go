@@ -1,8 +1,8 @@
 package route
 
 import (
+	"encoding/json"
 	"errors"
-	"strings"
 
 	ext "k8s.io/api/extensions/v1beta1"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,9 +72,12 @@ func (r *RouteCollector) getRoutes(serviceName string) ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
-	return splitUris(service.Labels["routes"]), nil
+	return decode(service.Annotations["routes"])
 }
 
-func splitUris(s string) []string {
-	return strings.Split(s, ",")
+func decode(s string) ([]string, error) {
+	uris := []string{}
+	err := json.Unmarshal([]byte(s), &uris)
+
+	return uris, err
 }

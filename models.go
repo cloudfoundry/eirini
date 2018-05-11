@@ -1,6 +1,7 @@
 package cube
 
 import (
+	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
@@ -76,4 +77,9 @@ type BackendConfig struct {
 //go:generate counterfeiter . Extractor
 type Extractor interface {
 	Extract(src, targetDir string) error
+}
+
+func GetInternalServiceName(appName string) string {
+	//Prefix service as the appName could start with numerical characters, which is not allowed
+	return fmt.Sprintf("cf-%s", appName)
 }
