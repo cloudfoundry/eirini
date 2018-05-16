@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -31,6 +32,7 @@ func routeEmitterCmd(c *cli.Context) {
 	rc := route.RouteCollector{
 		Client:        clientset,
 		Work:          workChan,
+		Scheduler:     &route.TickerTaskScheduler{time.NewTicker(time.Second * 15)},
 		KubeNamespace: kubeNamespace,
 	}
 
