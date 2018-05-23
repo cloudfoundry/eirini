@@ -4,7 +4,7 @@ package routefakes
 import (
 	"sync"
 
-	"github.com/julz/cube/route"
+	"github.com/cloudfoundry-incubator/eirini/route"
 )
 
 type FakeTaskScheduler struct {

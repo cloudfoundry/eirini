@@ -3,8 +3,8 @@ package k8s
 import (
 	"context"
 
-	"github.com/julz/cube"
-	"github.com/julz/cube/opi"
+	"github.com/cloudfoundry-incubator/eirini"
+	"github.com/cloudfoundry-incubator/eirini/opi"
 	"k8s.io/api/core/v1"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 

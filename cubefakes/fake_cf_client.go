@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/julz/cube"
+	"github.com/cloudfoundry-incubator/eirini"
 )
 
 type FakeCfClient struct {

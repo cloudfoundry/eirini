@@ -3,9 +3,9 @@ package st8ger_test
 import (
 	"context"
 
-	"github.com/julz/cube"
-	"github.com/julz/cube/opi"
-	. "github.com/julz/cube/st8ger"
+	"github.com/cloudfoundry-incubator/eirini"
+	"github.com/cloudfoundry-incubator/eirini/opi"
+	. "github.com/cloudfoundry-incubator/eirini/st8ger"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

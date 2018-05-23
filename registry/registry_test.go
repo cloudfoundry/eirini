@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/julz/cube/blobondemand"
-	"github.com/julz/cube/registry"
+	"github.com/cloudfoundry-incubator/eirini/blobondemand"
+	"github.com/cloudfoundry-incubator/eirini/registry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

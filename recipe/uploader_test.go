@@ -3,8 +3,8 @@ package main_test
 import (
 	"errors"
 
-	"github.com/julz/cube/cubefakes"
-	. "github.com/julz/cube/recipe"
+	"github.com/cloudfoundry-incubator/eirini/cubefakes"
+	. "github.com/cloudfoundry-incubator/eirini/recipe"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

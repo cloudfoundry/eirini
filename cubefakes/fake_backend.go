@@ -6,8 +6,8 @@ import (
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	"github.com/julz/cube"
-	"github.com/julz/cube/opi"
+	"github.com/cloudfoundry-incubator/eirini"
+	"github.com/cloudfoundry-incubator/eirini/opi"
 )
 
 type FakeBackend struct {

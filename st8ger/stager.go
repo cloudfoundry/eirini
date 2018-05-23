@@ -3,7 +3,7 @@ package st8ger
 import (
 	"context"
 
-	"github.com/julz/cube/opi"
+	"github.com/cloudfoundry-incubator/eirini/opi"
 )
 
 type St8ger struct {
