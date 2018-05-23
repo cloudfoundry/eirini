@@ -16,7 +16,7 @@ var _ = Describe("Cubed", func() {
 	// the current IP address to insecure_registry_list in docker so
 	// it will pull
 	PIt("serves up OCI images that can be downloaded by a docker client", func() {
-		cubed, err := gexec.Build("github.com/julz/cube/cmd/cubed")
+		cubed, err := gexec.Build("github.com/cloudfoundry-incubator/eirini/cmd/cubed")
 		Expect(err).NotTo(HaveOccurred())
 
 		server, err := gexec.Start(exec.Command(cubed, "-rootfs", "/Users/julz/workspace/minirootfs.tar"), GinkgoWriter, GinkgoWriter)

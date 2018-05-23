@@ -3,8 +3,8 @@ package k8s
 import (
 	"fmt"
 
-	"github.com/julz/cube"
-	"github.com/julz/cube/opi"
+	"github.com/cloudfoundry-incubator/eirini"
+	"github.com/cloudfoundry-incubator/eirini/opi"
 	ext "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"

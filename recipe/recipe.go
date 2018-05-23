@@ -10,7 +10,7 @@ import (
 	"os/exec"
 
 	"github.com/JulzDiverse/cfclient"
-	"github.com/julz/cube"
+	"github.com/cloudfoundry-incubator/eirini"
 	"github.com/pkg/errors"
 	"github.com/starkandwayne/goutils/ansi"
 

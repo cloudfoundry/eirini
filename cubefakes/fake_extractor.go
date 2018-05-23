@@ -4,7 +4,7 @@ package cubefakes
 import (
 	"sync"
 
-	"github.com/julz/cube"
+	"github.com/cloudfoundry-incubator/eirini"
 )
 
 type FakeExtractor struct {

@@ -10,7 +10,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"github.com/julienschmidt/httprouter"
-	"github.com/julz/cube"
+	"github.com/cloudfoundry-incubator/eirini"
 )
 
 func New(stager cube.St8ger, backend cube.Backend, logger lager.Logger) http.Handler {

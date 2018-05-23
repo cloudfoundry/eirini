@@ -11,7 +11,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/nsync/bulk"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	"github.com/julz/cube/kubeconv"
+	"github.com/cloudfoundry-incubator/eirini/kubeconv"
 	"k8s.io/api/apps/v1beta1"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"

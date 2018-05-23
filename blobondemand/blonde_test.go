@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/julz/cube/blobondemand"
+	"github.com/cloudfoundry-incubator/eirini/blobondemand"
 )
 
 func TestSaveLoad(t *testing.T) {

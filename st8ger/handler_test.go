@@ -9,9 +9,9 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/julienschmidt/httprouter"
-	"github.com/julz/cube/cubefakes"
-	"github.com/julz/cube/opi"
-	stager "github.com/julz/cube/st8ger"
+	"github.com/cloudfoundry-incubator/eirini/cubefakes"
+	"github.com/cloudfoundry-incubator/eirini/opi"
+	stager "github.com/cloudfoundry-incubator/eirini/st8ger"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
