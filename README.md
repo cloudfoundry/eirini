@@ -57,7 +57,7 @@ OPI uses the LRP/Task abstractions to do that.
 
 # Development
 
-* `go get github.com/julz/cube`
+* `go get github.com/cloudfoundry-incubator/eirini`
 * `cd` into the package you want to test
 * `ginkgo`
 

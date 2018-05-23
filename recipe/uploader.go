@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/julz/cube"
+	"github.com/cloudfoundry-incubator/eirini"
 	"github.com/pkg/errors"
 )
 

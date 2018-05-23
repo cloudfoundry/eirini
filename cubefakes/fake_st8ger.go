@@ -4,8 +4,8 @@ package cubefakes
 import (
 	"sync"
 
-	"github.com/julz/cube"
-	"github.com/julz/cube/opi"
+	"github.com/cloudfoundry-incubator/eirini"
+	"github.com/cloudfoundry-incubator/eirini/opi"
 )
 
 type FakeSt8ger struct {

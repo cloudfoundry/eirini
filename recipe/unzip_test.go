@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/julz/cube"
-	. "github.com/julz/cube/recipe"
+	"github.com/cloudfoundry-incubator/eirini"
+	. "github.com/cloudfoundry-incubator/eirini/recipe"
 )
 
 var _ = Describe("Unzip function", func() {

@@ -10,7 +10,7 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
-	"github.com/julz/cube/blobondemand"
+	"github.com/cloudfoundry-incubator/eirini/blobondemand"
 )
 
 var blobs = blobondemand.NewInMemoryStore()
