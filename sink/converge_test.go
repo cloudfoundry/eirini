@@ -22,7 +22,7 @@ var _ = Describe("Converge", func() {
 				msg cc_messages.DesireAppRequestFromCC,
 				regUrl string,
 				regIP string,
-				cfClient cube.CfClient,
+				cfClient eirini.CfClient,
 				client *http.Client,
 				log lager.Logger,
 			) opi.LRP {

@@ -13,8 +13,8 @@ Works the same as today: the registry always combines the droplet layer with the
 
 ~~~~
 # start the registry with the current rootfs
-# (a nice way to do this is to deploy `rootfs-release` and `cube-release` on the same bosh host and point one to the other)
-cube registry --rootfs /path/to/rootfs.tar
+# (a nice way to do this is to deploy `rootfs-release` and `eirini-release` on the same bosh host and point one to the other)
+eirini registry --rootfs /path/to/rootfs.tar
 
 # .. add <yourip>:8080 to insecure-registry-list in your docker daemon
 
@@ -22,7 +22,7 @@ cube registry --rootfs /path/to/rootfs.tar
 # change staging so it's already stored as a valid layer and then this step goes away)
 curl <your ip>:8080/v2/some-space/some-app/blobs/?guid=droplet-guid -XPOST -d@<path-to-droplet-tar-gz> -H"Content-Type: text/plain"
 
-# run your image with docker! push it to kube! push it to cube! world is your oyster
+# run your image with docker! push it to kube! push it to eirini! world is your oyster
 docker run -it -uvcap <your ip>:8080/some-space/some-app:droplet-guid /bin/sh
 ~~~~
 
@@ -31,7 +31,7 @@ docker run -it -uvcap <your ip>:8080/some-space/some-app:droplet-guid /bin/sh
 The alternate way of doing this would be to use an existing registry and just
 have a sync loop to pull droplets / rootfs from CC and push them to it. That's
 not as expensive as it sounds because you never have to re-upload stuff, blobs
-that are there will hit cache in the registry. (Either way the rest of Cube
+that are there will hit cache in the registry. (Either way the rest of eirini
 doesn't really care tho and this is an easier PoC so this is what we did.
 Potentially could support both modes like built-in/remote postgres.)
 

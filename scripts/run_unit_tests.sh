@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BASEDIR="$(cd $(dirname $0)/.. && pwd)"
-EXCLUDE="cmd scripts blobondemand cubefakes launcher"
+EXCLUDE="cmd scripts blobondemand eirinifakes launcher"
 
 for d in $BASEDIR/*; do
   if [ -d "$d" ]; then

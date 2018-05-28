@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCube(t *testing.T) {
+func TestEirini(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Recipe Suite")
 }

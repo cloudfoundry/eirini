@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cloudfoundry-incubator/eirini/cubefakes"
+	"github.com/cloudfoundry-incubator/eirini/eirinifakes"
 	. "github.com/cloudfoundry-incubator/eirini/recipe"
 
 	. "github.com/onsi/ginkgo"
@@ -22,16 +22,16 @@ var _ = Describe("PackageInstaller", func() {
 		targetDir   string
 		zipFilePath string
 		installer   *PackageInstaller
-		cfclient    *cubefakes.FakeCfClient
-		extractor   *cubefakes.FakeExtractor
+		cfclient    *eirinifakes.FakeCfClient
+		extractor   *eirinifakes.FakeExtractor
 	)
 
 	BeforeEach(func() {
 		appId = "guid"
 		targetDir = "testdata"
 		zipFilePath = filepath.Join(targetDir, appId) + ".zip"
-		cfclient = new(cubefakes.FakeCfClient)
-		extractor = new(cubefakes.FakeExtractor)
+		cfclient = new(eirinifakes.FakeCfClient)
+		extractor = new(eirinifakes.FakeExtractor)
 		installer = &PackageInstaller{cfclient, extractor}
 	})
 

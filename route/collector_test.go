@@ -96,7 +96,7 @@ var _ = Describe("Collector", func() {
 			}
 
 			BeforeEach(func() {
-				serviceName = cube.GetInternalServiceName(appName)
+				serviceName = eirini.GetInternalServiceName(appName)
 				host = fmt.Sprintf("%s.%s", serviceName, "kube-endpoint")
 				routes = []string{"route1.app.com", "route2.app.com"}
 

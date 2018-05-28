@@ -12,7 +12,7 @@ Now you can run the build script located in `recipe/bin/`:
 
 `$ bin/build.sh`
 
-The container name is `cube/recipe` and is tagged with `build`.
+The container name is `eirini/recipe` and is tagged with `build`.
 
 ## Run the container locally with Docker
 
@@ -26,7 +26,7 @@ The container requires several environment variables to run the staging recipe l
 
 These environment variables need to be passed to the docker run call:
 
-`$ docker run -it -e 'APP_ID=<your-app-id>' -e 'STAGING_GUID=staging-guid' -e 'CF_USERNAME=admin' -e 'CF_PASSWORD=<cf-password>' -e 'API_ADDRESS=<cf-endpoint>' --rm cube/recipe:build`
+`$ docker run -it -e 'APP_ID=<your-app-id>' -e 'STAGING_GUID=staging-guid' -e 'CF_USERNAME=admin' -e 'CF_PASSWORD=<cf-password>' -e 'API_ADDRESS=<cf-endpoint>' --rm eirini/recipe:build`
 
 ### Info
 

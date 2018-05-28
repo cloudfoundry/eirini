@@ -6,7 +6,7 @@ import (
 )
 
 type Uploader struct {
-	Cfclient cube.CfClient
+	Cfclient eirini.CfClient
 }
 
 func (u *Uploader) Upload(guid string, path string) error {

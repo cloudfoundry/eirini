@@ -15,8 +15,8 @@ func main() {
 	exitWithError(err)
 
 	app := cli.NewApp()
-	app.Name = "cube"
-	app.Usage = "Cube - the CF experience, on any scheduler"
+	app.Name = "eirini"
+	app.Usage = "Eirini - the CF experience, on any scheduler"
 	app.Commands = []cli.Command{
 		{
 			Name:  "registry",
@@ -64,13 +64,13 @@ func main() {
 					Name: "skipSslValidation",
 				},
 				cli.StringFlag{
-					Name:  "externalCubeAddress",
+					Name:  "externalEiriniAddress",
 					Value: fmt.Sprintf("%s:8080", selfIp),
-					Usage: "The external cube address which will be used by kubernetes to pull images. <host>:<port>",
+					Usage: "The external eirini address which will be used by kubernetes to pull images. <host>:<port>",
 				},
 				cli.StringFlag{
 					Name:  "config",
-					Usage: "Path to cube config file",
+					Usage: "Path to eirini config file",
 				},
 				cli.StringFlag{
 					Name:  "namespace",
@@ -105,7 +105,7 @@ func main() {
 					Value: "https://api.bosh-lite.com",
 				},
 				cli.StringFlag{
-					Name: "cube-address",
+					Name: "eirini-address",
 				},
 				cli.BoolFlag{
 					Name: "skipSslValidation",

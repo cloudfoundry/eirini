@@ -17,12 +17,12 @@ var _ = Describe("Backend", func() {
 
 	var (
 		logger  lager.Logger
-		backend cube.Backend
+		backend eirini.Backend
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test")
-		config := cube.BackendConfig{
+		config := eirini.BackendConfig{
 			CfUsername: "admin",
 			CfPassword: "admin",
 			ApiAddress: "api.mycf.com",

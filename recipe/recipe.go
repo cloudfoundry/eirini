@@ -19,16 +19,16 @@ import (
 )
 
 func main() {
-	downloadUrl := os.Getenv(cube.EnvDownloadUrl)
-	uploadUrl := os.Getenv(cube.EnvUploadUrl)
-	appId := os.Getenv(cube.EnvAppId)
-	stagingGuid := os.Getenv(cube.EnvStagingGuid)
-	completionCallback := os.Getenv(cube.EnvCompletionCallback)
+	downloadUrl := os.Getenv(eirini.EnvDownloadUrl)
+	uploadUrl := os.Getenv(eirini.EnvUploadUrl)
+	appId := os.Getenv(eirini.EnvAppId)
+	stagingGuid := os.Getenv(eirini.EnvStagingGuid)
+	completionCallback := os.Getenv(eirini.EnvCompletionCallback)
 
-	username := os.Getenv(cube.EnvCfUsername)
-	password := os.Getenv(cube.EnvCfPassword)
-	apiAddress := os.Getenv(cube.EnvApiAddress)
-	cubeAddress := os.Getenv(cube.EnvCubeAddress)
+	username := os.Getenv(eirini.EnvCfUsername)
+	password := os.Getenv(eirini.EnvCfPassword)
+	apiAddress := os.Getenv(eirini.EnvApiAddress)
+	eiriniAddress := os.Getenv(eirini.EnvEiriniAddress)
 
 	fmt.Println("STARTING WITH:", downloadUrl, uploadUrl, appId, stagingGuid, completionCallback)
 
@@ -82,7 +82,7 @@ func main() {
 		Annotation: string(annotationJson[:len(annotationJson)]),
 	}
 
-	err = stagingCompleteResponse(cubeAddress, cbResponse)
+	err = stagingCompleteResponse(eiriniAddress, cbResponse)
 	if err != nil {
 		fmt.Println("Error processsing completion callback:", err.Error())
 		os.Exit(1)
@@ -99,11 +99,11 @@ func readResultJson(path string) ([]byte, error) {
 	return file, nil
 }
 
-func stagingCompleteResponse(cubeAddress string, callbackResponse models.TaskCallbackResponse) error {
+func stagingCompleteResponse(eiriniAddress string, callbackResponse models.TaskCallbackResponse) error {
 	jsonBytes := new(bytes.Buffer)
 	json.NewEncoder(jsonBytes).Encode(callbackResponse)
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/staging/%s/completed", cubeAddress, callbackResponse.TaskGuid), jsonBytes)
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/staging/%s/completed", eiriniAddress, callbackResponse.TaskGuid), jsonBytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to create request")
 	}

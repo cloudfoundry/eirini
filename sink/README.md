@@ -4,11 +4,11 @@ a sync loop (similar to nsync) that uses pluggable 'OPI' backends to convert CC 
 
 ~~~~
 # make sure ~/.kube/config points to a valid kube
-cube sync --ccApi <api.your-env.com> --ccPass <your_internal_user_admin_pass> --adminPass <your_cf_admin_pass> --skipSslValidation
+eirini sync --ccApi <api.your-env.com> --ccPass <your_internal_user_admin_pass> --adminPass <your_cf_admin_pass> --skipSslValidation
 
 or use a config file:
 
-cube sync --config <path/to/config/file.yml>
+eirini sync --config <path/to/config/file.yml>
 
 # example config file:
 

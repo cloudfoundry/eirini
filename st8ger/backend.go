@@ -11,11 +11,11 @@ import (
 )
 
 type backend struct {
-	config cube.BackendConfig
+	config eirini.BackendConfig
 	logger lager.Logger
 }
 
-func NewBackend(config cube.BackendConfig, logger lager.Logger) cube.Backend {
+func NewBackend(config eirini.BackendConfig, logger lager.Logger) eirini.Backend {
 	return &backend{
 		config: config,
 		logger: logger.Session("kubernetes"),
@@ -35,15 +35,15 @@ func (b backend) CreateStagingTask(stagingGuid string, request cc_messages.Stagi
 	stagingTask := opi.Task{
 		Image: "diegoteam/recipe:build",
 		Env: map[string]string{
-			cube.EnvDownloadUrl:        lifecycleData.AppBitsDownloadUri,
-			cube.EnvUploadUrl:          lifecycleData.DropletUploadUri,
-			cube.EnvAppId:              request.LogGuid,
-			cube.EnvStagingGuid:        stagingGuid,
-			cube.EnvCompletionCallback: request.CompletionCallback,
-			cube.EnvCfUsername:         b.config.CfUsername,
-			cube.EnvCfPassword:         b.config.CfPassword,
-			cube.EnvApiAddress:         b.config.ApiAddress,
-			cube.EnvCubeAddress:        b.config.CubeAddress,
+			eirini.EnvDownloadUrl:        lifecycleData.AppBitsDownloadUri,
+			eirini.EnvUploadUrl:          lifecycleData.DropletUploadUri,
+			eirini.EnvAppId:              request.LogGuid,
+			eirini.EnvStagingGuid:        stagingGuid,
+			eirini.EnvCompletionCallback: request.CompletionCallback,
+			eirini.EnvCfUsername:         b.config.CfUsername,
+			eirini.EnvCfPassword:         b.config.CfPassword,
+			eirini.EnvApiAddress:         b.config.ApiAddress,
+			eirini.EnvEiriniAddress:      b.config.EiriniAddress,
 		},
 	}
 	return stagingTask, nil

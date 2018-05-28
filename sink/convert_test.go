@@ -6,7 +6,7 @@ import (
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	"github.com/cloudfoundry-incubator/eirini/cubefakes"
+	"github.com/cloudfoundry-incubator/eirini/eirinifakes"
 	"github.com/cloudfoundry-incubator/eirini/opi"
 	"github.com/cloudfoundry-incubator/eirini/sink"
 	. "github.com/onsi/ginkgo"
@@ -16,7 +16,7 @@ import (
 
 var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	var (
-		cfClient   *cubefakes.FakeCfClient
+		cfClient   *eirinifakes.FakeCfClient
 		fakeServer *ghttp.Server
 		logger     *lagertest.TestLogger
 		client     *http.Client
@@ -25,11 +25,11 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	)
 
 	BeforeEach(func() {
-		cfClient = new(cubefakes.FakeCfClient)
+		cfClient = new(eirinifakes.FakeCfClient)
 		fakeServer = ghttp.NewServer()
 		logger = lagertest.NewTestLogger("test")
 		client = &http.Client{}
-		regIP = "cube-registry.service.cf.internal"
+		regIP = "eirini-registry.service.cf.internal"
 		fakeServer.AppendHandlers(
 			ghttp.VerifyRequest("POST", "/v2/transformers/bumblebee/blobs/"),
 		)
@@ -68,6 +68,6 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	})
 
 	It("Converts droplet apps via the special registry URL", func() {
-		Expect(lrp.Image).To(Equal("cube-registry.service.cf.internal/cloudfoundry/app-name:the-droplet-hash"))
+		Expect(lrp.Image).To(Equal("eirini-registry.service.cf.internal/cloudfoundry/app-name:the-droplet-hash"))
 	})
 })

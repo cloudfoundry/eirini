@@ -18,8 +18,8 @@
 * [Inception doc](https://files.slack.com/files-pri/T02FL4A1X-FAED4MMSN/download/projecteirinipdf.pdf)
 * [Demo]( https://files.slack.com/files-pri/T02FL4A1X-FADSGHCUR/download/eirini-demo.mp4)
 * Code: https://github.com/cloudfoundry-incubator/eirini
-* BOSH Release: https://github.com/andrew-edgar/cube-release
-* Pipeline: https://github.com/julzdiverse/cube-release-ci
+* BOSH Release: https://github.com/andrew-edgar/eirini-release
+* Pipeline: https://github.com/julzdiverse/eirini-release-ci
 * Backlog: https://github.com/cloudfoundry-incubator/eirini/projects/1
 * Pairing Board: https://eunomia.eu-de.mybluemix.net/
 * Slack Channel: [#eirini-dev](https://cloudfoundry.slack.com/messages/C8RU3BZ26)
