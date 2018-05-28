@@ -9,11 +9,11 @@ import (
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	"github.com/julienschmidt/httprouter"
 	"github.com/cloudfoundry-incubator/eirini"
+	"github.com/julienschmidt/httprouter"
 )
 
-func New(stager cube.St8ger, backend cube.Backend, logger lager.Logger) http.Handler {
+func New(stager eirini.St8ger, backend eirini.Backend, logger lager.Logger) http.Handler {
 	handler := httprouter.New()
 
 	stagingHandler := NewStagingHandler(stager, backend, logger)
@@ -26,12 +26,12 @@ func New(stager cube.St8ger, backend cube.Backend, logger lager.Logger) http.Han
 }
 
 type StagingHandler struct {
-	stager  cube.St8ger
-	backend cube.Backend
+	stager  eirini.St8ger
+	backend eirini.Backend
 	logger  lager.Logger
 }
 
-func NewStagingHandler(stager cube.St8ger, backend cube.Backend, logger lager.Logger) *StagingHandler {
+func NewStagingHandler(stager eirini.St8ger, backend eirini.Backend, logger lager.Logger) *StagingHandler {
 	logger = logger.Session("staging-handler")
 
 	return &StagingHandler{

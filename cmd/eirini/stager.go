@@ -33,11 +33,11 @@ func stagingCmd(c *cli.Context) {
 	logger := lager.NewLogger("st8r")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 
-	backendConfig := cube.BackendConfig{
+	backendConfig := eirini.BackendConfig{
 		CfUsername:        c.String("cf-username"),
 		CfPassword:        c.String("cf-password"),
 		ApiAddress:        c.String("cf-endpoint"),
-		CubeAddress:       c.String("cube-address"),
+		EiriniAddress:     c.String("eirini-address"),
 		SkipSslValidation: c.Bool("skipSslValidation"),
 	}
 

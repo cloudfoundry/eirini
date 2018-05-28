@@ -8,10 +8,10 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/julienschmidt/httprouter"
-	"github.com/cloudfoundry-incubator/eirini/cubefakes"
+	"github.com/cloudfoundry-incubator/eirini/eirinifakes"
 	"github.com/cloudfoundry-incubator/eirini/opi"
 	stager "github.com/cloudfoundry-incubator/eirini/st8ger"
+	"github.com/julienschmidt/httprouter"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -23,8 +23,8 @@ var _ = Describe("Handler", func() {
 		logger lager.Logger
 		client *http.Client
 
-		backend            *cubefakes.FakeBackend
-		stagingClient      *cubefakes.FakeSt8ger
+		backend            *eirinifakes.FakeBackend
+		stagingClient      *eirinifakes.FakeSt8ger
 		responseRecorder   *httptest.ResponseRecorder
 		stagingHandler     *stager.StagingHandler
 		stagingRequestJson string
@@ -33,8 +33,8 @@ var _ = Describe("Handler", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test")
 		client = &http.Client{}
-		backend = new(cubefakes.FakeBackend)
-		stagingClient = new(cubefakes.FakeSt8ger)
+		backend = new(eirinifakes.FakeBackend)
+		stagingClient = new(eirinifakes.FakeSt8ger)
 		stagingHandler = stager.NewStagingHandler(stagingClient, backend, logger)
 		stagingRequestJson = `{"app_id":"myapp", "lifecycle":"kube-backend"}`
 	})

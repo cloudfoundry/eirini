@@ -11,15 +11,15 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Cubed", func() {
+var _ = Describe("Eirini", func() {
 	// This test is a bit of a pain atm, you need to manually add
 	// the current IP address to insecure_registry_list in docker so
 	// it will pull
 	PIt("serves up OCI images that can be downloaded by a docker client", func() {
-		cubed, err := gexec.Build("github.com/cloudfoundry-incubator/eirini/cmd/cubed")
+		eirini, err := gexec.Build("github.com/cloudfoundry-incubator/eirini/cmd/eirini")
 		Expect(err).NotTo(HaveOccurred())
 
-		server, err := gexec.Start(exec.Command(cubed, "-rootfs", "/Users/julz/workspace/minirootfs.tar"), GinkgoWriter, GinkgoWriter)
+		server, err := gexec.Start(exec.Command(eirinid, "-rootfs", "/Users/julz/workspace/minirootfs.tar"), GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 		defer server.Kill()
 

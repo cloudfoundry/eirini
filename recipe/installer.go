@@ -12,8 +12,8 @@ import (
 )
 
 type PackageInstaller struct {
-	Cfclient  cube.CfClient
-	Extractor cube.Extractor
+	Cfclient  eirini.CfClient
+	Extractor eirini.Extractor
 }
 
 func (d *PackageInstaller) Install(appId string, targetDir string) error {

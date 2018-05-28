@@ -18,7 +18,7 @@ func Convert(
 	msg cc_messages.DesireAppRequestFromCC,
 	registryUrl string,
 	registryIP string,
-	cfClient cube.CfClient,
+	cfClient eirini.CfClient,
 	client *http.Client,
 	log lager.Logger,
 ) opi.LRP {
@@ -51,13 +51,13 @@ func envVarsToMap(envs []*models.EnvironmentVariable) map[string]string {
 
 func dropletToImageURI(
 	msg cc_messages.DesireAppRequestFromCC,
-	cfClient cube.CfClient,
+	cfClient eirini.CfClient,
 	client *http.Client,
 	registryUrl string,
 	registryIP string,
 	log lager.Logger,
 ) string {
-	var appInfo cube.AppInfo
+	var appInfo eirini.AppInfo
 	for _, v := range msg.Environment {
 		if v.Name == "VCAP_APPLICATION" {
 			err := json.Unmarshal([]byte(v.Value), &appInfo)
@@ -82,7 +82,7 @@ func dropletToImageURI(
 func stageRequest(
 	client *http.Client,
 	registryUrl string,
-	appInfo cube.AppInfo,
+	appInfo eirini.AppInfo,
 	dropletHash string,
 	dropletBytes []byte,
 	log lager.Logger,

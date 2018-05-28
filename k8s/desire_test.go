@@ -136,7 +136,7 @@ var _ = Describe("Desiring some LRPs", func() {
 						panic(err)
 					}
 
-					serviceName := cube.GetInternalServiceName(appName)
+					serviceName := eirini.GetInternalServiceName(appName)
 					if err := client.CoreV1().Services(namespace).Delete(serviceName, &metav1.DeleteOptions{}); err != nil {
 						panic(err)
 					}

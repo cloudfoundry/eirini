@@ -1,26 +1,26 @@
 # What this?
 
-Cube is a Kubernetes backend for Cloud Foundry. It syncs CF apps to a kube
+Eirini is a Kubernetes backend for Cloud Foundry. It syncs CF apps to a kube
 backend in exactly the same way that the diego `nsync` component works, except
 using OCI images and Kube deployments.
 
 _But there's more!_
 
-Cube exports staged CF images as docker images. So you can schedule them
+Eirini exports staged CF images as docker images. So you can schedule them
 however you'd like. *And separately* it gives you the nice integrated `cf push` flow,
 with CF Apps mapped directly to kube Deployment objects. In other words it decouples buildpack
 staging and stateless-multitenant-app running.
 
 _But there's more!_
 
-Cube uses a little abstraction library, "OPI", which means it's not actually a
+Eirini uses a little abstraction library, "OPI", which means it's not actually a
 Kube backend at all: it's a generic backend for any scheduler! This means it
 can schedule to diego/kube/swarm and whatever else is cool next year.
 
 It uses the diego abstractions -- LRPs and Tasks -- in order to support generic
 orchestrators.
 
-An experimental BOSH release for this is available at https://github.com/andrew-edgar/cube-release
+An experimental BOSH release for this is available at https://github.com/andrew-edgar/eirini-release
 
 # y tho, y?
 
@@ -30,10 +30,10 @@ out of it now.
 
 # What components?
 
-Cube has the following components, the first two are available as subcommands of the `cube` binary:
+Eirini has the following components, the first two are available as subcommands of the `eirini` binary:
  
- - `Sink` provides a convergence loop that pulls desired apps from the Cloud Controller and creates corresponding Kubernetes resources. It relies on the `Registry` to serve OCI images for droplets, and `OPI` to abstract the communication with Kube. (Example: `cube sink --ccApi <api url> --ccPass <internal admin user password>`)
- - `Registry` is an OCI registry vending images based on droplets. Eventually this would be nice to move in to Cloud Controller. (Example: `cube registry --rootfs </path/to/rootfs.tar>`)
+ - `Sink` provides a convergence loop that pulls desired apps from the Cloud Controller and creates corresponding Kubernetes resources. It relies on the `Registry` to serve OCI images for droplets, and `OPI` to abstract the communication with Kube. (Example: `eirini sink --ccApi <api url> --ccPass <internal admin user password>`)
+ - `Registry` is an OCI registry vending images based on droplets. Eventually this would be nice to move in to Cloud Controller. (Example: `eirini registry --rootfs </path/to/rootfs.tar>`)
  - `OPI` or the "orchestrator provider interface" provides a declarative abstraction over multiple schedulers inspired by Diego's LRP/Task model and Bosh's CPI concept.
  - `St8ge` implements Staging by running Kubernetes/OPI one-off tasks
  

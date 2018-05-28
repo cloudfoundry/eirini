@@ -78,7 +78,7 @@ func createIngressRule(lrp opi.LRP, vcap VcapApp, kubeEndpoint string) ext.Ingre
 			ext.HTTPIngressPath{
 				Path: "/",
 				Backend: ext.IngressBackend{
-					ServiceName: cube.GetInternalServiceName(lrp.Name),
+					ServiceName: eirini.GetInternalServiceName(lrp.Name),
 					ServicePort: intstr.FromInt(8080),
 				},
 			},

@@ -3,7 +3,7 @@ package main_test
 import (
 	"errors"
 
-	"github.com/cloudfoundry-incubator/eirini/cubefakes"
+	"github.com/cloudfoundry-incubator/eirini/eirinifakes"
 	. "github.com/cloudfoundry-incubator/eirini/recipe"
 
 	. "github.com/onsi/ginkgo"
@@ -13,12 +13,12 @@ import (
 var _ = Describe("Uploader", func() {
 
 	var (
-		cfclient *cubefakes.FakeCfClient
+		cfclient *eirinifakes.FakeCfClient
 		uploader Uploader
 	)
 
 	BeforeEach(func() {
-		cfclient = new(cubefakes.FakeCfClient)
+		cfclient = new(eirinifakes.FakeCfClient)
 		uploader = Uploader{cfclient}
 	})
 

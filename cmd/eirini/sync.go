@@ -26,7 +26,7 @@ import (
 func syncCmd(c *cli.Context) {
 	var cfClientConfig *cfclient.Config
 	var configPath = c.String("config")
-	var conf *cube.SyncConfig
+	var conf *eirini.SyncConfig
 
 	if configPath == "" {
 		conf = setConfigFromCLI(c)
@@ -110,20 +110,20 @@ func fetch(fetcher *bulk.CCFetcher, converger sink.Converger, log lager.Logger, 
 	}
 }
 
-func setConfigFromFile(file string) *cube.SyncConfig {
+func setConfigFromFile(file string) *eirini.SyncConfig {
 	fileBytes, err := ioutil.ReadFile(file)
 	exitWithError(err)
 
-	var syncConf cube.SyncConfig
+	var syncConf eirini.SyncConfig
 	err = yaml.Unmarshal(fileBytes, &syncConf)
 	exitWithError(err)
 
 	return &syncConf
 }
 
-func setConfigFromCLI(c *cli.Context) *cube.SyncConfig {
-	return &cube.SyncConfig{
-		Properties: cube.SyncProperties{
+func setConfigFromCLI(c *cli.Context) *eirini.SyncConfig {
+	return &eirini.SyncConfig{
+		Properties: eirini.SyncProperties{
 			KubeConfig:         c.String("kubeconfig"),
 			KubeNamespace:      c.String("namespace"),
 			KubeEndpoint:       c.String("kubeEndpoint"),
@@ -134,7 +134,7 @@ func setConfigFromCLI(c *cli.Context) *cube.SyncConfig {
 			CfPassword:         c.String("adminPass"),
 			CcUser:             c.String("ccUser"),
 			CcPassword:         c.String("ccPass"),
-			ExternalAddress:    c.String("externalCubeAddress"),
+			ExternalAddress:    c.String("externalEiriniAddress"),
 			SkipSslValidation:  c.Bool("skipSslValidation"),
 			InsecureSkipVerify: true,
 		},

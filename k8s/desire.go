@@ -98,8 +98,8 @@ func toDeployment(lrp opi.LRP) *v1beta1.Deployment {
 	}
 
 	deployment.Labels = map[string]string{
-		"cube": "cube",
-		"name": lrp.Name,
+		"eirini": "eirini",
+		"name":   lrp.Name,
 	}
 
 	return deployment
@@ -127,11 +127,11 @@ func exposeDeployment(lrp opi.LRP, namespace string) (*v1.Service, error) {
 
 	service.APIVersion = "v1"
 	service.Kind = "Service"
-	service.Name = cube.GetInternalServiceName(lrp.Name)
+	service.Name = eirini.GetInternalServiceName(lrp.Name)
 	service.Namespace = namespace
 	service.Labels = map[string]string{
-		"cube": "cube",
-		"name": lrp.Name,
+		"eirini": "eirini",
+		"name":   lrp.Name,
 	}
 
 	vcap := parseVcapApplication(lrp.Env["VCAP_APPLICATION"])

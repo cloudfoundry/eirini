@@ -123,7 +123,7 @@ var _ = Describe("Ingress", func() {
 				},
 			}
 
-			rule := createIngressRule(cube.GetInternalServiceName(ingressAppName))
+			rule := createIngressRule(eirini.GetInternalServiceName(ingressAppName))
 			ingress.Spec.Rules = append(ingress.Spec.Rules, rule)
 
 			return ingress
@@ -160,8 +160,8 @@ var _ = Describe("Ingress", func() {
 				}))
 
 				Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
-					createIngressRule(cube.GetInternalServiceName(ingressAppName)),
-					createIngressRule(cube.GetInternalServiceName(lrpName)),
+					createIngressRule(eirini.GetInternalServiceName(ingressAppName)),
+					createIngressRule(eirini.GetInternalServiceName(lrpName)),
 				}))
 			})
 
@@ -185,7 +185,7 @@ var _ = Describe("Ingress", func() {
 				}))
 
 				Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
-					createIngressRule(cube.GetInternalServiceName(lrpName)),
+					createIngressRule(eirini.GetInternalServiceName(lrpName)),
 				}))
 			})
 

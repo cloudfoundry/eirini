@@ -19,7 +19,7 @@ var _ = Describe("Unzip function", func() {
 		targetDir string
 		srcZip    string
 		err       error
-		extractor cube.Extractor
+		extractor eirini.Extractor
 	)
 
 	JustBeforeEach(func() {

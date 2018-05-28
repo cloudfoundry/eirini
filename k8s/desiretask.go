@@ -68,15 +68,15 @@ func toJob(task opi.Task) *batch.Job {
 		},
 	}
 
-	job.Name = task.Env[cube.EnvAppId]
+	job.Name = task.Env[eirini.EnvAppId]
 
 	job.Spec.Template.Labels = map[string]string{
-		"name": task.Env[cube.EnvAppId],
+		"name": task.Env[eirini.EnvAppId],
 	}
 
 	job.Labels = map[string]string{
-		"cube": "cube",
-		"name": task.Env[cube.EnvAppId],
+		"eirini": "eirini",
+		"name":   task.Env[eirini.EnvAppId],
 	}
 	return job
 }

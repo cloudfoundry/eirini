@@ -16,7 +16,7 @@ var _ = Describe("Stager", func() {
 
 		var (
 			task   opi.Task
-			st8ger cube.St8ger
+			st8ger eirini.St8ger
 		)
 
 		BeforeEach(func() {
