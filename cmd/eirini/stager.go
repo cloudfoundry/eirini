@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/cloudfoundry-incubator/eirini"
-	"github.com/cloudfoundry-incubator/eirini/k8s"
-	"github.com/cloudfoundry-incubator/eirini/st8ger"
+	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/st8ger"
 	"github.com/urfave/cli"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"

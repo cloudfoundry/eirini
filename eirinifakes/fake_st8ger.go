@@ -4,8 +4,8 @@ package eirinifakes
 import (
 	"sync"
 
-	"github.com/cloudfoundry-incubator/eirini"
-	"github.com/cloudfoundry-incubator/eirini/opi"
+	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/opi"
 )
 
 type FakeSt8ger struct {

@@ -4,7 +4,7 @@ package eirinifakes
 import (
 	"sync"
 
-	"github.com/cloudfoundry-incubator/eirini"
+	"code.cloudfoundry.org/eirini"
 )
 
 type FakeExtractor struct {

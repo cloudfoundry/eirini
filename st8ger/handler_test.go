@@ -8,9 +8,9 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/cloudfoundry-incubator/eirini/eirinifakes"
-	"github.com/cloudfoundry-incubator/eirini/opi"
-	stager "github.com/cloudfoundry-incubator/eirini/st8ger"
+	"code.cloudfoundry.org/eirini/eirinifakes"
+	"code.cloudfoundry.org/eirini/opi"
+	stager "code.cloudfoundry.org/eirini/st8ger"
 	"github.com/julienschmidt/httprouter"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/cloudfoundry-incubator/eirini/blobondemand"
-	"github.com/cloudfoundry-incubator/eirini/registry"
+	"code.cloudfoundry.org/eirini/blobondemand"
+	"code.cloudfoundry.org/eirini/registry"
 	"github.com/urfave/cli"
 )
 

@@ -5,9 +5,9 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/cloudfoundry-incubator/eirini"
-	. "github.com/cloudfoundry-incubator/eirini/k8s"
-	"github.com/cloudfoundry-incubator/eirini/opi"
+	"code.cloudfoundry.org/eirini"
+	. "code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/opi"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cloudfoundry-incubator/eirini/route/routefakes"
+	"code.cloudfoundry.org/eirini/route/routefakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/cloudfoundry-incubator/eirini/route"
+	. "code.cloudfoundry.org/eirini/route"
 )
 
 var _ = Describe("Emitter", func() {

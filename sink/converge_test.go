@@ -6,9 +6,9 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	"github.com/cloudfoundry-incubator/eirini"
-	"github.com/cloudfoundry-incubator/eirini/opi"
-	"github.com/cloudfoundry-incubator/eirini/sink"
+	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/sink"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
