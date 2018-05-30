@@ -3,8 +3,8 @@ package main_test
 import (
 	"errors"
 
-	"github.com/cloudfoundry-incubator/eirini/eirinifakes"
-	. "github.com/cloudfoundry-incubator/eirini/recipe"
+	"code.cloudfoundry.org/eirini/eirinifakes"
+	. "code.cloudfoundry.org/eirini/recipe"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

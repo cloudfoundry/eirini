@@ -4,8 +4,8 @@ package k8sfakes
 import (
 	"sync"
 
-	"github.com/cloudfoundry-incubator/eirini/k8s"
-	"github.com/cloudfoundry-incubator/eirini/opi"
+	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/opi"
 	ext "k8s.io/api/extensions/v1beta1"
 )
 

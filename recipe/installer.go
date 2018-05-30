@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cloudfoundry-incubator/eirini"
+	"code.cloudfoundry.org/eirini"
 	"github.com/pkg/errors"
 )
 

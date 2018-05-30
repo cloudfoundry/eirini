@@ -6,7 +6,7 @@ The st8ger implements Staging by running Kubernetes/OPI one-off tasks. It receiv
 
 1. Get a Bosh-Lite director 
 
-2. Deploy the latest CF with the [eirini-release](https://github.com/cloudfoundry-incubator/eirini-release) to your bosh-lite (follow the instructions in the README).
+2. Deploy the latest CF with the [eirini-release](https://code.cloudfoundry.org/eirini-release) to your bosh-lite (follow the instructions in the README).
 
 3. Get a Minikube deployment and make sure Bosh-Lite and Minikube are running in the same Network:
 

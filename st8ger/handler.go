@@ -9,7 +9,7 @@ import (
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	"github.com/cloudfoundry-incubator/eirini"
+	"code.cloudfoundry.org/eirini"
 	"github.com/julienschmidt/httprouter"
 )
 

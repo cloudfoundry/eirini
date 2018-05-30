@@ -10,9 +10,9 @@ import (
 	ext "k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/cloudfoundry-incubator/eirini"
-	. "github.com/cloudfoundry-incubator/eirini/route"
-	"github.com/cloudfoundry-incubator/eirini/route/routefakes"
+	"code.cloudfoundry.org/eirini"
+	. "code.cloudfoundry.org/eirini/route"
+	"code.cloudfoundry.org/eirini/route/routefakes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 

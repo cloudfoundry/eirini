@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/cloudfoundry-incubator/eirini"
+	"code.cloudfoundry.org/eirini"
 	"github.com/pkg/errors"
 )
 

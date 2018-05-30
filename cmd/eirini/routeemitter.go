@@ -7,7 +7,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/cloudfoundry-incubator/eirini/route"
+	"code.cloudfoundry.org/eirini/route"
 	nats "github.com/nats-io/go-nats"
 	"github.com/urfave/cli"
 )

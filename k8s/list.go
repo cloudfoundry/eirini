@@ -3,7 +3,7 @@ package k8s
 import (
 	"context"
 
-	"github.com/cloudfoundry-incubator/eirini/opi"
+	"code.cloudfoundry.org/eirini/opi"
 )
 
 type Lister struct{}

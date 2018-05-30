@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/cloudfoundry-incubator/eirini/k8s"
-	"github.com/cloudfoundry-incubator/eirini/opi"
+	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/opi"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"

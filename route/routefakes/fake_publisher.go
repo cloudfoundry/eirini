@@ -4,7 +4,7 @@ package routefakes
 import (
 	"sync"
 
-	"github.com/cloudfoundry-incubator/eirini/route"
+	"code.cloudfoundry.org/eirini/route"
 )
 
 type FakePublisher struct {
