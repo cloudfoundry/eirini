@@ -5,9 +5,9 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
 type FakeBackend struct {

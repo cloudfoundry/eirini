@@ -1,12 +1,13 @@
 package eirini
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
 //Environment Variable Names
@@ -77,6 +78,11 @@ type BackendConfig struct {
 //go:generate counterfeiter . Extractor
 type Extractor interface {
 	Extract(src, targetDir string) error
+}
+
+//go:generate counterfeiter . Converger
+type Converger interface {
+	ConvergeOnce(ctx context.Context, ccMessages []cc_messages.DesireAppRequestFromCC) error
 }
 
 func GetInternalServiceName(appName string) string {
