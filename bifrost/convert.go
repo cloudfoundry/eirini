@@ -1,4 +1,4 @@
-package sink
+package bifrost
 
 import (
 	"bytes"
@@ -8,10 +8,10 @@ import (
 	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
 func Convert(

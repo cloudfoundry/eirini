@@ -1,16 +1,16 @@
-package sink
+package bifrost
 
 import (
 	"context"
 	"net/http"
 
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
-type Converger struct {
+type Bifrost struct {
 	Converter   Converter
 	Desirer     opi.Desirer
 	CfClient    eirini.CfClient
@@ -26,7 +26,7 @@ type Converger struct {
 // honestly for any reasonable number of apps, memory is cheap and
 // any efficiency is likely dominated by the actual business of actioning
 // the requests
-func (c *Converger) ConvergeOnce(ctx context.Context, ccMessages []cc_messages.DesireAppRequestFromCC) error {
+func (c *Bifrost) Transfer(ctx context.Context, ccMessages []cc_messages.DesireAppRequestFromCC) error {
 	desire := make([]opi.LRP, 0)
 	for _, msg := range ccMessages {
 		lrp := c.convertMessage(msg)
@@ -37,7 +37,7 @@ func (c *Converger) ConvergeOnce(ctx context.Context, ccMessages []cc_messages.D
 
 // Convert could panic. To be able to skip this message and continue with the next,
 // the panic needs to be handled for each message.
-func (c *Converger) convertMessage(msg cc_messages.DesireAppRequestFromCC) opi.LRP {
+func (c *Bifrost) convertMessage(msg cc_messages.DesireAppRequestFromCC) opi.LRP {
 	defer func() {
 		if r := recover(); r != nil {
 			if err, ok := r.(error); ok {

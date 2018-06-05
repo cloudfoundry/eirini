@@ -1,0 +1,13 @@
+opi:
+  kube_config: "/Users/Skupnjak/.kube/config"
+  kube_namespace: "eirini"
+  kube_endpoint: "endpoint"
+  registry_endpoint: "reg"
+  api_endpoint: "https://api.10.45.94.82.nip.io"
+  cf_username: "admin"
+  cf_password: "bksx04ystoq8yo84eooz"
+  cc_internal_user: "admin"
+  cc_internal_password: "pass"
+  external_eirini_address: "add"
+  skip_ssl_validation: true
+  insecure_skip_verify: true

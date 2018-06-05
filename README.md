@@ -1,8 +1,7 @@
 # What this?
 
-Eirini is a Kubernetes backend for Cloud Foundry. It syncs CF apps to a kube
-backend in exactly the same way that the diego `nsync` component works, except
-using OCI images and Kube deployments.
+Eirini is a Kubernetes backend for Cloud Foundry. It deploys CF apps to a kube
+backend, using OCI images and Kube deployments.
 
 _But there's more!_
 
@@ -32,8 +31,8 @@ out of it now.
 
 Eirini has the following components, the first two are available as subcommands of the `eirini` binary:
  
- - `Sink` provides a convergence loop that pulls desired apps from the Cloud Controller and creates corresponding Kubernetes resources. It relies on the `Registry` to serve OCI images for droplets, and `OPI` to abstract the communication with Kube. (Example: `eirini sink --ccApi <api url> --ccPass <internal admin user password>`)
- - `Registry` is an OCI registry vending images based on droplets. Eventually this would be nice to move in to Cloud Controller. (Example: `eirini registry --rootfs </path/to/rootfs.tar>`)
+ - `Bifrost` converts and transfers cloud controller app specific requests to OPI specific objects and runs them in Kubernetes. It relies on the `Registry` to serve OCI images for droplets, and `OPI` to abstract the communication with Kube. 
+ - `Registry` is an OCI registry vending images based on droplets. Eventually this would be nice to move in to Cloud Controller.
  - `OPI` or the "orchestrator provider interface" provides a declarative abstraction over multiple schedulers inspired by Diego's LRP/Task model and Bosh's CPI concept.
  - `St8ge` implements Staging by running Kubernetes/OPI one-off tasks
  

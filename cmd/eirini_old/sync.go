@@ -12,12 +12,12 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
+	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/bifrost"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/nsync/bulk"
 	"github.com/JulzDiverse/cfclient"
-	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/sink"
 	"github.com/urfave/cli"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"

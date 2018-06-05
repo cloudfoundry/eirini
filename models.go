@@ -36,11 +36,11 @@ type CfClient interface {
 	GetAppBitsByAppGuid(string) (*http.Response, error)
 }
 
-type SyncConfig struct {
-	Properties SyncProperties `yaml:"sync"`
+type Config struct {
+	Properties Properties `yaml:"opi"`
 }
 
-type SyncProperties struct {
+type Properties struct {
 	KubeConfig         string `yaml:"kube_config"`
 	KubeNamespace      string `yaml:"kube_namespace"`
 	KubeEndpoint       string `yaml:"kube_endpoint"`
@@ -80,9 +80,9 @@ type Extractor interface {
 	Extract(src, targetDir string) error
 }
 
-//go:generate counterfeiter . Converger
-type Converger interface {
-	ConvergeOnce(ctx context.Context, ccMessages []cc_messages.DesireAppRequestFromCC) error
+//go:generate counterfeiter . Bifrost
+type Bifrost interface {
+	Transfer(ctx context.Context, ccMessages []cc_messages.DesireAppRequestFromCC) error
 }
 
 func GetInternalServiceName(appName string) string {

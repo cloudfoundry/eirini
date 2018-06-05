@@ -23,9 +23,9 @@ var _ = Describe("Handler", func() {
 
 	BeforeEach(func() {
 		client = &http.Client{}
-		converger := new(eirinifakes.FakeConverger)
+		bifrost := new(eirinifakes.FakeBifrost)
 		lager := lagertest.NewTestLogger("handler-test")
-		handlerClient = New(converger, lager)
+		handlerClient = New(bifrost, lager)
 	})
 
 	JustBeforeEach(func() {

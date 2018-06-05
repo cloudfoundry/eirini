@@ -20,10 +20,10 @@ var _ = Describe("AppHandler", func() {
 	Context("Desire an app", func() {
 
 		var (
-			path      string
-			body      string
-			converger *eirinifakes.FakeConverger
-			response  *http.Response
+			path     string
+			body     string
+			bifrost  *eirinifakes.FakeBifrost
+			response *http.Response
 		)
 
 		BeforeEach(func() {
@@ -33,8 +33,8 @@ var _ = Describe("AppHandler", func() {
 
 		JustBeforeEach(func() {
 			lager := lagertest.NewTestLogger("app-handler-test")
-			converger = new(eirinifakes.FakeConverger)
-			ts := httptest.NewServer(New(converger, lager))
+			bifrost = new(eirinifakes.FakeBifrost)
+			ts := httptest.NewServer(New(bifrost, lager))
 			req, err := http.NewRequest("PUT", ts.URL+path, bytes.NewReader([]byte(body)))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -47,7 +47,7 @@ var _ = Describe("AppHandler", func() {
 			Expect(response.StatusCode).To(Equal(http.StatusOK))
 		})
 
-		It("should call the converger with the desired LRPs request from Cloud Controller", func() {
+		It("should call the bifrost with the desired LRPs request from Cloud Controller", func() {
 			expectedRequest := cc_messages.DesireAppRequestFromCC{
 				ProcessGuid:  "myguid",
 				StartCommand: "./start",
@@ -55,8 +55,8 @@ var _ = Describe("AppHandler", func() {
 				NumInstances: 5,
 			}
 
-			Expect(converger.ConvergeOnceCallCount()).To(Equal(1))
-			_, messages := converger.ConvergeOnceArgsForCall(0)
+			Expect(bifrost.TransferCallCount()).To(Equal(1))
+			_, messages := bifrost.TransferArgsForCall(0)
 			Expect(messages[0]).To(Equal(expectedRequest))
 		})
 

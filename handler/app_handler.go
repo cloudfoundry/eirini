@@ -10,13 +10,13 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func NewAppHandler(converger eirini.Converger, logger lager.Logger) *AppHandler {
-	return &AppHandler{converger: converger, logger: logger}
+func NewAppHandler(bifrost eirini.Bifrost, logger lager.Logger) *AppHandler {
+	return &AppHandler{bifrost: bifrost, logger: logger}
 }
 
 type AppHandler struct {
-	converger eirini.Converger
-	logger    lager.Logger
+	bifrost eirini.Bifrost
+	logger  lager.Logger
 }
 
 func (a *AppHandler) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -33,10 +33,10 @@ func (a *AppHandler) Desire(w http.ResponseWriter, r *http.Request, ps httproute
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err := a.converger.ConvergeOnce(r.Context(), []cc_messages.DesireAppRequestFromCC{desiredApp}); err != nil {
+
+	if err := a.bifrost.Transfer(r.Context(), []cc_messages.DesireAppRequestFromCC{desiredApp}); err != nil {
 		a.logger.Error("desire-app-failed", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
 }

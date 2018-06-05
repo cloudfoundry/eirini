@@ -8,7 +8,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func New(converger eirini.Converger, lager lager.Logger) http.Handler {
+func New(converger eirini.Bifrost, lager lager.Logger) http.Handler {
 	handler := httprouter.New()
 
 	appHandler := NewAppHandler(converger, lager)

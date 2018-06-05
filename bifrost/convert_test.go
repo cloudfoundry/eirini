@@ -1,14 +1,14 @@
-package sink_test
+package bifrost_test
 
 import (
 	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/lager/lagertest"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
+	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/eirinifakes"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/sink"
+	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -40,7 +40,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	})
 
 	It("Directly converts DockerImageURL, Instances fields", func() {
-		lrp := sink.Convert(cc_messages.DesireAppRequestFromCC{
+		lrp := bifrost.Convert(cc_messages.DesireAppRequestFromCC{
 			DockerImageUrl: "the-image-url",
 			NumInstances:   3,
 		}, fakeServer.URL(), regIP, cfClient, client, logger)
@@ -50,7 +50,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	})
 
 	BeforeEach(func() {
-		lrp = sink.Convert(cc_messages.DesireAppRequestFromCC{
+		lrp = bifrost.Convert(cc_messages.DesireAppRequestFromCC{
 			ProcessGuid: "b194809b-88c0-49af-b8aa-69da097fc360-2fdc448f-6bac-4085-9426-87d0124c433a",
 			DropletHash: "the-droplet-hash",
 			Environment: []*models.EnvironmentVariable{

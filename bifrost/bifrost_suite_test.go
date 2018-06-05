@@ -1,4 +1,4 @@
-package sink_test
+package bifrost_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestSink(t *testing.T) {
+func TestBifrost(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Sink Suite")
+	RunSpecs(t, "Bifrost Suite")
 }

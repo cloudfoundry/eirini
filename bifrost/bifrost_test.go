@@ -1,14 +1,14 @@
-package sink_test
+package bifrost_test
 
 import (
 	"context"
 	"net/http"
 
+	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/bifrost"
+	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/sink"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -17,8 +17,8 @@ var _ = Describe("Converge", func() {
 	It("simply converts and desires every single CCRequest to a LRP", func() {
 		converted := make([]cc_messages.DesireAppRequestFromCC, 0)
 		desired := make([][]opi.LRP, 0)
-		converger := sink.Converger{
-			Converter: sink.ConvertFunc(func(
+		bifrost := bifrost.Bifrost{
+			Converter: bifrost.ConvertFunc(func(
 				msg cc_messages.DesireAppRequestFromCC,
 				regUrl string,
 				regIP string,
@@ -35,7 +35,7 @@ var _ = Describe("Converge", func() {
 			}),
 		}
 
-		err := converger.ConvergeOnce(context.Background(), []cc_messages.DesireAppRequestFromCC{
+		err := bifrost.Transfer(context.Background(), []cc_messages.DesireAppRequestFromCC{
 			{
 				DockerImageUrl: "msg1",
 			},
