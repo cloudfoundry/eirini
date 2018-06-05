@@ -22,6 +22,7 @@ type AppHandler struct {
 func (a *AppHandler) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var desiredApp cc_messages.DesireAppRequestFromCC
 	if err := json.NewDecoder(r.Body).Decode(&desiredApp); err != nil {
+		a.logger.Error("request-body-decoding-failed", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

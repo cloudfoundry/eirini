@@ -19,14 +19,12 @@ var _ = Describe("Handler", func() {
 		ts            *httptest.Server
 		client        *http.Client
 		handlerClient http.Handler
-		converger     *eirinifakes.FakeConverger
-		lager         = lagertest.NewTestLogger("app-handler-test")
 	)
 
 	BeforeEach(func() {
 		client = &http.Client{}
-		converger = new(eirinifakes.FakeConverger)
-		lager = lagertest.NewTestLogger("handler-test")
+		converger := new(eirinifakes.FakeConverger)
+		lager := lagertest.NewTestLogger("handler-test")
 		handlerClient = New(converger, lager)
 	})
 
