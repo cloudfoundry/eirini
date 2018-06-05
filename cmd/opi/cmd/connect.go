@@ -21,6 +21,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"github.com/JulzDiverse/cfclient"
 	"github.com/spf13/cobra"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
 var (
