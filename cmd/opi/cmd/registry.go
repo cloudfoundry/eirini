@@ -10,10 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	rootfs string
-)
-
 var registryCmd = &cobra.Command{
 	Use:   "registry",
 	Short: "starts the eirini registry",
@@ -43,5 +39,5 @@ func reg(cmd *cobra.Command, args []string) {
 }
 
 func initRegistry() {
-	registryCmd.Flags().StringVarP(&rootfs, "rootfs", "r", "", "Path to the rootfs tarball")
+	registryCmd.Flags().StringP("rootfs", "r", "", "Path to the rootfs tarball")
 }

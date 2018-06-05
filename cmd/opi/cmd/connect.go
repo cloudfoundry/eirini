@@ -24,10 +24,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
-var (
-	eiriniConfig string
-)
-
 var connectCmd = &cobra.Command{
 	Use:   "connect",
 	Short: "connects CloudFoundry with Kubernetes",
@@ -104,7 +100,7 @@ func setConfigFromFile(path string) *eirini.Config {
 }
 
 func initConnect() {
-	connectCmd.Flags().StringVarP(&eiriniConfig, "config", "c", "", "Path to the erini config file")
+	connectCmd.Flags().StringP("config", "c", "", "Path to the erini config file")
 }
 
 func exitWithError(err error) {
