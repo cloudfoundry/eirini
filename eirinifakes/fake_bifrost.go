@@ -5,6 +5,7 @@ import (
 	"context"
 	"sync"
 
+	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
@@ -21,6 +22,19 @@ type FakeBifrost struct {
 	}
 	transferReturnsOnCall map[int]struct {
 		result1 error
+	}
+	ListStub        func(ctx context.Context) ([]models.DesiredLRPSchedulingInfo, error)
+	listMutex       sync.RWMutex
+	listArgsForCall []struct {
+		ctx context.Context
+	}
+	listReturns struct {
+		result1 []models.DesiredLRPSchedulingInfo
+		result2 error
+	}
+	listReturnsOnCall map[int]struct {
+		result1 []models.DesiredLRPSchedulingInfo
+		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -80,11 +94,64 @@ func (fake *FakeBifrost) TransferReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeBifrost) List(ctx context.Context) ([]models.DesiredLRPSchedulingInfo, error) {
+	fake.listMutex.Lock()
+	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
+	fake.listArgsForCall = append(fake.listArgsForCall, struct {
+		ctx context.Context
+	}{ctx})
+	fake.recordInvocation("List", []interface{}{ctx})
+	fake.listMutex.Unlock()
+	if fake.ListStub != nil {
+		return fake.ListStub(ctx)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.listReturns.result1, fake.listReturns.result2
+}
+
+func (fake *FakeBifrost) ListCallCount() int {
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
+	return len(fake.listArgsForCall)
+}
+
+func (fake *FakeBifrost) ListArgsForCall(i int) context.Context {
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
+	return fake.listArgsForCall[i].ctx
+}
+
+func (fake *FakeBifrost) ListReturns(result1 []models.DesiredLRPSchedulingInfo, result2 error) {
+	fake.ListStub = nil
+	fake.listReturns = struct {
+		result1 []models.DesiredLRPSchedulingInfo
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeBifrost) ListReturnsOnCall(i int, result1 []models.DesiredLRPSchedulingInfo, result2 error) {
+	fake.ListStub = nil
+	if fake.listReturnsOnCall == nil {
+		fake.listReturnsOnCall = make(map[int]struct {
+			result1 []models.DesiredLRPSchedulingInfo
+			result2 error
+		})
+	}
+	fake.listReturnsOnCall[i] = struct {
+		result1 []models.DesiredLRPSchedulingInfo
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeBifrost) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.transferMutex.RLock()
 	defer fake.transferMutex.RUnlock()
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

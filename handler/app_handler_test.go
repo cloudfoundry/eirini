@@ -2,27 +2,40 @@ package handler_test
 
 import (
 	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
+	"github.com/julienschmidt/httprouter"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/eirinifakes"
 	. "code.cloudfoundry.org/eirini/handler"
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
 var _ = Describe("AppHandler", func() {
 
-	Context("Desire an app", func() {
+	var (
+		bifrost *eirinifakes.FakeBifrost
+		lager   lager.Logger
+	)
 
+	BeforeEach(func() {
+		bifrost = new(eirinifakes.FakeBifrost)
+		lager = lagertest.NewTestLogger("app-handler-test")
+	})
+
+	Context("Desire an app", func() {
 		var (
 			path     string
 			body     string
-			bifrost  *eirinifakes.FakeBifrost
 			response *http.Response
 		)
 
@@ -32,8 +45,6 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			lager := lagertest.NewTestLogger("app-handler-test")
-			bifrost = new(eirinifakes.FakeBifrost)
 			ts := httptest.NewServer(New(bifrost, lager))
 			req, err := http.NewRequest("PUT", ts.URL+path, bytes.NewReader([]byte(body)))
 			Expect(err).NotTo(HaveOccurred())
@@ -41,10 +52,6 @@ var _ = Describe("AppHandler", func() {
 			client := &http.Client{}
 			response, err = client.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should return OK status", func() {
-			Expect(response.StatusCode).To(Equal(http.StatusOK))
 		})
 
 		It("should call the bifrost with the desired LRPs request from Cloud Controller", func() {
@@ -72,4 +79,63 @@ var _ = Describe("AppHandler", func() {
 		})
 
 	})
+
+	Context("List Apps", func() {
+
+		var (
+			appHandler           *AppHandler
+			responseRecorder     *httptest.ResponseRecorder
+			req                  *http.Request
+			expectedJsonResponse []byte
+		)
+
+		BeforeEach(func() {
+			req, _ = http.NewRequest("", "/apps", nil)
+			responseRecorder = httptest.NewRecorder()
+			schedInfos := createSchedulingInfos()
+			appHandler = NewAppHandler(bifrost, lager)
+
+			expectedResponse := struct {
+				SchedInfos []models.DesiredLRPSchedulingInfo `json:"desired_lrp_scheduling_infos"`
+			}{
+				schedInfos,
+			}
+
+			expectedJsonResponse, _ = json.Marshal(expectedResponse)
+
+			bifrost.ListReturns(schedInfos, nil)
+
+			appHandler.List(responseRecorder, req, httprouter.Params{})
+		})
+
+		It("should list all DesiredLRPSchedulingInfos as JSON in the response body", func() {
+			Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+
+			body, err := readBody(responseRecorder.Body)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(strings.Trim(string(body), "\n")).To(Equal(string(expectedJsonResponse)))
+		})
+	})
 })
+
+func createSchedulingInfos() []models.DesiredLRPSchedulingInfo {
+	schedInfo1 := models.DesiredLRPSchedulingInfo{}
+	schedInfo1.ProcessGuid = "1234"
+
+	schedInfo2 := models.DesiredLRPSchedulingInfo{}
+	schedInfo2.ProcessGuid = "5678"
+
+	return []models.DesiredLRPSchedulingInfo{
+		schedInfo1,
+		schedInfo2,
+	}
+}
+
+func readBody(body *bytes.Buffer) ([]byte, error) {
+	bytes, err := ioutil.ReadAll(body)
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
+}

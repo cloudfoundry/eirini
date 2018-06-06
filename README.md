@@ -54,6 +54,28 @@ or she wants and higher level systems can support all of them for free.
 
 OPI uses the LRP/Task abstractions to do that.
 
+# The OPI config file
+
+In order to start OPI you need to call the `connect` command and provide a OPI config YAML file:
+
+`$ opi connect --config path/to/config.yml`
+
+```yaml
+opi:
+  kube_config: "path/to/kube/config/file"
+  kube_namespace: "the kubernetes namespace used by the cf deployment"
+  kube_endpoint: "the kubernetes endpoint where to schedule workload to"
+  registry_endpoint: "the eirini registry endpoint (usually the eirini Host maschine on port 8080)"
+  api_endpoint: "the CF API endpoint (eg. api.bosh-lite.com)"
+  cf_username: "cf admin user"
+  cf_password: "cf admin password"
+  cc_internal_user: "cloud controller internal user"
+  cc_internal_password: "cloud controller internal password"
+  external_eirini_address: "the external eirini address"
+  skip_ssl_validation: "cf CLI skip-ssl-validation flag (bool)"
+  insecure_skip_verify: "http client config for insecure traffic (bool)"
+```
+
 # Development
 
 * `go get code.cloudfoundry.org/eirini`

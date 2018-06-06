@@ -23,14 +23,20 @@ type Task struct {
 	Env     map[string]string
 }
 
+//go:generate counterfeiter . Desirer
 type Desirer interface {
 	Desire(ctx context.Context, lrps []LRP) error
+	List(ctx context.Context) ([]LRP, error)
 }
 
 type DesireFunc func(ctx context.Context, lrp []LRP) error
 
 func (d DesireFunc) Desire(ctx context.Context, lrp []LRP) error {
 	return d(ctx, lrp)
+}
+
+func (d DesireFunc) List(ctx context.Context) ([]LRP, error) {
+	return nil, nil
 }
 
 type TaskDesirer interface {

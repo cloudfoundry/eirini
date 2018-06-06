@@ -4,6 +4,9 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/pkg/errors"
+
+	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
@@ -48,12 +51,23 @@ func (c *Bifrost) convertMessage(msg cc_messages.DesireAppRequestFromCC) opi.LRP
 	return c.Converter.Convert(msg, c.RegistryUrl, c.RegistryIP, c.CfClient, c.Client, c.Logger)
 }
 
-type Converter interface {
-	Convert(cc cc_messages.DesireAppRequestFromCC, registryUrl string, registryIP string, cfClient eirini.CfClient, client *http.Client, log lager.Logger) opi.LRP
+func (b *Bifrost) List(ctx context.Context) ([]models.DesiredLRPSchedulingInfo, error) {
+	lrps, err := b.Desirer.List(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list desired LRPs")
+	}
+
+	infos := toDesiredLRPSchedulingInfo(lrps)
+
+	return infos, nil
 }
 
-type ConvertFunc func(cc cc_messages.DesireAppRequestFromCC, registryUrl string, registryIP string, cfClient eirini.CfClient, client *http.Client, log lager.Logger) opi.LRP
-
-func (fn ConvertFunc) Convert(cc cc_messages.DesireAppRequestFromCC, registryUrl string, registryIP string, cfClient eirini.CfClient, client *http.Client, log lager.Logger) opi.LRP {
-	return fn(cc, registryUrl, registryIP, cfClient, client, log)
+func toDesiredLRPSchedulingInfo(lrps []opi.LRP) []models.DesiredLRPSchedulingInfo {
+	infos := []models.DesiredLRPSchedulingInfo{}
+	for _, l := range lrps {
+		info := models.DesiredLRPSchedulingInfo{}
+		info.ProcessGuid = l.Name
+		infos = append(infos, info)
+	}
+	return infos
 }
