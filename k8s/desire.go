@@ -14,16 +14,20 @@ import (
 )
 
 type Desirer struct {
-	KubeNamespace  string
-	Client         *kubernetes.Clientset
-	ingressManager IngressManager
+	KubeNamespace     string
+	Client            *kubernetes.Clientset
+	ingressManager    IngressManager
+	deploymentManager DeploymentManager
 }
 
 func NewDesirer(client *kubernetes.Clientset, kubeNamespace string, ingressManager IngressManager) *Desirer {
+	deploymentManager := NewDeploymentManager(client)
+
 	return &Desirer{
-		KubeNamespace:  kubeNamespace,
-		Client:         client,
-		ingressManager: ingressManager,
+		KubeNamespace:     kubeNamespace,
+		Client:            client,
+		ingressManager:    ingressManager,
+		deploymentManager: deploymentManager,
 	}
 }
 
@@ -64,6 +68,10 @@ func (d *Desirer) Desire(ctx context.Context, lrps []opi.LRP) error {
 	}
 
 	return nil
+}
+
+func (d *Desirer) List(ctx context.Context) ([]opi.LRP, error) {
+	return d.deploymentManager.ListLRPs(d.KubeNamespace)
 }
 
 func toDeployment(lrp opi.LRP) *v1beta1.Deployment {
