@@ -87,34 +87,50 @@ var _ = Describe("AppHandler", func() {
 			responseRecorder     *httptest.ResponseRecorder
 			req                  *http.Request
 			expectedJsonResponse []byte
+			schedInfos           []models.DesiredLRPSchedulingInfo
 		)
 
 		BeforeEach(func() {
+			schedInfos = createSchedulingInfos()
+			expectedResponse := DesiredLRPSchedulingInfoResponse{schedInfos}
+			expectedJsonResponse, _ = json.Marshal(expectedResponse)
+		})
+
+		JustBeforeEach(func() {
 			req, _ = http.NewRequest("", "/apps", nil)
 			responseRecorder = httptest.NewRecorder()
-			schedInfos := createSchedulingInfos()
 			appHandler = NewAppHandler(bifrost, lager)
-
-			expectedResponse := struct {
-				SchedInfos []models.DesiredLRPSchedulingInfo `json:"desired_lrp_scheduling_infos"`
-			}{
-				schedInfos,
-			}
-
-			expectedJsonResponse, _ = json.Marshal(expectedResponse)
-
 			bifrost.ListReturns(schedInfos, nil)
-
 			appHandler.List(responseRecorder, req, httprouter.Params{})
 		})
 
-		It("should list all DesiredLRPSchedulingInfos as JSON in the response body", func() {
-			Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+		Context("When there are existing apps", func() {
+			It("should list all DesiredLRPSchedulingInfos as JSON in the response body", func() {
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
 
-			body, err := readBody(responseRecorder.Body)
-			Expect(err).ToNot(HaveOccurred())
+				body, err := readBody(responseRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
 
-			Expect(strings.Trim(string(body), "\n")).To(Equal(string(expectedJsonResponse)))
+				Expect(strings.Trim(string(body), "\n")).To(Equal(string(expectedJsonResponse)))
+			})
+		})
+
+		Context("When there are no existing apps", func() {
+
+			BeforeEach(func() {
+				schedInfos = []models.DesiredLRPSchedulingInfo{}
+				expectedResponse := DesiredLRPSchedulingInfoResponse{schedInfos}
+				expectedJsonResponse, _ = json.Marshal(expectedResponse)
+			})
+
+			It("should return an empty list of DesiredLRPSchedulingInfo", func() {
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+
+				body, err := readBody(responseRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(strings.Trim(string(body), "\n")).To(Equal(string(expectedJsonResponse)))
+			})
 		})
 	})
 })

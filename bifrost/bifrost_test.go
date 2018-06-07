@@ -62,6 +62,7 @@ var _ = Describe("Bifrost", func() {
 			opiClient *opifakes.FakeDesirer
 			lager     lager.Logger
 			bfrst     bifrost.Bifrost
+			lrps      []opi.LRP
 		)
 
 		BeforeEach(func() {
@@ -73,14 +74,18 @@ var _ = Describe("Bifrost", func() {
 			}
 		})
 
+		JustBeforeEach(func() {
+			opiClient.ListReturns(lrps, nil)
+		})
+
 		Context("When listing running LRPs", func() {
 
-			JustBeforeEach(func() {
-				opiClient.ListReturns([]opi.LRP{
+			BeforeEach(func() {
+				lrps = []opi.LRP{
 					opi.LRP{Name: "1234"},
 					opi.LRP{Name: "5678"},
 					opi.LRP{Name: "0213"},
-				}, nil)
+				}
 			})
 
 			It("should translate []LRPs to []DesiredLRPSchedulingInfo", func() {
@@ -90,6 +95,20 @@ var _ = Describe("Bifrost", func() {
 				Expect(desiredLRPSchedulingInfos[0].ProcessGuid).To(Equal("1234"))
 				Expect(desiredLRPSchedulingInfos[1].ProcessGuid).To(Equal("5678"))
 				Expect(desiredLRPSchedulingInfos[2].ProcessGuid).To(Equal("0213"))
+			})
+		})
+
+		Context("When no running LRPs exist", func() {
+
+			BeforeEach(func() {
+				lrps = []opi.LRP{}
+			})
+
+			It("should return an empty list of DesiredLRPSchedulingInfo", func() {
+				desiredLRPSchedulingInfos, err := bfrst.List(context.Background())
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(len(desiredLRPSchedulingInfos)).To(Equal(0))
 			})
 		})
 

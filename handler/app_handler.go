@@ -11,6 +11,10 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+type DesiredLRPSchedulingInfoResponse struct {
+	SchedulingInfos []models.DesiredLRPSchedulingInfo `json:"desired_lrp_scheduling_infos"`
+}
+
 func NewAppHandler(bifrost eirini.Bifrost, logger lager.Logger) *AppHandler {
 	return &AppHandler{bifrost: bifrost, logger: logger}
 }
@@ -52,15 +56,11 @@ func (a *AppHandler) List(w http.ResponseWriter, r *http.Request, ps httprouter.
 		return
 	}
 
-	desiredLRPSchedulingInfoResponse := struct {
-		SchedulingInfos []models.DesiredLRPSchedulingInfo `json:"desired_lrp_scheduling_infos"`
-	}{
-		SchedulingInfos: desiredLRPSchedulingInfos,
-	}
+	response := DesiredLRPSchedulingInfoResponse{desiredLRPSchedulingInfos}
 
 	w.Header().Set("Content-Type", "application/json")
 
-	err = json.NewEncoder(w).Encode(desiredLRPSchedulingInfoResponse)
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		a.logger.Error("encode-json-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
