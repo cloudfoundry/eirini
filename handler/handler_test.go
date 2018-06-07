@@ -38,7 +38,13 @@ var _ = Describe("Handler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			res, err := client.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(res.StatusCode).To(Equal(http.StatusOK))
+			Expect(res.StatusCode).To(Equal(http.StatusAccepted))
+		})
+
+		It("serves a /apps endpoint", func() {
+			resp, err := http.Get(ts.URL + "/apps")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
 	})
 
