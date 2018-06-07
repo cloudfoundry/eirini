@@ -54,6 +54,7 @@ func (c *Bifrost) convertMessage(msg cc_messages.DesireAppRequestFromCC) opi.LRP
 func (b *Bifrost) List(ctx context.Context) ([]models.DesiredLRPSchedulingInfo, error) {
 	lrps, err := b.Desirer.List(ctx)
 	if err != nil {
+		b.Logger.Error("failed-to-list-deployments", err)
 		return nil, errors.Wrap(err, "failed to list desired LRPs")
 	}
 
