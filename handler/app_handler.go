@@ -8,12 +8,9 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/julienschmidt/httprouter"
 )
-
-type DesiredLRPSchedulingInfoResponse struct {
-	SchedulingInfos []models.DesiredLRPSchedulingInfo `json:"desired_lrp_scheduling_infos"`
-}
 
 func NewAppHandler(bifrost eirini.Bifrost, logger lager.Logger) *AppHandler {
 	return &AppHandler{bifrost: bifrost, logger: logger}
@@ -56,14 +53,19 @@ func (a *AppHandler) List(w http.ResponseWriter, r *http.Request, ps httprouter.
 		return
 	}
 
-	response := DesiredLRPSchedulingInfoResponse{desiredLRPSchedulingInfos}
+	response := models.DesiredLRPSchedulingInfosResponse{
+		DesiredLrpSchedulingInfos: desiredLRPSchedulingInfos,
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 
-	err = json.NewEncoder(w).Encode(response)
+	marshaler := &jsonpb.Marshaler{Indent: "", OrigName: true}
+	result, err := marshaler.MarshalToString(&response)
 	if err != nil {
 		a.logger.Error("encode-json-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	w.Write([]byte(result))
 }

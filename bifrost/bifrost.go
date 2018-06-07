@@ -51,7 +51,7 @@ func (c *Bifrost) convertMessage(msg cc_messages.DesireAppRequestFromCC) opi.LRP
 	return c.Converter.Convert(msg, c.RegistryUrl, c.RegistryIP, c.CfClient, c.Client, c.Logger)
 }
 
-func (b *Bifrost) List(ctx context.Context) ([]models.DesiredLRPSchedulingInfo, error) {
+func (b *Bifrost) List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error) {
 	lrps, err := b.Desirer.List(ctx)
 	if err != nil {
 		b.Logger.Error("failed-to-list-deployments", err)
@@ -63,11 +63,11 @@ func (b *Bifrost) List(ctx context.Context) ([]models.DesiredLRPSchedulingInfo, 
 	return infos, nil
 }
 
-func toDesiredLRPSchedulingInfo(lrps []opi.LRP) []models.DesiredLRPSchedulingInfo {
-	infos := []models.DesiredLRPSchedulingInfo{}
+func toDesiredLRPSchedulingInfo(lrps []opi.LRP) []*models.DesiredLRPSchedulingInfo {
+	infos := []*models.DesiredLRPSchedulingInfo{}
 	for _, l := range lrps {
-		info := models.DesiredLRPSchedulingInfo{}
-		info.ProcessGuid = l.Name
+		info := &models.DesiredLRPSchedulingInfo{}
+		info.DesiredLRPKey.ProcessGuid = l.Name
 		infos = append(infos, info)
 	}
 	return infos

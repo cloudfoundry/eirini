@@ -2,12 +2,12 @@ package handler_test
 
 import (
 	"bytes"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/julienschmidt/httprouter"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -86,14 +86,12 @@ var _ = Describe("AppHandler", func() {
 			appHandler           *AppHandler
 			responseRecorder     *httptest.ResponseRecorder
 			req                  *http.Request
-			expectedJsonResponse []byte
-			schedInfos           []models.DesiredLRPSchedulingInfo
+			expectedJsonResponse string
+			schedInfos           []*models.DesiredLRPSchedulingInfo
 		)
 
 		BeforeEach(func() {
 			schedInfos = createSchedulingInfos()
-			expectedResponse := DesiredLRPSchedulingInfoResponse{schedInfos}
-			expectedJsonResponse, _ = json.Marshal(expectedResponse)
 		})
 
 		JustBeforeEach(func() {
@@ -102,6 +100,10 @@ var _ = Describe("AppHandler", func() {
 			appHandler = NewAppHandler(bifrost, lager)
 			bifrost.ListReturns(schedInfos, nil)
 			appHandler.List(responseRecorder, req, httprouter.Params{})
+			expectedResponse := models.DesiredLRPSchedulingInfosResponse{
+				DesiredLrpSchedulingInfos: schedInfos,
+			}
+			expectedJsonResponse, _ = (&jsonpb.Marshaler{Indent: "", OrigName: true}).MarshalToString(&expectedResponse)
 		})
 
 		Context("When there are existing apps", func() {
@@ -118,9 +120,7 @@ var _ = Describe("AppHandler", func() {
 		Context("When there are no existing apps", func() {
 
 			BeforeEach(func() {
-				schedInfos = []models.DesiredLRPSchedulingInfo{}
-				expectedResponse := DesiredLRPSchedulingInfoResponse{schedInfos}
-				expectedJsonResponse, _ = json.Marshal(expectedResponse)
+				schedInfos = []*models.DesiredLRPSchedulingInfo{}
 			})
 
 			It("should return an empty list of DesiredLRPSchedulingInfo", func() {
@@ -135,14 +135,14 @@ var _ = Describe("AppHandler", func() {
 	})
 })
 
-func createSchedulingInfos() []models.DesiredLRPSchedulingInfo {
-	schedInfo1 := models.DesiredLRPSchedulingInfo{}
+func createSchedulingInfos() []*models.DesiredLRPSchedulingInfo {
+	schedInfo1 := &models.DesiredLRPSchedulingInfo{}
 	schedInfo1.ProcessGuid = "1234"
 
-	schedInfo2 := models.DesiredLRPSchedulingInfo{}
+	schedInfo2 := &models.DesiredLRPSchedulingInfo{}
 	schedInfo2.ProcessGuid = "5678"
 
-	return []models.DesiredLRPSchedulingInfo{
+	return []*models.DesiredLRPSchedulingInfo{
 		schedInfo1,
 		schedInfo2,
 	}

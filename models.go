@@ -83,7 +83,7 @@ type Extractor interface {
 //go:generate counterfeiter . Bifrost
 type Bifrost interface {
 	Transfer(ctx context.Context, ccMessages []cc_messages.DesireAppRequestFromCC) error
-	List(ctx context.Context) ([]models.DesiredLRPSchedulingInfo, error)
+	List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error)
 }
 
 func GetInternalServiceName(appName string) string {
