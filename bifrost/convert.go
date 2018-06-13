@@ -22,10 +22,6 @@ func Convert(
 	client *http.Client,
 	log lager.Logger,
 ) opi.LRP {
-	if len(msg.ProcessGuid) > 36 {
-		msg.ProcessGuid = msg.ProcessGuid[:36]
-	}
-
 	if msg.DockerImageUrl == "" {
 		msg.DockerImageUrl = dropletToImageURI(msg, cfClient, client, registryUrl, registryIP, log)
 	}

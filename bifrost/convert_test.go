@@ -62,11 +62,6 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 		}, fakeServer.URL(), regIP, cfClient, client, logger)
 	})
 
-	// a processGuid is <app-guid>-<version-guid>
-	It("truncates the ProcessGuid so it only contain the app guid", func() {
-		Expect(lrp.Name).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360"))
-	})
-
 	It("Converts droplet apps via the special registry URL", func() {
 		Expect(lrp.Image).To(Equal("eirini-registry.service.cf.internal/cloudfoundry/app-name:the-droplet-hash"))
 	})
