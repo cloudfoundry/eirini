@@ -23,12 +23,11 @@ type FakeIngressManager struct {
 		result1 *ext.Ingress
 		result2 error
 	}
-	UpdateIngressStub        func(namespace string, lrp opi.LRP, vcap k8s.VcapApp) error
+	UpdateIngressStub        func(namespace string, lrp opi.LRP) error
 	updateIngressMutex       sync.RWMutex
 	updateIngressArgsForCall []struct {
 		namespace string
 		lrp       opi.LRP
-		vcap      k8s.VcapApp
 	}
 	updateIngressReturns struct {
 		result1 error
@@ -91,18 +90,17 @@ func (fake *FakeIngressManager) CreateIngressReturnsOnCall(i int, result1 *ext.I
 	}{result1, result2}
 }
 
-func (fake *FakeIngressManager) UpdateIngress(namespace string, lrp opi.LRP, vcap k8s.VcapApp) error {
+func (fake *FakeIngressManager) UpdateIngress(namespace string, lrp opi.LRP) error {
 	fake.updateIngressMutex.Lock()
 	ret, specificReturn := fake.updateIngressReturnsOnCall[len(fake.updateIngressArgsForCall)]
 	fake.updateIngressArgsForCall = append(fake.updateIngressArgsForCall, struct {
 		namespace string
 		lrp       opi.LRP
-		vcap      k8s.VcapApp
-	}{namespace, lrp, vcap})
-	fake.recordInvocation("UpdateIngress", []interface{}{namespace, lrp, vcap})
+	}{namespace, lrp})
+	fake.recordInvocation("UpdateIngress", []interface{}{namespace, lrp})
 	fake.updateIngressMutex.Unlock()
 	if fake.UpdateIngressStub != nil {
-		return fake.UpdateIngressStub(namespace, lrp, vcap)
+		return fake.UpdateIngressStub(namespace, lrp)
 	}
 	if specificReturn {
 		return ret.result1
@@ -116,10 +114,10 @@ func (fake *FakeIngressManager) UpdateIngressCallCount() int {
 	return len(fake.updateIngressArgsForCall)
 }
 
-func (fake *FakeIngressManager) UpdateIngressArgsForCall(i int) (string, opi.LRP, k8s.VcapApp) {
+func (fake *FakeIngressManager) UpdateIngressArgsForCall(i int) (string, opi.LRP) {
 	fake.updateIngressMutex.RLock()
 	defer fake.updateIngressMutex.RUnlock()
-	return fake.updateIngressArgsForCall[i].namespace, fake.updateIngressArgsForCall[i].lrp, fake.updateIngressArgsForCall[i].vcap
+	return fake.updateIngressArgsForCall[i].namespace, fake.updateIngressArgsForCall[i].lrp
 }
 
 func (fake *FakeIngressManager) UpdateIngressReturns(result1 error) {

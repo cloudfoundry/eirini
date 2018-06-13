@@ -86,12 +86,12 @@ var _ = Describe("Ingress", func() {
 		const (
 			ingressAppName = "app-name"
 			lrpName        = "new-app-name"
-			vcapName       = "new-vcaapp-name"
+			appName        = "new-vcaapp-name"
 		)
 
 		createIngressRule := func(serviceName string) ext.IngressRule {
 			ingress := ext.IngressRule{
-				Host: fmt.Sprintf("%s.%s", vcapName, kubeEndpoint),
+				Host: fmt.Sprintf("%s.%s", appName, kubeEndpoint),
 			}
 
 			ingress.HTTP = &ext.HTTPIngressRuleValue{
@@ -130,10 +130,13 @@ var _ = Describe("Ingress", func() {
 		}
 
 		JustBeforeEach(func() {
-			lrp := opi.LRP{Name: lrpName}
-			vcap := VcapApp{AppName: vcapName}
+			lrp := opi.LRP{
+				Name: lrpName,
+				Metadata: map[string]string{
+					"application_name": appName,
+				}}
 
-			err = ingressManager.UpdateIngress(namespace, lrp, vcap)
+			err = ingressManager.UpdateIngress(namespace, lrp)
 		})
 
 		Context("When ingress already exists", func() {
@@ -152,7 +155,7 @@ var _ = Describe("Ingress", func() {
 				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 				Expect(err).ToNot(HaveOccurred())
 
-				tlsHosts := []string{fmt.Sprintf("%s.%s", ingressAppName, kubeEndpoint), fmt.Sprintf("%s.%s", vcapName, kubeEndpoint)}
+				tlsHosts := []string{fmt.Sprintf("%s.%s", ingressAppName, kubeEndpoint), fmt.Sprintf("%s.%s", appName, kubeEndpoint)}
 				Expect(ingress.Spec.TLS).To(Equal([]ext.IngressTLS{
 					ext.IngressTLS{
 						Hosts: tlsHosts,
@@ -177,7 +180,7 @@ var _ = Describe("Ingress", func() {
 				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 				Expect(err).ToNot(HaveOccurred())
 
-				tlsHosts := []string{fmt.Sprintf("%s.%s", vcapName, kubeEndpoint)}
+				tlsHosts := []string{fmt.Sprintf("%s.%s", appName, kubeEndpoint)}
 				Expect(ingress.Spec.TLS).To(Equal([]ext.IngressTLS{
 					ext.IngressTLS{
 						Hosts: tlsHosts,

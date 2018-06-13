@@ -2,10 +2,10 @@ package k8s
 
 import (
 	"context"
-	"encoding/json"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/launcher"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
@@ -61,8 +61,7 @@ func (d *Desirer) Desire(ctx context.Context, lrps []opi.LRP) error {
 			return err
 		}
 
-		vcap := parseVcapApplication(lrp.Env["VCAP_APPLICATION"])
-		if err = d.ingressManager.UpdateIngress(d.KubeNamespace, lrp, vcap); err != nil {
+		if err = d.ingressManager.UpdateIngress(d.KubeNamespace, lrp); err != nil {
 			return err
 		}
 	}
@@ -110,6 +109,8 @@ func toDeployment(lrp opi.LRP) *v1beta1.Deployment {
 		"name":   lrp.Name,
 	}
 
+	deployment.Annotations = lrp.Metadata
+
 	return deployment
 }
 
@@ -142,32 +143,11 @@ func exposeDeployment(lrp opi.LRP, namespace string) (*v1.Service, error) {
 		"name":   lrp.Name,
 	}
 
-	vcap := parseVcapApplication(lrp.Env["VCAP_APPLICATION"])
-	routes, err := toRouteString(vcap.AppUris)
-	if err != nil {
-		return nil, err
-	}
 	service.Annotations = map[string]string{
-		"routes": string(routes),
+		"routes": lrp.Metadata[cf.VcapAppUris],
 	}
 
 	return service, nil
-}
-
-type VcapApp struct {
-	AppName   string   `json:"application_name"`
-	AppUris   []string `json:"application_uris"`
-	SpaceName string   `json:"space_name"`
-}
-
-func parseVcapApplication(vcap string) VcapApp {
-	var vcapApp VcapApp
-	json.Unmarshal([]byte(vcap), &vcapApp)
-	return vcapApp
-}
-
-func toRouteString(routes []string) ([]byte, error) {
-	return json.Marshal(routes)
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {

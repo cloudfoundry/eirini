@@ -13,6 +13,7 @@ type LRP struct {
 	Command         []string
 	Env             map[string]string
 	TargetInstances int
+	Metadata        map[string]string
 }
 
 // A Task is a one-off process that is run exactly once and returns a
