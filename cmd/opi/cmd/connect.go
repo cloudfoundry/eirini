@@ -88,14 +88,15 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	ingressManager := k8s.NewIngressManager(clientset, kubeEndpoint)
 	desirer := k8s.NewDesirer(clientset, kubeNamespace, ingressManager)
 
+	convertLogger := lager.NewLogger("convert")
+	convertLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
+	registryIP := cfg.Properties.ExternalAddress
+	converter := bifrost.NewConverter(cfClient, client, convertLogger, registryIP, "http://127.0.0.1:8080")
+
 	return &bifrost.Bifrost{
-		Converter:   bifrost.ConvertFunc(bifrost.Convert),
-		Desirer:     desirer,
-		CfClient:    cfClient,
-		Client:      client,
-		Logger:      syncLogger,
-		RegistryUrl: "http://127.0.0.1:8080",        //for internal use
-		RegistryIP:  cfg.Properties.ExternalAddress, //for external use (kube)
+		Converter: converter,
+		Desirer:   desirer,
+		Logger:    syncLogger,
 	}
 }
 

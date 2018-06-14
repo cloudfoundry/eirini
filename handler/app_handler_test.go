@@ -2,22 +2,23 @@ package handler_test
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 
+	"code.cloudfoundry.org/bbs/models"
+	"code.cloudfoundry.org/eirini/eirinifakes"
+	. "code.cloudfoundry.org/eirini/handler"
+	"code.cloudfoundry.org/eirini/models/cf"
+	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/julienschmidt/httprouter"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/eirini/eirinifakes"
-	. "code.cloudfoundry.org/eirini/handler"
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
 var _ = Describe("AppHandler", func() {
@@ -41,7 +42,7 @@ var _ = Describe("AppHandler", func() {
 
 		BeforeEach(func() {
 			path = "/apps/myguid"
-			body = `{"process_guid" : "myguid", "start_command": "./start", "environment": [ { "name": "env_var", "value": "env_var_value" } ], "num_instances": 5}`
+			body = `{"process_guid" : "myguid", "start_command": "./start", "environment": { "env_var": "env_var_value" }, "instances": 5, "last_updated":"1529073295.9"}`
 		})
 
 		JustBeforeEach(func() {
@@ -55,16 +56,17 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		It("should call the bifrost with the desired LRPs request from Cloud Controller", func() {
-			expectedRequest := cc_messages.DesireAppRequestFromCC{
+			expectedRequest := cf.DesireLRPRequest{
 				ProcessGuid:  "myguid",
 				StartCommand: "./start",
-				Environment:  []*models.EnvironmentVariable{&models.EnvironmentVariable{Name: "env_var", Value: "env_var_value"}},
+				Environment:  map[string]string{"env_var": "env_var_value"},
 				NumInstances: 5,
+				LastUpdated:  "1529073295.9",
 			}
 
 			Expect(bifrost.TransferCallCount()).To(Equal(1))
-			_, messages := bifrost.TransferArgsForCall(0)
-			Expect(messages[0]).To(Equal(expectedRequest))
+			_, request := bifrost.TransferArgsForCall(0)
+			Expect(request).To(Equal(expectedRequest))
 		})
 
 		Context("When the endpoint process guid does not match the desired app process guid", func() {
@@ -132,6 +134,169 @@ var _ = Describe("AppHandler", func() {
 				Expect(strings.Trim(string(body), "\n")).To(Equal(string(expectedJsonResponse)))
 			})
 		})
+	})
+
+	Context("Update an app", func() {
+		var (
+			path     string
+			body     string
+			response *http.Response
+		)
+
+		verifyResponseObject := func() {
+			var responseObj models.DesiredLRPLifecycleResponse
+			err := json.NewDecoder(response.Body).Decode(&responseObj)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(responseObj.Error.Message).ToNot(BeNil())
+		}
+
+		BeforeEach(func() {
+			path = "/apps/myguid"
+			body = `{"process_guid": "myguid", "update": {"instances": 5}}`
+		})
+
+		JustBeforeEach(func() {
+			ts := httptest.NewServer(New(bifrost, lager))
+			req, err := http.NewRequest("POST", ts.URL+path, bytes.NewReader([]byte(body)))
+			Expect(err).NotTo(HaveOccurred())
+
+			client := &http.Client{}
+			response, err = client.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		Context("when the update is successful", func() {
+			BeforeEach(func() {
+				bifrost.UpdateReturns(nil)
+			})
+
+			It("should return a 200 HTTP stauts code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusOK))
+			})
+
+			It("should translate the request", func() {
+				Expect(bifrost.UpdateCallCount()).To(Equal(1))
+				_, request := bifrost.UpdateArgsForCall(0)
+				Expect(request.ProcessGuid).To(Equal("myguid"))
+				Expect(*request.Update.Instances).To(Equal(int32(5)))
+			})
+		})
+
+		Context("when the endpoint guid does not match the one in the body", func() {
+
+			BeforeEach(func() {
+				body = `{"process_guid": "anotherGUID", "update": {"instances": 5}}`
+			})
+
+			It("should return a 400 HTTP status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			})
+
+			It("should return a response object containing the error", func() {
+				verifyResponseObject()
+			})
+
+		})
+
+		Context("when the json is invalid", func() {
+			BeforeEach(func() {
+				body = "{invalid.json"
+			})
+
+			It("should return a 400 Bad Request HTTP status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			})
+
+			It("should not update the app", func() {
+				Expect(bifrost.UpdateCallCount()).To(Equal(0))
+			})
+
+			It("should return a response object containing the error", func() {
+				verifyResponseObject()
+			})
+		})
+
+		Context("when update fails", func() {
+			BeforeEach(func() {
+				bifrost.UpdateReturns(errors.New("Failed to update"))
+			})
+
+			It("should return a 500 HTTP status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+			})
+
+			It("shoud return a response object containing the error", func() {
+				verifyResponseObject()
+			})
+
+		})
+	})
+
+	Context("get an app", func() {
+		var (
+			path       string
+			response   *http.Response
+			desiredLRP *models.DesiredLRP
+		)
+
+		BeforeEach(func() {
+			path = "/app/guid_1234"
+		})
+
+		JustBeforeEach(func() {
+			ts := httptest.NewServer(New(bifrost, lager))
+			req, err := http.NewRequest("GET", ts.URL+path, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			client := &http.Client{}
+			response, err = client.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+
+		})
+
+		It("should use the bifrost to get the app", func() {
+			Expect(bifrost.GetCallCount()).To(Equal(1))
+			_, guid := bifrost.GetArgsForCall(0)
+			Expect(guid).To(Equal("guid_1234"))
+		})
+
+		Context("when the app exists", func() {
+			BeforeEach(func() {
+				desiredLRP = &models.DesiredLRP{
+					ProcessGuid: "guid_1234",
+					Instances:   5,
+				}
+				bifrost.GetReturns(desiredLRP)
+			})
+
+			It("should return a 200 HTTP status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusOK))
+			})
+
+			It("should return the DesiredLRP in the response body", func() {
+				var getLRPResponse models.DesiredLRPResponse
+				err := json.NewDecoder(response.Body).Decode(&getLRPResponse)
+				Expect(err).ToNot(HaveOccurred())
+
+				actualLRP := getLRPResponse.DesiredLrp
+				Expect(actualLRP.ProcessGuid).To(Equal("guid_1234"))
+				Expect(actualLRP.Instances).To(Equal(int32(5)))
+			})
+
+		})
+
+		Context("when the app does not exist", func() {
+			BeforeEach(func() {
+				bifrost.GetReturns(nil)
+			})
+
+			It("should return a 404 HTTP status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
+			})
+
+		})
+
 	})
 })
 

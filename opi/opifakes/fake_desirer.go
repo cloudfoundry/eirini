@@ -34,6 +34,32 @@ type FakeDesirer struct {
 		result1 []opi.LRP
 		result2 error
 	}
+	GetStub        func(ctx context.Context, name string) (*opi.LRP, error)
+	getMutex       sync.RWMutex
+	getArgsForCall []struct {
+		ctx  context.Context
+		name string
+	}
+	getReturns struct {
+		result1 *opi.LRP
+		result2 error
+	}
+	getReturnsOnCall map[int]struct {
+		result1 *opi.LRP
+		result2 error
+	}
+	UpdateStub        func(ctx context.Context, updated opi.LRP) error
+	updateMutex       sync.RWMutex
+	updateArgsForCall []struct {
+		ctx     context.Context
+		updated opi.LRP
+	}
+	updateReturns struct {
+		result1 error
+	}
+	updateReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -143,6 +169,107 @@ func (fake *FakeDesirer) ListReturnsOnCall(i int, result1 []opi.LRP, result2 err
 	}{result1, result2}
 }
 
+func (fake *FakeDesirer) Get(ctx context.Context, name string) (*opi.LRP, error) {
+	fake.getMutex.Lock()
+	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
+	fake.getArgsForCall = append(fake.getArgsForCall, struct {
+		ctx  context.Context
+		name string
+	}{ctx, name})
+	fake.recordInvocation("Get", []interface{}{ctx, name})
+	fake.getMutex.Unlock()
+	if fake.GetStub != nil {
+		return fake.GetStub(ctx, name)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getReturns.result1, fake.getReturns.result2
+}
+
+func (fake *FakeDesirer) GetCallCount() int {
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	return len(fake.getArgsForCall)
+}
+
+func (fake *FakeDesirer) GetArgsForCall(i int) (context.Context, string) {
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	return fake.getArgsForCall[i].ctx, fake.getArgsForCall[i].name
+}
+
+func (fake *FakeDesirer) GetReturns(result1 *opi.LRP, result2 error) {
+	fake.GetStub = nil
+	fake.getReturns = struct {
+		result1 *opi.LRP
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeDesirer) GetReturnsOnCall(i int, result1 *opi.LRP, result2 error) {
+	fake.GetStub = nil
+	if fake.getReturnsOnCall == nil {
+		fake.getReturnsOnCall = make(map[int]struct {
+			result1 *opi.LRP
+			result2 error
+		})
+	}
+	fake.getReturnsOnCall[i] = struct {
+		result1 *opi.LRP
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeDesirer) Update(ctx context.Context, updated opi.LRP) error {
+	fake.updateMutex.Lock()
+	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
+	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
+		ctx     context.Context
+		updated opi.LRP
+	}{ctx, updated})
+	fake.recordInvocation("Update", []interface{}{ctx, updated})
+	fake.updateMutex.Unlock()
+	if fake.UpdateStub != nil {
+		return fake.UpdateStub(ctx, updated)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.updateReturns.result1
+}
+
+func (fake *FakeDesirer) UpdateCallCount() int {
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
+	return len(fake.updateArgsForCall)
+}
+
+func (fake *FakeDesirer) UpdateArgsForCall(i int) (context.Context, opi.LRP) {
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
+	return fake.updateArgsForCall[i].ctx, fake.updateArgsForCall[i].updated
+}
+
+func (fake *FakeDesirer) UpdateReturns(result1 error) {
+	fake.UpdateStub = nil
+	fake.updateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeDesirer) UpdateReturnsOnCall(i int, result1 error) {
+	fake.UpdateStub = nil
+	if fake.updateReturnsOnCall == nil {
+		fake.updateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.updateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeDesirer) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -150,6 +277,10 @@ func (fake *FakeDesirer) Invocations() map[string][][]interface{} {
 	defer fake.desireMutex.RUnlock()
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

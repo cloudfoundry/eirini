@@ -3,128 +3,113 @@ package bifrost
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
-func Convert(
-	msg cc_messages.DesireAppRequestFromCC,
-	registryUrl string,
-	registryIP string,
-	cfClient eirini.CfClient,
-	client *http.Client,
-	log lager.Logger,
-) opi.LRP {
-	envMap := envVarsToMap(msg.Environment)
-	vcap := parseVcapApplication(envMap["VCAP_APPLICATION"])
+type DropletToImageConverter struct {
+	cfClient    eirini.CfClient
+	client      *http.Client
+	logger      lager.Logger
+	registryURL string
+	registryIP  string
+}
 
-	if msg.DockerImageUrl == "" {
-		msg.DockerImageUrl = dropletToImageURI(msg, vcap, cfClient, client, registryUrl, registryIP, log)
+func NewConverter(cfClient eirini.CfClient, client *http.Client, logger lager.Logger, registryIP, registryURL string) *DropletToImageConverter {
+	return &DropletToImageConverter{
+		cfClient:    cfClient,
+		client:      client,
+		logger:      logger,
+		registryURL: registryURL,
+		registryIP:  registryIP,
+	}
+}
+
+func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP, error) {
+	vcapJson := request.Environment["VCAP_APPLICATION"]
+	vcap, err := parseVcapApplication(vcapJson)
+
+	if err != nil {
+		c.logger.Error("failed-to-parse-vcap-app", err, lager.Data{"vcap-json": vcapJson})
+		return opi.LRP{}, err
+	}
+
+	request.DockerImageUrl, err = c.dropletToImageURI(request, vcap)
+	if err != nil {
+		c.logger.Error("failed-to-get-droplet-from-cloud-controller", err, lager.Data{"app-guid": vcap.AppId})
+		return opi.LRP{}, err
 	}
 
 	uris, err := json.Marshal(vcap.AppUris)
 	if err != nil {
-		log.Error("failed-to-marshal-vcap-app-uris", err, lager.Data{"app-guid": vcap.AppId})
-		uris = []byte{}
+		c.logger.Error("failed-to-marshal-vcap-app-uris", err, lager.Data{"app-guid": vcap.AppId})
+		panic(err)
 	}
 
 	return opi.LRP{
 		Name:            vcap.AppId,
-		Image:           msg.DockerImageUrl,
-		TargetInstances: msg.NumInstances,
+		Image:           request.DockerImageUrl,
+		TargetInstances: request.NumInstances,
 		Command: []string{
-			msg.StartCommand,
+			request.StartCommand,
 		},
-		Env: envMap,
+		Env: request.Environment,
 		Metadata: map[string]string{
 			cf.VcapAppName: vcap.AppName,
 			cf.VcapAppId:   vcap.AppId,
 			cf.VcapVersion: vcap.Version,
 			cf.VcapAppUris: string(uris),
-			cf.ProcessGuid: msg.ProcessGuid,
+			cf.ProcessGuid: request.ProcessGuid,
+			cf.LastUpdated: request.LastUpdated,
 		},
-	}
+	}, nil
 }
 
-func parseVcapApplication(vcap string) cf.VcapApp {
-	var vcapApp cf.VcapApp
-	if err := json.Unmarshal([]byte(vcap), &vcapApp); err != nil {
-		panic(err)
+func (c *DropletToImageConverter) dropletToImageURI(request cf.DesireLRPRequest, vcap cf.VcapApp) (string, error) {
+	if request.DockerImageUrl != "" {
+		return request.DockerImageUrl, nil
 	}
 
-	return vcapApp
-}
-
-func envVarsToMap(envs []*models.EnvironmentVariable) map[string]string {
-	envMap := map[string]string{}
-	for _, v := range envs {
-		envMap[v.Name] = v.Value
-	}
-	return envMap
-}
-
-func dropletToImageURI(
-	msg cc_messages.DesireAppRequestFromCC,
-	vcap cf.VcapApp,
-	cfClient eirini.CfClient,
-	client *http.Client,
-	registryUrl string,
-	registryIP string,
-	log lager.Logger,
-) string {
-	dropletBytes, err := cfClient.GetDropletByAppGuid(vcap.AppId)
+	dropletBytes, err := c.cfClient.GetDropletByAppGuid(vcap.AppId)
 	if err != nil {
-		log.Error("failed-to-get-droplet-from-cloud-controller", err, lager.Data{"app-guid": vcap.AppId})
-		panic(err)
+		return "", err
 	}
 
-	stageRequest(client, registryUrl, vcap, msg.DropletHash, dropletBytes, log)
+	if err = c.stageRequest(vcap, request.DropletHash, dropletBytes); err != nil {
+		return "", err
+	}
 
-	return fmt.Sprintf("%s/cloudfoundry/app-name:%s", registryIP, msg.DropletHash)
+	return fmt.Sprintf("%s/cloudfoundry/app-name:%s", c.registryIP, request.DropletHash), nil
 }
 
-func stageRequest(
-	client *http.Client,
-	registryUrl string,
-	vcap cf.VcapApp,
-	dropletHash string,
-	dropletBytes []byte,
-	log lager.Logger,
-) string {
-	registryStageUri := registryStageUri(registryUrl, vcap.SpaceName, vcap.AppName, dropletHash)
-
-	log.Info("sending-request-to-registry", lager.Data{"request": registryStageUri})
+func (c *DropletToImageConverter) stageRequest(vcap cf.VcapApp, dropletHash string, dropletBytes []byte) error {
+	registryStageUri := registryStageUri(c.registryURL, vcap.SpaceName, vcap.AppName, dropletHash)
+	c.logger.Info("sending-request-to-registry", lager.Data{"request": registryStageUri})
 
 	req, err := http.NewRequest("POST", registryStageUri, bytes.NewReader(dropletBytes))
 	if err != nil {
-		log.Error("failed-to-create-http-request", err, nil)
+		c.logger.Error("failed-to-create-http-request", err, nil)
 		panic(err)
 	}
 
 	req.Header.Set("Content-Type", "application/gzip")
 
-	resp, err := client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
-		log.Error("stage-request-to-registry-failed", err, lager.Data{"request": registryStageUri})
-		return ""
+		c.logger.Error("stage-request-to-registry-failed", err, lager.Data{"request": registryStageUri})
+		return err
 	}
 
-	log.Info("request-successful", lager.Data{"response_status": resp.StatusCode})
-
-	digest, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Error("read-response-failed", err)
-		return ""
+	if resp.StatusCode != http.StatusCreated {
+		c.logger.Info("invalid-stage-request-to-registry-response-code", lager.Data{"response_status": resp.StatusCode})
+		return errors.New(fmt.Sprintf("Invalid staging response: %s", resp))
 	}
 
-	return string(digest)
-
+	return nil
 }

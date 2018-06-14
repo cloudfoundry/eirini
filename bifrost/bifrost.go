@@ -2,54 +2,28 @@ package bifrost
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/pkg/errors"
 
 	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
 type Bifrost struct {
-	Converter   Converter
-	Desirer     opi.Desirer
-	CfClient    eirini.CfClient
-	Client      *http.Client
-	Logger      lager.Logger
-	RegistryUrl string
-	RegistryIP  string
+	Converter Converter
+	Desirer   opi.Desirer
+	Logger    lager.Logger
 }
 
-// this is a brain-dead simple initial implementation, obviously
-// it could be optimised by checking for which things changed etc,
-// and you could avoid using an array with a channel of fingerprints but..
-// honestly for any reasonable number of apps, memory is cheap and
-// any efficiency is likely dominated by the actual business of actioning
-// the requests
-func (c *Bifrost) Transfer(ctx context.Context, ccMessages []cc_messages.DesireAppRequestFromCC) error {
-	desire := make([]opi.LRP, 0)
-	for _, msg := range ccMessages {
-		lrp := c.convertMessage(msg)
-		desire = append(desire, lrp)
+func (c *Bifrost) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
+	desiredLRP, err := c.Converter.Convert(request)
+	if err != nil {
+		c.Logger.Error("failed-to-convert-request", err, lager.Data{"desire-lrp-request": request})
+		return err
 	}
-	return c.Desirer.Desire(ctx, desire)
-}
-
-// Convert could panic. To be able to skip this message and continue with the next,
-// the panic needs to be handled for each message.
-func (c *Bifrost) convertMessage(msg cc_messages.DesireAppRequestFromCC) opi.LRP {
-	defer func() {
-		if r := recover(); r != nil {
-			if err, ok := r.(error); ok {
-				c.Logger.Error("failed-to-convert-message", err)
-			}
-		}
-	}()
-	return c.Converter.Convert(msg, c.RegistryUrl, c.RegistryIP, c.CfClient, c.Client, c.Logger)
+	return c.Desirer.Desire(ctx, []opi.LRP{desiredLRP})
 }
 
 func (b *Bifrost) List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error) {
@@ -72,4 +46,32 @@ func toDesiredLRPSchedulingInfo(lrps []opi.LRP) []*models.DesiredLRPSchedulingIn
 		infos = append(infos, info)
 	}
 	return infos
+}
+
+func (b *Bifrost) Update(ctx context.Context, update models.UpdateDesiredLRPRequest) error {
+	lrp, err := b.Desirer.Get(ctx, update.ProcessGuid)
+	if err != nil {
+		b.Logger.Error("application-not-found", err, lager.Data{"process-guid": update.ProcessGuid})
+		return err
+	}
+
+	lrp.TargetInstances = int(*update.Update.Instances)
+	lrp.Metadata[cf.LastUpdated] = *update.Update.Annotation
+
+	return b.Desirer.Update(ctx, *lrp)
+}
+
+func (b *Bifrost) Get(ctx context.Context, guid string) *models.DesiredLRP {
+	lrp, err := b.Desirer.Get(ctx, guid)
+	if err != nil {
+		b.Logger.Error("failed-to-get-deployment", err, lager.Data{"process-guid": guid})
+		return nil
+	}
+
+	desiredLRP := &models.DesiredLRP{
+		ProcessGuid: lrp.Name,
+		Instances:   int32(lrp.TargetInstances),
+	}
+
+	return desiredLRP
 }
