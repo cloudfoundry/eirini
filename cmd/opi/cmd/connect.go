@@ -7,12 +7,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/handler"
+	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 
 	yaml "gopkg.in/yaml.v2"
@@ -20,6 +22,7 @@ import (
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/k8s"
 	"github.com/JulzDiverse/cfclient"
+	nats "github.com/nats-io/go-nats"
 	"github.com/spf13/cobra"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
@@ -36,6 +39,13 @@ func connect(cmd *cobra.Command, args []string) {
 
 	cfg := setConfigFromFile(path)
 	converger := initBifrost(cfg)
+
+	launchRouteEmitter(
+		cfg.Properties.KubeConfig,
+		cfg.Properties.KubeNamespace,
+		cfg.Properties.NatsPassword,
+		cfg.Properties.NatsIP,
+	)
 
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
@@ -101,6 +111,31 @@ func setConfigFromFile(path string) *eirini.Config {
 
 func initConnect() {
 	connectCmd.Flags().StringP("config", "c", "", "Path to the erini config file")
+}
+
+func launchRouteEmitter(kubeConf, namespace, natsPassword, natsIP string) {
+	nc, err := nats.Connect(fmt.Sprintf("nats://nats:%s@%s:4222", natsPassword, natsIP))
+	exitWithError(err)
+
+	config, err := clientcmd.BuildConfigFromFlags("", kubeConf)
+	exitWithError(err)
+
+	clientset, err := kubernetes.NewForConfig(config)
+	exitWithError(err)
+
+	workChan := make(chan []route.RegistryMessage)
+
+	rc := route.RouteCollector{
+		Client:        clientset,
+		Work:          workChan,
+		Scheduler:     &route.TickerTaskScheduler{time.NewTicker(time.Second * 15)},
+		KubeNamespace: namespace,
+	}
+
+	re := route.NewRouteEmitter(nc, workChan, 15)
+
+	go re.Start()
+	go rc.Start()
 }
 
 func exitWithError(err error) {

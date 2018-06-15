@@ -38,6 +38,8 @@ type Properties struct {
 	KubeConfig         string `yaml:"kube_config"`
 	KubeNamespace      string `yaml:"kube_namespace"`
 	KubeEndpoint       string `yaml:"kube_endpoint"`
+	NatsPassword       string `yaml:"nats_password"`
+	NatsIP             string `yaml:"nats_ip"`
 	RegistryEndpoint   string `yaml:"registry_endpoint"`
 	CcApi              string `yaml:"api_endpoint"`
 	Backend            string `yaml:"backend"`
