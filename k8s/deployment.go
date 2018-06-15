@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"k8s.io/api/apps/v1beta1"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +37,11 @@ func (m *deploymentManager) ListLRPs(namespace string) ([]opi.LRP, error) {
 func toLRPs(deployments *v1beta1.DeploymentList) []opi.LRP {
 	lrps := []opi.LRP{}
 	for _, d := range deployments.Items {
-		lrp := opi.LRP{Name: d.Name}
+		lrp := opi.LRP{
+			Metadata: map[string]string{
+				cf.ProcessGuid: d.Annotations[cf.ProcessGuid],
+			},
+		}
 		lrps = append(lrps, lrp)
 	}
 	return lrps

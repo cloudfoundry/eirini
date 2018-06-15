@@ -17,7 +17,7 @@ var _ = Describe("Deployment", func() {
 	var (
 		fakeClient        kubernetes.Interface
 		deploymentManager DeploymentManager
-		apps              []string
+		processGuids      []string
 	)
 
 	const (
@@ -25,19 +25,19 @@ var _ = Describe("Deployment", func() {
 	)
 
 	BeforeEach(func() {
-		apps = []string{"odin", "thor", "mimir"}
+		processGuids = []string{"odin", "thor", "mimir"}
 	})
 
 	JustBeforeEach(func() {
 		fakeClient = fake.NewSimpleClientset()
 		deploymentManager = NewDeploymentManager(fakeClient)
-		for _, a := range apps {
+		for _, a := range processGuids {
 			fakeClient.AppsV1beta1().Deployments(namespace).Create(toDeployment(a))
 		}
 	})
 
 	AfterEach(func() {
-		for _, a := range apps {
+		for _, a := range processGuids {
 			fakeClient.AppsV1beta1().Deployments(namespace).Delete(a, &v1.DeleteOptions{})
 		}
 	})
@@ -49,7 +49,7 @@ var _ = Describe("Deployment", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(lrps)).To(Equal(3))
 
-				exists := findAll(lrps, apps)
+				exists := findAll(lrps, processGuids)
 				Expect(exists).To(BeTrue())
 			})
 		})
@@ -57,7 +57,7 @@ var _ = Describe("Deployment", func() {
 		Context("When no deployments exist", func() {
 
 			BeforeEach(func() {
-				apps = []string{}
+				processGuids = []string{}
 			})
 
 			It("returns an empy list of LRPs", func() {
@@ -69,9 +69,12 @@ var _ = Describe("Deployment", func() {
 	})
 })
 
-func toDeployment(name string) *v1beta1.Deployment {
+func toDeployment(processGuid string) *v1beta1.Deployment {
 	deployment := &v1beta1.Deployment{}
-	deployment.Name = name
+	deployment.Name = "test-app-" + processGuid
+	deployment.Annotations = map[string]string{
+		"process_guid": processGuid,
+	}
 	return deployment
 }
 
@@ -80,7 +83,7 @@ func findAll(lrps []opi.LRP, ids []string) bool {
 	for _, a := range ids {
 		exists = false
 		for _, l := range lrps {
-			if l.Name == a {
+			if l.Metadata["process_guid"] == a {
 				exists = true
 			}
 		}

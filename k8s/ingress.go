@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	ext "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -21,7 +22,7 @@ const (
 //go:generate counterfeiter . IngressManager
 type IngressManager interface {
 	CreateIngress(namespace string) (*ext.Ingress, error)
-	UpdateIngress(namespace string, lrp opi.LRP, vcap VcapApp) error
+	UpdateIngress(namespace string, lrp opi.LRP) error
 }
 
 type KubeIngressManager struct {
@@ -36,13 +37,13 @@ func NewIngressManager(client kubernetes.Interface, kubeEndpoint string) Ingress
 	}
 }
 
-func (i *KubeIngressManager) UpdateIngress(namespace string, lrp opi.LRP, vcap VcapApp) error {
+func (i *KubeIngressManager) UpdateIngress(namespace string, lrp opi.LRP) error {
 	ingress, err := i.getIngress(namespace)
 	if err != nil {
 		return err
 	}
 
-	i.updateSpec(ingress, lrp, vcap)
+	i.updateSpec(ingress, lrp)
 
 	if _, err = i.client.ExtensionsV1beta1().Ingresses(namespace).Update(ingress); err != nil {
 		return err
@@ -51,11 +52,11 @@ func (i *KubeIngressManager) UpdateIngress(namespace string, lrp opi.LRP, vcap V
 	return nil
 }
 
-func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrp opi.LRP, vcap VcapApp) {
-	newHost := fmt.Sprintf("%s.%s", vcap.AppName, i.endpoint)
+func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrp opi.LRP) {
+	newHost := fmt.Sprintf("%s.%s", lrp.Metadata[cf.VcapAppName], i.endpoint)
 	ingress.Spec.TLS[0].Hosts = append(ingress.Spec.TLS[0].Hosts, newHost)
 
-	rule := createIngressRule(lrp, vcap, i.endpoint)
+	rule := createIngressRule(lrp, i.endpoint)
 	ingress.Spec.Rules = append(ingress.Spec.Rules, rule)
 }
 
@@ -68,9 +69,9 @@ func (i *KubeIngressManager) getIngress(namespace string) (*ext.Ingress, error) 
 	return ingress, err
 }
 
-func createIngressRule(lrp opi.LRP, vcap VcapApp, kubeEndpoint string) ext.IngressRule {
+func createIngressRule(lrp opi.LRP, kubeEndpoint string) ext.IngressRule {
 	rule := ext.IngressRule{
-		Host: fmt.Sprintf("%s.%s", vcap.AppName, kubeEndpoint),
+		Host: fmt.Sprintf("%s.%s", lrp.Metadata[cf.VcapAppName], kubeEndpoint),
 	}
 
 	rule.HTTP = &ext.HTTPIngressRuleValue{
