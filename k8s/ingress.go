@@ -7,7 +7,6 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	ext "k8s.io/api/extensions/v1beta1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
@@ -21,7 +20,6 @@ const (
 
 //go:generate counterfeiter . IngressManager
 type IngressManager interface {
-	CreateIngress(namespace string) (*ext.Ingress, error)
 	UpdateIngress(namespace string, lrp opi.LRP) error
 }
 
@@ -38,18 +36,41 @@ func NewIngressManager(client kubernetes.Interface, kubeEndpoint string) Ingress
 }
 
 func (i *KubeIngressManager) UpdateIngress(namespace string, lrp opi.LRP) error {
-	ingress, err := i.getIngress(namespace)
+	ingresses, err := i.client.ExtensionsV1beta1().Ingresses(namespace).List(av1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
-	i.updateSpec(ingress, lrp)
+	if ingress, exists := i.getIngress(ingresses); exists {
+		i.updateSpec(ingress, lrp)
 
-	if _, err = i.client.ExtensionsV1beta1().Ingresses(namespace).Update(ingress); err != nil {
+		_, err = i.client.ExtensionsV1beta1().Ingresses(namespace).Update(ingress)
 		return err
+	} else {
+		return i.createIngress(namespace, lrp)
+	}
+}
+
+func (i *KubeIngressManager) createIngress(namespace string, lrp opi.LRP) error {
+	ingress := &ext.Ingress{
+		TypeMeta: av1.TypeMeta{
+			Kind:       ingressKind,
+			APIVersion: ingressAPIVersion,
+		},
+		ObjectMeta: av1.ObjectMeta{
+			Name:      ingressName,
+			Namespace: namespace,
+		},
+		Spec: ext.IngressSpec{
+			TLS: []ext.IngressTLS{
+				ext.IngressTLS{},
+			},
+		},
 	}
 
-	return nil
+	i.updateSpec(ingress, lrp)
+	_, err := i.client.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
+	return err
 }
 
 func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrp opi.LRP) {
@@ -60,13 +81,13 @@ func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrp opi.LRP) {
 	ingress.Spec.Rules = append(ingress.Spec.Rules, rule)
 }
 
-func (i *KubeIngressManager) getIngress(namespace string) (*ext.Ingress, error) {
-	ingress, err := i.client.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-
-	if statusErr, ok := err.(*errors.StatusError); ok && statusErr.ErrStatus.Code == 404 {
-		return i.CreateIngress(namespace)
+func (i *KubeIngressManager) getIngress(ingresses *ext.IngressList) (*ext.Ingress, bool) {
+	for _, ing := range ingresses.Items {
+		if ing.ObjectMeta.Name == ingressName {
+			return &ing, true
+		}
 	}
-	return ingress, err
+	return &ext.Ingress{}, false
 }
 
 func createIngressRule(lrp opi.LRP, kubeEndpoint string) ext.IngressRule {
@@ -87,24 +108,4 @@ func createIngressRule(lrp opi.LRP, kubeEndpoint string) ext.IngressRule {
 	}
 
 	return rule
-}
-
-func (i *KubeIngressManager) CreateIngress(namespace string) (*ext.Ingress, error) {
-	ingress := &ext.Ingress{
-		TypeMeta: av1.TypeMeta{
-			Kind:       ingressKind,
-			APIVersion: ingressAPIVersion,
-		},
-		ObjectMeta: av1.ObjectMeta{
-			Name:      ingressName,
-			Namespace: namespace,
-		},
-		Spec: ext.IngressSpec{
-			TLS: []ext.IngressTLS{
-				ext.IngressTLS{},
-			},
-		},
-	}
-
-	return i.client.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
 }

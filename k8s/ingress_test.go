@@ -40,46 +40,7 @@ var _ = Describe("Ingress", func() {
 		ingressManager = NewIngressManager(fakeClient, kubeEndpoint)
 	})
 
-	Context("Create Ingress", func() {
-
-		Context("When successfully created", func() {
-
-			var (
-				createdIngress *ext.Ingress
-				err            error
-			)
-
-			assertIngress := func(ingress *ext.Ingress) {
-				Expect(ingress.Name).To(Equal(ingressName))
-				Expect(ingress.Namespace).To(Equal(namespace))
-				Expect(ingress.Kind).To(Equal(ingressKind))
-				Expect(ingress.APIVersion).To(Equal(ingressAPIVersion))
-				Expect(ingress.Spec.TLS).To(HaveLen(1))
-				Expect(ingress.Spec.TLS[0].Hosts).To(HaveLen(0))
-			}
-
-			JustBeforeEach(func() {
-				createdIngress, err = ingressManager.CreateIngress(namespace)
-			})
-
-			It("should not error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("shoud return expected object", func() {
-				assertIngress(createdIngress)
-			})
-
-			It("should create the expected object in k8s", func() {
-				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get("eirini", av1.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
-
-				assertIngress(ingress)
-			})
-		})
-	})
-
-	Context("Update Ingress", func() {
+	Context("Update Ingress Rule", func() {
 
 		var err error
 
@@ -139,7 +100,40 @@ var _ = Describe("Ingress", func() {
 			err = ingressManager.UpdateIngress(namespace, lrp)
 		})
 
-		Context("When ingress already exists", func() {
+		verifyTlsHosts := func(tlsHosts []string) {
+			ingress, _ := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+
+			Expect(ingress.Spec.TLS).To(Equal([]ext.IngressTLS{
+				ext.IngressTLS{
+					Hosts: tlsHosts,
+				},
+			}))
+		}
+
+		Context("When no ingress exists", func() {
+			It("should create a new one", func() {
+				_, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should add the rule for the specific lrp", func() {
+				ingress, _ := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+
+				rules := ingress.Spec.Rules
+				Expect(rules).To(Equal([]ext.IngressRule{
+					createIngressRule(eirini.GetInternalServiceName(lrpName)),
+				}))
+
+			})
+
+			It("should add a TLS host", func() {
+				tlsHosts := []string{fmt.Sprintf("%s.%s", appName, kubeEndpoint)}
+				verifyTlsHosts(tlsHosts)
+			})
+
+		})
+
+		Context("When ingress exists", func() {
 
 			BeforeEach(func() {
 				ingress := createIngress(ingressName, namespace)
@@ -155,44 +149,18 @@ var _ = Describe("Ingress", func() {
 				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 				Expect(err).ToNot(HaveOccurred())
 
-				tlsHosts := []string{fmt.Sprintf("%s.%s", ingressAppName, kubeEndpoint), fmt.Sprintf("%s.%s", appName, kubeEndpoint)}
-				Expect(ingress.Spec.TLS).To(Equal([]ext.IngressTLS{
-					ext.IngressTLS{
-						Hosts: tlsHosts,
-					},
-				}))
-
 				Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
 					createIngressRule(eirini.GetInternalServiceName(ingressAppName)),
 					createIngressRule(eirini.GetInternalServiceName(lrpName)),
 				}))
 			})
 
-		})
+			It("should add a TLS host", func() {
+				tlsHosts := []string{fmt.Sprintf("%s.%s", ingressAppName, kubeEndpoint), fmt.Sprintf("%s.%s", appName, kubeEndpoint)}
 
-		Context("When ingress does not exist", func() {
-
-			It("should not error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should update the record", func() {
-				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
-
-				tlsHosts := []string{fmt.Sprintf("%s.%s", appName, kubeEndpoint)}
-				Expect(ingress.Spec.TLS).To(Equal([]ext.IngressTLS{
-					ext.IngressTLS{
-						Hosts: tlsHosts,
-					},
-				}))
-
-				Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
-					createIngressRule(eirini.GetInternalServiceName(lrpName)),
-				}))
+				verifyTlsHosts(tlsHosts)
 			})
 
 		})
-
 	})
 })

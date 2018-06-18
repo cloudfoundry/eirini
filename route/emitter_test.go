@@ -16,7 +16,6 @@ var _ = Describe("Emitter", func() {
 
 	Context("RouteEmitter", func() {
 		var (
-			scheduler   *routefakes.FakeTaskScheduler
 			publisher   *routefakes.FakePublisher
 			workChannel chan []RegistryMessage
 			emitter     RouteEmitter
@@ -51,7 +50,6 @@ var _ = Describe("Emitter", func() {
 		}
 
 		BeforeEach(func() {
-			scheduler = new(routefakes.FakeTaskScheduler)
 			publisher = new(routefakes.FakePublisher)
 			workChannel = make(chan []RegistryMessage, 1)
 
@@ -74,22 +72,14 @@ var _ = Describe("Emitter", func() {
 		JustBeforeEach(func() {
 			emitter = RouteEmitter{
 				Publisher: publisher,
-				Scheduler: scheduler,
 				Work:      workChannel,
 			}
-
-			emitter.Start()
 		})
 
 		assertInteractionsWithFakes := func() {
-			It("should use the scheduler", func() {
-				Expect(scheduler.ScheduleCallCount()).To(Equal(1))
-			})
-
 			It("should publish the routes", func() {
-				task := scheduler.ScheduleArgsForCall(0)
 				workChannel <- messages
-				task()
+				emitter.Start()
 				time.Sleep(time.Millisecond * 100) //TODO: Think of a better way (abstract goroutine? waitgroups?)
 
 				Expect(publisher.PublishCallCount()).To(Equal(len(messages)))

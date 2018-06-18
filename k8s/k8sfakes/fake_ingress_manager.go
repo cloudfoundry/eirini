@@ -6,23 +6,9 @@ import (
 
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
-	ext "k8s.io/api/extensions/v1beta1"
 )
 
 type FakeIngressManager struct {
-	CreateIngressStub        func(namespace string) (*ext.Ingress, error)
-	createIngressMutex       sync.RWMutex
-	createIngressArgsForCall []struct {
-		namespace string
-	}
-	createIngressReturns struct {
-		result1 *ext.Ingress
-		result2 error
-	}
-	createIngressReturnsOnCall map[int]struct {
-		result1 *ext.Ingress
-		result2 error
-	}
 	UpdateIngressStub        func(namespace string, lrp opi.LRP) error
 	updateIngressMutex       sync.RWMutex
 	updateIngressArgsForCall []struct {
@@ -37,57 +23,6 @@ type FakeIngressManager struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeIngressManager) CreateIngress(namespace string) (*ext.Ingress, error) {
-	fake.createIngressMutex.Lock()
-	ret, specificReturn := fake.createIngressReturnsOnCall[len(fake.createIngressArgsForCall)]
-	fake.createIngressArgsForCall = append(fake.createIngressArgsForCall, struct {
-		namespace string
-	}{namespace})
-	fake.recordInvocation("CreateIngress", []interface{}{namespace})
-	fake.createIngressMutex.Unlock()
-	if fake.CreateIngressStub != nil {
-		return fake.CreateIngressStub(namespace)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.createIngressReturns.result1, fake.createIngressReturns.result2
-}
-
-func (fake *FakeIngressManager) CreateIngressCallCount() int {
-	fake.createIngressMutex.RLock()
-	defer fake.createIngressMutex.RUnlock()
-	return len(fake.createIngressArgsForCall)
-}
-
-func (fake *FakeIngressManager) CreateIngressArgsForCall(i int) string {
-	fake.createIngressMutex.RLock()
-	defer fake.createIngressMutex.RUnlock()
-	return fake.createIngressArgsForCall[i].namespace
-}
-
-func (fake *FakeIngressManager) CreateIngressReturns(result1 *ext.Ingress, result2 error) {
-	fake.CreateIngressStub = nil
-	fake.createIngressReturns = struct {
-		result1 *ext.Ingress
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeIngressManager) CreateIngressReturnsOnCall(i int, result1 *ext.Ingress, result2 error) {
-	fake.CreateIngressStub = nil
-	if fake.createIngressReturnsOnCall == nil {
-		fake.createIngressReturnsOnCall = make(map[int]struct {
-			result1 *ext.Ingress
-			result2 error
-		})
-	}
-	fake.createIngressReturnsOnCall[i] = struct {
-		result1 *ext.Ingress
-		result2 error
-	}{result1, result2}
 }
 
 func (fake *FakeIngressManager) UpdateIngress(namespace string, lrp opi.LRP) error {
@@ -142,8 +77,6 @@ func (fake *FakeIngressManager) UpdateIngressReturnsOnCall(i int, result1 error)
 func (fake *FakeIngressManager) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.createIngressMutex.RLock()
-	defer fake.createIngressMutex.RUnlock()
 	fake.updateIngressMutex.RLock()
 	defer fake.updateIngressMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
