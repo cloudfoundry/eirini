@@ -132,7 +132,7 @@ func launchRouteEmitter(kubeConf, namespace, natsPassword, natsIP string) {
 		KubeNamespace: namespace,
 	}
 
-	re := route.NewRouteEmitter(nc, workChan, 15)
+	re := route.NewRouteEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{})
 
 	go re.Start()
 	go rc.Start()

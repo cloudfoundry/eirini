@@ -22,23 +22,27 @@ func (p *NATSPublisher) Publish(subj string, data []byte) error {
 }
 
 type RouteEmitter struct {
-	Publisher Publisher
-	Work      <-chan []RegistryMessage
+	publisher Publisher
+	scheduler TaskScheduler
+	work      <-chan []RegistryMessage
 }
 
-func NewRouteEmitter(nats *nats.Conn, workChannel chan []RegistryMessage, emitInterval int) *RouteEmitter {
-	publisher := &NATSPublisher{NatsClient: nats}
+func NewRouteEmitter(publisher Publisher, workChannel chan []RegistryMessage, scheduler TaskScheduler) *RouteEmitter {
 	return &RouteEmitter{
-		Publisher: publisher,
-		Work:      workChannel,
+		publisher: publisher,
+		scheduler: scheduler,
+		work:      workChannel,
 	}
 }
 
 func (r *RouteEmitter) Start() {
-	select {
-	case batch := <-r.Work:
-		go r.emit(batch)
-	}
+	r.scheduler.Schedule(func() error {
+		select {
+		case batch := <-r.work:
+			r.emit(batch)
+		}
+		return nil
+	})
 }
 
 func (r *RouteEmitter) emit(batch []RegistryMessage) {
@@ -49,7 +53,7 @@ func (r *RouteEmitter) emit(batch []RegistryMessage) {
 			continue
 		}
 
-		if err = r.Publisher.Publish(publisherSubject, routeJson); err != nil {
+		if err = r.publisher.Publish(publisherSubject, routeJson); err != nil {
 			fmt.Println("failed to publish route:", err.Error())
 		}
 	}
