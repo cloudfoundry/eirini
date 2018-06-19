@@ -8,6 +8,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+//go:generate counterfeiter . DeploymentManager
 type DeploymentManager interface {
 	ListLRPs(namespace string) ([]opi.LRP, error)
 }
@@ -40,6 +41,7 @@ func toLRPs(deployments *v1beta1.DeploymentList) []opi.LRP {
 		lrp := opi.LRP{
 			Metadata: map[string]string{
 				cf.ProcessGuid: d.Annotations[cf.ProcessGuid],
+				cf.LastUpdated: d.Annotations[cf.LastUpdated],
 			},
 		}
 		lrps = append(lrps, lrp)

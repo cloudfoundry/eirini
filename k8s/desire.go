@@ -22,8 +22,7 @@ type Desirer struct {
 	deploymentManager DeploymentManager
 }
 
-func NewDesirer(client *kubernetes.Clientset, kubeNamespace string, ingressManager IngressManager) *Desirer {
-	deploymentManager := NewDeploymentManager(client)
+func NewDesirer(client *kubernetes.Clientset, kubeNamespace string, ingressManager IngressManager, deploymentManager DeploymentManager) *Desirer {
 
 	return &Desirer{
 		KubeNamespace:     kubeNamespace,

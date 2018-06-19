@@ -27,13 +27,14 @@ import (
 // NOTE: this test requires a minikube to be set up and targeted in ~/.kube/config
 var _ = Describe("Desiring some LRPs", func() {
 	var (
-		client         *kubernetes.Clientset
-		ingressManager *k8sfakes.FakeIngressManager
-		desirer        *k8s.Desirer
-		namespace      string
-		lrps           []opi.LRP
-		vcapAppNames   []string
-		lrpUris        [][]string
+		client            *kubernetes.Clientset
+		ingressManager    *k8sfakes.FakeIngressManager
+		deploymentManager *k8sfakes.FakeDeploymentManager
+		desirer           *k8s.Desirer
+		namespace         string
+		lrps              []opi.LRP
+		vcapAppNames      []string
+		lrpUris           [][]string
 	)
 
 	const timeout time.Duration = 60 * time.Second
@@ -128,6 +129,7 @@ var _ = Describe("Desiring some LRPs", func() {
 		}
 
 		ingressManager = new(k8sfakes.FakeIngressManager)
+		deploymentManager = new(k8sfakes.FakeDeploymentManager)
 	})
 
 	JustBeforeEach(func() {
@@ -135,7 +137,7 @@ var _ = Describe("Desiring some LRPs", func() {
 			createNamespace(namespace)
 		}
 
-		desirer = k8s.NewDesirer(client, namespace, ingressManager)
+		desirer = k8s.NewDesirer(client, namespace, ingressManager, deploymentManager)
 	})
 
 	Context("When a LRP is desired", func() {
@@ -274,6 +276,56 @@ var _ = Describe("Desiring some LRPs", func() {
 
 		return deployment
 	}
+
+	Context("List LRPs", func() {
+
+		var (
+			err        error
+			actualLRPs []opi.LRP
+		)
+
+		JustBeforeEach(func() {
+			actualLRPs, err = desirer.List(context.Background())
+		})
+
+		Context("When list is succesful", func() {
+
+			var lrps []opi.LRP
+
+			BeforeEach(func() {
+				lrps = []opi.LRP{
+					opi.LRP{Name: "missing", Image: "docker.png"},
+					opi.LRP{Name: "wanted", Image: "docker.jpg"},
+				}
+
+				deploymentManager.ListLRPsReturns(lrps, nil)
+			})
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should delegate to DeploymentManager", func() {
+				Expect(deploymentManager.ListLRPsCallCount()).To(Equal(1))
+				Expect(deploymentManager.ListLRPsArgsForCall(0)).To(Equal(namespace))
+			})
+
+			It("propagates the returned LRPs from DeploymentManager", func() {
+				Expect(actualLRPs).To(Equal(lrps))
+			})
+		})
+
+		Context("When list fails", func() {
+
+			BeforeEach(func() {
+				deploymentManager.ListLRPsReturns([]opi.LRP{}, errors.New("failed-to-list-lrps"))
+			})
+
+			It("should return an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
 
 	Context("Get LRP by name", func() {
 
