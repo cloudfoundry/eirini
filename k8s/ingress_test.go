@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-var _ = FDescribe("Ingress", func() {
+var _ = Describe("Ingress", func() {
 
 	var (
 		fakeClient     kubernetes.Interface

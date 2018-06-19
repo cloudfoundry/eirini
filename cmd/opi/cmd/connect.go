@@ -42,6 +42,7 @@ func connect(cmd *cobra.Command, args []string) {
 
 	launchRouteEmitter(
 		cfg.Properties.KubeConfig,
+		cfg.Properties.KubeEndpoint,
 		cfg.Properties.KubeNamespace,
 		cfg.Properties.NatsPassword,
 		cfg.Properties.NatsIP,
@@ -113,7 +114,7 @@ func initConnect() {
 	connectCmd.Flags().StringP("config", "c", "", "Path to the erini config file")
 }
 
-func launchRouteEmitter(kubeConf, namespace, natsPassword, natsIP string) {
+func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP string) {
 	nc, err := nats.Connect(fmt.Sprintf("nats://nats:%s@%s:4222", natsPassword, natsIP))
 	exitWithError(err)
 
@@ -130,6 +131,7 @@ func launchRouteEmitter(kubeConf, namespace, natsPassword, natsIP string) {
 		Work:          workChan,
 		Scheduler:     &route.TickerTaskScheduler{time.NewTicker(time.Second * 15)},
 		KubeNamespace: namespace,
+		KubeEndpoint:  kubeEndpoint,
 	}
 
 	re := route.NewRouteEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{})

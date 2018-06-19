@@ -32,10 +32,11 @@ var _ = Describe("Collector", func() {
 			)
 
 			const (
-				appName   = "dora"
-				namespace = "testing"
-				httpPort  = 80
-				tlsPort   = 443
+				appName      = "dora"
+				namespace    = "testing"
+				kubeEndpoint = "asgard"
+				httpPort     = 80
+				tlsPort      = 443
 			)
 
 			// handcraft json in order not to mirror the production implementation
@@ -97,7 +98,7 @@ var _ = Describe("Collector", func() {
 
 			BeforeEach(func() {
 				serviceName = eirini.GetInternalServiceName(appName)
-				host = fmt.Sprintf("%s.%s", serviceName, "kube-endpoint")
+				host = "app.bosh.com"
 				routes = []string{"route1.app.com", "route2.app.com"}
 
 				scheduler = new(routefakes.FakeTaskScheduler)
@@ -113,6 +114,7 @@ var _ = Describe("Collector", func() {
 					Scheduler:     scheduler,
 					Work:          workChannel,
 					KubeNamespace: namespace,
+					KubeEndpoint:  kubeEndpoint,
 				}
 
 				collector.Start()
@@ -129,7 +131,7 @@ var _ = Describe("Collector", func() {
 				actualMessages := <-workChannel
 				expectedMessages := []RegistryMessage{
 					RegistryMessage{
-						Host:    host,
+						Host:    kubeEndpoint,
 						URIs:    routes,
 						Port:    httpPort,
 						TlsPort: tlsPort,
