@@ -1,7 +1,7 @@
 package k8s
 
 import (
-	"fmt"
+	"encoding/json"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -36,22 +36,32 @@ func NewIngressManager(client kubernetes.Interface, kubeEndpoint string) Ingress
 }
 
 func (i *KubeIngressManager) UpdateIngress(namespace string, lrp opi.LRP) error {
+	uriList := []string{}
+	err := json.Unmarshal([]byte(lrp.Metadata[cf.VcapAppUris]), &uriList)
+	if err != nil {
+		panic(err)
+	}
+
+	if len(uriList) == 0 {
+		return nil
+	}
+
 	ingresses, err := i.client.ExtensionsV1beta1().Ingresses(namespace).List(av1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	if ingress, exists := i.getIngress(ingresses); exists {
-		i.updateSpec(ingress, lrp)
+		i.updateSpec(ingress, lrp.Name, uriList)
 
 		_, err = i.client.ExtensionsV1beta1().Ingresses(namespace).Update(ingress)
 		return err
 	} else {
-		return i.createIngress(namespace, lrp)
+		return i.createIngress(namespace, lrp.Name, uriList)
 	}
 }
 
-func (i *KubeIngressManager) createIngress(namespace string, lrp opi.LRP) error {
+func (i *KubeIngressManager) createIngress(namespace, lrpName string, uriList []string) error {
 	ingress := &ext.Ingress{
 		TypeMeta: av1.TypeMeta{
 			Kind:       ingressKind,
@@ -68,17 +78,16 @@ func (i *KubeIngressManager) createIngress(namespace string, lrp opi.LRP) error 
 		},
 	}
 
-	i.updateSpec(ingress, lrp)
+	i.updateSpec(ingress, lrpName, uriList)
 	_, err := i.client.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
 	return err
 }
 
-func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrp opi.LRP) {
-	newHost := fmt.Sprintf("%s.%s", lrp.Metadata[cf.VcapAppName], i.endpoint)
-	ingress.Spec.TLS[0].Hosts = append(ingress.Spec.TLS[0].Hosts, newHost)
+func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrpName string, uriList []string) {
+	ingress.Spec.TLS[0].Hosts = append(ingress.Spec.TLS[0].Hosts, uriList...)
 
-	rule := createIngressRule(lrp, i.endpoint)
-	ingress.Spec.Rules = append(ingress.Spec.Rules, rule)
+	rules := createIngressRules(lrpName, uriList, i.endpoint)
+	ingress.Spec.Rules = append(ingress.Spec.Rules, rules...)
 }
 
 func (i *KubeIngressManager) getIngress(ingresses *ext.IngressList) (*ext.Ingress, bool) {
@@ -90,22 +99,27 @@ func (i *KubeIngressManager) getIngress(ingresses *ext.IngressList) (*ext.Ingres
 	return &ext.Ingress{}, false
 }
 
-func createIngressRule(lrp opi.LRP, kubeEndpoint string) ext.IngressRule {
-	rule := ext.IngressRule{
-		Host: fmt.Sprintf("%s.%s", lrp.Metadata[cf.VcapAppName], kubeEndpoint),
-	}
+func createIngressRules(lrpName string, uriList []string, kubeEndpoint string) []ext.IngressRule {
+	rules := []ext.IngressRule{}
 
-	rule.HTTP = &ext.HTTPIngressRuleValue{
-		Paths: []ext.HTTPIngressPath{
-			ext.HTTPIngressPath{
-				Path: "/",
-				Backend: ext.IngressBackend{
-					ServiceName: eirini.GetInternalServiceName(lrp.Name),
-					ServicePort: intstr.FromInt(8080),
+	for _, uri := range uriList {
+		rule := ext.IngressRule{
+			Host: uri,
+		}
+
+		rule.HTTP = &ext.HTTPIngressRuleValue{
+			Paths: []ext.HTTPIngressPath{
+				ext.HTTPIngressPath{
+					Path: "/",
+					Backend: ext.IngressBackend{
+						ServiceName: eirini.GetInternalServiceName(lrpName),
+						ServicePort: intstr.FromInt(8080),
+					},
 				},
 			},
-		},
+		}
+		rules = append(rules, rule)
 	}
 
-	return rule
+	return rules
 }
