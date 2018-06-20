@@ -19,6 +19,7 @@ type RouteCollector struct {
 	Scheduler     TaskScheduler
 	Work          chan<- []RegistryMessage
 	KubeNamespace string
+	KubeEndpoint  string
 }
 
 func (r *RouteCollector) Start() {
@@ -50,7 +51,7 @@ func (r *RouteCollector) createRegistryMessage(rule *ext.IngressRule) (RegistryM
 	if len(rule.HTTP.Paths) == 0 {
 		return RegistryMessage{}, errors.New("paths must not be empty slice")
 	}
-	host := rule.Host
+
 	serviceName := rule.HTTP.Paths[0].Backend.ServiceName
 
 	routes, err := r.getRoutes(serviceName)
@@ -59,7 +60,7 @@ func (r *RouteCollector) createRegistryMessage(rule *ext.IngressRule) (RegistryM
 	}
 
 	return RegistryMessage{
-		Host:    host,
+		Host:    r.KubeEndpoint,
 		Port:    httpPort,
 		TlsPort: tlsPort,
 		URIs:    routes,

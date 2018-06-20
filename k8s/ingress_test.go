@@ -1,7 +1,7 @@
 package k8s_test
 
 import (
-	"fmt"
+	"encoding/json"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -22,6 +22,9 @@ var _ = Describe("Ingress", func() {
 	var (
 		fakeClient     kubernetes.Interface
 		ingressManager IngressManager
+		appURIs        []string
+
+		err error
 	)
 
 	const (
@@ -30,6 +33,9 @@ var _ = Describe("Ingress", func() {
 		ingressName       = "eirini"
 		ingressKind       = "Ingress"
 		ingressAPIVersion = "extensions/v1beta1"
+		ingressAppName    = "app-name"
+		lrpName           = "new-app-name"
+		appName           = "new-vcaapp-name"
 	)
 
 	BeforeEach(func() {
@@ -40,77 +46,76 @@ var _ = Describe("Ingress", func() {
 		ingressManager = NewIngressManager(fakeClient, kubeEndpoint)
 	})
 
-	Context("Update Ingress Rule", func() {
+	createIngressRule := func(serviceName string, appUri string) ext.IngressRule {
+		ingress := ext.IngressRule{
+			Host: appUri,
+		}
 
-		var err error
-
-		const (
-			ingressAppName = "app-name"
-			lrpName        = "new-app-name"
-			appName        = "new-vcaapp-name"
-		)
-
-		createIngressRule := func(serviceName string) ext.IngressRule {
-			ingress := ext.IngressRule{
-				Host: fmt.Sprintf("%s.%s", appName, kubeEndpoint),
-			}
-
-			ingress.HTTP = &ext.HTTPIngressRuleValue{
-				Paths: []ext.HTTPIngressPath{
-					ext.HTTPIngressPath{
-						Path: "/",
-						Backend: ext.IngressBackend{
-							ServiceName: serviceName,
-							ServicePort: intstr.FromInt(8080),
-						},
+		ingress.HTTP = &ext.HTTPIngressRuleValue{
+			Paths: []ext.HTTPIngressPath{
+				ext.HTTPIngressPath{
+					Path: "/",
+					Backend: ext.IngressBackend{
+						ServiceName: serviceName,
+						ServicePort: intstr.FromInt(8080),
 					},
 				},
-			}
-
-			return ingress
+			},
 		}
 
-		createIngress := func(name, namespace string) *ext.Ingress {
-			ingress := &ext.Ingress{}
+		return ingress
+	}
 
-			ingress.APIVersion = ingressAPIVersion
-			ingress.Kind = ingressKind
-			ingress.Name = name
-			ingress.Namespace = namespace
+	newIngress := func(name, namespace, appName string) *ext.Ingress {
+		ingress := &ext.Ingress{}
 
-			ingress.Spec.TLS = []ext.IngressTLS{
-				ext.IngressTLS{
-					Hosts: []string{fmt.Sprintf("%s.%s", ingressAppName, kubeEndpoint)},
-				},
-			}
+		ingress.APIVersion = ingressAPIVersion
+		ingress.Kind = ingressKind
+		ingress.Name = name
+		ingress.Namespace = namespace
 
-			rule := createIngressRule(eirini.GetInternalServiceName(ingressAppName))
-			ingress.Spec.Rules = append(ingress.Spec.Rules, rule)
-
-			return ingress
+		ingress.Spec.TLS = []ext.IngressTLS{
+			ext.IngressTLS{
+				Hosts: []string{appName},
+			},
 		}
 
-		JustBeforeEach(func() {
-			lrp := opi.LRP{
-				Name: lrpName,
-				Metadata: map[string]string{
-					"application_name": appName,
-				}}
+		rule := createIngressRule(eirini.GetInternalServiceName(appName), appName)
+		ingress.Spec.Rules = append(ingress.Spec.Rules, rule)
 
-			err = ingressManager.UpdateIngress(namespace, lrp)
-		})
+		return ingress
+	}
 
-		verifyTlsHosts := func(tlsHosts []string) {
-			ingress, _ := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+	JustBeforeEach(func() {
+		uris, err := json.Marshal(appURIs)
+		Expect(err).ToNot(HaveOccurred())
 
-			Expect(ingress.Spec.TLS).To(Equal([]ext.IngressTLS{
-				ext.IngressTLS{
-					Hosts: tlsHosts,
-				},
-			}))
-		}
+		lrp := opi.LRP{
+			Name: lrpName,
+			Metadata: map[string]string{
+				"application_name": appName,
+				"application_uris": string(uris),
+			}}
 
-		Context("When no ingress exists", func() {
+		err = ingressManager.UpdateIngress(namespace, lrp)
+	})
+
+	verifyTlsHosts := func(tlsHosts []string) {
+		ingress, _ := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+
+		Expect(ingress.Spec.TLS).To(Equal([]ext.IngressTLS{
+			ext.IngressTLS{
+				Hosts: tlsHosts,
+			},
+		}))
+	}
+
+	BeforeEach(func() {
+		appURIs = []string{"alpha.example.com"}
+	})
+
+	Context("When no ingress exists", func() {
+		Context("When an app has one route", func() {
 			It("should create a new one", func() {
 				_, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 				Expect(err).ToNot(HaveOccurred())
@@ -121,26 +126,58 @@ var _ = Describe("Ingress", func() {
 
 				rules := ingress.Spec.Rules
 				Expect(rules).To(Equal([]ext.IngressRule{
-					createIngressRule(eirini.GetInternalServiceName(lrpName)),
+					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
 				}))
 
 			})
 
 			It("should add a TLS host", func() {
-				tlsHosts := []string{fmt.Sprintf("%s.%s", appName, kubeEndpoint)}
-				verifyTlsHosts(tlsHosts)
+				verifyTlsHosts(appURIs)
+			})
+		})
+
+		Context("When an app has multiple routes", func() {
+			BeforeEach(func() {
+				appURIs = []string{
+					"alpha.example.com",
+					"beta.example.com",
+					"gamma.example.com",
+				}
+			})
+
+			It("should create an ingress rule for each route", func() {
+				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
+					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
+					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[1]),
+					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[2]),
+				}))
+			})
+		})
+
+		Context("When an app has no routes", func() {
+			BeforeEach(func() {
+				appURIs = []string{}
+			})
+
+			It("shouldn't create an ingress at all", func() {
+				_, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+				Expect(err).To(HaveOccurred())
 			})
 
 		})
+	})
 
-		Context("When ingress exists", func() {
+	Context("When ingress exists", func() {
+		BeforeEach(func() {
+			ingress := newIngress(ingressName, namespace, "existing-app")
+			ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
+			Expect(err).ToNot(HaveOccurred())
+		})
 
-			BeforeEach(func() {
-				ingress := createIngress(ingressName, namespace)
-				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
-				Expect(err).ToNot(HaveOccurred())
-			})
-
+		Context("When an app has one route", func() {
 			It("should not error", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
@@ -150,17 +187,50 @@ var _ = Describe("Ingress", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
-					createIngressRule(eirini.GetInternalServiceName(ingressAppName)),
-					createIngressRule(eirini.GetInternalServiceName(lrpName)),
+					createIngressRule("cf-existing-app", "existing-app"),
+					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
 				}))
 			})
 
 			It("should add a TLS host", func() {
-				tlsHosts := []string{fmt.Sprintf("%s.%s", ingressAppName, kubeEndpoint), fmt.Sprintf("%s.%s", appName, kubeEndpoint)}
+				hosts := append([]string{"existing-app"}, appURIs...)
+				verifyTlsHosts(hosts)
+			})
+		})
 
-				verifyTlsHosts(tlsHosts)
+		Context("When an app has multiple routes", func() {
+			BeforeEach(func() {
+				appURIs = []string{
+					"alpha.example.com",
+					"beta.example.com",
+					"gamma.example.com",
+				}
 			})
 
+			It("should create an ingress rule for each route", func() {
+				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
+					createIngressRule("cf-existing-app", "existing-app"),
+					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
+					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[1]),
+					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[2]),
+				}))
+			})
+		})
+
+		Context("When an app has no routes", func() {
+			BeforeEach(func() {
+				appURIs = []string{}
+			})
+
+			It("shouldn't create an ingress rule", func() {
+				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ingress.Spec.Rules).To(HaveLen(1))
+			})
 		})
 	})
+
 })
