@@ -2,12 +2,13 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/julienschmidt/httprouter"
 )
@@ -22,21 +23,21 @@ type AppHandler struct {
 }
 
 func (a *AppHandler) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	var desiredApp cc_messages.DesireAppRequestFromCC
-	if err := json.NewDecoder(r.Body).Decode(&desiredApp); err != nil {
+	var request cf.DesireLRPRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		a.logger.Error("request-body-decoding-failed", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	processGuid := ps.ByName("process_guid")
-	if processGuid != desiredApp.ProcessGuid {
-		a.logger.Error("process-guid-mismatch", nil, lager.Data{"desired-app-process-guid": desiredApp.ProcessGuid})
+	if processGuid != request.ProcessGuid {
+		a.logger.Error("process-guid-mismatch", nil, lager.Data{"desired-app-process-guid": request.ProcessGuid})
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if err := a.bifrost.Transfer(r.Context(), []cc_messages.DesireAppRequestFromCC{desiredApp}); err != nil {
+	if err := a.bifrost.Transfer(r.Context(), request); err != nil {
 		a.logger.Error("desire-app-failed", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -68,4 +69,58 @@ func (a *AppHandler) List(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	w.Write([]byte(result))
+}
+
+func (a *AppHandler) Get(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	processGuid := ps.ByName("process_guid")
+	desiredLRP := a.bifrost.Get(r.Context(), processGuid)
+	if desiredLRP == nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	response := models.DesiredLRPResponse{
+		DesiredLrp: desiredLRP,
+	}
+
+	marshaler := &jsonpb.Marshaler{Indent: "", OrigName: true}
+	result, err := marshaler.MarshalToString(&response)
+	if err != nil {
+		a.logger.Error("encode-json-failed", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte(result))
+}
+
+func (a *AppHandler) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var request models.UpdateDesiredLRPRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		a.logger.Error("json-decoding-failure", err)
+		writeUpdateErrorResponse(w, err, http.StatusBadRequest)
+		return
+	}
+
+	guid := ps.ByName("process_guid")
+	if guid != request.ProcessGuid {
+		a.logger.Error("process-guid-mismatch", nil, lager.Data{"update-app-process-guid": request.ProcessGuid})
+		writeUpdateErrorResponse(w, errors.New("Process guid missmatch"), http.StatusBadRequest)
+		return
+	}
+
+	if err := a.bifrost.Update(r.Context(), request); err != nil {
+		a.logger.Error("update-app-failed", err)
+		writeUpdateErrorResponse(w, err, http.StatusInternalServerError)
+	}
+}
+
+func writeUpdateErrorResponse(w http.ResponseWriter, err error, statusCode int) {
+	response := models.DesiredLRPLifecycleResponse{
+		Error: &models.Error{
+			Message: err.Error(),
+		},
+	}
+	body, _ := json.Marshal(response)
+	w.WriteHeader(statusCode)
+	w.Write(body)
 }

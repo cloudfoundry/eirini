@@ -28,16 +28,8 @@ type Task struct {
 type Desirer interface {
 	Desire(ctx context.Context, lrps []LRP) error
 	List(ctx context.Context) ([]LRP, error)
-}
-
-type DesireFunc func(ctx context.Context, lrp []LRP) error
-
-func (d DesireFunc) Desire(ctx context.Context, lrp []LRP) error {
-	return d(ctx, lrp)
-}
-
-func (d DesireFunc) List(ctx context.Context) ([]LRP, error) {
-	return nil, nil
+	Get(ctx context.Context, name string) (*LRP, error)
+	Update(ctx context.Context, updated LRP) error
 }
 
 type TaskDesirer interface {

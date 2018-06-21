@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/eirinifakes"
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -18,12 +19,13 @@ var _ = Describe("Handler", func() {
 	var (
 		ts            *httptest.Server
 		client        *http.Client
+		bifrost       *eirinifakes.FakeBifrost
 		handlerClient http.Handler
 	)
 
 	BeforeEach(func() {
 		client = &http.Client{}
-		bifrost := new(eirinifakes.FakeBifrost)
+		bifrost = new(eirinifakes.FakeBifrost)
 		lager := lagertest.NewTestLogger("handler-test")
 		handlerClient = New(bifrost, lager)
 	})
@@ -33,18 +35,76 @@ var _ = Describe("Handler", func() {
 	})
 
 	Context("Routes", func() {
-		It("serves a apps/:process_guid endpoint", func() {
-			req, err := http.NewRequest("PUT", ts.URL+"/apps/myguid", bytes.NewReader([]byte(`{"process_guid": "myguid", "num_instances": 5}`)))
+
+		var (
+			method         string
+			path           string
+			body           string
+			expectedStatus int
+		)
+
+		assertEndpoint := func() {
+			req, err := http.NewRequest(method, ts.URL+path, bytes.NewReader([]byte(body)))
 			Expect(err).ToNot(HaveOccurred())
 			res, err := client.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(res.StatusCode).To(Equal(http.StatusAccepted))
+			Expect(res.StatusCode).To(Equal(expectedStatus))
+
+		}
+		Context("PUT /apps/:process_guid", func() {
+
+			BeforeEach(func() {
+				method = "PUT"
+				path = "/apps/myguid"
+				body = `{"process_guid": "myguid", "num_instances": 5}`
+				expectedStatus = http.StatusAccepted
+			})
+
+			It("serves the endpoint", func() {
+				assertEndpoint()
+			})
 		})
 
-		It("serves a /apps endpoint", func() {
-			resp, err := http.Get(ts.URL + "/apps")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		Context("GET /apps", func() {
+
+			BeforeEach(func() {
+				method = "GET"
+				path = "/apps"
+				expectedStatus = http.StatusOK
+			})
+
+			It("serves the endpoint", func() {
+				assertEndpoint()
+			})
+		})
+
+		Context("POST /apps/:process_guid", func() {
+
+			BeforeEach(func() {
+				method = "POST"
+				path = "/apps/myguid"
+				body = `{"process_guid": "myguid", "update": {"instances": 5}}`
+				expectedStatus = http.StatusOK
+			})
+
+			It("serves the endpoint", func() {
+				assertEndpoint()
+			})
+		})
+
+		Context("GET /app/:process_guid", func() {
+
+			BeforeEach(func() {
+				method = "GET"
+				path = "/app/myguid"
+				expectedStatus = http.StatusOK
+
+				bifrost.GetReturns(&models.DesiredLRP{})
+			})
+
+			It("serves the endpoint", func() {
+				assertEndpoint()
+			})
 		})
 	})
 
