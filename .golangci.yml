@@ -1,0 +1,49 @@
+run:
+  # which dirs to skip: they won't be analyzed;
+  skip-dirs:
+    - vendor
+    - recipe/packs
+    - launcher/buildpackapplifecycle
+    - cmd/eirini_old
+
+linters-settings:
+  govet:
+    # report about shadowed variables
+    check-shadowing: true
+  gocyclo:
+    # minimal code complexity to report
+    min-complexity: 10
+  maligned:
+    # print struct with more effective memory layout
+    suggest-new: true
+
+linters:
+  enable-all: true
+  disable:
+    - errcheck
+    - golint
+    - govet
+    - gofmt
+    - goimports
+    - gas
+    - ineffassign
+    - unconvert
+    - structcheck
+    - deadcode
+    - typecheck
+    - goconst
+    - gocyclo
+    - varcheck
+    - megacheck
+
+issues:
+  exclude-use-default: true
+  # Maximum issues count per one linter. Set to 0 to disable.
+  max-per-linter: 0
+
+  # Maximum count of issues with the same text. Set to 0 to disable
+  max-same: 0
+
+  # Show only new issues
+  new: false
+
