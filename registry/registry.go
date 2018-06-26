@@ -53,6 +53,7 @@ type BlobHandler struct {
 	blobs BlobStore
 }
 
+// nolint
 func (b BlobHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	digest := vars["digest"]
@@ -70,6 +71,7 @@ type ManifestHandler struct {
 	BlobStore    BlobStore
 }
 
+// nolint
 func (b ManifestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	dropletGuid := mux.Vars(r)["guid"]
 	droplet := b.DropletStore.Get(dropletGuid)
@@ -99,6 +101,8 @@ func (b ManifestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Content-Type", "application/vnd.docker.distribution.manifest.v2+json")
+
+	// nolint
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"mediaType":     "application/vnd.docker.distribution.manifest.v2+json",
 		"schemaVersion": 2,
@@ -132,6 +136,7 @@ type Stager struct {
 // droplet and stores it content-addressed in the local blobstore and stores a mapping
 // from the droplet guid to the content-addressed guid. This is fine for now but the real
 // solution is just to modify staging so that the droplet is a valid content-addressed layer
+// nolint
 func (s Stager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	guid := r.FormValue("guid")
 	if guid == "" {

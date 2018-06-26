@@ -20,7 +20,6 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - errcheck
     - golint
     - govet
     - gofmt
@@ -46,4 +45,3 @@ issues:
 
   # Show only new issues
   new: false
-

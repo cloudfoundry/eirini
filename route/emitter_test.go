@@ -80,7 +80,10 @@ var _ = Describe("Emitter", func() {
 			It("should publish the routes", func() {
 				task := scheduler.ScheduleArgsForCall(0)
 				workChannel <- messages
-				task()
+
+				err := task()
+				Expect(err).ToNot(HaveOccurred())
+
 				time.Sleep(time.Millisecond * 100) //TODO: Think of a better way (abstract goroutine? waitgroups?)
 
 				Expect(publisher.PublishCallCount()).To(Equal(len(messages)))

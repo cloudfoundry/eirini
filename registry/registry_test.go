@@ -18,6 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+// nolint
 var _ = Describe("Registry", func() {
 	var (
 		ts           *httptest.Server

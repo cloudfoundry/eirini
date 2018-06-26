@@ -68,7 +68,8 @@ func (a *AppHandler) List(w http.ResponseWriter, r *http.Request, ps httprouter.
 		return
 	}
 
-	w.Write([]byte(result))
+	_, err = w.Write([]byte(result))
+	a.logError("Could not write response", err)
 }
 
 func (a *AppHandler) Get(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -90,37 +91,55 @@ func (a *AppHandler) Get(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
-	w.Write([]byte(result))
+	_, err = w.Write([]byte(result))
+
+	a.logError("Could not write response", err)
 }
 
 func (a *AppHandler) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var request models.UpdateDesiredLRPRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		a.logger.Error("json-decoding-failure", err)
-		writeUpdateErrorResponse(w, err, http.StatusBadRequest)
+		err = writeUpdateErrorResponse(w, err, http.StatusBadRequest)
+
+		a.logError("Could not write response", err)
+
 		return
 	}
 
 	guid := ps.ByName("process_guid")
 	if guid != request.ProcessGuid {
 		a.logger.Error("process-guid-mismatch", nil, lager.Data{"update-app-process-guid": request.ProcessGuid})
-		writeUpdateErrorResponse(w, errors.New("Process guid missmatch"), http.StatusBadRequest)
+		err := writeUpdateErrorResponse(w, errors.New("Process guid missmatch"), http.StatusBadRequest)
+		a.logError("Could not write response", err)
+
 		return
 	}
 
 	if err := a.bifrost.Update(r.Context(), request); err != nil {
 		a.logger.Error("update-app-failed", err)
-		writeUpdateErrorResponse(w, err, http.StatusInternalServerError)
+		err = writeUpdateErrorResponse(w, err, http.StatusInternalServerError)
+		a.logError("Could not write response", err)
 	}
 }
 
-func writeUpdateErrorResponse(w http.ResponseWriter, err error, statusCode int) {
+func writeUpdateErrorResponse(w http.ResponseWriter, err error, statusCode int) error {
+	w.WriteHeader(statusCode)
+
 	response := models.DesiredLRPLifecycleResponse{
 		Error: &models.Error{
 			Message: err.Error(),
 		},
 	}
+
 	body, _ := json.Marshal(response)
-	w.WriteHeader(statusCode)
-	w.Write(body)
+
+	_, err = w.Write(body)
+	return err
+}
+
+func (a *AppHandler) logError(msg string, err error) {
+	if err != nil {
+		a.logger.Error(msg, err)
+	}
 }

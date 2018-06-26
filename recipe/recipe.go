@@ -9,8 +9,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/JulzDiverse/cfclient"
 	"code.cloudfoundry.org/eirini"
+	"github.com/JulzDiverse/cfclient"
 	"github.com/pkg/errors"
 	"github.com/starkandwayne/goutils/ansi"
 
@@ -101,7 +101,11 @@ func readResultJson(path string) ([]byte, error) {
 
 func stagingCompleteResponse(eiriniAddress string, callbackResponse models.TaskCallbackResponse) error {
 	jsonBytes := new(bytes.Buffer)
-	json.NewEncoder(jsonBytes).Encode(callbackResponse)
+	err := json.NewEncoder(jsonBytes).Encode(callbackResponse)
+
+	if err != nil {
+		return errors.Wrap(err, "failed to encode response")
+	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/staging/%s/completed", eiriniAddress, callbackResponse.TaskGuid), jsonBytes)
 	if err != nil {
