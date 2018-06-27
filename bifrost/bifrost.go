@@ -62,7 +62,7 @@ func (b *Bifrost) Update(ctx context.Context, update models.UpdateDesiredLRPRequ
 	return b.Desirer.Update(ctx, *lrp)
 }
 
-func (b *Bifrost) Get(ctx context.Context, guid string) *models.DesiredLRP {
+func (b *Bifrost) GetApp(ctx context.Context, guid string) *models.DesiredLRP {
 	lrp, err := b.Desirer.Get(ctx, guid)
 	if err != nil {
 		b.Logger.Error("failed-to-get-deployment", err, lager.Data{"process-guid": guid})
@@ -79,4 +79,20 @@ func (b *Bifrost) Get(ctx context.Context, guid string) *models.DesiredLRP {
 
 func (b *Bifrost) Stop(ctx context.Context, guid string) error {
 	return b.Desirer.Stop(ctx, guid)
+}
+
+func (b *Bifrost) GetInstances(ctx context.Context, guid string) ([]*cf.Instance, error) {
+	lrp, err := b.Desirer.Get(ctx, guid)
+	if err != nil {
+		b.Logger.Error("failed-to-get-lrp", err, lager.Data{"process-guid": guid})
+		return nil, err
+	}
+
+	result := []*cf.Instance{}
+	for i := 0; i < lrp.RunningInstances; i++ {
+		instance := &cf.Instance{Index: i, State: cf.RunningState}
+		result = append(result, instance)
+	}
+
+	return result, nil
 }

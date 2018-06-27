@@ -8,12 +8,13 @@ import (
 // where the scheduler should attempt to keep N copies running,
 // killing and recreating as needed to maintain that guarantee
 type LRP struct {
-	Name            string
-	Image           string
-	Command         []string
-	Env             map[string]string
-	TargetInstances int
-	Metadata        map[string]string
+	Name             string
+	Image            string
+	Command          []string
+	Env              map[string]string
+	TargetInstances  int
+	RunningInstances int
+	Metadata         map[string]string
 }
 
 // A Task is a one-off process that is run exactly once and returns a

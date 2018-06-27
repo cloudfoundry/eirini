@@ -88,12 +88,13 @@ func (d *Desirer) Get(ctx context.Context, name string) (*opi.LRP, error) {
 	}
 
 	return &opi.LRP{
-		Name:            deployment.Name,
-		Image:           container.Image,
-		Command:         container.Command,
-		Env:             toMap(container.Env),
-		TargetInstances: int(*deployment.Spec.Replicas),
-		Metadata:        metadata,
+		Name:             deployment.Name,
+		Image:            container.Image,
+		Command:          container.Command,
+		Env:              toMap(container.Env),
+		TargetInstances:  int(*deployment.Spec.Replicas),
+		RunningInstances: int(deployment.Status.AvailableReplicas),
+		Metadata:         metadata,
 	}, nil
 }
 

@@ -344,7 +344,7 @@ var _ = Describe("Desiring some LRPs", func() {
 			BeforeEach(func() {
 				appName = "test-app"
 				image = "busybox"
-				command = []string{"ls", "-la"}
+				command = []string{"/bin/sh", "-c", "while true; do echo hello; sleep 10;done"}
 				replicas = int32(2)
 
 				expectedDep := createDeployment(appName, image, replicas, command)
@@ -356,12 +356,20 @@ var _ = Describe("Desiring some LRPs", func() {
 				lrp, err = desirer.Get(context.Background(), appName)
 			})
 
-			It("should return the correct LRP", func() {
+			It("should return the correct desired LRP spec", func() {
 				Expect(lrp.Name).To(Equal(appName))
 				Expect(lrp.Image).To(Equal(image))
 				Expect(lrp.Command).To(Equal(command))
 				Expect(lrp.Env).To(Equal(map[string]string{"GOPATH": "~/go"}))
 				Expect(lrp.TargetInstances).To(Equal(int(replicas)))
+			})
+
+			It("should report all running instances", func() {
+				Eventually(func() int {
+					lrp, _ := desirer.Get(context.Background(), appName)
+					return lrp.RunningInstances
+				}, timeout).Should(Equal(int(replicas)))
+
 			})
 
 			It("should contain last_updated timestamp", func() {
@@ -413,7 +421,7 @@ var _ = Describe("Desiring some LRPs", func() {
 			BeforeEach(func() {
 				appName = "test-app"
 				image = "busybox"
-				command = []string{"ls", "-la"}
+				command = []string{"/bin/sh", "-c", "while true; do echo hello; sleep 10;done"}
 				replicas = int32(2)
 
 				expectedDep := createDeployment(appName, image, replicas, command)
@@ -450,7 +458,7 @@ var _ = Describe("Desiring some LRPs", func() {
 
 				It("creates the desired number of app instances", func() {
 					Eventually(func() int32 {
-						return getDeployment(appName).Status.Replicas
+						return getDeployment(appName).Status.AvailableReplicas
 					}, timeout).Should(Equal(int32(5)))
 
 					Eventually(func() int32 {

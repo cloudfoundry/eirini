@@ -302,7 +302,7 @@ var _ = Describe("Bifrost", func() {
 				Logger:  lager,
 			}
 
-			desiredLRP = bfrst.Get(context.Background(), "app_name")
+			desiredLRP = bfrst.GetApp(context.Background(), "app_name")
 		})
 
 		Context("when the app exists", func() {
@@ -370,9 +370,67 @@ var _ = Describe("Bifrost", func() {
 
 			It("returns an error", func() {
 				err := bfrst.Stop(context.Background(), "guid")
-				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
+
+	Context("Get all instances of an app", func() {
+		var (
+			bfrst     bifrost.Bifrost
+			opiClient *opifakes.FakeDesirer
+			lager     lager.Logger
+			lrp       *opi.LRP
+			instances []*cf.Instance
+			err       error
+		)
+
+		BeforeEach(func() {
+			opiClient = new(opifakes.FakeDesirer)
+			lager = lagertest.NewTestLogger("bifrost-get-instances-test")
+
+			lrp = &opi.LRP{
+				Name:             "my-guid-420",
+				TargetInstances:  3,
+				RunningInstances: 2,
+			}
+
+			opiClient.GetReturns(lrp, nil)
+		})
+
+		JustBeforeEach(func() {
+			bfrst = bifrost.Bifrost{
+				Desirer: opiClient,
+				Logger:  lager,
+			}
+
+			instances, err = bfrst.GetInstances(context.Background(), "my-guid-420")
+		})
+
+		It("should get the app from Desirer", func() {
+			Expect(opiClient.GetCallCount()).To(Equal(1))
+			_, guid := opiClient.GetArgsForCall(0)
+			Expect(guid).To(Equal("my-guid-420"))
+		})
+
+		It("should not return an error", func() {
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return all running instances", func() {
+			Expect(instances).To(ConsistOf(
+				&cf.Instance{Index: 0, State: cf.RunningState},
+				&cf.Instance{Index: 1, State: cf.RunningState},
+			))
+		})
+
+		Context("when the app does not exist", func() {
+			BeforeEach(func() {
+				opiClient.GetReturns(nil, errors.New("not found"))
 			})
 
+			It("returns an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
 		})
 
 	})

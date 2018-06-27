@@ -232,7 +232,7 @@ var _ = Describe("AppHandler", func() {
 		})
 	})
 
-	Context("get an app", func() {
+	Context("Get an app", func() {
 		var (
 			path       string
 			response   *http.Response
@@ -240,7 +240,7 @@ var _ = Describe("AppHandler", func() {
 		)
 
 		BeforeEach(func() {
-			path = "/app/guid_1234"
+			path = "/apps/guid_1234"
 		})
 
 		JustBeforeEach(func() {
@@ -255,8 +255,8 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		It("should use the bifrost to get the app", func() {
-			Expect(bifrost.GetCallCount()).To(Equal(1))
-			_, guid := bifrost.GetArgsForCall(0)
+			Expect(bifrost.GetAppCallCount()).To(Equal(1))
+			_, guid := bifrost.GetAppArgsForCall(0)
 			Expect(guid).To(Equal("guid_1234"))
 		})
 
@@ -266,7 +266,7 @@ var _ = Describe("AppHandler", func() {
 					ProcessGuid: "guid_1234",
 					Instances:   5,
 				}
-				bifrost.GetReturns(desiredLRP)
+				bifrost.GetAppReturns(desiredLRP)
 			})
 
 			It("should return a 200 HTTP status code", func() {
@@ -287,7 +287,7 @@ var _ = Describe("AppHandler", func() {
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				bifrost.GetReturns(nil)
+				bifrost.GetAppReturns(nil)
 			})
 
 			It("should return a 404 HTTP status code", func() {
@@ -298,7 +298,6 @@ var _ = Describe("AppHandler", func() {
 	})
 
 	Context("Stop an app", func() {
-
 		var (
 			path     string
 			response *http.Response
@@ -346,7 +345,90 @@ var _ = Describe("AppHandler", func() {
 			})
 
 		})
+	})
 
+	Context("Get Instances", func() {
+		var (
+			path     string
+			response *http.Response
+		)
+
+		BeforeEach(func() {
+			path = "/apps/guid_1234/instances"
+
+			instances := []*cf.Instance{
+				&cf.Instance{Index: 0, State: "RUNNING"},
+				&cf.Instance{Index: 1, State: "RUNNING"},
+			}
+			bifrost.GetInstancesReturns(instances, nil)
+		})
+
+		JustBeforeEach(func() {
+			ts := httptest.NewServer(New(bifrost, lager))
+			req, err := http.NewRequest("GET", ts.URL+path, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			client := &http.Client{}
+			response, err = client.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should use bifrost to get all instances", func() {
+			Expect(bifrost.GetInstancesCallCount()).To(Equal(1))
+			_, guid := bifrost.GetInstancesArgsForCall(0)
+			Expect(guid).To(Equal("guid_1234"))
+		})
+
+		It("should return the instances in the response", func() {
+			expectedResponse := `
+				{
+					"process_guid": "guid_1234",
+					"instances": [
+						{
+							"index": 0,
+							"state": "RUNNING"
+						},
+						{
+							"index": 1,
+							"state": "RUNNING"
+						}
+					]
+				}`
+			body, _ := ioutil.ReadAll(response.Body)
+			Expect(string(body)).To(MatchJSON(expectedResponse))
+		})
+
+		Context("when there are no running instances", func() {
+			BeforeEach(func() {
+				bifrost.GetInstancesReturns([]*cf.Instance{}, nil)
+			})
+
+			It("returns the error in the response", func() {
+				expectedResponse := `
+					{
+						"error": "no-running-instances",
+						"process_guid": "guid_1234"
+					}`
+				body, _ := ioutil.ReadAll(response.Body)
+				Expect(string(body)).To(MatchJSON(expectedResponse))
+			})
+		})
+
+		Context("when Bifrost returns an error", func() {
+			BeforeEach(func() {
+				bifrost.GetInstancesReturns(nil, errors.New("not found"))
+			})
+
+			It("returns the error in the response", func() {
+				expectedResponse := `
+					{
+						"error": "not found",
+						"process_guid": "guid_1234"
+					}`
+				body, _ := ioutil.ReadAll(response.Body)
+				Expect(string(body)).To(MatchJSON(expectedResponse))
+			})
+		})
 	})
 })
 

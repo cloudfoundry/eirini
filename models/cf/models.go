@@ -7,8 +7,9 @@ const (
 	VcapAppID     = "application_id"
 	VcapSpaceName = "space_name"
 
-	LastUpdated = "last_updated"
-	ProcessGUID = "process_guid"
+	LastUpdated  = "last_updated"
+	ProcessGUID  = "process_guid"
+	RunningState = "RUNNING"
 )
 
 type VcapApp struct {
@@ -27,4 +28,15 @@ type DesireLRPRequest struct {
 	Environment    map[string]string `json:"environment"`
 	NumInstances   int               `json:"instances"`
 	LastUpdated    string            `json:"last_updated"`
+}
+
+type GetInstancesResponse struct {
+	Error       string      `json:"error,omitempty"`
+	ProcessGuid string      `json:"process_guid"`
+	Instances   []*Instance `json:"instances,omitempty"`
+}
+
+type Instance struct {
+	Index int    `json:"index"`
+	State string `json:"state"`
 }

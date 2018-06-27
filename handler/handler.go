@@ -13,11 +13,12 @@ func New(converger eirini.Bifrost, lager lager.Logger) http.Handler {
 
 	appHandler := NewAppHandler(converger, lager)
 
-	handler.PUT("/apps/:process_guid", appHandler.Desire)
 	handler.GET("/apps", appHandler.List)
+	handler.PUT("/apps/:process_guid", appHandler.Desire)
 	handler.POST("/apps/:process_guid", appHandler.Update)
-	handler.GET("/app/:process_guid", appHandler.Get)
 	handler.PUT("/apps/:process_guid/stop", appHandler.Stop)
+	handler.GET("/apps/:process_guid", appHandler.GetApp)
+	handler.GET("/apps/:process_guid/instances", appHandler.GetInstances)
 
 	return handler
 }

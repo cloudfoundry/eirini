@@ -82,8 +82,9 @@ type Bifrost interface {
 	Transfer(ctx context.Context, request cf.DesireLRPRequest) error
 	List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error)
 	Update(ctx context.Context, update models.UpdateDesiredLRPRequest) error
-	Get(ctx context.Context, guid string) *models.DesiredLRP
 	Stop(ctx context.Context, guid string) error
+	GetApp(ctx context.Context, guid string) *models.DesiredLRP
+	GetInstances(ctx context.Context, guid string) ([]*cf.Instance, error)
 }
 
 func GetInternalServiceName(appName string) string {

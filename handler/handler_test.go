@@ -92,19 +92,32 @@ var _ = Describe("Handler", func() {
 			})
 		})
 
-		Context("GET /app/:process_guid", func() {
+		Context("GET /apps/:process_guid", func() {
 
 			BeforeEach(func() {
 				method = "GET"
-				path = "/app/myguid"
+				path = "/apps/myguid"
 				expectedStatus = http.StatusOK
 
-				bifrost.GetReturns(&models.DesiredLRP{})
+				bifrost.GetAppReturns(&models.DesiredLRP{})
 			})
 
 			It("serves the endpoint", func() {
 				assertEndpoint()
 			})
+		})
+
+		Context("GET /apps/:process_guid/instances", func() {
+			BeforeEach(func() {
+				method = "GET"
+				path = "/apps/my-guid/instances"
+				expectedStatus = http.StatusOK
+			})
+
+			It("serves the endpoint", func() {
+				assertEndpoint()
+			})
+
 		})
 
 		Context("PUT /apps/:process_guid/stop", func() {
