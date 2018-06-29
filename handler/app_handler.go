@@ -73,8 +73,8 @@ func (a *AppHandler) List(w http.ResponseWriter, r *http.Request, ps httprouter.
 }
 
 func (a *AppHandler) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	processGuid := ps.ByName("process_guid")
-	desiredLRP := a.bifrost.GetApp(r.Context(), processGuid)
+	processGUID := ps.ByName("process_guid")
+	desiredLRP := a.bifrost.GetApp(r.Context(), processGUID)
 	if desiredLRP == nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -159,14 +159,14 @@ func (a *AppHandler) createGetInstancesResponse(guid string, instances []*cf.Ins
 	}
 
 	return cf.GetInstancesResponse{
-		ProcessGuid: guid,
+		ProcessGUID: guid,
 		Instances:   instances,
 	}
 }
 
 func createErrorGetInstancesResponse(guid string, err error) cf.GetInstancesResponse {
 	return cf.GetInstancesResponse{
-		ProcessGuid: guid,
+		ProcessGUID: guid,
 		Error:       err.Error(),
 	}
 }

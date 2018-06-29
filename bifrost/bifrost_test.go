@@ -340,7 +340,7 @@ var _ = Describe("Bifrost", func() {
 		})
 	})
 
-	Context("stop an app", func() {
+	Context("Stop an app", func() {
 		BeforeEach(func() {
 			opiClient = new(opifakes.FakeDesirer)
 
@@ -355,33 +355,30 @@ var _ = Describe("Bifrost", func() {
 		})
 
 		It("should call the desirer with the expected guid", func() {
-			err := bfrst.Stop(context.Background(), "guid")
+			err = bfrst.Stop(context.Background(), "guid")
 			Expect(err).ToNot(HaveOccurred())
 
 			_, guid := opiClient.StopArgsForCall(0)
 			Expect(guid).To(Equal("guid"))
 		})
 
-		Context("when desirer's stop fails ", func() {
+		Context("when desirer's stop fails", func() {
 
 			BeforeEach(func() {
 				opiClient.StopReturns(errors.New("failed-to-stop"))
 			})
 
 			It("returns an error", func() {
-				err := bfrst.Stop(context.Background(), "guid")
+				err := bfrst.Stop(context.Background(), "guido")
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
 
 	Context("Get all instances of an app", func() {
 		var (
-			bfrst     bifrost.Bifrost
-			opiClient *opifakes.FakeDesirer
-			lager     lager.Logger
 			lrp       *opi.LRP
 			instances []*cf.Instance
-			err       error
 		)
 
 		BeforeEach(func() {
@@ -398,7 +395,7 @@ var _ = Describe("Bifrost", func() {
 		})
 
 		JustBeforeEach(func() {
-			bfrst = bifrost.Bifrost{
+			bfrst = &bifrost.Bifrost{
 				Desirer: opiClient,
 				Logger:  lager,
 			}

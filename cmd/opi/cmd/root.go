@@ -18,6 +18,7 @@ func init() {
 	initRegistry()
 	rootCmd.AddCommand(connectCmd)
 	rootCmd.AddCommand(registryCmd)
+	rootCmd.AddCommand(simulatorCmd)
 }
 
 func Execute() {
