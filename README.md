@@ -19,7 +19,8 @@ can schedule to diego/kube/swarm and whatever else is cool next year.
 It uses the diego abstractions -- LRPs and Tasks -- in order to support generic
 orchestrators.
 
-An experimental BOSH release for this is available at https://github.com/andrew-edgar/eirini-release
+An experimental BOSH release for this is available at
+https://github.com/cloudfoundry-incubator/eirini-release
 
 # y tho, y?
 
