@@ -30,6 +30,7 @@ type Desirer interface {
 	List(ctx context.Context) ([]LRP, error)
 	Get(ctx context.Context, name string) (*LRP, error)
 	Update(ctx context.Context, updated LRP) error
+	Stop(ctx context.Context, name string) error
 }
 
 type TaskDesirer interface {

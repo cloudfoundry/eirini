@@ -13,7 +13,6 @@ import (
 	"code.cloudfoundry.org/eirini/eirinifakes"
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/julienschmidt/httprouter"
@@ -25,7 +24,7 @@ var _ = Describe("AppHandler", func() {
 
 	var (
 		bifrost *eirinifakes.FakeBifrost
-		lager   lager.Logger
+		lager   *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
@@ -293,6 +292,57 @@ var _ = Describe("AppHandler", func() {
 
 			It("should return a 404 HTTP status code", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
+			})
+
+		})
+	})
+
+	Context("Stop an app", func() {
+
+		var (
+			path     string
+			response *http.Response
+		)
+
+		BeforeEach(func() {
+			path = "/apps/a-really-really-really-long-process-guid/stop"
+		})
+
+		JustBeforeEach(func() {
+			ts := httptest.NewServer(New(bifrost, lager))
+			req, err := http.NewRequest("PUT", ts.URL+path, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			client := &http.Client{}
+			response, err = client.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return a 200 HTTP status code", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusOK))
+		})
+
+		It("should stop the app", func() {
+			Expect(bifrost.StopCallCount()).To(Equal(1))
+		})
+
+		It("should trim the process guid", func() {
+			_, appGuid := bifrost.StopArgsForCall(0)
+			Expect(appGuid).To(Equal("a-really-really-really-long-process-"))
+		})
+
+		Context("when app stop is not successful", func() {
+			BeforeEach(func() {
+				bifrost.StopReturns(errors.New("someting-bad-happened"))
+			})
+
+			It("should return a 500 HTTP status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+			})
+
+			It("should log the failure", func() {
+				messages := lager.LogMessages()
+				Expect(messages).To(ConsistOf("app-handler-test.stop-app-failed"))
 			})
 
 		})

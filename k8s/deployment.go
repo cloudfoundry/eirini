@@ -6,11 +6,13 @@ import (
 	"k8s.io/api/apps/v1beta1"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	ev1 "k8s.io/client-go/kubernetes/typed/apps/v1beta1"
 )
 
 //go:generate counterfeiter . DeploymentManager
 type DeploymentManager interface {
 	ListLRPs(namespace string) ([]opi.LRP, error)
+	Delete(appName, namespace string) error
 }
 
 type deploymentManager struct {
@@ -25,7 +27,7 @@ func NewDeploymentManager(client kubernetes.Interface) DeploymentManager {
 }
 
 func (m *deploymentManager) ListLRPs(namespace string) ([]opi.LRP, error) {
-	deployments, err := m.client.AppsV1beta1().Deployments(namespace).List(av1.ListOptions{})
+	deployments, err := m.deployments(namespace).List(av1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -33,6 +35,14 @@ func (m *deploymentManager) ListLRPs(namespace string) ([]opi.LRP, error) {
 	lrps := toLRPs(deployments)
 
 	return lrps, nil
+}
+
+func (m *deploymentManager) Delete(appName, namespace string) error {
+	return m.deployments(namespace).Delete(appName, &av1.DeleteOptions{})
+}
+
+func (m *deploymentManager) deployments(namespace string) ev1.DeploymentInterface {
+	return m.client.AppsV1beta1().Deployments(namespace)
 }
 
 func toLRPs(deployments *v1beta1.DeploymentList) []opi.LRP {

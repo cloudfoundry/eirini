@@ -20,15 +20,17 @@ type Desirer struct {
 	Client            *kubernetes.Clientset
 	ingressManager    IngressManager
 	deploymentManager DeploymentManager
+	serviceManager    ServiceManager
 }
 
-func NewDesirer(client *kubernetes.Clientset, kubeNamespace string, ingressManager IngressManager, deploymentManager DeploymentManager) *Desirer {
+func NewDesirer(client *kubernetes.Clientset, kubeNamespace string, ingressManager IngressManager, deploymentManager DeploymentManager, serviceManager ServiceManager) *Desirer {
 
 	return &Desirer{
 		KubeNamespace:     kubeNamespace,
 		Client:            client,
 		ingressManager:    ingressManager,
 		deploymentManager: deploymentManager,
+		serviceManager:    serviceManager,
 	}
 }
 
@@ -110,6 +112,17 @@ func (d *Desirer) Update(ctx context.Context, updated opi.LRP) error {
 
 	_, err = d.Client.AppsV1beta1().Deployments(d.KubeNamespace).Update(deployment)
 	return err
+}
+
+func (d *Desirer) Stop(ctx context.Context, name string) error {
+	if err := d.deploymentManager.Delete(name, d.KubeNamespace); err != nil {
+		return err
+	}
+	if err := d.serviceManager.Delete(name, d.KubeNamespace); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func toMap(envVars []v1.EnvVar) map[string]string {

@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/api/apps/v1beta1"
+	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -62,7 +63,33 @@ var _ = Describe("Deployment", func() {
 			})
 		})
 	})
+
+	Context("Delete a deployment", func() {
+		It("deletes the deployment", func() {
+			err := deploymentManager.Delete("test-app-odin", namespace)
+			Expect(err).ToNot(HaveOccurred())
+
+			deployments, _ := fakeClient.AppsV1beta1().Deployments(namespace).List(av1.ListOptions{})
+			Expect(deployments.Items).To(HaveLen(2))
+			Expect(getDeploymentNames(deployments)).To(ConsistOf("test-app-mimir", "test-app-thor"))
+		})
+
+		Context("when the deployment does not exist", func() {
+			It("returns an error", func() {
+				err := deploymentManager.Delete("test-app-where-are-you", namespace)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
 })
+
+func getDeploymentNames(deployments *v1beta1.DeploymentList) []string {
+	deploymentNames := []string{}
+	for _, d := range deployments.Items {
+		deploymentNames = append(deploymentNames, d.Name)
+	}
+	return deploymentNames
+}
 
 func toDeployment(lrp opi.LRP) *v1beta1.Deployment {
 	deployment := &v1beta1.Deployment{}

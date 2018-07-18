@@ -60,6 +60,18 @@ type FakeBifrost struct {
 	getReturnsOnCall map[int]struct {
 		result1 *models.DesiredLRP
 	}
+	StopStub        func(ctx context.Context, guid string) error
+	stopMutex       sync.RWMutex
+	stopArgsForCall []struct {
+		ctx  context.Context
+		guid string
+	}
+	stopReturns struct {
+		result1 error
+	}
+	stopReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -262,6 +274,55 @@ func (fake *FakeBifrost) GetReturnsOnCall(i int, result1 *models.DesiredLRP) {
 	}{result1}
 }
 
+func (fake *FakeBifrost) Stop(ctx context.Context, guid string) error {
+	fake.stopMutex.Lock()
+	ret, specificReturn := fake.stopReturnsOnCall[len(fake.stopArgsForCall)]
+	fake.stopArgsForCall = append(fake.stopArgsForCall, struct {
+		ctx  context.Context
+		guid string
+	}{ctx, guid})
+	fake.recordInvocation("Stop", []interface{}{ctx, guid})
+	fake.stopMutex.Unlock()
+	if fake.StopStub != nil {
+		return fake.StopStub(ctx, guid)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.stopReturns.result1
+}
+
+func (fake *FakeBifrost) StopCallCount() int {
+	fake.stopMutex.RLock()
+	defer fake.stopMutex.RUnlock()
+	return len(fake.stopArgsForCall)
+}
+
+func (fake *FakeBifrost) StopArgsForCall(i int) (context.Context, string) {
+	fake.stopMutex.RLock()
+	defer fake.stopMutex.RUnlock()
+	return fake.stopArgsForCall[i].ctx, fake.stopArgsForCall[i].guid
+}
+
+func (fake *FakeBifrost) StopReturns(result1 error) {
+	fake.StopStub = nil
+	fake.stopReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeBifrost) StopReturnsOnCall(i int, result1 error) {
+	fake.StopStub = nil
+	if fake.stopReturnsOnCall == nil {
+		fake.stopReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.stopReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeBifrost) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -273,6 +334,8 @@ func (fake *FakeBifrost) Invocations() map[string][][]interface{} {
 	defer fake.updateMutex.RUnlock()
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
+	fake.stopMutex.RLock()
+	defer fake.stopMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

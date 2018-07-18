@@ -30,6 +30,7 @@ var _ = Describe("Desiring some LRPs", func() {
 		client            *kubernetes.Clientset
 		ingressManager    *k8sfakes.FakeIngressManager
 		deploymentManager *k8sfakes.FakeDeploymentManager
+		serviceManager    *k8sfakes.FakeServiceManager
 		desirer           *k8s.Desirer
 		namespace         string
 		lrps              []opi.LRP
@@ -130,6 +131,7 @@ var _ = Describe("Desiring some LRPs", func() {
 
 		ingressManager = new(k8sfakes.FakeIngressManager)
 		deploymentManager = new(k8sfakes.FakeDeploymentManager)
+		serviceManager = new(k8sfakes.FakeServiceManager)
 	})
 
 	JustBeforeEach(func() {
@@ -137,7 +139,7 @@ var _ = Describe("Desiring some LRPs", func() {
 			createNamespace(namespace)
 		}
 
-		desirer = k8s.NewDesirer(client, namespace, ingressManager, deploymentManager)
+		desirer = k8s.NewDesirer(client, namespace, ingressManager, deploymentManager, serviceManager)
 	})
 
 	Context("When a LRP is desired", func() {
@@ -491,4 +493,50 @@ var _ = Describe("Desiring some LRPs", func() {
 		})
 	})
 
+	Context("Stop an application", func() {
+
+		var err error
+
+		JustBeforeEach(func() {
+			err = desirer.Stop(context.Background(), "thor")
+		})
+
+		It("should not return an error", func() {
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should delete the service", func() {
+			Expect(serviceManager.DeleteCallCount()).To(Equal(1))
+			name, namespace := serviceManager.DeleteArgsForCall(0)
+			Expect(name).To(Equal("thor"))
+			Expect(namespace).To(Equal(namespace))
+		})
+
+		It("should delete the deployment", func() {
+			Expect(deploymentManager.DeleteCallCount()).To(Equal(1))
+			name, namespace := serviceManager.DeleteArgsForCall(0)
+			Expect(name).To(Equal("thor"))
+			Expect(namespace).To(Equal(namespace))
+		})
+
+		Context("when deployment deletion fails", func() {
+			BeforeEach(func() {
+				deploymentManager.DeleteReturns(errors.New("failed-to-delete"))
+			})
+
+			It("should return an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("when service deletion fails", func() {
+			BeforeEach(func() {
+				serviceManager.DeleteReturns(errors.New("failed-to-delete"))
+			})
+
+			It("should return an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
 })

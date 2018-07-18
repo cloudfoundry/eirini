@@ -18,14 +18,18 @@ import (
 )
 
 var _ = Describe("Bifrost", func() {
+
+	var (
+		err       error
+		bfrst     eirini.Bifrost
+		request   cf.DesireLRPRequest
+		converter *bifrostfakes.FakeConverter
+		desirer   *opifakes.FakeDesirer
+		lager     lager.Logger
+		opiClient *opifakes.FakeDesirer
+	)
+
 	Context("Transfer", func() {
-		var (
-			err       error
-			bfrst     eirini.Bifrost
-			request   cf.DesireLRPRequest
-			converter *bifrostfakes.FakeConverter
-			desirer   *opifakes.FakeDesirer
-		)
 
 		BeforeEach(func() {
 			converter = new(bifrostfakes.FakeConverter)
@@ -103,16 +107,13 @@ var _ = Describe("Bifrost", func() {
 
 	Context("List", func() {
 		var (
-			opiClient *opifakes.FakeDesirer
-			lager     lager.Logger
-			bfrst     bifrost.Bifrost
-			lrps      []opi.LRP
+			lrps []opi.LRP
 		)
 
 		BeforeEach(func() {
 			opiClient = new(opifakes.FakeDesirer)
 			lager = lagertest.NewTestLogger("bifrost-test")
-			bfrst = bifrost.Bifrost{
+			bfrst = &bifrost.Bifrost{
 				Desirer: opiClient,
 				Logger:  lager,
 			}
@@ -188,8 +189,6 @@ var _ = Describe("Bifrost", func() {
 
 		var (
 			bfrst         bifrost.Bifrost
-			opiClient     *opifakes.FakeDesirer
-			lager         lager.Logger
 			updateRequest models.UpdateDesiredLRPRequest
 			err           error
 		)
@@ -287,9 +286,6 @@ var _ = Describe("Bifrost", func() {
 
 	Context("get an App", func() {
 		var (
-			bfrst      bifrost.Bifrost
-			opiClient  *opifakes.FakeDesirer
-			lager      lager.Logger
 			desiredLRP *models.DesiredLRP
 			lrp        *opi.LRP
 		)
@@ -301,7 +297,7 @@ var _ = Describe("Bifrost", func() {
 		})
 
 		JustBeforeEach(func() {
-			bfrst = bifrost.Bifrost{
+			bfrst = &bifrost.Bifrost{
 				Desirer: opiClient,
 				Logger:  lager,
 			}
@@ -341,6 +337,42 @@ var _ = Describe("Bifrost", func() {
 				Expect(opiClient.GetCallCount()).To(Equal(1))
 				Expect(desiredLRP).To(BeNil())
 			})
+		})
+	})
+
+	Context("stop an app", func() {
+		BeforeEach(func() {
+			opiClient = new(opifakes.FakeDesirer)
+
+			lager = lagertest.NewTestLogger("bifrost-stop-test")
+		})
+
+		JustBeforeEach(func() {
+			bfrst = &bifrost.Bifrost{
+				Desirer: opiClient,
+				Logger:  lager,
+			}
+		})
+
+		It("should call the desirer with the expected guid", func() {
+			err := bfrst.Stop(context.Background(), "guid")
+			Expect(err).ToNot(HaveOccurred())
+
+			_, guid := opiClient.StopArgsForCall(0)
+			Expect(guid).To(Equal("guid"))
+		})
+
+		Context("when desirer's stop fails ", func() {
+
+			BeforeEach(func() {
+				opiClient.StopReturns(errors.New("failed-to-stop"))
+			})
+
+			It("returns an error", func() {
+				err := bfrst.Stop(context.Background(), "guid")
+				Expect(err).To(HaveOccurred())
+			})
+
 		})
 
 	})

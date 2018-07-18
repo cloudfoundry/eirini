@@ -106,6 +106,19 @@ var _ = Describe("Handler", func() {
 				assertEndpoint()
 			})
 		})
+
+		Context("PUT /apps/:process_guid/stop", func() {
+
+			BeforeEach(func() {
+				method = "PUT"
+				path = "/apps/myguid/stop"
+				expectedStatus = http.StatusOK
+			})
+
+			It("serves the endpoint", func() {
+				assertEndpoint()
+			})
+		})
 	})
 
 })

@@ -123,6 +123,19 @@ func (a *AppHandler) Update(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 }
 
+func (a *AppHandler) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	processGuid := ps.ByName("process_guid")
+	if len(processGuid) > 36 {
+		processGuid = processGuid[:36]
+	}
+
+	err := a.bifrost.Stop(r.Context(), processGuid)
+	if err != nil {
+		a.logError("stop-app-failed", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 func writeUpdateErrorResponse(w http.ResponseWriter, err error, statusCode int) error {
 	w.WriteHeader(statusCode)
 

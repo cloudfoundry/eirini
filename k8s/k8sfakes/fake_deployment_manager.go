@@ -22,6 +22,18 @@ type FakeDeploymentManager struct {
 		result1 []opi.LRP
 		result2 error
 	}
+	DeleteStub        func(appName, namespace string) error
+	deleteMutex       sync.RWMutex
+	deleteArgsForCall []struct {
+		appName   string
+		namespace string
+	}
+	deleteReturns struct {
+		result1 error
+	}
+	deleteReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -77,11 +89,62 @@ func (fake *FakeDeploymentManager) ListLRPsReturnsOnCall(i int, result1 []opi.LR
 	}{result1, result2}
 }
 
+func (fake *FakeDeploymentManager) Delete(appName string, namespace string) error {
+	fake.deleteMutex.Lock()
+	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
+	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
+		appName   string
+		namespace string
+	}{appName, namespace})
+	fake.recordInvocation("Delete", []interface{}{appName, namespace})
+	fake.deleteMutex.Unlock()
+	if fake.DeleteStub != nil {
+		return fake.DeleteStub(appName, namespace)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.deleteReturns.result1
+}
+
+func (fake *FakeDeploymentManager) DeleteCallCount() int {
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
+	return len(fake.deleteArgsForCall)
+}
+
+func (fake *FakeDeploymentManager) DeleteArgsForCall(i int) (string, string) {
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
+	return fake.deleteArgsForCall[i].appName, fake.deleteArgsForCall[i].namespace
+}
+
+func (fake *FakeDeploymentManager) DeleteReturns(result1 error) {
+	fake.DeleteStub = nil
+	fake.deleteReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeDeploymentManager) DeleteReturnsOnCall(i int, result1 error) {
+	fake.DeleteStub = nil
+	if fake.deleteReturnsOnCall == nil {
+		fake.deleteReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deleteReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeDeploymentManager) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.listLRPsMutex.RLock()
 	defer fake.listLRPsMutex.RUnlock()
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

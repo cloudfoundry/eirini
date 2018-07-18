@@ -76,3 +76,7 @@ func (b *Bifrost) Get(ctx context.Context, guid string) *models.DesiredLRP {
 
 	return desiredLRP
 }
+
+func (b *Bifrost) Stop(ctx context.Context, guid string) error {
+	return b.Desirer.Stop(ctx, guid)
+}
