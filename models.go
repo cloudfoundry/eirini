@@ -13,14 +13,14 @@ import (
 
 //Environment Variable Names
 const (
-	EnvDownloadUrl        = "DOWNLOAD_URL"
-	EnvUploadUrl          = "UPLOAD_URL"
-	EnvAppId              = "APP_ID"
-	EnvStagingGuid        = "STAGING_GUID"
+	EnvDownloadURL        = "DOWNLOAD_URL"
+	EnvUploadURL          = "UPLOAD_URL"
+	EnvAppID              = "APP_ID"
+	EnvStagingGUID        = "STAGING_GUID"
 	EnvCompletionCallback = "COMPLETION_CALLBACK"
 	EnvCfUsername         = "CF_USERNAME"
 	EnvCfPassword         = "CF_PASSWORD"
-	EnvApiAddress         = "API_ADDRESS"
+	EnvAPIAddress         = "API_ADDRESS"
 	EnvEiriniAddress      = "EIRINI_ADDRESS"
 )
 
@@ -42,7 +42,7 @@ type Properties struct {
 	NatsPassword       string `yaml:"nats_password"`
 	NatsIP             string `yaml:"nats_ip"`
 	RegistryEndpoint   string `yaml:"registry_endpoint"`
-	CcApi              string `yaml:"api_endpoint"`
+	CcAPI              string `yaml:"api_endpoint"`
 	Backend            string `yaml:"backend"`
 	CfUsername         string `yaml:"cf_username"`
 	CfPassword         string `yaml:"cf_password"`
@@ -67,7 +67,7 @@ type Backend interface {
 type BackendConfig struct {
 	CfUsername        string
 	CfPassword        string
-	ApiAddress        string
+	APIAddress        string
 	EiriniAddress     string
 	SkipSslValidation bool
 }

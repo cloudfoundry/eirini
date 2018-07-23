@@ -30,7 +30,7 @@ func (s *InMemoryStore) Put(buf io.Reader) (id string, size int64, err error) {
 	return id, size, nil
 }
 
-func (s *InMemoryStore) PutWithId(guid string, buf io.Reader) (id string, size int64, err error) {
+func (s *InMemoryStore) PutWithID(guid string, buf io.Reader) (id string, size int64, err error) {
 	sum := sha256.New()
 	stored := &bytes.Buffer{}
 	if size, err = io.Copy(io.MultiWriter(sum, stored), buf); err != nil {

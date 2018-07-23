@@ -4,24 +4,24 @@ const (
 	VcapAppName   = "application_name"
 	VcapVersion   = "version"
 	VcapAppUris   = "application_uris"
-	VcapAppId     = "application_id"
+	VcapAppID     = "application_id"
 	VcapSpaceName = "space_name"
 
 	LastUpdated = "last_updated"
-	ProcessGuid = "process_guid"
+	ProcessGUID = "process_guid"
 )
 
 type VcapApp struct {
 	AppName   string   `json:"application_name"`
-	AppId     string   `json:"application_id"`
+	AppID     string   `json:"application_id"`
 	Version   string   `json:"version"`
 	AppUris   []string `json:"application_uris"`
 	SpaceName string   `json:"space_name"`
 }
 
 type DesireLRPRequest struct {
-	ProcessGuid    string            `json:"process_guid"`
-	DockerImageUrl string            `json:"docker_image"`
+	ProcessGUID    string            `json:"process_guid"`
+	DockerImageURL string            `json:"docker_image"`
 	DropletHash    string            `json:"droplet_hash"`
 	StartCommand   string            `json:"start_command"`
 	Environment    map[string]string `json:"environment"`

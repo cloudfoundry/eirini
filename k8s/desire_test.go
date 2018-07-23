@@ -76,7 +76,7 @@ var _ = Describe("Desiring some LRPs", func() {
 	}
 
 	// handcraft json in order not to mirror the production implementation
-	asJsonArray := func(uris []string) string {
+	asJSONArray := func(uris []string) string {
 		quotedUris := []string{}
 		for _, uri := range uris {
 			quotedUris = append(quotedUris, fmt.Sprintf("\"%s\"", uri))
@@ -86,7 +86,7 @@ var _ = Describe("Desiring some LRPs", func() {
 	}
 
 	metaFor := func(uris []string) map[string]string {
-		jsonUris := asJsonArray(uris)
+		jsonUris := asJSONArray(uris)
 		return map[string]string{
 			cf.VcapAppUris: fmt.Sprintf("%s", jsonUris),
 		}
@@ -196,7 +196,7 @@ var _ = Describe("Desiring some LRPs", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				for i, service := range services.Items {
-					expectedVcapApp := asJsonArray(lrpUris[i])
+					expectedVcapApp := asJSONArray(lrpUris[i])
 					Expect(service.Annotations["routes"]).To(Equal(expectedVcapApp))
 				}
 			})

@@ -33,7 +33,7 @@ type Endpoint struct {
 
 //Config is used to configure the creation of a client
 type Config struct {
-	ApiAddress          string `json:"api_url"`
+	APIAddress          string `json:"api_url"`
 	Username            string `json:"user"`
 	Password            string `json:"password"`
 	ClientID            string `json:"client_id"`
@@ -60,7 +60,7 @@ type request struct {
 //Need to be remove in close future
 func DefaultConfig() *Config {
 	return &Config{
-		ApiAddress:        "http://api.bosh-lite.com",
+		APIAddress:        "http://api.bosh-lite.com",
 		Username:          "admin",
 		Password:          "admin",
 		Token:             "",
@@ -84,8 +84,8 @@ func NewClient(config *Config) (client *Client, err error) {
 	// bootstrap the config
 	defConfig := DefaultConfig()
 
-	if len(config.ApiAddress) == 0 {
-		config.ApiAddress = defConfig.ApiAddress
+	if len(config.APIAddress) == 0 {
+		config.APIAddress = defConfig.APIAddress
 	}
 
 	if len(config.Username) == 0 {
@@ -231,7 +231,7 @@ func getInfo(api string, httpClient *http.Client) (*Endpoint, error) {
 func (c *Client) NewRequest(method, path string) *request {
 	r := &request{
 		method: method,
-		url:    c.Config.ApiAddress + path,
+		url:    c.Config.APIAddress + path,
 		params: make(map[string][]string),
 	}
 	return r
@@ -299,7 +299,7 @@ func (c *Client) refreshEndpoint() error {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, c.Config.HttpClient)
 
-	endpoint, err := getInfo(c.Config.ApiAddress, oauth2.NewClient(ctx, nil))
+	endpoint, err := getInfo(c.Config.APIAddress, oauth2.NewClient(ctx, nil))
 
 	if err != nil {
 		return errors.Wrap(err, "Could not get api /v2/info")

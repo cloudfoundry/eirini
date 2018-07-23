@@ -19,24 +19,24 @@ import (
 )
 
 func main() {
-	downloadUrl := os.Getenv(eirini.EnvDownloadUrl)
-	uploadUrl := os.Getenv(eirini.EnvUploadUrl)
-	appId := os.Getenv(eirini.EnvAppId)
-	stagingGuid := os.Getenv(eirini.EnvStagingGuid)
+	downloadURL := os.Getenv(eirini.EnvDownloadURL)
+	uploadURL := os.Getenv(eirini.EnvUploadURL)
+	appID := os.Getenv(eirini.EnvAppID)
+	stagingGUID := os.Getenv(eirini.EnvStagingGUID)
 	completionCallback := os.Getenv(eirini.EnvCompletionCallback)
 
 	username := os.Getenv(eirini.EnvCfUsername)
 	password := os.Getenv(eirini.EnvCfPassword)
-	apiAddress := os.Getenv(eirini.EnvApiAddress)
+	apiAddress := os.Getenv(eirini.EnvAPIAddress)
 	eiriniAddress := os.Getenv(eirini.EnvEiriniAddress)
 
-	fmt.Println("STARTING WITH:", downloadUrl, uploadUrl, appId, stagingGuid, completionCallback)
+	fmt.Println("STARTING WITH:", downloadURL, uploadURL, appID, stagingGUID, completionCallback)
 
 	annotation := cc_messages.StagingTaskAnnotation{
 		CompletionCallback: completionCallback,
 	}
 
-	annotationJson, err := json.Marshal(annotation)
+	annotationJSON, err := json.Marshal(annotation)
 	if err != nil {
 		os.Exit(1)
 	}
@@ -45,18 +45,18 @@ func main() {
 		SkipSslValidation: true,
 		Username:          username,
 		Password:          password,
-		ApiAddress:        apiAddress,
+		APIAddress:        apiAddress,
 	})
 
-	respondWithFailureAndExit(err, stagingGuid, annotationJson)
+	respondWithFailureAndExit(err, stagingGUID, annotationJSON)
 
 	installer := PackageInstaller{cfclient, &Unzipper{}}
 	uploader := Uploader{cfclient}
 
 	workspaceDir := "/workspace"
 
-	err = installer.Install(appId, workspaceDir)
-	respondWithFailureAndExit(err, stagingGuid, annotationJson)
+	err = installer.Install(appID, workspaceDir)
+	respondWithFailureAndExit(err, stagingGUID, annotationJSON)
 
 	err = execCmd(
 		"/packs/builder", []string{
@@ -65,21 +65,21 @@ func main() {
 			"-outputBuildArtifactsCache", "/cache/cache.tgz",
 			"-outputMetadata", "/out/result.json",
 		})
-	respondWithFailureAndExit(err, stagingGuid, annotationJson)
+	respondWithFailureAndExit(err, stagingGUID, annotationJSON)
 
 	fmt.Println("Start Upload Process.")
-	err = uploader.Upload(appId, "/out/droplet.tgz")
-	respondWithFailureAndExit(err, stagingGuid, annotationJson)
+	err = uploader.Upload(appID, "/out/droplet.tgz")
+	respondWithFailureAndExit(err, stagingGUID, annotationJSON)
 
 	fmt.Println("Upload successful!")
-	result, err := readResultJson("/out/result.json")
-	respondWithFailureAndExit(err, stagingGuid, annotationJson)
+	result, err := readResultJSON("/out/result.json")
+	respondWithFailureAndExit(err, stagingGUID, annotationJSON)
 
 	cbResponse := models.TaskCallbackResponse{
-		TaskGuid:   stagingGuid,
+		TaskGuid:   stagingGUID,
 		Result:     string(result[:len(result)]),
 		Failed:     false,
-		Annotation: string(annotationJson[:len(annotationJson)]),
+		Annotation: string(annotationJSON[:len(annotationJSON)]),
 	}
 
 	err = stagingCompleteResponse(eiriniAddress, cbResponse)
@@ -91,7 +91,7 @@ func main() {
 	fmt.Println("Staging completed")
 }
 
-func readResultJson(path string) ([]byte, error) {
+func readResultJSON(path string) ([]byte, error) {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		return []byte{}, errors.Wrap(err, "failed to read result.json")
@@ -127,16 +127,16 @@ func stagingCompleteResponse(eiriniAddress string, callbackResponse models.TaskC
 	return nil
 }
 
-func respondWithFailureAndExit(err error, stagingGuid string, annotationJson []byte) {
+func respondWithFailureAndExit(err error, stagingGUID string, annotationJSON []byte) {
 	if err != nil {
 		cbResponse := models.TaskCallbackResponse{
-			TaskGuid:      stagingGuid,
+			TaskGuid:      stagingGUID,
 			Failed:        true,
 			FailureReason: err.Error(),
-			Annotation:    string(annotationJson[:len(annotationJson)]),
+			Annotation:    string(annotationJSON[:len(annotationJSON)]),
 		}
 
-		if completeErr := stagingCompleteResponse(stagingGuid, cbResponse); completeErr != nil {
+		if completeErr := stagingCompleteResponse(stagingGUID, cbResponse); completeErr != nil {
 			fmt.Println("Error processsing completion callback:", completeErr.Error())
 			os.Exit(1)
 		}

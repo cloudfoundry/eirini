@@ -13,12 +13,12 @@ type Converter interface {
 	Convert(request cf.DesireLRPRequest) (opi.LRP, error)
 }
 
-func dropletDownloadUri(baseUrl string, appGuid string) string {
-	return fmt.Sprintf("%s/v2/apps/%s/droplet/download", baseUrl, appGuid)
+func dropletDownloadURI(baseURL string, appGUID string) string {
+	return fmt.Sprintf("%s/v2/apps/%s/droplet/download", baseURL, appGUID)
 }
 
-func registryStageUri(baseUrl string, space string, appname string, guid string) string {
-	return fmt.Sprintf("%s/v2/%s/%s/blobs/?guid=%s", baseUrl, space, appname, guid)
+func registryStageURI(baseURL string, space string, appname string, guid string) string {
+	return fmt.Sprintf("%s/v2/%s/%s/blobs/?guid=%s", baseURL, space, appname, guid)
 }
 
 func parseVcapApplication(vcap string) (cf.VcapApp, error) {

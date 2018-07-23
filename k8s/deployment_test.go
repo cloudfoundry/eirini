@@ -93,18 +93,18 @@ func getDeploymentNames(deployments *v1beta1.DeploymentList) []string {
 
 func toDeployment(lrp opi.LRP) *v1beta1.Deployment {
 	deployment := &v1beta1.Deployment{}
-	deployment.Name = "test-app-" + lrp.Metadata[cf.ProcessGuid]
+	deployment.Name = "test-app-" + lrp.Metadata[cf.ProcessGUID]
 	deployment.Annotations = map[string]string{
-		cf.ProcessGuid: lrp.Metadata[cf.ProcessGuid],
+		cf.ProcessGUID: lrp.Metadata[cf.ProcessGUID],
 		cf.LastUpdated: lrp.Metadata[cf.LastUpdated],
 	}
 	return deployment
 }
 
-func createLRP(processGuid, lastUpdated string) opi.LRP {
+func createLRP(processGUID, lastUpdated string) opi.LRP {
 	return opi.LRP{
 		Metadata: map[string]string{
-			cf.ProcessGuid: processGuid,
+			cf.ProcessGUID: processGUID,
 			cf.LastUpdated: lastUpdated,
 		},
 	}

@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/eirini/eirinifakes"
 	"code.cloudfoundry.org/eirini/opi"
 	stager "code.cloudfoundry.org/eirini/st8ger"
+	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/julienschmidt/httprouter"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,7 +27,7 @@ var _ = Describe("Handler", func() {
 		stagingClient      *eirinifakes.FakeSt8ger
 		responseRecorder   *httptest.ResponseRecorder
 		stagingHandler     *stager.StagingHandler
-		stagingRequestJson string
+		stagingRequestJSON string
 	)
 
 	BeforeEach(func() {
@@ -36,7 +36,7 @@ var _ = Describe("Handler", func() {
 		backend = new(eirinifakes.FakeBackend)
 		stagingClient = new(eirinifakes.FakeSt8ger)
 		stagingHandler = stager.NewStagingHandler(stagingClient, backend, logger)
-		stagingRequestJson = `{"app_id":"myapp", "lifecycle":"kube-backend"}`
+		stagingRequestJSON = `{"app_id":"myapp", "lifecycle":"kube-backend"}`
 	})
 
 	Context("Router", func() {
@@ -48,7 +48,7 @@ var _ = Describe("Handler", func() {
 		Context("When it receives a staging request", func() {
 
 			It("returns an Accepted response", func() {
-				req, err := http.NewRequest("PUT", ts.URL+"/v1/staging/myguid", bytes.NewReader([]byte(stagingRequestJson)))
+				req, err := http.NewRequest("PUT", ts.URL+"/v1/staging/myguid", bytes.NewReader([]byte(stagingRequestJSON)))
 				Expect(err).ToNot(HaveOccurred())
 				res, err := client.Do(req)
 				Expect(err).ToNot(HaveOccurred())
@@ -88,7 +88,7 @@ var _ = Describe("Handler", func() {
 		)
 
 		BeforeEach(func() {
-			req, err = http.NewRequest("PUT", "/v1/staging/myguid", bytes.NewReader([]byte(stagingRequestJson)))
+			req, err = http.NewRequest("PUT", "/v1/staging/myguid", bytes.NewReader([]byte(stagingRequestJSON)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 

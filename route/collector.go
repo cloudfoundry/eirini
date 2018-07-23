@@ -14,7 +14,7 @@ const (
 	tlsPort  = 443
 )
 
-type RouteCollector struct {
+type Collector struct {
 	Client        kubernetes.Interface
 	Scheduler     TaskScheduler
 	Work          chan<- []RegistryMessage
@@ -22,11 +22,11 @@ type RouteCollector struct {
 	KubeEndpoint  string
 }
 
-func (r *RouteCollector) Start() {
+func (r *Collector) Start() {
 	r.Scheduler.Schedule(r.collectRoutes)
 }
 
-func (r *RouteCollector) collectRoutes() error {
+func (r *Collector) collectRoutes() error {
 	ingressList, err := r.Client.ExtensionsV1beta1().Ingresses(r.KubeNamespace).List(av1.ListOptions{})
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func (r *RouteCollector) collectRoutes() error {
 	return nil
 }
 
-func (r *RouteCollector) createRegistryMessage(rule *ext.IngressRule) (RegistryMessage, error) {
+func (r *Collector) createRegistryMessage(rule *ext.IngressRule) (RegistryMessage, error) {
 	if len(rule.HTTP.Paths) == 0 {
 		return RegistryMessage{}, errors.New("paths must not be empty slice")
 	}
@@ -62,13 +62,13 @@ func (r *RouteCollector) createRegistryMessage(rule *ext.IngressRule) (RegistryM
 	return RegistryMessage{
 		Host:    r.KubeEndpoint,
 		Port:    httpPort,
-		TlsPort: tlsPort,
+		TLSPort: tlsPort,
 		URIs:    routes,
 		App:     serviceName,
 	}, nil
 }
 
-func (r *RouteCollector) getRoutes(serviceName string) ([]string, error) {
+func (r *Collector) getRoutes(serviceName string) ([]string, error) {
 	service, err := r.Client.CoreV1().Services(r.KubeNamespace).Get(serviceName, av1.GetOptions{})
 	if err != nil {
 		return []string{}, err

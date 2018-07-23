@@ -72,7 +72,7 @@ func getServicesNames(services *v1.ServiceList) []string {
 func toService(lrp opi.LRP, namespace string) *v1.Service {
 	service := &v1.Service{}
 	service.Kind = "service"
-	service.Name = eirini.GetInternalServiceName(lrp.Metadata[cf.ProcessGuid])
+	service.Name = eirini.GetInternalServiceName(lrp.Metadata[cf.ProcessGUID])
 	service.Namespace = namespace
 
 	return service

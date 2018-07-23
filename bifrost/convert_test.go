@@ -37,9 +37,9 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			ghttp.VerifyRequest("POST", "/v2/transformers/bumblebee/blobs/"),
 		)
 		desireLRPRequest = cf.DesireLRPRequest{
-			ProcessGuid:    "b194809b-88c0-49af-b8aa-69da097fc360-2fdc448f-6bac-4085-9426-87d0124c433a",
+			ProcessGUID:    "b194809b-88c0-49af-b8aa-69da097fc360-2fdc448f-6bac-4085-9426-87d0124c433a",
 			DropletHash:    "the-droplet-hash",
-			DockerImageUrl: "the-image-url",
+			DockerImageURL: "the-image-url",
 			LastUpdated:    "23534635232.3",
 			NumInstances:   3,
 			Environment: map[string]string{
@@ -71,12 +71,12 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 			It("should store the VCAP env variable as metadata", func() {
 				Expect(lrp.Metadata[cf.VcapAppName]).To(Equal("bumblebee"))
-				Expect(lrp.Metadata[cf.VcapAppId]).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360"))
+				Expect(lrp.Metadata[cf.VcapAppID]).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360"))
 				Expect(lrp.Metadata[cf.VcapVersion]).To(Equal("something-something-uuid"))
 			})
 
 			It("should store the process guid in metadata", func() {
-				Expect(lrp.Metadata[cf.ProcessGuid]).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360-2fdc448f-6bac-4085-9426-87d0124c433a"))
+				Expect(lrp.Metadata[cf.ProcessGUID]).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360-2fdc448f-6bac-4085-9426-87d0124c433a"))
 			})
 
 			It("should store the last updated timestamp in metadata", func() {
@@ -94,7 +94,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 		Context("When the Docker Image Url is not provided", func() {
 			BeforeEach(func() {
-				desireLRPRequest.DockerImageUrl = ""
+				desireLRPRequest.DockerImageURL = ""
 			})
 
 			Context("when the staging is successful", func() {
@@ -115,7 +115,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	Context("When the request fails to be converted", func() {
 		Context("when registry staging fails", func() {
 			BeforeEach(func() {
-				desireLRPRequest.DockerImageUrl = ""
+				desireLRPRequest.DockerImageURL = ""
 			})
 
 			Context("because of invalid url", func() {

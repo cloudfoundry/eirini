@@ -30,9 +30,9 @@ func (a *AppHandler) Desire(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 
-	processGuid := ps.ByName("process_guid")
-	if processGuid != request.ProcessGuid {
-		a.logger.Error("process-guid-mismatch", nil, lager.Data{"desired-app-process-guid": request.ProcessGuid})
+	processGUID := ps.ByName("process_guid")
+	if processGUID != request.ProcessGUID {
+		a.logger.Error("process-guid-mismatch", nil, lager.Data{"desired-app-process-guid": request.ProcessGUID})
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -73,8 +73,8 @@ func (a *AppHandler) List(w http.ResponseWriter, r *http.Request, ps httprouter.
 }
 
 func (a *AppHandler) Get(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	processGuid := ps.ByName("process_guid")
-	desiredLRP := a.bifrost.Get(r.Context(), processGuid)
+	processGUID := ps.ByName("process_guid")
+	desiredLRP := a.bifrost.Get(r.Context(), processGUID)
 	if desiredLRP == nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -124,12 +124,12 @@ func (a *AppHandler) Update(w http.ResponseWriter, r *http.Request, ps httproute
 }
 
 func (a *AppHandler) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	processGuid := ps.ByName("process_guid")
-	if len(processGuid) > 36 {
-		processGuid = processGuid[:36]
+	processGUID := ps.ByName("process_guid")
+	if len(processGUID) > 36 {
+		processGUID = processGUID[:36]
 	}
 
-	err := a.bifrost.Stop(r.Context(), processGuid)
+	err := a.bifrost.Stop(r.Context(), processGUID)
 	if err != nil {
 		a.logError("stop-app-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)

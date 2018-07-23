@@ -18,7 +18,7 @@ import (
 var _ = Describe("PackageInstaller", func() {
 	var (
 		err         error
-		appId       string
+		appID       string
 		targetDir   string
 		zipFilePath string
 		installer   *PackageInstaller
@@ -27,16 +27,16 @@ var _ = Describe("PackageInstaller", func() {
 	)
 
 	BeforeEach(func() {
-		appId = "guid"
+		appID = "guid"
 		targetDir = "testdata"
-		zipFilePath = filepath.Join(targetDir, appId) + ".zip"
+		zipFilePath = filepath.Join(targetDir, appID) + ".zip"
 		cfclient = new(eirinifakes.FakeCfClient)
 		extractor = new(eirinifakes.FakeExtractor)
 		installer = &PackageInstaller{cfclient, extractor}
 	})
 
 	JustBeforeEach(func() {
-		err = installer.Install(appId, targetDir)
+		err = installer.Install(appID, targetDir)
 	})
 
 	Context("Install", func() {
@@ -55,9 +55,9 @@ var _ = Describe("PackageInstaller", func() {
 
 		assertCfclientInteractions := func() {
 			It("should use the cfclient to download the file", func() {
-				actualAppId := cfclient.GetAppBitsByAppGuidArgsForCall(0)
+				actualAppID := cfclient.GetAppBitsByAppGuidArgsForCall(0)
 				Expect(cfclient.GetAppBitsByAppGuidCallCount()).To(Equal(1))
-				Expect(actualAppId).To(Equal(appId))
+				Expect(actualAppID).To(Equal(appID))
 			})
 		}
 
@@ -77,14 +77,14 @@ var _ = Describe("PackageInstaller", func() {
 			}, err)
 		}
 
-		Context("When an empty appId is provided", func() {
+		Context("When an empty appID is provided", func() {
 			BeforeEach(func() {
-				appId = ""
+				appID = ""
 			})
 
 			It("should return an error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(ContainSubstring("empty appId provided")))
+				Expect(err).To(MatchError(ContainSubstring("empty appID provided")))
 			})
 			assertNoInteractionsWithCfclient()
 			assertNoInteractionsWithExtractor()

@@ -100,7 +100,7 @@ var _ = Describe("Ingress", func() {
 		err = ingressManager.UpdateIngress(namespace, lrp)
 	})
 
-	verifyTlsHosts := func(tlsHosts []string) {
+	verifyTLSHosts := func(tlsHosts []string) {
 		ingress, _ := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 
 		Expect(ingress.Spec.TLS).To(Equal([]ext.IngressTLS{
@@ -132,7 +132,7 @@ var _ = Describe("Ingress", func() {
 			})
 
 			It("should add a TLS host", func() {
-				verifyTlsHosts(appURIs)
+				verifyTLSHosts(appURIs)
 			})
 		})
 
@@ -194,7 +194,7 @@ var _ = Describe("Ingress", func() {
 
 			It("should add a TLS host", func() {
 				hosts := append([]string{"existing-app"}, appURIs...)
-				verifyTlsHosts(hosts)
+				verifyTLSHosts(hosts)
 			})
 		})
 

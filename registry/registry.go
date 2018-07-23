@@ -23,7 +23,7 @@ type BlobRef struct {
 
 type BlobStore interface {
 	Put(buf io.Reader) (digest string, size int64, err error)
-	PutWithId(guid string, buf io.Reader) (digest string, size int64, err error)
+	PutWithID(guid string, buf io.Reader) (digest string, size int64, err error)
 	Has(digest string) bool
 	Get(digest string, dest io.Writer) error
 }
@@ -198,7 +198,7 @@ func (s Stager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, _, err = s.blobs.PutWithId(guid, layerTar)
+	_, _, err = s.blobs.PutWithID(guid, layerTar)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

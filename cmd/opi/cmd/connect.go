@@ -24,6 +24,8 @@ import (
 	"github.com/JulzDiverse/cfclient"
 	nats "github.com/nats-io/go-nats"
 	"github.com/spf13/cobra"
+
+	// https://github.com/kubernetes/client-go/issues/345
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
@@ -67,7 +69,7 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 		SkipSslValidation: cfg.Properties.SkipSslValidation,
 		Username:          cfg.Properties.CfUsername,
 		Password:          cfg.Properties.CfPassword,
-		ApiAddress:        cfg.Properties.CcApi,
+		APIAddress:        cfg.Properties.CcAPI,
 	}
 
 	cfClient, err := cfclient.NewClient(cfClientConfig)
@@ -129,7 +131,7 @@ func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP 
 
 	workChan := make(chan []route.RegistryMessage)
 
-	rc := route.RouteCollector{
+	rc := route.Collector{
 		Client:        clientset,
 		Work:          workChan,
 		Scheduler:     &route.TickerTaskScheduler{time.NewTicker(time.Second * 15)},
@@ -137,7 +139,7 @@ func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP 
 		KubeEndpoint:  kubeEndpoint,
 	}
 
-	re := route.NewRouteEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{})
+	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{})
 
 	go re.Start()
 	go rc.Start()

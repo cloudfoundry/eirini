@@ -16,31 +16,31 @@ type PackageInstaller struct {
 	Extractor eirini.Extractor
 }
 
-func (d *PackageInstaller) Install(appId string, targetDir string) error {
-	if appId == "" {
-		return errors.New("empty appId provided")
+func (d *PackageInstaller) Install(appID string, targetDir string) error {
+	if appID == "" {
+		return errors.New("empty appID provided")
 	}
 
 	if targetDir == "" {
 		return errors.New("empty targetDir provided")
 	}
 
-	zipPath := filepath.Join(targetDir, appId) + ".zip"
-	if err := d.download(appId, zipPath); err != nil {
+	zipPath := filepath.Join(targetDir, appID) + ".zip"
+	if err := d.download(appID, zipPath); err != nil {
 		return err
 	}
 
 	return d.Extractor.Extract(zipPath, targetDir)
 }
 
-func (d *PackageInstaller) download(appId string, filepath string) error {
+func (d *PackageInstaller) download(appID string, filepath string) error {
 	file, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	resp, err := d.Cfclient.GetAppBitsByAppGuid(appId)
+	resp, err := d.Cfclient.GetAppBitsByAppGuid(appID)
 	if err != nil {
 		return errors.Wrap(err, "failed to perform request")
 	}

@@ -17,13 +17,13 @@ type Bifrost struct {
 	Logger    lager.Logger
 }
 
-func (c *Bifrost) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
-	desiredLRP, err := c.Converter.Convert(request)
+func (b *Bifrost) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
+	desiredLRP, err := b.Converter.Convert(request)
 	if err != nil {
-		c.Logger.Error("failed-to-convert-request", err, lager.Data{"desire-lrp-request": request})
+		b.Logger.Error("failed-to-convert-request", err, lager.Data{"desire-lrp-request": request})
 		return err
 	}
-	return c.Desirer.Desire(ctx, []opi.LRP{desiredLRP})
+	return b.Desirer.Desire(ctx, []opi.LRP{desiredLRP})
 }
 
 func (b *Bifrost) List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error) {
@@ -42,7 +42,7 @@ func toDesiredLRPSchedulingInfo(lrps []opi.LRP) []*models.DesiredLRPSchedulingIn
 	infos := []*models.DesiredLRPSchedulingInfo{}
 	for _, l := range lrps {
 		info := &models.DesiredLRPSchedulingInfo{}
-		info.DesiredLRPKey.ProcessGuid = l.Metadata[cf.ProcessGuid]
+		info.DesiredLRPKey.ProcessGuid = l.Metadata[cf.ProcessGUID]
 		info.Annotation = l.Metadata[cf.LastUpdated]
 		infos = append(infos, info)
 	}

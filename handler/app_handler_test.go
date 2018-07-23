@@ -56,7 +56,7 @@ var _ = Describe("AppHandler", func() {
 
 		It("should call the bifrost with the desired LRPs request from Cloud Controller", func() {
 			expectedRequest := cf.DesireLRPRequest{
-				ProcessGuid:  "myguid",
+				ProcessGUID:  "myguid",
 				StartCommand: "./start",
 				Environment:  map[string]string{"env_var": "env_var_value"},
 				NumInstances: 5,
@@ -87,7 +87,7 @@ var _ = Describe("AppHandler", func() {
 			appHandler           *AppHandler
 			responseRecorder     *httptest.ResponseRecorder
 			req                  *http.Request
-			expectedJsonResponse string
+			expectedJSONResponse string
 			schedInfos           []*models.DesiredLRPSchedulingInfo
 		)
 
@@ -104,7 +104,7 @@ var _ = Describe("AppHandler", func() {
 			expectedResponse := models.DesiredLRPSchedulingInfosResponse{
 				DesiredLrpSchedulingInfos: schedInfos,
 			}
-			expectedJsonResponse, _ = (&jsonpb.Marshaler{Indent: "", OrigName: true}).MarshalToString(&expectedResponse)
+			expectedJSONResponse, _ = (&jsonpb.Marshaler{Indent: "", OrigName: true}).MarshalToString(&expectedResponse)
 		})
 
 		Context("When there are existing apps", func() {
@@ -114,7 +114,7 @@ var _ = Describe("AppHandler", func() {
 				body, err := readBody(responseRecorder.Body)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(strings.Trim(string(body), "\n")).To(Equal(string(expectedJsonResponse)))
+				Expect(strings.Trim(string(body), "\n")).To(Equal(string(expectedJSONResponse)))
 			})
 		})
 
@@ -130,7 +130,7 @@ var _ = Describe("AppHandler", func() {
 				body, err := readBody(responseRecorder.Body)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(strings.Trim(string(body), "\n")).To(Equal(string(expectedJsonResponse)))
+				Expect(strings.Trim(string(body), "\n")).To(Equal(string(expectedJSONResponse)))
 			})
 		})
 	})
@@ -327,8 +327,8 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		It("should trim the process guid", func() {
-			_, appGuid := bifrost.StopArgsForCall(0)
-			Expect(appGuid).To(Equal("a-really-really-really-long-process-"))
+			_, appGUID := bifrost.StopArgsForCall(0)
+			Expect(appGUID).To(Equal("a-really-really-really-long-process-"))
 		})
 
 		Context("when app stop is not successful", func() {

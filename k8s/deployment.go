@@ -50,7 +50,7 @@ func toLRPs(deployments *v1beta1.DeploymentList) []opi.LRP {
 	for _, d := range deployments.Items {
 		lrp := opi.LRP{
 			Metadata: map[string]string{
-				cf.ProcessGuid: d.Annotations[cf.ProcessGuid],
+				cf.ProcessGUID: d.Annotations[cf.ProcessGUID],
 				cf.LastUpdated: d.Annotations[cf.LastUpdated],
 			},
 		}

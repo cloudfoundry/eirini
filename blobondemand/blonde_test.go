@@ -27,21 +27,21 @@ func TestSaveLoad(t *testing.T) {
 		t.Fatalf("expected to retrieve 'here-is-some-content' but was '%s'", buf.String())
 	}
 
-	keyForId, _, err := store.PutWithId("my-id", bytes.NewReader([]byte("here-is-some-content")))
+	keyForID, _, err := store.PutWithID("my-id", bytes.NewReader([]byte("here-is-some-content")))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if keyForId != "sha256:e0c6189f72b0e909e963116fb71625186098e75a843abffc6f7f5ab53df8cdd3" {
-		t.Fatalf("expected key to match sha of content but was %s", keyForId)
+	if keyForID != "sha256:e0c6189f72b0e909e963116fb71625186098e75a843abffc6f7f5ab53df8cdd3" {
+		t.Fatalf("expected key to match sha of content but was %s", keyForID)
 	}
 
-	var bufForId bytes.Buffer
-	if err := store.Get("my-id", &bufForId); err != nil {
+	var bufForID bytes.Buffer
+	if err := store.Get("my-id", &bufForID); err != nil {
 		t.Fatal(err)
 	}
 
-	if bufForId.String() != "here-is-some-content" {
-		t.Fatalf("expected to retrieve 'here-is-some-content' but was '%s'", bufForId.String())
+	if bufForID.String() != "here-is-some-content" {
+		t.Fatalf("expected to retrieve 'here-is-some-content' but was '%s'", bufForID.String())
 	}
 }

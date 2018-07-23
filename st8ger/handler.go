@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	"code.cloudfoundry.org/eirini"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -42,8 +42,8 @@ func NewStagingHandler(stager eirini.St8ger, backend eirini.Backend, logger lage
 }
 
 func (handler *StagingHandler) Stage(resp http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	stagingGuid := ps.ByName("staging_guid")
-	logger := handler.logger.Session("staging-request", lager.Data{"staging-guid": stagingGuid})
+	stagingGUID := ps.ByName("staging_guid")
+	logger := handler.logger.Session("staging-request", lager.Data{"staging-guid": stagingGUID})
 
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -67,7 +67,7 @@ func (handler *StagingHandler) Stage(resp http.ResponseWriter, req *http.Request
 
 	logger.Info("environment", lager.Data{"keys": envVars})
 
-	stagingTask, err := handler.backend.CreateStagingTask(stagingGuid, stagingRequest)
+	stagingTask, err := handler.backend.CreateStagingTask(stagingGUID, stagingRequest)
 	if err != nil {
 		logger.Error("building-receipe-failed", err)
 		resp.WriteHeader(http.StatusInternalServerError)
@@ -85,8 +85,8 @@ func (handler *StagingHandler) Stage(resp http.ResponseWriter, req *http.Request
 }
 
 func (handler *StagingHandler) StagingComplete(res http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	stagingGuid := ps.ByName("staging_guid")
-	logger := handler.logger.Session("staging-complete", lager.Data{"staging-guid": stagingGuid})
+	stagingGUID := ps.ByName("staging_guid")
+	logger := handler.logger.Session("staging-complete", lager.Data{"staging-guid": stagingGUID})
 
 	task := &models.TaskCallbackResponse{}
 	err := json.NewDecoder(req.Body).Decode(task)
@@ -111,14 +111,14 @@ func (handler *StagingHandler) StagingComplete(res http.ResponseWriter, req *htt
 		return
 	}
 
-	responseJson, err := json.Marshal(response)
+	responseJSON, err := json.Marshal(response)
 	if err != nil {
 		res.WriteHeader(http.StatusBadRequest)
 		logger.Error("get-staging-response-failed", err)
 		return
 	}
 
-	request, err := http.NewRequest("POST", annotation.CompletionCallback, bytes.NewBuffer(responseJson))
+	request, err := http.NewRequest("POST", annotation.CompletionCallback, bytes.NewBuffer(responseJSON))
 	if err != nil {
 		return
 	}

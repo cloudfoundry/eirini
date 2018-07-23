@@ -56,9 +56,8 @@ func (i *KubeIngressManager) UpdateIngress(namespace string, lrp opi.LRP) error 
 
 		_, err = i.client.ExtensionsV1beta1().Ingresses(namespace).Update(ingress)
 		return err
-	} else {
-		return i.createIngress(namespace, lrp.Name, uriList)
 	}
+	return i.createIngress(namespace, lrp.Name, uriList)
 }
 
 func (i *KubeIngressManager) createIngress(namespace, lrpName string, uriList []string) error {

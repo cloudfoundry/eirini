@@ -119,11 +119,11 @@ var _ = Describe("Bifrost", func() {
 			}
 		})
 
-		createLRP := func(name, processGuid, lastUpdated string) opi.LRP {
+		createLRP := func(name, processGUID, lastUpdated string) opi.LRP {
 			return opi.LRP{
 				Name: name,
 				Metadata: map[string]string{
-					cf.ProcessGuid: processGuid,
+					cf.ProcessGUID: processGUID,
 					cf.LastUpdated: lastUpdated,
 				},
 			}

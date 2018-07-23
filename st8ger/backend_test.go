@@ -3,12 +3,12 @@ package st8ger_test
 import (
 	"encoding/json"
 
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/st8ger"
+	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -25,7 +25,7 @@ var _ = Describe("Backend", func() {
 		config := eirini.BackendConfig{
 			CfUsername: "admin",
 			CfPassword: "admin",
-			ApiAddress: "api.mycf.com",
+			APIAddress: "api.mycf.com",
 		}
 
 		backend = st8ger.NewBackend(config, logger)

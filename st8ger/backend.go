@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 
 	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
 type backend struct {
@@ -22,8 +22,8 @@ func NewBackend(config eirini.BackendConfig, logger lager.Logger) eirini.Backend
 	}
 }
 
-func (b backend) CreateStagingTask(stagingGuid string, request cc_messages.StagingRequestFromCC) (opi.Task, error) {
-	logger := b.logger.Session("create-staging-task", lager.Data{"app-id": request.AppId, "staging-guid": stagingGuid})
+func (b backend) CreateStagingTask(stagingGUID string, request cc_messages.StagingRequestFromCC) (opi.Task, error) {
+	logger := b.logger.Session("create-staging-task", lager.Data{"app-id": request.AppId, "staging-guid": stagingGUID})
 	logger.Info("staging-request")
 
 	var lifecycleData cc_messages.BuildpackStagingData
@@ -35,14 +35,14 @@ func (b backend) CreateStagingTask(stagingGuid string, request cc_messages.Stagi
 	stagingTask := opi.Task{
 		Image: "diegoteam/recipe:build",
 		Env: map[string]string{
-			eirini.EnvDownloadUrl:        lifecycleData.AppBitsDownloadUri,
-			eirini.EnvUploadUrl:          lifecycleData.DropletUploadUri,
-			eirini.EnvAppId:              request.LogGuid,
-			eirini.EnvStagingGuid:        stagingGuid,
+			eirini.EnvDownloadURL:        lifecycleData.AppBitsDownloadUri,
+			eirini.EnvUploadURL:          lifecycleData.DropletUploadUri,
+			eirini.EnvAppID:              request.LogGuid,
+			eirini.EnvStagingGUID:        stagingGUID,
 			eirini.EnvCompletionCallback: request.CompletionCallback,
 			eirini.EnvCfUsername:         b.config.CfUsername,
 			eirini.EnvCfPassword:         b.config.CfPassword,
-			eirini.EnvApiAddress:         b.config.ApiAddress,
+			eirini.EnvAPIAddress:         b.config.APIAddress,
 			eirini.EnvEiriniAddress:      b.config.EiriniAddress,
 		},
 	}

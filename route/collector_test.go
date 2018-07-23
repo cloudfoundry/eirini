@@ -18,11 +18,11 @@ import (
 
 var _ = Describe("Collector", func() {
 
-	Describe("RouteCollector", func() {
+	Describe("Collector", func() {
 		Context("Start collecting routes", func() {
 
 			var (
-				collector   *RouteCollector
+				collector   *Collector
 				fakeClient  kubernetes.Interface
 				scheduler   *routefakes.FakeTaskScheduler
 				workChannel chan []RegistryMessage
@@ -40,7 +40,7 @@ var _ = Describe("Collector", func() {
 			)
 
 			// handcraft json in order not to mirror the production implementation
-			asJsonArray := func(uris []string) string {
+			asJSONArray := func(uris []string) string {
 				quotedUris := []string{}
 				for _, uri := range uris {
 					quotedUris = append(quotedUris, fmt.Sprintf("\"%s\"", uri))
@@ -56,7 +56,7 @@ var _ = Describe("Collector", func() {
 				service.Namespace = namespace
 
 				service.Annotations = map[string]string{
-					"routes": asJsonArray(routes),
+					"routes": asJSONArray(routes),
 				}
 
 				return service
@@ -109,7 +109,7 @@ var _ = Describe("Collector", func() {
 			})
 
 			JustBeforeEach(func() {
-				collector = &RouteCollector{
+				collector = &Collector{
 					Client:        fakeClient,
 					Scheduler:     scheduler,
 					Work:          workChannel,
@@ -134,7 +134,7 @@ var _ = Describe("Collector", func() {
 						Host:    kubeEndpoint,
 						URIs:    routes,
 						Port:    httpPort,
-						TlsPort: tlsPort,
+						TLSPort: tlsPort,
 						App:     serviceName,
 					},
 				}
