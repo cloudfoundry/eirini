@@ -55,10 +55,7 @@ func (d *Desirer) Desire(ctx context.Context, lrps []opi.LRP) error {
 			return err
 		}
 
-		service, err := exposeDeployment(lrp, d.KubeNamespace)
-		if err != nil {
-			return err
-		}
+		service := exposeDeployment(lrp, d.KubeNamespace)
 
 		if _, err = d.Client.CoreV1().Services(d.KubeNamespace).Create(service); err != nil {
 			return err
@@ -187,7 +184,7 @@ func assertSingleContainer(containers []v1.Container) {
 	}
 }
 
-func exposeDeployment(lrp opi.LRP, namespace string) (*v1.Service, error) {
+func exposeDeployment(lrp opi.LRP, namespace string) *v1.Service {
 	service := &v1.Service{
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
@@ -220,7 +217,7 @@ func exposeDeployment(lrp opi.LRP, namespace string) (*v1.Service, error) {
 		"routes": lrp.Metadata[cf.VcapAppUris],
 	}
 
-	return service, nil
+	return service
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {

@@ -16,6 +16,8 @@ linters-settings:
   maligned:
     # print struct with more effective memory layout
     suggest-new: true
+  lll:
+    line-length: 512
 
 linters:
   enable-all: true

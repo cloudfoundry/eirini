@@ -85,9 +85,8 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	syncLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 
 	kubeNamespace := cfg.Properties.KubeNamespace
-	kubeEndpoint := cfg.Properties.KubeEndpoint
 
-	ingressManager := k8s.NewIngressManager(clientset, kubeEndpoint)
+	ingressManager := k8s.NewIngressManager(clientset)
 	deploymentManager := k8s.NewDeploymentManager(clientset)
 	serviceManager := k8s.NewServiceManager(clientset)
 	desirer := k8s.NewDesirer(clientset, kubeNamespace, ingressManager, deploymentManager, serviceManager)

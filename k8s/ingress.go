@@ -24,14 +24,12 @@ type IngressManager interface {
 }
 
 type KubeIngressManager struct {
-	client   kubernetes.Interface
-	endpoint string
+	client kubernetes.Interface
 }
 
-func NewIngressManager(client kubernetes.Interface, kubeEndpoint string) IngressManager {
+func NewIngressManager(client kubernetes.Interface) IngressManager {
 	return &KubeIngressManager{
-		client:   client,
-		endpoint: kubeEndpoint,
+		client: client,
 	}
 }
 
@@ -85,7 +83,7 @@ func (i *KubeIngressManager) createIngress(namespace, lrpName string, uriList []
 func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrpName string, uriList []string) {
 	ingress.Spec.TLS[0].Hosts = append(ingress.Spec.TLS[0].Hosts, uriList...)
 
-	rules := createIngressRules(lrpName, uriList, i.endpoint)
+	rules := createIngressRules(lrpName, uriList)
 	ingress.Spec.Rules = append(ingress.Spec.Rules, rules...)
 }
 
@@ -98,7 +96,7 @@ func (i *KubeIngressManager) getIngress(ingresses *ext.IngressList) (*ext.Ingres
 	return &ext.Ingress{}, false
 }
 
-func createIngressRules(lrpName string, uriList []string, kubeEndpoint string) []ext.IngressRule {
+func createIngressRules(lrpName string, uriList []string) []ext.IngressRule {
 	rules := []ext.IngressRule{}
 
 	for _, uri := range uriList {

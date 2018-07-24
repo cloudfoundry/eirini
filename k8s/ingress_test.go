@@ -29,7 +29,6 @@ var _ = Describe("Ingress", func() {
 
 	const (
 		namespace         = "testing"
-		kubeEndpoint      = "alfheim"
 		ingressName       = "eirini"
 		ingressKind       = "Ingress"
 		ingressAPIVersion = "extensions/v1beta1"
@@ -43,7 +42,7 @@ var _ = Describe("Ingress", func() {
 	})
 
 	JustBeforeEach(func() {
-		ingressManager = NewIngressManager(fakeClient, kubeEndpoint)
+		ingressManager = NewIngressManager(fakeClient)
 	})
 
 	createIngressRule := func(serviceName string, appUri string) ext.IngressRule {
