@@ -18,130 +18,139 @@ import (
 
 var _ = Describe("Collector", func() {
 
-	Describe("Collector", func() {
-		Context("Start collecting routes", func() {
+	Context("Start collecting routes", func() {
 
-			var (
-				collector   *Collector
-				fakeClient  kubernetes.Interface
-				scheduler   *routefakes.FakeTaskScheduler
-				workChannel chan []RegistryMessage
-				routes      []string
-				host        string
-				serviceName string
-			)
+		var (
+			collector   *Collector
+			fakeClient  kubernetes.Interface
+			scheduler   *routefakes.FakeTaskScheduler
+			workChannel chan []RegistryMessage
+			routes      []string
+			host        string
+			serviceName string
+		)
 
-			const (
-				appName      = "dora"
-				namespace    = "testing"
-				kubeEndpoint = "asgard"
-				httpPort     = 80
-				tlsPort      = 443
-			)
+		const (
+			appName      = "dora"
+			namespace    = "testing"
+			kubeEndpoint = "asgard"
+			httpPort     = 80
+			tlsPort      = 443
+		)
 
-			// handcraft json in order not to mirror the production implementation
-			asJSONArray := func(uris []string) string {
-				quotedUris := []string{}
-				for _, uri := range uris {
-					quotedUris = append(quotedUris, fmt.Sprintf("\"%s\"", uri))
-				}
-
-				return fmt.Sprintf("[%s]", strings.Join(quotedUris, ","))
+		// handcraft json in order not to mirror the production implementation
+		asJSONArray := func(uris []string) string {
+			quotedUris := []string{}
+			for _, uri := range uris {
+				quotedUris = append(quotedUris, fmt.Sprintf("\"%s\"", uri))
 			}
 
-			createService := func(appName string) *v1.Service {
-				service := &v1.Service{}
+			return fmt.Sprintf("[%s]", strings.Join(quotedUris, ","))
+		}
 
-				service.Name = serviceName
-				service.Namespace = namespace
+		createService := func(appName string) *v1.Service {
+			service := &v1.Service{}
 
-				service.Annotations = map[string]string{
-					"routes": asJSONArray(routes),
-				}
+			service.Name = serviceName
+			service.Namespace = namespace
 
-				return service
+			service.Annotations = map[string]string{
+				"routes": asJSONArray(routes),
 			}
 
-			createIngress := func(serviceName string) *ext.Ingress {
-				rule := ext.IngressRule{
-					Host: host,
-					IngressRuleValue: ext.IngressRuleValue{
-						HTTP: &ext.HTTPIngressRuleValue{
-							Paths: []ext.HTTPIngressPath{
-								ext.HTTPIngressPath{
-									Backend: ext.IngressBackend{
-										ServiceName: serviceName,
-									},
+			return service
+		}
+
+		createRule := func(serviceName string) ext.IngressRule {
+			return ext.IngressRule{
+				Host: host,
+				IngressRuleValue: ext.IngressRuleValue{
+					HTTP: &ext.HTTPIngressRuleValue{
+						Paths: []ext.HTTPIngressPath{
+							ext.HTTPIngressPath{
+								Backend: ext.IngressBackend{
+									ServiceName: serviceName,
 								},
 							},
 						},
 					},
-				}
-
-				return &ext.Ingress{
-					Spec: ext.IngressSpec{
-						Rules: []ext.IngressRule{rule},
-					},
-				}
+				},
 			}
+		}
 
-			createFakes := func() {
-				ingress := createIngress(serviceName)
-				service := createService(appName)
-
-				_, err := fakeClient.CoreV1().Services(namespace).Create(service)
-				Expect(err).ToNot(HaveOccurred())
-
-				_, err = fakeClient.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
-				Expect(err).ToNot(HaveOccurred())
+		createIngress := func(serviceNames ...string) *ext.Ingress {
+			rules := []ext.IngressRule{}
+			for _, name := range serviceNames {
+				rule := createRule(name)
+				rules = append(rules, rule)
 			}
+			return &ext.Ingress{
+				Spec: ext.IngressSpec{
+					Rules: rules,
+				},
+			}
+		}
 
-			BeforeEach(func() {
-				serviceName = eirini.GetInternalServiceName(appName)
-				host = "app.bosh.com"
-				routes = []string{"route1.app.com", "route2.app.com"}
+		createFakes := func() {
+			service := createService(appName)
+			_, err := fakeClient.CoreV1().Services(namespace).Create(service)
+			Expect(err).ToNot(HaveOccurred())
 
-				scheduler = new(routefakes.FakeTaskScheduler)
-				workChannel = make(chan []RegistryMessage, 1)
-				fakeClient = fake.NewSimpleClientset()
+			serviceNoAnnotation := &v1.Service{}
+			serviceNoAnnotation.Name = "no-annotation"
+			serviceNoAnnotation.Namespace = namespace
 
-				createFakes()
-			})
+			_, err = fakeClient.CoreV1().Services(namespace).Create(serviceNoAnnotation)
+			Expect(err).ToNot(HaveOccurred())
 
-			JustBeforeEach(func() {
-				collector = &Collector{
-					Client:        fakeClient,
-					Scheduler:     scheduler,
-					Work:          workChannel,
-					KubeNamespace: namespace,
-					KubeEndpoint:  kubeEndpoint,
-				}
+			ingress := createIngress(serviceName, "no-annotation")
+			_, err = fakeClient.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
+			Expect(err).ToNot(HaveOccurred())
+		}
 
-				collector.Start()
-				task := scheduler.ScheduleArgsForCall(0)
-				err := task()
-				Expect(err).ToNot(HaveOccurred())
-			})
+		BeforeEach(func() {
+			serviceName = eirini.GetInternalServiceName(appName)
+			host = "app.bosh.com"
+			routes = []string{"route1.app.com", "route2.app.com"}
 
-			It("should use the scheduler to collect routes", func() {
-				Expect(scheduler.ScheduleCallCount()).To(Equal(1))
-			})
+			scheduler = new(routefakes.FakeTaskScheduler)
+			workChannel = make(chan []RegistryMessage, 1)
+			fakeClient = fake.NewSimpleClientset()
 
-			It("should send the correct RegistryMessage in the work channel", func() {
-				actualMessages := <-workChannel
-				expectedMessages := []RegistryMessage{
-					RegistryMessage{
-						Host:    kubeEndpoint,
-						URIs:    routes,
-						Port:    httpPort,
-						TLSPort: tlsPort,
-						App:     serviceName,
-					},
-				}
-				Expect(actualMessages).To(Equal(expectedMessages))
-			})
+			createFakes()
 		})
 
-	})
+		JustBeforeEach(func() {
+			collector = &Collector{
+				Client:        fakeClient,
+				Scheduler:     scheduler,
+				Work:          workChannel,
+				KubeNamespace: namespace,
+				KubeEndpoint:  kubeEndpoint,
+			}
 
+			collector.Start()
+			task := scheduler.ScheduleArgsForCall(0)
+			err := task()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should use the scheduler to collect routes", func() {
+			Expect(scheduler.ScheduleCallCount()).To(Equal(1))
+		})
+
+		It("should send the correct RegistryMessage in the work channel", func() {
+			actualMessages := <-workChannel
+			expectedMessages := []RegistryMessage{
+				RegistryMessage{
+					Host:    kubeEndpoint,
+					URIs:    routes,
+					Port:    httpPort,
+					TLSPort: tlsPort,
+					App:     serviceName,
+				},
+			}
+			Expect(actualMessages).To(Equal(expectedMessages))
+		})
+	})
 })
