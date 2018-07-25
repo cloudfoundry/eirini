@@ -83,4 +83,4 @@ opi:
 * `cd` into the package you want to test
 * `ginkgo`
 
-Some integration tests require a running `[minikube](https://github.com/kubernetes/minikube#installation)`.
+Some integration tests require a running [`minikube`](https://github.com/kubernetes/minikube#installation).
