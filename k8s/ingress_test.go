@@ -37,14 +37,6 @@ var _ = Describe("Ingress", func() {
 		appName           = "new-vcaapp-name"
 	)
 
-	BeforeEach(func() {
-		fakeClient = fake.NewSimpleClientset()
-	})
-
-	JustBeforeEach(func() {
-		ingressManager = NewIngressManager(fakeClient)
-	})
-
 	createIngressRule := func(serviceName string, appUri string) ext.IngressRule {
 		ingress := ext.IngressRule{
 			Host: appUri,
@@ -65,7 +57,7 @@ var _ = Describe("Ingress", func() {
 		return ingress
 	}
 
-	newIngress := func(name, namespace, appName string) *ext.Ingress {
+	newIngress := func(name string, namespace string, appNames ...string) *ext.Ingress {
 		ingress := &ext.Ingress{}
 
 		ingress.APIVersion = ingressAPIVersion
@@ -75,161 +67,223 @@ var _ = Describe("Ingress", func() {
 
 		ingress.Spec.TLS = []ext.IngressTLS{
 			ext.IngressTLS{
-				Hosts: []string{appName},
+
+				Hosts: appNames,
 			},
 		}
 
-		rule := createIngressRule(eirini.GetInternalServiceName(appName), appName)
-		ingress.Spec.Rules = append(ingress.Spec.Rules, rule)
+		for _, appName := range appNames {
+			rule := createIngressRule(eirini.GetInternalServiceName(appName), appName)
+			ingress.Spec.Rules = append(ingress.Spec.Rules, rule)
+		}
 
 		return ingress
 	}
 
-	JustBeforeEach(func() {
-		uris, err := json.Marshal(appURIs)
+	createFakeIngress := func(ingressName string, namespace string, serviceNames ...string) {
+		ingress := newIngress(ingressName, namespace, serviceNames...)
+		ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
 		Expect(err).ToNot(HaveOccurred())
-
-		lrp := opi.LRP{
-			Name: lrpName,
-			Metadata: map[string]string{
-				"application_name": appName,
-				"application_uris": string(uris),
-			}}
-
-		err = ingressManager.UpdateIngress(namespace, lrp)
-	})
-
-	verifyTLSHosts := func(tlsHosts []string) {
-		ingress, _ := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-
-		Expect(ingress.Spec.TLS).To(Equal([]ext.IngressTLS{
-			ext.IngressTLS{
-				Hosts: tlsHosts,
-			},
-		}))
 	}
 
 	BeforeEach(func() {
-		appURIs = []string{"alpha.example.com"}
+		fakeClient = fake.NewSimpleClientset()
 	})
 
-	Context("When no ingress exists", func() {
-		Context("When an app has one route", func() {
-			It("should create a new one", func() {
-				_, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+	JustBeforeEach(func() {
+		ingressManager = NewIngressManager(fakeClient)
+	})
+
+	Context("DeleteIngressRules", func() {
+		JustBeforeEach(func() {
+			err = ingressManager.DeleteIngressRules(namespace, appName)
+		})
+
+		Context("When there is a single rule", func() {
+			BeforeEach(func() {
+				createFakeIngress(ingressName, namespace, appName)
+			})
+
+			It("should remove the ingress object", func() {
+				list, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).List(av1.ListOptions{})
 				Expect(err).ToNot(HaveOccurred())
+				Expect(list.Items).To(BeNil())
 			})
 
-			It("should add the rule for the specific lrp", func() {
-				ingress, _ := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-
-				rules := ingress.Spec.Rules
-				Expect(rules).To(Equal([]ext.IngressRule{
-					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
-				}))
-
-			})
-
-			It("should add a TLS host", func() {
-				verifyTLSHosts(appURIs)
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
-		Context("When an app has multiple routes", func() {
+		Context("When there is more than one rule", func() {
 			BeforeEach(func() {
-				appURIs = []string{
-					"alpha.example.com",
-					"beta.example.com",
-					"gamma.example.com",
+				createFakeIngress(ingressName, namespace, appName, "existing_app")
+			})
+
+			getRuleServiceNames := func(rules []ext.IngressRule) []string {
+				result := []string{}
+				for _, rule := range rules {
+					result = append(result, rule.HTTP.Paths[0].Backend.ServiceName)
 				}
-			})
+				return result
+			}
 
-			It("should create an ingress rule for each route", func() {
+			It("should remove the rules for the service", func() {
 				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+				ruleServiceNames := getRuleServiceNames(ingress.Spec.Rules)
+
 				Expect(err).ToNot(HaveOccurred())
-
-				Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
-					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
-					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[1]),
-					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[2]),
-				}))
+				Expect(ruleServiceNames).ToNot(ContainElement(eirini.GetInternalServiceName(appName)))
+				Expect(ruleServiceNames).To(ContainElement("cf-existing_app"))
+				Expect(ruleServiceNames).To(HaveLen(1))
 			})
-		})
-
-		Context("When an app has no routes", func() {
-			BeforeEach(func() {
-				appURIs = []string{}
-			})
-
-			It("shouldn't create an ingress at all", func() {
-				_, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-				Expect(err).To(HaveOccurred())
-			})
-
 		})
 	})
 
-	Context("When ingress exists", func() {
-		BeforeEach(func() {
-			ingress := newIngress(ingressName, namespace, "existing-app")
-			ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
+	Context("UpdateIngress", func() {
+		JustBeforeEach(func() {
+			uris, err := json.Marshal(appURIs)
 			Expect(err).ToNot(HaveOccurred())
+
+			lrp := opi.LRP{
+				Name: lrpName,
+				Metadata: map[string]string{
+					"application_name": appName,
+					"application_uris": string(uris),
+				}}
+
+			err = ingressManager.UpdateIngress(namespace, lrp)
 		})
 
-		Context("When an app has one route", func() {
-			It("should not error", func() {
-				Expect(err).ToNot(HaveOccurred())
+		verifyTLSHosts := func(tlsHosts []string) {
+			ingress, _ := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+
+			Expect(ingress.Spec.TLS).To(Equal([]ext.IngressTLS{
+				ext.IngressTLS{
+					Hosts: tlsHosts,
+				},
+			}))
+		}
+
+		BeforeEach(func() {
+			appURIs = []string{"alpha.example.com"}
+		})
+
+		Context("When no ingress exists", func() {
+			Context("When an app has one route", func() {
+				It("should create a new one", func() {
+					_, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				It("should add the rule for the specific lrp", func() {
+					ingress, _ := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+
+					rules := ingress.Spec.Rules
+					Expect(rules).To(Equal([]ext.IngressRule{
+						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
+					}))
+
+				})
+
+				It("should add a TLS host", func() {
+					verifyTLSHosts(appURIs)
+				})
 			})
 
-			It("should update the record", func() {
-				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
+			Context("When an app has multiple routes", func() {
+				BeforeEach(func() {
+					appURIs = []string{
+						"alpha.example.com",
+						"beta.example.com",
+						"gamma.example.com",
+					}
+				})
 
-				Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
-					createIngressRule("cf-existing-app", "existing-app"),
-					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
-				}))
+				It("should create an ingress rule for each route", func() {
+					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
+						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
+						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[1]),
+						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[2]),
+					}))
+				})
 			})
 
-			It("should add a TLS host", func() {
-				hosts := append([]string{"existing-app"}, appURIs...)
-				verifyTLSHosts(hosts)
+			Context("When an app has no routes", func() {
+				BeforeEach(func() {
+					appURIs = []string{}
+				})
+
+				It("shouldn't create an ingress at all", func() {
+					_, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(err).To(HaveOccurred())
+				})
+
 			})
 		})
 
-		Context("When an app has multiple routes", func() {
+		Context("When ingress exists", func() {
 			BeforeEach(func() {
-				appURIs = []string{
-					"alpha.example.com",
-					"beta.example.com",
-					"gamma.example.com",
-				}
+				createFakeIngress(ingressName, namespace, "existing-app")
 			})
 
-			It("should create an ingress rule for each route", func() {
-				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
+			Context("When an app has one route", func() {
+				It("should not error", func() {
+					Expect(err).ToNot(HaveOccurred())
+				})
 
-				Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
-					createIngressRule("cf-existing-app", "existing-app"),
-					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
-					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[1]),
-					createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[2]),
-				}))
+				It("should update the record", func() {
+					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
+						createIngressRule("cf-existing-app", "existing-app"),
+						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
+					}))
+				})
+
+				It("should add a TLS host", func() {
+					hosts := append([]string{"existing-app"}, appURIs...)
+					verifyTLSHosts(hosts)
+				})
 			})
-		})
 
-		Context("When an app has no routes", func() {
-			BeforeEach(func() {
-				appURIs = []string{}
+			Context("When an app has multiple routes", func() {
+				BeforeEach(func() {
+					appURIs = []string{
+						"alpha.example.com",
+						"beta.example.com",
+						"gamma.example.com",
+					}
+				})
+
+				It("should create an ingress rule for each route", func() {
+					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
+						createIngressRule("cf-existing-app", "existing-app"),
+						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
+						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[1]),
+						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[2]),
+					}))
+				})
 			})
 
-			It("shouldn't create an ingress rule", func() {
-				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
-				Expect(ingress.Spec.Rules).To(HaveLen(1))
+			Context("When an app has no routes", func() {
+				BeforeEach(func() {
+					appURIs = []string{}
+				})
+
+				It("shouldn't create an ingress rule", func() {
+					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ingress.Spec.Rules).To(HaveLen(1))
+				})
 			})
 		})
 	})
-
 })

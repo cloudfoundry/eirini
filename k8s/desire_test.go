@@ -502,7 +502,6 @@ var _ = Describe("Desiring some LRPs", func() {
 	})
 
 	Context("Stop an application", func() {
-
 		var err error
 
 		JustBeforeEach(func() {
@@ -513,18 +512,25 @@ var _ = Describe("Desiring some LRPs", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should delete the ingress rules", func() {
+			Expect(ingressManager.DeleteIngressRulesCallCount()).To(Equal(1))
+			actualNamespace, serviceName := ingressManager.DeleteIngressRulesArgsForCall(0)
+			Expect(actualNamespace).To(Equal(namespace))
+			Expect(serviceName).To(Equal("thor"))
+		})
+
 		It("should delete the service", func() {
 			Expect(serviceManager.DeleteCallCount()).To(Equal(1))
-			name, namespace := serviceManager.DeleteArgsForCall(0)
+			name, actualNamespace := serviceManager.DeleteArgsForCall(0)
 			Expect(name).To(Equal("thor"))
-			Expect(namespace).To(Equal(namespace))
+			Expect(actualNamespace).To(Equal(namespace))
 		})
 
 		It("should delete the deployment", func() {
 			Expect(deploymentManager.DeleteCallCount()).To(Equal(1))
-			name, namespace := serviceManager.DeleteArgsForCall(0)
+			name, actualNamespace := serviceManager.DeleteArgsForCall(0)
 			Expect(name).To(Equal("thor"))
-			Expect(namespace).To(Equal(namespace))
+			Expect(actualNamespace).To(Equal(namespace))
 		})
 
 		Context("when deployment deletion fails", func() {
@@ -534,6 +540,28 @@ var _ = Describe("Desiring some LRPs", func() {
 
 			It("should return an error", func() {
 				Expect(err).To(HaveOccurred())
+			})
+
+			It("does not interact with IngressManager", func() {
+				Expect(ingressManager.DeleteIngressRulesCallCount()).To(Equal(0))
+			})
+
+			It("does not interact with ServiceManager", func() {
+				Expect(serviceManager.DeleteCallCount()).To(Equal(0))
+			})
+		})
+
+		Context("when deployment deletion fails", func() {
+			BeforeEach(func() {
+				ingressManager.DeleteIngressRulesReturns(errors.New("failed-to-delete"))
+			})
+
+			It("should return an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("does not interact with ServiceManager", func() {
+				Expect(serviceManager.DeleteCallCount()).To(Equal(0))
 			})
 		})
 

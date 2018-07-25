@@ -116,11 +116,12 @@ func (d *Desirer) Stop(ctx context.Context, name string) error {
 	if err := d.deploymentManager.Delete(name, d.KubeNamespace); err != nil {
 		return err
 	}
-	if err := d.serviceManager.Delete(name, d.KubeNamespace); err != nil {
+
+	if err := d.ingressManager.DeleteIngressRules(d.KubeNamespace, name); err != nil {
 		return err
 	}
 
-	return nil
+	return d.serviceManager.Delete(name, d.KubeNamespace)
 }
 
 func toMap(envVars []v1.EnvVar) map[string]string {

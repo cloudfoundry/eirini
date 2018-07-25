@@ -1,11 +1,10 @@
 package k8s
 
 import (
-	"encoding/json"
-
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
+	"encoding/json"
 	ext "k8s.io/api/extensions/v1beta1"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -21,6 +20,7 @@ const (
 //go:generate counterfeiter . IngressManager
 type IngressManager interface {
 	UpdateIngress(namespace string, lrp opi.LRP) error
+	DeleteIngressRules(namespace string, lrpName string) error
 }
 
 type KubeIngressManager struct {
@@ -31,6 +31,26 @@ func NewIngressManager(client kubernetes.Interface) IngressManager {
 	return &KubeIngressManager{
 		client: client,
 	}
+}
+
+func (i *KubeIngressManager) DeleteIngressRules(namespace string, lrpName string) error {
+	ing, err := i.client.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	serviceName := eirini.GetInternalServiceName(lrpName)
+	for i, rule := range ing.Spec.Rules {
+		if rule.HTTP.Paths[0].Backend.ServiceName == serviceName {
+			ing.Spec.Rules = append(ing.Spec.Rules[:i], ing.Spec.Rules[i+1:]...)
+		}
+	}
+
+	if len(ing.Spec.Rules) == 0 {
+		err = i.client.ExtensionsV1beta1().Ingresses(namespace).Delete(ingressName, &av1.DeleteOptions{})
+		return err
+	}
+
+	return i.updateIngressObject(namespace, ing)
 }
 
 func (i *KubeIngressManager) UpdateIngress(namespace string, lrp opi.LRP) error {
@@ -51,11 +71,14 @@ func (i *KubeIngressManager) UpdateIngress(namespace string, lrp opi.LRP) error 
 
 	if ingress, exists := i.getIngress(ingresses); exists {
 		i.updateSpec(ingress, lrp.Name, uriList)
-
-		_, err = i.client.ExtensionsV1beta1().Ingresses(namespace).Update(ingress)
-		return err
+		return i.updateIngressObject(namespace, ingress)
 	}
 	return i.createIngress(namespace, lrp.Name, uriList)
+}
+
+func (i *KubeIngressManager) updateIngressObject(namespace string, ingress *ext.Ingress) error {
+	_, err := i.client.ExtensionsV1beta1().Ingresses(namespace).Update(ingress)
+	return err
 }
 
 func (i *KubeIngressManager) createIngress(namespace, lrpName string, uriList []string) error {
