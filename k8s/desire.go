@@ -61,7 +61,7 @@ func (d *Desirer) Desire(ctx context.Context, lrps []opi.LRP) error {
 			return err
 		}
 
-		if err = d.ingressManager.UpdateIngress(d.KubeNamespace, lrp); err != nil {
+		if err = d.ingressManager.Update(d.KubeNamespace, lrp); err != nil {
 			return err
 		}
 	}
@@ -117,7 +117,7 @@ func (d *Desirer) Stop(ctx context.Context, name string) error {
 		return err
 	}
 
-	if err := d.ingressManager.DeleteIngressRules(d.KubeNamespace, name); err != nil {
+	if err := d.ingressManager.Delete(d.KubeNamespace, name); err != nil {
 		return err
 	}
 

@@ -19,8 +19,8 @@ const (
 
 //go:generate counterfeiter . IngressManager
 type IngressManager interface {
-	UpdateIngress(namespace string, lrp opi.LRP) error
-	DeleteIngressRules(namespace string, lrpName string) error
+	Update(namespace string, lrp opi.LRP) error
+	Delete(namespace string, lrpName string) error
 }
 
 type KubeIngressManager struct {
@@ -33,7 +33,7 @@ func NewIngressManager(client kubernetes.Interface) IngressManager {
 	}
 }
 
-func (i *KubeIngressManager) DeleteIngressRules(namespace string, lrpName string) error {
+func (i *KubeIngressManager) Delete(namespace string, lrpName string) error {
 	ing, err := i.client.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func (i *KubeIngressManager) DeleteIngressRules(namespace string, lrpName string
 	return i.updateIngressObject(namespace, ing)
 }
 
-func (i *KubeIngressManager) UpdateIngress(namespace string, lrp opi.LRP) error {
+func (i *KubeIngressManager) Update(namespace string, lrp opi.LRP) error {
 	uriList := []string{}
 	err := json.Unmarshal([]byte(lrp.Metadata[cf.VcapAppUris]), &uriList)
 	if err != nil {

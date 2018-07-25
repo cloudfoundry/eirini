@@ -154,7 +154,7 @@ var _ = Describe("Desiring some LRPs", func() {
 		}
 
 		verifyUpdateIngressArgsForCall := func(i int) {
-			actualNamespace, actualLrp := ingressManager.UpdateIngressArgsForCall(i)
+			actualNamespace, actualLrp := ingressManager.UpdateArgsForCall(i)
 
 			Expect(actualNamespace).To(Equal(namespace))
 			Expect(actualLrp).To(Equal(lrps[i]))
@@ -206,7 +206,7 @@ var _ = Describe("Desiring some LRPs", func() {
 			It("Adds an ingress rule for each app", func() {
 				Expect(desirer.Desire(context.Background(), lrps)).To(Succeed())
 
-				Eventually(ingressManager.UpdateIngressCallCount(), timeout).Should(Equal(len(lrps)))
+				Eventually(ingressManager.UpdateCallCount(), timeout).Should(Equal(len(lrps)))
 				for i := 0; i < len(lrps); i++ {
 					verifyUpdateIngressArgsForCall(i)
 				}
@@ -231,7 +231,7 @@ var _ = Describe("Desiring some LRPs", func() {
 			BeforeEach(func() {
 				lrp = lrps[0]
 				expectedErr = errors.New("failed to update ingress")
-				ingressManager.UpdateIngressReturns(expectedErr)
+				ingressManager.UpdateReturns(expectedErr)
 			})
 
 			It("Propagates the error", func() {
@@ -513,8 +513,8 @@ var _ = Describe("Desiring some LRPs", func() {
 		})
 
 		It("should delete the ingress rules", func() {
-			Expect(ingressManager.DeleteIngressRulesCallCount()).To(Equal(1))
-			actualNamespace, serviceName := ingressManager.DeleteIngressRulesArgsForCall(0)
+			Expect(ingressManager.DeleteCallCount()).To(Equal(1))
+			actualNamespace, serviceName := ingressManager.DeleteArgsForCall(0)
 			Expect(actualNamespace).To(Equal(namespace))
 			Expect(serviceName).To(Equal("thor"))
 		})
@@ -543,7 +543,7 @@ var _ = Describe("Desiring some LRPs", func() {
 			})
 
 			It("does not interact with IngressManager", func() {
-				Expect(ingressManager.DeleteIngressRulesCallCount()).To(Equal(0))
+				Expect(ingressManager.DeleteCallCount()).To(Equal(0))
 			})
 
 			It("does not interact with ServiceManager", func() {
@@ -553,7 +553,7 @@ var _ = Describe("Desiring some LRPs", func() {
 
 		Context("when deployment deletion fails", func() {
 			BeforeEach(func() {
-				ingressManager.DeleteIngressRulesReturns(errors.New("failed-to-delete"))
+				ingressManager.DeleteReturns(errors.New("failed-to-delete"))
 			})
 
 			It("should return an error", func() {

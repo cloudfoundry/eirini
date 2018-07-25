@@ -96,7 +96,7 @@ var _ = Describe("Ingress", func() {
 
 	Context("DeleteIngressRules", func() {
 		JustBeforeEach(func() {
-			err = ingressManager.DeleteIngressRules(namespace, appName)
+			err = ingressManager.Delete(namespace, appName)
 		})
 
 		Context("When there is a single rule", func() {
@@ -152,7 +152,7 @@ var _ = Describe("Ingress", func() {
 					"application_uris": string(uris),
 				}}
 
-			err = ingressManager.UpdateIngress(namespace, lrp)
+			err = ingressManager.Update(namespace, lrp)
 		})
 
 		verifyTLSHosts := func(tlsHosts []string) {

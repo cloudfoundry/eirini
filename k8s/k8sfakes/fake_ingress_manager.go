@@ -9,128 +9,128 @@ import (
 )
 
 type FakeIngressManager struct {
-	UpdateIngressStub        func(namespace string, lrp opi.LRP) error
-	updateIngressMutex       sync.RWMutex
-	updateIngressArgsForCall []struct {
+	UpdateStub        func(namespace string, lrp opi.LRP) error
+	updateMutex       sync.RWMutex
+	updateArgsForCall []struct {
 		namespace string
 		lrp       opi.LRP
 	}
-	updateIngressReturns struct {
+	updateReturns struct {
 		result1 error
 	}
-	updateIngressReturnsOnCall map[int]struct {
+	updateReturnsOnCall map[int]struct {
 		result1 error
 	}
-	DeleteIngressRulesStub        func(namespace string, serviceName string) error
-	deleteIngressRulesMutex       sync.RWMutex
-	deleteIngressRulesArgsForCall []struct {
-		namespace   string
-		serviceName string
+	DeleteStub        func(namespace string, lrpName string) error
+	deleteMutex       sync.RWMutex
+	deleteArgsForCall []struct {
+		namespace string
+		lrpName   string
 	}
-	deleteIngressRulesReturns struct {
+	deleteReturns struct {
 		result1 error
 	}
-	deleteIngressRulesReturnsOnCall map[int]struct {
+	deleteReturnsOnCall map[int]struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeIngressManager) UpdateIngress(namespace string, lrp opi.LRP) error {
-	fake.updateIngressMutex.Lock()
-	ret, specificReturn := fake.updateIngressReturnsOnCall[len(fake.updateIngressArgsForCall)]
-	fake.updateIngressArgsForCall = append(fake.updateIngressArgsForCall, struct {
+func (fake *FakeIngressManager) Update(namespace string, lrp opi.LRP) error {
+	fake.updateMutex.Lock()
+	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
+	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
 		namespace string
 		lrp       opi.LRP
 	}{namespace, lrp})
-	fake.recordInvocation("UpdateIngress", []interface{}{namespace, lrp})
-	fake.updateIngressMutex.Unlock()
-	if fake.UpdateIngressStub != nil {
-		return fake.UpdateIngressStub(namespace, lrp)
+	fake.recordInvocation("Update", []interface{}{namespace, lrp})
+	fake.updateMutex.Unlock()
+	if fake.UpdateStub != nil {
+		return fake.UpdateStub(namespace, lrp)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.updateIngressReturns.result1
+	return fake.updateReturns.result1
 }
 
-func (fake *FakeIngressManager) UpdateIngressCallCount() int {
-	fake.updateIngressMutex.RLock()
-	defer fake.updateIngressMutex.RUnlock()
-	return len(fake.updateIngressArgsForCall)
+func (fake *FakeIngressManager) UpdateCallCount() int {
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
+	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeIngressManager) UpdateIngressArgsForCall(i int) (string, opi.LRP) {
-	fake.updateIngressMutex.RLock()
-	defer fake.updateIngressMutex.RUnlock()
-	return fake.updateIngressArgsForCall[i].namespace, fake.updateIngressArgsForCall[i].lrp
+func (fake *FakeIngressManager) UpdateArgsForCall(i int) (string, opi.LRP) {
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
+	return fake.updateArgsForCall[i].namespace, fake.updateArgsForCall[i].lrp
 }
 
-func (fake *FakeIngressManager) UpdateIngressReturns(result1 error) {
-	fake.UpdateIngressStub = nil
-	fake.updateIngressReturns = struct {
+func (fake *FakeIngressManager) UpdateReturns(result1 error) {
+	fake.UpdateStub = nil
+	fake.updateReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeIngressManager) UpdateIngressReturnsOnCall(i int, result1 error) {
-	fake.UpdateIngressStub = nil
-	if fake.updateIngressReturnsOnCall == nil {
-		fake.updateIngressReturnsOnCall = make(map[int]struct {
+func (fake *FakeIngressManager) UpdateReturnsOnCall(i int, result1 error) {
+	fake.UpdateStub = nil
+	if fake.updateReturnsOnCall == nil {
+		fake.updateReturnsOnCall = make(map[int]struct {
 			result1 error
 		})
 	}
-	fake.updateIngressReturnsOnCall[i] = struct {
+	fake.updateReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeIngressManager) DeleteIngressRules(namespace string, serviceName string) error {
-	fake.deleteIngressRulesMutex.Lock()
-	ret, specificReturn := fake.deleteIngressRulesReturnsOnCall[len(fake.deleteIngressRulesArgsForCall)]
-	fake.deleteIngressRulesArgsForCall = append(fake.deleteIngressRulesArgsForCall, struct {
-		namespace   string
-		serviceName string
-	}{namespace, serviceName})
-	fake.recordInvocation("DeleteIngressRules", []interface{}{namespace, serviceName})
-	fake.deleteIngressRulesMutex.Unlock()
-	if fake.DeleteIngressRulesStub != nil {
-		return fake.DeleteIngressRulesStub(namespace, serviceName)
+func (fake *FakeIngressManager) Delete(namespace string, lrpName string) error {
+	fake.deleteMutex.Lock()
+	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
+	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
+		namespace string
+		lrpName   string
+	}{namespace, lrpName})
+	fake.recordInvocation("Delete", []interface{}{namespace, lrpName})
+	fake.deleteMutex.Unlock()
+	if fake.DeleteStub != nil {
+		return fake.DeleteStub(namespace, lrpName)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.deleteIngressRulesReturns.result1
+	return fake.deleteReturns.result1
 }
 
-func (fake *FakeIngressManager) DeleteIngressRulesCallCount() int {
-	fake.deleteIngressRulesMutex.RLock()
-	defer fake.deleteIngressRulesMutex.RUnlock()
-	return len(fake.deleteIngressRulesArgsForCall)
+func (fake *FakeIngressManager) DeleteCallCount() int {
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
+	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeIngressManager) DeleteIngressRulesArgsForCall(i int) (string, string) {
-	fake.deleteIngressRulesMutex.RLock()
-	defer fake.deleteIngressRulesMutex.RUnlock()
-	return fake.deleteIngressRulesArgsForCall[i].namespace, fake.deleteIngressRulesArgsForCall[i].serviceName
+func (fake *FakeIngressManager) DeleteArgsForCall(i int) (string, string) {
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
+	return fake.deleteArgsForCall[i].namespace, fake.deleteArgsForCall[i].lrpName
 }
 
-func (fake *FakeIngressManager) DeleteIngressRulesReturns(result1 error) {
-	fake.DeleteIngressRulesStub = nil
-	fake.deleteIngressRulesReturns = struct {
+func (fake *FakeIngressManager) DeleteReturns(result1 error) {
+	fake.DeleteStub = nil
+	fake.deleteReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeIngressManager) DeleteIngressRulesReturnsOnCall(i int, result1 error) {
-	fake.DeleteIngressRulesStub = nil
-	if fake.deleteIngressRulesReturnsOnCall == nil {
-		fake.deleteIngressRulesReturnsOnCall = make(map[int]struct {
+func (fake *FakeIngressManager) DeleteReturnsOnCall(i int, result1 error) {
+	fake.DeleteStub = nil
+	if fake.deleteReturnsOnCall == nil {
+		fake.deleteReturnsOnCall = make(map[int]struct {
 			result1 error
 		})
 	}
-	fake.deleteIngressRulesReturnsOnCall[i] = struct {
+	fake.deleteReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -138,10 +138,10 @@ func (fake *FakeIngressManager) DeleteIngressRulesReturnsOnCall(i int, result1 e
 func (fake *FakeIngressManager) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.updateIngressMutex.RLock()
-	defer fake.updateIngressMutex.RUnlock()
-	fake.deleteIngressRulesMutex.RLock()
-	defer fake.deleteIngressRulesMutex.RUnlock()
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
