@@ -25,7 +25,7 @@ import (
 )
 
 // NOTE: this test requires a minikube to be set up and targeted in ~/.kube/config
-var _ = Describe("Desiring some LRPs", func() {
+var _ = Describe("Desiring some LRPs {SYSTEM}", func() {
 	var (
 		client            *kubernetes.Clientset
 		ingressManager    *k8sfakes.FakeIngressManager

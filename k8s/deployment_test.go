@@ -22,7 +22,7 @@ import (
 )
 
 // NOTE: this test requires a minikube to be set up and targeted in ~/.kube/config
-var _ = Describe("Deployment", func() {
+var _ = Describe("Deployment {SYSTEM}", func() {
 
 	var (
 		client            kubernetes.Interface
