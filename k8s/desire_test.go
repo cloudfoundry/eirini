@@ -34,7 +34,6 @@ var _ = Describe("Desiring some LRPs", func() {
 		desirer           *k8s.Desirer
 		namespace         string
 		lrps              []opi.LRP
-		vcapAppNames      []string
 		lrpUris           [][]string
 	)
 
@@ -93,7 +92,8 @@ var _ = Describe("Desiring some LRPs", func() {
 	}
 
 	cleanupDeployment := func(appName string) {
-		if err := client.AppsV1beta1().Deployments(namespace).Delete(appName, &metav1.DeleteOptions{}); err != nil {
+		propagationPolicy := metav1.DeletePropagationBackground
+		if err := client.AppsV1beta1().Deployments(namespace).Delete(appName, &metav1.DeleteOptions{PropagationPolicy: &propagationPolicy}); err != nil {
 			panic(err)
 		}
 	}
@@ -117,7 +117,6 @@ var _ = Describe("Desiring some LRPs", func() {
 		}
 
 		namespace = "testing"
-		vcapAppNames = []string{"vcap-app-name0", "vcap-app-name1"}
 
 		lrpUris = [][]string{
 			[]string{"https://app-0.eirini.cf/", "https://commahere.eirini.cf/,,"},
@@ -419,7 +418,7 @@ var _ = Describe("Desiring some LRPs", func() {
 			)
 
 			BeforeEach(func() {
-				appName = "test-app"
+				appName = "app-to-update"
 				image = "busybox"
 				command = []string{"/bin/sh", "-c", "while true; do echo hello; sleep 10;done"}
 				replicas = int32(2)

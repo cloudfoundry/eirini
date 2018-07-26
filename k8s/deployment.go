@@ -38,7 +38,8 @@ func (m *deploymentManager) ListLRPs(namespace string) ([]opi.LRP, error) {
 }
 
 func (m *deploymentManager) Delete(appName, namespace string) error {
-	return m.deployments(namespace).Delete(appName, &av1.DeleteOptions{})
+	backgroundPropagation := av1.DeletePropagationBackground
+	return m.deployments(namespace).Delete(appName, &av1.DeleteOptions{PropagationPolicy: &backgroundPropagation})
 }
 
 func (m *deploymentManager) deployments(namespace string) ev1.DeploymentInterface {
