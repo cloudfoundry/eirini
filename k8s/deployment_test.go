@@ -2,8 +2,6 @@ package k8s_test
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	"code.cloudfoundry.org/eirini"
@@ -16,18 +14,18 @@ import (
 	"k8s.io/api/core/v1"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/kubernetes/fake"
 
 	. "code.cloudfoundry.org/eirini/k8s"
 )
 
-// NOTE: this test requires a minikube to be set up and targeted in ~/.kube/config
-var _ = Describe("Deployment {SYSTEM}", func() {
+var _ = Describe("Deployment", func() {
 
 	var (
+		err               error
 		client            kubernetes.Interface
-		deploymentManager DeploymentManager
-		lrps              []opi.LRP
+		deploymentManager InstanceManager
+		lrps              []*opi.LRP
 	)
 
 	const (
@@ -96,20 +94,8 @@ var _ = Describe("Deployment {SYSTEM}", func() {
 		client.CoreV1().Services(namespace).Delete(serviceName, &av1.DeleteOptions{})
 	}
 
-	createClient := func() {
-		config, err := clientcmd.BuildConfigFromFlags("", filepath.Join(os.Getenv("HOME"), ".kube", "config"))
-		if err != nil {
-			panic(err.Error())
-		}
-
-		client, err = kubernetes.NewForConfig(config)
-		if err != nil {
-			panic(err.Error())
-		}
-	}
-
 	BeforeEach(func() {
-		lrps = []opi.LRP{
+		lrps = []*opi.LRP{
 			createLRP("odin", "1234.5"),
 			createLRP("thor", "4567.8"),
 			createLRP("mimir", "9012.3"),
@@ -128,73 +114,108 @@ var _ = Describe("Deployment {SYSTEM}", func() {
 
 	//nolint
 	JustBeforeEach(func() {
-		createClient()
+		client = fake.NewSimpleClientset()
 		if !namespaceExists(namespace) {
 			createNamespace(namespace)
 		}
 
 		for _, l := range lrps {
-			client.AppsV1beta1().Deployments(namespace).Create(toDeployment(l))
+			client.AppsV1beta1().Deployments(namespace).Create(toDeployment(l, namespace))
 		}
 
-		deploymentManager = NewDeploymentManager(client)
+		deploymentManager = NewDeploymentManager(namespace, client)
 	})
 
-	Context("List deployments", func() {
+	Context("When creating an LRP", func() {
+		var lrp *opi.LRP
 
-		It("translates all existing deployments to opi.LRPs", func() {
-			actualLRPs, err := deploymentManager.ListLRPs(namespace)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actualLRPs).To(ConsistOf(lrps))
+		JustBeforeEach(func() {
+			lrp = createLRP("Baldur", "1234.5")
+			lrps = append(lrps, lrp)
+
+			err = deploymentManager.Create(lrp)
 		})
 
-		Context("When no deployments exist", func() {
+		It("should not fail", func() {
+			Expect(err).ToNot(HaveOccurred())
+		})
 
+		It("should create the desired deployment", func() {
+			deployment, err := client.AppsV1beta1().Deployments(namespace).Get("Baldur", av1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(deployment).To(Equal(toDeployment(lrp, namespace)))
+		})
+
+		Context("When redeploying an existing LRP", func() {
 			BeforeEach(func() {
-				lrps = []opi.LRP{}
+				lrp = createLRP("Baldur", "1234.5")
+				lrps = append(lrps, lrp)
 			})
 
-			It("returns an empy list of LRPs", func() {
-				actualLRPs, err := deploymentManager.ListLRPs(namespace)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(actualLRPs).To(BeEmpty())
+			It("should fail", func() {
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
 
-	Context("Delete a deployment", func() {
+	Context("List/Delete", func() {
+		Context("List deployments", func() {
 
-		It("deletes the deployment", func() {
-			err := deploymentManager.Delete("odin", namespace)
-			Expect(err).ToNot(HaveOccurred())
+			It("translates all existing deployments to opi.LRPs", func() {
+				actualLRPs, err := deploymentManager.List()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(actualLRPs).To(ConsistOf(lrps))
+			})
 
-			Eventually(listDeployments, timeout).Should(HaveLen(2))
-			Expect(getDeploymentNames(listDeployments())).To(ConsistOf("mimir", "thor"))
+			Context("When no deployments exist", func() {
+
+				BeforeEach(func() {
+					lrps = []*opi.LRP{}
+				})
+
+				It("returns an empy list of LRPs", func() {
+					actualLRPs, err := deploymentManager.List()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(actualLRPs).To(BeEmpty())
+				})
+			})
 		})
 
-		It("deletes the pods associated with the deployment", func() {
-			err := deploymentManager.Delete("odin", namespace)
-			Expect(err).ToNot(HaveOccurred())
+		Context("Delete a deployment", func() {
 
-			Eventually(func() []v1.Pod {
-				return listPods("odin")
-			}, timeout).Should(BeEmpty())
-		})
+			It("deletes the deployment", func() {
+				err := deploymentManager.Delete("odin")
+				Expect(err).ToNot(HaveOccurred())
 
-		It("deletes the replicasets associated with the deployment", func() {
-			err := deploymentManager.Delete("odin", namespace)
-			Expect(err).ToNot(HaveOccurred())
+				Eventually(listDeployments, timeout).Should(HaveLen(2))
+				Expect(getDeploymentNames(listDeployments())).To(ConsistOf("mimir", "thor"))
+			})
 
-			Eventually(func() []v1beta2.ReplicaSet {
-				return listReplicasets("odin")
-			}, timeout).Should(BeEmpty())
-		})
+			PIt("deletes the pods associated with the deployment", func() {
+				err := deploymentManager.Delete("odin")
+				Expect(err).ToNot(HaveOccurred())
 
-		Context("when the deployment does not exist", func() {
+				Eventually(func() []v1.Pod {
+					return listPods("odin")
+				}, timeout).Should(BeEmpty())
+			})
 
-			It("returns an error", func() {
-				err := deploymentManager.Delete("test-app-where-are-you", namespace)
-				Expect(err).To(HaveOccurred())
+			It("deletes the replicasets associated with the deployment", func() {
+				err := deploymentManager.Delete("odin")
+				Expect(err).ToNot(HaveOccurred())
+
+				Eventually(func() []v1beta2.ReplicaSet {
+					return listReplicasets("odin")
+				}, timeout).Should(BeEmpty())
+			})
+
+			Context("when the deployment does not exist", func() {
+
+				It("returns an error", func() {
+					err := deploymentManager.Delete("test-app-where-are-you")
+					Expect(err).To(HaveOccurred())
+				})
 			})
 		})
 	})
@@ -208,19 +229,25 @@ func getDeploymentNames(deployments []v1beta1.Deployment) []string {
 	return deploymentNames
 }
 
-func toDeployment(lrp opi.LRP) *v1beta1.Deployment {
-	replicas := int32(2)
+func toDeployment(lrp *opi.LRP, namespace string) *v1beta1.Deployment {
+	targetInstances := int32(lrp.TargetInstances)
 	deployment := &v1beta1.Deployment{
 		Spec: v1beta1.DeploymentSpec{
-			Replicas: &replicas,
+			Replicas: &targetInstances,
 			Template: v1.PodTemplateSpec{
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						v1.Container{
-							Name:    "cont",
-							Image:   "busybox",
-							Command: []string{"/bin/sh", "-c", "while true; do echo hello; sleep 10;done"},
-							Env:     []v1.EnvVar{v1.EnvVar{Name: "GOPATH", Value: "~/go"}},
+							Name:    "opi",
+							Image:   lrp.Image,
+							Command: lrp.Command,
+							Env:     MapToEnvVar(lrp.Env),
+							Ports: []v1.ContainerPort{
+								v1.ContainerPort{
+									Name:          "expose",
+									ContainerPort: 8080,
+								},
+							},
 						},
 					},
 				},
@@ -228,23 +255,18 @@ func toDeployment(lrp opi.LRP) *v1beta1.Deployment {
 		},
 	}
 
-	deployment.Name = lrp.Metadata[cf.ProcessGUID]
+	deployment.Name = lrp.Name
+	deployment.Namespace = namespace
 	deployment.Spec.Template.Labels = map[string]string{
-		"name": lrp.Metadata[cf.ProcessGUID],
+		"name": lrp.Name,
 	}
-	deployment.Annotations = map[string]string{
-		cf.ProcessGUID: lrp.Metadata[cf.ProcessGUID],
-		cf.LastUpdated: lrp.Metadata[cf.LastUpdated],
+
+	deployment.Labels = map[string]string{
+		"eirini": "eirini",
+		"name":   lrp.Name,
 	}
+
+	deployment.Annotations = lrp.Metadata
 
 	return deployment
-}
-
-func createLRP(processGUID, lastUpdated string) opi.LRP {
-	return opi.LRP{
-		Metadata: map[string]string{
-			cf.ProcessGUID: processGUID,
-			cf.LastUpdated: lastUpdated,
-		},
-	}
 }

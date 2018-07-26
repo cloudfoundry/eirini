@@ -5,14 +5,25 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/opi"
 )
 
 type FakeServiceManager struct {
-	DeleteStub        func(appName, namespace string) error
+	CreateStub        func(lrp *opi.LRP) error
+	createMutex       sync.RWMutex
+	createArgsForCall []struct {
+		lrp *opi.LRP
+	}
+	createReturns struct {
+		result1 error
+	}
+	createReturnsOnCall map[int]struct {
+		result1 error
+	}
+	DeleteStub        func(appName string) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
-		appName   string
-		namespace string
+		appName string
 	}
 	deleteReturns struct {
 		result1 error
@@ -24,17 +35,64 @@ type FakeServiceManager struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeServiceManager) Delete(appName string, namespace string) error {
+func (fake *FakeServiceManager) Create(lrp *opi.LRP) error {
+	fake.createMutex.Lock()
+	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
+	fake.createArgsForCall = append(fake.createArgsForCall, struct {
+		lrp *opi.LRP
+	}{lrp})
+	fake.recordInvocation("Create", []interface{}{lrp})
+	fake.createMutex.Unlock()
+	if fake.CreateStub != nil {
+		return fake.CreateStub(lrp)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.createReturns.result1
+}
+
+func (fake *FakeServiceManager) CreateCallCount() int {
+	fake.createMutex.RLock()
+	defer fake.createMutex.RUnlock()
+	return len(fake.createArgsForCall)
+}
+
+func (fake *FakeServiceManager) CreateArgsForCall(i int) *opi.LRP {
+	fake.createMutex.RLock()
+	defer fake.createMutex.RUnlock()
+	return fake.createArgsForCall[i].lrp
+}
+
+func (fake *FakeServiceManager) CreateReturns(result1 error) {
+	fake.CreateStub = nil
+	fake.createReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeServiceManager) CreateReturnsOnCall(i int, result1 error) {
+	fake.CreateStub = nil
+	if fake.createReturnsOnCall == nil {
+		fake.createReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.createReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeServiceManager) Delete(appName string) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
-		appName   string
-		namespace string
-	}{appName, namespace})
-	fake.recordInvocation("Delete", []interface{}{appName, namespace})
+		appName string
+	}{appName})
+	fake.recordInvocation("Delete", []interface{}{appName})
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
-		return fake.DeleteStub(appName, namespace)
+		return fake.DeleteStub(appName)
 	}
 	if specificReturn {
 		return ret.result1
@@ -48,10 +106,10 @@ func (fake *FakeServiceManager) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeServiceManager) DeleteArgsForCall(i int) (string, string) {
+func (fake *FakeServiceManager) DeleteArgsForCall(i int) string {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
-	return fake.deleteArgsForCall[i].appName, fake.deleteArgsForCall[i].namespace
+	return fake.deleteArgsForCall[i].appName
 }
 
 func (fake *FakeServiceManager) DeleteReturns(result1 error) {
@@ -76,6 +134,8 @@ func (fake *FakeServiceManager) DeleteReturnsOnCall(i int, result1 error) {
 func (fake *FakeServiceManager) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.createMutex.RLock()
+	defer fake.createMutex.RUnlock()
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

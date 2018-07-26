@@ -59,7 +59,7 @@ func toJob(task opi.Task) *batch.Job {
 					Containers: []v1.Container{{
 						Name:  "opi-task",
 						Image: task.Image,
-						Env:   mapToEnvVar(task.Env),
+						Env:   MapToEnvVar(task.Env),
 						//ImagePullPolicy: "Always",
 					}},
 					RestartPolicy: "Never",
@@ -79,13 +79,4 @@ func toJob(task opi.Task) *batch.Job {
 		"name":   task.Env[eirini.EnvAppID],
 	}
 	return job
-}
-
-func mapToEnvVar(env map[string]string) []v1.EnvVar {
-	envVars := []v1.EnvVar{}
-	for k, v := range env {
-		envVar := v1.EnvVar{Name: k, Value: v}
-		envVars = append(envVars, envVar)
-	}
-	return envVars
 }

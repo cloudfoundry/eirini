@@ -23,11 +23,11 @@ func (b *Bifrost) Transfer(ctx context.Context, request cf.DesireLRPRequest) err
 		b.Logger.Error("failed-to-convert-request", err, lager.Data{"desire-lrp-request": request})
 		return err
 	}
-	return b.Desirer.Desire(ctx, []opi.LRP{desiredLRP})
+	return b.Desirer.Desire(&desiredLRP)
 }
 
 func (b *Bifrost) List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error) {
-	lrps, err := b.Desirer.List(ctx)
+	lrps, err := b.Desirer.List()
 	if err != nil {
 		b.Logger.Error("failed-to-list-deployments", err)
 		return nil, errors.Wrap(err, "failed to list desired LRPs")
@@ -38,7 +38,7 @@ func (b *Bifrost) List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo,
 	return infos, nil
 }
 
-func toDesiredLRPSchedulingInfo(lrps []opi.LRP) []*models.DesiredLRPSchedulingInfo {
+func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []*models.DesiredLRPSchedulingInfo {
 	infos := []*models.DesiredLRPSchedulingInfo{}
 	for _, l := range lrps {
 		info := &models.DesiredLRPSchedulingInfo{}
@@ -50,7 +50,7 @@ func toDesiredLRPSchedulingInfo(lrps []opi.LRP) []*models.DesiredLRPSchedulingIn
 }
 
 func (b *Bifrost) Update(ctx context.Context, update models.UpdateDesiredLRPRequest) error {
-	lrp, err := b.Desirer.Get(ctx, update.ProcessGuid)
+	lrp, err := b.Desirer.Get(update.ProcessGuid)
 	if err != nil {
 		b.Logger.Error("application-not-found", err, lager.Data{"process-guid": update.ProcessGuid})
 		return err
@@ -59,11 +59,11 @@ func (b *Bifrost) Update(ctx context.Context, update models.UpdateDesiredLRPRequ
 	lrp.TargetInstances = int(*update.Update.Instances)
 	lrp.Metadata[cf.LastUpdated] = *update.Update.Annotation
 
-	return b.Desirer.Update(ctx, *lrp)
+	return b.Desirer.Update(lrp)
 }
 
 func (b *Bifrost) GetApp(ctx context.Context, guid string) *models.DesiredLRP {
-	lrp, err := b.Desirer.Get(ctx, guid)
+	lrp, err := b.Desirer.Get(guid)
 	if err != nil {
 		b.Logger.Error("failed-to-get-deployment", err, lager.Data{"process-guid": guid})
 		return nil
@@ -78,11 +78,11 @@ func (b *Bifrost) GetApp(ctx context.Context, guid string) *models.DesiredLRP {
 }
 
 func (b *Bifrost) Stop(ctx context.Context, guid string) error {
-	return b.Desirer.Stop(ctx, guid)
+	return b.Desirer.Stop(guid)
 }
 
 func (b *Bifrost) GetInstances(ctx context.Context, guid string) ([]*cf.Instance, error) {
-	lrp, err := b.Desirer.Get(ctx, guid)
+	lrp, err := b.Desirer.Get(guid)
 	if err != nil {
 		b.Logger.Error("failed-to-get-lrp", err, lager.Data{"process-guid": guid})
 		return nil, err

@@ -19,22 +19,24 @@ const (
 
 //go:generate counterfeiter . IngressManager
 type IngressManager interface {
-	Update(namespace string, lrp opi.LRP) error
-	Delete(namespace string, lrpName string) error
+	Update(lrp *opi.LRP) error
+	Delete(lrpName string) error
 }
 
 type KubeIngressManager struct {
-	client kubernetes.Interface
+	namespace string
+	client    kubernetes.Interface
 }
 
-func NewIngressManager(client kubernetes.Interface) IngressManager {
+func NewIngressManager(namespace string, client kubernetes.Interface) IngressManager {
 	return &KubeIngressManager{
-		client: client,
+		namespace: namespace,
+		client:    client,
 	}
 }
 
-func (i *KubeIngressManager) Delete(namespace string, lrpName string) error {
-	ing, err := i.client.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+func (i *KubeIngressManager) Delete(lrpName string) error {
+	ing, err := i.client.ExtensionsV1beta1().Ingresses(i.namespace).Get(ingressName, av1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -46,14 +48,14 @@ func (i *KubeIngressManager) Delete(namespace string, lrpName string) error {
 	}
 
 	if len(ing.Spec.Rules) == 0 {
-		err = i.client.ExtensionsV1beta1().Ingresses(namespace).Delete(ingressName, &av1.DeleteOptions{})
+		err = i.client.ExtensionsV1beta1().Ingresses(i.namespace).Delete(ingressName, &av1.DeleteOptions{})
 		return err
 	}
 
-	return i.updateIngressObject(namespace, ing)
+	return i.updateIngressObject(ing)
 }
 
-func (i *KubeIngressManager) Update(namespace string, lrp opi.LRP) error {
+func (i *KubeIngressManager) Update(lrp *opi.LRP) error {
 	uriList := []string{}
 	err := json.Unmarshal([]byte(lrp.Metadata[cf.VcapAppUris]), &uriList)
 	if err != nil {
@@ -64,24 +66,24 @@ func (i *KubeIngressManager) Update(namespace string, lrp opi.LRP) error {
 		return nil
 	}
 
-	ingresses, err := i.client.ExtensionsV1beta1().Ingresses(namespace).List(av1.ListOptions{})
+	ingresses, err := i.client.ExtensionsV1beta1().Ingresses(i.namespace).List(av1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	if ingress, exists := i.getIngress(ingresses); exists {
 		i.updateSpec(ingress, lrp.Name, uriList)
-		return i.updateIngressObject(namespace, ingress)
+		return i.updateIngressObject(ingress)
 	}
-	return i.createIngress(namespace, lrp.Name, uriList)
+	return i.createIngress(lrp.Name, uriList)
 }
 
-func (i *KubeIngressManager) updateIngressObject(namespace string, ingress *ext.Ingress) error {
-	_, err := i.client.ExtensionsV1beta1().Ingresses(namespace).Update(ingress)
+func (i *KubeIngressManager) updateIngressObject(ingress *ext.Ingress) error {
+	_, err := i.client.ExtensionsV1beta1().Ingresses(i.namespace).Update(ingress)
 	return err
 }
 
-func (i *KubeIngressManager) createIngress(namespace, lrpName string, uriList []string) error {
+func (i *KubeIngressManager) createIngress(lrpName string, uriList []string) error {
 	ingress := &ext.Ingress{
 		TypeMeta: av1.TypeMeta{
 			Kind:       ingressKind,
@@ -89,7 +91,7 @@ func (i *KubeIngressManager) createIngress(namespace, lrpName string, uriList []
 		},
 		ObjectMeta: av1.ObjectMeta{
 			Name:      ingressName,
-			Namespace: namespace,
+			Namespace: i.namespace,
 		},
 		Spec: ext.IngressSpec{
 			TLS: []ext.IngressTLS{
@@ -99,7 +101,7 @@ func (i *KubeIngressManager) createIngress(namespace, lrpName string, uriList []
 	}
 
 	i.updateSpec(ingress, lrpName, uriList)
-	_, err := i.client.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
+	_, err := i.client.ExtensionsV1beta1().Ingresses(i.namespace).Create(ingress)
 	return err
 }
 

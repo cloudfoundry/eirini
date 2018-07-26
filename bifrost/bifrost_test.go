@@ -67,8 +67,8 @@ var _ = Describe("Bifrost", func() {
 
 			It("should use Desirer with the converted LRP", func() {
 				Expect(desirer.DesireCallCount()).To(Equal(1))
-				_, lrps := desirer.DesireArgsForCall(0)
-				Expect(lrps).To(Equal([]opi.LRP{lrp}))
+				desired := desirer.DesireArgsForCall(0)
+				Expect(desired).To(Equal(&lrp))
 			})
 		})
 
@@ -107,7 +107,7 @@ var _ = Describe("Bifrost", func() {
 
 	Context("List", func() {
 		var (
-			lrps []opi.LRP
+			lrps []*opi.LRP
 		)
 
 		BeforeEach(func() {
@@ -119,8 +119,8 @@ var _ = Describe("Bifrost", func() {
 			}
 		})
 
-		createLRP := func(name, processGUID, lastUpdated string) opi.LRP {
-			return opi.LRP{
+		createLRP := func(name, processGUID, lastUpdated string) *opi.LRP {
+			return &opi.LRP{
 				Name: name,
 				Metadata: map[string]string{
 					cf.ProcessGUID: processGUID,
@@ -136,7 +136,7 @@ var _ = Describe("Bifrost", func() {
 		Context("When listing running LRPs", func() {
 
 			BeforeEach(func() {
-				lrps = []opi.LRP{
+				lrps = []*opi.LRP{
 					createLRP("1234", "abcd", "3464634.2"),
 					createLRP("5678", "efgh", "235.26535"),
 					createLRP("0213", "ijkl", "2342342.2"),
@@ -160,7 +160,7 @@ var _ = Describe("Bifrost", func() {
 		Context("When no running LRPs exist", func() {
 
 			BeforeEach(func() {
-				lrps = []opi.LRP{}
+				lrps = []*opi.LRP{}
 			})
 
 			It("should return an empty list of DesiredLRPSchedulingInfo", func() {
@@ -233,13 +233,13 @@ var _ = Describe("Bifrost", func() {
 
 				It("should get the existing LRP", func() {
 					Expect(opiClient.GetCallCount()).To(Equal(1))
-					_, appName := opiClient.GetArgsForCall(0)
+					appName := opiClient.GetArgsForCall(0)
 					Expect(appName).To(Equal("app_name"))
 				})
 
 				It("should submit the updated LRP", func() {
 					Expect(opiClient.UpdateCallCount()).To(Equal(1))
-					_, lrp := opiClient.UpdateArgsForCall(0)
+					lrp := opiClient.UpdateArgsForCall(0)
 					Expect(lrp.Name).To(Equal("app_name"))
 					Expect(lrp.TargetInstances).To(Equal(int(*updateRequest.Update.Instances)))
 					Expect(lrp.Metadata[cf.LastUpdated]).To(Equal("21421321.3"))
@@ -269,7 +269,7 @@ var _ = Describe("Bifrost", func() {
 
 			It("should try to get the LRP", func() {
 				Expect(opiClient.GetCallCount()).To(Equal(1))
-				_, appName := opiClient.GetArgsForCall(0)
+				appName := opiClient.GetArgsForCall(0)
 				Expect(appName).To(Equal("app_name"))
 
 			})
@@ -317,7 +317,7 @@ var _ = Describe("Bifrost", func() {
 
 			It("should use the desirer to get the lrp", func() {
 				Expect(opiClient.GetCallCount()).To(Equal(1))
-				_, guid := opiClient.GetArgsForCall(0)
+				guid := opiClient.GetArgsForCall(0)
 				Expect(guid).To(Equal("app_name"))
 			})
 
@@ -358,7 +358,7 @@ var _ = Describe("Bifrost", func() {
 			err = bfrst.Stop(context.Background(), "guid")
 			Expect(err).ToNot(HaveOccurred())
 
-			_, guid := opiClient.StopArgsForCall(0)
+			guid := opiClient.StopArgsForCall(0)
 			Expect(guid).To(Equal("guid"))
 		})
 
@@ -405,7 +405,7 @@ var _ = Describe("Bifrost", func() {
 
 		It("should get the app from Desirer", func() {
 			Expect(opiClient.GetCallCount()).To(Equal(1))
-			_, guid := opiClient.GetArgsForCall(0)
+			guid := opiClient.GetArgsForCall(0)
 			Expect(guid).To(Equal("my-guid-420"))
 		})
 

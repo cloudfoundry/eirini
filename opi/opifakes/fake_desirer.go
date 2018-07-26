@@ -2,18 +2,16 @@
 package opifakes
 
 import (
-	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/opi"
 )
 
 type FakeDesirer struct {
-	DesireStub        func(ctx context.Context, lrps []opi.LRP) error
+	DesireStub        func(lrp *opi.LRP) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
-		ctx  context.Context
-		lrps []opi.LRP
+		lrp *opi.LRP
 	}
 	desireReturns struct {
 		result1 error
@@ -21,23 +19,20 @@ type FakeDesirer struct {
 	desireReturnsOnCall map[int]struct {
 		result1 error
 	}
-	ListStub        func(ctx context.Context) ([]opi.LRP, error)
+	ListStub        func() ([]*opi.LRP, error)
 	listMutex       sync.RWMutex
-	listArgsForCall []struct {
-		ctx context.Context
-	}
-	listReturns struct {
-		result1 []opi.LRP
+	listArgsForCall []struct{}
+	listReturns     struct {
+		result1 []*opi.LRP
 		result2 error
 	}
 	listReturnsOnCall map[int]struct {
-		result1 []opi.LRP
+		result1 []*opi.LRP
 		result2 error
 	}
-	GetStub        func(ctx context.Context, name string) (*opi.LRP, error)
+	GetStub        func(name string) (*opi.LRP, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		ctx  context.Context
 		name string
 	}
 	getReturns struct {
@@ -48,11 +43,10 @@ type FakeDesirer struct {
 		result1 *opi.LRP
 		result2 error
 	}
-	UpdateStub        func(ctx context.Context, updated opi.LRP) error
+	UpdateStub        func(lrp *opi.LRP) error
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
-		ctx     context.Context
-		updated opi.LRP
+		lrp *opi.LRP
 	}
 	updateReturns struct {
 		result1 error
@@ -60,10 +54,9 @@ type FakeDesirer struct {
 	updateReturnsOnCall map[int]struct {
 		result1 error
 	}
-	StopStub        func(ctx context.Context, name string) error
+	StopStub        func(name string) error
 	stopMutex       sync.RWMutex
 	stopArgsForCall []struct {
-		ctx  context.Context
 		name string
 	}
 	stopReturns struct {
@@ -76,22 +69,16 @@ type FakeDesirer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeDesirer) Desire(ctx context.Context, lrps []opi.LRP) error {
-	var lrpsCopy []opi.LRP
-	if lrps != nil {
-		lrpsCopy = make([]opi.LRP, len(lrps))
-		copy(lrpsCopy, lrps)
-	}
+func (fake *FakeDesirer) Desire(lrp *opi.LRP) error {
 	fake.desireMutex.Lock()
 	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
 	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
-		ctx  context.Context
-		lrps []opi.LRP
-	}{ctx, lrpsCopy})
-	fake.recordInvocation("Desire", []interface{}{ctx, lrpsCopy})
+		lrp *opi.LRP
+	}{lrp})
+	fake.recordInvocation("Desire", []interface{}{lrp})
 	fake.desireMutex.Unlock()
 	if fake.DesireStub != nil {
-		return fake.DesireStub(ctx, lrps)
+		return fake.DesireStub(lrp)
 	}
 	if specificReturn {
 		return ret.result1
@@ -105,10 +92,10 @@ func (fake *FakeDesirer) DesireCallCount() int {
 	return len(fake.desireArgsForCall)
 }
 
-func (fake *FakeDesirer) DesireArgsForCall(i int) (context.Context, []opi.LRP) {
+func (fake *FakeDesirer) DesireArgsForCall(i int) *opi.LRP {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
-	return fake.desireArgsForCall[i].ctx, fake.desireArgsForCall[i].lrps
+	return fake.desireArgsForCall[i].lrp
 }
 
 func (fake *FakeDesirer) DesireReturns(result1 error) {
@@ -130,16 +117,14 @@ func (fake *FakeDesirer) DesireReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeDesirer) List(ctx context.Context) ([]opi.LRP, error) {
+func (fake *FakeDesirer) List() ([]*opi.LRP, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
-	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		ctx context.Context
-	}{ctx})
-	fake.recordInvocation("List", []interface{}{ctx})
+	fake.listArgsForCall = append(fake.listArgsForCall, struct{}{})
+	fake.recordInvocation("List", []interface{}{})
 	fake.listMutex.Unlock()
 	if fake.ListStub != nil {
-		return fake.ListStub(ctx)
+		return fake.ListStub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -153,45 +138,38 @@ func (fake *FakeDesirer) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakeDesirer) ListArgsForCall(i int) context.Context {
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
-	return fake.listArgsForCall[i].ctx
-}
-
-func (fake *FakeDesirer) ListReturns(result1 []opi.LRP, result2 error) {
+func (fake *FakeDesirer) ListReturns(result1 []*opi.LRP, result2 error) {
 	fake.ListStub = nil
 	fake.listReturns = struct {
-		result1 []opi.LRP
+		result1 []*opi.LRP
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeDesirer) ListReturnsOnCall(i int, result1 []opi.LRP, result2 error) {
+func (fake *FakeDesirer) ListReturnsOnCall(i int, result1 []*opi.LRP, result2 error) {
 	fake.ListStub = nil
 	if fake.listReturnsOnCall == nil {
 		fake.listReturnsOnCall = make(map[int]struct {
-			result1 []opi.LRP
+			result1 []*opi.LRP
 			result2 error
 		})
 	}
 	fake.listReturnsOnCall[i] = struct {
-		result1 []opi.LRP
+		result1 []*opi.LRP
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeDesirer) Get(ctx context.Context, name string) (*opi.LRP, error) {
+func (fake *FakeDesirer) Get(name string) (*opi.LRP, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		ctx  context.Context
 		name string
-	}{ctx, name})
-	fake.recordInvocation("Get", []interface{}{ctx, name})
+	}{name})
+	fake.recordInvocation("Get", []interface{}{name})
 	fake.getMutex.Unlock()
 	if fake.GetStub != nil {
-		return fake.GetStub(ctx, name)
+		return fake.GetStub(name)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -205,10 +183,10 @@ func (fake *FakeDesirer) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
-func (fake *FakeDesirer) GetArgsForCall(i int) (context.Context, string) {
+func (fake *FakeDesirer) GetArgsForCall(i int) string {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
-	return fake.getArgsForCall[i].ctx, fake.getArgsForCall[i].name
+	return fake.getArgsForCall[i].name
 }
 
 func (fake *FakeDesirer) GetReturns(result1 *opi.LRP, result2 error) {
@@ -233,17 +211,16 @@ func (fake *FakeDesirer) GetReturnsOnCall(i int, result1 *opi.LRP, result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeDesirer) Update(ctx context.Context, updated opi.LRP) error {
+func (fake *FakeDesirer) Update(lrp *opi.LRP) error {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
-		ctx     context.Context
-		updated opi.LRP
-	}{ctx, updated})
-	fake.recordInvocation("Update", []interface{}{ctx, updated})
+		lrp *opi.LRP
+	}{lrp})
+	fake.recordInvocation("Update", []interface{}{lrp})
 	fake.updateMutex.Unlock()
 	if fake.UpdateStub != nil {
-		return fake.UpdateStub(ctx, updated)
+		return fake.UpdateStub(lrp)
 	}
 	if specificReturn {
 		return ret.result1
@@ -257,10 +234,10 @@ func (fake *FakeDesirer) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeDesirer) UpdateArgsForCall(i int) (context.Context, opi.LRP) {
+func (fake *FakeDesirer) UpdateArgsForCall(i int) *opi.LRP {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
-	return fake.updateArgsForCall[i].ctx, fake.updateArgsForCall[i].updated
+	return fake.updateArgsForCall[i].lrp
 }
 
 func (fake *FakeDesirer) UpdateReturns(result1 error) {
@@ -282,17 +259,16 @@ func (fake *FakeDesirer) UpdateReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeDesirer) Stop(ctx context.Context, name string) error {
+func (fake *FakeDesirer) Stop(name string) error {
 	fake.stopMutex.Lock()
 	ret, specificReturn := fake.stopReturnsOnCall[len(fake.stopArgsForCall)]
 	fake.stopArgsForCall = append(fake.stopArgsForCall, struct {
-		ctx  context.Context
 		name string
-	}{ctx, name})
-	fake.recordInvocation("Stop", []interface{}{ctx, name})
+	}{name})
+	fake.recordInvocation("Stop", []interface{}{name})
 	fake.stopMutex.Unlock()
 	if fake.StopStub != nil {
-		return fake.StopStub(ctx, name)
+		return fake.StopStub(name)
 	}
 	if specificReturn {
 		return ret.result1
@@ -306,10 +282,10 @@ func (fake *FakeDesirer) StopCallCount() int {
 	return len(fake.stopArgsForCall)
 }
 
-func (fake *FakeDesirer) StopArgsForCall(i int) (context.Context, string) {
+func (fake *FakeDesirer) StopArgsForCall(i int) string {
 	fake.stopMutex.RLock()
 	defer fake.stopMutex.RUnlock()
-	return fake.stopArgsForCall[i].ctx, fake.stopArgsForCall[i].name
+	return fake.stopArgsForCall[i].name
 }
 
 func (fake *FakeDesirer) StopReturns(result1 error) {

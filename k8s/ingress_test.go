@@ -91,12 +91,12 @@ var _ = Describe("Ingress", func() {
 	})
 
 	JustBeforeEach(func() {
-		ingressManager = NewIngressManager(fakeClient)
+		ingressManager = NewIngressManager(namespace, fakeClient)
 	})
 
 	Context("DeleteIngressRules", func() {
 		JustBeforeEach(func() {
-			err = ingressManager.Delete(namespace, appName)
+			err = ingressManager.Delete(appName)
 		})
 
 		Context("When there is a single rule", func() {
@@ -145,14 +145,14 @@ var _ = Describe("Ingress", func() {
 			uris, err := json.Marshal(appURIs)
 			Expect(err).ToNot(HaveOccurred())
 
-			lrp := opi.LRP{
+			lrp := &opi.LRP{
 				Name: lrpName,
 				Metadata: map[string]string{
 					"application_name": appName,
 					"application_uris": string(uris),
 				}}
 
-			err = ingressManager.Update(namespace, lrp)
+			err = ingressManager.Update(lrp)
 		})
 
 		verifyTLSHosts := func(tlsHosts []string) {
