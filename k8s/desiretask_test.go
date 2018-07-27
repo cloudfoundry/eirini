@@ -18,7 +18,7 @@ import (
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Desiretask", func() {
+var _ = Describe("Desiretask {SYSTEM}", func() {
 	var (
 		client    *kubernetes.Clientset
 		desirer   *k8s.TaskDesirer
