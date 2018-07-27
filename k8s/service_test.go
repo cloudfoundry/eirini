@@ -38,7 +38,8 @@ var _ = Describe("Service", func() {
 		fakeClient = fake.NewSimpleClientset()
 		serviceManager = NewServiceManager(fakeClient)
 		for _, l := range lrps {
-			fakeClient.CoreV1().Services(namespace).Create(toService(l, namespace))
+			_, err := fakeClient.CoreV1().Services(namespace).Create(toService(l, namespace))
+			Expect(err).ToNot(HaveOccurred())
 		}
 	})
 

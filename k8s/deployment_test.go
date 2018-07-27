@@ -84,11 +84,13 @@ var _ = Describe("Deployment {SYSTEM}", func() {
 		return replicasets.Items
 	}
 
+	//nolint
 	cleanupDeployment := func(appName string) {
 		backgroundPropagation := av1.DeletePropagationBackground
 		client.AppsV1beta1().Deployments(namespace).Delete(appName, &av1.DeleteOptions{PropagationPolicy: &backgroundPropagation})
 	}
 
+	//nolint
 	cleanupService := func(appName string) {
 		serviceName := eirini.GetInternalServiceName(appName)
 		client.CoreV1().Services(namespace).Delete(serviceName, &av1.DeleteOptions{})
@@ -124,6 +126,7 @@ var _ = Describe("Deployment {SYSTEM}", func() {
 		Eventually(listServices, timeout).Should(BeEmpty())
 	})
 
+	//nolint
 	JustBeforeEach(func() {
 		createClient()
 		if !namespaceExists(namespace) {
