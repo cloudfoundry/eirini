@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"log"
 	"net/http"
@@ -41,15 +40,15 @@ func simulate(cmd *cobra.Command, args []string) {
 
 type DesirerSimulator struct{}
 
-func (d *DesirerSimulator) Desire(ctx context.Context, lrps []opi.LRP) error {
+func (d *DesirerSimulator) Desire(lrps *opi.LRP) error {
 	return nil
 }
 
-func (d *DesirerSimulator) List(ctx context.Context) ([]opi.LRP, error) {
+func (d *DesirerSimulator) List() ([]*opi.LRP, error) {
 	panic("not implemented")
 }
 
-func (d *DesirerSimulator) Get(ctx context.Context, name string) (*opi.LRP, error) {
+func (d *DesirerSimulator) Get(name string) (*opi.LRP, error) {
 	if name != "jeff" {
 		return &opi.LRP{}, errors.New("this is not jeff")
 	}
@@ -60,11 +59,11 @@ func (d *DesirerSimulator) Get(ctx context.Context, name string) (*opi.LRP, erro
 	}, nil
 }
 
-func (d *DesirerSimulator) Update(ctx context.Context, updated opi.LRP) error {
+func (d *DesirerSimulator) Update(updated *opi.LRP) error {
 	panic("not implemented")
 }
 
-func (d *DesirerSimulator) Stop(ctx context.Context, guid string) error {
+func (d *DesirerSimulator) Stop(guid string) error {
 	panic("not implemented")
 }
 

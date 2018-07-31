@@ -86,10 +86,7 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 
 	kubeNamespace := cfg.Properties.KubeNamespace
 
-	ingressManager := k8s.NewIngressManager(clientset)
-	deploymentManager := k8s.NewDeploymentManager(clientset)
-	serviceManager := k8s.NewServiceManager(clientset)
-	desirer := k8s.NewDesirer(clientset, kubeNamespace, ingressManager, deploymentManager, serviceManager)
+	desirer := k8s.NewDesirer(kubeNamespace, clientset, k8s.UseStatefulSets)
 
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
