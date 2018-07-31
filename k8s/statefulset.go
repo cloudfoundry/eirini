@@ -145,6 +145,12 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 		"name": lrp.Name,
 	}
 
+	statefulSet.Spec.Selector = &meta.LabelSelector{
+		MatchLabels: map[string]string{
+			"name": lrp.Name,
+		},
+	}
+
 	statefulSet.Labels = map[string]string{
 		"eirini": "eirini",
 		"name":   lrp.Name,
