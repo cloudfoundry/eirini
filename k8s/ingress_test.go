@@ -91,7 +91,7 @@ var _ = Describe("Ingress", func() {
 	})
 
 	JustBeforeEach(func() {
-		ingressManager = NewIngressManager(namespace, fakeClient)
+		ingressManager = NewIngressManager(fakeClient, namespace)
 	})
 
 	Context("DeleteIngressRules", func() {

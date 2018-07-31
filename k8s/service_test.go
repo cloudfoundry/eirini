@@ -28,7 +28,7 @@ var _ = Describe("Service", func() {
 
 	JustBeforeEach(func() {
 		fakeClient = fake.NewSimpleClientset()
-		serviceManager = NewServiceManager(namespace, fakeClient)
+		serviceManager = NewServiceManager(fakeClient, namespace)
 	})
 
 	Context("When exposing an existing LRP", func() {

@@ -6,12 +6,13 @@ import (
 )
 
 type Desirer struct {
-	KubeNamespace   string
 	Client          *kubernetes.Clientset
 	ingressManager  IngressManager
 	instanceManager InstanceManager
 	serviceManager  ServiceManager
 }
+
+type InstanceOptionFunc func(string, kubernetes.Interface) InstanceManager
 
 //go:generate counterfeiter . InstanceManager
 type InstanceManager interface {
@@ -23,14 +24,32 @@ type InstanceManager interface {
 	Update(lrp *opi.LRP) error
 }
 
-func NewDesirer(kubeNamespace string, instanceManager InstanceManager, ingressManager IngressManager, serviceManager ServiceManager) *Desirer {
-
+func NewDesirer(kubeNamespace string, clientset kubernetes.Interface, option InstanceOptionFunc) *Desirer {
 	return &Desirer{
-		KubeNamespace:   kubeNamespace,
+		instanceManager: NewInstanceManager(clientset, kubeNamespace, option),
+		ingressManager:  NewIngressManager(clientset, kubeNamespace),
+		serviceManager:  NewServiceManager(clientset, kubeNamespace),
+	}
+}
+
+func NewTestDesirer(
+	instanceManager InstanceManager,
+	ingressManager IngressManager,
+	serviceManager ServiceManager,
+) *Desirer {
+	return &Desirer{
 		instanceManager: instanceManager,
 		ingressManager:  ingressManager,
 		serviceManager:  serviceManager,
 	}
+}
+
+func NewInstanceManager(client kubernetes.Interface, namespace string, option InstanceOptionFunc) InstanceManager {
+	return option(namespace, client)
+}
+
+func UseStatefulSets(namespace string, client kubernetes.Interface) InstanceManager {
+	return NewStatefulSetManager(client, namespace)
 }
 
 func (d *Desirer) Desire(lrp *opi.LRP) error {

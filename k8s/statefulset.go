@@ -17,7 +17,7 @@ type statefulSetManager struct {
 	namespace string
 }
 
-func NewStatefulsetManager(client kubernetes.Interface, namespace string) InstanceManager {
+func NewStatefulSetManager(client kubernetes.Interface, namespace string) InstanceManager {
 	return &statefulSetManager{
 		client:    client,
 		namespace: namespace,

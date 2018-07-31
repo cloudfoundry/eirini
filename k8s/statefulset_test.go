@@ -105,7 +105,7 @@ var _ = Describe("Statefulset", func() {
 			client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
 		}
 
-		statefulSetManager = NewStatefulsetManager(client, namespace)
+		statefulSetManager = NewStatefulSetManager(client, namespace)
 	})
 
 	Context("When creating an LRP", func() {

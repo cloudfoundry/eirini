@@ -28,7 +28,7 @@ type KubeIngressManager struct {
 	client    kubernetes.Interface
 }
 
-func NewIngressManager(namespace string, client kubernetes.Interface) IngressManager {
+func NewIngressManager(client kubernetes.Interface, namespace string) IngressManager {
 	return &KubeIngressManager{
 		namespace: namespace,
 		client:    client,

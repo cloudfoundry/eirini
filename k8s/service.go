@@ -21,7 +21,7 @@ type serviceManager struct {
 	namespace string
 }
 
-func NewServiceManager(namespace string, client kubernetes.Interface) ServiceManager {
+func NewServiceManager(client kubernetes.Interface, namespace string) ServiceManager {
 	return &serviceManager{
 		client:    client,
 		namespace: namespace,
