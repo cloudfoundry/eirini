@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/launcher"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
@@ -51,14 +52,16 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		panic(err)
 	}
 
+	lev := launcher.SetupEnv(launcher.Launch)
+
 	return opi.LRP{
 		Name:            vcap.AppID,
 		Image:           request.DockerImageURL,
 		TargetInstances: request.NumInstances,
 		Command: []string{
-			request.StartCommand,
+			launcher.Launch,
 		},
-		Env: request.Environment,
+		Env: mergeMaps(request.Environment, lev),
 		Metadata: map[string]string{
 			cf.VcapAppName: vcap.AppName,
 			cf.VcapAppID:   vcap.AppID,
@@ -111,4 +114,17 @@ func (c *DropletToImageConverter) stageRequest(vcap cf.VcapApp, dropletHash stri
 	}
 
 	return nil
+}
+
+func mergeMaps(maps ...map[string]string) map[string]string {
+	result := make(map[string]string)
+	for _, m := range maps {
+		for k, v := range m {
+			result[k] = v
+
+		}
+
+	}
+	return result
+
 }
