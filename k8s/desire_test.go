@@ -86,7 +86,7 @@ var _ = Describe("Desire", func() {
 
 			Context("When the instance manager is failing on exists", func() {
 				BeforeEach(func() {
-					instanceManager.ExistsReturns(false, errors.New("argh!"))
+					instanceManager.ExistsReturns(false, errors.New("argh"))
 				})
 
 				It("should return an error", func() {
@@ -102,7 +102,7 @@ var _ = Describe("Desire", func() {
 
 			Context("When the instance manager is failing on create", func() {
 				BeforeEach(func() {
-					instanceManager.CreateReturns(errors.New("argh!"))
+					instanceManager.CreateReturns(errors.New("argh"))
 				})
 
 				It("should return an error", func() {
@@ -117,7 +117,7 @@ var _ = Describe("Desire", func() {
 
 			Context("When the service manager fails", func() {
 				BeforeEach(func() {
-					serviceManager.CreateReturns(errors.New("argh!"))
+					serviceManager.CreateReturns(errors.New("argh"))
 				})
 
 				It("should return an error", func() {
@@ -131,7 +131,7 @@ var _ = Describe("Desire", func() {
 
 			Context("When update ingress fails", func() {
 				BeforeEach(func() {
-					ingressManager.UpdateReturns(errors.New("argh!"))
+					ingressManager.UpdateReturns(errors.New("argh"))
 				})
 
 				It("should return an error", func() {

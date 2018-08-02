@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"flag"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,10 +20,12 @@ const (
 )
 
 var (
-	namespace string
-	clientset kubernetes.Interface
+	namespace     string
+	clientset     kubernetes.Interface
+	opiConfigPath string
 )
 
+// nolint
 var _ = BeforeSuite(func() {
 	namespace = "opi-integration"
 	config, err := clientcmd.BuildConfigFromFlags("",
@@ -36,6 +39,10 @@ var _ = BeforeSuite(func() {
 	ns := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
 	clientset.CoreV1().Namespaces().Create(ns)
 })
+
+func init() {
+	flag.StringVar(&opiConfigPath, "opi_config", "", "path to a valid opi config file")
+}
 
 func TestIntegration(t *testing.T) {
 	RegisterFailHandler(Fail)

@@ -20,6 +20,7 @@ var _ = Describe("Instance {SYSTEM}", func() {
 		err             error
 	)
 
+	// nolint
 	cleanupStatefulSet := func(appName string) {
 		backgroundPropagation := metav1.DeletePropagationBackground
 		clientset.AppsV1beta2().StatefulSets(namespace).Delete(appName, &metav1.DeleteOptions{PropagationPolicy: &backgroundPropagation})
@@ -87,6 +88,40 @@ var _ = Describe("Instance {SYSTEM}", func() {
 				return list.Items
 			}, timeout).Should(BeEmpty())
 		})
+	})
+
+	Context("TODO", func() {
+		//PIt("creates the desired number of app instances", func() {
+		//Eventually(func() int32 {
+		//return getStatefulSet(appName).Status.CurrentReplicas
+		//}, timeout).Should(Equal(int32(5)))
+
+		//Eventually(func() int32 {
+		//return getStatefulSet(appName).Status.UpdatedReplicas
+		//}, timeout).Should(Equal(int32(5)))
+		//})
+
+		//PIt("updates the timestamp of the last update", func() {
+		//Eventually(func() map[string]string {
+		//return getStatefulSet(appName).Annotations
+		//}, timeout).Should(HaveKeyWithValue(cf.LastUpdated, "123214.2"))
+		//})
+
+		//It("deletes the replicasets associated with the statefulSet", func() {
+		//err := statefulSetManager.Delete("odin")
+		//Expect(err).ToNot(HaveOccurred())
+
+		//Eventually(func() []v1beta2.ReplicaSet {
+		//return listReplicasets("odin")
+		//}, timeout).Should(BeEmpty())
+		//})
+
+		//listReplicasets := func(appName string) []v1beta2.ReplicaSet {
+		//		labelSelector := fmt.Sprintf("name=%s", appName)
+		//	replicasets, err := client.AppsV1beta2().ReplicaSets(namespace).List(meta.ListOptions{LabelSelector: labelSelector})
+		//	Expect(err).NotTo(HaveOccurred())
+		//	return replicasets.Items
+		//}
 	})
 })
 

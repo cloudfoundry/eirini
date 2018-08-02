@@ -2,11 +2,15 @@ package integration_test
 
 import (
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
 	yaml "gopkg.in/yaml.v2"
@@ -17,13 +21,12 @@ import (
 var _ = Describe("Build {SYSTEM}", func() {
 	Context("When building OPI", func() {
 		var (
-			opiPath    string
-			err        error
-			opiConfig  eirini.Config
-			tmpDir     string
-			config     []byte
-			configPath string
-			session    *gexec.Session
+			opiPath   string
+			err       error
+			opiConfig eirini.Config
+			tmpDir    string
+			config    []byte
+			session   *gexec.Session
 		)
 
 		BeforeEach(func() {
@@ -31,8 +34,12 @@ var _ = Describe("Build {SYSTEM}", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		AfterEach(func() {
+			session.Terminate()
+		})
+
 		JustBeforeEach(func() {
-			cmd := exec.Command(opiPath, "connect", "--config", configPath)
+			cmd := exec.Command(opiPath, "connect", "--config", opiConfigPath)
 			session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -46,8 +53,8 @@ var _ = Describe("Build {SYSTEM}", func() {
 				tmpDir, err = ioutil.TempDir("", "opi-tmp-dir")
 				Expect(err).NotTo(HaveOccurred())
 
-				configPath = filepath.Join(tmpDir, "opi.yml")
-				err = ioutil.WriteFile(configPath, config, 0644)
+				opiConfigPath = filepath.Join(tmpDir, "opi.yml")
+				err = ioutil.WriteFile(opiConfigPath, config, 0644)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -55,6 +62,22 @@ var _ = Describe("Build {SYSTEM}", func() {
 				<-session.Exited
 				Expect(session.ExitCode()).ToNot(Equal(0))
 			})
+		})
+
+		FContext("Using a valid opi config file", func() {
+			FIt("should print connected string", func() {
+				Eventually(session.Err, 5*time.Second).Should(gbytes.Say(".*opi connected"))
+			})
+
+			It("should run the opi process", func() {
+				pid := session.Command.Process.Pid
+				process, err := os.FindProcess(int(pid))
+				Expect(err).ToNot(HaveOccurred())
+				err = process.Signal(syscall.Signal(0))
+				Expect(err).ToNot(HaveOccurred())
+
+			})
+
 		})
 	})
 })

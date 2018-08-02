@@ -55,6 +55,8 @@ func connect(cmd *cobra.Command, args []string) {
 
 	handler := handler.New(bifrost, handlerLogger)
 
+	log.Println("opi connected")
+
 	log.Fatal(http.ListenAndServe("0.0.0.0:8085", handler))
 }
 
