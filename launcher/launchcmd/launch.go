@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"syscall"
 )
 
-//This is a smal wrapper arounc the launcher which is required to
+//This is a smal wrapper around the launcher which is required to
 //get the start_command from the staging_info.yml
 //inside the container. The command is passed to the
 //code.cloudfoundry.org/buildpackapplifecycle/launcher.
@@ -18,9 +19,21 @@ func main() {
 		command = readCommand("/home/vcap/staging_info.yml")
 	}
 
+	err := os.Setenv("INSTANCE_INDEX", parsePodIndex())
+	check(err, "setting instance index env var")
+
 	args := []string{"/lifecycle/launcher", "/home/vcap/app", command, ""}
-	err := syscall.Exec("/lifecycle/launcher", args, os.Environ())
+
+	err = syscall.Exec("/lifecycle/launcher", args, os.Environ())
 	check(err, "execute launcher")
+}
+
+func parsePodIndex() string {
+	sl := strings.Split(os.Getenv("POD_NAME"), "-")
+	if len(sl) == 0 {
+		return ""
+	}
+	return sl[len(sl)-1]
 }
 
 func readCommand(path string) string {

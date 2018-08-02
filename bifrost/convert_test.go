@@ -46,6 +46,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			Environment: map[string]string{
 				"VCAP_APPLICATION": `{"application_name":"bumblebee", "space_name":"transformers", "application_id":"b194809b-88c0-49af-b8aa-69da097fc360", "version": "something-something-uuid", "application_uris":["bumblebee.example.com", "transformers.example.com"]}`,
 			},
+			StartCommand: "start me",
 		}
 	})
 
@@ -98,6 +99,12 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				val, ok := lrp.Env["PORT"]
 				Expect(ok).To(BeTrue())
 				Expect(val).To(Equal("8080"))
+			})
+
+			It("should set the start command env variable", func() {
+				val, ok := lrp.Env["START_COMMAND"]
+				Expect(ok).To(BeTrue())
+				Expect(val).To(Equal("start me"))
 			})
 		}
 

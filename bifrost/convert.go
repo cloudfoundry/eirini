@@ -52,7 +52,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		panic(err)
 	}
 
-	lev := launcher.SetupEnv(launcher.Launch)
+	lev := launcher.SetupEnv(request.StartCommand)
 
 	return opi.LRP{
 		Name:            vcap.AppID,
