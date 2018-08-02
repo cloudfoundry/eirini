@@ -7,16 +7,6 @@ import (
 	"k8s.io/api/core/v1"
 )
 
-func MergeMaps(maps ...map[string]string) map[string]string {
-	result := make(map[string]string)
-	for _, m := range maps {
-		for k, v := range m {
-			result[k] = v
-		}
-	}
-	return result
-}
-
 func MapToEnvVar(env map[string]string) []v1.EnvVar {
 	envVars := []v1.EnvVar{}
 	for k, v := range env {

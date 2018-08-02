@@ -1,7 +1,6 @@
 package k8s_test
 
 import (
-	"fmt"
 	"time"
 
 	. "code.cloudfoundry.org/eirini/k8s"
@@ -30,52 +29,10 @@ var _ = Describe("Statefulset", func() {
 		timeout   time.Duration = 60 * time.Second
 	)
 
-	namespaceExists := func(name string) bool {
-		_, err := client.CoreV1().Namespaces().Get(namespace, meta.GetOptions{})
-		return err == nil
-	}
-
-	createNamespace := func(name string) {
-		namespaceSpec := &v1.Namespace{
-			ObjectMeta: meta.ObjectMeta{Name: name},
-		}
-
-		if _, err := client.CoreV1().Namespaces().Create(namespaceSpec); err != nil {
-			panic(err)
-		}
-	}
-
-	getLRPNames := func() []string {
-		names := []string{}
-		for _, lrp := range lrps {
-			names = append(names, lrp.Metadata[cf.ProcessGUID])
-		}
-		return names
-	}
-
 	listStatefulSets := func() []v1beta2.StatefulSet {
 		list, err := client.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		return list.Items
-	}
-
-	listPods := func(appName string) []v1.Pod {
-		labelSelector := fmt.Sprintf("name=%s", appName)
-		pods, err := client.CoreV1().Pods(namespace).List(meta.ListOptions{LabelSelector: labelSelector})
-		Expect(err).NotTo(HaveOccurred())
-		return pods.Items
-	}
-
-	listReplicasets := func(appName string) []v1beta2.ReplicaSet {
-		labelSelector := fmt.Sprintf("name=%s", appName)
-		replicasets, err := client.AppsV1beta2().ReplicaSets(namespace).List(meta.ListOptions{LabelSelector: labelSelector})
-		Expect(err).NotTo(HaveOccurred())
-		return replicasets.Items
-	}
-
-	cleanupStatefulSet := func(appName string) {
-		backgroundPropagation := meta.DeletePropagationBackground
-		client.AppsV1beta2().StatefulSets(namespace).Delete(appName, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
 	}
 
 	BeforeEach(func() {
@@ -84,22 +41,10 @@ var _ = Describe("Statefulset", func() {
 			createLRP("thor", "4567.8"),
 			createLRP("mimir", "9012.3"),
 		}
-
-	})
-
-	AfterEach(func() {
-		for _, appName := range getLRPNames() {
-			cleanupStatefulSet(appName)
-		}
-
-		Eventually(listStatefulSets, timeout).Should(BeEmpty())
 	})
 
 	JustBeforeEach(func() {
 		client = fake.NewSimpleClientset()
-		if !namespaceExists(namespace) {
-			createNamespace(namespace)
-		}
 
 		for _, l := range lrps {
 			client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
@@ -213,26 +158,12 @@ var _ = Describe("Statefulset", func() {
 
 	Context("When updating an app", func() {
 		Context("when the app exists", func() {
-
-			var (
-				appName string
-			)
-
-			BeforeEach(func() {
-				appName = "update"
-
-				lrp := createLRP("update", "7653.2")
-				lrps = append(lrps, lrp)
-
-				statefulSet := toStatefulSet(lrp, namespace)
-				_, err := client.AppsV1beta2().StatefulSets(namespace).Create(statefulSet)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
 			Context("with replica count modified", func() {
 
-				var err error
-
+				var (
+					err     error
+					appName string
+				)
 				getStatefulSet := func(appName string) *v1beta2.StatefulSet {
 					statefulSet, err := client.AppsV1beta2().StatefulSets(namespace).Get(appName, meta.GetOptions{})
 					Expect(err).ToNot(HaveOccurred())
@@ -240,6 +171,14 @@ var _ = Describe("Statefulset", func() {
 				}
 
 				JustBeforeEach(func() {
+					appName = "update"
+
+					lrp := createLRP("update", "7653.2")
+					lrps = append(lrps, lrp)
+
+					statefulSet := toStatefulSet(lrp, namespace)
+					_, err := client.AppsV1beta2().StatefulSets(namespace).Create(statefulSet)
+					Expect(err).NotTo(HaveOccurred())
 					err = statefulSetManager.Update(&opi.LRP{
 						Name:            appName,
 						TargetInstances: 5,
@@ -254,22 +193,6 @@ var _ = Describe("Statefulset", func() {
 					Eventually(func() int32 {
 						return *getStatefulSet(appName).Spec.Replicas
 					}, timeout).Should(Equal(int32(5)))
-				})
-
-				PIt("creates the desired number of app instances", func() {
-					Eventually(func() int32 {
-						return getStatefulSet(appName).Status.CurrentReplicas
-					}, timeout).Should(Equal(int32(5)))
-
-					Eventually(func() int32 {
-						return getStatefulSet(appName).Status.UpdatedReplicas
-					}, timeout).Should(Equal(int32(5)))
-				})
-
-				PIt("updates the timestamp of the last update", func() {
-					Eventually(func() map[string]string {
-						return getStatefulSet(appName).Annotations
-					}, timeout).Should(HaveKeyWithValue(cf.LastUpdated, "123214.2"))
 				})
 			})
 		})
@@ -327,24 +250,6 @@ var _ = Describe("Statefulset", func() {
 			Expect(getStatefulSetNames(listStatefulSets())).To(ConsistOf("mimir", "thor"))
 		})
 
-		PIt("deletes the pods associated with the statefulSet", func() {
-			err := statefulSetManager.Delete("odin")
-			Expect(err).ToNot(HaveOccurred())
-
-			Eventually(func() []v1.Pod {
-				return listPods("odin")
-			}, timeout).Should(BeEmpty())
-		})
-
-		It("deletes the replicasets associated with the statefulSet", func() {
-			err := statefulSetManager.Delete("odin")
-			Expect(err).ToNot(HaveOccurred())
-
-			Eventually(func() []v1beta2.ReplicaSet {
-				return listReplicasets("odin")
-			}, timeout).Should(BeEmpty())
-		})
-
 		Context("when the statefulSet does not exist", func() {
 
 			It("returns an error", func() {
@@ -366,10 +271,10 @@ func getStatefulSetNames(statefulSets []v1beta2.StatefulSet) []string {
 func toStatefulSet(lrp *opi.LRP, namespace string) *v1beta2.StatefulSet {
 	envs := MapToEnvVar(lrp.Env)
 	envs = append(envs, v1.EnvVar{
-		Name: "INSTANCE_INDEX",
+		Name: "POD_NAME",
 		ValueFrom: &v1.EnvVarSource{
 			FieldRef: &v1.ObjectFieldSelector{
-				FieldPath: "metadata.annotations['spec.pod.beta.kubernetes.io/statefulset-index']",
+				FieldPath: "metadata.name",
 			},
 		},
 	})

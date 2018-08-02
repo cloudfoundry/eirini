@@ -108,10 +108,10 @@ func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	envs := MapToEnvVar(lrp.Env)
 	envs = append(envs, v1.EnvVar{
-		Name: "INSTANCE_INDEX",
+		Name: "POD_NAME",
 		ValueFrom: &v1.EnvVarSource{
 			FieldRef: &v1.ObjectFieldSelector{
-				FieldPath: "metadata.annotations['spec.pod.beta.kubernetes.io/statefulset-index']",
+				FieldPath: "metadata.name",
 			},
 		},
 	})

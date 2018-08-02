@@ -29,7 +29,11 @@ var _ = Describe("Desire", func() {
 	})
 
 	JustBeforeEach(func() {
-		desirer = NewTestDesirer(instanceManager, ingressManager, serviceManager)
+		desirer = &Desirer{
+			InstanceManager: instanceManager,
+			IngressManager:  ingressManager,
+			ServiceManager:  serviceManager,
+		}
 	})
 
 	Context("When desiring an lrp", func() {
