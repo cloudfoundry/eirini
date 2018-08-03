@@ -91,3 +91,8 @@ func GetInternalServiceName(appName string) string {
 	//Prefix service as the appName could start with numerical characters, which is not allowed
 	return fmt.Sprintf("cf-%s", appName)
 }
+
+func GetInternalHeadlessServiceName(appName string) string {
+	//Prefix service as the appName could start with numerical characters, which is not allowed
+	return fmt.Sprintf("cf-%s-headless", appName)
+}

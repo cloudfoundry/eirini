@@ -20,9 +20,9 @@ const (
 )
 
 var (
-	namespace     string
-	clientset     kubernetes.Interface
-	opiConfigPath string
+	namespace          string
+	clientset          kubernetes.Interface
+	validOpiConfigPath string
 )
 
 // nolint
@@ -41,7 +41,7 @@ var _ = BeforeSuite(func() {
 })
 
 func init() {
-	flag.StringVar(&opiConfigPath, "opi_config", "", "path to a valid opi config file")
+	flag.StringVar(&validOpiConfigPath, "valid_opi_config", "", "path to a valid opi config file")
 }
 
 func TestIntegration(t *testing.T) {

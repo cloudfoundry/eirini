@@ -20,6 +20,17 @@ type FakeServiceManager struct {
 	createReturnsOnCall map[int]struct {
 		result1 error
 	}
+	CreateHeadlessStub        func(lrp *opi.LRP) error
+	createHeadlessMutex       sync.RWMutex
+	createHeadlessArgsForCall []struct {
+		lrp *opi.LRP
+	}
+	createHeadlessReturns struct {
+		result1 error
+	}
+	createHeadlessReturnsOnCall map[int]struct {
+		result1 error
+	}
 	DeleteStub        func(appName string) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
@@ -83,6 +94,54 @@ func (fake *FakeServiceManager) CreateReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeServiceManager) CreateHeadless(lrp *opi.LRP) error {
+	fake.createHeadlessMutex.Lock()
+	ret, specificReturn := fake.createHeadlessReturnsOnCall[len(fake.createHeadlessArgsForCall)]
+	fake.createHeadlessArgsForCall = append(fake.createHeadlessArgsForCall, struct {
+		lrp *opi.LRP
+	}{lrp})
+	fake.recordInvocation("CreateHeadless", []interface{}{lrp})
+	fake.createHeadlessMutex.Unlock()
+	if fake.CreateHeadlessStub != nil {
+		return fake.CreateHeadlessStub(lrp)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.createHeadlessReturns.result1
+}
+
+func (fake *FakeServiceManager) CreateHeadlessCallCount() int {
+	fake.createHeadlessMutex.RLock()
+	defer fake.createHeadlessMutex.RUnlock()
+	return len(fake.createHeadlessArgsForCall)
+}
+
+func (fake *FakeServiceManager) CreateHeadlessArgsForCall(i int) *opi.LRP {
+	fake.createHeadlessMutex.RLock()
+	defer fake.createHeadlessMutex.RUnlock()
+	return fake.createHeadlessArgsForCall[i].lrp
+}
+
+func (fake *FakeServiceManager) CreateHeadlessReturns(result1 error) {
+	fake.CreateHeadlessStub = nil
+	fake.createHeadlessReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeServiceManager) CreateHeadlessReturnsOnCall(i int, result1 error) {
+	fake.CreateHeadlessStub = nil
+	if fake.createHeadlessReturnsOnCall == nil {
+		fake.createHeadlessReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.createHeadlessReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeServiceManager) Delete(appName string) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
@@ -136,6 +195,8 @@ func (fake *FakeServiceManager) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
+	fake.createHeadlessMutex.RLock()
+	defer fake.createHeadlessMutex.RUnlock()
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

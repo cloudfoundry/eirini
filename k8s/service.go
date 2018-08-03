@@ -13,6 +13,7 @@ import (
 //go:generate counterfeiter . ServiceManager
 type ServiceManager interface {
 	Create(lrp *opi.LRP) error
+	CreateHeadless(lrp *opi.LRP) error
 	Delete(appName string) error
 }
 
@@ -42,36 +43,57 @@ func (m *serviceManager) Create(lrp *opi.LRP) error {
 	return err
 }
 
+func (m *serviceManager) CreateHeadless(lrp *opi.LRP) error {
+	_, err := m.services().Create(toHeadlessService(lrp))
+	return err
+}
+
 func toService(lrp *opi.LRP) *v1.Service {
 	service := &v1.Service{
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
-				v1.ServicePort{
-					Name:     "service",
-					Port:     8080,
-					Protocol: v1.ProtocolTCP,
+				{
+					Name: "service",
+					Port: 8080,
 				},
 			},
 			Selector: map[string]string{
 				"name": lrp.Name,
 			},
-			SessionAffinity: "None",
-		},
-		Status: v1.ServiceStatus{
-			LoadBalancer: v1.LoadBalancerStatus{},
 		},
 	}
 
-	service.APIVersion = "v1"
-	service.Kind = "Service"
 	service.Name = eirini.GetInternalServiceName(lrp.Name)
 	service.Labels = map[string]string{
-		"eirini": "eirini",
-		"name":   lrp.Name,
+		"name": lrp.Name,
 	}
 
 	service.Annotations = map[string]string{
 		"routes": lrp.Metadata[cf.VcapAppUris],
+	}
+
+	return service
+}
+
+func toHeadlessService(lrp *opi.LRP) *v1.Service {
+	service := &v1.Service{
+		Spec: v1.ServiceSpec{
+			ClusterIP: "None",
+			Ports: []v1.ServicePort{
+				{
+					Name: "service",
+					Port: 8080,
+				},
+			},
+			Selector: map[string]string{
+				"name": lrp.Name,
+			},
+		},
+	}
+
+	service.Name = eirini.GetInternalHeadlessServiceName(lrp.Name)
+	service.Labels = map[string]string{
+		"name": lrp.Name,
 	}
 
 	return service

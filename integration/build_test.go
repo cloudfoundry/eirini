@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -21,12 +22,13 @@ import (
 var _ = Describe("Build {SYSTEM}", func() {
 	Context("When building OPI", func() {
 		var (
-			opiPath   string
-			err       error
-			opiConfig eirini.Config
-			tmpDir    string
-			config    []byte
-			session   *gexec.Session
+			opiPath       string
+			err           error
+			opiConfig     eirini.Config
+			tmpDir        string
+			config        []byte
+			session       *gexec.Session
+			opiConfigPath string
 		)
 
 		BeforeEach(func() {
@@ -64,8 +66,16 @@ var _ = Describe("Build {SYSTEM}", func() {
 			})
 		})
 
-		FContext("Using a valid opi config file", func() {
-			FIt("should print connected string", func() {
+		Context("Using a valid opi config file", func() {
+
+			BeforeEach(func() {
+				if validOpiConfigPath == "" {
+					panic(errors.New("Valid OPI config file not provided"))
+				}
+				opiConfigPath = validOpiConfigPath
+			})
+
+			It("should print connected string", func() {
 				Eventually(session.Err, 5*time.Second).Should(gbytes.Say(".*opi connected"))
 			})
 
@@ -75,7 +85,6 @@ var _ = Describe("Build {SYSTEM}", func() {
 				Expect(err).ToNot(HaveOccurred())
 				err = process.Signal(syscall.Signal(0))
 				Expect(err).ToNot(HaveOccurred())
-
 			})
 
 		})
