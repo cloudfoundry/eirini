@@ -12,19 +12,21 @@ import (
 	types "k8s.io/client-go/kubernetes/typed/apps/v1beta2"
 )
 
-type statefulSetManager struct {
-	client    kubernetes.Interface
-	namespace string
+type StatefulSetManager struct {
+	Client         kubernetes.Interface
+	Namespace      string
+	ServiceManager ServiceManager
 }
 
 func NewStatefulSetManager(client kubernetes.Interface, namespace string) InstanceManager {
-	return &statefulSetManager{
-		client:    client,
-		namespace: namespace,
+	return &StatefulSetManager{
+		Client:         client,
+		Namespace:      namespace,
+		ServiceManager: NewServiceManager(client, namespace),
 	}
 }
 
-func (m *statefulSetManager) List() ([]*opi.LRP, error) {
+func (m *StatefulSetManager) List() ([]*opi.LRP, error) {
 	statefulsets, err := m.statefulSets().List(meta.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -35,17 +37,19 @@ func (m *statefulSetManager) List() ([]*opi.LRP, error) {
 	return lrps, nil
 }
 
-func (m *statefulSetManager) Delete(appName string) error {
+func (m *StatefulSetManager) Delete(appName string) error {
 	backgroundPropagation := meta.DeletePropagationBackground
 	return m.statefulSets().Delete(appName, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
 }
 
-func (m *statefulSetManager) Create(lrp *opi.LRP) error {
-	_, err := m.statefulSets().Create(toStatefulSet(lrp))
-	return err
+func (m *StatefulSetManager) Create(lrp *opi.LRP) error {
+	if _, err := m.statefulSets().Create(toStatefulSet(lrp)); err != nil {
+		return err
+	}
+	return m.ServiceManager.CreateHeadless(lrp)
 }
 
-func (m *statefulSetManager) Update(lrp *opi.LRP) error {
+func (m *StatefulSetManager) Update(lrp *opi.LRP) error {
 	statefulSet, err := m.statefulSets().Get(lrp.Name, meta.GetOptions{})
 	if err != nil {
 		return err
@@ -59,7 +63,7 @@ func (m *statefulSetManager) Update(lrp *opi.LRP) error {
 	return err
 }
 
-func (m *statefulSetManager) Exists(appName string) (bool, error) {
+func (m *StatefulSetManager) Exists(appName string) (bool, error) {
 	selector := fmt.Sprintf("name=%s", appName)
 	list, err := m.statefulSets().List(meta.ListOptions{LabelSelector: selector})
 	if err != nil {
@@ -69,7 +73,7 @@ func (m *statefulSetManager) Exists(appName string) (bool, error) {
 	return len(list.Items) > 0, nil
 }
 
-func (m *statefulSetManager) Get(appName string) (*opi.LRP, error) {
+func (m *StatefulSetManager) Get(appName string) (*opi.LRP, error) {
 	statefulSet, err := m.statefulSets().Get(appName, meta.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -80,8 +84,8 @@ func (m *statefulSetManager) Get(appName string) (*opi.LRP, error) {
 	return lrp, nil
 }
 
-func (m *statefulSetManager) statefulSets() types.StatefulSetInterface {
-	return m.client.AppsV1beta2().StatefulSets(m.namespace)
+func (m *StatefulSetManager) statefulSets() types.StatefulSetInterface {
+	return m.Client.AppsV1beta2().StatefulSets(m.Namespace)
 }
 
 func statefulSetsToLRPs(statefulSets *v1beta2.StatefulSetList) []*opi.LRP {

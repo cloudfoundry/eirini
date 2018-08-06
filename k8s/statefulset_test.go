@@ -1,9 +1,11 @@
 package k8s_test
 
 import (
+	"errors"
 	"time"
 
 	. "code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
@@ -21,6 +23,7 @@ var _ = Describe("Statefulset", func() {
 		err                error
 		client             kubernetes.Interface
 		statefulSetManager InstanceManager
+		serviceManager     *k8sfakes.FakeServiceManager
 		lrps               []*opi.LRP
 	)
 
@@ -41,16 +44,17 @@ var _ = Describe("Statefulset", func() {
 			createLRP("thor", "4567.8"),
 			createLRP("mimir", "9012.3"),
 		}
+
+		client = fake.NewSimpleClientset()
+		serviceManager = new(k8sfakes.FakeServiceManager)
 	})
 
 	JustBeforeEach(func() {
-		client = fake.NewSimpleClientset()
-
-		for _, l := range lrps {
-			client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+		statefulSetManager = &StatefulSetManager{
+			Client:         client,
+			Namespace:      namespace,
+			ServiceManager: serviceManager,
 		}
-
-		statefulSetManager = NewStatefulSetManager(client, namespace)
 	})
 
 	Context("When creating an LRP", func() {
@@ -58,8 +62,6 @@ var _ = Describe("Statefulset", func() {
 
 		JustBeforeEach(func() {
 			lrp = createLRP("Baldur", "1234.5")
-			lrps = append(lrps, lrp)
-
 			err = statefulSetManager.Create(lrp)
 		})
 
@@ -74,10 +76,32 @@ var _ = Describe("Statefulset", func() {
 			Expect(statefulSet).To(Equal(toStatefulSet(lrp, namespace)))
 		})
 
+		It("should create a headless service", func() {
+			Expect(serviceManager.CreateHeadlessCallCount()).To(Equal(1))
+			headlessLRP := serviceManager.CreateHeadlessArgsForCall(0)
+			Expect(headlessLRP).To(Equal(lrp))
+		})
+
 		Context("When redeploying an existing LRP", func() {
 			BeforeEach(func() {
 				lrp = createLRP("Baldur", "1234.5")
-				lrps = append(lrps, lrp)
+				_, err := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp, namespace))
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should fail", func() {
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("should not create headless service", func() {
+				Expect(serviceManager.CreateHeadlessCallCount()).To(Equal(0))
+			})
+		})
+
+		Context("When fails to create a headless service", func() {
+
+			BeforeEach(func() {
+				serviceManager.CreateHeadlessReturns(errors.New("oopsie"))
 			})
 
 			It("should fail", func() {
@@ -89,6 +113,12 @@ var _ = Describe("Statefulset", func() {
 	Context("When getting an app", func() {
 
 		var lrp *opi.LRP
+
+		BeforeEach(func() {
+			for _, l := range lrps {
+				client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+			}
+		})
 
 		JustBeforeEach(func() {
 			lrp, err = statefulSetManager.Get("odin")
@@ -128,7 +158,9 @@ var _ = Describe("Statefulset", func() {
 		Context("when the app exists", func() {
 
 			BeforeEach(func() {
-				appName = "mimir"
+				appName = "baldur"
+				lrp := createLRP(appName, "9012.3")
+				client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp, namespace))
 			})
 
 			It("should not return an error", func() {
@@ -164,21 +196,24 @@ var _ = Describe("Statefulset", func() {
 					err     error
 					appName string
 				)
+
 				getStatefulSet := func(appName string) *v1beta2.StatefulSet {
 					statefulSet, err := client.AppsV1beta2().StatefulSets(namespace).Get(appName, meta.GetOptions{})
 					Expect(err).ToNot(HaveOccurred())
 					return statefulSet
 				}
 
-				JustBeforeEach(func() {
+				BeforeEach(func() {
 					appName = "update"
 
 					lrp := createLRP("update", "7653.2")
-					lrps = append(lrps, lrp)
 
 					statefulSet := toStatefulSet(lrp, namespace)
 					_, err := client.AppsV1beta2().StatefulSets(namespace).Create(statefulSet)
 					Expect(err).NotTo(HaveOccurred())
+				})
+
+				JustBeforeEach(func() {
 					err = statefulSetManager.Update(&opi.LRP{
 						Name:            appName,
 						TargetInstances: 5,
@@ -220,6 +255,13 @@ var _ = Describe("Statefulset", func() {
 	})
 
 	Context("List StatefulSets", func() {
+
+		BeforeEach(func() {
+			for _, l := range lrps {
+				client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+			}
+		})
+
 		It("translates all existing statefulSets to opi.LRPs", func() {
 			actualLRPs, err := statefulSetManager.List()
 			Expect(err).ToNot(HaveOccurred())
@@ -229,7 +271,8 @@ var _ = Describe("Statefulset", func() {
 		Context("When no statefulSets exist", func() {
 
 			BeforeEach(func() {
-				lrps = []*opi.LRP{}
+				client = fake.NewSimpleClientset()
+				serviceManager = new(k8sfakes.FakeServiceManager)
 			})
 
 			It("returns an empy list of LRPs", func() {
@@ -241,6 +284,12 @@ var _ = Describe("Statefulset", func() {
 	})
 
 	Context("Delete a statefulSet", func() {
+
+		BeforeEach(func() {
+			for _, l := range lrps {
+				client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+			}
+		})
 
 		It("deletes the statefulSet", func() {
 			err := statefulSetManager.Delete("odin")
