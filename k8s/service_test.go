@@ -25,8 +25,11 @@ var _ = Describe("Service", func() {
 		namespace = "midgard"
 	)
 
-	JustBeforeEach(func() {
+	BeforeEach(func() {
 		fakeClient = fake.NewSimpleClientset()
+	})
+
+	JustBeforeEach(func() {
 		serviceManager = NewServiceManager(fakeClient, namespace)
 	})
 
@@ -106,42 +109,86 @@ var _ = Describe("Service", func() {
 				})
 			})
 		})
+	})
 
-		Context("When deleting a service", func() {
+	Context("When deleting", func() {
 
-			var lrps []*opi.LRP
+		var service *v1.Service
 
-			BeforeEach(func() {
-				lrps = []*opi.LRP{
-					createLRP("odin", "1234.5"),
-					createLRP("thor", "4567.8"),
-					createLRP("mimir", "9012.3"),
-				}
-			})
+		assertServiceIsDeleted := func(err error) {
+			Expect(err).ToNot(HaveOccurred())
+
+			services, err := fakeClient.CoreV1().Services(namespace).List(meta.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(services.Items).To(BeEmpty())
+		}
+
+		JustBeforeEach(func() {
+			_, err := fakeClient.CoreV1().Services(namespace).Create(service)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		Context("a regular service", func() {
+
+			var err error
 
 			JustBeforeEach(func() {
-				for _, l := range lrps {
-					fakeClient.CoreV1().Services(namespace).Create(toService(l, namespace))
-				}
+				err = serviceManager.Delete("odin")
+			})
+
+			BeforeEach(func() {
+				lrp := createLRP("odin", "1234.5")
+				service = toService(lrp, namespace)
 			})
 
 			It("deletes the service", func() {
-				err := serviceManager.Delete("odin")
-				Expect(err).ToNot(HaveOccurred())
-
-				services, _ := fakeClient.CoreV1().Services(namespace).List(meta.ListOptions{})
-				Expect(services.Items).To(HaveLen(2))
-				Expect(getServicesNames(services)).To(ConsistOf(eirini.GetInternalServiceName("mimir"), eirini.GetInternalServiceName("thor")))
+				assertServiceIsDeleted(err)
 			})
 
 			Context("when the service does not exist", func() {
+
+				JustBeforeEach(func() {
+					err = serviceManager.Delete("tyr")
+				})
+
 				It("returns an error", func() {
-					err := serviceManager.Delete("non-existing")
 					Expect(err).To(HaveOccurred())
 				})
+
+			})
+		})
+
+		Context("a headless service", func() {
+
+			var err error
+
+			BeforeEach(func() {
+				lrp := createLRP("odin", "1234.5")
+				service = toHeadlessService(lrp, namespace)
+			})
+
+			JustBeforeEach(func() {
+				err = serviceManager.DeleteHeadless("odin")
+			})
+
+			It("deletes the service", func() {
+				assertServiceIsDeleted(err)
+			})
+
+			Context("when the service does not exist", func() {
+
+				JustBeforeEach(func() {
+					err = serviceManager.DeleteHeadless("tyr")
+				})
+
+				It("returns an error", func() {
+					Expect(err).To(HaveOccurred())
+				})
+
 			})
 		})
 	})
+
 })
 
 func getServicesNames(services *v1.ServiceList) []string {

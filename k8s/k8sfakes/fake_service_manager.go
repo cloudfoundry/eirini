@@ -42,6 +42,17 @@ type FakeServiceManager struct {
 	deleteReturnsOnCall map[int]struct {
 		result1 error
 	}
+	DeleteHeadlessStub        func(appName string) error
+	deleteHeadlessMutex       sync.RWMutex
+	deleteHeadlessArgsForCall []struct {
+		appName string
+	}
+	deleteHeadlessReturns struct {
+		result1 error
+	}
+	deleteHeadlessReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -190,6 +201,54 @@ func (fake *FakeServiceManager) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeServiceManager) DeleteHeadless(appName string) error {
+	fake.deleteHeadlessMutex.Lock()
+	ret, specificReturn := fake.deleteHeadlessReturnsOnCall[len(fake.deleteHeadlessArgsForCall)]
+	fake.deleteHeadlessArgsForCall = append(fake.deleteHeadlessArgsForCall, struct {
+		appName string
+	}{appName})
+	fake.recordInvocation("DeleteHeadless", []interface{}{appName})
+	fake.deleteHeadlessMutex.Unlock()
+	if fake.DeleteHeadlessStub != nil {
+		return fake.DeleteHeadlessStub(appName)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.deleteHeadlessReturns.result1
+}
+
+func (fake *FakeServiceManager) DeleteHeadlessCallCount() int {
+	fake.deleteHeadlessMutex.RLock()
+	defer fake.deleteHeadlessMutex.RUnlock()
+	return len(fake.deleteHeadlessArgsForCall)
+}
+
+func (fake *FakeServiceManager) DeleteHeadlessArgsForCall(i int) string {
+	fake.deleteHeadlessMutex.RLock()
+	defer fake.deleteHeadlessMutex.RUnlock()
+	return fake.deleteHeadlessArgsForCall[i].appName
+}
+
+func (fake *FakeServiceManager) DeleteHeadlessReturns(result1 error) {
+	fake.DeleteHeadlessStub = nil
+	fake.deleteHeadlessReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeServiceManager) DeleteHeadlessReturnsOnCall(i int, result1 error) {
+	fake.DeleteHeadlessStub = nil
+	if fake.deleteHeadlessReturnsOnCall == nil {
+		fake.deleteHeadlessReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deleteHeadlessReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeServiceManager) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -199,6 +258,8 @@ func (fake *FakeServiceManager) Invocations() map[string][][]interface{} {
 	defer fake.createHeadlessMutex.RUnlock()
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
+	fake.deleteHeadlessMutex.RLock()
+	defer fake.deleteHeadlessMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -39,7 +39,10 @@ func (m *StatefulSetManager) List() ([]*opi.LRP, error) {
 
 func (m *StatefulSetManager) Delete(appName string) error {
 	backgroundPropagation := meta.DeletePropagationBackground
-	return m.statefulSets().Delete(appName, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
+	if err := m.statefulSets().Delete(appName, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation}); err != nil {
+		return err
+	}
+	return m.ServiceManager.DeleteHeadless(appName)
 }
 
 func (m *StatefulSetManager) Create(lrp *opi.LRP) error {

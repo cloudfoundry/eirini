@@ -19,6 +19,7 @@ import (
 )
 
 var _ = Describe("Statefulset", func() {
+
 	var (
 		err                error
 		client             kubernetes.Interface
@@ -299,7 +300,38 @@ var _ = Describe("Statefulset", func() {
 			Expect(getStatefulSetNames(listStatefulSets())).To(ConsistOf("mimir", "thor"))
 		})
 
+		It("deletes the associated headless service", func() {
+			err := statefulSetManager.Delete("odin")
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(serviceManager.DeleteHeadlessCallCount()).To(Equal(1))
+			appName := serviceManager.DeleteHeadlessArgsForCall(0)
+			Expect(appName).To(Equal("odin"))
+		})
+
 		Context("when the statefulSet does not exist", func() {
+
+			var err error
+
+			JustBeforeEach(func() {
+				err = statefulSetManager.Delete("test-app-where-are-you")
+			})
+
+			It("returns an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("does not delete a headless service", func() {
+				Expect(serviceManager.DeleteHeadlessCallCount()).To(Equal(0))
+			})
+
+		})
+
+		Context("when the headless service cannot be deleted", func() {
+
+			BeforeEach(func() {
+				serviceManager.DeleteHeadlessReturns(errors.New("oopsie"))
+			})
 
 			It("returns an error", func() {
 				err := statefulSetManager.Delete("test-app-where-are-you")
