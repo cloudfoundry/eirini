@@ -15,6 +15,7 @@ type ServiceManager interface {
 	Create(lrp *opi.LRP) error
 	CreateHeadless(lrp *opi.LRP) error
 	Delete(appName string) error
+	DeleteHeadless(appName string) error
 }
 
 type serviceManager struct {
@@ -33,11 +34,6 @@ func (m *serviceManager) services() types.ServiceInterface {
 	return m.client.CoreV1().Services(m.namespace)
 }
 
-func (m *serviceManager) Delete(appName string) error {
-	serviceName := eirini.GetInternalServiceName(appName)
-	return m.services().Delete(serviceName, &meta_v1.DeleteOptions{})
-}
-
 func (m *serviceManager) Create(lrp *opi.LRP) error {
 	_, err := m.services().Create(toService(lrp))
 	return err
@@ -46,6 +42,16 @@ func (m *serviceManager) Create(lrp *opi.LRP) error {
 func (m *serviceManager) CreateHeadless(lrp *opi.LRP) error {
 	_, err := m.services().Create(toHeadlessService(lrp))
 	return err
+}
+
+func (m *serviceManager) Delete(appName string) error {
+	serviceName := eirini.GetInternalServiceName(appName)
+	return m.services().Delete(serviceName, &meta_v1.DeleteOptions{})
+}
+
+func (m *serviceManager) DeleteHeadless(appName string) error {
+	serviceName := eirini.GetInternalHeadlessServiceName(appName)
+	return m.services().Delete(serviceName, &meta_v1.DeleteOptions{})
 }
 
 func toService(lrp *opi.LRP) *v1.Service {
