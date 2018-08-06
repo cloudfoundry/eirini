@@ -46,7 +46,6 @@ func (d *Desirer) Desire(lrp *opi.LRP) error {
 	}
 
 	if err := d.InstanceManager.Create(lrp); err != nil {
-		// fixme: this should be a multi-error and deferred
 		return err
 	}
 

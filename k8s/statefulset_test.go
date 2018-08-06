@@ -384,7 +384,8 @@ func createLRP(processGUID, lastUpdated string) *opi.LRP {
 			"-c",
 			"while true; do echo hello; sleep 10;done",
 		},
-		Image: "busybox",
+		RunningInstances: 0,
+		Image:            "busybox",
 		Metadata: map[string]string{
 			cf.ProcessGUID: processGUID,
 			cf.LastUpdated: lastUpdated,
