@@ -1,3 +1,5 @@
+// +build integration
+
 package integration_test
 
 import (
@@ -19,7 +21,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 )
 
-var _ = Describe("Build {SYSTEM}", func() {
+var _ = Describe("Build", func() {
 	Context("When building OPI", func() {
 		var (
 			opiPath       string

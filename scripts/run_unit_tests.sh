@@ -1,15 +1,15 @@
 #!/bin/bash
 
-BASEDIR="$(cd $(dirname $0)/.. && pwd)"
-EXCLUDE="cmd scripts blobondemand eirinifakes launcher"
+readonly BASEDIR="$(cd "$(dirname "$0")"/.. && pwd)"
 
-for d in $BASEDIR/*; do
-  if [ -d "$d" ]; then
-	  dirname=$(basename $d)
-	  if [[ $EXCLUDE != *"$dirname"* ]]; then
-	     pushd $d
-             ginkgo -succinct
-	     popd $d
-	  fi
-  fi
-done
+main(){
+  run_tests
+}
+
+run_tests() {
+  pushd "$BASEDIR" || exit 1
+    ginkgo -r -keepGoing --skipPackage=launcher,recipe --skip="{SYSTEM}"
+  popd || exit 1
+}
+
+main "$@"

@@ -1,0 +1,12 @@
+opi:
+  kube_config: "<PROVIDE>"
+  kube_namespace: "doesn't matter"
+  kube_endpoint: "doesn't matter"
+  nats_password: "<PROVIDE>"
+  nats_ip: "<PROVIDE>"
+  api_endpoint: "<PROVIDE>"
+  cf_username: "admin"
+  cf_password: "<PROVIDE>"
+  external_eirini_address: "doesn't matter"
+  skip_ssl_validation: true
+  insecure_skip_verify: true
