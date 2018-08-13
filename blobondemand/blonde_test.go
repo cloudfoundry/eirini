@@ -19,7 +19,7 @@ func TestSaveLoad(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	if err := store.Get("sha256:e0c6189f72b0e909e963116fb71625186098e75a843abffc6f7f5ab53df8cdd3", &buf); err != nil {
+	if err = store.Get("sha256:e0c6189f72b0e909e963116fb71625186098e75a843abffc6f7f5ab53df8cdd3", &buf); err != nil {
 		t.Fatal(err)
 	}
 

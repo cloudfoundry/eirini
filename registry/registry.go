@@ -36,8 +36,8 @@ type DropletStore interface {
 func NewHandler(rootfsBlob BlobRef, dropletStore DropletStore, blobs BlobStore) http.Handler {
 	mux := mux.NewRouter()
 	mux.Path("/v2").HandlerFunc(Ping)
-	mux.Path("/v2/{space}/{app}/blobs/").Methods("POST").Handler(Stager{blobs, dropletStore})
-	mux.Path("/v2/{space}/{app}/blobs/{digest}").Methods("GET").Handler(BlobHandler{blobs})
+	mux.Path("/v2/{space}/{app}/blobs/").Methods("POST").Handler(Stager{blobs: blobs, droplets: dropletStore})
+	mux.Path("/v2/{space}/{app}/blobs/{digest}").Methods("GET").Handler(BlobHandler{blobs: blobs})
 	mux.Path("/v2/{space}/{app}/manifests/{guid}").Handler(ManifestHandler{Rootfs: rootfsBlob, DropletStore: dropletStore, BlobStore: blobs})
 
 	return mux

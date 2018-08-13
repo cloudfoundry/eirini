@@ -120,8 +120,8 @@ var _ = Describe("PackageInstaller", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(zipFilePath).Should(BeAnExistingFile())
 
-				file, err := ioutil.ReadFile(zipFilePath)
-				Expect(err).ToNot(HaveOccurred())
+				file, readErr := ioutil.ReadFile(zipFilePath)
+				Expect(readErr).ToNot(HaveOccurred())
 				Expect(string(file)).To(Equal(expectedZipContents))
 			})
 			assertCfclientInteractions()

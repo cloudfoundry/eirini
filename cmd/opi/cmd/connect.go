@@ -132,7 +132,7 @@ func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP 
 	rc := route.Collector{
 		Client:        clientset,
 		Work:          workChan,
-		Scheduler:     &route.TickerTaskScheduler{time.NewTicker(time.Second * 15)},
+		Scheduler:     &route.TickerTaskScheduler{Ticker: time.NewTicker(time.Second * 15)},
 		KubeNamespace: namespace,
 		KubeEndpoint:  kubeEndpoint,
 	}

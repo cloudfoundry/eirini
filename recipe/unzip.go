@@ -57,7 +57,7 @@ func extractFile(src *zip.File, destPath string) error {
 	}
 	defer destFile.Close()
 
-	if _, err := io.Copy(destFile, reader); err != nil {
+	if _, err = io.Copy(destFile, reader); err != nil {
 		return err
 	}
 

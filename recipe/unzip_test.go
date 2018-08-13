@@ -47,9 +47,8 @@ var _ = Describe("Unzip function", func() {
 		}
 
 		removeFile := func(file string) {
-			if err := os.RemoveAll(file); err != nil {
-				panic(err)
-			}
+			ioErr := os.RemoveAll(file)
+			Expect(ioErr).ToNot(HaveOccurred())
 		}
 
 		cleanUpFiles := func() {
@@ -61,19 +60,15 @@ var _ = Describe("Unzip function", func() {
 
 		assertFileContents := func(file string, expectedContent string) {
 			path := filepath.Join(targetDir, file)
-			content, err := ioutil.ReadFile(path)
-			if err != nil {
-				panic(err)
-			}
+			content, ioErr := ioutil.ReadFile(path)
+			Expect(ioErr).ToNot(HaveOccurred())
 			Expect(content).To(Equal([]byte(expectedContent)))
 		}
 
 		assertFilePermissions := func(file string, expectedPermissions os.FileMode) {
 			path := filepath.Join(targetDir, file)
-			fileInfo, err := os.Stat(path)
-			if err != nil {
-				panic(err)
-			}
+			fileInfo, ioErr := os.Stat(path)
+			Expect(ioErr).ToNot(HaveOccurred())
 			Expect(fileInfo.Mode()).To(Equal(expectedPermissions))
 		}
 
@@ -120,17 +115,13 @@ var _ = Describe("Unzip function", func() {
 			BeforeEach(func() {
 				targetDir = "testdata/tmp"
 
-				err := os.Mkdir(targetDir, 0755)
-				if err != nil {
-					panic(err)
-				}
+				ioErr := os.Mkdir(targetDir, 0755)
+				Expect(ioErr).ToNot(HaveOccurred())
 			})
 
 			AfterEach(func() {
-				err := os.RemoveAll(targetDir)
-				if err != nil {
-					panic(err)
-				}
+				ioErr := os.RemoveAll(targetDir)
+				Expect(ioErr).ToNot(HaveOccurred())
 			})
 
 			Context("When the zip does not contain the directory files", func() {

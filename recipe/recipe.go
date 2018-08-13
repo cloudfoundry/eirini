@@ -50,8 +50,8 @@ func main() {
 
 	respondWithFailureAndExit(err, stagingGUID, annotationJSON)
 
-	installer := PackageInstaller{cfclient, &Unzipper{}}
-	uploader := Uploader{cfclient}
+	installer := PackageInstaller{Cfclient: cfclient, Extractor: &Unzipper{}}
+	uploader := Uploader{Cfclient: cfclient}
 
 	workspaceDir := "/workspace"
 

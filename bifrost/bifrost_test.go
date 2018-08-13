@@ -107,17 +107,9 @@ var _ = Describe("Bifrost", func() {
 
 	Context("List", func() {
 		var (
-			lrps []*opi.LRP
+			lrps                      []*opi.LRP
+			desiredLRPSchedulingInfos []*models.DesiredLRPSchedulingInfo
 		)
-
-		BeforeEach(func() {
-			opiClient = new(opifakes.FakeDesirer)
-			lager = lagertest.NewTestLogger("bifrost-test")
-			bfrst = &bifrost.Bifrost{
-				Desirer: opiClient,
-				Logger:  lager,
-			}
-		})
 
 		createLRP := func(name, processGUID, lastUpdated string) *opi.LRP {
 			return &opi.LRP{
@@ -129,8 +121,18 @@ var _ = Describe("Bifrost", func() {
 			}
 		}
 
-		JustBeforeEach(func() {
+		BeforeEach(func() {
+			opiClient = new(opifakes.FakeDesirer)
+			lager = lagertest.NewTestLogger("bifrost-test")
+			bfrst = &bifrost.Bifrost{
+				Desirer: opiClient,
+				Logger:  lager,
+			}
 			opiClient.ListReturns(lrps, nil)
+		})
+
+		JustBeforeEach(func() {
+			desiredLRPSchedulingInfos, err = bfrst.List(context.Background())
 		})
 
 		Context("When listing running LRPs", func() {
@@ -143,10 +145,11 @@ var _ = Describe("Bifrost", func() {
 				}
 			})
 
-			It("should translate []LRPs to []DesiredLRPSchedulingInfo", func() {
-				desiredLRPSchedulingInfos, err := bfrst.List(context.Background())
+			It("should not return an error", func() {
 				Expect(err).ToNot(HaveOccurred())
+			})
 
+			It("should translate []LRPs to []DesiredLRPSchedulingInfo", func() {
 				Expect(desiredLRPSchedulingInfos[0].ProcessGuid).To(Equal("abcd"))
 				Expect(desiredLRPSchedulingInfos[1].ProcessGuid).To(Equal("efgh"))
 				Expect(desiredLRPSchedulingInfos[2].ProcessGuid).To(Equal("ijkl"))
@@ -163,22 +166,22 @@ var _ = Describe("Bifrost", func() {
 				lrps = []*opi.LRP{}
 			})
 
-			It("should return an empty list of DesiredLRPSchedulingInfo", func() {
-				desiredLRPSchedulingInfos, err := bfrst.List(context.Background())
+			It("should not return an error", func() {
 				Expect(err).ToNot(HaveOccurred())
+			})
 
+			It("should return an empty list of DesiredLRPSchedulingInfo", func() {
 				Expect(len(desiredLRPSchedulingInfos)).To(Equal(0))
 			})
 		})
 
 		Context("When an error occurs", func() {
 
-			JustBeforeEach(func() {
+			BeforeEach(func() {
 				opiClient.ListReturns(nil, errors.New("arrgh"))
 			})
 
 			It("should return a meaningful errormessage", func() {
-				_, err := bfrst.List(context.Background())
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).Should(ContainSubstring("failed to list desired LRPs"))
 			})
@@ -190,7 +193,6 @@ var _ = Describe("Bifrost", func() {
 		var (
 			bfrst         bifrost.Bifrost
 			updateRequest models.UpdateDesiredLRPRequest
-			err           error
 		)
 
 		BeforeEach(func() {
@@ -345,19 +347,21 @@ var _ = Describe("Bifrost", func() {
 			opiClient = new(opifakes.FakeDesirer)
 
 			lager = lagertest.NewTestLogger("bifrost-stop-test")
-		})
-
-		JustBeforeEach(func() {
 			bfrst = &bifrost.Bifrost{
 				Desirer: opiClient,
 				Logger:  lager,
 			}
 		})
 
-		It("should call the desirer with the expected guid", func() {
+		JustBeforeEach(func() {
 			err = bfrst.Stop(context.Background(), "guid")
-			Expect(err).ToNot(HaveOccurred())
+		})
 
+		It("should not return an error", func() {
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should call the desirer with the expected guid", func() {
 			guid := opiClient.StopArgsForCall(0)
 			Expect(guid).To(Equal("guid"))
 		})
@@ -369,7 +373,6 @@ var _ = Describe("Bifrost", func() {
 			})
 
 			It("returns an error", func() {
-				err := bfrst.Stop(context.Background(), "guido")
 				Expect(err).To(HaveOccurred())
 			})
 		})
