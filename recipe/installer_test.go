@@ -32,7 +32,7 @@ var _ = Describe("PackageInstaller", func() {
 		zipFilePath = filepath.Join(targetDir, appID) + ".zip"
 		cfclient = new(eirinifakes.FakeCfClient)
 		extractor = new(eirinifakes.FakeExtractor)
-		installer = &PackageInstaller{cfclient, extractor}
+		installer = &PackageInstaller{Cfclient: cfclient, Extractor: extractor}
 	})
 
 	JustBeforeEach(func() {

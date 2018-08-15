@@ -19,7 +19,7 @@ var _ = Describe("Uploader", func() {
 
 	BeforeEach(func() {
 		cfclient = new(eirinifakes.FakeCfClient)
-		uploader = Uploader{cfclient}
+		uploader = Uploader{Cfclient: cfclient}
 	})
 
 	Context("UploadWithCfClient", func() {
