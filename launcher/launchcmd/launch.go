@@ -14,6 +14,7 @@ import (
 //code.cloudfoundry.org/buildpackapplifecycle/launcher.
 //Build this binary as "launch".
 func main() {
+	fmt.Println("ARGS:", os.Args)
 	command := os.Getenv("START_COMMAND")
 	if command == "" {
 		command = readCommand("/home/vcap/staging_info.yml")
@@ -29,7 +30,10 @@ func main() {
 	err = os.Setenv("CF_INSTANCE_INDEX", index)
 	check(err, "setting instance index env var")
 
-	launcherPath := os.Args[1]
+	var launcherPath string
+	if len(os.Args) > 1 {
+		launcherPath = os.Args[1]
+	}
 
 	if launcherPath == "" {
 		launcherPath = "/lifecycle/launcher"
