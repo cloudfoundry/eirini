@@ -112,7 +112,7 @@ var _ = Describe("Launch", func() {
 
 	Context("When no launcher is provided", func() {
 		BeforeEach(func() {
-			envs = []string{"START_COMMAND=dummy", "POD_NAME=my-super-pod-11"}
+			envs = []string{"START_COMMAND=run-it", "POD_NAME=my-super-pod-11"}
 			launchPath, err = gexec.Build("code.cloudfoundry.org/eirini/launcher/launchcmd")
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -123,10 +123,11 @@ var _ = Describe("Launch", func() {
 			session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		It("should fallback to the default command, which is not present on your machine", func() {
+			<-session.Exited
+			Expect(session.ExitCode()).ToNot(Equal(0))
+		})
 	})
 
-	It("should exit with a non-zero exit code", func() {
-		<-session.Exited
-		Expect(session.ExitCode()).To(Equal(0))
-	})
 })
