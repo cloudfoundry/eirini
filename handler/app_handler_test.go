@@ -21,7 +21,6 @@ import (
 )
 
 var _ = Describe("AppHandler", func() {
-
 	var (
 		bifrost *eirinifakes.FakeBifrost
 		lager   *lagertest.TestLogger
@@ -82,7 +81,6 @@ var _ = Describe("AppHandler", func() {
 	})
 
 	Context("List Apps", func() {
-
 		var (
 			appHandler           *AppHandler
 			responseRecorder     *httptest.ResponseRecorder
@@ -119,7 +117,6 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		Context("When there are no existing apps", func() {
-
 			BeforeEach(func() {
 				schedInfos = []*models.DesiredLRPSchedulingInfo{}
 			})
@@ -357,8 +354,8 @@ var _ = Describe("AppHandler", func() {
 			path = "/apps/guid_1234/instances"
 
 			instances := []*cf.Instance{
-				&cf.Instance{Index: 0, State: "RUNNING"},
-				&cf.Instance{Index: 1, State: "RUNNING"},
+				{Index: 0, State: "RUNNING"},
+				{Index: 1, State: "RUNNING"},
 			}
 			bifrost.GetInstancesReturns(instances, nil)
 		})

@@ -55,11 +55,11 @@ var _ = Describe("Emitter", func() {
 		workChannel = make(chan []RegistryMessage, 1)
 
 		messages = []RegistryMessage{
-			RegistryMessage{
+			{
 				Host: host,
 				URIs: []string{"uri1", "uri2", "uri3"},
 			},
-			RegistryMessage{
+			{
 				Host: host,
 				URIs: []string{"uri4", "uri5", "uri6"},
 			},

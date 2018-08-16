@@ -44,7 +44,7 @@ var _ = Describe("Ingress", func() {
 
 		ingress.HTTP = &ext.HTTPIngressRuleValue{
 			Paths: []ext.HTTPIngressPath{
-				ext.HTTPIngressPath{
+				{
 					Path: "/",
 					Backend: ext.IngressBackend{
 						ServiceName: serviceName,
@@ -66,7 +66,7 @@ var _ = Describe("Ingress", func() {
 		ingress.Namespace = namespace
 
 		ingress.Spec.TLS = []ext.IngressTLS{
-			ext.IngressTLS{
+			{
 
 				Hosts: appNames,
 			},
@@ -159,7 +159,7 @@ var _ = Describe("Ingress", func() {
 			ingress, _ := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 
 			Expect(ingress.Spec.TLS).To(Equal([]ext.IngressTLS{
-				ext.IngressTLS{
+				{
 					Hosts: tlsHosts,
 				},
 			}))

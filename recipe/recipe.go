@@ -77,9 +77,9 @@ func main() {
 
 	cbResponse := models.TaskCallbackResponse{
 		TaskGuid:   stagingGUID,
-		Result:     string(result[:len(result)]),
+		Result:     string(result[:]),
 		Failed:     false,
-		Annotation: string(annotationJSON[:len(annotationJSON)]),
+		Annotation: string(annotationJSON[:]),
 	}
 
 	err = stagingCompleteResponse(eiriniAddress, cbResponse)
@@ -133,7 +133,7 @@ func respondWithFailureAndExit(err error, stagingGUID string, annotationJSON []b
 			TaskGuid:      stagingGUID,
 			Failed:        true,
 			FailureReason: err.Error(),
-			Annotation:    string(annotationJSON[:len(annotationJSON)]),
+			Annotation:    string(annotationJSON[:]),
 		}
 
 		if completeErr := stagingCompleteResponse(stagingGUID, cbResponse); completeErr != nil {

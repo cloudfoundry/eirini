@@ -367,13 +367,13 @@ func toStatefulSet(lrp *opi.LRP, namespace string) *v1beta2.StatefulSet {
 			Template: v1.PodTemplateSpec{
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
-						v1.Container{
+						{
 							Name:    "opi",
 							Image:   lrp.Image,
 							Command: lrp.Command,
 							Env:     envs,
 							Ports: []v1.ContainerPort{
-								v1.ContainerPort{
+								{
 									Name:          "expose",
 									ContainerPort: 8080,
 								},

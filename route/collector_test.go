@@ -67,7 +67,7 @@ var _ = Describe("Collector", func() {
 				IngressRuleValue: ext.IngressRuleValue{
 					HTTP: &ext.HTTPIngressRuleValue{
 						Paths: []ext.HTTPIngressPath{
-							ext.HTTPIngressPath{
+							{
 								Backend: ext.IngressBackend{
 									ServiceName: serviceName,
 								},
@@ -142,7 +142,7 @@ var _ = Describe("Collector", func() {
 		It("should send the correct RegistryMessage in the work channel", func() {
 			actualMessages := <-workChannel
 			expectedMessages := []RegistryMessage{
-				RegistryMessage{
+				{
 					Host:    kubeEndpoint,
 					URIs:    routes,
 					Port:    httpPort,

@@ -22,7 +22,6 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - gofmt
     - goimports
     - gas
     - ineffassign

@@ -8,7 +8,7 @@ main(){
 
 run_tests() {
   pushd "$BASEDIR" || exit 1
-    ginkgo -r -keepGoing --skipPackage=launcher,recipe --skip="{SYSTEM}"
+    ginkgo -r -keepGoing --skipPackage=launcher,recipe,integration --skip="{SYSTEM}"
   popd || exit 1
 }
 

@@ -148,7 +148,7 @@ var _ = Describe("Desire", func() {
 			)
 
 			BeforeEach(func() {
-				lrps = []*opi.LRP{&opi.LRP{Name: "app1"}, &opi.LRP{Name: "app2"}}
+				lrps = []*opi.LRP{{Name: "app1"}, {Name: "app2"}}
 				instanceManager.ListReturns(lrps, nil)
 			})
 

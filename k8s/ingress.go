@@ -95,7 +95,7 @@ func (i *KubeIngressManager) createIngress(lrpName string, uriList []string) err
 		},
 		Spec: ext.IngressSpec{
 			TLS: []ext.IngressTLS{
-				ext.IngressTLS{},
+				{},
 			},
 		},
 	}
@@ -131,7 +131,7 @@ func createIngressRules(lrpName string, uriList []string) []ext.IngressRule {
 
 		rule.HTTP = &ext.HTTPIngressRuleValue{
 			Paths: []ext.HTTPIngressPath{
-				ext.HTTPIngressPath{
+				{
 					Path: "/",
 					Backend: ext.IngressBackend{
 						ServiceName: eirini.GetInternalServiceName(lrpName),
