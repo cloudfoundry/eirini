@@ -8,7 +8,7 @@ import (
 	"syscall"
 )
 
-//This is a smal wrapper around the launcher which is required to
+//This is a small wrapper around the launcher which is required to
 //get the start_command from the staging_info.yml
 //inside the container. The command is passed to the
 //code.cloudfoundry.org/buildpackapplifecycle/launcher.
@@ -19,21 +19,36 @@ func main() {
 		command = readCommand("/home/vcap/staging_info.yml")
 	}
 
-	err := os.Setenv("INSTANCE_INDEX", parsePodIndex())
+	index, err := parsePodIndex()
+
+	check(err, "parse pod index")
+
+	err = os.Setenv("INSTANCE_INDEX", index)
 	check(err, "setting instance index env var")
 
-	args := []string{"/lifecycle/launcher", "/home/vcap/app", command, ""}
+	err = os.Setenv("CF_INSTANCE_INDEX", index)
+	check(err, "setting instance index env var")
 
-	err = syscall.Exec("/lifecycle/launcher", args, os.Environ())
+	launcherPath := os.Args[1]
+
+	if launcherPath == "" {
+		launcherPath = "/lifecycle/launcher"
+	}
+
+	args := []string{launcherPath, "/home/vcap/app", command, ""}
+
+	err = syscall.Exec(launcherPath, args, os.Environ())
 	check(err, "execute launcher")
 }
 
-func parsePodIndex() string {
-	sl := strings.Split(os.Getenv("POD_NAME"), "-")
-	if len(sl) == 0 {
-		return ""
+func parsePodIndex() (string, error) {
+	podName := os.Getenv("POD_NAME")
+	sl := strings.Split(podName, "-")
+
+	if len(sl) <= 1 {
+		return "", fmt.Errorf("Could not parse pod name from %s", podName)
 	}
-	return sl[len(sl)-1]
+	return sl[len(sl)-1], nil
 }
 
 func readCommand(path string) string {

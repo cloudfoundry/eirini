@@ -14,7 +14,6 @@ func SetupEnv(startCmd string) map[string]string {
 
 		"CF_INSTANCE_ADDR":        "0.0.0.0:8080",
 		"CF_INSTANCE_GUID":        "guid",
-		"CF_INSTANCE_INDEX":       "0",
 		"CF_INSTANCE_INTERNAL_IP": "0.0.0.0",
 		"CF_INSTANCE_IP":          "0.0.0.0",
 		"CF_INSTANCE_PORT":        "8080",
