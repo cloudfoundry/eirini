@@ -62,6 +62,12 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 			launcher.Launch,
 		},
 		Env: mergeMaps(request.Environment, lev),
+		Health: opi.Healtcheck{
+			Type:      request.HealthCheckType,
+			Endpoint:  request.HealthCheckHTTPEndpoint,
+			TimeoutMs: request.HealthCheckTimeoutMs,
+			Port:      int32(8080),
+		},
 		Metadata: map[string]string{
 			cf.VcapAppName: vcap.AppName,
 			cf.VcapAppID:   vcap.AppID,

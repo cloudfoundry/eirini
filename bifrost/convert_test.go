@@ -46,7 +46,10 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			Environment: map[string]string{
 				"VCAP_APPLICATION": `{"application_name":"bumblebee", "space_name":"transformers", "application_id":"b194809b-88c0-49af-b8aa-69da097fc360", "version": "something-something-uuid", "application_uris":["bumblebee.example.com", "transformers.example.com"]}`,
 			},
-			StartCommand: "start me",
+			StartCommand:            "start me",
+			HealthCheckType:         "http",
+			HealthCheckHTTPEndpoint: "/heat",
+			HealthCheckTimeoutMs:    400,
 		}
 	})
 
@@ -106,6 +109,15 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(ok).To(BeTrue())
 				Expect(val).To(Equal("start me"))
 			})
+
+			It("sets the healthcheck information", func() {
+				health := lrp.Health
+				Expect(health.Type).To(Equal("http"))
+				Expect(health.Port).To(Equal(int32(8080)))
+				Expect(health.Endpoint).To(Equal("/heat"))
+				Expect(health.TimeoutMs).To(Equal(uint(400)))
+			})
+
 		}
 
 		Context("When the Docker image is provided", func() {

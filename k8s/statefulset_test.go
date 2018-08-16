@@ -25,6 +25,7 @@ var _ = Describe("Statefulset", func() {
 		client             kubernetes.Interface
 		statefulSetManager InstanceManager
 		serviceManager     *k8sfakes.FakeServiceManager
+		probeCreator       *k8sfakes.FakeLivenessProbeCreator
 		lrps               []*opi.LRP
 	)
 
@@ -48,13 +49,15 @@ var _ = Describe("Statefulset", func() {
 
 		client = fake.NewSimpleClientset()
 		serviceManager = new(k8sfakes.FakeServiceManager)
+		probeCreator = new(k8sfakes.FakeLivenessProbeCreator)
 	})
 
 	JustBeforeEach(func() {
 		statefulSetManager = &StatefulSetManager{
-			Client:         client,
-			Namespace:      namespace,
-			ServiceManager: serviceManager,
+			Client:               client,
+			Namespace:            namespace,
+			ServiceManager:       serviceManager,
+			LivenessProbeCreator: probeCreator.Spy,
 		}
 	})
 
@@ -62,6 +65,7 @@ var _ = Describe("Statefulset", func() {
 		var lrp *opi.LRP
 
 		JustBeforeEach(func() {
+			probeCreator.Returns(&v1.Probe{})
 			lrp = createLRP("Baldur", "1234.5")
 			err = statefulSetManager.Create(lrp)
 		})
@@ -75,6 +79,10 @@ var _ = Describe("Statefulset", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(statefulSet).To(Equal(toStatefulSet(lrp, namespace)))
+		})
+
+		It("creates a healthcheck probe", func() {
+			Expect(probeCreator.CallCount()).To(Equal(1))
 		})
 
 		It("should create a headless service", func() {
@@ -378,6 +386,7 @@ func toStatefulSet(lrp *opi.LRP, namespace string) *v1beta2.StatefulSet {
 									ContainerPort: 8080,
 								},
 							},
+							LivenessProbe: &v1.Probe{},
 						},
 					},
 				},

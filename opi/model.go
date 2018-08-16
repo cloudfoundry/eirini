@@ -12,9 +12,17 @@ type LRP struct {
 	Image            string
 	Command          []string
 	Env              map[string]string
+	Health           Healtcheck
 	TargetInstances  int
 	RunningInstances int
 	Metadata         map[string]string
+}
+
+type Healtcheck struct {
+	Type      string
+	Port      int32
+	Endpoint  string
+	TimeoutMs uint
 }
 
 // A Task is a one-off process that is run exactly once and returns a

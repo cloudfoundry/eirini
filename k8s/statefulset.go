@@ -13,16 +13,21 @@ import (
 )
 
 type StatefulSetManager struct {
-	Client         kubernetes.Interface
-	Namespace      string
-	ServiceManager ServiceManager
+	Client               kubernetes.Interface
+	Namespace            string
+	ServiceManager       ServiceManager
+	LivenessProbeCreator LivenessProbeCreator
 }
+
+//go:generate counterfeiter . LivenessProbeCreator
+type LivenessProbeCreator func(lrp *opi.LRP) *v1.Probe
 
 func NewStatefulSetManager(client kubernetes.Interface, namespace string) InstanceManager {
 	return &StatefulSetManager{
-		Client:         client,
-		Namespace:      namespace,
-		ServiceManager: NewServiceManager(client, namespace),
+		Client:               client,
+		Namespace:            namespace,
+		ServiceManager:       NewServiceManager(client, namespace),
+		LivenessProbeCreator: CreateLivenessProbe,
 	}
 }
 
@@ -46,7 +51,7 @@ func (m *StatefulSetManager) Delete(appName string) error {
 }
 
 func (m *StatefulSetManager) Create(lrp *opi.LRP) error {
-	if _, err := m.statefulSets().Create(toStatefulSet(lrp)); err != nil {
+	if _, err := m.statefulSets().Create(m.toStatefulSet(lrp)); err != nil {
 		return err
 	}
 	return m.ServiceManager.CreateHeadless(lrp)
@@ -113,7 +118,7 @@ func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 	}
 }
 
-func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
+func (m *StatefulSetManager) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	envs := MapToEnvVar(lrp.Env)
 	envs = append(envs, v1.EnvVar{
 		Name: "POD_NAME",
@@ -123,6 +128,8 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 			},
 		},
 	})
+
+	livenessProbe := m.LivenessProbeCreator(lrp)
 
 	statefulSet := &v1beta2.StatefulSet{
 		Spec: v1beta2.StatefulSetSpec{
@@ -141,6 +148,7 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 									ContainerPort: 8080,
 								},
 							},
+							LivenessProbe: livenessProbe,
 						},
 					},
 				},

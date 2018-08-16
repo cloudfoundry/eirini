@@ -40,7 +40,7 @@ var _ = Describe("AppHandler", func() {
 
 		BeforeEach(func() {
 			path = "/apps/myguid"
-			body = `{"process_guid" : "myguid", "start_command": "./start", "environment": { "env_var": "env_var_value" }, "instances": 5, "last_updated":"1529073295.9"}`
+			body = `{"process_guid" : "myguid", "start_command": "./start", "environment": { "env_var": "env_var_value" }, "instances": 5, "last_updated":"1529073295.9","health_check_type":"http","health_check_http_endpoint":"/healthz","health_check_timeout_ms":400}`
 		})
 
 		JustBeforeEach(func() {
@@ -55,11 +55,14 @@ var _ = Describe("AppHandler", func() {
 
 		It("should call the bifrost with the desired LRPs request from Cloud Controller", func() {
 			expectedRequest := cf.DesireLRPRequest{
-				ProcessGUID:  "myguid",
-				StartCommand: "./start",
-				Environment:  map[string]string{"env_var": "env_var_value"},
-				NumInstances: 5,
-				LastUpdated:  "1529073295.9",
+				ProcessGUID:             "myguid",
+				StartCommand:            "./start",
+				Environment:             map[string]string{"env_var": "env_var_value"},
+				NumInstances:            5,
+				LastUpdated:             "1529073295.9",
+				HealthCheckType:         "http",
+				HealthCheckHTTPEndpoint: "/healthz",
+				HealthCheckTimeoutMs:    400,
 			}
 
 			Expect(bifrost.TransferCallCount()).To(Equal(1))
