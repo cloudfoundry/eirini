@@ -2,6 +2,7 @@ package bifrost
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/pkg/errors"
 
@@ -59,6 +60,14 @@ func (b *Bifrost) Update(ctx context.Context, update models.UpdateDesiredLRPRequ
 	lrp.TargetInstances = int(*update.Update.Instances)
 	lrp.Metadata[cf.LastUpdated] = *update.Update.Annotation
 
+	hostnames, err := getURIs(update)
+	if err != nil {
+		return err
+	}
+
+	hostnamesBytes, _ := json.Marshal(hostnames)
+	lrp.Metadata[cf.VcapAppUris] = string(hostnamesBytes)
+
 	return b.Desirer.Update(lrp)
 }
 
@@ -95,4 +104,44 @@ func (b *Bifrost) GetInstances(ctx context.Context, guid string) ([]*cf.Instance
 	}
 
 	return result, nil
+}
+
+func getURIs(update models.UpdateDesiredLRPRequest) ([]string, error) {
+	if !routesAvailable(update.Update.Routes) {
+		return []string{}, nil
+	}
+
+	cfRouterRoutes := (*update.Update.Routes)["cf-router"]
+	data, err := cfRouterRoutes.MarshalJSON()
+	if err != nil {
+		return []string{}, err
+	}
+
+	routes := []struct {
+		Hostnames []string `json:"hostnames"`
+		Hort      int      `json:"port"`
+	}{}
+	err = json.Unmarshal(data, &routes)
+	if err != nil {
+		return []string{}, err
+	}
+
+	hostnames := []string{}
+	for _, r := range routes {
+		hostnames = append(hostnames, r.Hostnames...)
+	}
+
+	return hostnames, nil
+}
+
+func routesAvailable(routes *models.Routes) bool {
+	if routes == nil {
+		return false
+	}
+
+	if _, ok := (*routes)["cf-router"]; !ok {
+		return false
+	}
+
+	return true
 }

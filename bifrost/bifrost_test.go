@@ -2,6 +2,7 @@ package bifrost_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"code.cloudfoundry.org/bbs/models"
@@ -219,7 +220,10 @@ var _ = Describe("Bifrost", func() {
 				lrp := opi.LRP{
 					Name:            "app_name",
 					TargetInstances: 2,
-					Metadata:        map[string]string{cf.LastUpdated: "whenever"},
+					Metadata: map[string]string{
+						cf.LastUpdated: "whenever",
+						cf.VcapAppUris: `["my.route","your.route"]`,
+					},
 				}
 				opiClient.GetReturns(&lrp, nil)
 			})
@@ -258,6 +262,58 @@ var _ = Describe("Bifrost", func() {
 
 					It("should propagate the error", func() {
 						Expect(err).To(HaveOccurred())
+					})
+				})
+			})
+
+			Context("When the routes are updated", func() {
+				BeforeEach(func() {
+					updatedRoutes := []map[string]interface{}{
+						{
+							"hostnames": []string{"my.route", "my.other.route"},
+							"port":      8080,
+						},
+					}
+
+					routesJSON, marshalErr := json.Marshal(updatedRoutes)
+					Expect(marshalErr).ToNot(HaveOccurred())
+
+					rawJSON := json.RawMessage(routesJSON)
+
+					updatedInstances := int32(5)
+					updatedTimestamp := "23456.7"
+					updateRequest.Update = &models.DesiredLRPUpdate{
+						Routes: &models.Routes{
+							"cf-router": &rawJSON,
+						},
+						Instances:  &updatedInstances,
+						Annotation: &updatedTimestamp,
+					}
+
+					opiClient.UpdateReturns(nil)
+				})
+
+				It("should get the existing LRP", func() {
+					Expect(opiClient.GetCallCount()).To(Equal(1))
+					appName := opiClient.GetArgsForCall(0)
+					Expect(appName).To(Equal("app_name"))
+				})
+
+				It("should have the updated routes", func() {
+					Expect(opiClient.UpdateCallCount()).To(Equal(1))
+					lrp := opiClient.UpdateArgsForCall(0)
+					Expect(lrp.Metadata[cf.VcapAppUris]).To(Equal(`["my.route","my.other.route"]`))
+				})
+
+				Context("When there are no routes provided", func() {
+					BeforeEach(func() {
+						updateRequest.Update.Routes = &models.Routes{}
+					})
+
+					It("should update it to an empty array", func() {
+						Expect(opiClient.UpdateCallCount()).To(Equal(1))
+						lrp := opiClient.UpdateArgsForCall(0)
+						Expect(lrp.Metadata[cf.VcapAppUris]).To(Equal(`[]`))
 					})
 				})
 			})
