@@ -33,7 +33,6 @@ linters:
     - gocyclo
     - varcheck
     - megacheck
-    - unparam
 
 issues:
   exclude-use-default: true
