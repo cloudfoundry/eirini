@@ -37,8 +37,11 @@ func (r *ServiceRouteLister) ListRoutes() ([]*eirini.Routes, error) {
 		}
 
 		route := eirini.Routes{
-			Routes: registered,
-			Name:   s.Name,
+			Routes:         registered,
+			Name:           s.Name,
+			ServiceAddress: s.Spec.ClusterIP,
+			ServicePort:    uint32(s.Spec.Ports[0].Port),
+			ServiceTLSPort: 0,
 		}
 
 		routes = append(routes, &route)

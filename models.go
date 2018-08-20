@@ -65,12 +65,16 @@ type Properties struct {
 	EiriniAddress      string `yaml:"eirini_address"`
 	SkipSslValidation  bool   `yaml:"skip_ssl_validation"`
 	InsecureSkipVerify bool   `yaml:"insecure_skip_verify"`
+	UseIngress         bool   `yaml:"use_ingress"`
 }
 
 //go:generate counterfeiter . RemoveCallbackFunc
 type RemoveCallbackFunc func(string) error
 
 type Routes struct {
+	ServiceAddress     string
+	ServicePort        uint32
+	ServiceTLSPort     uint32
 	Routes             []string
 	UnregisteredRoutes []string
 	Name               string

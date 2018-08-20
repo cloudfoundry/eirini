@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	httpPort          = 80
-	tlsPort           = 443
+	ingressHTTPPort   = 80
+	ingressTLSPort    = 443
 	registerSubject   = "router.register"
 	unregisterSubject = "router.unregister"
 )
@@ -32,14 +32,16 @@ type Emitter struct {
 	scheduler    TaskScheduler
 	kubeEndpoint string
 	work         <-chan []*eirini.Routes
+	useIngress   bool
 }
 
-func NewEmitter(publisher Publisher, workChannel chan []*eirini.Routes, scheduler TaskScheduler, kubeEndpoint string) *Emitter {
+func NewEmitter(publisher Publisher, workChannel chan []*eirini.Routes, scheduler TaskScheduler, kubeEndpoint string, useIngress bool) *Emitter {
 	return &Emitter{
 		publisher:    publisher,
 		scheduler:    scheduler,
 		work:         workChannel,
 		kubeEndpoint: kubeEndpoint,
+		useIngress:   useIngress,
 	}
 }
 
@@ -56,7 +58,7 @@ func (e *Emitter) Start() {
 func (e *Emitter) emit(batch []*eirini.Routes) {
 	for _, route := range batch {
 		if len(route.Routes) != 0 {
-			err := e.publish(registerSubject, route.Routes, route.Name)
+			err := e.publish(registerSubject, route.Routes, route.Name, route.ServiceAddress, route.ServicePort, route.ServiceTLSPort)
 			if err != nil {
 				fmt.Println("failed to publish registered route:", err.Error())
 			}
@@ -69,15 +71,23 @@ func (e *Emitter) emit(batch []*eirini.Routes) {
 }
 
 func (e *Emitter) unregisterRoute(route *eirini.Routes) {
-	err := e.publish(unregisterSubject, route.UnregisteredRoutes, route.Name)
+	err := e.publish(unregisterSubject, route.UnregisteredRoutes, route.Name, route.ServiceAddress, route.ServicePort, route.ServiceTLSPort)
 	if err != nil {
 		fmt.Println("failed to publish unregistered route:", err.Error())
 	}
 }
 
-func (e *Emitter) publish(subject string, routes []string, name string) error {
+func (e *Emitter) publish(subject string, routes []string, name, host string, httpPort, tlsPort uint32) error {
+
+	// If we use an ingress, all emmitted routes should point to it
+	if e.useIngress {
+		host = e.kubeEndpoint
+		httpPort = ingressHTTPPort
+		tlsPort = tlsPort
+	}
+
 	message := RegistryMessage{
-		Host:    e.kubeEndpoint,
+		Host:    host,
 		Port:    httpPort,
 		TLSPort: tlsPort,
 		URIs:    routes,

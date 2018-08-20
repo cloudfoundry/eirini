@@ -55,6 +55,7 @@ func connect(cmd *cobra.Command, args []string) {
 		cfg.Properties.NatsPassword,
 		cfg.Properties.NatsIP,
 		workChan,
+		cfg.Properties.UseIngress,
 	)
 
 	handlerLogger := lager.NewLogger("handler")
@@ -108,7 +109,7 @@ func initBifrost(cfg *eirini.Config, workChan chan []*eirini.Routes) eirini.Bifr
 	kubeNamespace := cfg.Properties.KubeNamespace
 
 	clientset := createKubeClient(cfg)
-	desirer := k8s.NewDesirer(kubeNamespace, clientset, k8s.UseStatefulSets, workChan)
+	desirer := k8s.NewDesirer(kubeNamespace, clientset, k8s.UseStatefulSets, cfg.Properties.UseIngress, workChan)
 
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
@@ -147,7 +148,7 @@ func initConnect() {
 	connectCmd.Flags().StringP("config", "c", "", "Path to the erini config file")
 }
 
-func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP string, workChan chan []*eirini.Routes) {
+func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP string, workChan chan []*eirini.Routes, useIngress bool) {
 	nc, err := nats.Connect(fmt.Sprintf("nats://nats:%s@%s:4222", natsPassword, natsIP))
 	exitWithError(err)
 
@@ -164,7 +165,7 @@ func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP 
 		Scheduler:   &route.TickerTaskScheduler{Ticker: time.NewTicker(time.Second * 15)},
 	}
 
-	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{}, kubeEndpoint)
+	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{}, kubeEndpoint, useIngress)
 
 	go re.Start()
 	go rc.Start()
