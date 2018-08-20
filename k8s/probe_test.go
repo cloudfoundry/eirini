@@ -45,7 +45,8 @@ var _ = Describe("LivenessProbeCreator", func() {
 						Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
 					},
 				},
-				TimeoutSeconds: 3,
+				InitialDelaySeconds: 3,
+				FailureThreshold:    4,
 			}))
 		})
 
@@ -64,7 +65,8 @@ var _ = Describe("LivenessProbeCreator", func() {
 						Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
 					},
 				},
-				TimeoutSeconds: 3,
+				InitialDelaySeconds: 3,
+				FailureThreshold:    4,
 			}))
 		})
 	})
@@ -77,7 +79,7 @@ var _ = Describe("LivenessProbeCreator", func() {
 		})
 
 		It("rounds it down", func() {
-			Expect(probe.TimeoutSeconds).To(Equal(int32(5)))
+			Expect(probe.InitialDelaySeconds).To(Equal(int32(5)))
 		})
 
 	})

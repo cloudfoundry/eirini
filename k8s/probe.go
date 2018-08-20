@@ -13,14 +13,16 @@ func CreateLivenessProbe(lrp *opi.LRP) *v1.Probe {
 			Handler: v1.Handler{
 				HTTPGet: httpGetAction(lrp),
 			},
-			TimeoutSeconds: toSeconds(lrp.Health.TimeoutMs),
+			InitialDelaySeconds: toSeconds(lrp.Health.TimeoutMs),
+			FailureThreshold:    4,
 		}
 	} else if checkType == "port" {
 		return &v1.Probe{
 			Handler: v1.Handler{
 				TCPSocket: tcpSocketAction(lrp),
 			},
-			TimeoutSeconds: toSeconds(lrp.Health.TimeoutMs),
+			InitialDelaySeconds: toSeconds(lrp.Health.TimeoutMs),
+			FailureThreshold:    4,
 		}
 	}
 
