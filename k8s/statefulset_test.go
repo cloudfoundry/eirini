@@ -18,6 +18,11 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
+const (
+	namespace               = "testing"
+	timeout   time.Duration = 60 * time.Second
+)
+
 var _ = Describe("Statefulset", func() {
 
 	var (
@@ -27,11 +32,6 @@ var _ = Describe("Statefulset", func() {
 		serviceManager     *k8sfakes.FakeServiceManager
 		probeCreator       *k8sfakes.FakeLivenessProbeCreator
 		lrps               []*opi.LRP
-	)
-
-	const (
-		namespace               = "testing"
-		timeout   time.Duration = 60 * time.Second
 	)
 
 	listStatefulSets := func() []v1beta2.StatefulSet {
@@ -78,7 +78,7 @@ var _ = Describe("Statefulset", func() {
 			statefulSet, getErr := client.AppsV1beta2().StatefulSets(namespace).Get("Baldur", meta.GetOptions{})
 			Expect(getErr).ToNot(HaveOccurred())
 
-			Expect(statefulSet).To(Equal(toStatefulSet(lrp, namespace)))
+			Expect(statefulSet).To(Equal(toStatefulSet(lrp)))
 		})
 
 		It("creates a healthcheck probe", func() {
@@ -94,7 +94,7 @@ var _ = Describe("Statefulset", func() {
 		Context("When redeploying an existing LRP", func() {
 			BeforeEach(func() {
 				lrp = createLRP("Baldur", "1234.5")
-				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp, namespace))
+				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp))
 				Expect(createErr).ToNot(HaveOccurred())
 			})
 
@@ -125,7 +125,7 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			for _, l := range lrps {
-				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l))
 				Expect(createErr).ToNot(HaveOccurred())
 			}
 		})
@@ -170,7 +170,7 @@ var _ = Describe("Statefulset", func() {
 			BeforeEach(func() {
 				appName = "baldur"
 				lrp := createLRP(appName, "9012.3")
-				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp, namespace))
+				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp))
 				Expect(createErr).ToNot(HaveOccurred())
 			})
 
@@ -219,7 +219,7 @@ var _ = Describe("Statefulset", func() {
 
 					lrp := createLRP("update", "7653.2")
 
-					statefulSet := toStatefulSet(lrp, namespace)
+					statefulSet := toStatefulSet(lrp)
 					_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(statefulSet)
 					Expect(createErr).NotTo(HaveOccurred())
 				})
@@ -269,7 +269,7 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			for _, l := range lrps {
-				_, err := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+				_, err := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l))
 				Expect(err).ToNot(HaveOccurred())
 			}
 		})
@@ -299,7 +299,7 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			for _, l := range lrps {
-				_, err := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+				_, err := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l))
 				Expect(err).ToNot(HaveOccurred())
 			}
 		})
@@ -361,7 +361,7 @@ func getStatefulSetNames(statefulSets []v1beta2.StatefulSet) []string {
 	return statefulSetNames
 }
 
-func toStatefulSet(lrp *opi.LRP, namespace string) *v1beta2.StatefulSet {
+func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	envs := MapToEnvVar(lrp.Env)
 	envs = append(envs, v1.EnvVar{
 		Name: "POD_NAME",
