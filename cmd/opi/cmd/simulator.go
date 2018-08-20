@@ -56,11 +56,12 @@ func (d *DesirerSimulator) Get(name string) (*opi.LRP, error) {
 		Name:             "jeff",
 		TargetInstances:  4,
 		RunningInstances: 2,
+		Metadata:         map[string]string{},
 	}, nil
 }
 
 func (d *DesirerSimulator) Update(updated *opi.LRP) error {
-	panic("not implemented")
+	return nil
 }
 
 func (d *DesirerSimulator) Stop(guid string) error {

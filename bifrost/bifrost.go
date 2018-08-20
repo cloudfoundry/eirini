@@ -119,7 +119,7 @@ func getURIs(update models.UpdateDesiredLRPRequest) ([]string, error) {
 
 	routes := []struct {
 		Hostnames []string `json:"hostnames"`
-		Hort      int      `json:"port"`
+		Port      int      `json:"port"`
 	}{}
 	err = json.Unmarshal(data, &routes)
 	if err != nil {
