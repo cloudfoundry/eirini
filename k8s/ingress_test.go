@@ -82,8 +82,8 @@ var _ = Describe("Ingress", func() {
 
 	createFakeIngress := func(ingressName string, namespace string, serviceNames ...string) {
 		ingress := newIngress(ingressName, namespace, serviceNames...)
-		ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
-		Expect(err).ToNot(HaveOccurred())
+		ingress, createErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
+		Expect(createErr).ToNot(HaveOccurred())
 	}
 
 	BeforeEach(func() {
@@ -105,8 +105,8 @@ var _ = Describe("Ingress", func() {
 			})
 
 			It("should remove the ingress object", func() {
-				list, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).List(av1.ListOptions{})
-				Expect(err).ToNot(HaveOccurred())
+				list, listErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).List(av1.ListOptions{})
+				Expect(listErr).ToNot(HaveOccurred())
 				Expect(list.Items).To(BeNil())
 			})
 
@@ -129,10 +129,10 @@ var _ = Describe("Ingress", func() {
 			}
 
 			It("should remove the rules for the service", func() {
-				ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+				ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 				ruleServiceNames := getRuleServiceNames(ingress.Spec.Rules)
 
-				Expect(err).ToNot(HaveOccurred())
+				Expect(getErr).ToNot(HaveOccurred())
 				Expect(ruleServiceNames).ToNot(ContainElement(eirini.GetInternalServiceName(appName)))
 				Expect(ruleServiceNames).To(ContainElement("cf-existing_app"))
 				Expect(ruleServiceNames).To(HaveLen(1))
@@ -142,8 +142,8 @@ var _ = Describe("Ingress", func() {
 
 	Context("UpdateIngress", func() {
 		JustBeforeEach(func() {
-			uris, err := json.Marshal(appURIs)
-			Expect(err).ToNot(HaveOccurred())
+			uris, marshalErr := json.Marshal(appURIs)
+			Expect(marshalErr).ToNot(HaveOccurred())
 
 			lrp := &opi.LRP{
 				Name: lrpName,
@@ -172,8 +172,8 @@ var _ = Describe("Ingress", func() {
 		Context("When no ingress exists", func() {
 			Context("When an app has one route", func() {
 				It("should create a new one", func() {
-					_, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-					Expect(err).ToNot(HaveOccurred())
+					_, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(getErr).ToNot(HaveOccurred())
 				})
 
 				It("should add the rule for the specific lrp", func() {
@@ -201,8 +201,8 @@ var _ = Describe("Ingress", func() {
 				})
 
 				It("should create an ingress rule for each route", func() {
-					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-					Expect(err).ToNot(HaveOccurred())
+					ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(getErr).ToNot(HaveOccurred())
 
 					Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
 						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
@@ -218,8 +218,8 @@ var _ = Describe("Ingress", func() {
 				})
 
 				It("shouldn't create an ingress at all", func() {
-					_, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-					Expect(err).To(HaveOccurred())
+					_, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(getErr).To(HaveOccurred())
 				})
 
 			})

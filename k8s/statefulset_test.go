@@ -35,8 +35,8 @@ var _ = Describe("Statefulset", func() {
 	)
 
 	listStatefulSets := func() []v1beta2.StatefulSet {
-		list, err := client.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		list, listErr := client.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{})
+		Expect(listErr).NotTo(HaveOccurred())
 		return list.Items
 	}
 
@@ -75,8 +75,8 @@ var _ = Describe("Statefulset", func() {
 		})
 
 		It("should create the desired statefulSet", func() {
-			statefulSet, err := client.AppsV1beta2().StatefulSets(namespace).Get("Baldur", meta.GetOptions{})
-			Expect(err).ToNot(HaveOccurred())
+			statefulSet, getErr := client.AppsV1beta2().StatefulSets(namespace).Get("Baldur", meta.GetOptions{})
+			Expect(getErr).ToNot(HaveOccurred())
 
 			Expect(statefulSet).To(Equal(toStatefulSet(lrp, namespace)))
 		})
@@ -94,8 +94,8 @@ var _ = Describe("Statefulset", func() {
 		Context("When redeploying an existing LRP", func() {
 			BeforeEach(func() {
 				lrp = createLRP("Baldur", "1234.5")
-				_, err := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp, namespace))
-				Expect(err).ToNot(HaveOccurred())
+				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp, namespace))
+				Expect(createErr).ToNot(HaveOccurred())
 			})
 
 			It("should fail", func() {
@@ -125,7 +125,8 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			for _, l := range lrps {
-				client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+				Expect(createErr).ToNot(HaveOccurred())
 			}
 		})
 
@@ -169,7 +170,8 @@ var _ = Describe("Statefulset", func() {
 			BeforeEach(func() {
 				appName = "baldur"
 				lrp := createLRP(appName, "9012.3")
-				client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp, namespace))
+				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp, namespace))
+				Expect(createErr).ToNot(HaveOccurred())
 			})
 
 			It("should not return an error", func() {
@@ -207,8 +209,8 @@ var _ = Describe("Statefulset", func() {
 				)
 
 				getStatefulSet := func(appName string) *v1beta2.StatefulSet {
-					statefulSet, err := client.AppsV1beta2().StatefulSets(namespace).Get(appName, meta.GetOptions{})
-					Expect(err).ToNot(HaveOccurred())
+					statefulSet, getErr := client.AppsV1beta2().StatefulSets(namespace).Get(appName, meta.GetOptions{})
+					Expect(getErr).ToNot(HaveOccurred())
 					return statefulSet
 				}
 
@@ -218,8 +220,8 @@ var _ = Describe("Statefulset", func() {
 					lrp := createLRP("update", "7653.2")
 
 					statefulSet := toStatefulSet(lrp, namespace)
-					_, err := client.AppsV1beta2().StatefulSets(namespace).Create(statefulSet)
-					Expect(err).NotTo(HaveOccurred())
+					_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(statefulSet)
+					Expect(createErr).NotTo(HaveOccurred())
 				})
 
 				JustBeforeEach(func() {
@@ -267,7 +269,8 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			for _, l := range lrps {
-				client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+				_, err := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+				Expect(err).ToNot(HaveOccurred())
 			}
 		})
 
@@ -296,7 +299,8 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			for _, l := range lrps {
-				client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+				_, err := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l, namespace))
+				Expect(err).ToNot(HaveOccurred())
 			}
 		})
 

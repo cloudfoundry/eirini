@@ -56,8 +56,8 @@ var _ = Describe("Service", func() {
 
 			It("should create a service", func() {
 				serviceName := eirini.GetInternalServiceName("baldur")
-				service, err := fakeClient.CoreV1().Services(namespace).Get(serviceName, meta.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
+				service, getErr := fakeClient.CoreV1().Services(namespace).Get(serviceName, meta.GetOptions{})
+				Expect(getErr).ToNot(HaveOccurred())
 				Expect(service).To(Equal(toService(lrp, namespace)))
 			})
 
@@ -89,8 +89,8 @@ var _ = Describe("Service", func() {
 
 			It("should create a service", func() {
 				serviceName := eirini.GetInternalHeadlessServiceName("baldur")
-				service, err := fakeClient.CoreV1().Services(namespace).Get(serviceName, meta.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
+				service, getErr := fakeClient.CoreV1().Services(namespace).Get(serviceName, meta.GetOptions{})
+				Expect(getErr).ToNot(HaveOccurred())
 				Expect(service).To(Equal(toHeadlessService(lrp, namespace)))
 			})
 
