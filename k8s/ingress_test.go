@@ -300,19 +300,6 @@ var _ = Describe("Ingress", func() {
 						createIngressRule(eirini.GetInternalServiceName(lrpName), strings.ToLower(appURIs[0])),
 					}))
 				})
-
-				It("should still be able to delete the route", func() {
-					err = ingressManager.Delete(lrpName)
-					Expect(err).ToNot(HaveOccurred())
-
-					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-					ruleServiceNames := getRuleServiceNames(ingress.Spec.Rules)
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(ruleServiceNames).ToNot(ContainElement(eirini.GetInternalServiceName(lrpName)))
-					Expect(ruleServiceNames).To(ContainElement("cf-existing-app"))
-					Expect(ruleServiceNames).To(HaveLen(1))
-				})
 			})
 		})
 	})
