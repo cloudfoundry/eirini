@@ -65,7 +65,10 @@ func (d *Desirer) Get(name string) (*opi.LRP, error) {
 }
 
 func (d *Desirer) Update(lrp *opi.LRP) error {
-	return d.InstanceManager.Update(lrp)
+	if err := d.InstanceManager.Update(lrp); err != nil {
+		return err
+	}
+	return d.IngressManager.Update(lrp)
 }
 
 func (d *Desirer) Stop(name string) error {
