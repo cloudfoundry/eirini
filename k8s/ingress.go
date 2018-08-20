@@ -1,10 +1,12 @@
 package k8s
 
 import (
+	"encoding/json"
+	"strings"
+
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"encoding/json"
 	ext "k8s.io/api/extensions/v1beta1"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -126,7 +128,7 @@ func createIngressRules(lrpName string, uriList []string) []ext.IngressRule {
 
 	for _, uri := range uriList {
 		rule := ext.IngressRule{
-			Host: uri,
+			Host: strings.ToLower(uri),
 		}
 
 		rule.HTTP = &ext.HTTPIngressRuleValue{

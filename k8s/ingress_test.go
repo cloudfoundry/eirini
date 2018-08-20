@@ -2,6 +2,7 @@ package k8s_test
 
 import (
 	"encoding/json"
+	"strings"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -36,6 +37,14 @@ var _ = Describe("Ingress", func() {
 		lrpName           = "new-app-name"
 		appName           = "new-vcaapp-name"
 	)
+
+	getRuleServiceNames := func(rules []ext.IngressRule) []string {
+		result := []string{}
+		for _, rule := range rules {
+			result = append(result, rule.HTTP.Paths[0].Backend.ServiceName)
+		}
+		return result
+	}
 
 	createIngressRule := func(serviceName string, appUri string) ext.IngressRule {
 		ingress := ext.IngressRule{
@@ -119,14 +128,6 @@ var _ = Describe("Ingress", func() {
 			BeforeEach(func() {
 				createFakeIngress(ingressName, namespace, appName, "existing_app")
 			})
-
-			getRuleServiceNames := func(rules []ext.IngressRule) []string {
-				result := []string{}
-				for _, rule := range rules {
-					result = append(result, rule.HTTP.Paths[0].Backend.ServiceName)
-				}
-				return result
-			}
 
 			It("should remove the rules for the service", func() {
 				ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
@@ -282,6 +283,35 @@ var _ = Describe("Ingress", func() {
 					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 					Expect(err).ToNot(HaveOccurred())
 					Expect(ingress.Spec.Rules).To(HaveLen(1))
+				})
+			})
+
+			FContext("When routes contain upper case letters", func() {
+				BeforeEach(func() {
+					appURIs = []string{"UPPER-CASE.route.org"}
+				})
+
+				It("should lower case all upper case letters", func() {
+					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
+						createIngressRule("cf-existing-app", "existing-app"),
+						createIngressRule(eirini.GetInternalServiceName(lrpName), strings.ToLower(appURIs[0])),
+					}))
+				})
+
+				It("should still be able to delete the route", func() {
+					err = ingressManager.Delete(lrpName)
+					Expect(err).ToNot(HaveOccurred())
+
+					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					ruleServiceNames := getRuleServiceNames(ingress.Spec.Rules)
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(ruleServiceNames).ToNot(ContainElement(eirini.GetInternalServiceName(lrpName)))
+					Expect(ruleServiceNames).To(ContainElement("cf-existing-app"))
+					Expect(ruleServiceNames).To(HaveLen(1))
 				})
 			})
 		})
