@@ -237,8 +237,8 @@ var _ = Describe("Ingress", func() {
 				})
 
 				It("should update the record", func() {
-					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-					Expect(err).ToNot(HaveOccurred())
+					ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(getErr).ToNot(HaveOccurred())
 
 					Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
 						createIngressRule("cf-existing-app", "existing-app"),
@@ -262,8 +262,8 @@ var _ = Describe("Ingress", func() {
 				})
 
 				It("should create an ingress rule for each route", func() {
-					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-					Expect(err).ToNot(HaveOccurred())
+					ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(getErr).ToNot(HaveOccurred())
 
 					Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
 						createIngressRule("cf-existing-app", "existing-app"),
@@ -280,20 +280,20 @@ var _ = Describe("Ingress", func() {
 				})
 
 				It("shouldn't create an ingress rule", func() {
-					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-					Expect(err).ToNot(HaveOccurred())
+					ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(getErr).ToNot(HaveOccurred())
 					Expect(ingress.Spec.Rules).To(HaveLen(1))
 				})
 			})
 
-			FContext("When routes contain upper case letters", func() {
+			Context("When routes contain upper case letters", func() {
 				BeforeEach(func() {
 					appURIs = []string{"UPPER-CASE.route.org"}
 				})
 
 				It("should lower case all upper case letters", func() {
-					ingress, err := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-					Expect(err).ToNot(HaveOccurred())
+					ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(getErr).ToNot(HaveOccurred())
 
 					Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
 						createIngressRule("cf-existing-app", "existing-app"),
