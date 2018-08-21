@@ -137,6 +137,7 @@ var _ = Describe("Desire", func() {
 			})
 		})
 	})
+
 	Context("When listing actual LRPs", func() {
 		var (
 			err        error
@@ -250,10 +251,35 @@ var _ = Describe("Desire", func() {
 			Expect(updateLRP).To(Equal(lrp))
 		})
 
+		It("should update the service", func() {
+			Expect(serviceManager.UpdateCallCount()).To(Equal(1))
+
+			updateLRP := serviceManager.UpdateArgsForCall(0)
+			Expect(updateLRP).To(Equal(lrp))
+		})
+
 		Context("When updating the instance fails", func() {
 
 			BeforeEach(func() {
 				instanceManager.UpdateReturns(errors.New("doing"))
+			})
+
+			It("should not update the service", func() {
+				Expect(serviceManager.UpdateCallCount()).To(Equal(0))
+			})
+
+			It("should not update the ingress", func() {
+				Expect(ingressManager.UpdateCallCount()).To(Equal(0))
+			})
+
+			It("should return an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("When updating the service fails", func() {
+			BeforeEach(func() {
+				serviceManager.UpdateReturns(errors.New("boing"))
 			})
 
 			It("should not update the ingress", func() {

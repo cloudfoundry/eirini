@@ -68,6 +68,11 @@ func (d *Desirer) Update(lrp *opi.LRP) error {
 	if err := d.InstanceManager.Update(lrp); err != nil {
 		return err
 	}
+
+	if err := d.ServiceManager.Update(lrp); err != nil {
+		return err
+	}
+
 	return d.IngressManager.Update(lrp)
 }
 

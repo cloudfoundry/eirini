@@ -27,9 +27,6 @@ var _ = Describe("Service", func() {
 
 	BeforeEach(func() {
 		fakeClient = fake.NewSimpleClientset()
-	})
-
-	JustBeforeEach(func() {
 		serviceManager = NewServiceManager(fakeClient, namespace)
 	})
 
@@ -41,7 +38,7 @@ var _ = Describe("Service", func() {
 		)
 
 		BeforeEach(func() {
-			lrp = createLRP("baldur", "54321.0")
+			lrp = createLRP("baldur", "54321.0", "my.example.route")
 		})
 
 		Context("When creating a usual service", func() {
@@ -64,7 +61,7 @@ var _ = Describe("Service", func() {
 			Context("When recreating a existing service", func() {
 
 				BeforeEach(func() {
-					lrp = createLRP("baldur", "54321.0")
+					lrp = createLRP("baldur", "54321.0", "my.example.route")
 				})
 
 				JustBeforeEach(func() {
@@ -97,7 +94,7 @@ var _ = Describe("Service", func() {
 			Context("When recreating a existing service", func() {
 
 				BeforeEach(func() {
-					lrp = createLRP("baldur", "54321.0")
+					lrp = createLRP("baldur", "54321.0", "my.example.route")
 				})
 
 				JustBeforeEach(func() {
@@ -137,7 +134,7 @@ var _ = Describe("Service", func() {
 			})
 
 			BeforeEach(func() {
-				lrp := createLRP("odin", "1234.5")
+				lrp := createLRP("odin", "1234.5", "my.example.route")
 				service = toService(lrp, namespace)
 			})
 
@@ -163,7 +160,7 @@ var _ = Describe("Service", func() {
 			var err error
 
 			BeforeEach(func() {
-				lrp := createLRP("odin", "1234.5")
+				lrp := createLRP("odin", "1234.5", "my.example.route")
 				service = toHeadlessService(lrp, namespace)
 			})
 
@@ -189,6 +186,35 @@ var _ = Describe("Service", func() {
 		})
 	})
 
+	Context("When updating an service", func() {
+		var (
+			err error
+			lrp *opi.LRP
+		)
+
+		BeforeEach(func() {
+			lrp = createLRP("odin", "1234.5", "my.example.route")
+			err = serviceManager.Create(lrp)
+		})
+
+		Context("wehn routes are updated", func() {
+
+			BeforeEach(func() {
+				lrp = createLRP("odin", "1234.5", "my-new.example.route")
+			})
+
+			JustBeforeEach(func() {
+				err = serviceManager.Update(lrp)
+			})
+
+			It("should update the routes", func() {
+				serviceName := eirini.GetInternalServiceName("odin")
+				updatedService, getErr := fakeClient.CoreV1().Services(namespace).Get(serviceName, meta.GetOptions{})
+				Expect(getErr).ToNot(HaveOccurred())
+				Expect(updatedService).To(Equal(toService(lrp, namespace)))
+			})
+		})
+	})
 })
 
 func getServicesNames(services *v1.ServiceList) []string {

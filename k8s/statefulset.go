@@ -114,6 +114,7 @@ func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 		Metadata: map[string]string{
 			cf.ProcessGUID: s.Annotations[cf.ProcessGUID],
 			cf.LastUpdated: s.Annotations[cf.LastUpdated],
+			cf.VcapAppUris: s.Annotations[cf.VcapAppUris],
 		},
 	}
 }
