@@ -95,11 +95,7 @@ func (i *KubeIngressManager) createIngress(lrpName string, uriList []string) err
 			Name:      ingressName,
 			Namespace: i.namespace,
 		},
-		Spec: ext.IngressSpec{
-			TLS: []ext.IngressTLS{
-				{},
-			},
-		},
+		Spec: ext.IngressSpec{},
 	}
 
 	i.updateSpec(ingress, lrpName, uriList)
@@ -108,8 +104,6 @@ func (i *KubeIngressManager) createIngress(lrpName string, uriList []string) err
 }
 
 func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrpName string, uriList []string) {
-	ingress.Spec.TLS[0].Hosts = append(ingress.Spec.TLS[0].Hosts, uriList...)
-
 	rules := createIngressRules(lrpName, uriList)
 	ingress.Spec.Rules = append(ingress.Spec.Rules, rules...)
 }

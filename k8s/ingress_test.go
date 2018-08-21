@@ -74,13 +74,6 @@ var _ = Describe("Ingress", func() {
 		ingress.Name = name
 		ingress.Namespace = namespace
 
-		ingress.Spec.TLS = []ext.IngressTLS{
-			{
-
-				Hosts: appNames,
-			},
-		}
-
 		for _, appName := range appNames {
 			rule := createIngressRule(eirini.GetInternalServiceName(appName), appName)
 			ingress.Spec.Rules = append(ingress.Spec.Rules, rule)
@@ -156,15 +149,6 @@ var _ = Describe("Ingress", func() {
 			err = ingressManager.Update(lrp)
 		})
 
-		verifyTLSHosts := func(tlsHosts []string) {
-			ingress, _ := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
-
-			Expect(ingress.Spec.TLS).To(Equal([]ext.IngressTLS{
-				{
-					Hosts: tlsHosts,
-				},
-			}))
-		}
 
 		BeforeEach(func() {
 			appURIs = []string{"alpha.example.com"}
@@ -184,11 +168,6 @@ var _ = Describe("Ingress", func() {
 					Expect(rules).To(Equal([]ext.IngressRule{
 						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
 					}))
-
-				})
-
-				It("should add a TLS host", func() {
-					verifyTLSHosts(appURIs)
 				})
 			})
 
@@ -246,9 +225,6 @@ var _ = Describe("Ingress", func() {
 					}))
 				})
 
-				It("should add a TLS host", func() {
-					hosts := append([]string{"existing-app"}, appURIs...)
-					verifyTLSHosts(hosts)
 				})
 			})
 
