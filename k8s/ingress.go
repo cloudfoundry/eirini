@@ -105,7 +105,11 @@ func (i *KubeIngressManager) createIngress(lrpName string, uriList []string) err
 
 func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrpName string, uriList []string) {
 	rules := createIngressRules(lrpName, uriList)
-	ingress.Spec.Rules = append(ingress.Spec.Rules, rules...)
+	ingress.Spec.Rules = intersect(
+		ingress.Spec.Rules,
+		rules,
+		eirini.GetInternalServiceName(lrpName),
+	)
 }
 
 func (i *KubeIngressManager) getIngress(ingresses *ext.IngressList) (*ext.Ingress, bool) {
@@ -140,4 +144,47 @@ func createIngressRules(lrpName string, uriList []string) []ext.IngressRule {
 	}
 
 	return rules
+}
+
+func intersect(existing, updated []ext.IngressRule, serviceName string) []ext.IngressRule {
+	hashExisting := toRuleMap(existing)
+	hashUpdated := toRuleMap(updated)
+
+	appendNewRules(hashExisting, hashUpdated)
+	removeObsoleteRules(hashExisting, hashUpdated, serviceName)
+
+	return toRuleSlice(hashExisting)
+}
+
+func appendNewRules(existing, updated map[ext.IngressRule]bool) {
+	for u := range updated {
+		if _, ok := existing[u]; !ok {
+			existing[u] = true
+		}
+	}
+}
+
+func removeObsoleteRules(existing, updated map[ext.IngressRule]bool, serviceName string) {
+	for e := range existing {
+		if _, ok := updated[e]; !ok {
+			if e.HTTP.Paths[0].Backend.ServiceName == serviceName {
+				delete(existing, e)
+			}
+		}
+	}
+}
+
+func toRuleMap(sl []ext.IngressRule) (hash map[ext.IngressRule]bool) {
+	hash = map[ext.IngressRule]bool{}
+	for _, v := range sl {
+		hash[v] = true
+	}
+	return
+}
+
+func toRuleSlice(hash map[ext.IngressRule]bool) (sl []ext.IngressRule) {
+	for v := range hash {
+		sl = append(sl, v)
+	}
+	return
 }

@@ -90,9 +90,6 @@ var _ = Describe("Ingress", func() {
 
 	BeforeEach(func() {
 		fakeClient = fake.NewSimpleClientset()
-	})
-
-	JustBeforeEach(func() {
 		ingressManager = NewIngressManager(fakeClient, namespace)
 	})
 
@@ -149,7 +146,6 @@ var _ = Describe("Ingress", func() {
 			err = ingressManager.Update(lrp)
 		})
 
-
 		BeforeEach(func() {
 			appURIs = []string{"alpha.example.com"}
 		})
@@ -184,11 +180,15 @@ var _ = Describe("Ingress", func() {
 					ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 					Expect(getErr).ToNot(HaveOccurred())
 
-					Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
+					Expect(ingress.Spec.Rules).To(ContainElement(
 						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
+					))
+					Expect(ingress.Spec.Rules).To(ContainElement(
 						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[1]),
+					))
+					Expect(ingress.Spec.Rules).To(ContainElement(
 						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[2]),
-					}))
+					))
 				})
 			})
 
@@ -219,12 +219,13 @@ var _ = Describe("Ingress", func() {
 					ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 					Expect(getErr).ToNot(HaveOccurred())
 
-					Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
-						createIngressRule("cf-existing-app", "existing-app"),
+					Expect(ingress.Spec.Rules).To(ContainElement(
 						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
-					}))
-				})
+					))
 
+					Expect(ingress.Spec.Rules).To(ContainElement(
+						createIngressRule("cf-existing-app", "existing-app"),
+					))
 				})
 			})
 
@@ -241,12 +242,18 @@ var _ = Describe("Ingress", func() {
 					ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 					Expect(getErr).ToNot(HaveOccurred())
 
-					Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
-						createIngressRule("cf-existing-app", "existing-app"),
+					Expect(ingress.Spec.Rules).To(ContainElement(
 						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
+					))
+					Expect(ingress.Spec.Rules).To(ContainElement(
 						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[1]),
+					))
+					Expect(ingress.Spec.Rules).To(ContainElement(
 						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[2]),
-					}))
+					))
+					Expect(ingress.Spec.Rules).To(ContainElement(
+						createIngressRule("cf-existing-app", "existing-app"),
+					))
 				})
 			})
 
@@ -271,10 +278,92 @@ var _ = Describe("Ingress", func() {
 					ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
 					Expect(getErr).ToNot(HaveOccurred())
 
-					Expect(ingress.Spec.Rules).To(Equal([]ext.IngressRule{
-						createIngressRule("cf-existing-app", "existing-app"),
+					Expect(ingress.Spec.Rules).To(ContainElement(
 						createIngressRule(eirini.GetInternalServiceName(lrpName), strings.ToLower(appURIs[0])),
-					}))
+					))
+					Expect(ingress.Spec.Rules).To(ContainElement(
+						createIngressRule("cf-existing-app", "existing-app"),
+					))
+				})
+			})
+
+			Context("When there are existing routes", func() {
+				BeforeEach(func() {
+					appURIs = []string{
+						"alpha.example.com",
+						"beta.example.com",
+						"gamma.example.com",
+					}
+
+					uris, marshalErr := json.Marshal(appURIs)
+					Expect(marshalErr).ToNot(HaveOccurred())
+
+					lrp := &opi.LRP{
+						Name: lrpName,
+						Metadata: map[string]string{
+							"application_name": appName,
+							"application_uris": string(uris),
+						}}
+
+					err = ingressManager.Update(lrp)
+				})
+
+				Context("When routes are getting removed", func() {
+					BeforeEach(func() {
+						appURIs = []string{
+							"alpha.example.com",
+							"beta.example.com",
+						}
+					})
+
+					It("should remove non required routes", func() {
+						ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+						Expect(getErr).ToNot(HaveOccurred())
+
+						Expect(ingress.Spec.Rules).To(ContainElement(createIngressRule(eirini.GetInternalServiceName(lrpName), "alpha.example.com")))
+						Expect(ingress.Spec.Rules).To(ContainElement(createIngressRule(eirini.GetInternalServiceName(lrpName), "beta.example.com")))
+						Expect(ingress.Spec.Rules).ToNot(ContainElement(createIngressRule(eirini.GetInternalServiceName(lrpName), "gamma.example.com")))
+					})
+				})
+
+				Context("When routes are added", func() {
+					BeforeEach(func() {
+						appURIs = []string{
+							"alpha.example.com",
+							"beta.example.com",
+							"gamma.example.com",
+							"delta.example.com",
+						}
+					})
+
+					It("should add the route", func() {
+						ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+						Expect(getErr).ToNot(HaveOccurred())
+
+						Expect(ingress.Spec.Rules).To(ContainElement(createIngressRule(eirini.GetInternalServiceName(lrpName), "alpha.example.com")))
+						Expect(ingress.Spec.Rules).To(ContainElement(createIngressRule(eirini.GetInternalServiceName(lrpName), "beta.example.com")))
+						Expect(ingress.Spec.Rules).To(ContainElement(createIngressRule(eirini.GetInternalServiceName(lrpName), "gamma.example.com")))
+						Expect(ingress.Spec.Rules).To(ContainElement(createIngressRule(eirini.GetInternalServiceName(lrpName), "delta.example.com")))
+					})
+				})
+
+				Context("When routes are replaced", func() {
+					BeforeEach(func() {
+						appURIs = []string{
+							"alpha.example.org",
+							"beta.example.org",
+							"gamma.example.com",
+						}
+					})
+
+					It("should add the route", func() {
+						ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+						Expect(getErr).ToNot(HaveOccurred())
+
+						Expect(ingress.Spec.Rules).To(ContainElement(createIngressRule(eirini.GetInternalServiceName(lrpName), "alpha.example.org")))
+						Expect(ingress.Spec.Rules).To(ContainElement(createIngressRule(eirini.GetInternalServiceName(lrpName), "beta.example.org")))
+						Expect(ingress.Spec.Rules).To(ContainElement(createIngressRule(eirini.GetInternalServiceName(lrpName), "gamma.example.com")))
+					})
 				})
 			})
 		})
