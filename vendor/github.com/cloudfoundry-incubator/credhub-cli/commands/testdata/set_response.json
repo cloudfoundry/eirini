@@ -1,7 +1,0 @@
-{"data": [{
-"type":"json",
-"id":"some_uuid",
-"name":"my-json",
-"version_created_at":"idc",
-"value":{"key": 1}
-}]}

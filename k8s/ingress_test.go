@@ -165,6 +165,26 @@ var _ = Describe("Ingress", func() {
 						createIngressRule(eirini.GetInternalServiceName(lrpName), appURIs[0]),
 					}))
 				})
+
+				Context("When routes contain paths", func() {
+					BeforeEach(func() {
+						appURIs = []string{
+							"alpha.example.com/path/to/app",
+						}
+					})
+
+					It("should not return an error", func() {
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					It("should set the path in the ingress object", func() {
+						ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+						Expect(getErr).ToNot(HaveOccurred())
+
+						Expect(ingress.Spec.Rules[0].HTTP.Paths[0].Path).To(Equal("/path/to/app"))
+					})
+				})
+
 			})
 
 			Context("When an app has multiple routes", func() {
@@ -284,6 +304,31 @@ var _ = Describe("Ingress", func() {
 					Expect(ingress.Spec.Rules).To(ContainElement(
 						createIngressRule("cf-existing-app", "existing-app"),
 					))
+				})
+			})
+
+			Context("When the route is an invalid url", func() {
+				BeforeEach(func() {
+					appURIs = []string{
+						"some.invalid.$_route/wuf#@",
+					}
+				})
+
+				It("should return an error", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(ContainSubstring("invalid url")))
+				})
+
+				Context("When the route contains an invalid character", func() {
+					BeforeEach(func() {
+						appURIs = []string{
+							"this is not valid % ",
+						}
+					})
+
+					It("should return an error", func() {
+						Expect(err).To(HaveOccurred())
+					})
 				})
 			})
 

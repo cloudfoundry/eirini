@@ -2,11 +2,15 @@ package k8s
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"net/url"
 	"strings"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
+	"github.com/asaskevich/govalidator"
 	ext "k8s.io/api/extensions/v1beta1"
 	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -74,7 +78,9 @@ func (i *KubeIngressManager) Update(lrp *opi.LRP) error {
 	}
 
 	if ingress, exists := i.getIngress(ingresses); exists {
-		i.updateSpec(ingress, lrp.Name, uriList)
+		if err := i.updateSpec(ingress, lrp.Name, uriList); err != nil {
+			return err
+		}
 		return i.updateIngressObject(ingress)
 	}
 	return i.createIngress(lrp.Name, uriList)
@@ -98,18 +104,26 @@ func (i *KubeIngressManager) createIngress(lrpName string, uriList []string) err
 		Spec: ext.IngressSpec{},
 	}
 
-	i.updateSpec(ingress, lrpName, uriList)
+	if err := i.updateSpec(ingress, lrpName, uriList); err != nil {
+		return err
+	}
 	_, err := i.client.ExtensionsV1beta1().Ingresses(i.namespace).Create(ingress)
 	return err
 }
 
-func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrpName string, uriList []string) {
-	rules := createIngressRules(lrpName, uriList)
+func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrpName string, uriList []string) error {
+	rules, err := createIngressRules(lrpName, uriList)
+	if err != nil {
+		return err
+	}
+
 	ingress.Spec.Rules = removeDifference(
 		ingress.Spec.Rules,
 		rules,
 		eirini.GetInternalServiceName(lrpName),
 	)
+
+	return nil
 }
 
 func (i *KubeIngressManager) getIngress(ingresses *ext.IngressList) (*ext.Ingress, bool) {
@@ -121,18 +135,23 @@ func (i *KubeIngressManager) getIngress(ingresses *ext.IngressList) (*ext.Ingres
 	return &ext.Ingress{}, false
 }
 
-func createIngressRules(lrpName string, uriList []string) []ext.IngressRule {
+func createIngressRules(lrpName string, uriList []string) ([]ext.IngressRule, error) {
 	rules := []ext.IngressRule{}
 
 	for _, uri := range uriList {
+		url, err := validateURL(uri)
+		if err != nil {
+			return nil, err
+		}
+
 		rule := ext.IngressRule{
-			Host: strings.ToLower(uri),
+			Host: strings.ToLower(url.Host),
 		}
 
 		rule.HTTP = &ext.HTTPIngressRuleValue{
 			Paths: []ext.HTTPIngressPath{
 				{
-					Path: "/",
+					Path: path(url.Path),
 					Backend: ext.IngressBackend{
 						ServiceName: eirini.GetInternalServiceName(lrpName),
 						ServicePort: intstr.FromInt(8080),
@@ -143,7 +162,27 @@ func createIngressRules(lrpName string, uriList []string) []ext.IngressRule {
 		rules = append(rules, rule)
 	}
 
-	return rules
+	return rules, nil
+}
+
+func validateURL(uri string) (*url.URL, error) {
+	url, err := url.Parse(fmt.Sprintf("http://%s", uri))
+	if err != nil {
+		return nil, err
+	}
+
+	if valid := govalidator.IsURL(url.String()); !valid {
+		return nil, errors.New("invalid url")
+	}
+
+	return url, nil
+}
+
+func path(path string) string {
+	if path == "" {
+		return "/"
+	}
+	return path
 }
 
 func removeDifference(existing, updated []ext.IngressRule, serviceName string) []ext.IngressRule {

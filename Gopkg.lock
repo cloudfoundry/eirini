@@ -2,71 +2,14 @@
 
 
 [[projects]]
-  name = "cloud.google.com/go"
-  packages = ["compute/metadata"]
-  revision = "050b16d2314d5fc3d4c9a51e4cd5c7468e77f162"
-  version = "v0.17.0"
-
-[[projects]]
   branch = "master"
   name = "code.cloudfoundry.org/bbs"
   packages = [
-    ".",
     "encryption",
-    "events",
     "format",
     "models"
   ]
   revision = "9b7c8f2e1df2f7d9cc80146d097647ace27aceaf"
-
-[[projects]]
-  branch = "master"
-  name = "code.cloudfoundry.org/buildpackapplifecycle"
-  packages = [
-    "containerpath",
-    "credhub",
-    "databaseuri",
-    "env",
-    "launcher/profile",
-    "platformoptions",
-    "shell",
-    "shell/exec"
-  ]
-  revision = "1e1fa5ae3fdb39bf974fe111ce2e7373473550fc"
-
-[[projects]]
-  branch = "master"
-  name = "code.cloudfoundry.org/cfhttp"
-  packages = [
-    ".",
-    "unix_transport"
-  ]
-  revision = "08baa6b247caf03100a743f6c3c426d28e55336a"
-
-[[projects]]
-  branch = "master"
-  name = "code.cloudfoundry.org/clock"
-  packages = ["."]
-  revision = "2269160ae1757f96bbb8c6475e6fa36c805e73e0"
-
-[[projects]]
-  branch = "master"
-  name = "code.cloudfoundry.org/diego-ssh"
-  packages = [
-    "helpers",
-    "keys",
-    "routes"
-  ]
-  revision = "fab225920d983f91da958bc3eb258425f191debf"
-
-[[projects]]
-  branch = "master"
-  name = "code.cloudfoundry.org/goshims"
-  packages = [
-    "osshim",
-    "osshim/os_fake"
-  ]
-  revision = "bd22da884005f55d24099376a3298e742bba411d"
 
 [[projects]]
   branch = "master"
@@ -80,45 +23,9 @@
 
 [[projects]]
   branch = "master"
-  name = "code.cloudfoundry.org/nsync"
-  packages = [
-    "bulk",
-    "helpers",
-    "recipebuilder"
-  ]
-  revision = "5a15eb29fb0acc23b34993ea326b1c76d9017265"
-
-[[projects]]
-  branch = "master"
   name = "code.cloudfoundry.org/runtimeschema"
-  packages = [
-    "cc_messages",
-    "metric"
-  ]
+  packages = ["cc_messages"]
   revision = "d1b745afbaba77a2ed2a15d07df773f8218b860a"
-
-[[projects]]
-  branch = "master"
-  name = "code.cloudfoundry.org/urljoiner"
-  packages = ["."]
-  revision = "5cabba6c0a5085a9d07c2c54e01df65c6122e450"
-
-[[projects]]
-  branch = "master"
-  name = "code.cloudfoundry.org/workpool"
-  packages = ["."]
-  revision = "99757edba73523adac0d2460f4c3555f938663b5"
-
-[[projects]]
-  name = "github.com/Azure/go-autorest"
-  packages = [
-    "autorest",
-    "autorest/adal",
-    "autorest/azure",
-    "autorest/date"
-  ]
-  revision = "3b13154dcaec43ea581ea56cbf6645e5bcbe8be0"
-  version = "v9.5.3"
 
 [[projects]]
   branch = "master"
@@ -139,67 +46,16 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/bmizerany/pat"
+  name = "github.com/asaskevich/govalidator"
   packages = ["."]
-  revision = "6226ea591a40176dd3ff9cd8eff81ed6ca721a00"
-
-[[projects]]
-  name = "github.com/cloudfoundry-incubator/credhub-cli"
-  packages = [
-    "credhub",
-    "credhub/auth",
-    "credhub/auth/uaa",
-    "credhub/credentials",
-    "credhub/credentials/generate",
-    "credhub/credentials/values",
-    "credhub/permissions",
-    "credhub/server",
-    "errors"
-  ]
-  revision = "fbeb23df0fb050ff5cfaf4d0a8de33942cd00d9e"
-  version = "1.7.5"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/cloudfoundry-incubator/routing-info"
-  packages = [
-    "cfroutes",
-    "tcp_routes"
-  ]
-  revision = "71334a8630c691bf952b0f4b3c6a11b9c3c45335"
-
-[[projects]]
-  name = "github.com/cloudfoundry/dropsonde"
-  packages = [
-    "metric_sender",
-    "metrics"
-  ]
-  revision = "fe07f64fd1fd25f3c920e9183edd71de6895f1d8"
-  version = "v1.0.0"
-
-[[projects]]
-  name = "github.com/cloudfoundry/socks5-proxy"
-  packages = ["."]
-  revision = "a5dbd34501d246ab6c004c9afebb5bd0dd9d7d22"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/cloudfoundry/sonde-go"
-  packages = ["events"]
-  revision = "c48c4f0332609a0e402af4ae31595204c9f7b363"
+  revision = "ccb8e960c48f04d6935e72476ae4a51028f9e22f"
+  version = "v9"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
-
-[[projects]]
-  name = "github.com/dgrijalva/jwt-go"
-  packages = ["."]
-  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
-  version = "v3.1.0"
 
 [[projects]]
   name = "github.com/emicklei/go-restful"
@@ -209,12 +65,6 @@
   ]
   revision = "5741799b275a3c4a5a9623a993576d7545cf7b5c"
   version = "v2.4.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/genevievelesperance/go-socks5"
-  packages = ["."]
-  revision = "54f73bdb8a8e85a6611d3d29ab9bbf98c2a060d7"
 
 [[projects]]
   name = "github.com/ghodss/yaml"
@@ -294,20 +144,6 @@
   version = "v0.1.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/gophercloud/gophercloud"
-  packages = [
-    ".",
-    "openstack",
-    "openstack/identity/v2/tenants",
-    "openstack/identity/v2/tokens",
-    "openstack/identity/v3/tokens",
-    "openstack/utils",
-    "pagination"
-  ]
-  revision = "92fb632e86f730790c3d240e468617c6f8d4a3bf"
-
-[[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
   revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
@@ -318,12 +154,6 @@
   packages = ["."]
   revision = "7f08801859139f86dfafd1c296e2cba9a80d292e"
   version = "v1.6.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/hashicorp/go-version"
-  packages = ["."]
-  revision = "23480c0665776210b5fbbac6eaaee40e3e6a96b7"
 
 [[projects]]
   branch = "master"
@@ -359,7 +189,6 @@
   branch = "master"
   name = "github.com/mailru/easyjson"
   packages = [
-    ".",
     "buffer",
     "jlexer",
     "jwriter"
@@ -460,33 +289,9 @@
   revision = "64cf2cb9adc18df7cb7158a98cbd58569c7594e4"
 
 [[projects]]
-  name = "github.com/tedsuo/rata"
-  packages = ["."]
-  revision = "0649c23705dfb45a9693b668c4fc1c0666f485d9"
-  version = "v1.0.0"
-
-[[projects]]
-  name = "github.com/urfave/cli"
-  packages = ["."]
-  revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
-  version = "v1.20.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/vito/go-sse"
-  packages = ["sse"]
-  revision = "fd69d275caac5d78d793e77ddbe9bd2001d9b88d"
-
-[[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = [
-    "curve25519",
-    "ed25519",
-    "ed25519/internal/edwards25519",
-    "ssh",
-    "ssh/terminal"
-  ]
+  packages = ["ssh/terminal"]
   revision = "687d4b818545e443c8ba223cbef20b1721afd4db"
 
 [[projects]]
@@ -501,8 +306,7 @@
     "http2",
     "http2/hpack",
     "idna",
-    "lex/httplex",
-    "proxy"
+    "lex/httplex"
   ]
   revision = "01c190206fbdffa42f334f4b2bf2220f50e64920"
 
@@ -512,10 +316,7 @@
   packages = [
     ".",
     "clientcredentials",
-    "google",
-    "internal",
-    "jws",
-    "jwt"
+    "internal"
   ]
   revision = "dfbc86644130ce8e95021c2c5b424bf5d76274a7"
 
@@ -571,13 +372,10 @@
 [[projects]]
   name = "google.golang.org/appengine"
   packages = [
-    ".",
     "internal",
-    "internal/app_identity",
     "internal/base",
     "internal/datastore",
     "internal/log",
-    "internal/modules",
     "internal/remote_api",
     "internal/urlfetch",
     "urlfetch"
@@ -744,16 +542,11 @@
     "pkg/apis/clientauthentication",
     "pkg/apis/clientauthentication/v1alpha1",
     "pkg/version",
-    "plugin/pkg/client/auth",
-    "plugin/pkg/client/auth/azure",
     "plugin/pkg/client/auth/exec",
-    "plugin/pkg/client/auth/gcp",
     "plugin/pkg/client/auth/oidc",
-    "plugin/pkg/client/auth/openstack",
     "rest",
     "rest/watch",
     "testing",
-    "third_party/forked/golang/template",
     "tools/auth",
     "tools/clientcmd",
     "tools/clientcmd/api",
@@ -765,8 +558,7 @@
     "util/cert",
     "util/flowcontrol",
     "util/homedir",
-    "util/integer",
-    "util/jsonpath"
+    "util/integer"
   ]
   revision = "23781f4d6632d88e869066eaebb743857aa1ef9b"
   version = "v7.0.0"
@@ -780,6 +572,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b161deefa83fb979782909ea6f8615c2bcd22877916599c238a133faf87e3acf"
+  inputs-digest = "39bb22c5e3633419e05d9b299b1c27393ffacb6757f8bee67bcef618f97feb51"
   solver-name = "gps-cdcl"
   solver-version = 1
