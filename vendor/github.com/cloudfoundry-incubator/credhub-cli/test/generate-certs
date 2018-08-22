@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -euo pipefail
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+credhub generate -t certificate -d 3650 -c example.com -n server-ca --is-ca
+credhub generate -t certificate -d 3650 -c example.com -n server-cert -a 127.0.0.1 --ca server-ca
+credhub generate -t certificate -d 3650 -c example.com -n auth-ca --is-ca
+credhub generate -t certificate -d 3650 -c example.com -n auth-cert -a 127.0.0.1 --ca auth-ca
+credhub generate -t certificate -d 3650 -c credhub-cli-test -n extra-ca --is-ca
+
+credhub get -n server-ca -k certificate > $DIR/server-tls-ca.pem
+credhub get -n server-cert -k certificate > $DIR/server-tls-cert.pem
+credhub get -n server-cert -k private_key > $DIR/server-tls-key.pem
+credhub get -n auth-ca -k certificate > $DIR/auth-tls-ca.pem
+credhub get -n auth-cert -k certificate > $DIR/auth-tls-cert.pem
+credhub get -n auth-cert -k private_key > $DIR/auth-tls-key.pem
+credhub get -n extra-ca -k certificate > $DIR/extra-ca.pem
+cat $DIR/server-tls-cert.pem $DIR/auth-tls-cert.pem > $DIR/server-and-auth-stacked-cert.pem

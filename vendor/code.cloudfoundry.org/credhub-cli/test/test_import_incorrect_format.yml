@@ -1,0 +1,6 @@
+- name: /test/password
+  type: password
+  value: test-password-value
+- name: /test/value
+  type: value
+  value: test-value

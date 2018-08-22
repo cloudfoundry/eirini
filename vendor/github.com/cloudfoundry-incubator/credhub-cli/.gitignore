@@ -1,0 +1,10 @@
+build/
+credhub-cli
+*.iml
+*.pem
+*.crt
+*.key
+.idea
+tmp
+!test/*.pem
+!credhub/fixtures/*.pem

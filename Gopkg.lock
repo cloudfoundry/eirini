@@ -13,6 +13,45 @@
 
 [[projects]]
   branch = "master"
+  name = "code.cloudfoundry.org/buildpackapplifecycle"
+  packages = [
+    "containerpath",
+    "credhub",
+    "databaseuri",
+    "env",
+    "launcher/profile",
+    "platformoptions",
+    "shell",
+    "shell/exec"
+  ]
+  revision = "344eb488fcd88f35e7aa53c6b78b9976ca1f9218"
+
+[[projects]]
+  name = "code.cloudfoundry.org/credhub-cli"
+  packages = [
+    "credhub/auth",
+    "credhub/auth/uaa",
+    "credhub/credentials",
+    "credhub/credentials/generate",
+    "credhub/credentials/values",
+    "credhub/permissions",
+    "credhub/server",
+    "errors"
+  ]
+  revision = "863774d30866c04d1dacb75df13ecfbe5f84d163"
+  version = "1.7.7"
+
+[[projects]]
+  branch = "master"
+  name = "code.cloudfoundry.org/goshims"
+  packages = [
+    "osshim",
+    "osshim/os_fake"
+  ]
+  revision = "bd22da884005f55d24099376a3298e742bba411d"
+
+[[projects]]
+  branch = "master"
   name = "code.cloudfoundry.org/lager"
   packages = [
     ".",
@@ -50,6 +89,23 @@
   packages = ["."]
   revision = "ccb8e960c48f04d6935e72476ae4a51028f9e22f"
   version = "v9"
+
+[[projects]]
+  name = "github.com/cloudfoundry-incubator/credhub-cli"
+  packages = ["credhub"]
+  revision = "8ce74fcab29428a399b0c1c00c0d77f5fc1946b2"
+  version = "2.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/cloudfoundry/go-socks5"
+  packages = ["."]
+  revision = "54f73bdb8a8e85a6611d3d29ab9bbf98c2a060d7"
+
+[[projects]]
+  name = "github.com/cloudfoundry/socks5-proxy"
+  packages = ["."]
+  revision = "3c6b4eec9c2d16c1dac4c42bdb5f755ba09daff8"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -154,6 +210,12 @@
   packages = ["."]
   revision = "7f08801859139f86dfafd1c296e2cba9a80d292e"
   version = "v1.6.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/go-version"
+  packages = ["."]
+  revision = "270f2f71b1ee587f3b609f00f422b76a6b28f348"
 
 [[projects]]
   branch = "master"
@@ -291,7 +353,13 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["ssh/terminal"]
+  packages = [
+    "curve25519",
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "ssh",
+    "ssh/terminal"
+  ]
   revision = "687d4b818545e443c8ba223cbef20b1721afd4db"
 
 [[projects]]
@@ -306,7 +374,8 @@
     "http2",
     "http2/hpack",
     "idna",
-    "lex/httplex"
+    "lex/httplex",
+    "proxy"
   ]
   revision = "01c190206fbdffa42f334f4b2bf2220f50e64920"
 
@@ -572,6 +641,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "39bb22c5e3633419e05d9b299b1c27393ffacb6757f8bee67bcef618f97feb51"
+  inputs-digest = "88faca6642e9c716336a91b25ac38924c9f3b8c42d2297ff3399550b355839e5"
   solver-name = "gps-cdcl"
   solver-version = 1

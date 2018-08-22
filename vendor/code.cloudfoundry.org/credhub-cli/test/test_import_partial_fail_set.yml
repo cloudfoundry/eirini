@@ -1,0 +1,12 @@
+credentials:
+- name: /test/invalid_type
+  type: invalid_type
+  value: "some string"
+- name: /test/invalid_type1
+  type: invalid_type
+  value: "some string"
+- name: /test/user
+  type: user
+  value:
+    username: covfefe
+    password: test-user-password
