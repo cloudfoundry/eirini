@@ -14,6 +14,7 @@ import (
 type ServiceManager interface {
 	Create(lrp *opi.LRP) error
 	CreateHeadless(lrp *opi.LRP) error
+	Update(lrp *opi.LRP) error
 	Delete(appName string) error
 	DeleteHeadless(appName string) error
 }
@@ -41,6 +42,17 @@ func (m *serviceManager) Create(lrp *opi.LRP) error {
 
 func (m *serviceManager) CreateHeadless(lrp *opi.LRP) error {
 	_, err := m.services().Create(toHeadlessService(lrp))
+	return err
+}
+
+func (m *serviceManager) Update(lrp *opi.LRP) error {
+	service, err := m.services().Get(eirini.GetInternalServiceName(lrp.Name), meta_v1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	service.Annotations["routes"] = lrp.Metadata[cf.VcapAppUris]
+	_, err = m.services().Update(service)
 	return err
 }
 

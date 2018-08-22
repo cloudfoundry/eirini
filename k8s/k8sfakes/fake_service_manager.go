@@ -31,6 +31,17 @@ type FakeServiceManager struct {
 	createHeadlessReturnsOnCall map[int]struct {
 		result1 error
 	}
+	UpdateStub        func(lrp *opi.LRP) error
+	updateMutex       sync.RWMutex
+	updateArgsForCall []struct {
+		lrp *opi.LRP
+	}
+	updateReturns struct {
+		result1 error
+	}
+	updateReturnsOnCall map[int]struct {
+		result1 error
+	}
 	DeleteStub        func(appName string) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
@@ -153,6 +164,54 @@ func (fake *FakeServiceManager) CreateHeadlessReturnsOnCall(i int, result1 error
 	}{result1}
 }
 
+func (fake *FakeServiceManager) Update(lrp *opi.LRP) error {
+	fake.updateMutex.Lock()
+	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
+	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
+		lrp *opi.LRP
+	}{lrp})
+	fake.recordInvocation("Update", []interface{}{lrp})
+	fake.updateMutex.Unlock()
+	if fake.UpdateStub != nil {
+		return fake.UpdateStub(lrp)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.updateReturns.result1
+}
+
+func (fake *FakeServiceManager) UpdateCallCount() int {
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
+	return len(fake.updateArgsForCall)
+}
+
+func (fake *FakeServiceManager) UpdateArgsForCall(i int) *opi.LRP {
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
+	return fake.updateArgsForCall[i].lrp
+}
+
+func (fake *FakeServiceManager) UpdateReturns(result1 error) {
+	fake.UpdateStub = nil
+	fake.updateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeServiceManager) UpdateReturnsOnCall(i int, result1 error) {
+	fake.UpdateStub = nil
+	if fake.updateReturnsOnCall == nil {
+		fake.updateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.updateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeServiceManager) Delete(appName string) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
@@ -256,6 +315,8 @@ func (fake *FakeServiceManager) Invocations() map[string][][]interface{} {
 	defer fake.createMutex.RUnlock()
 	fake.createHeadlessMutex.RLock()
 	defer fake.createHeadlessMutex.RUnlock()
+	fake.updateMutex.RLock()
+	defer fake.updateMutex.RUnlock()
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	fake.deleteHeadlessMutex.RLock()

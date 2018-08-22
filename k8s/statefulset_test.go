@@ -42,9 +42,9 @@ var _ = Describe("Statefulset", func() {
 
 	BeforeEach(func() {
 		lrps = []*opi.LRP{
-			createLRP("odin", "1234.5"),
-			createLRP("thor", "4567.8"),
-			createLRP("mimir", "9012.3"),
+			createLRP("odin", "1234.5", "my.example.route"),
+			createLRP("thor", "4567.8", "my.example.route"),
+			createLRP("mimir", "9012.3", "my.example.route"),
 		}
 
 		client = fake.NewSimpleClientset()
@@ -66,7 +66,7 @@ var _ = Describe("Statefulset", func() {
 
 		JustBeforeEach(func() {
 			probeCreator.Returns(&v1.Probe{})
-			lrp = createLRP("Baldur", "1234.5")
+			lrp = createLRP("Baldur", "1234.5", "my.example.route")
 			err = statefulSetManager.Create(lrp)
 		})
 
@@ -93,7 +93,7 @@ var _ = Describe("Statefulset", func() {
 
 		Context("When redeploying an existing LRP", func() {
 			BeforeEach(func() {
-				lrp = createLRP("Baldur", "1234.5")
+				lrp = createLRP("Baldur", "1234.5", "my.example.route")
 				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp))
 				Expect(createErr).ToNot(HaveOccurred())
 			})
@@ -169,7 +169,7 @@ var _ = Describe("Statefulset", func() {
 
 			BeforeEach(func() {
 				appName = "baldur"
-				lrp := createLRP(appName, "9012.3")
+				lrp := createLRP(appName, "9012.3", "my.example.route")
 				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp))
 				Expect(createErr).ToNot(HaveOccurred())
 			})
@@ -217,7 +217,7 @@ var _ = Describe("Statefulset", func() {
 				BeforeEach(func() {
 					appName = "update"
 
-					lrp := createLRP("update", "7653.2")
+					lrp := createLRP("update", "7653.2", "my.example.route")
 
 					statefulSet := toStatefulSet(lrp)
 					_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(statefulSet)
@@ -421,7 +421,7 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	return statefulSet
 }
 
-func createLRP(processGUID, lastUpdated string) *opi.LRP {
+func createLRP(processGUID, lastUpdated, routes string) *opi.LRP {
 	return &opi.LRP{
 		Name: processGUID,
 		Command: []string{
@@ -434,6 +434,7 @@ func createLRP(processGUID, lastUpdated string) *opi.LRP {
 		Metadata: map[string]string{
 			cf.ProcessGUID: processGUID,
 			cf.LastUpdated: lastUpdated,
+			cf.VcapAppUris: routes,
 		},
 	}
 }
