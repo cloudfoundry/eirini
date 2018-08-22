@@ -71,7 +71,7 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 		SkipSslValidation: cfg.Properties.SkipSslValidation,
 		Username:          cfg.Properties.CfUsername,
 		Password:          cfg.Properties.CfPassword,
-		APIAddress:        cfg.Properties.CcAPI,
+		ApiAddress:        cfg.Properties.CcAPI,
 	}
 
 	cfClient, err := cfclient.NewClient(cfClientConfig)
