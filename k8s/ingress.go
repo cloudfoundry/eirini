@@ -47,9 +47,10 @@ func (i *KubeIngressManager) Delete(lrpName string) error {
 		return err
 	}
 	serviceName := eirini.GetInternalServiceName(lrpName)
-	for i, rule := range ing.Spec.Rules {
-		if rule.HTTP.Paths[0].Backend.ServiceName == serviceName {
+	for i := 0; i < len(ing.Spec.Rules); i++ {
+		if ing.Spec.Rules[i].HTTP.Paths[0].Backend.ServiceName == serviceName {
 			ing.Spec.Rules = append(ing.Spec.Rules[:i], ing.Spec.Rules[i+1:]...)
+			i--
 		}
 	}
 
@@ -68,21 +69,22 @@ func (i *KubeIngressManager) Update(lrp *opi.LRP) error {
 		panic(err)
 	}
 
-	if len(uriList) == 0 {
-		return nil
-	}
-
 	ingresses, err := i.client.ExtensionsV1beta1().Ingresses(i.namespace).List(av1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	if ingress, exists := i.getIngress(ingresses); exists {
+		if len(uriList) == 0 {
+			return i.Delete(lrp.Name)
+		}
+
 		if err := i.updateSpec(ingress, lrp.Name, uriList); err != nil {
 			return err
 		}
 		return i.updateIngressObject(ingress)
 	}
+
 	return i.createIngress(lrp.Name, uriList)
 }
 
@@ -92,6 +94,10 @@ func (i *KubeIngressManager) updateIngressObject(ingress *ext.Ingress) error {
 }
 
 func (i *KubeIngressManager) createIngress(lrpName string, uriList []string) error {
+	if len(uriList) == 0 {
+		return nil
+	}
+
 	ingress := &ext.Ingress{
 		TypeMeta: av1.TypeMeta{
 			Kind:       ingressKind,
