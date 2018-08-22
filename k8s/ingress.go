@@ -105,7 +105,7 @@ func (i *KubeIngressManager) createIngress(lrpName string, uriList []string) err
 
 func (i *KubeIngressManager) updateSpec(ingress *ext.Ingress, lrpName string, uriList []string) {
 	rules := createIngressRules(lrpName, uriList)
-	ingress.Spec.Rules = intersect(
+	ingress.Spec.Rules = removeDifference(
 		ingress.Spec.Rules,
 		rules,
 		eirini.GetInternalServiceName(lrpName),
@@ -146,7 +146,7 @@ func createIngressRules(lrpName string, uriList []string) []ext.IngressRule {
 	return rules
 }
 
-func intersect(existing, updated []ext.IngressRule, serviceName string) []ext.IngressRule {
+func removeDifference(existing, updated []ext.IngressRule, serviceName string) []ext.IngressRule {
 	hashExisting := toRuleMap(existing)
 	hashUpdated := toRuleMap(updated)
 
