@@ -31,6 +31,10 @@ func NewServiceManager(client kubernetes.Interface, namespace string) ServiceMan
 	}
 }
 
+func (m *serviceManager) removeRoutes(serviceName string) error {
+	return nil
+}
+
 func (m *serviceManager) services() types.ServiceInterface {
 	return m.client.CoreV1().Services(m.namespace)
 }

@@ -53,6 +53,26 @@ type Properties struct {
 	InsecureSkipVerify bool   `yaml:"insecure_skip_verify"`
 }
 
+//go:generate counterfeiter . RemoveCallbackFunc
+type RemoveCallbackFunc func(string) error
+
+type Routes struct {
+	Routes             []string
+	UnregisteredRoutes []string
+	Name               string
+	removeCallback     RemoveCallbackFunc
+}
+
+func NewRoutes(f RemoveCallbackFunc) *Routes {
+	return &Routes{
+		removeCallback: f,
+	}
+}
+
+func (r *Routes) Pop() error {
+	return r.removeCallback(r.Name)
+}
+
 //go:generate counterfeiter . St8ger
 type St8ger interface {
 	Run(task opi.Task) error

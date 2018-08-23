@@ -5,6 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/eirinifakes"
 	"code.cloudfoundry.org/eirini/route/routefakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,58 +14,114 @@ import (
 	. "code.cloudfoundry.org/eirini/route"
 )
 
-var _ = Describe("Emitter", func() {
+var _ = FDescribe("Emitter", func() {
 
 	var (
-		scheduler   *routefakes.FakeTaskScheduler
-		publisher   *routefakes.FakePublisher
-		workChannel chan []RegistryMessage
-		emitter     *Emitter
-		messages    []RegistryMessage
+		scheduler           *routefakes.FakeTaskScheduler
+		publisher           *routefakes.FakePublisher
+		fakeRemoveRouteFunc *eirinifakes.FakeRemoveCallbackFunc
+		workChannel         chan []*eirini.Routes
+		emitter             *Emitter
+		routes              []*eirini.Routes
+		messageCount        int
 	)
 
 	const (
-		host     = "our.host.com"
-		natsSubj = "router.register"
+		host              = "our.host.com"
+		natsSubj          = "router.register"
+		kubeEndpoint      = "example.com/kube"
+		httpPort          = 80
+		tlsPort           = 443
+		registerSubject   = "router.register"
+		unregisterSubject = "router.unregister"
 	)
 
-	getExpectedData := func() [][]byte {
-		expectedData := [][]byte{}
-		for _, m := range messages {
-			messageJSON, err := json.Marshal(m)
-			Expect(err).ToNot(HaveOccurred())
-			expectedData = append(expectedData, messageJSON)
+	countMessages := func() int {
+		count := 0
+		for _, r := range routes {
+			count += len(r.Routes)
+			count += len(r.UnregisteredRoutes)
 		}
-
-		return expectedData
+		return count
 	}
 
-	getPublishData := func() [][]byte {
-		publishData := [][]byte{}
-		for i := 0; i < len(messages); i++ {
-			subj, data := publisher.PublishArgsForCall(i)
-			Expect(subj).To(Equal(natsSubj))
-
-			publishData = append(publishData, data)
+	getRegisterMessage := func(routes []string, name string) []byte {
+		m := RegistryMessage{
+			NatsMessage: NatsMessage{
+				Host:    kubeEndpoint,
+				Port:    httpPort,
+				TLSPort: tlsPort,
+				URIs:    routes,
+			},
+			App: name,
 		}
-		return publishData
+		data, err := json.Marshal(m)
+		Expect(err).ToNot(HaveOccurred())
+		return data
+	}
+
+	getExpectedData := func() (registered [][]byte, unregistered [][]byte) {
+		for _, r := range routes {
+			if len(r.Routes) != 0 {
+				m := getRegisterMessage(r.Routes, r.Name)
+				registered = append(registered, m)
+			}
+			if len(r.UnregisteredRoutes) != 0 {
+				m := getRegisterMessage(r.UnregisteredRoutes, r.Name)
+				unregistered = append(unregistered, m)
+			}
+
+		}
+		return
+	}
+
+	getPublishData := func() (registered [][]byte, unregistered [][]byte) {
+		for i := 0; i < messageCount; i++ {
+			subj, data := publisher.PublishArgsForCall(i)
+			Expect([]string{registerSubject, unregisterSubject}).To(ContainElement(subj))
+			if subj == registerSubject {
+				registered = append(registered, data)
+			} else {
+				unregistered = append(unregistered, data)
+			}
+		}
+		return
+	}
+
+	compareSlices := func(actual [][]byte, expected [][]byte) {
+		Expect(len(actual)).To(Equal(len(expected)))
+		for _, e := range expected {
+			Expect(actual).To(ContainElement(e))
+		}
+	}
+
+	assertInteractionsWithFakes := func() {
+		It("should publish the routes", func() {
+			Expect(publisher.PublishCallCount()).To(Equal(messageCount))
+			actualRegistered, actualUnregistered := getPublishData()
+			expectedRegistered, expectedUnregistered := getExpectedData()
+
+			compareSlices(actualRegistered, expectedRegistered)
+			compareSlices(actualUnregistered, expectedUnregistered)
+		})
 	}
 
 	BeforeEach(func() {
 		scheduler = new(routefakes.FakeTaskScheduler)
 		publisher = new(routefakes.FakePublisher)
-		workChannel = make(chan []RegistryMessage, 1)
+		fakeRemoveRouteFunc = new(eirinifakes.FakeRemoveCallbackFunc)
+		workChannel = make(chan []*eirini.Routes, 1)
 
-		messages = []RegistryMessage{
-			{
-				Host: host,
-				URIs: []string{"uri1", "uri2", "uri3"},
-			},
-			{
-				Host: host,
-				URIs: []string{"uri4", "uri5", "uri6"},
-			},
-		}
+		route := eirini.NewRoutes(fakeRemoveRouteFunc.Spy)
+		route.Routes = []string{"route1.my.app.com"}
+		route.UnregisteredRoutes = []string{"removed.route1.my.app.com"}
+		route.Name = "app1"
+
+		routes = []*eirini.Routes{route}
+
+		messageCount = countMessages()
+		emitter = NewEmitter(publisher, workChannel, scheduler, kubeEndpoint)
+		emitter.Start()
 	})
 
 	AfterEach(func() {
@@ -71,32 +129,20 @@ var _ = Describe("Emitter", func() {
 	})
 
 	JustBeforeEach(func() {
-		emitter = NewEmitter(publisher, workChannel, scheduler)
-		emitter.Start()
+		task := scheduler.ScheduleArgsForCall(0)
+		workChannel <- routes
+
+		err := task()
+		Expect(err).ToNot(HaveOccurred())
+		time.Sleep(time.Millisecond * 100) //TODO: Think of a better way (abstract goroutine? waitgroups?)
 	})
-
-	assertInteractionsWithFakes := func() {
-		It("should publish the routes", func() {
-			task := scheduler.ScheduleArgsForCall(0)
-			workChannel <- messages
-
-			err := task()
-			Expect(err).ToNot(HaveOccurred())
-
-			time.Sleep(time.Millisecond * 100) //TODO: Think of a better way (abstract goroutine? waitgroups?)
-
-			Expect(publisher.PublishCallCount()).To(Equal(len(messages)))
-			publishData := getPublishData()
-			expectedData := getExpectedData()
-
-			for _, e := range expectedData {
-				Expect(publishData).To(ContainElement(e))
-			}
-		})
-	}
 
 	Context("When emitter is started", func() {
 		assertInteractionsWithFakes()
+
+		It("should remove the unregistered route", func() {
+			Expect(fakeRemoveRouteFunc.CallCount()).To(Equal(1))
+		})
 	})
 
 	Context("When the publisher returns an error", func() {
@@ -105,5 +151,8 @@ var _ = Describe("Emitter", func() {
 		})
 
 		assertInteractionsWithFakes()
+		It("should not remove the unregistered route", func() {
+			Expect(fakeRemoveRouteFunc.CallCount()).To(Equal(0))
+		})
 	})
 })

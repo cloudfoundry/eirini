@@ -1,10 +1,7 @@
 package route
 
 type RegistryMessage struct {
-	Host                 string            `json:"host"`
-	Port                 uint32            `json:"port"`
-	TLSPort              uint32            `json:"tls_port,omitempty"`
-	URIs                 []string          `json:"uris"`
+	NatsMessage
 	App                  string            `json:"app,omitempty"`
 	RouteServiceURL      string            `json:"route_service_url,omitempty"`
 	PrivateInstanceID    string            `json:"private_instance_id,omitempty"`
@@ -13,4 +10,11 @@ type RegistryMessage struct {
 	IsolationSegment     string            `json:"isolation_segment,omitempty"`
 	EndpointUpdatedAtNs  int64             `json:"endpoint_updated_at_ns,omitempty"`
 	Tags                 map[string]string `json:"tags,omitempty"`
+}
+
+type NatsMessage struct {
+	Host    string   `json:"host"`
+	Port    uint32   `json:"port"`
+	TLSPort uint32   `json:"tls_port,omitempty"`
+	URIs    []string `json:"uris"`
 }
