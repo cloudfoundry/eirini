@@ -38,7 +38,7 @@ var _ = Describe("Service", func() {
 		)
 
 		BeforeEach(func() {
-			lrp = createLRP("baldur", "54321.0", "my.example.route")
+			lrp = createLRP("baldur", "54321.0", `["my.example.route"]`)
 		})
 
 		Context("When creating a usual service", func() {
@@ -61,7 +61,7 @@ var _ = Describe("Service", func() {
 			Context("When recreating a existing service", func() {
 
 				BeforeEach(func() {
-					lrp = createLRP("baldur", "54321.0", "my.example.route")
+					lrp = createLRP("baldur", "54321.0", `["my.example.route"]`)
 				})
 
 				JustBeforeEach(func() {
@@ -94,7 +94,7 @@ var _ = Describe("Service", func() {
 			Context("When recreating a existing service", func() {
 
 				BeforeEach(func() {
-					lrp = createLRP("baldur", "54321.0", "my.example.route")
+					lrp = createLRP("baldur", "54321.0", `["my.example.route"]`)
 				})
 
 				JustBeforeEach(func() {
@@ -134,7 +134,7 @@ var _ = Describe("Service", func() {
 			})
 
 			BeforeEach(func() {
-				lrp := createLRP("odin", "1234.5", "my.example.route")
+				lrp := createLRP("odin", "1234.5", `["my.example.route"]`)
 				service = toService(lrp, namespace)
 			})
 
@@ -160,7 +160,7 @@ var _ = Describe("Service", func() {
 			var err error
 
 			BeforeEach(func() {
-				lrp := createLRP("odin", "1234.5", "my.example.route")
+				lrp := createLRP("odin", "1234.5", `["my.example.route"]`)
 				service = toHeadlessService(lrp, namespace)
 			})
 
@@ -188,30 +188,126 @@ var _ = Describe("Service", func() {
 
 	Context("When updating an service", func() {
 		var (
-			err error
-			lrp *opi.LRP
+			err            error
+			lrp            *opi.LRP
+			serviceName    string
+			updatedService *v1.Service
 		)
 
 		BeforeEach(func() {
-			lrp = createLRP("odin", "1234.5", "my.example.route")
+			lrp = createLRP("odin", "1234.5", `["my.example.route"]`)
 			err = serviceManager.Create(lrp)
 		})
 
-		Context("wehn routes are updated", func() {
-
-			BeforeEach(func() {
-				lrp = createLRP("odin", "1234.5", "my-new.example.route")
-			})
+		Context("when routes are updated", func() {
 
 			JustBeforeEach(func() {
 				err = serviceManager.Update(lrp)
+				Expect(err).ToNot(HaveOccurred())
+
+				serviceName = eirini.GetInternalServiceName("odin")
+
+				updatedService, err = fakeClient.CoreV1().Services(namespace).Get(serviceName, meta.GetOptions{})
 			})
 
-			It("should update the routes", func() {
-				serviceName := eirini.GetInternalServiceName("odin")
-				updatedService, getErr := fakeClient.CoreV1().Services(namespace).Get(serviceName, meta.GetOptions{})
-				Expect(getErr).ToNot(HaveOccurred())
-				Expect(updatedService).To(Equal(toService(lrp, namespace)))
+			Context("When a route is replaced", func() {
+				BeforeEach(func() {
+					lrp = createLRP("odin", "1234.5", `["my-new.example.route"]`)
+				})
+
+				It("should update the routes annotation", func() {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(updatedService.Annotations[eirini.RegisteredRoutes]).To(Equal(`["my-new.example.route"]`))
+				})
+
+				It("should remove the difference and add it to unregisteredRoutes annotation ", func() {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(updatedService.Annotations[eirini.UnregisteredRoutes]).To(Equal(`["my.example.route"]`))
+				})
+			})
+
+			Context("When routes are added", func() {
+				BeforeEach(func() {
+					lrp = createLRP("odin", "1234.5", `["my.example.route","my-new.example.route"]`)
+				})
+
+				It("should contain the old route", func() {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(updatedService.Annotations[eirini.RegisteredRoutes]).To(ContainSubstring(`"my.example.route"`))
+				})
+
+				It("should contain the new route", func() {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(updatedService.Annotations[eirini.RegisteredRoutes]).To(ContainSubstring(`"my-new.example.route"`))
+				})
+
+				It("should be empty", func() {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(updatedService.Annotations[eirini.UnregisteredRoutes]).To(Equal(`[]`))
+				})
+			})
+
+			Context("When routes are completly removed", func() {
+				BeforeEach(func() {
+					lrp = createLRP("odin", "1234.5", `[]`)
+				})
+
+				It("should empty the routes annotation", func() {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(updatedService.Annotations[eirini.RegisteredRoutes]).To(Equal(`[]`))
+				})
+
+				It("should unregister the existing routes", func() {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(updatedService.Annotations[eirini.UnregisteredRoutes]).To(ContainSubstring(`my.example.route`))
+				})
+			})
+		})
+	})
+
+	Context("ListRoutes", func() {
+
+		var (
+			routes         []*eirini.Routes
+			err            error
+			updatedService *v1.Service
+		)
+
+		JustBeforeEach(func() {
+			routes, err = serviceManager.ListRoutes()
+		})
+
+		Context("When there are existing services", func() {
+			BeforeEach(func() {
+				lrp := createLRP("baldur", "54321.0", `["my.example.route"]`)
+				err = serviceManager.Create(lrp)
+				Expect(err).ToNot(HaveOccurred())
+				lrp = createLRP("baldur", "54322.0", `["my-new.example.route"]`)
+				err = serviceManager.Update(lrp)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return the correct routes", func() {
+				route := routes[0]
+				Expect(route.Routes).To(ContainElement("my-new.example.route"))
+				Expect(route.UnregisteredRoutes).To(ContainElement("my.example.route"))
+				Expect(route.Name).To(Equal(eirini.GetInternalServiceName("baldur")))
+			})
+
+			Context("When a route was unregistered", func() {
+				It("should set the correct remove unregisterred route callback", func() {
+					route := routes[0]
+					err := route.PopUnregisteredRoutes()
+					Expect(err).ToNot(HaveOccurred())
+
+					updatedService, err = fakeClient.CoreV1().Services(namespace).Get(eirini.GetInternalServiceName("baldur"), meta.GetOptions{})
+					Expect(err).ToNot(HaveOccurred())
+					Expect(updatedService.Annotations[eirini.UnregisteredRoutes]).To(Equal(`[]`))
+				})
 			})
 		})
 	})
@@ -247,7 +343,8 @@ func toService(lrp *opi.LRP, namespace string) *v1.Service {
 	}
 
 	service.Annotations = map[string]string{
-		"routes": lrp.Metadata[cf.VcapAppUris],
+		eirini.RegisteredRoutes:   lrp.Metadata[cf.VcapAppUris],
+		eirini.UnregisteredRoutes: `[]`,
 	}
 
 	return service

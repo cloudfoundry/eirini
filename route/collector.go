@@ -4,20 +4,14 @@ import (
 	"code.cloudfoundry.org/eirini"
 )
 
-const (
-	httpPort = 80
-	tlsPort  = 443
-)
-
 type Collector struct {
-	RouteLister  RouteLister
-	Scheduler    TaskScheduler
-	Work         chan<- []*eirini.Routes
-	KubeEndpoint string
+	RouteLister Lister
+	Scheduler   TaskScheduler
+	Work        chan<- []*eirini.Routes
 }
 
-//go:generate counterfeiter . RouteLister
-type RouteLister interface {
+//go:generate counterfeiter . Lister
+type Lister interface {
 	ListRoutes() ([]*eirini.Routes, error)
 }
 

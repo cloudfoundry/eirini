@@ -126,18 +126,17 @@ func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP 
 
 	clientset, err := kubernetes.NewForConfig(config)
 	exitWithError(err)
+	lister := k8s.NewServiceManager(clientset, namespace)
 
-	workChan := make(chan []route.RegistryMessage)
+	workChan := make(chan []*eirini.Routes)
 
 	rc := route.Collector{
-		Client:        clientset,
-		Work:          workChan,
-		Scheduler:     &route.TickerTaskScheduler{Ticker: time.NewTicker(time.Second * 15)},
-		KubeNamespace: namespace,
-		KubeEndpoint:  kubeEndpoint,
+		RouteLister: lister,
+		Work:        workChan,
+		Scheduler:   &route.TickerTaskScheduler{Ticker: time.NewTicker(time.Second * 15)},
 	}
 
-	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{})
+	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{}, kubeEndpoint)
 
 	go re.Start()
 	go rc.Start()

@@ -17,7 +17,7 @@ var _ = Describe("Collector", func() {
 	var (
 		collector              *Collector
 		scheduler              *routefakes.FakeTaskScheduler
-		fakeRouteLister        *routefakes.FakeRouteLister
+		fakeRouteLister        *routefakes.FakeLister
 		fakeRemoveCallbackFunc *eirinifakes.FakeRemoveCallbackFunc
 		workChannel            chan []*eirini.Routes
 		routes                 []*eirini.Routes
@@ -27,10 +27,9 @@ var _ = Describe("Collector", func() {
 	)
 
 	const (
-		appName      = "dora"
-		httpPort     = 80
-		tlsPort      = 443
-		kubeEndpoint = "example.com/kube"
+		appName  = "dora"
+		httpPort = 80
+		tlsPort  = 443
 	)
 
 	BeforeEach(func() {
@@ -38,16 +37,15 @@ var _ = Describe("Collector", func() {
 		removedRoutes = []string{"removed.route1.app.com", "removed.route2.app.com"}
 		scheduler = new(routefakes.FakeTaskScheduler)
 		workChannel = make(chan []*eirini.Routes, 1)
-		fakeRouteLister = new(routefakes.FakeRouteLister)
+		fakeRouteLister = new(routefakes.FakeLister)
 		fakeRemoveCallbackFunc = new(eirinifakes.FakeRemoveCallbackFunc)
 	})
 
 	JustBeforeEach(func() {
 		collector = &Collector{
-			RouteLister:  fakeRouteLister,
-			Scheduler:    scheduler,
-			Work:         workChannel,
-			KubeEndpoint: kubeEndpoint,
+			RouteLister: fakeRouteLister,
+			Scheduler:   scheduler,
+			Work:        workChannel,
 		}
 
 		collector.Start()

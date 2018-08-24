@@ -11,8 +11,8 @@ import (
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
-//Environment Variable Names
 const (
+	//Environment Variable Names
 	EnvDownloadURL        = "DOWNLOAD_URL"
 	EnvUploadURL          = "UPLOAD_URL"
 	EnvAppID              = "APP_ID"
@@ -22,6 +22,10 @@ const (
 	EnvCfPassword         = "CF_PASSWORD"
 	EnvAPIAddress         = "API_ADDRESS"
 	EnvEiriniAddress      = "EIRINI_ADDRESS"
+
+	//routes
+	RegisteredRoutes   = "routes"
+	UnregisteredRoutes = "unregisteredRoutes"
 )
 
 //go:generate counterfeiter . CfClient
@@ -69,7 +73,7 @@ func NewRoutes(f RemoveCallbackFunc) *Routes {
 	}
 }
 
-func (r *Routes) Pop() error {
+func (r *Routes) PopUnregisteredRoutes() error {
 	return r.removeCallback(r.Name)
 }
 

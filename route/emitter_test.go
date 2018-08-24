@@ -47,13 +47,11 @@ var _ = FDescribe("Emitter", func() {
 
 	getRegisterMessage := func(routes []string, name string) []byte {
 		m := RegistryMessage{
-			NatsMessage: NatsMessage{
-				Host:    kubeEndpoint,
-				Port:    httpPort,
-				TLSPort: tlsPort,
-				URIs:    routes,
-			},
-			App: name,
+			Host:    kubeEndpoint,
+			Port:    httpPort,
+			TLSPort: tlsPort,
+			URIs:    routes,
+			App:     name,
 		}
 		data, err := json.Marshal(m)
 		Expect(err).ToNot(HaveOccurred())
