@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"encoding/json"
+	"regexp"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -97,6 +98,10 @@ func (m *serviceManager) ListRoutes() ([]*eirini.Routes, error) {
 
 	routes := []*eirini.Routes{}
 	for _, s := range services.Items {
+		if !isCFService(s.Name) || isHeadless(s.Name) {
+			continue
+		}
+
 		route := eirini.NewRoutes(m.removeUnregisteredRoutes)
 		registered, err := decodeRoutes(s.Annotations[eirini.RegisteredRoutes])
 		if err != nil {
@@ -206,4 +211,21 @@ func decodeRoutes(s string) ([]string, error) {
 	err := json.Unmarshal([]byte(s), &uris)
 
 	return uris, err
+}
+
+func isHeadless(s string) bool {
+	return matchRegex(s, "(headless)$")
+}
+
+func isCFService(s string) bool {
+	return matchRegex(s, "^cf-.*$")
+}
+
+func matchRegex(subject string, regex string) bool {
+	r, err := regexp.Compile(regex)
+	if err != nil {
+		panic(err)
+	}
+	return r.MatchString(subject)
+
 }
