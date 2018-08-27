@@ -120,26 +120,36 @@ var _ = Describe("Service", func() {
 			Expect(services.Items).To(BeEmpty())
 		}
 
-		JustBeforeEach(func() {
-			_, err := fakeClient.CoreV1().Services(namespace).Create(service)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
 		Context("a regular service", func() {
 
-			var err error
+			var (
+				err error
+			)
+
+			BeforeEach(func() {
+				lrp := createLRP("odin", "1234.5", `["my.example.route"]`)
+				service = toService(lrp, namespace)
+				_, err = fakeClient.CoreV1().Services(namespace).Create(service)
+				Expect(err).ToNot(HaveOccurred())
+			})
 
 			JustBeforeEach(func() {
 				err = serviceManager.Delete("odin")
 			})
 
-			BeforeEach(func() {
-				lrp := createLRP("odin", "1234.5", `["my.example.route"]`)
-				service = toService(lrp, namespace)
+			It("flags the service with delete", func() {
+				service, err = fakeClient.CoreV1().Services(namespace).Get(service.Name, meta.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(service.Annotations["delete"]).To(Equal("true"))
 			})
 
-			It("deletes the service", func() {
-				assertServiceIsDeleted(err)
+			It("moves the registered routes to unregistered", func() {
+				service, err = fakeClient.CoreV1().Services(namespace).Get(service.Name, meta.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(service.Annotations[eirini.RegisteredRoutes]).To(Equal(`[]`))
+				Expect(service.Annotations[eirini.UnregisteredRoutes]).To(Equal(`["my.example.route"]`))
 			})
 
 			Context("when the service does not exist", func() {
@@ -150,6 +160,23 @@ var _ = Describe("Service", func() {
 
 				It("returns an error", func() {
 					Expect(err).To(HaveOccurred())
+				})
+			})
+
+			Context("When there are unregistered routes", func() {
+				BeforeEach(func() {
+					lrp := createLRP("odin", "1234.5", `["my-new.example.route"]`)
+					err = serviceManager.Update(lrp)
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				It("append the routes to the unregistered routes", func() {
+					service, err = fakeClient.CoreV1().Services(namespace).Get(service.Name, meta.GetOptions{})
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(service.Annotations[eirini.RegisteredRoutes]).To(Equal(`[]`))
+					Expect(service.Annotations[eirini.UnregisteredRoutes]).To(Equal(`["my.example.route","my-new.example.route"]`))
+
 				})
 
 			})
@@ -162,6 +189,8 @@ var _ = Describe("Service", func() {
 			BeforeEach(func() {
 				lrp := createLRP("odin", "1234.5", `["my.example.route"]`)
 				service = toHeadlessService(lrp, namespace)
+				_, err = fakeClient.CoreV1().Services(namespace).Create(service)
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			JustBeforeEach(func() {
@@ -303,15 +332,30 @@ var _ = Describe("Service", func() {
 			})
 
 			Context("When a route was unregistered", func() {
-				It("should set the correct remove unregisterred route callback", func() {
+				JustBeforeEach(func() {
 					route := routes[0]
 					err = route.PopUnregisteredRoutes()
 					Expect(err).ToNot(HaveOccurred())
+				})
 
+				It("should set the correct remove unregisterred route callback", func() {
 					updatedService, err = fakeClient.CoreV1().Services(namespace).Get(eirini.GetInternalServiceName("baldur"), meta.GetOptions{})
 					Expect(err).ToNot(HaveOccurred())
 					Expect(updatedService.Annotations[eirini.UnregisteredRoutes]).To(Equal(`[]`))
 				})
+
+				Context("When the service is scheduled for deletion", func() {
+					BeforeEach(func() {
+						err = serviceManager.Delete("baldur")
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					It("should delete the service", func() {
+						_, err = fakeClient.CoreV1().Services(namespace).Get(eirini.GetInternalServiceName("baldur"), meta.GetOptions{})
+						Expect(err).To(HaveOccurred())
+					})
+				})
+
 			})
 
 			Context("When there are headless services", func() {

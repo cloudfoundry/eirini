@@ -36,10 +36,6 @@ func NewServiceManager(client kubernetes.Interface, namespace string) ServiceMan
 	}
 }
 
-func (m *serviceManager) removeRoutes(serviceName string) error {
-	return nil
-}
-
 func (m *serviceManager) services() types.ServiceInterface {
 	return m.client.CoreV1().Services(m.namespace)
 }
@@ -82,7 +78,22 @@ func (m *serviceManager) Update(lrp *opi.LRP) error {
 
 func (m *serviceManager) Delete(appName string) error {
 	serviceName := eirini.GetInternalServiceName(appName)
-	return m.services().Delete(serviceName, &meta_v1.DeleteOptions{})
+	service, err := m.services().Get(serviceName, meta_v1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	routes, err := mergeRoutes(service)
+	if err != nil {
+		return err
+	}
+
+	service.Annotations[eirini.UnregisteredRoutes] = routes
+	service.Annotations[eirini.RegisteredRoutes] = `[]`
+	service.Annotations["delete"] = "true"
+
+	_, err = m.services().Update(service)
+	return err
 }
 
 func (m *serviceManager) DeleteHeadless(appName string) error {
@@ -128,8 +139,14 @@ func (m *serviceManager) removeUnregisteredRoutes(serviceName string) error {
 	if err != nil {
 		return err
 	}
+
+	if service.Annotations["delete"] == "true" {
+		return m.services().Delete(serviceName, &meta_v1.DeleteOptions{})
+	}
+
 	service.Annotations[eirini.UnregisteredRoutes] = `[]`
 	_, err = m.services().Update(service)
+
 	return err
 }
 
@@ -183,6 +200,26 @@ func toHeadlessService(lrp *opi.LRP) *v1.Service {
 	}
 
 	return service
+}
+
+func mergeRoutes(service *v1.Service) (string, error) {
+	existingRoutes, err := decodeRoutes(service.Annotations[eirini.RegisteredRoutes])
+	if err != nil {
+		return "", err
+	}
+
+	unregisteredRoutes, err := decodeRoutes(service.Annotations[eirini.UnregisteredRoutes])
+	if err != nil {
+		return "", err
+	}
+
+	unregisteredRoutes = append(unregisteredRoutes, existingRoutes...)
+
+	routes, err := json.Marshal(unregisteredRoutes)
+	if err != nil {
+		panic(err)
+	}
+	return string(routes), nil
 }
 
 func getUnregisteredRoutes(existing, updated []string) (string, error) {
