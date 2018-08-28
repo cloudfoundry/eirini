@@ -14,11 +14,12 @@ import (
 	. "code.cloudfoundry.org/eirini/k8s"
 )
 
-var _ = Describe("Service", func() {
+var _ = FDescribe("Service", func() {
 
 	var (
 		fakeClient     kubernetes.Interface
 		serviceManager ServiceManager
+		routesChan     chan []*eirini.Routes
 	)
 
 	const (
@@ -27,7 +28,7 @@ var _ = Describe("Service", func() {
 
 	BeforeEach(func() {
 		fakeClient = fake.NewSimpleClientset()
-		serviceManager = NewServiceManager(fakeClient, namespace)
+		serviceManager = NewServiceManager(fakeClient, namespace, routesChan)
 	})
 
 	Context("When exposing an existing LRP", func() {
@@ -123,7 +124,8 @@ var _ = Describe("Service", func() {
 		Context("a regular service", func() {
 
 			var (
-				err error
+				err  error
+				work []*eirini.Routes
 			)
 
 			BeforeEach(func() {
@@ -131,17 +133,21 @@ var _ = Describe("Service", func() {
 				service = toService(lrp, namespace)
 				_, err = fakeClient.CoreV1().Services(namespace).Create(service)
 				Expect(err).ToNot(HaveOccurred())
+
 			})
 
 			JustBeforeEach(func() {
 				err = serviceManager.Delete("odin")
 			})
 
-			It("flags the service with delete", func() {
-				service, err = fakeClient.CoreV1().Services(namespace).Get(service.Name, meta.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
+			It("send work to the route emitter", func() {
+				//	work = <-routesChan
 
-				Expect(service.Annotations["delete"]).To(Equal("true"))
+			})
+
+			It("should delete the service", func() {
+				_, err = fakeClient.CoreV1().Services(namespace).Get(service.Name, meta.GetOptions{})
+				Expect(err).To(HaveOccurred())
 			})
 
 			It("moves the registered routes to unregistered", func() {

@@ -29,7 +29,7 @@ type serviceManager struct {
 	namespace string
 }
 
-func NewServiceManager(client kubernetes.Interface, namespace string) ServiceManager {
+func NewServiceManager(client kubernetes.Interface, namespace string, routesChan chan []*eirini.Routes) ServiceManager {
 	return &serviceManager{
 		client:    client,
 		namespace: namespace,
