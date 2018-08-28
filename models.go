@@ -24,8 +24,7 @@ const (
 	EnvEiriniAddress      = "EIRINI_ADDRESS"
 
 	//routes
-	RegisteredRoutes   = "routes"
-	UnregisteredRoutes = "unregisteredRoutes"
+	RegisteredRoutes = "routes"
 )
 
 //go:generate counterfeiter . CfClient
@@ -64,17 +63,6 @@ type Routes struct {
 	Routes             []string
 	UnregisteredRoutes []string
 	Name               string
-	removeCallback     RemoveCallbackFunc
-}
-
-func NewRoutes(f RemoveCallbackFunc) *Routes {
-	return &Routes{
-		removeCallback: f,
-	}
-}
-
-func (r *Routes) PopUnregisteredRoutes() error {
-	return r.removeCallback(r.Name)
 }
 
 //go:generate counterfeiter . St8ger

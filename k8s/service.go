@@ -7,7 +7,6 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/route"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -16,7 +15,6 @@ import (
 
 //go:generate counterfeiter . ServiceManager
 type ServiceManager interface {
-	route.Lister
 	Create(lrp *opi.LRP) error
 	CreateHeadless(lrp *opi.LRP) error
 	Update(lrp *opi.LRP) error
@@ -127,49 +125,6 @@ func (m *serviceManager) DeleteHeadless(appName string) error {
 	return m.services().Delete(serviceName, &meta_v1.DeleteOptions{})
 }
 
-func (m *serviceManager) ListRoutes() ([]*eirini.Routes, error) {
-	services, err := m.services().List(meta_v1.ListOptions{})
-	if err != nil {
-		return []*eirini.Routes{}, err
-	}
-
-	routes := []*eirini.Routes{}
-	for _, s := range services.Items {
-		if !isCFService(s.Name) || isHeadless(s.Name) {
-			continue
-		}
-
-		route := eirini.NewRoutes(m.removeUnregisteredRoutes)
-		registered, err := decodeRoutes(s.Annotations[eirini.RegisteredRoutes])
-		if err != nil {
-			return []*eirini.Routes{}, err
-		}
-
-		route.Routes = registered
-		route.Name = s.Name
-
-		routes = append(routes, route)
-	}
-
-	return routes, nil
-}
-
-func (m *serviceManager) removeUnregisteredRoutes(serviceName string) error {
-	service, err := m.services().Get(serviceName, meta_v1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	if service.Annotations["delete"] == "true" {
-		return m.services().Delete(serviceName, &meta_v1.DeleteOptions{})
-	}
-
-	service.Annotations[eirini.UnregisteredRoutes] = `[]`
-	_, err = m.services().Update(service)
-
-	return err
-}
-
 func toService(lrp *opi.LRP) *v1.Service {
 	service := &v1.Service{
 		Spec: v1.ServiceSpec{
@@ -191,8 +146,7 @@ func toService(lrp *opi.LRP) *v1.Service {
 	}
 
 	service.Annotations = map[string]string{
-		eirini.RegisteredRoutes:   lrp.Metadata[cf.VcapAppUris],
-		eirini.UnregisteredRoutes: `[]`,
+		eirini.RegisteredRoutes: lrp.Metadata[cf.VcapAppUris],
 	}
 
 	return service
@@ -220,26 +174,6 @@ func toHeadlessService(lrp *opi.LRP) *v1.Service {
 	}
 
 	return service
-}
-
-func mergeRoutes(service *v1.Service) (string, error) {
-	existingRoutes, err := decodeRoutes(service.Annotations[eirini.RegisteredRoutes])
-	if err != nil {
-		return "", err
-	}
-
-	unregisteredRoutes, err := decodeRoutes(service.Annotations[eirini.UnregisteredRoutes])
-	if err != nil {
-		return "", err
-	}
-
-	unregisteredRoutes = append(unregisteredRoutes, existingRoutes...)
-
-	routes, err := json.Marshal(unregisteredRoutes)
-	if err != nil {
-		panic(err)
-	}
-	return string(routes), nil
 }
 
 func getUnregisteredRoutes(existing, updated []string) []string {

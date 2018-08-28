@@ -72,11 +72,6 @@ func (e *Emitter) unregisterRoute(route *eirini.Routes) {
 	err := e.publish(unregisterSubject, route.UnregisteredRoutes, route.Name)
 	if err != nil {
 		fmt.Println("failed to publish unregistered route:", err.Error())
-		return
-	}
-	err = route.PopUnregisteredRoutes()
-	if err != nil {
-		fmt.Println("failed to remove unregistered routes")
 	}
 }
 

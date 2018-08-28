@@ -128,7 +128,7 @@ func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP 
 
 	clientset, err := kubernetes.NewForConfig(config)
 	exitWithError(err)
-	lister := k8s.NewServiceManager(clientset, namespace, nil)
+	lister := k8s.NewServiceRouteLister(clientset, namespace)
 
 	rc := route.Collector{
 		RouteLister: lister,

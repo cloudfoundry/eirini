@@ -319,73 +319,6 @@ var _ = Describe("Service", func() {
 		})
 	})
 
-	Context("ListRoutes", func() {
-
-		var (
-			routes []*eirini.Routes
-			err    error
-		)
-
-		JustBeforeEach(func() {
-			routes, err = serviceManager.ListRoutes()
-		})
-
-		Context("When there are existing services", func() {
-
-			var lrp *opi.LRP
-
-			BeforeEach(func() {
-				lrp = createLRP("baldur", "54321.0", `["my.example.route"]`)
-				err = serviceManager.Create(lrp)
-				r := <-routesChan
-				Expect(r).To(HaveLen(1))
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return the correct routes", func() {
-				Expect(routes).To(HaveLen(1))
-				route := routes[0]
-				Expect(route.Routes).To(ContainElement("my.example.route"))
-				Expect(route.Name).To(Equal(eirini.GetInternalServiceName("baldur")))
-			})
-
-			Context("When there are headless services", func() {
-				BeforeEach(func() {
-					err = serviceManager.CreateHeadless(lrp)
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("should not return an error", func() {
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("should return only one Routes object", func() {
-					Expect(routes).To(HaveLen(1))
-				})
-			})
-
-			Context("When there are non cf services", func() {
-				BeforeEach(func() {
-					service := &v1.Service{}
-					service.Name = "some-other-service"
-					_, err = fakeClient.CoreV1().Services(namespace).Create(service)
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("should not return an error", func() {
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("should return only one Routes object", func() {
-					Expect(routes).To(HaveLen(1))
-				})
-			})
-		})
-	})
 })
 
 func getServicesNames(services *v1.ServiceList) []string {
@@ -418,8 +351,7 @@ func toService(lrp *opi.LRP, namespace string) *v1.Service {
 	}
 
 	service.Annotations = map[string]string{
-		eirini.RegisteredRoutes:   lrp.Metadata[cf.VcapAppUris],
-		eirini.UnregisteredRoutes: `[]`,
+		eirini.RegisteredRoutes: lrp.Metadata[cf.VcapAppUris],
 	}
 
 	return service

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/eirinifakes"
 	"code.cloudfoundry.org/eirini/route/routefakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,16 +13,15 @@ import (
 	. "code.cloudfoundry.org/eirini/route"
 )
 
-var _ = FDescribe("Emitter", func() {
+var _ = Describe("Emitter", func() {
 
 	var (
-		scheduler           *routefakes.FakeTaskScheduler
-		publisher           *routefakes.FakePublisher
-		fakeRemoveRouteFunc *eirinifakes.FakeRemoveCallbackFunc
-		workChannel         chan []*eirini.Routes
-		emitter             *Emitter
-		routes              []*eirini.Routes
-		messageCount        int
+		scheduler    *routefakes.FakeTaskScheduler
+		publisher    *routefakes.FakePublisher
+		workChannel  chan []*eirini.Routes
+		emitter      *Emitter
+		routes       []*eirini.Routes
+		messageCount int
 	)
 
 	const (
@@ -107,15 +105,15 @@ var _ = FDescribe("Emitter", func() {
 	BeforeEach(func() {
 		scheduler = new(routefakes.FakeTaskScheduler)
 		publisher = new(routefakes.FakePublisher)
-		fakeRemoveRouteFunc = new(eirinifakes.FakeRemoveCallbackFunc)
 		workChannel = make(chan []*eirini.Routes, 1)
 
-		route := eirini.NewRoutes(fakeRemoveRouteFunc.Spy)
-		route.Routes = []string{"route1.my.app.com"}
-		route.UnregisteredRoutes = []string{"removed.route1.my.app.com"}
-		route.Name = "app1"
+		route := eirini.Routes{
+			Routes:             []string{"route1.my.app.com"},
+			UnregisteredRoutes: []string{"removed.route1.my.app.com"},
+			Name:               "app1",
+		}
 
-		routes = []*eirini.Routes{route}
+		routes = []*eirini.Routes{&route}
 
 		messageCount = countMessages()
 		emitter = NewEmitter(publisher, workChannel, scheduler, kubeEndpoint)
@@ -137,10 +135,6 @@ var _ = FDescribe("Emitter", func() {
 
 	Context("When emitter is started", func() {
 		assertInteractionsWithFakes()
-
-		It("should remove the unregistered route", func() {
-			Expect(fakeRemoveRouteFunc.CallCount()).To(Equal(1))
-		})
 	})
 
 	Context("When the publisher returns an error", func() {
@@ -149,8 +143,5 @@ var _ = FDescribe("Emitter", func() {
 		})
 
 		assertInteractionsWithFakes()
-		It("should not remove the unregistered route", func() {
-			Expect(fakeRemoveRouteFunc.CallCount()).To(Equal(0))
-		})
 	})
 })
