@@ -15,6 +15,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/route"
+	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/lager"
 
 	yaml "gopkg.in/yaml.v2"
@@ -40,6 +41,9 @@ func connect(cmd *cobra.Command, args []string) {
 	exitWithError(err)
 
 	cfg := setConfigFromFile(path)
+
+	stager := initStager(cfg)
+
 	workChan := make(chan []*eirini.Routes)
 	bifrost := initBifrost(cfg, workChan)
 
@@ -54,21 +58,31 @@ func connect(cmd *cobra.Command, args []string) {
 
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
-
-	handler := handler.New(bifrost, handlerLogger)
+	handler := handler.New(bifrost, stager, handlerLogger)
 
 	log.Println("opi connected")
-
 	log.Fatal(http.ListenAndServe("0.0.0.0:8085", handler))
 }
 
+func initStager(cfg *eirini.Config) eirini.Stager {
+	clientset := createKubeClient(cfg)
+	taskDesirer := &k8s.TaskDesirer{
+		Namespace: cfg.Properties.KubeNamespace,
+		Client:    clientset,
+	}
+
+	stagerCfg := eirini.StagerConfig{
+		CfUsername:        cfg.Properties.CfUsername,
+		CfPassword:        cfg.Properties.CfPassword,
+		APIAddress:        cfg.Properties.CcAPI,
+		EiriniAddress:     cfg.Properties.EiriniAddress,
+		SkipSslValidation: cfg.Properties.SkipSslValidation,
+	}
+
+	return stager.New(taskDesirer, stagerCfg)
+}
+
 func initBifrost(cfg *eirini.Config, workChan chan []*eirini.Routes) eirini.Bifrost {
-	config, err := clientcmd.BuildConfigFromFlags("", cfg.Properties.KubeConfig)
-	exitWithError(err)
-
-	clientset, err := kubernetes.NewForConfig(config)
-	exitWithError(err)
-
 	cfClientConfig := &cfclient.Config{
 		SkipSslValidation: cfg.Properties.SkipSslValidation,
 		Username:          cfg.Properties.CfUsername,
@@ -90,11 +104,12 @@ func initBifrost(cfg *eirini.Config, workChan chan []*eirini.Routes) eirini.Bifr
 
 	kubeNamespace := cfg.Properties.KubeNamespace
 
+	clientset := createKubeClient(cfg)
 	desirer := k8s.NewDesirer(kubeNamespace, clientset, k8s.UseStatefulSets, workChan)
 
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
-	registryIP := cfg.Properties.ExternalAddress
+	registryIP := cfg.Properties.RegistryAddress
 	converter := bifrost.NewConverter(cfClient, client, convertLogger, registryIP, "http://127.0.0.1:8080")
 
 	return &bifrost.Bifrost{
@@ -102,6 +117,16 @@ func initBifrost(cfg *eirini.Config, workChan chan []*eirini.Routes) eirini.Bifr
 		Desirer:   desirer,
 		Logger:    syncLogger,
 	}
+}
+
+func createKubeClient(cfg *eirini.Config) kubernetes.Interface {
+	config, err := clientcmd.BuildConfigFromFlags("", cfg.Properties.KubeConfig)
+	exitWithError(err)
+
+	clientset, err := kubernetes.NewForConfig(config)
+	exitWithError(err)
+
+	return clientset
 }
 
 func setConfigFromFile(path string) *eirini.Config {

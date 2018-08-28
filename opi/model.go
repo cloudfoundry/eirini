@@ -1,9 +1,5 @@
 package opi
 
-import (
-	"context"
-)
-
 // An LRP, or long-running-process, is a stateless process
 // where the scheduler should attempt to keep N copies running,
 // killing and recreating as needed to maintain that guarantee
@@ -42,12 +38,8 @@ type Desirer interface {
 	Stop(name string) error
 }
 
+//go:generate counterfeiter . TaskDesirer
 type TaskDesirer interface {
-	Desire(ctx context.Context, tasks []Task) error
-}
-
-type DesireTaskFunc func(ctx context.Context, tasks []Task) error
-
-func (d DesireTaskFunc) Desire(ctx context.Context, tasks []Task) error {
-	return d(ctx, tasks)
+	Desire(task *Task) error
+	Delete(name string) error
 }

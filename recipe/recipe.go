@@ -45,7 +45,7 @@ func main() {
 		SkipSslValidation: true,
 		Username:          username,
 		Password:          password,
-		APIAddress:        apiAddress,
+		ApiAddress:        apiAddress,
 	})
 
 	respondWithFailureAndExit(err, stagingGUID, annotationJSON)

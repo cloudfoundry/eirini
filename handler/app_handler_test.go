@@ -23,11 +23,13 @@ import (
 var _ = Describe("AppHandler", func() {
 	var (
 		bifrost *eirinifakes.FakeBifrost
+		stager  *eirinifakes.FakeStager
 		lager   *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
 		bifrost = new(eirinifakes.FakeBifrost)
+		stager = new(eirinifakes.FakeStager)
 		lager = lagertest.NewTestLogger("app-handler-test")
 	})
 
@@ -44,7 +46,7 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, lager))
+			ts := httptest.NewServer(New(bifrost, stager, lager))
 			req, err := http.NewRequest("PUT", ts.URL+path, bytes.NewReader([]byte(body)))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -85,7 +87,7 @@ var _ = Describe("AppHandler", func() {
 
 	Context("List Apps", func() {
 		var (
-			appHandler           *AppHandler
+			appHandler           *App
 			responseRecorder     *httptest.ResponseRecorder
 			req                  *http.Request
 			expectedJSONResponse string
@@ -156,7 +158,7 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, lager))
+			ts := httptest.NewServer(New(bifrost, stager, lager))
 			req, err := http.NewRequest("POST", ts.URL+path, bytes.NewReader([]byte(body)))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -244,7 +246,7 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, lager))
+			ts := httptest.NewServer(New(bifrost, stager, lager))
 			req, err := http.NewRequest("GET", ts.URL+path, nil)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -308,7 +310,7 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, lager))
+			ts := httptest.NewServer(New(bifrost, stager, lager))
 			req, err := http.NewRequest("PUT", ts.URL+path, nil)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -364,7 +366,7 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, lager))
+			ts := httptest.NewServer(New(bifrost, stager, lager))
 			req, err := http.NewRequest("GET", ts.URL+path, nil)
 			Expect(err).NotTo(HaveOccurred())
 

@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"os"
 
+	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +35,8 @@ func simulate(cmd *cobra.Command, args []string) {
 		Logger:    syncLogger,
 	}
 
-	handler := handler.New(bifrost, handlerLogger)
+	stager := &StagerSimulator{}
+	handler := handler.New(bifrost, stager, handlerLogger)
 
 	log.Fatal(http.ListenAndServe("0.0.0.0:8085", handler))
 }
@@ -72,4 +75,14 @@ type ConverterSimulator struct{}
 
 func (c *ConverterSimulator) Convert(request cf.DesireLRPRequest) (opi.LRP, error) {
 	return opi.LRP{}, nil
+}
+
+type StagerSimulator struct{}
+
+func (s *StagerSimulator) Stage(stagingGUID string, request cc_messages.StagingRequestFromCC) error {
+	return nil
+}
+
+func (s *StagerSimulator) CompleteStaging(task *models.TaskCallbackResponse) error {
+	return nil
 }

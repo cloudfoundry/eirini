@@ -1,130 +1,146 @@
 package k8s_test
 
 import (
-	"context"
-	"os"
-	"path/filepath"
-	"time"
-
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini"
+	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
-	"k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	bv1 "k8s.io/api/batch/v1"
-	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	batch "k8s.io/api/batch/v1"
+	"k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
-var _ = Describe("Desiretask {SYSTEM}", func() {
-	var (
-		client    *kubernetes.Clientset
-		desirer   *k8s.TaskDesirer
-		namespace string
-		tasks     []opi.Task
+var _ = Describe("Desiretask", func() {
+
+	const (
+		Namespace = "tests"
+		Image     = "docker.png"
 	)
 
-	namespaceExists := func(name string) bool {
-		_, err := client.CoreV1().Namespaces().Get(namespace, av1.GetOptions{})
-		return err == nil
-	}
-
-	createNamespace := func(name string) {
-		namespaceSpec := &v1.Namespace{
-			ObjectMeta: av1.ObjectMeta{Name: name},
-		}
-
-		if _, err := client.CoreV1().Namespaces().Create(namespaceSpec); err != nil {
-			panic(err)
-		}
-	}
-
-	getTaskNames := func() []string {
-		names := []string{}
-		for _, task := range tasks {
-			names = append(names, task.Env["APP_ID"])
-		}
-		return names
-	}
-
-	listJobs := func() []bv1.Job {
-		list, err := client.BatchV1().Jobs(namespace).List(av1.ListOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		return list.Items
-	}
+	var (
+		task       *opi.Task
+		desirer    opi.TaskDesirer
+		fakeClient kubernetes.Interface
+		err        error
+	)
 
 	BeforeEach(func() {
-		config, err := clientcmd.BuildConfigFromFlags("", filepath.Join(os.Getenv("HOME"), ".kube", "config"))
-		if err != nil {
-			panic(err.Error())
+		fakeClient = fake.NewSimpleClientset()
+		task = &opi.Task{
+			Image: Image,
+			Env: map[string]string{
+				eirini.EnvDownloadURL:        "example.com/download",
+				eirini.EnvUploadURL:          "example.com/upload",
+				eirini.EnvAppID:              "env-app-id",
+				eirini.EnvStagingGUID:        "the-stage-is-yours",
+				eirini.EnvCompletionCallback: "example.com/call/me/maybe",
+				eirini.EnvCfUsername:         "admin",
+				eirini.EnvCfPassword:         "not1234567",
+				eirini.EnvAPIAddress:         "api.bosh-lite.com",
+				eirini.EnvEiriniAddress:      "http://opi.cf.internal",
+			},
 		}
-
-		client, err = kubernetes.NewForConfig(config)
-		if err != nil {
-			panic(err.Error())
-		}
-
-		namespace = "testing"
-		tasks = []opi.Task{
-			{Image: "pi", Command: []string{}, Env: map[string]string{"APP_ID": "guid0", "STAGING_GUID": "guid0"}},
-			{Image: "pi", Command: []string{}, Env: map[string]string{"APP_ID": "guid1", "STAGING_GUID": "guid1"}},
-		}
-	})
-
-	JustBeforeEach(func() {
-		if !namespaceExists(namespace) {
-			createNamespace(namespace)
-		}
-
-		desirer = &k8s.TaskDesirer{
-			Config: k8s.JobConfig{Namespace: namespace},
-			Client: client,
+		desirer = &TaskDesirer{
+			Namespace: Namespace,
+			Client:    fakeClient,
 		}
 	})
 
-	Context("When desiring some tasks", func() {
+	Context("When desiring a task", func() {
 
-		AfterEach(func() {
-			for _, jobName := range getTaskNames() {
-				if err := client.BatchV1().Jobs(namespace).Delete(jobName, &av1.DeleteOptions{}); err != nil {
-					panic(err)
-				}
-			}
-
-			Eventually(listJobs, 5*time.Second).Should(BeEmpty())
-		})
-
-		getJobNames := func(jobs *bv1.JobList) []string {
-			jobNames := []string{}
-			for _, job := range jobs.Items {
-				jobNames = append(jobNames, job.ObjectMeta.Name)
-			}
-
-			return jobNames
+		assertGeneralSpec := func(job *batch.Job) {
+			Expect(job.Name).To(Equal("the-stage-is-yours"))
+			Expect(job.Spec.ActiveDeadlineSeconds).To(Equal(int64ptr(900)))
+			Expect(job.Spec.Template.Spec.RestartPolicy).To(Equal(v1.RestartPolicyNever))
+			Expect(job.Spec.Template.Labels).To(Equal(map[string]string{"name": "env-app-id"}))
+			Expect(job.Labels).To(Equal(map[string]string{"name": "env-app-id"}))
 		}
 
-		It("creates jobs for every task in the array", func() {
-			Expect(desirer.Desire(context.Background(), tasks)).To(Succeed())
-			jobs, err := client.BatchV1().Jobs(namespace).List(av1.ListOptions{})
+		assertContainer := func(container v1.Container) {
+			Expect(container.Name).To(Equal("opi-task"))
+			Expect(container.Image).To(Equal(Image))
 
-			Expect(err).NotTo(HaveOccurred())
-			Expect(jobs.Items).To(HaveLen(len(tasks)))
-			Expect(getJobNames(jobs)).To(ConsistOf(getTaskNames()))
+			Expect(container.Env).To(ConsistOf(
+				v1.EnvVar{Name: eirini.EnvDownloadURL, Value: "example.com/download"},
+				v1.EnvVar{Name: eirini.EnvUploadURL, Value: "example.com/upload"},
+				v1.EnvVar{Name: eirini.EnvAppID, Value: "env-app-id"},
+				v1.EnvVar{Name: eirini.EnvStagingGUID, Value: "the-stage-is-yours"},
+				v1.EnvVar{Name: eirini.EnvCompletionCallback, Value: "example.com/call/me/maybe"},
+				v1.EnvVar{Name: eirini.EnvCfUsername, Value: "admin"},
+				v1.EnvVar{Name: eirini.EnvCfPassword, Value: "not1234567"},
+				v1.EnvVar{Name: eirini.EnvAPIAddress, Value: "api.bosh-lite.com"},
+				v1.EnvVar{Name: eirini.EnvEiriniAddress, Value: "http://opi.cf.internal"},
+			))
+		}
+
+		JustBeforeEach(func() {
+			err = desirer.Desire(task)
+		})
+
+		It("should not return an error", func() {
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should desire the task", func() {
+			job, getErr := fakeClient.BatchV1().Jobs(Namespace).Get("the-stage-is-yours", meta_v1.GetOptions{})
+			Expect(getErr).ToNot(HaveOccurred())
+
+			assertGeneralSpec(job)
+
+			containers := job.Spec.Template.Spec.Containers
+			Expect(containers).To(HaveLen(1))
+
+			assertContainer(containers[0])
+		})
+		Context("and the job already exists", func() {
+			BeforeEach(func() {
+				err = desirer.Desire(task)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
 		})
 	})
 
-	Context("When trying to delete some tasks", func() {
+	Context("When deleting a task", func() {
 
-		It("deletes every task in the array", func() {
-			Expect(desirer.Desire(context.Background(), tasks)).To(Succeed())
-
-			for _, taskName := range getTaskNames() {
-				Expect(desirer.DeleteJob(taskName)).To(Succeed())
-			}
-
-			Eventually(listJobs, 5*time.Second).Should(BeEmpty())
+		JustBeforeEach(func() {
+			err = desirer.Delete("the-stage-is-yours")
 		})
+
+		Context("that already exists", func() {
+			BeforeEach(func() {
+				err = desirer.Desire(task)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should delete the job", func() {
+				_, err = fakeClient.BatchV1().Jobs(Namespace).Get("env-app-id", meta_v1.GetOptions{})
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("that does not exist", func() {
+
+			It("should return an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+
+		})
+
 	})
 })
+
+func int64ptr(i int) *int64 {
+	u := int64(i)
+	return &u
+}

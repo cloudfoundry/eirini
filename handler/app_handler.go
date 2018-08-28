@@ -13,16 +13,16 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func NewAppHandler(bifrost eirini.Bifrost, logger lager.Logger) *AppHandler {
-	return &AppHandler{bifrost: bifrost, logger: logger}
+func NewAppHandler(bifrost eirini.Bifrost, logger lager.Logger) *App {
+	return &App{bifrost: bifrost, logger: logger}
 }
 
-type AppHandler struct {
+type App struct {
 	bifrost eirini.Bifrost
 	logger  lager.Logger
 }
 
-func (a *AppHandler) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (a *App) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var request cf.DesireLRPRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		a.logger.Error("request-body-decoding-failed", err)
@@ -46,7 +46,7 @@ func (a *AppHandler) Desire(w http.ResponseWriter, r *http.Request, ps httproute
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (a *AppHandler) List(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (a *App) List(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	desiredLRPSchedulingInfos, err := a.bifrost.List(r.Context())
 	if err != nil {
 		a.logger.Error("list-apps-failed", err)
@@ -72,7 +72,7 @@ func (a *AppHandler) List(w http.ResponseWriter, r *http.Request, ps httprouter.
 	a.logError("Could not write response", err)
 }
 
-func (a *AppHandler) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	processGUID := ps.ByName("process_guid")
 	desiredLRP := a.bifrost.GetApp(r.Context(), processGUID)
 	if desiredLRP == nil {
@@ -96,7 +96,7 @@ func (a *AppHandler) GetApp(w http.ResponseWriter, r *http.Request, ps httproute
 	a.logError("Could not write response", err)
 }
 
-func (a *AppHandler) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (a *App) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var request models.UpdateDesiredLRPRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		a.logger.Error("json-decoding-failure", err)
@@ -123,7 +123,7 @@ func (a *AppHandler) Update(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 }
 
-func (a *AppHandler) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (a *App) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	processGUID := ps.ByName("process_guid")
 	if len(processGUID) > 36 {
 		processGUID = processGUID[:36]
@@ -136,7 +136,7 @@ func (a *AppHandler) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 }
 
-func (a *AppHandler) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	guid := ps.ByName("process_guid")
 	instances, err := a.bifrost.GetInstances(r.Context(), guid)
 	response := a.createGetInstancesResponse(guid, instances, err)
@@ -149,7 +149,7 @@ func (a *AppHandler) GetInstances(w http.ResponseWriter, r *http.Request, ps htt
 	}
 }
 
-func (a *AppHandler) createGetInstancesResponse(guid string, instances []*cf.Instance, err error) cf.GetInstancesResponse {
+func (a *App) createGetInstancesResponse(guid string, instances []*cf.Instance, err error) cf.GetInstancesResponse {
 	if err != nil {
 		return createErrorGetInstancesResponse(guid, err)
 	}
@@ -186,7 +186,7 @@ func writeUpdateErrorResponse(w http.ResponseWriter, err error, statusCode int) 
 	return err
 }
 
-func (a *AppHandler) logError(msg string, err error) {
+func (a *App) logError(msg string, err error) {
 	if err != nil {
 		a.logger.Error(msg, err)
 	}

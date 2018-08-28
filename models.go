@@ -7,7 +7,6 @@ import (
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
@@ -51,7 +50,8 @@ type Properties struct {
 	CfPassword         string `yaml:"cf_password"`
 	CcUser             string `yaml:"cc_internal_user"`
 	CcPassword         string `yaml:"cc_internal_password"`
-	ExternalAddress    string `yaml:"external_eirini_address"`
+	RegistryAddress    string `yaml:"registry_address"`
+	EiriniAddress      string `yaml:"eirini_address"`
 	SkipSslValidation  bool   `yaml:"skip_ssl_validation"`
 	InsecureSkipVerify bool   `yaml:"insecure_skip_verify"`
 }
@@ -65,18 +65,13 @@ type Routes struct {
 	Name               string
 }
 
-//go:generate counterfeiter . St8ger
-type St8ger interface {
-	Run(task opi.Task) error
+//go:generate counterfeiter . Stager
+type Stager interface {
+	Stage(string, cc_messages.StagingRequestFromCC) error //stage
+	CompleteStaging(*models.TaskCallbackResponse) error
 }
 
-//go:generate counterfeiter . Backend
-type Backend interface {
-	CreateStagingTask(string, cc_messages.StagingRequestFromCC) (opi.Task, error)
-	BuildStagingResponse(*models.TaskCallbackResponse) (cc_messages.StagingResponseForCC, error)
-}
-
-type BackendConfig struct {
+type StagerConfig struct {
 	CfUsername        string
 	CfPassword        string
 	APIAddress        string

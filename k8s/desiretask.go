@@ -1,82 +1,56 @@
 package k8s
 
 import (
-	"context"
-
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/opi"
 	"k8s.io/api/core/v1"
-	av1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-type JobConfig struct {
-	ActiveDeadlineSeconds int64
-	RestartPolicy         string
-	Namespace             string
-}
+const ActiveDeadlineSeconds = 900
 
 type TaskDesirer struct {
-	Config JobConfig
-	Client *kubernetes.Clientset
+	Namespace string
+	Client    kubernetes.Interface
 }
 
-func (d TaskDesirer) Desire(ctx context.Context, tasks []opi.Task) error {
-	namespace := d.Config.Namespace
-	jobs, err := d.Client.BatchV1().Jobs(namespace).List(av1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	dByName := make(map[string]struct{})
-	for _, d := range jobs.Items {
-		dByName[d.Name] = struct{}{}
-	}
-
-	for _, task := range tasks {
-		if _, err := d.Client.BatchV1().Jobs(namespace).Create(toJob(task)); err != nil {
-			// fixme: this should be a multi-error and deferred
-			return err
-		}
-	}
-
-	return nil
+func (d *TaskDesirer) Desire(task *opi.Task) error {
+	_, err := d.Client.BatchV1().Jobs(d.Namespace).Create(toJob(task))
+	return err
 }
 
-func (d *TaskDesirer) DeleteJob(job string) error {
-	namespace := d.Config.Namespace
-	return d.Client.BatchV1().Jobs(namespace).Delete(job, nil)
+func (d *TaskDesirer) Delete(name string) error {
+	return d.Client.BatchV1().Jobs(d.Namespace).Delete(name, &meta_v1.DeleteOptions{})
 }
 
-func toJob(task opi.Task) *batch.Job {
+func toJob(task *opi.Task) *batch.Job {
 	job := &batch.Job{
 		Spec: batch.JobSpec{
-			ActiveDeadlineSeconds: int64ptr(600),
+			ActiveDeadlineSeconds: int64ptr(ActiveDeadlineSeconds),
 			Template: v1.PodTemplateSpec{
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
 						Name:  "opi-task",
 						Image: task.Image,
 						Env:   MapToEnvVar(task.Env),
-						//ImagePullPolicy: "Always",
 					}},
-					RestartPolicy: "Never",
+					RestartPolicy: v1.RestartPolicyNever,
 				},
 			},
 		},
 	}
 
-	job.Name = task.Env[eirini.EnvAppID]
+	job.Name = task.Env[eirini.EnvStagingGUID]
 
 	job.Spec.Template.Labels = map[string]string{
 		"name": task.Env[eirini.EnvAppID],
 	}
 
 	job.Labels = map[string]string{
-		"eirini": "eirini",
-		"name":   task.Env[eirini.EnvAppID],
+		"name": task.Env[eirini.EnvAppID],
 	}
 	return job
 }
