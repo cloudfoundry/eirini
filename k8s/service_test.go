@@ -14,7 +14,7 @@ import (
 	. "code.cloudfoundry.org/eirini/k8s"
 )
 
-var _ = FDescribe("Service", func() {
+var _ = Describe("Service", func() {
 
 	var (
 		fakeClient     kubernetes.Interface
@@ -167,7 +167,7 @@ var _ = FDescribe("Service", func() {
 			})
 
 			It("should delete the service", func() {
-				_, err := fakeClient.CoreV1().Services(namespace).Get(service.Name, meta.GetOptions{})
+				_, err = fakeClient.CoreV1().Services(namespace).Get(service.Name, meta.GetOptions{})
 				Expect(err).To(HaveOccurred())
 			})
 
