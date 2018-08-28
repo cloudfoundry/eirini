@@ -27,6 +27,7 @@ var _ = FDescribe("Service", func() {
 	)
 
 	BeforeEach(func() {
+		routesChan = make(chan []*eirini.Routes, 1)
 		fakeClient = fake.NewSimpleClientset()
 		serviceManager = NewServiceManager(fakeClient, namespace, routesChan)
 	})
@@ -60,7 +61,6 @@ var _ = FDescribe("Service", func() {
 			})
 
 			Context("When recreating a existing service", func() {
-
 				BeforeEach(func() {
 					lrp = createLRP("baldur", "54321.0", `["my.example.route"]`)
 				})
@@ -133,16 +133,20 @@ var _ = FDescribe("Service", func() {
 				service = toService(lrp, namespace)
 				_, err = fakeClient.CoreV1().Services(namespace).Create(service)
 				Expect(err).ToNot(HaveOccurred())
-
 			})
 
 			JustBeforeEach(func() {
 				err = serviceManager.Delete("odin")
+				routesChan <- []*eirini.Routes{{}}
 			})
 
 			It("send work to the route emitter", func() {
-				//	work = <-routesChan
+				Eventually(routesChan).Should(HaveLen(1))
+			})
 
+			It("should send the right routes to unregister", func() {
+				work = <-routesChan
+				Expect(work[0].UnregisteredRoutes).To(ContainElement("my.example.route"))
 			})
 
 			It("should delete the service", func() {
