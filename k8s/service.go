@@ -25,14 +25,16 @@ type ServiceManager interface {
 }
 
 type serviceManager struct {
-	client    kubernetes.Interface
-	namespace string
+	client     kubernetes.Interface
+	namespace  string
+	routesChan chan<- []*eirini.Routes
 }
 
-func NewServiceManager(client kubernetes.Interface, namespace string, routesChan chan []*eirini.Routes) ServiceManager {
+func NewServiceManager(client kubernetes.Interface, namespace string, routesChan chan<- []*eirini.Routes) ServiceManager {
 	return &serviceManager{
-		client:    client,
-		namespace: namespace,
+		client:     client,
+		namespace:  namespace,
+		routesChan: routesChan,
 	}
 }
 
@@ -41,8 +43,23 @@ func (m *serviceManager) services() types.ServiceInterface {
 }
 
 func (m *serviceManager) Create(lrp *opi.LRP) error {
-	_, err := m.services().Create(toService(lrp))
-	return err
+	s, err := m.services().Create(toService(lrp))
+	if err != nil {
+		return err
+	}
+
+	registeredRoutes, err := decodeRoutes(s.Annotations[eirini.RegisteredRoutes])
+	if err != nil {
+		return err
+	}
+
+	routes := eirini.Routes{
+		Routes: registeredRoutes,
+		Name:   s.Name,
+	}
+
+	m.routesChan <- []*eirini.Routes{&routes}
+	return nil
 }
 
 func (m *serviceManager) CreateHeadless(lrp *opi.LRP) error {
@@ -51,12 +68,13 @@ func (m *serviceManager) CreateHeadless(lrp *opi.LRP) error {
 }
 
 func (m *serviceManager) Update(lrp *opi.LRP) error {
-	service, err := m.services().Get(eirini.GetInternalServiceName(lrp.Name), meta_v1.GetOptions{})
+	serviceName := eirini.GetInternalServiceName(lrp.Name)
+	service, err := m.services().Get(serviceName, meta_v1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	routes, err := decodeRoutes(service.Annotations[eirini.RegisteredRoutes])
+	registeredRoutes, err := decodeRoutes(service.Annotations[eirini.RegisteredRoutes])
 	if err != nil {
 		return err
 	}
@@ -65,15 +83,21 @@ func (m *serviceManager) Update(lrp *opi.LRP) error {
 		return err
 	}
 
-	unregistered, err := getUnregisteredRoutes(routes, updatedRoutes)
+	service.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
+	_, err = m.services().Update(service)
 	if err != nil {
 		return err
 	}
-	service.Annotations[eirini.UnregisteredRoutes] = unregistered
 
-	service.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
-	_, err = m.services().Update(service)
-	return err
+	unregistered := getUnregisteredRoutes(registeredRoutes, updatedRoutes)
+	routes := eirini.Routes{
+		Routes:             updatedRoutes,
+		UnregisteredRoutes: unregistered,
+		Name:               serviceName,
+	}
+
+	m.routesChan <- []*eirini.Routes{&routes}
+	return nil
 }
 
 func (m *serviceManager) Delete(appName string) error {
@@ -83,17 +107,19 @@ func (m *serviceManager) Delete(appName string) error {
 		return err
 	}
 
-	routes, err := mergeRoutes(service)
+	existingRoutes, err := decodeRoutes(service.Annotations[eirini.RegisteredRoutes])
 	if err != nil {
 		return err
 	}
 
-	service.Annotations[eirini.UnregisteredRoutes] = routes
-	service.Annotations[eirini.RegisteredRoutes] = `[]`
-	service.Annotations["delete"] = "true"
+	routes := eirini.Routes{
+		UnregisteredRoutes: existingRoutes,
+		Name:               serviceName,
+	}
 
-	_, err = m.services().Update(service)
-	return err
+	m.routesChan <- []*eirini.Routes{&routes}
+
+	return m.services().Delete(serviceName, &meta_v1.DeleteOptions{})
 }
 
 func (m *serviceManager) DeleteHeadless(appName string) error {
@@ -119,13 +145,7 @@ func (m *serviceManager) ListRoutes() ([]*eirini.Routes, error) {
 			return []*eirini.Routes{}, err
 		}
 
-		unregistered, err := decodeRoutes(s.Annotations[eirini.UnregisteredRoutes])
-		if err != nil {
-			return []*eirini.Routes{}, err
-		}
-
 		route.Routes = registered
-		route.UnregisteredRoutes = unregistered
 		route.Name = s.Name
 
 		routes = append(routes, route)
@@ -222,7 +242,7 @@ func mergeRoutes(service *v1.Service) (string, error) {
 	return string(routes), nil
 }
 
-func getUnregisteredRoutes(existing, updated []string) (string, error) {
+func getUnregisteredRoutes(existing, updated []string) []string {
 	updatedMap := sliceToMap(updated)
 	unregistered := []string{}
 	for _, e := range existing {
@@ -231,8 +251,7 @@ func getUnregisteredRoutes(existing, updated []string) (string, error) {
 		}
 	}
 
-	b, err := json.Marshal(unregistered)
-	return string(b), err
+	return unregistered
 }
 
 func sliceToMap(slice []string) map[string]bool {
