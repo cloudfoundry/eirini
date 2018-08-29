@@ -40,7 +40,8 @@ func connect(cmd *cobra.Command, args []string) {
 	exitWithError(err)
 
 	cfg := setConfigFromFile(path)
-	bifrost := initBifrost(cfg)
+	workChan := make(chan []*eirini.Routes)
+	bifrost := initBifrost(cfg, workChan)
 
 	launchRouteEmitter(
 		cfg.Properties.KubeConfig,
@@ -48,6 +49,7 @@ func connect(cmd *cobra.Command, args []string) {
 		cfg.Properties.KubeNamespace,
 		cfg.Properties.NatsPassword,
 		cfg.Properties.NatsIP,
+		workChan,
 	)
 
 	handlerLogger := lager.NewLogger("handler")
@@ -60,7 +62,7 @@ func connect(cmd *cobra.Command, args []string) {
 	log.Fatal(http.ListenAndServe("0.0.0.0:8085", handler))
 }
 
-func initBifrost(cfg *eirini.Config) eirini.Bifrost {
+func initBifrost(cfg *eirini.Config, workChan chan []*eirini.Routes) eirini.Bifrost {
 	config, err := clientcmd.BuildConfigFromFlags("", cfg.Properties.KubeConfig)
 	exitWithError(err)
 
@@ -88,7 +90,7 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 
 	kubeNamespace := cfg.Properties.KubeNamespace
 
-	desirer := k8s.NewDesirer(kubeNamespace, clientset, k8s.UseStatefulSets)
+	desirer := k8s.NewDesirer(kubeNamespace, clientset, k8s.UseStatefulSets, workChan)
 
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
@@ -117,7 +119,7 @@ func initConnect() {
 	connectCmd.Flags().StringP("config", "c", "", "Path to the erini config file")
 }
 
-func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP string) {
+func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP string, workChan chan []*eirini.Routes) {
 	nc, err := nats.Connect(fmt.Sprintf("nats://nats:%s@%s:4222", natsPassword, natsIP))
 	exitWithError(err)
 
@@ -126,9 +128,7 @@ func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP 
 
 	clientset, err := kubernetes.NewForConfig(config)
 	exitWithError(err)
-	lister := k8s.NewServiceManager(clientset, namespace)
-
-	workChan := make(chan []*eirini.Routes)
+	lister := k8s.NewServiceRouteLister(clientset, namespace)
 
 	rc := route.Collector{
 		RouteLister: lister,

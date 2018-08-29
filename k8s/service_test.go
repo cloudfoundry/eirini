@@ -19,6 +19,7 @@ var _ = Describe("Service", func() {
 	var (
 		fakeClient     kubernetes.Interface
 		serviceManager ServiceManager
+		routesChan     chan []*eirini.Routes
 	)
 
 	const (
@@ -26,8 +27,9 @@ var _ = Describe("Service", func() {
 	)
 
 	BeforeEach(func() {
+		routesChan = make(chan []*eirini.Routes, 1)
 		fakeClient = fake.NewSimpleClientset()
-		serviceManager = NewServiceManager(fakeClient, namespace)
+		serviceManager = NewServiceManager(fakeClient, namespace, routesChan)
 	})
 
 	Context("When exposing an existing LRP", func() {
@@ -58,8 +60,21 @@ var _ = Describe("Service", func() {
 				Expect(service).To(Equal(toService(lrp, namespace)))
 			})
 
-			Context("When recreating a existing service", func() {
+			It("should submit the routes to the route channel", func() {
+				Eventually(routesChan).Should(Receive())
+			})
 
+			It("should emmit the correct routes", func() {
+				routes := <-routesChan
+				Expect(routes).To(HaveLen(1))
+
+				route := routes[0]
+				Expect(route.Routes).To(HaveLen(1))
+				Expect(route.Routes).To(ContainElement("my.example.route"))
+				Expect(route.UnregisteredRoutes).To(HaveLen(0))
+			})
+
+			Context("When recreating a existing service", func() {
 				BeforeEach(func() {
 					lrp = createLRP("baldur", "54321.0", `["my.example.route"]`)
 				})
@@ -123,7 +138,8 @@ var _ = Describe("Service", func() {
 		Context("a regular service", func() {
 
 			var (
-				err error
+				err  error
+				work []*eirini.Routes
 			)
 
 			BeforeEach(func() {
@@ -137,19 +153,22 @@ var _ = Describe("Service", func() {
 				err = serviceManager.Delete("odin")
 			})
 
-			It("flags the service with delete", func() {
-				service, err = fakeClient.CoreV1().Services(namespace).Get(service.Name, meta.GetOptions{})
+			It("should not return an error", func() {
 				Expect(err).ToNot(HaveOccurred())
-
-				Expect(service.Annotations["delete"]).To(Equal("true"))
 			})
 
-			It("moves the registered routes to unregistered", func() {
-				service, err = fakeClient.CoreV1().Services(namespace).Get(service.Name, meta.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
+			It("sends work to the route emitter", func() {
+				Eventually(routesChan).Should(Receive())
+			})
 
-				Expect(service.Annotations[eirini.RegisteredRoutes]).To(Equal(`[]`))
-				Expect(service.Annotations[eirini.UnregisteredRoutes]).To(Equal(`["my.example.route"]`))
+			It("should send the right routes to unregister", func() {
+				work = <-routesChan
+				Expect(work[0].UnregisteredRoutes).To(ContainElement("my.example.route"))
+			})
+
+			It("should delete the service", func() {
+				_, err = fakeClient.CoreV1().Services(namespace).Get(service.Name, meta.GetOptions{})
+				Expect(err).To(HaveOccurred())
 			})
 
 			Context("when the service does not exist", func() {
@@ -163,23 +182,6 @@ var _ = Describe("Service", func() {
 				})
 			})
 
-			Context("When there are unregistered routes", func() {
-				BeforeEach(func() {
-					lrp := createLRP("odin", "1234.5", `["my-new.example.route"]`)
-					err = serviceManager.Update(lrp)
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("append the routes to the unregistered routes", func() {
-					service, err = fakeClient.CoreV1().Services(namespace).Get(service.Name, meta.GetOptions{})
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(service.Annotations[eirini.RegisteredRoutes]).To(Equal(`[]`))
-					Expect(service.Annotations[eirini.UnregisteredRoutes]).To(Equal(`["my.example.route","my-new.example.route"]`))
-
-				})
-
-			})
 		})
 
 		Context("a headless service", func() {
@@ -226,6 +228,8 @@ var _ = Describe("Service", func() {
 		BeforeEach(func() {
 			lrp = createLRP("odin", "1234.5", `["my.example.route"]`)
 			err = serviceManager.Create(lrp)
+			r := <-routesChan
+			Expect(r).To(HaveLen(1))
 		})
 
 		Context("when routes are updated", func() {
@@ -244,14 +248,23 @@ var _ = Describe("Service", func() {
 					lrp = createLRP("odin", "1234.5", `["my-new.example.route"]`)
 				})
 
-				It("should update the routes annotation", func() {
+				It("should not return an error", func() {
 					Expect(err).ToNot(HaveOccurred())
+				})
+
+				It("should update the routes annotation", func() {
 					Expect(updatedService.Annotations[eirini.RegisteredRoutes]).To(Equal(`["my-new.example.route"]`))
 				})
 
-				It("should remove the difference and add it to unregisteredRoutes annotation ", func() {
-					Expect(err).ToNot(HaveOccurred())
-					Expect(updatedService.Annotations[eirini.UnregisteredRoutes]).To(Equal(`["my.example.route"]`))
+				It("should remove the difference and emmit the routes", func() {
+					routes := <-routesChan
+					Expect(routes).To(HaveLen(1))
+
+					route := routes[0]
+					Expect(route.Routes).To(HaveLen(1))
+					Expect(route.Routes).To(ContainElement("my-new.example.route"))
+					Expect(route.UnregisteredRoutes).To(HaveLen(1))
+					Expect(route.UnregisteredRoutes).To(ContainElement("my.example.route"))
 				})
 			})
 
@@ -270,9 +283,15 @@ var _ = Describe("Service", func() {
 					Expect(updatedService.Annotations[eirini.RegisteredRoutes]).To(ContainSubstring(`"my-new.example.route"`))
 				})
 
-				It("should be empty", func() {
-					Expect(err).ToNot(HaveOccurred())
-					Expect(updatedService.Annotations[eirini.UnregisteredRoutes]).To(Equal(`[]`))
+				It("should remove the difference and emmit the routes", func() {
+					routes := <-routesChan
+					Expect(routes).To(HaveLen(1))
+
+					route := routes[0]
+					Expect(route.Routes).To(HaveLen(2))
+					Expect(route.Routes).To(ContainElement("my-new.example.route"))
+					Expect(route.Routes).To(ContainElement("my.example.route"))
+					Expect(route.UnregisteredRoutes).To(HaveLen(0))
 				})
 			})
 
@@ -286,111 +305,20 @@ var _ = Describe("Service", func() {
 					Expect(updatedService.Annotations[eirini.RegisteredRoutes]).To(Equal(`[]`))
 				})
 
-				It("should unregister the existing routes", func() {
-					Expect(err).ToNot(HaveOccurred())
-					Expect(updatedService.Annotations[eirini.UnregisteredRoutes]).To(ContainSubstring(`my.example.route`))
-				})
-			})
-		})
-	})
+				It("should remove the difference and emmit the routes", func() {
+					routes := <-routesChan
+					Expect(routes).To(HaveLen(1))
 
-	Context("ListRoutes", func() {
-
-		var (
-			routes         []*eirini.Routes
-			err            error
-			updatedService *v1.Service
-		)
-
-		JustBeforeEach(func() {
-			routes, err = serviceManager.ListRoutes()
-		})
-
-		Context("When there are existing services", func() {
-
-			var lrp *opi.LRP
-
-			BeforeEach(func() {
-				lrp = createLRP("baldur", "54321.0", `["my.example.route"]`)
-				err = serviceManager.Create(lrp)
-				Expect(err).ToNot(HaveOccurred())
-				lrp = createLRP("baldur", "54322.0", `["my-new.example.route"]`)
-				err = serviceManager.Update(lrp)
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return the correct routes", func() {
-				Expect(routes).To(HaveLen(1))
-				route := routes[0]
-				Expect(route.Routes).To(ContainElement("my-new.example.route"))
-				Expect(route.UnregisteredRoutes).To(ContainElement("my.example.route"))
-				Expect(route.Name).To(Equal(eirini.GetInternalServiceName("baldur")))
-			})
-
-			Context("When a route was unregistered", func() {
-				JustBeforeEach(func() {
 					route := routes[0]
-					err = route.PopUnregisteredRoutes()
-					Expect(err).ToNot(HaveOccurred())
+					Expect(route.UnregisteredRoutes).To(HaveLen(1))
+					Expect(route.UnregisteredRoutes).To(ContainElement("my.example.route"))
+					Expect(route.Routes).To(HaveLen(0))
 				})
 
-				It("should set the correct remove unregisterred route callback", func() {
-					updatedService, err = fakeClient.CoreV1().Services(namespace).Get(eirini.GetInternalServiceName("baldur"), meta.GetOptions{})
-					Expect(err).ToNot(HaveOccurred())
-					Expect(updatedService.Annotations[eirini.UnregisteredRoutes]).To(Equal(`[]`))
-				})
-
-				Context("When the service is scheduled for deletion", func() {
-					BeforeEach(func() {
-						err = serviceManager.Delete("baldur")
-						Expect(err).ToNot(HaveOccurred())
-					})
-
-					It("should delete the service", func() {
-						_, err = fakeClient.CoreV1().Services(namespace).Get(eirini.GetInternalServiceName("baldur"), meta.GetOptions{})
-						Expect(err).To(HaveOccurred())
-					})
-				})
-
-			})
-
-			Context("When there are headless services", func() {
-				BeforeEach(func() {
-					err = serviceManager.CreateHeadless(lrp)
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("should not return an error", func() {
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("should return only one Routes object", func() {
-					Expect(routes).To(HaveLen(1))
-				})
-			})
-
-			Context("When there are non cf services", func() {
-				BeforeEach(func() {
-					service := &v1.Service{}
-					service.Name = "some-other-service"
-					_, err = fakeClient.CoreV1().Services(namespace).Create(service)
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("should not return an error", func() {
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("should return only one Routes object", func() {
-					Expect(routes).To(HaveLen(1))
-				})
 			})
 		})
 	})
+
 })
 
 func getServicesNames(services *v1.ServiceList) []string {
@@ -423,8 +351,7 @@ func toService(lrp *opi.LRP, namespace string) *v1.Service {
 	}
 
 	service.Annotations = map[string]string{
-		eirini.RegisteredRoutes:   lrp.Metadata[cf.VcapAppUris],
-		eirini.UnregisteredRoutes: `[]`,
+		eirini.RegisteredRoutes: lrp.Metadata[cf.VcapAppUris],
 	}
 
 	return service

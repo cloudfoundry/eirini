@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/eirinifakes"
 	. "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/route/routefakes"
 )
@@ -15,15 +14,14 @@ import (
 var _ = Describe("Collector", func() {
 
 	var (
-		collector              *Collector
-		scheduler              *routefakes.FakeTaskScheduler
-		fakeRouteLister        *routefakes.FakeLister
-		fakeRemoveCallbackFunc *eirinifakes.FakeRemoveCallbackFunc
-		workChannel            chan []*eirini.Routes
-		routes                 []*eirini.Routes
-		registeredRoutes       []string
-		removedRoutes          []string
-		err                    error
+		collector        *Collector
+		scheduler        *routefakes.FakeTaskScheduler
+		fakeRouteLister  *routefakes.FakeLister
+		workChannel      chan []*eirini.Routes
+		routes           []*eirini.Routes
+		registeredRoutes []string
+		removedRoutes    []string
+		err              error
 	)
 
 	const (
@@ -38,7 +36,6 @@ var _ = Describe("Collector", func() {
 		scheduler = new(routefakes.FakeTaskScheduler)
 		workChannel = make(chan []*eirini.Routes, 1)
 		fakeRouteLister = new(routefakes.FakeLister)
-		fakeRemoveCallbackFunc = new(eirinifakes.FakeRemoveCallbackFunc)
 	})
 
 	JustBeforeEach(func() {

@@ -26,7 +26,7 @@ func NewStatefulSetManager(client kubernetes.Interface, namespace string) Instan
 	return &StatefulSetManager{
 		Client:               client,
 		Namespace:            namespace,
-		ServiceManager:       NewServiceManager(client, namespace),
+		ServiceManager:       NewServiceManager(client, namespace, nil),
 		LivenessProbeCreator: CreateLivenessProbe,
 	}
 }

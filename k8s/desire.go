@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/opi"
 	"k8s.io/client-go/kubernetes"
 )
@@ -23,11 +24,11 @@ type InstanceManager interface {
 	Update(lrp *opi.LRP) error
 }
 
-func NewDesirer(kubeNamespace string, clientset kubernetes.Interface, option InstanceOptionFunc) *Desirer {
+func NewDesirer(kubeNamespace string, clientset kubernetes.Interface, option InstanceOptionFunc, routesChan chan []*eirini.Routes) *Desirer {
 	return &Desirer{
 		InstanceManager: NewInstanceManager(clientset, kubeNamespace, option),
 		IngressManager:  NewIngressManager(clientset, kubeNamespace),
-		ServiceManager:  NewServiceManager(clientset, kubeNamespace),
+		ServiceManager:  NewServiceManager(clientset, kubeNamespace, routesChan),
 	}
 }
 
