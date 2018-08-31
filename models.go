@@ -50,7 +50,7 @@ type Properties struct {
 	CfPassword         string `yaml:"cf_password"`
 	CcUser             string `yaml:"cc_internal_user"`
 	CcPassword         string `yaml:"cc_internal_password"`
-	RegistryAddress    string `yaml:"registry_address"`
+	RegistryAddress    string `yaml:"external_eirini_address"`
 	EiriniAddress      string `yaml:"eirini_address"`
 	SkipSslValidation  bool   `yaml:"skip_ssl_validation"`
 	InsecureSkipVerify bool   `yaml:"insecure_skip_verify"`
