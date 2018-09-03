@@ -1,70 +1,107 @@
-package main_test
+package recipe_test
 
 import (
-	"errors"
+	"fmt"
+	"net/http"
 
-	"code.cloudfoundry.org/eirini/eirinifakes"
 	. "code.cloudfoundry.org/eirini/recipe"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/ghttp"
 )
 
 var _ = Describe("Uploader", func() {
 
 	var (
-		cfclient *eirinifakes.FakeCfClient
-		uploader Uploader
+		server       *ghttp.Server
+		uploader     Uploader
+		testFilePath string
+		url          string
+		err          error
 	)
 
 	BeforeEach(func() {
-		cfclient = new(eirinifakes.FakeCfClient)
-		uploader = Uploader{Cfclient: cfclient}
+		server = ghttp.NewServer()
+		url = fmt.Sprintf("%s/dog/pictures/upload", server.URL())
+
+		uploader = &DropletUploader{
+			HTTPClient: &http.Client{},
+		}
+
+		server.RouteToHandler("POST", "/dog/pictures/upload",
+			ghttp.CombineHandlers(
+				ghttp.VerifyContentType("application/octet-stream"),
+				ghttp.VerifyHeaderKV("Content-Length", "30"),
+				ghttp.VerifyBody([]byte("This is definitely not a zip.\n")),
+			),
+		)
 	})
 
-	Context("UploadWithCfClient", func() {
-		It("should return an error if an empty guid parameter is passed", func() {
-			err := uploader.Upload("", "")
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(ContainSubstring("empty guid parameter")))
+	JustBeforeEach(func() {
+		err = uploader.Upload(testFilePath, url)
+	})
+
+	Context("Upload a file", func() {
+
+		BeforeEach(func() {
+			testFilePath = "testdata/file.notzip"
 		})
 
-		It("should return an error if an empty path parameter is passed", func() {
-			err := uploader.Upload("guid", "")
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(ContainSubstring("empty path parameter")))
+		It("should not return an error", func() {
+			Expect(err).ToNot(HaveOccurred())
 		})
 
-		Context("Cfclient", func() {
-			Context("When PushDroplet is called", func() {
-				It("passes the right parameters", func() {
-					err := uploader.Upload("my-guid", "path")
-					Expect(err).ToNot(HaveOccurred())
-					name, guid := cfclient.PushDropletArgsForCall(0)
-					Expect(name).To(Equal("path"))
-					Expect(guid).To(Equal("my-guid"))
-				})
+		It("should post the file contents", func() {
+			Expect(server.ReceivedRequests()).To(HaveLen(1))
+		})
+
+		Context("When the file is missing", func() {
+			BeforeEach(func() {
+				testFilePath = "wat"
 			})
 
-			Context("When a push is successful", func() {
-				It("should not return any error", func() {
-					err := uploader.Upload("my-guid", "path")
-					Expect(err).ToNot(HaveOccurred())
-				})
+			It("should return an error", func() {
+				Expect(err).To(HaveOccurred())
 			})
 
-			Context("When a push fails", func() {
-				BeforeEach(func() {
-					cfclient.PushDropletReturns(errors.New("aargh"))
-				})
+			It("should not post anything", func() {
+				Expect(server.ReceivedRequests()).To(HaveLen(0))
+			})
 
-				It("should return an meaningful error message", func() {
-					err := uploader.Upload("guid", "path")
-					Expect(err).To(HaveOccurred())
+		})
 
-					Expect(err).To(MatchError(ContainSubstring("perform request failed")))
-				})
+		Context("When the url is invalid", func() {
+			BeforeEach(func() {
+				url = "very.invalid/url%&"
+			})
+
+			It("should return an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("should not post anything", func() {
+				Expect(server.ReceivedRequests()).To(HaveLen(0))
 			})
 		})
+
+		Context("When the response is 400", func() {
+
+			BeforeEach(func() {
+				server.RouteToHandler("POST", "/dog/pictures/upload",
+					ghttp.RespondWith(http.StatusUnavailableForLegalReasons, nil),
+				)
+			})
+
+			It("should return an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("should post the request body", func() {
+				Expect(server.ReceivedRequests()).To(HaveLen(1))
+			})
+
+		})
+
 	})
 })

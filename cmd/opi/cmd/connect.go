@@ -26,6 +26,7 @@ import (
 	nats "github.com/nats-io/go-nats"
 	"github.com/spf13/cobra"
 
+	// For gcp and oidc authentication
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
@@ -67,8 +68,9 @@ func connect(cmd *cobra.Command, args []string) {
 func initStager(cfg *eirini.Config) eirini.Stager {
 	clientset := createKubeClient(cfg)
 	taskDesirer := &k8s.TaskDesirer{
-		Namespace: cfg.Properties.KubeNamespace,
-		Client:    clientset,
+		Namespace:    cfg.Properties.KubeNamespace,
+		CCUploaderIP: cfg.Properties.CcUploaderIP,
+		Client:       clientset,
 	}
 
 	stagerCfg := eirini.StagerConfig{

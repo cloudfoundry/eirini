@@ -41,5 +41,6 @@ type Desirer interface {
 //go:generate counterfeiter . TaskDesirer
 type TaskDesirer interface {
 	Desire(task *Task) error
+	DesireStaging(task *Task) error
 	Delete(name string) error
 }

@@ -141,6 +141,7 @@ func (s Stager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	guid := r.FormValue("guid")
 	if guid == "" {
 		http.Error(w, "guid parameter is required", http.StatusInternalServerError)
+		return
 	}
 
 	tmp, err := ioutil.TempFile("", "converted-layer")

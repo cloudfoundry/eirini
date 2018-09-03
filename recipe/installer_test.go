@@ -1,4 +1,4 @@
-package main_test
+package recipe_test
 
 import (
 	"bytes"
@@ -21,7 +21,7 @@ var _ = Describe("PackageInstaller", func() {
 		appID       string
 		targetDir   string
 		zipFilePath string
-		installer   *PackageInstaller
+		installer   Installer
 		cfclient    *eirinifakes.FakeCfClient
 		extractor   *eirinifakes.FakeExtractor
 	)

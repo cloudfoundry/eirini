@@ -13,8 +13,9 @@ import (
 const ActiveDeadlineSeconds = 900
 
 type TaskDesirer struct {
-	Namespace string
-	Client    kubernetes.Interface
+	Namespace    string
+	CCUploaderIP string
+	Client       kubernetes.Interface
 }
 
 func (d *TaskDesirer) Desire(task *opi.Task) error {
@@ -22,8 +23,46 @@ func (d *TaskDesirer) Desire(task *opi.Task) error {
 	return err
 }
 
+func (d *TaskDesirer) DesireStaging(task *opi.Task) error {
+	job := d.toStagingJob(task)
+	_, err := d.Client.BatchV1().Jobs(d.Namespace).Create(job)
+	return err
+}
+
 func (d *TaskDesirer) Delete(name string) error {
-	return d.Client.BatchV1().Jobs(d.Namespace).Delete(name, &meta_v1.DeleteOptions{})
+	backgroundPropagation := meta_v1.DeletePropagationBackground
+	return d.Client.BatchV1().Jobs(d.Namespace).Delete(name, &meta_v1.DeleteOptions{
+		PropagationPolicy: &backgroundPropagation,
+	})
+}
+
+func (d *TaskDesirer) toStagingJob(task *opi.Task) *batch.Job {
+	job := toJob(task)
+	job.Spec.Template.Spec.HostAliases = []v1.HostAlias{
+		{
+			IP:        d.CCUploaderIP,
+			Hostnames: []string{eirini.CCUploaderInternalURL},
+		},
+	}
+	job.Spec.Template.Spec.Volumes = []v1.Volume{
+		{
+			Name: eirini.CCCertsVolumeName,
+			VolumeSource: v1.VolumeSource{
+				Secret: &v1.SecretVolumeSource{
+					SecretName: eirini.CCCertsSecretName,
+				},
+			},
+		},
+	}
+
+	job.Spec.Template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{
+		{
+			Name:      eirini.CCCertsVolumeName,
+			ReadOnly:  true,
+			MountPath: eirini.CCCertsMountPath,
+		},
+	}
+	return job
 }
 
 func toJob(task *opi.Task) *batch.Job {

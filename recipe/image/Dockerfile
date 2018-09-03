@@ -16,7 +16,7 @@ RUN \
     rm /tmp/buildpack.zip; \
   done
 
-RUN mkdir /packs
+RUN mkdir -p /packs
 
 COPY builder /packs/
 COPY recipe /packs/

@@ -4,7 +4,6 @@ run:
     - vendor
     - recipe/packs
     - launcher/buildpackapplifecycle
-    - cmd/eirini_old
 
 linters-settings:
   govet:

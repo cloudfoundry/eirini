@@ -28,6 +28,7 @@ var _ = Describe("Stager", func() {
 
 	BeforeEach(func() {
 		taskDesirer = new(opifakes.FakeTaskDesirer)
+
 		logger := lagertest.NewTestLogger("test")
 		config := &eirini.StagerConfig{
 			CfUsername:        "admin",
@@ -56,7 +57,15 @@ var _ = Describe("Stager", func() {
 
 			lData := json.RawMessage(`{
 				"app_bits_download_uri": "example.com/download",
-				"droplet_upload_uri": "example.com/upload"
+				"droplet_upload_uri": "example.com/upload",
+				"buildpacks": [
+					{
+						"name": "go_buildpack",
+						"key": "1234eeff",
+						"url": "example.com/build/pack",
+						"skip_detect":true
+					}
+				]
 			}`)
 			request = cc_messages.StagingRequestFromCC{
 				AppId:           "our-app-id",
@@ -87,16 +96,17 @@ var _ = Describe("Stager", func() {
 		})
 
 		It("should desire a converted task", func() {
-			Expect(taskDesirer.DesireCallCount()).To(Equal(1))
-			task := taskDesirer.DesireArgsForCall(0)
+			Expect(taskDesirer.DesireStagingCallCount()).To(Equal(1))
+			task := taskDesirer.DesireStagingArgsForCall(0)
 			Expect(task).To(Equal(&opi.Task{
-				Image: StagerImage,
+				Image: "eirini/recipe",
 				Env: map[string]string{
 					eirini.EnvDownloadURL:        "example.com/download",
-					eirini.EnvUploadURL:          "example.com/upload",
+					eirini.EnvDropletUploadURL:   "example.com/upload",
 					eirini.EnvAppID:              request.LogGuid,
 					eirini.EnvStagingGUID:        stagingGUID,
 					eirini.EnvCompletionCallback: request.CompletionCallback,
+					eirini.EnvBuildpacks:         `[{"name":"go_buildpack","key":"1234eeff","url":"example.com/build/pack","skip_detect":true}]`,
 					eirini.EnvCfUsername:         "admin",
 					eirini.EnvCfPassword:         "not1234567",
 					eirini.EnvAPIAddress:         "api.bosh-lite.com",
@@ -124,7 +134,7 @@ var _ = Describe("Stager", func() {
 			})
 
 			It("should not desire the task", func() {
-				Expect(taskDesirer.DesireCallCount()).To(Equal(0))
+				Expect(taskDesirer.DesireStagingCallCount()).To(Equal(0))
 			})
 
 		})
@@ -132,7 +142,7 @@ var _ = Describe("Stager", func() {
 		Context("and desiring the task fails", func() {
 
 			BeforeEach(func() {
-				taskDesirer.DesireReturns(errors.New("woopsie"))
+				taskDesirer.DesireStagingReturns(errors.New("woopsie"))
 			})
 
 			It("should return an error", func() {
@@ -152,8 +162,8 @@ var _ = Describe("Stager", func() {
 
 		BeforeEach(func() {
 			server = ghttp.NewServer()
-
 			annotation := fmt.Sprintf(`{"completion_callback": "%s/call/me/maybe"}`, server.URL())
+
 			task = &models.TaskCallbackResponse{
 				TaskGuid:      "our-task-guid",
 				Failed:        false,
@@ -173,7 +183,7 @@ var _ = Describe("Stager", func() {
 		})
 
 		JustBeforeEach(func() {
-			server.RouteToHandler("PUT", "/call/me/maybe",
+			server.RouteToHandler("POST", "/call/me/maybe",
 				ghttp.CombineHandlers(handlers...),
 			)
 			err = stager.CompleteStaging(task)
@@ -187,7 +197,7 @@ var _ = Describe("Stager", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should put the response", func() {
+		It("should post the response", func() {
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 		})
 
@@ -218,7 +228,7 @@ var _ = Describe("Stager", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should put the response", func() {
+			It("should post the response", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
 		})
@@ -232,7 +242,7 @@ var _ = Describe("Stager", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("should not put the response", func() {
+			It("should not post the response", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(0))
 			})
 		})
@@ -246,20 +256,9 @@ var _ = Describe("Stager", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("should not put the response", func() {
+			It("should not post the response", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(0))
 			})
-		})
-
-		Context("and the completion callback is an invalid uri", func() {
-			BeforeEach(func() {
-				task.Annotation = `{"completion_callback": "http://example.com/invalid/url/%&"}`
-			})
-
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-
 		})
 
 		Context("and the callback response is an error", func() {
@@ -273,7 +272,7 @@ var _ = Describe("Stager", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("should put the response", func() {
+			It("should post the response", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
 		})

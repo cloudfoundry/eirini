@@ -1,4 +1,4 @@
-package main
+package recipe
 
 import (
 	"archive/zip"

@@ -13,7 +13,8 @@ import (
 const (
 	//Environment Variable Names
 	EnvDownloadURL        = "DOWNLOAD_URL"
-	EnvUploadURL          = "UPLOAD_URL"
+	EnvBuildpacks         = "BUILDPACKS"
+	EnvDropletUploadURL   = "DROPLET_UPLOAD_URL"
 	EnvAppID              = "APP_ID"
 	EnvStagingGUID        = "STAGING_GUID"
 	EnvCompletionCallback = "COMPLETION_CALLBACK"
@@ -24,6 +25,12 @@ const (
 
 	//routes
 	RegisteredRoutes = "routes"
+
+	//cc-uploader certs
+	CCUploaderInternalURL = "cc-uploader.service.cf.internal"
+	CCCertsMountPath      = "/etc/config/certs"
+	CCCertsSecretName     = "cc-certs"
+	CCCertsVolumeName     = "cc-certs-volume"
 )
 
 //go:generate counterfeiter . CfClient
@@ -44,6 +51,7 @@ type Properties struct {
 	NatsPassword       string `yaml:"nats_password"`
 	NatsIP             string `yaml:"nats_ip"`
 	RegistryEndpoint   string `yaml:"registry_endpoint"`
+	CcUploaderIP       string `yaml:"cc_uploader_ip"`
 	CcAPI              string `yaml:"api_endpoint"`
 	Backend            string `yaml:"backend"`
 	CfUsername         string `yaml:"cf_username"`

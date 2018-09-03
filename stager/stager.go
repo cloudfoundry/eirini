@@ -14,7 +14,7 @@ import (
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
-const StagerImage = "diegoteam/recipe:build"
+const StagerImage = "eirini/recipe"
 
 type Stager struct {
 	Desirer    opi.TaskDesirer
@@ -45,7 +45,7 @@ func (s *Stager) Stage(stagingGUID string, request cc_messages.StagingRequestFro
 		return err
 	}
 
-	return s.Desirer.Desire(task)
+	return s.Desirer.DesireStaging(task)
 }
 
 func (s *Stager) createStagingTask(stagingGUID string, request cc_messages.StagingRequestFromCC) (*opi.Task, error) {
@@ -57,11 +57,17 @@ func (s *Stager) createStagingTask(stagingGUID string, request cc_messages.Stagi
 		return &opi.Task{}, err
 	}
 
+	buildpacksJSON, err := json.Marshal(lifecycleData.Buildpacks)
+	if err != nil {
+		return nil, err
+	}
+
 	stagingTask := &opi.Task{
 		Image: StagerImage,
 		Env: map[string]string{
 			eirini.EnvDownloadURL:        lifecycleData.AppBitsDownloadUri,
-			eirini.EnvUploadURL:          lifecycleData.DropletUploadUri,
+			eirini.EnvDropletUploadURL:   lifecycleData.DropletUploadUri,
+			eirini.EnvBuildpacks:         string(buildpacksJSON),
 			eirini.EnvAppID:              request.LogGuid,
 			eirini.EnvStagingGUID:        stagingGUID,
 			eirini.EnvCompletionCallback: request.CompletionCallback,
@@ -89,7 +95,7 @@ func (s *Stager) CompleteStaging(task *models.TaskCallbackResponse) error {
 		return err
 	}
 
-	request, err := http.NewRequest("PUT", callbackURI, bytes.NewBuffer(callbackBody))
+	request, err := http.NewRequest("POST", callbackURI, bytes.NewBuffer(callbackBody))
 	if err != nil {
 		l.Error("failed-to-create-callback-request", err)
 		return err
