@@ -89,7 +89,7 @@ func (s *Stager) CompleteStaging(task *models.TaskCallbackResponse) error {
 		return err
 	}
 
-	request, err := http.NewRequest("POST", callbackURI, bytes.NewBuffer(callbackBody))
+	request, err := http.NewRequest("PUT", callbackURI, bytes.NewBuffer(callbackBody))
 	if err != nil {
 		l.Error("failed-to-create-callback-request", err)
 		return err

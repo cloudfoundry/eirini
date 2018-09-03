@@ -135,12 +135,13 @@ var _ = Describe("Handler", func() {
 			})
 		})
 
-		Context("PUT /stage/:staging_guid", func() {
+		Context("POST /stage/:staging_guid", func() {
 
 			BeforeEach(func() {
-				method = "PUT"
+				method = "POST"
 				path = "/stage/stage_123"
 				expectedStatus = http.StatusAccepted
+				body = `{}`
 			})
 
 			It("serves the endpoint", func() {
@@ -148,17 +149,17 @@ var _ = Describe("Handler", func() {
 			})
 		})
 
-		Context("POST /stage/:staging_guid/completed", func() {
+		Context("PUT /stage/:staging_guid/completed", func() {
 
 			BeforeEach(func() {
-				method = "POST"
+				method = "PUT"
 				path = "/stage/stage_123/completed"
-				body = `{"task_guid": "aa129-s90as09-d9kjnz-xo1829-hjsk", "annotation": {"lifecycle": "cycle-for-life"}}`
+				body = `{"task_guid": "aa129-s90as09-d9kjnz-xo1829-hjsk"}`
 				expectedStatus = http.StatusOK
 			})
 
 			It("serves the endpoint", func() {
-				// to be continued -> assertEndpoint()
+				assertEndpoint()
 			})
 		})
 	})

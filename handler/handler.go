@@ -30,6 +30,6 @@ func registerAppsEndpoints(handler *httprouter.Router, appHandler *App) {
 }
 
 func registerStageEndpoints(handler *httprouter.Router, stageHandler *Stage) {
-	handler.PUT("/stage/:staging_guid", stageHandler.Stage)
-	handler.POST("/stage/:staging_guid/completed", stageHandler.StagingComplete)
+	handler.POST("/stage/:staging_guid", stageHandler.Stage)
+	handler.PUT("/stage/:staging_guid/completed", stageHandler.StagingComplete)
 }
