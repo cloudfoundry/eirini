@@ -9,7 +9,7 @@ import (
 	"k8s.io/api/core/v1"
 )
 
-type FakeLivenessProbeCreator struct {
+type FakeProbeCreator struct {
 	Stub        func(lrp *opi.LRP) *v1.Probe
 	mutex       sync.RWMutex
 	argsForCall []struct {
@@ -25,13 +25,13 @@ type FakeLivenessProbeCreator struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeLivenessProbeCreator) Spy(lrp *opi.LRP) *v1.Probe {
+func (fake *FakeProbeCreator) Spy(lrp *opi.LRP) *v1.Probe {
 	fake.mutex.Lock()
 	ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
 	fake.argsForCall = append(fake.argsForCall, struct {
 		lrp *opi.LRP
 	}{lrp})
-	fake.recordInvocation("LivenessProbeCreator", []interface{}{lrp})
+	fake.recordInvocation("ProbeCreator", []interface{}{lrp})
 	fake.mutex.Unlock()
 	if fake.Stub != nil {
 		return fake.Stub(lrp)
@@ -42,26 +42,26 @@ func (fake *FakeLivenessProbeCreator) Spy(lrp *opi.LRP) *v1.Probe {
 	return fake.returns.result1
 }
 
-func (fake *FakeLivenessProbeCreator) CallCount() int {
+func (fake *FakeProbeCreator) CallCount() int {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
 	return len(fake.argsForCall)
 }
 
-func (fake *FakeLivenessProbeCreator) ArgsForCall(i int) *opi.LRP {
+func (fake *FakeProbeCreator) ArgsForCall(i int) *opi.LRP {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
 	return fake.argsForCall[i].lrp
 }
 
-func (fake *FakeLivenessProbeCreator) Returns(result1 *v1.Probe) {
+func (fake *FakeProbeCreator) Returns(result1 *v1.Probe) {
 	fake.Stub = nil
 	fake.returns = struct {
 		result1 *v1.Probe
 	}{result1}
 }
 
-func (fake *FakeLivenessProbeCreator) ReturnsOnCall(i int, result1 *v1.Probe) {
+func (fake *FakeProbeCreator) ReturnsOnCall(i int, result1 *v1.Probe) {
 	fake.Stub = nil
 	if fake.returnsOnCall == nil {
 		fake.returnsOnCall = make(map[int]struct {
@@ -73,7 +73,7 @@ func (fake *FakeLivenessProbeCreator) ReturnsOnCall(i int, result1 *v1.Probe) {
 	}{result1}
 }
 
-func (fake *FakeLivenessProbeCreator) Invocations() map[string][][]interface{} {
+func (fake *FakeProbeCreator) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.mutex.RLock()
@@ -85,7 +85,7 @@ func (fake *FakeLivenessProbeCreator) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeLivenessProbeCreator) recordInvocation(key string, args []interface{}) {
+func (fake *FakeProbeCreator) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -97,4 +97,4 @@ func (fake *FakeLivenessProbeCreator) recordInvocation(key string, args []interf
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ k8s.LivenessProbeCreator = new(FakeLivenessProbeCreator).Spy
+var _ k8s.ProbeCreator = new(FakeProbeCreator).Spy

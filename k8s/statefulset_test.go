@@ -26,12 +26,13 @@ const (
 var _ = Describe("Statefulset", func() {
 
 	var (
-		err                error
-		client             kubernetes.Interface
-		statefulSetManager InstanceManager
-		serviceManager     *k8sfakes.FakeServiceManager
-		probeCreator       *k8sfakes.FakeLivenessProbeCreator
-		lrps               []*opi.LRP
+		err                   error
+		client                kubernetes.Interface
+		statefulSetManager    InstanceManager
+		serviceManager        *k8sfakes.FakeServiceManager
+		livenessProbeCreator  *k8sfakes.FakeProbeCreator
+		readinessProbeCreator *k8sfakes.FakeProbeCreator
+		lrps                  []*opi.LRP
 	)
 
 	listStatefulSets := func() []v1beta2.StatefulSet {
@@ -49,15 +50,17 @@ var _ = Describe("Statefulset", func() {
 
 		client = fake.NewSimpleClientset()
 		serviceManager = new(k8sfakes.FakeServiceManager)
-		probeCreator = new(k8sfakes.FakeLivenessProbeCreator)
+		livenessProbeCreator = new(k8sfakes.FakeProbeCreator)
+		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
 	})
 
 	JustBeforeEach(func() {
 		statefulSetManager = &StatefulSetManager{
-			Client:               client,
-			Namespace:            namespace,
-			ServiceManager:       serviceManager,
-			LivenessProbeCreator: probeCreator.Spy,
+			Client:                client,
+			Namespace:             namespace,
+			ServiceManager:        serviceManager,
+			LivenessProbeCreator:  livenessProbeCreator.Spy,
+			ReadinessProbeCreator: readinessProbeCreator.Spy,
 		}
 	})
 
@@ -65,7 +68,8 @@ var _ = Describe("Statefulset", func() {
 		var lrp *opi.LRP
 
 		JustBeforeEach(func() {
-			probeCreator.Returns(&v1.Probe{})
+			livenessProbeCreator.Returns(&v1.Probe{})
+			readinessProbeCreator.Returns(&v1.Probe{})
 			lrp = createLRP("Baldur", "1234.5", "my.example.route")
 			err = statefulSetManager.Create(lrp)
 		})
@@ -82,7 +86,11 @@ var _ = Describe("Statefulset", func() {
 		})
 
 		It("creates a healthcheck probe", func() {
-			Expect(probeCreator.CallCount()).To(Equal(1))
+			Expect(livenessProbeCreator.CallCount()).To(Equal(1))
+		})
+
+		It("creates a readiness probe", func() {
+			Expect(readinessProbeCreator.CallCount()).To(Equal(1))
 		})
 
 		It("should create a headless service", func() {
@@ -390,7 +398,8 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 									ContainerPort: 8080,
 								},
 							},
-							LivenessProbe: &v1.Probe{},
+							LivenessProbe:  &v1.Probe{},
+							ReadinessProbe: &v1.Probe{},
 						},
 					},
 				},

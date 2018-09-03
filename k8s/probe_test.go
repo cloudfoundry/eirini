@@ -10,7 +10,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
-var _ = Describe("LivenessProbeCreator", func() {
+var _ = Describe("PrrobeCreator", func() {
 
 	var (
 		probe *v1.Probe
@@ -27,72 +27,132 @@ var _ = Describe("LivenessProbeCreator", func() {
 		}
 	})
 
-	JustBeforeEach(func() {
-		probe = CreateLivenessProbe(lrp)
-	})
+	Context("LivenessProbeCreator", func() {
 
-	Context("When healthcheck type is HTTP", func() {
-
-		BeforeEach(func() {
-			lrp.Health.Type = "http"
+		JustBeforeEach(func() {
+			probe = CreateLivenessProbe(lrp)
 		})
 
-		It("creates a probe with HTTPGet action", func() {
-			Expect(probe).To(Equal(&v1.Probe{
-				Handler: v1.Handler{
-					HTTPGet: &v1.HTTPGetAction{
-						Path: "/healthz",
-						Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
+		Context("When healthcheck type is HTTP", func() {
+
+			BeforeEach(func() {
+				lrp.Health.Type = "http"
+			})
+
+			It("creates a probe with HTTPGet action", func() {
+				Expect(probe).To(Equal(&v1.Probe{
+					Handler: v1.Handler{
+						HTTPGet: &v1.HTTPGetAction{
+							Path: "/healthz",
+							Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
+						},
 					},
-				},
-				InitialDelaySeconds: 3,
-				FailureThreshold:    4,
-			}))
+					InitialDelaySeconds: 3,
+					FailureThreshold:    4,
+				}))
+			})
+
 		})
 
-	})
+		Context("When healthcheck type is Port", func() {
 
-	Context("When healthcheck type is PORT", func() {
+			BeforeEach(func() {
+				lrp.Health.Type = "port"
+			})
 
-		BeforeEach(func() {
-			lrp.Health.Type = "port"
-		})
-
-		It("creates a probe with HTTPGet action", func() {
-			Expect(probe).To(Equal(&v1.Probe{
-				Handler: v1.Handler{
-					TCPSocket: &v1.TCPSocketAction{
-						Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
+			It("creates a probe with TCPSocket action", func() {
+				Expect(probe).To(Equal(&v1.Probe{
+					Handler: v1.Handler{
+						TCPSocket: &v1.TCPSocketAction{
+							Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
+						},
 					},
-				},
-				InitialDelaySeconds: 3,
-				FailureThreshold:    4,
-			}))
+					InitialDelaySeconds: 3,
+					FailureThreshold:    4,
+				}))
+			})
+		})
+
+		Context("When timeout is not a whole number", func() {
+
+			BeforeEach(func() {
+				lrp.Health.Type = "http"
+				lrp.Health.TimeoutMs = 5700
+			})
+
+			It("rounds it down", func() {
+				Expect(probe.InitialDelaySeconds).To(Equal(int32(5)))
+			})
+
+		})
+
+		Context("When healthcheck information is missing", func() {
+
+			BeforeEach(func() {
+				lrp = &opi.LRP{}
+			})
+
+			It("returns nil", func() {
+				Expect(probe).To(BeNil())
+			})
+
 		})
 	})
 
-	Context("When timeout is not a whole number", func() {
+	Context("ReadinessProbeCreator", func() {
 
-		BeforeEach(func() {
-			lrp.Health.Type = "http"
-			lrp.Health.TimeoutMs = 5700
+		JustBeforeEach(func() {
+			probe = CreateReadinessProbe(lrp)
 		})
 
-		It("rounds it down", func() {
-			Expect(probe.InitialDelaySeconds).To(Equal(int32(5)))
+		Context("When Healtcheck type is HTTP", func() {
+
+			BeforeEach(func() {
+				lrp.Health.Type = "http"
+			})
+
+			It("should create a probe with a HTTP GET action", func() {
+				Expect(probe).To(Equal(&v1.Probe{
+					Handler: v1.Handler{
+						HTTPGet: &v1.HTTPGetAction{
+							Path: "/healthz",
+							Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
+						},
+					},
+					InitialDelaySeconds: 0,
+					FailureThreshold:    1,
+				}))
+			})
 		})
 
-	})
+		Context("When Healthcheck type is Port", func() {
 
-	Context("When healthcheck information is missing", func() {
+			BeforeEach(func() {
+				lrp.Health.Type = "port"
+			})
 
-		BeforeEach(func() {
-			lrp = &opi.LRP{}
+			It("should create a probe with a TCPSocket action", func() {
+				Expect(probe).To(Equal(&v1.Probe{
+					Handler: v1.Handler{
+						TCPSocket: &v1.TCPSocketAction{
+							Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
+						},
+					},
+					InitialDelaySeconds: 0,
+					FailureThreshold:    1,
+				}))
+			})
 		})
 
-		It("returns nil", func() {
-			Expect(probe).To(BeNil())
-		})
+		Context("When healthcheck information is missing", func() {
 
+			BeforeEach(func() {
+				lrp = &opi.LRP{}
+			})
+
+			It("returns nil", func() {
+				Expect(probe).To(BeNil())
+			})
+		})
 	})
 })

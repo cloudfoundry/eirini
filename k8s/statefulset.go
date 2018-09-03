@@ -13,21 +13,23 @@ import (
 )
 
 type StatefulSetManager struct {
-	Client               kubernetes.Interface
-	Namespace            string
-	ServiceManager       ServiceManager
-	LivenessProbeCreator LivenessProbeCreator
+	Client                kubernetes.Interface
+	Namespace             string
+	ServiceManager        ServiceManager
+	LivenessProbeCreator  ProbeCreator
+	ReadinessProbeCreator ProbeCreator
 }
 
-//go:generate counterfeiter . LivenessProbeCreator
-type LivenessProbeCreator func(lrp *opi.LRP) *v1.Probe
+//go:generate counterfeiter . ProbeCreator
+type ProbeCreator func(lrp *opi.LRP) *v1.Probe
 
 func NewStatefulSetManager(client kubernetes.Interface, namespace string) InstanceManager {
 	return &StatefulSetManager{
-		Client:               client,
-		Namespace:            namespace,
-		ServiceManager:       NewServiceManager(client, namespace, nil),
-		LivenessProbeCreator: CreateLivenessProbe,
+		Client:                client,
+		Namespace:             namespace,
+		ServiceManager:        NewServiceManager(client, namespace, nil),
+		LivenessProbeCreator:  CreateLivenessProbe,
+		ReadinessProbeCreator: CreateReadinessProbe,
 	}
 }
 
@@ -131,6 +133,7 @@ func (m *StatefulSetManager) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	})
 
 	livenessProbe := m.LivenessProbeCreator(lrp)
+	readinessProbe := m.ReadinessProbeCreator(lrp)
 
 	statefulSet := &v1beta2.StatefulSet{
 		Spec: v1beta2.StatefulSetSpec{
@@ -149,7 +152,8 @@ func (m *StatefulSetManager) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 									ContainerPort: 8080,
 								},
 							},
-							LivenessProbe: livenessProbe,
+							LivenessProbe:  livenessProbe,
+							ReadinessProbe: readinessProbe,
 						},
 					},
 				},

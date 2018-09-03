@@ -4,23 +4,11 @@ package k8sfakes
 import (
 	"sync"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
 )
 
 type FakeServiceManager struct {
-	ListRoutesStub        func() ([]*eirini.Routes, error)
-	listRoutesMutex       sync.RWMutex
-	listRoutesArgsForCall []struct{}
-	listRoutesReturns     struct {
-		result1 []*eirini.Routes
-		result2 error
-	}
-	listRoutesReturnsOnCall map[int]struct {
-		result1 []*eirini.Routes
-		result2 error
-	}
 	CreateStub        func(lrp *opi.LRP) error
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
@@ -78,49 +66,6 @@ type FakeServiceManager struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeServiceManager) ListRoutes() ([]*eirini.Routes, error) {
-	fake.listRoutesMutex.Lock()
-	ret, specificReturn := fake.listRoutesReturnsOnCall[len(fake.listRoutesArgsForCall)]
-	fake.listRoutesArgsForCall = append(fake.listRoutesArgsForCall, struct{}{})
-	fake.recordInvocation("ListRoutes", []interface{}{})
-	fake.listRoutesMutex.Unlock()
-	if fake.ListRoutesStub != nil {
-		return fake.ListRoutesStub()
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.listRoutesReturns.result1, fake.listRoutesReturns.result2
-}
-
-func (fake *FakeServiceManager) ListRoutesCallCount() int {
-	fake.listRoutesMutex.RLock()
-	defer fake.listRoutesMutex.RUnlock()
-	return len(fake.listRoutesArgsForCall)
-}
-
-func (fake *FakeServiceManager) ListRoutesReturns(result1 []*eirini.Routes, result2 error) {
-	fake.ListRoutesStub = nil
-	fake.listRoutesReturns = struct {
-		result1 []*eirini.Routes
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeServiceManager) ListRoutesReturnsOnCall(i int, result1 []*eirini.Routes, result2 error) {
-	fake.ListRoutesStub = nil
-	if fake.listRoutesReturnsOnCall == nil {
-		fake.listRoutesReturnsOnCall = make(map[int]struct {
-			result1 []*eirini.Routes
-			result2 error
-		})
-	}
-	fake.listRoutesReturnsOnCall[i] = struct {
-		result1 []*eirini.Routes
-		result2 error
-	}{result1, result2}
 }
 
 func (fake *FakeServiceManager) Create(lrp *opi.LRP) error {
@@ -366,8 +311,6 @@ func (fake *FakeServiceManager) DeleteHeadlessReturnsOnCall(i int, result1 error
 func (fake *FakeServiceManager) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.listRoutesMutex.RLock()
-	defer fake.listRoutesMutex.RUnlock()
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	fake.createHeadlessMutex.RLock()

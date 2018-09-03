@@ -8,25 +8,45 @@ import (
 
 func CreateLivenessProbe(lrp *opi.LRP) *v1.Probe {
 	checkType := lrp.Health.Type
+	initialDelay := toSeconds(lrp.Health.TimeoutMs)
 	if checkType == "http" {
-		return &v1.Probe{
-			Handler: v1.Handler{
-				HTTPGet: httpGetAction(lrp),
-			},
-			InitialDelaySeconds: toSeconds(lrp.Health.TimeoutMs),
-			FailureThreshold:    4,
-		}
+		return createHTTPProbe(lrp, initialDelay, 4)
 	} else if checkType == "port" {
-		return &v1.Probe{
-			Handler: v1.Handler{
-				TCPSocket: tcpSocketAction(lrp),
-			},
-			InitialDelaySeconds: toSeconds(lrp.Health.TimeoutMs),
-			FailureThreshold:    4,
-		}
+		return createPortProbe(lrp, initialDelay, 4)
 	}
 
 	return nil
+}
+
+func CreateReadinessProbe(lrp *opi.LRP) *v1.Probe {
+	checkType := lrp.Health.Type
+	if checkType == "http" {
+		return createHTTPProbe(lrp, 0, 1)
+	} else if checkType == "port" {
+		return createPortProbe(lrp, 0, 1)
+	}
+
+	return nil
+}
+
+func createPortProbe(lrp *opi.LRP, initialDelay, failureThreshold int32) *v1.Probe {
+	return &v1.Probe{
+		Handler: v1.Handler{
+			TCPSocket: tcpSocketAction(lrp),
+		},
+		InitialDelaySeconds: initialDelay,
+		FailureThreshold:    failureThreshold,
+	}
+}
+
+func createHTTPProbe(lrp *opi.LRP, initialDelay, failureThreshold int32) *v1.Probe {
+	return &v1.Probe{
+		Handler: v1.Handler{
+			HTTPGet: httpGetAction(lrp),
+		},
+		InitialDelaySeconds: initialDelay,
+		FailureThreshold:    failureThreshold,
+	}
 }
 
 func toSeconds(millis uint) int32 {
