@@ -1,6 +1,6 @@
-// +build integration
-
 package integration_test
+
+// +build integration
 
 import (
 	"code.cloudfoundry.org/eirini"
@@ -64,8 +64,8 @@ var _ = Describe("StatefulSet Manager", func() {
 		})
 
 		It("should create a StatefulSet object", func() {
-			statefulset, err := clientset.AppsV1beta2().StatefulSets(namespace).Get(lrp.Name, meta.GetOptions{})
-			Expect(err).ToNot(HaveOccurred())
+			statefulset, getErr := clientset.AppsV1beta2().StatefulSets(namespace).Get(lrp.Name, meta.GetOptions{})
+			Expect(getErr).ToNot(HaveOccurred())
 
 			Expect(statefulset.Name).To(Equal(lrp.Name))
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Command).To(Equal(lrp.Command))
@@ -80,8 +80,8 @@ var _ = Describe("StatefulSet Manager", func() {
 		})
 
 		It("should create a headless service", func() {
-			service, err := clientset.CoreV1().Services(namespace).Get(eirini.GetInternalHeadlessServiceName("odin"), meta.GetOptions{})
-			Expect(err).ToNot(HaveOccurred())
+			service, getErr := clientset.CoreV1().Services(namespace).Get(eirini.GetInternalHeadlessServiceName("odin"), meta.GetOptions{})
+			Expect(getErr).ToNot(HaveOccurred())
 			Expect(service.Spec.ClusterIP).To(Equal("None"))
 		})
 
@@ -121,12 +121,39 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		It("correctly reports the running instances", func() {
 			Eventually(func() int {
-				lrp, err := instanceManager.Get("odin")
-				Expect(err).ToNot(HaveOccurred())
-				return lrp.RunningInstances
+				l, e := instanceManager.Get("odin")
+				Expect(e).ToNot(HaveOccurred())
+				return l.RunningInstances
 			}, timeout).Should(Equal(2))
 		})
+
+		Context("When one of the instances if failing", func() {
+			BeforeEach(func() {
+				lrp = &opi.LRP{
+					Name: "odin",
+					Command: []string{
+						"/bin/sh",
+						"-c",
+						"if [ $INSTANCE_INDEX -eq 1 ]; then exit; else  while true; do echo hello; sleep 10;done; fi;",
+					},
+					TargetInstances: 2,
+					Image:           "busybox",
+					Metadata: map[string]string{
+						cf.ProcessGUID: "odin",
+					},
+				}
+			})
+
+			It("correctly reports the running instances", func() {
+				Eventually(func() int {
+					lrp, err := instanceManager.Get("odin")
+					Expect(err).ToNot(HaveOccurred())
+					return lrp.RunningInstances
+				}, timeout).Should(Equal(1))
+			})
+		})
 	})
+
 })
 
 func int32ptr(i int) *int32 {
