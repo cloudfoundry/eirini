@@ -173,7 +173,7 @@ var _ = Describe("Stager", func() {
 		})
 
 		JustBeforeEach(func() {
-			server.RouteToHandler("POST", "/call/me/maybe",
+			server.RouteToHandler("PUT", "/call/me/maybe",
 				ghttp.CombineHandlers(handlers...),
 			)
 			err = stager.CompleteStaging(task)
@@ -187,7 +187,7 @@ var _ = Describe("Stager", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should post the response", func() {
+		It("should put the response", func() {
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 		})
 
@@ -218,7 +218,7 @@ var _ = Describe("Stager", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should post the response", func() {
+			It("should put the response", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
 		})
@@ -232,7 +232,7 @@ var _ = Describe("Stager", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("should not post the response", func() {
+			It("should not put the response", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(0))
 			})
 		})
@@ -246,7 +246,7 @@ var _ = Describe("Stager", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("should not post the response", func() {
+			It("should not put the response", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(0))
 			})
 		})
@@ -273,7 +273,7 @@ var _ = Describe("Stager", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("should post the response", func() {
+			It("should put the response", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
 		})

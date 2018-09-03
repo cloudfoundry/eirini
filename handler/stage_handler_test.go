@@ -52,7 +52,7 @@ var _ = Describe("StageHandler", func() {
 	Context("When an app is submitted for staging", func() {
 
 		BeforeEach(func() {
-			method = "PUT"
+			method = "POST"
 			path = "/stage/guid_1234"
 			body = `{
 				"app_id": "our-app-id",
@@ -127,7 +127,7 @@ var _ = Describe("StageHandler", func() {
 
 	Context("When app staging is completed", func() {
 		BeforeEach(func() {
-			method = "POST"
+			method = "PUT"
 			path = "/stage/staging_123523/completed"
 			body = `{
 				"task_guid": "our-task-guid",
