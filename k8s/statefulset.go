@@ -112,7 +112,7 @@ func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 		Name:             s.Name,
 		Image:            s.Spec.Template.Spec.Containers[0].Image,
 		Command:          s.Spec.Template.Spec.Containers[0].Command,
-		RunningInstances: int(s.Status.CurrentReplicas),
+		RunningInstances: int(s.Status.ReadyReplicas),
 		Metadata: map[string]string{
 			cf.ProcessGUID: s.Annotations[cf.ProcessGUID],
 			cf.LastUpdated: s.Annotations[cf.LastUpdated],
