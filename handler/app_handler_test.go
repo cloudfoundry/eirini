@@ -400,32 +400,17 @@ var _ = Describe("AppHandler", func() {
 			Expect(string(body)).To(MatchJSON(expectedResponse))
 		})
 
-		Context("when there are no running instances", func() {
-			BeforeEach(func() {
-				bifrost.GetInstancesReturns([]*cf.Instance{}, nil)
-			})
-
-			It("returns the error in the response", func() {
-				expectedResponse := `
-					{
-						"error": "no-running-instances",
-						"process_guid": "guid_1234"
-					}`
-				body, _ := ioutil.ReadAll(response.Body)
-				Expect(string(body)).To(MatchJSON(expectedResponse))
-			})
-		})
-
 		Context("when Bifrost returns an error", func() {
 			BeforeEach(func() {
-				bifrost.GetInstancesReturns(nil, errors.New("not found"))
+				bifrost.GetInstancesReturns([]*cf.Instance{}, errors.New("not found"))
 			})
 
 			It("returns the error in the response", func() {
 				expectedResponse := `
 					{
 						"error": "not found",
-						"process_guid": "guid_1234"
+						"process_guid": "guid_1234",
+						"instances": []
 					}`
 				body, _ := ioutil.ReadAll(response.Body)
 				Expect(string(body)).To(MatchJSON(expectedResponse))

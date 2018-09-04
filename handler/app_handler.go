@@ -154,10 +154,6 @@ func (a *App) createGetInstancesResponse(guid string, instances []*cf.Instance, 
 		return createErrorGetInstancesResponse(guid, err)
 	}
 
-	if len(instances) == 0 {
-		return createErrorGetInstancesResponse(guid, errors.New("no-running-instances"))
-	}
-
 	return cf.GetInstancesResponse{
 		ProcessGUID: guid,
 		Instances:   instances,
@@ -168,6 +164,7 @@ func createErrorGetInstancesResponse(guid string, err error) cf.GetInstancesResp
 	return cf.GetInstancesResponse{
 		ProcessGUID: guid,
 		Error:       err.Error(),
+		Instances:   []*cf.Instance{},
 	}
 }
 

@@ -36,7 +36,7 @@ type DesireLRPRequest struct {
 type GetInstancesResponse struct {
 	Error       string      `json:"error,omitempty"`
 	ProcessGUID string      `json:"process_guid"`
-	Instances   []*Instance `json:"instances,omitempty"`
+	Instances   []*Instance `json:"instances"`
 }
 
 type Instance struct {

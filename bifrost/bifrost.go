@@ -94,7 +94,7 @@ func (b *Bifrost) GetInstances(ctx context.Context, guid string) ([]*cf.Instance
 	lrp, err := b.Desirer.Get(guid)
 	if err != nil {
 		b.Logger.Error("failed-to-get-lrp", err, lager.Data{"process-guid": guid})
-		return nil, err
+		return []*cf.Instance{}, err
 	}
 
 	result := []*cf.Instance{}
