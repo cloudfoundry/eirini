@@ -26,7 +26,7 @@ import (
 	nats "github.com/nats-io/go-nats"
 	"github.com/spf13/cobra"
 
-	// https://github.com/kubernetes/client-go/issues/345
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
