@@ -28,7 +28,10 @@ func reg(cmd *cobra.Command, args []string) {
 	rootfsDigest, rootfsSize, err := blobstore.Put(rootfsTar)
 	exitWithError(err)
 
-	log.Fatal(http.ListenAndServe("0.0.0.0:8080", registry.NewHandler(
+	cert, _ := cmd.Flags().GetString("cert")
+	key, _ := cmd.Flags().GetString("key")
+
+	log.Fatal(http.ListenAndServeTLS("0.0.0.0:8080", cert, key, registry.NewHandler(
 		registry.BlobRef{
 			Digest: rootfsDigest,
 			Size:   rootfsSize,
@@ -40,4 +43,6 @@ func reg(cmd *cobra.Command, args []string) {
 
 func initRegistry() {
 	registryCmd.Flags().StringP("rootfs", "r", "", "Path to the rootfs tarball")
+	registryCmd.Flags().StringP("cert", "c", "", "Path to cert")
+	registryCmd.Flags().StringP("key", "k", "", "Path to key")
 }
