@@ -21,15 +21,8 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - goimports
     - gas
-    - ineffassign
-    - unconvert
-    - structcheck
-    - deadcode
-    - typecheck
     - goconst
-    - gocyclo
     - varcheck
     - megacheck
 

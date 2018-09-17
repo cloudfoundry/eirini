@@ -3,14 +3,9 @@ package integration_test
 import (
 	"flag"
 	"testing"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-)
-
-const (
-	timeout time.Duration = 60 * time.Second
 )
 
 var (

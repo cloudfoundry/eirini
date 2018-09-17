@@ -83,7 +83,7 @@ var _ = Describe("Ingress", func() {
 
 	createFakeIngress := func(ingressName string, namespace string, serviceNames ...string) {
 		ingress := newIngress(ingressName, namespace, serviceNames...)
-		ingress, createErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
+		_, createErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Create(ingress)
 		Expect(createErr).ToNot(HaveOccurred())
 	}
 

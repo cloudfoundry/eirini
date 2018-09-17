@@ -117,7 +117,7 @@ var _ = Describe("AppHandler", func() {
 				body, err := readBody(responseRecorder.Body)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(strings.Trim(string(body), "\n")).To(Equal(string(expectedJSONResponse)))
+				Expect(strings.Trim(string(body), "\n")).To(Equal(expectedJSONResponse))
 			})
 		})
 
@@ -132,7 +132,7 @@ var _ = Describe("AppHandler", func() {
 				body, err := readBody(responseRecorder.Body)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(strings.Trim(string(body), "\n")).To(Equal(string(expectedJSONResponse)))
+				Expect(strings.Trim(string(body), "\n")).To(Equal(expectedJSONResponse))
 			})
 		})
 	})

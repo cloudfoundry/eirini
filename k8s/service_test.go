@@ -321,14 +321,6 @@ var _ = Describe("Service", func() {
 
 })
 
-func getServicesNames(services *v1.ServiceList) []string {
-	serviceNames := []string{}
-	for _, s := range services.Items {
-		serviceNames = append(serviceNames, s.Name)
-	}
-	return serviceNames
-}
-
 func toService(lrp *opi.LRP, namespace string) *v1.Service {
 	service := &v1.Service{
 		Spec: v1.ServiceSpec{

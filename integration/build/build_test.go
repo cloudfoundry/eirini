@@ -83,7 +83,7 @@ var _ = Describe("Build", func() {
 
 			It("should run the opi process", func() {
 				pid := session.Command.Process.Pid
-				process, err := os.FindProcess(int(pid))
+				process, err := os.FindProcess(pid)
 				Expect(err).ToNot(HaveOccurred())
 				err = process.Signal(syscall.Signal(0))
 				Expect(err).ToNot(HaveOccurred())

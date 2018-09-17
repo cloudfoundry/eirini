@@ -24,9 +24,8 @@ const (
 )
 
 var (
-	namespace          string
-	clientset          kubernetes.Interface
-	validOpiConfigPath string
+	namespace string
+	clientset kubernetes.Interface
 )
 
 var _ = BeforeSuite(func() {
