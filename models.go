@@ -29,8 +29,10 @@ const (
 	//cc-uploader certs
 	CCUploaderInternalURL = "cc-uploader.service.cf.internal"
 	CCCertsMountPath      = "/etc/config/certs"
-	CCCertsSecretName     = "cc-certs"
 	CCCertsVolumeName     = "cc-certs-volume"
+	CCUploaderCertName    = "cc-uploader-crt"
+	CCUploaderKeyName     = "cc-uploader-key"
+	CCInternalCACertName  = "internal-ca-cert"
 )
 
 //go:generate counterfeiter . CfClient
@@ -58,6 +60,7 @@ type Properties struct {
 	CfPassword         string `yaml:"cf_password"`
 	CcUser             string `yaml:"cc_internal_user"`
 	CcPassword         string `yaml:"cc_internal_password"`
+	CCCertsSecretName  string `yaml:"cc_certs_secret_name"`
 	RegistryAddress    string `yaml:"external_eirini_address"`
 	EiriniAddress      string `yaml:"eirini_address"`
 	SkipSslValidation  bool   `yaml:"skip_ssl_validation"`

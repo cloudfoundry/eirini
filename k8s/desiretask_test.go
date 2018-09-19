@@ -16,9 +16,10 @@ import (
 var _ = Describe("Desiretask", func() {
 
 	const (
-		Namespace    = "tests"
-		Image        = "docker.png"
-		CCUploaderIP = "10.10.10.1"
+		Namespace       = "tests"
+		Image           = "docker.png"
+		CCUploaderIP    = "10.10.10.1"
+		CertsSecretName = "secret-certs"
 	)
 
 	var (
@@ -70,9 +71,10 @@ var _ = Describe("Desiretask", func() {
 			},
 		}
 		desirer = &TaskDesirer{
-			Namespace:    Namespace,
-			CCUploaderIP: CCUploaderIP,
-			Client:       fakeClient,
+			Namespace:       Namespace,
+			CCUploaderIP:    CCUploaderIP,
+			CertsSecretName: CertsSecretName,
+			Client:          fakeClient,
 		}
 	})
 
@@ -112,6 +114,13 @@ var _ = Describe("Desiretask", func() {
 
 	Context("When desiring a staging task", func() {
 
+		toKeyPath := func(key string) v1.KeyToPath {
+			return v1.KeyToPath{
+				Key:  key,
+				Path: key,
+			}
+		}
+
 		assertHostAliases := func(job *batch.Job) {
 			Expect(job.Spec.Template.Spec.HostAliases).To(HaveLen(1))
 			hostAlias := job.Spec.Template.Spec.HostAliases[0]
@@ -125,7 +134,11 @@ var _ = Describe("Desiretask", func() {
 			volume := job.Spec.Template.Spec.Volumes[0]
 
 			Expect(volume.Name).To(Equal("cc-certs-volume"))
-			Expect(volume.VolumeSource.Secret.SecretName).To(Equal("cc-certs"))
+			Expect(volume.VolumeSource.Secret.SecretName).To(Equal("secret-certs"))
+			Expect(volume.VolumeSource.Secret.Items).To(ConsistOf(
+				toKeyPath(eirini.CCUploaderCertName),
+				toKeyPath(eirini.CCUploaderKeyName),
+				toKeyPath(eirini.CCInternalCACertName)))
 		}
 
 		assertContainerVolumeMount := func(job *batch.Job) {

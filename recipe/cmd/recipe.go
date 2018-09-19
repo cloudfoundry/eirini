@@ -82,9 +82,9 @@ func main() {
 }
 
 func createHTTPClient() *http.Client {
-	certLocation := filepath.Join(eirini.CCCertsMountPath, "cc_cert")
-	cacertLocation := filepath.Join(eirini.CCCertsMountPath, "cc_ca")
-	privKeyLocation := filepath.Join(eirini.CCCertsMountPath, "cc_priv")
+	certLocation := filepath.Join(eirini.CCCertsMountPath, eirini.CCUploaderCertName)
+	cacertLocation := filepath.Join(eirini.CCCertsMountPath, eirini.CCInternalCACertName)
+	privKeyLocation := filepath.Join(eirini.CCCertsMountPath, eirini.CCUploaderKeyName)
 
 	cert, err := tls.LoadX509KeyPair(certLocation, privKeyLocation)
 	if err != nil {
