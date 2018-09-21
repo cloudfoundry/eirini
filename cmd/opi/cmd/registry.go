@@ -28,17 +28,40 @@ func reg(cmd *cobra.Command, args []string) {
 	rootfsDigest, rootfsSize, err := blobstore.Put(rootfsTar)
 	exitWithError(err)
 
-	cert, _ := cmd.Flags().GetString("cert")
-	key, _ := cmd.Flags().GetString("key")
-
-	log.Fatal(http.ListenAndServeTLS("0.0.0.0:8080", cert, key, registry.NewHandler(
+	handler := registry.NewHandler(
 		registry.BlobRef{
 			Digest: rootfsDigest,
 			Size:   rootfsSize,
 		},
 		make(registry.InMemoryDropletStore),
 		blobstore,
-	)))
+	)
+
+	cert, err := cmd.Flags().GetString("cert")
+	if err != nil {
+		panic(err)
+	}
+
+	key, err := cmd.Flags().GetString("key")
+	if err != nil {
+		panic(err)
+	}
+
+	if cert != "" && key != "" {
+		serveTLS(cert, key, handler)
+	}
+
+	serveHTTP(handler)
+}
+
+func serveHTTP(handler http.Handler) {
+	log.Fatal(http.ListenAndServe("0.0.0.0:8080", handler))
+}
+
+func serveTLS(cert, key string, handler http.Handler) {
+	go func() {
+		log.Fatal(http.ListenAndServeTLS("0.0.0.0:8081", cert, key, handler))
+	}()
 }
 
 func initRegistry() {
