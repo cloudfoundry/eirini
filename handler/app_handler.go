@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"io/ioutil"
 	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
@@ -23,8 +26,16 @@ type App struct {
 }
 
 func (a *App) Desire(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		a.logger.Error("reading-request-body", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	a.logger.Debug("desire-request", lager.Data{"body": string(body)})
+
 	var request cf.DesireLRPRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	if err := json.NewDecoder(bytes.NewReader(body)).Decode(&request); err != nil {
 		a.logger.Error("request-body-decoding-failed", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -93,8 +104,16 @@ func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 }
 
 func (a *App) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	var request cf.UpdateDesiredLRPRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		a.logger.Error("reading-request-body", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	a.logger.Debug("update-request", lager.Data{"body": string(body)})
+
+	var request models.UpdateDesiredLRPRequest
+	if err := json.NewDecoder(bytes.NewReader(body)).Decode(&request); err != nil {
 		a.logger.Error("json-decoding-failure", err)
 		err = writeUpdateErrorResponse(w, err, http.StatusBadRequest)
 

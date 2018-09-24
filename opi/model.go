@@ -44,6 +44,12 @@ type LRP struct {
 	RunningInstances int
 	Metadata         map[string]string
 	MemoryMB         int64
+	VolumeMounts     []VolumeMount
+}
+
+type VolumeMount struct {
+	MountPath string
+	ClaimName string
 }
 
 type Instance struct {

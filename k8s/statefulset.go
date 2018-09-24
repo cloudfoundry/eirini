@@ -279,10 +279,30 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 
 	livenessProbe := m.LivenessProbeCreator(lrp)
 	readinessProbe := m.ReadinessProbeCreator(lrp)
+
 	memory, err := resource.ParseQuantity(fmt.Sprintf("%dM", lrp.MemoryMB))
 	if err != nil {
 		panic(err)
 	}
+
+	var volumes []v1.Volume
+	var volumeMounts []v1.VolumeMount
+
+	for _, vm := range lrp.VolumeMounts {
+		volumes = append(volumes, v1.Volume{
+			Name: vm.ClaimName,
+			VolumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: vm.ClaimName,
+				},
+			},
+		})
+		volumeMounts = append(volumeMounts, v1.VolumeMount{
+			Name:      vm.ClaimName,
+			MountPath: vm.MountPath,
+		})
+	}
+
 	statefulSet := &v1beta2.StatefulSet{
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: int32ptr(lrp.TargetInstances),
@@ -311,8 +331,10 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 							},
 							LivenessProbe:  livenessProbe,
 							ReadinessProbe: readinessProbe,
+							VolumeMounts:   volumeMounts,
 						},
 					},
+					Volumes: volumes,
 				},
 			},
 		},

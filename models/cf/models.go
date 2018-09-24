@@ -25,6 +25,38 @@ type VcapApp struct {
 	SpaceName string   `json:"space_name"`
 }
 
+type VolumeMountConfig struct {
+	Name string `json:"name"`
+}
+
+type SharedVolumeConfig struct {
+	MountConfig VolumeMountConfig `json:"mount_config"`
+}
+
+func (svc *SharedVolumeConfig) UnmarshalJSON(b []byte) error {
+	var data struct {
+		MountConfig string `json:"mount_config"`
+	}
+	err := json.Unmarshal(b, &data)
+	if err != nil {
+		return err
+	}
+
+	var volumeMountConfig VolumeMountConfig
+	err = json.Unmarshal([]byte(data.MountConfig), &volumeMountConfig)
+	if err != nil {
+		return err
+	}
+
+	svc.MountConfig = volumeMountConfig
+	return nil
+}
+
+type VolumeMount struct {
+	ContainerDir string             `json:"container_dir"`
+	Shared       SharedVolumeConfig `json:"shared"`
+}
+
 type DesireLRPRequest struct {
 	GUID                    string                      `json:"guid"`
 	Version                 string                      `json:"version"`
@@ -42,6 +74,7 @@ type DesireLRPRequest struct {
 	HealthCheckHTTPEndpoint string                      `json:"health_check_http_endpoint"`
 	HealthCheckTimeoutMs    uint                        `json:"health_check_timeout_ms"`
 	MemoryMB                int64                       `json:"memory_mb"`
+	VolumeMounts            []VolumeMount               `json:"volume_mounts"`
 }
 
 type StagingRequest struct {

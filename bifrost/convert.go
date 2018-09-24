@@ -50,6 +50,14 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		Hasher:  c.hasher,
 	}
 
+	var volumeMounts []opi.VolumeMount
+	for _, vm := range request.VolumeMounts {
+		volumeMounts = append(volumeMounts, opi.VolumeMount{
+			MountPath: vm.ContainerDir,
+			ClaimName: vm.Shared.MountConfig.Name,
+		})
+	}
+
 	return opi.LRP{
 		Name:            identifier.Name(),
 		LRPIdentifier:   identifier,
@@ -72,7 +80,8 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 			cf.VcapAppUris: routesJSON,
 			cf.LastUpdated: request.LastUpdated,
 		},
-		MemoryMB: request.MemoryMB,
+		MemoryMB:     request.MemoryMB,
+		VolumeMounts: volumeMounts,
 	}, nil
 }
 
