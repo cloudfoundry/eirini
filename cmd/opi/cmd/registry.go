@@ -47,10 +47,7 @@ func reg(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	if cert != "" && key != "" {
-		serveTLS(cert, key, handler)
-	}
-
+	serveTLS(cert, key, handler)
 	serveHTTP(handler)
 }
 
