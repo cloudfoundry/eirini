@@ -54,6 +54,14 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 
 	lev := launcher.SetupEnv(request.StartCommand)
 
+	var volumeMounts []opi.VolumeMount
+	for _, vm := range request.VolumeMounts {
+		volumeMounts = append(volumeMounts, opi.VolumeMount{
+			MountPath: vm.ContainerDir,
+			ClaimName: vm.Shared.MountConfig.Name,
+		})
+	}
+
 	return opi.LRP{
 		Name:            vcap.AppID,
 		Image:           request.DockerImageURL,
@@ -74,6 +82,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 			cf.ProcessGUID: request.ProcessGUID,
 			cf.LastUpdated: request.LastUpdated,
 		},
+		VolumeMounts: volumeMounts,
 	}, nil
 }
 
