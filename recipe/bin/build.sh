@@ -25,7 +25,7 @@ build-packs-builder() {
 
 build-image() {
     pushd "$BASEDIR"/image
-        docker build --add-host="cc-uploader.service.cf.internal:10.45.94.125" --build-arg buildpacks="$(< "buildpacks.json")" -t "eirini/recipe" .
+        docker build --build-arg buildpacks="$(< "buildpacks.json")" -t "eirini/recipe" .
     popd
 }
 
