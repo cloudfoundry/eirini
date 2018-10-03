@@ -45,6 +45,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			NumInstances:   3,
 			Environment: map[string]string{
 				"VCAP_APPLICATION": `{"application_name":"bumblebee", "space_name":"transformers", "application_id":"b194809b-88c0-49af-b8aa-69da097fc360", "version": "something-something-uuid", "application_uris":["bumblebee.example.com", "transformers.example.com"]}`,
+				"VCAP_SERVICES":    `"user-provided": [{"binding_name": "bind-it-like-beckham","credentials": {"password": "notpassword1","username": "admin"},"instance_name": "dora","name": "serve"}]`,
 			},
 			StartCommand:            "start me",
 			HealthCheckType:         "http",
@@ -92,10 +93,16 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(lrp.Command).To(Equal([]string{launcher.Launch}))
 			})
 
-			It("should set the desired environment variables", func() {
+			It("should set the VCAP_APPLICATION environment variable", func() {
 				val, ok := lrp.Env["VCAP_APPLICATION"]
 				Expect(ok).To(BeTrue())
 				Expect(val).To(Equal(desireLRPRequest.Environment["VCAP_APPLICATION"]))
+			})
+
+			It("should set the VCAP_SERVICES environment variable", func() {
+				val, ok := lrp.Env["VCAP_SERVICES"]
+				Expect(ok).To(BeTrue())
+				Expect(val).To(Equal(desireLRPRequest.Environment["VCAP_SERVICES"]))
 			})
 
 			It("should set the launcher specific environment variables", func() {
