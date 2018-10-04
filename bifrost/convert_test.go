@@ -46,6 +46,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			Environment: map[string]string{
 				"VCAP_APPLICATION": `{"application_name":"bumblebee", "space_name":"transformers", "application_id":"b194809b-88c0-49af-b8aa-69da097fc360", "version": "something-something-uuid", "application_uris":["bumblebee.example.com", "transformers.example.com"]}`,
 				"VCAP_SERVICES":    `"user-provided": [{"binding_name": "bind-it-like-beckham","credentials": {"password": "notpassword1","username": "admin"},"instance_name": "dora","name": "serve"}]`,
+				"PORT":             "8080",
 			},
 			StartCommand:            "start me",
 			HealthCheckType:         "http",

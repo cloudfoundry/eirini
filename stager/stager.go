@@ -62,20 +62,24 @@ func (s *Stager) createStagingTask(stagingGUID string, request cc_messages.Stagi
 		return nil, err
 	}
 
+	eiriniEnv := map[string]string{
+		eirini.EnvDownloadURL:        lifecycleData.AppBitsDownloadUri,
+		eirini.EnvDropletUploadURL:   lifecycleData.DropletUploadUri,
+		eirini.EnvBuildpacks:         string(buildpacksJSON),
+		eirini.EnvAppID:              request.LogGuid,
+		eirini.EnvStagingGUID:        stagingGUID,
+		eirini.EnvCompletionCallback: request.CompletionCallback,
+		eirini.EnvCfUsername:         s.Config.CfUsername,
+		eirini.EnvCfPassword:         s.Config.CfPassword,
+		eirini.EnvAPIAddress:         s.Config.APIAddress,
+		eirini.EnvEiriniAddress:      s.Config.EiriniAddress,
+	}
+
+	stagingEnv := mergeEnvVriables(eiriniEnv, request.Environment)
+
 	stagingTask := &opi.Task{
 		Image: StagerImage,
-		Env: map[string]string{
-			eirini.EnvDownloadURL:        lifecycleData.AppBitsDownloadUri,
-			eirini.EnvDropletUploadURL:   lifecycleData.DropletUploadUri,
-			eirini.EnvBuildpacks:         string(buildpacksJSON),
-			eirini.EnvAppID:              request.LogGuid,
-			eirini.EnvStagingGUID:        stagingGUID,
-			eirini.EnvCompletionCallback: request.CompletionCallback,
-			eirini.EnvCfUsername:         s.Config.CfUsername,
-			eirini.EnvCfPassword:         s.Config.CfPassword,
-			eirini.EnvAPIAddress:         s.Config.APIAddress,
-			eirini.EnvEiriniAddress:      s.Config.EiriniAddress,
-		},
+		Env:   stagingEnv,
 	}
 	return stagingTask, nil
 }
@@ -153,4 +157,14 @@ func (s *Stager) getCallbackURI(task *models.TaskCallbackResponse) (string, erro
 	}
 
 	return annotation.CompletionCallback, nil
+}
+
+func mergeEnvVriables(eiriniEnv map[string]string, cfEnvs []*models.EnvironmentVariable) map[string]string {
+	for _, env := range cfEnvs {
+		if _, present := eiriniEnv[env.Name]; !present {
+			eiriniEnv[env.Name] = env.Value
+		}
+	}
+
+	return eiriniEnv
 }

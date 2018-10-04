@@ -74,6 +74,16 @@ var _ = Describe("Stager", func() {
 				DiskMB:          512,
 				Environment: []*models.EnvironmentVariable{
 					{Name: "HOWARD", Value: "the alien"},
+					{Name: eirini.EnvAppID, Value: "should be ignored"},
+					{Name: eirini.EnvAPIAddress, Value: "should be ignored"},
+					{Name: eirini.EnvBuildpacks, Value: "should be ignored"},
+					{Name: eirini.EnvCfPassword, Value: "should be ignored"},
+					{Name: eirini.EnvCfUsername, Value: "should be ignored"},
+					{Name: eirini.EnvDownloadURL, Value: "should be ignored"},
+					{Name: eirini.EnvStagingGUID, Value: "should be ignored"},
+					{Name: eirini.EnvEiriniAddress, Value: "should be ignored"},
+					{Name: eirini.EnvCompletionCallback, Value: "should be ignored"},
+					{Name: eirini.EnvDropletUploadURL, Value: "should be ignored"},
 				},
 				EgressRules: []*models.SecurityGroupRule{
 					{Protocol: "http"},
@@ -95,12 +105,13 @@ var _ = Describe("Stager", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should desire a converted task", func() {
+		It("should desire a converted task without overriding eirini env variables", func() {
 			Expect(taskDesirer.DesireStagingCallCount()).To(Equal(1))
 			task := taskDesirer.DesireStagingArgsForCall(0)
 			Expect(task).To(Equal(&opi.Task{
 				Image: "eirini/recipe",
 				Env: map[string]string{
+					"HOWARD":                     "the alien",
 					eirini.EnvDownloadURL:        "example.com/download",
 					eirini.EnvDropletUploadURL:   "example.com/upload",
 					eirini.EnvAppID:              request.LogGuid,
