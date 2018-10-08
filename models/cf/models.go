@@ -25,36 +25,9 @@ type VcapApp struct {
 	SpaceName string   `json:"space_name"`
 }
 
-type VolumeMountConfig struct {
-	Name string `json:"name"`
-}
-
-type SharedVolumeConfig struct {
-	MountConfig VolumeMountConfig `json:"mount_config"`
-}
-
-func (svc *SharedVolumeConfig) UnmarshalJSON(b []byte) error {
-	var data struct {
-		MountConfig string `json:"mount_config"`
-	}
-	err := json.Unmarshal(b, &data)
-	if err != nil {
-		return err
-	}
-
-	var volumeMountConfig VolumeMountConfig
-	err = json.Unmarshal([]byte(data.MountConfig), &volumeMountConfig)
-	if err != nil {
-		return err
-	}
-
-	svc.MountConfig = volumeMountConfig
-	return nil
-}
-
 type VolumeMount struct {
-	ContainerDir string             `json:"container_dir"`
-	Shared       SharedVolumeConfig `json:"shared"`
+	VolumeId string `json:"volume_id"`
+	MountDir string `json:"mount_dir"`
 }
 
 type DesireLRPRequest struct {

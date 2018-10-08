@@ -42,7 +42,6 @@ var _ = Describe("AppHandler", func() {
 
 		BeforeEach(func() {
 			path = "/apps/myguid"
-			body = `{"process_guid" : "myguid", "start_command": "./start", "environment": { "env_var": "env_var_value" }, "instances": 5, "memory_mb": 123, "last_updated":"1529073295.9","health_check_type":"http","health_check_http_endpoint":"/healthz","health_check_timeout_ms":400,"ports":[8080,7777]}`
 			body = `{
 				"process_guid" : "myguid",
 				"start_command": "./start",
@@ -54,14 +53,9 @@ var _ = Describe("AppHandler", func() {
 				"health_check_http_endpoint":"/healthz",
 				"health_check_timeout_ms":400,
 				"volume_mounts": [
-				  {
-						"driver": "csi",
-						"container_dir": "/var/vcap/data/e1df89b4-33de-4d72-b471-5495222177c8",
-						"mode": "rw",
-						"shared": {
-							"volume_id": "e1df89b4-33de-4d72-b471-5495222177c8-volume",
-							"mount_config": "{\"name\":\"vol1\"}"
-						}
+					{
+						"mount_dir": "/var/vcap/data/e1df89b4-33de-4d72-b471-5495222177c8",
+						"volume_id":"vol1"
 					}
 				],
 				"ports":[8080,7777]
@@ -92,12 +86,8 @@ var _ = Describe("AppHandler", func() {
 				Ports:                   []int32{8080, 7777},
 				VolumeMounts: []cf.VolumeMount{
 					{
-						ContainerDir: "/var/vcap/data/e1df89b4-33de-4d72-b471-5495222177c8",
-						Shared: cf.SharedVolumeConfig{
-							MountConfig: cf.VolumeMountConfig{
-								Name: "vol1",
-							},
-						},
+						MountDir: "/var/vcap/data/e1df89b4-33de-4d72-b471-5495222177c8",
+						VolumeId: "vol1",
 					},
 				},
 			}

@@ -70,6 +70,16 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			Routes: map[string]*json.RawMessage{
 				"cf-router": &rawJSON,
 			},
+			VolumeMounts: []cf.VolumeMount{
+				{
+					VolumeId: "claim-one",
+					MountDir: "/path/one",
+				},
+				{
+					VolumeId: "claim-two",
+					MountDir: "/path/two",
+				},
+			},
 		}
 		hasher.HashReturns("LRPHashedName", nil)
 	})
@@ -165,6 +175,19 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 			It("should set the ports", func() {
 				Expect(lrp.Ports).To(Equal([]int32{8080, 8888}))
+			})
+
+			It("should set the volume mounts", func() {
+				volumes := lrp.VolumeMounts
+				Expect(len(volumes)).To(Equal(2))
+				Expect(volumes).To(ContainElement(opi.VolumeMount{
+					ClaimName: "claim-one",
+					MountPath: "/path/one",
+				}))
+				Expect(volumes).To(ContainElement(opi.VolumeMount{
+					ClaimName: "claim-two",
+					MountPath: "/path/two",
+				}))
 			})
 		}
 
