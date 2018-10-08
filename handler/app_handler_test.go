@@ -53,14 +53,9 @@ var _ = Describe("AppHandler", func() {
 				"health_check_timeout_ms":400,
 				"volume_mounts": [
 				  {
-						"driver": "csi",
-						"container_dir": "/var/vcap/data/e1df89b4-33de-4d72-b471-5495222177c8",
-						"mode": "rw",
-						"shared": {
-							"volume_id": "e1df89b4-33de-4d72-b471-5495222177c8-volume",
-							"mount_config": "{\"name\":\"vol1\"}"
-						}
-					}
+						"mount_dir": "/var/vcap/data/e1df89b4-33de-4d72-b471-5495222177c8",
+						"volume_id":"vol1"
+			       	  }
 				]
 			}`
 		})
@@ -87,12 +82,8 @@ var _ = Describe("AppHandler", func() {
 				HealthCheckTimeoutMs:    400,
 				VolumeMounts: []cf.VolumeMount{
 					{
-						ContainerDir: "/var/vcap/data/e1df89b4-33de-4d72-b471-5495222177c8",
-						Shared: cf.SharedVolumeConfig{
-							MountConfig: cf.VolumeMountConfig{
-								Name: "vol1",
-							},
-						},
+						MountDir: "/var/vcap/data/e1df89b4-33de-4d72-b471-5495222177c8",
+						VolumeId: "vol1",
 					},
 				},
 			}

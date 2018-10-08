@@ -53,6 +53,16 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			HealthCheckType:         "http",
 			HealthCheckHTTPEndpoint: "/heat",
 			HealthCheckTimeoutMs:    400,
+			VolumeMounts: []cf.VolumeMount{
+				{
+					VolumeId: "claim-one",
+					MountDir: "/path/one",
+				},
+				{
+					VolumeId: "claim-two",
+					MountDir: "/path/two",
+				},
+			},
 		}
 	})
 
@@ -126,7 +136,18 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(health.Endpoint).To(Equal("/heat"))
 				Expect(health.TimeoutMs).To(Equal(uint(400)))
 			})
-
+			It("should set the volume mounts", func() {
+				volumes := lrp.VolumeMounts
+				Expect(len(volumes)).To(Equal(2))
+				Expect(volumes).To(ContainElement(opi.VolumeMount{
+					ClaimName: "claim-one",
+					MountPath: "/path/one",
+				}))
+				Expect(volumes).To(ContainElement(opi.VolumeMount{
+					ClaimName: "claim-two",
+					MountPath: "/path/two",
+				}))
+			})
 		}
 
 		Context("When the Docker image is provided", func() {
