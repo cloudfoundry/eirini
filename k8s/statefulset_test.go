@@ -553,6 +553,8 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 
 	envs = append(envs, fieldEnvs...)
 
+	vols, volumeMounts := createVolumeSpecs(lrp.VolumeMounts)
+
 	targetInstances := int32(lrp.TargetInstances)
 	statefulSet := &v1beta2.StatefulSet{
 		Spec: v1beta2.StatefulSetSpec{
@@ -578,8 +580,10 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 							},
 							LivenessProbe:  &v1.Probe{},
 							ReadinessProbe: &v1.Probe{},
+							VolumeMounts:   volumeMounts,
 						},
 					},
+					Volumes: vols,
 				},
 			},
 		},
@@ -609,6 +613,28 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	return statefulSet
 }
 
+func createVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]v1.Volume, []v1.VolumeMount) {
+
+	vols := []v1.Volume{}
+	volumeMounts := []v1.VolumeMount{}
+	for _, vol := range lrpVolumeMounts {
+		vols = append(vols, v1.Volume{
+			Name: vol.ClaimName,
+			VolumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: vol.ClaimName,
+				},
+			},
+		})
+
+		volumeMounts = append(volumeMounts, v1.VolumeMount{
+			Name:      vol.ClaimName,
+			MountPath: vol.MountPath,
+		})
+	}
+	return vols, volumeMounts
+}
+
 func createLRP(processGUID, lastUpdated, routes string) *opi.LRP {
 	return &opi.LRP{
 		Name: processGUID,
@@ -623,6 +649,12 @@ func createLRP(processGUID, lastUpdated, routes string) *opi.LRP {
 			cf.ProcessGUID: processGUID,
 			cf.LastUpdated: lastUpdated,
 			cf.VcapAppUris: routes,
+		},
+		VolumeMounts: []opi.VolumeMount{
+			{
+				ClaimName: "some-claim",
+				MountPath: "/some/path",
+			},
 		},
 	}
 }

@@ -168,10 +168,19 @@ func statefulSetsToLRPs(statefulSets *v1beta2.StatefulSetList) []*opi.LRP {
 }
 
 func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
+	container := s.Spec.Template.Spec.Containers[0]
+	volMounts := []opi.VolumeMount{}
+	for _, vol := range container.VolumeMounts {
+		volMounts = append(volMounts, opi.VolumeMount{
+			ClaimName: vol.Name,
+			MountPath: vol.MountPath,
+		})
+	}
+
 	return &opi.LRP{
 		Name:             s.Name,
-		Image:            s.Spec.Template.Spec.Containers[0].Image,
-		Command:          s.Spec.Template.Spec.Containers[0].Command,
+		Image:            container.Image,
+		Command:          container.Command,
 		RunningInstances: int(s.Status.ReadyReplicas),
 		Metadata: map[string]string{
 			cf.ProcessGUID:          s.Annotations[cf.ProcessGUID],
@@ -179,6 +188,7 @@ func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 			cf.VcapAppUris:          s.Annotations[cf.VcapAppUris],
 			eirini.RegisteredRoutes: s.Annotations[cf.VcapAppUris],
 		},
+		VolumeMounts: volMounts,
 	}
 }
 
@@ -216,24 +226,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	livenessProbe := m.LivenessProbeCreator(lrp)
 	readinessProbe := m.ReadinessProbeCreator(lrp)
 
-	var volumes []v1.Volume
-	var volumeMounts []v1.VolumeMount
-
-	for _, vm := range lrp.VolumeMounts {
-		volumes = append(volumes, v1.Volume{
-			Name: vm.ClaimName,
-			VolumeSource: v1.VolumeSource{
-				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-					ClaimName: vm.ClaimName,
-				},
-			},
-		})
-		volumeMounts = append(volumeMounts, v1.VolumeMount{
-			Name:      vm.ClaimName,
-			MountPath: vm.MountPath,
-		})
-	}
-
+	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
 	statefulSet := &v1beta2.StatefulSet{
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: int32ptr(lrp.TargetInstances),
@@ -297,4 +290,24 @@ func parsePodIndex(podName string) (int, error) {
 	}
 
 	return strconv.Atoi(sl[len(sl)-1])
+}
+
+func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]v1.Volume, []v1.VolumeMount) {
+	volumes := []v1.Volume{}
+	volumeMounts := []v1.VolumeMount{}
+	for _, vm := range lrpVolumeMounts {
+		volumes = append(volumes, v1.Volume{
+			Name: vm.ClaimName,
+			VolumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: vm.ClaimName,
+				},
+			},
+		})
+		volumeMounts = append(volumeMounts, v1.VolumeMount{
+			Name:      vm.ClaimName,
+			MountPath: vm.MountPath,
+		})
+	}
+	return volumes, volumeMounts
 }
