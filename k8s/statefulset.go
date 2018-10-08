@@ -216,18 +216,29 @@ func statefulSetsToLRPs(statefulSets *v1beta2.StatefulSetList) []*opi.LRP {
 
 func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 	ports := []int32{}
-	for _, port := range s.Spec.Template.Spec.Containers[0].Ports {
+	container := s.Spec.Template.Spec.Containers[0]
+
+	for _, port := range container.Ports {
 		ports = append(ports, port.ContainerPort)
 	}
-	memory := s.Spec.Template.Spec.Containers[0].Resources.Requests.Memory().ScaledValue(resource.Mega)
+
+	memory := container.Resources.Requests.Memory().ScaledValue(resource.Mega)
+	volMounts := []opi.VolumeMount{}
+	for _, vol := range container.VolumeMounts {
+		volMounts = append(volMounts, opi.VolumeMount{
+			ClaimName: vol.Name,
+			MountPath: vol.MountPath,
+		})
+	}
+
 	return &opi.LRP{
 		LRPIdentifier: opi.LRPIdentifier{
 			GUID:    s.Annotations[cf.VcapAppID],
 			Version: s.Annotations[cf.VcapVersion],
 		},
 		Name:             s.Name,
-		Image:            s.Spec.Template.Spec.Containers[0].Image,
-		Command:          s.Spec.Template.Spec.Containers[0].Command,
+		Image:            container.Image,
+		Command:          container.Command,
 		RunningInstances: int(s.Status.ReadyReplicas),
 		Ports:            ports,
 		Metadata: map[string]string{
@@ -238,7 +249,8 @@ func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 			cf.VcapAppID:            s.Annotations[cf.VcapAppID],
 			cf.VcapVersion:          s.Annotations[cf.VcapVersion],
 		},
-		MemoryMB: memory,
+		MemoryMB:     memory,
+		VolumeMounts: volMounts,
 	}
 }
 
@@ -280,28 +292,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	livenessProbe := m.LivenessProbeCreator(lrp)
 	readinessProbe := m.ReadinessProbeCreator(lrp)
 
-	memory, err := resource.ParseQuantity(fmt.Sprintf("%dM", lrp.MemoryMB))
-	if err != nil {
-		panic(err)
-	}
-
-	var volumes []v1.Volume
-	var volumeMounts []v1.VolumeMount
-
-	for _, vm := range lrp.VolumeMounts {
-		volumes = append(volumes, v1.Volume{
-			Name: vm.ClaimName,
-			VolumeSource: v1.VolumeSource{
-				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-					ClaimName: vm.ClaimName,
-				},
-			},
-		})
-		volumeMounts = append(volumeMounts, v1.VolumeMount{
-			Name:      vm.ClaimName,
-			MountPath: vm.MountPath,
-		})
-	}
+	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
 
 	statefulSet := &v1beta2.StatefulSet{
 		Spec: v1beta2.StatefulSetSpec{
@@ -372,4 +363,24 @@ func parsePodIndex(podName string) (int, error) {
 	}
 
 	return strconv.Atoi(sl[len(sl)-1])
+}
+
+func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]v1.Volume, []v1.VolumeMount) {
+	volumes := []v1.Volume{}
+	volumeMounts := []v1.VolumeMount{}
+	for _, vm := range lrpVolumeMounts {
+		volumes = append(volumes, v1.Volume{
+			Name: vm.ClaimName,
+			VolumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: vm.ClaimName,
+				},
+			},
+		})
+		volumeMounts = append(volumeMounts, v1.VolumeMount{
+			Name:      vm.ClaimName,
+			MountPath: vm.MountPath,
+		})
+	}
+	return volumes, volumeMounts
 }

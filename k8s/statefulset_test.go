@@ -580,6 +580,8 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 		ports = append(ports, v1.ContainerPort{ContainerPort: port})
 	}
 
+	vols, volumeMounts := createVolumeSpecs(lrp.VolumeMounts)
+
 	targetInstances := int32(lrp.TargetInstances)
 	memory, err := resource.ParseQuantity(fmt.Sprintf("%dM", lrp.MemoryMB))
 	if err != nil {
@@ -613,8 +615,10 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 									v1.ResourceMemory: memory,
 								},
 							},
+							VolumeMounts: volumeMounts,
 						},
 					},
+					Volumes: vols,
 				},
 			},
 		},
@@ -646,6 +650,28 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	return statefulSet
 }
 
+func createVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]v1.Volume, []v1.VolumeMount) {
+
+	vols := []v1.Volume{}
+	volumeMounts := []v1.VolumeMount{}
+	for _, vol := range lrpVolumeMounts {
+		vols = append(vols, v1.Volume{
+			Name: vol.ClaimName,
+			VolumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: vol.ClaimName,
+				},
+			},
+		})
+
+		volumeMounts = append(volumeMounts, v1.VolumeMount{
+			Name:      vol.ClaimName,
+			MountPath: vol.MountPath,
+		})
+	}
+	return vols, volumeMounts
+}
+
 func createLRP(processGUID, lastUpdated, routes string) *opi.LRP {
 	return &opi.LRP{
 		LRPIdentifier: opi.LRPIdentifier{
@@ -668,6 +694,12 @@ func createLRP(processGUID, lastUpdated, routes string) *opi.LRP {
 			cf.VcapAppUris: routes,
 			cf.VcapAppID:   "guid_1234",
 			cf.VcapVersion: "version_1234",
+		},
+		VolumeMounts: []opi.VolumeMount{
+			{
+				ClaimName: "some-claim",
+				MountPath: "/some/path",
+			},
 		},
 	}
 }
