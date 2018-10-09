@@ -26,7 +26,7 @@ type VcapApp struct {
 }
 
 type VolumeMount struct {
-	VolumeId string `json:"volume_id"`
+	VolumeID string `json:"volume_id"`
 	MountDir string `json:"mount_dir"`
 }
 

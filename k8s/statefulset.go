@@ -292,6 +292,11 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	livenessProbe := m.LivenessProbeCreator(lrp)
 	readinessProbe := m.ReadinessProbeCreator(lrp)
 
+	memory, err := resource.ParseQuantity(fmt.Sprintf("%dM", lrp.MemoryMB))
+	if err != nil {
+		panic(err)
+	}
+
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
 
 	statefulSet := &v1beta2.StatefulSet{

@@ -55,7 +55,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 	for _, vm := range request.VolumeMounts {
 		volumeMounts = append(volumeMounts, opi.VolumeMount{
 			MountPath: vm.MountDir,
-			ClaimName: vm.VolumeId,
+			ClaimName: vm.VolumeID,
 		})
 	}
 

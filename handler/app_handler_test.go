@@ -87,7 +87,7 @@ var _ = Describe("AppHandler", func() {
 				VolumeMounts: []cf.VolumeMount{
 					{
 						MountDir: "/var/vcap/data/e1df89b4-33de-4d72-b471-5495222177c8",
-						VolumeId: "vol1",
+						VolumeID: "vol1",
 					},
 				},
 			}

@@ -72,11 +72,11 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			},
 			VolumeMounts: []cf.VolumeMount{
 				{
-					VolumeId: "claim-one",
+					VolumeID: "claim-one",
 					MountDir: "/path/one",
 				},
 				{
-					VolumeId: "claim-two",
+					VolumeID: "claim-two",
 					MountDir: "/path/two",
 				},
 			},
