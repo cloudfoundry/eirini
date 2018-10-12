@@ -79,11 +79,11 @@ func (e *Emitter) unregisterRoute(route *eirini.Routes) {
 
 func (e *Emitter) publish(subject string, routes []string, name, host string, httpPort, tlsPort uint32) error {
 
-	// If we use an ingress, all emmitted routes should point to it
+	// If we use an ingress, all emitted routes should point to it
 	if e.useIngress {
 		host = e.kubeEndpoint
 		httpPort = ingressHTTPPort
-		tlsPort = tlsPort
+		tlsPort = ingressTLSPort
 	}
 
 	message := RegistryMessage{

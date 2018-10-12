@@ -22,6 +22,7 @@ var _ = Describe("Emitter", func() {
 		emitter      *Emitter
 		routes       []*eirini.Routes
 		messageCount int
+		useIngress   bool
 	)
 
 	const (
@@ -43,14 +44,41 @@ var _ = Describe("Emitter", func() {
 		return count
 	}
 
-	getRegisterMessage := func(routes []string, name string) []byte {
+	getRegisterMessage := func(routes *eirini.Routes) []byte {
 		m := RegistryMessage{
-			Host:    kubeEndpoint,
-			Port:    httpPort,
-			TLSPort: tlsPort,
-			URIs:    routes,
-			App:     name,
+			Host:    routes.ServiceAddress,
+			Port:    routes.ServicePort,
+			TLSPort: routes.ServiceTLSPort,
+			URIs:    routes.Routes,
+			App:     routes.Name,
 		}
+
+		if useIngress {
+			m.Host = kubeEndpoint
+			m.Port = httpPort
+			m.TLSPort = tlsPort
+		}
+
+		data, err := json.Marshal(m)
+		Expect(err).ToNot(HaveOccurred())
+		return data
+	}
+
+	getUnregisterMessage := func(routes *eirini.Routes) []byte {
+		m := RegistryMessage{
+			Host:    routes.ServiceAddress,
+			Port:    routes.ServicePort,
+			TLSPort: routes.ServiceTLSPort,
+			URIs:    routes.UnregisteredRoutes,
+			App:     routes.Name,
+		}
+
+		if useIngress {
+			m.Host = kubeEndpoint
+			m.Port = httpPort
+			m.TLSPort = tlsPort
+		}
+
 		data, err := json.Marshal(m)
 		Expect(err).ToNot(HaveOccurred())
 		return data
@@ -59,11 +87,11 @@ var _ = Describe("Emitter", func() {
 	getExpectedData := func() (registered [][]byte, unregistered [][]byte) {
 		for _, r := range routes {
 			if len(r.Routes) != 0 {
-				m := getRegisterMessage(r.Routes, r.Name)
+				m := getRegisterMessage(r)
 				registered = append(registered, m)
 			}
 			if len(r.UnregisteredRoutes) != 0 {
-				m := getRegisterMessage(r.UnregisteredRoutes, r.Name)
+				m := getUnregisterMessage(r)
 				unregistered = append(unregistered, m)
 			}
 
@@ -111,12 +139,15 @@ var _ = Describe("Emitter", func() {
 			Routes:             []string{"route1.my.app.com"},
 			UnregisteredRoutes: []string{"removed.route1.my.app.com"},
 			Name:               "app1",
+			ServiceAddress:     "203.0.113.2",
+			ServicePort:        8080,
+			ServiceTLSPort:     8443,
 		}
 
 		routes = []*eirini.Routes{&route}
 
 		messageCount = countMessages()
-		emitter = NewEmitter(publisher, workChannel, scheduler, kubeEndpoint)
+		emitter = NewEmitter(publisher, workChannel, scheduler, kubeEndpoint, useIngress)
 		emitter.Start()
 	})
 
@@ -138,10 +169,20 @@ var _ = Describe("Emitter", func() {
 	})
 
 	Context("When the publisher returns an error", func() {
+		useIngress = true
+
 		BeforeEach(func() {
 			publisher.PublishReturns(errors.New("Failed to publish message"))
 		})
 
 		assertInteractionsWithFakes()
+	})
+
+	Context("When not using an ingress", func() {
+		useIngress = false
+
+		BeforeEach(func() {
+			publisher.PublishReturns(errors.New("Failed to publish message"))
+		})
 	})
 })
