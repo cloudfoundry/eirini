@@ -157,7 +157,8 @@ var _ = Describe("Ingress", func() {
 				})
 
 				It("should add the rule for the specific lrp", func() {
-					ingress, _ := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					ingress, getErr := fakeClient.ExtensionsV1beta1().Ingresses(namespace).Get(ingressName, av1.GetOptions{})
+					Expect(getErr).ToNot(HaveOccurred())
 
 					rules := ingress.Spec.Rules
 					Expect(rules).To(Equal([]ext.IngressRule{

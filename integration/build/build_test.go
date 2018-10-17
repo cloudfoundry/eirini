@@ -1,6 +1,6 @@
-package integration_test
-
 // +build integration
+
+package integration_test
 
 import (
 	"errors"

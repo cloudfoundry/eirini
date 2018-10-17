@@ -73,7 +73,7 @@ var _ = Describe("PacksExecutor", func() {
 	})
 
 	AfterEach(func() {
-		os.Remove(tmpfile.Name())
+		Expect(os.Remove(tmpfile.Name())).To(Succeed())
 	})
 
 	Context("When executing a recipe", func() {

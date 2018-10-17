@@ -115,7 +115,7 @@ var _ = Describe("Unzip function", func() {
 			BeforeEach(func() {
 				targetDir = "testdata/tmp"
 
-				ioErr := os.Mkdir(targetDir, 0755)
+				ioErr := os.Mkdir(targetDir, 0750)
 				Expect(ioErr).ToNot(HaveOccurred())
 			})
 

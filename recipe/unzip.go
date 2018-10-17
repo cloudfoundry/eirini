@@ -41,7 +41,7 @@ func (u *Unzipper) Extract(src, targetDir string) error {
 
 func extractFile(src *zip.File, destPath string) error {
 	parentDir := filepath.Dir(destPath)
-	if err := os.MkdirAll(parentDir, 0755); err != nil {
+	if err := os.MkdirAll(parentDir, 0750); err != nil {
 		return err
 	}
 

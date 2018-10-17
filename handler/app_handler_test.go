@@ -98,7 +98,8 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			req, _ = http.NewRequest("", "/apps", nil)
+			req, err := http.NewRequest("", "/apps", nil)
+			Expect(err).ToNot(HaveOccurred())
 			responseRecorder = httptest.NewRecorder()
 			appHandler = NewAppHandler(bifrost, lager)
 			bifrost.ListReturns(schedInfos, nil)
@@ -106,7 +107,8 @@ var _ = Describe("AppHandler", func() {
 			expectedResponse := models.DesiredLRPSchedulingInfosResponse{
 				DesiredLrpSchedulingInfos: schedInfos,
 			}
-			expectedJSONResponse, _ = (&jsonpb.Marshaler{Indent: "", OrigName: true}).MarshalToString(&expectedResponse)
+			expectedJSONResponse, err = (&jsonpb.Marshaler{Indent: "", OrigName: true}).MarshalToString(&expectedResponse)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		Context("When there are existing apps", func() {
@@ -395,7 +397,8 @@ var _ = Describe("AppHandler", func() {
 						}
 					]
 				}`
-			body, _ := ioutil.ReadAll(response.Body)
+			body, err := ioutil.ReadAll(response.Body)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(string(body)).To(MatchJSON(expectedResponse))
 		})
 
@@ -411,7 +414,8 @@ var _ = Describe("AppHandler", func() {
 						"process_guid": "guid_1234",
 						"instances": []
 					}`
-				body, _ := ioutil.ReadAll(response.Body)
+				body, err := ioutil.ReadAll(response.Body)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(string(body)).To(MatchJSON(expectedResponse))
 			})
 		})

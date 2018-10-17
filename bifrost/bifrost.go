@@ -65,7 +65,12 @@ func (b *Bifrost) Update(ctx context.Context, update models.UpdateDesiredLRPRequ
 		return err
 	}
 
-	hostnamesBytes, _ := json.Marshal(hostnames)
+	hostnamesBytes, err := json.Marshal(hostnames)
+	if err != nil {
+		b.Logger.Error("failed-to-marshal hostnames", err, lager.Data{"process-guid": update.ProcessGuid})
+		panic(err)
+	}
+
 	lrp.Metadata[cf.VcapAppUris] = string(hostnamesBytes)
 
 	return b.Desirer.Update(lrp)
