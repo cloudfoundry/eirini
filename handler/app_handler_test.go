@@ -89,7 +89,6 @@ var _ = Describe("AppHandler", func() {
 		var (
 			appHandler           *App
 			responseRecorder     *httptest.ResponseRecorder
-			req                  *http.Request
 			expectedJSONResponse string
 			schedInfos           []*models.DesiredLRPSchedulingInfo
 		)

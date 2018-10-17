@@ -33,7 +33,6 @@ var _ = Describe("Ingress", func() {
 		ingressName       = "eirini"
 		ingressKind       = "Ingress"
 		ingressAPIVersion = "extensions/v1beta1"
-		ingressAppName    = "app-name"
 		appName           = "new-vcaapp-name"
 	)
 

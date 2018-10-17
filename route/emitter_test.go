@@ -25,8 +25,6 @@ var _ = Describe("Emitter", func() {
 	)
 
 	const (
-		host              = "our.host.com"
-		natsSubj          = "router.register"
 		kubeEndpoint      = "example.com/kube"
 		httpPort          = 80
 		tlsPort           = 443

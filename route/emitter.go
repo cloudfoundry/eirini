@@ -45,10 +45,7 @@ func NewEmitter(publisher Publisher, workChannel chan []*eirini.Routes, schedule
 
 func (e *Emitter) Start() {
 	e.scheduler.Schedule(func() error {
-		select {
-		case batch := <-e.work:
-			e.emit(batch)
-		}
+		e.emit(<-e.work)
 		return nil
 	})
 }

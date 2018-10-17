@@ -23,8 +23,6 @@ linters:
   disable:
     - gas
     - goconst
-    - varcheck
-    - megacheck
 
 issues:
   exclude-use-default: true
