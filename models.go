@@ -31,7 +31,7 @@ const (
 	CCCertsMountPath      = "/etc/config/certs"
 	CCCertsVolumeName     = "cc-certs-volume"
 	CCUploaderCertName    = "cc-uploader-crt"
-	CCUploaderKeyName     = "cc-uploader-key"
+	CCUploaderKeyName     = "cc-uploader-crt-key"
 	CCInternalCACertName  = "internal-ca-cert"
 )
 
