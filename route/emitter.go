@@ -9,8 +9,6 @@ import (
 )
 
 const (
-	ingressHTTPPort   = 80
-	ingressTLSPort    = 443
 	registerSubject   = "router.register"
 	unregisterSubject = "router.unregister"
 )
@@ -28,20 +26,16 @@ func (p *NATSPublisher) Publish(subj string, data []byte) error {
 }
 
 type Emitter struct {
-	publisher    Publisher
-	scheduler    TaskScheduler
-	kubeEndpoint string
-	work         <-chan []*eirini.Routes
-	useIngress   bool
+	publisher Publisher
+	scheduler TaskScheduler
+	work      <-chan []*eirini.Routes
 }
 
-func NewEmitter(publisher Publisher, workChannel chan []*eirini.Routes, scheduler TaskScheduler, kubeEndpoint string, useIngress bool) *Emitter {
+func NewEmitter(publisher Publisher, workChannel chan []*eirini.Routes, scheduler TaskScheduler) *Emitter {
 	return &Emitter{
-		publisher:    publisher,
-		scheduler:    scheduler,
-		work:         workChannel,
-		kubeEndpoint: kubeEndpoint,
-		useIngress:   useIngress,
+		publisher: publisher,
+		scheduler: scheduler,
+		work:      workChannel,
 	}
 }
 
@@ -58,7 +52,7 @@ func (e *Emitter) Start() {
 func (e *Emitter) emit(batch []*eirini.Routes) {
 	for _, route := range batch {
 		if len(route.Routes) != 0 {
-			err := e.publish(registerSubject, route.Routes, route.Name, route.ServiceAddress, route.ServicePort, route.ServiceTLSPort)
+			err := e.publish(registerSubject, route, false)
 			if err != nil {
 				fmt.Println("failed to publish registered route:", err.Error())
 			}
@@ -71,27 +65,24 @@ func (e *Emitter) emit(batch []*eirini.Routes) {
 }
 
 func (e *Emitter) unregisterRoute(route *eirini.Routes) {
-	err := e.publish(unregisterSubject, route.UnregisteredRoutes, route.Name, route.ServiceAddress, route.ServicePort, route.ServiceTLSPort)
+	err := e.publish(unregisterSubject, route, true)
 	if err != nil {
 		fmt.Println("failed to publish unregistered route:", err.Error())
 	}
 }
 
-func (e *Emitter) publish(subject string, routes []string, name, host string, httpPort, tlsPort uint32) error {
-
-	// If we use an ingress, all emitted routes should point to it
-	if e.useIngress {
-		host = e.kubeEndpoint
-		httpPort = ingressHTTPPort
-		tlsPort = ingressTLSPort
-	}
+func (e *Emitter) publish(subject string, route *eirini.Routes, unregister bool) error {
 
 	message := RegistryMessage{
-		Host:    host,
-		Port:    httpPort,
-		TLSPort: tlsPort,
-		URIs:    routes,
-		App:     name,
+		Host:    route.ServiceAddress,
+		Port:    route.ServicePort,
+		TLSPort: route.ServiceTLSPort,
+		URIs:    route.Routes,
+		App:     route.Name,
+	}
+
+	if unregister {
+		message.URIs = route.UnregisteredRoutes
 	}
 
 	routeJSON, err := json.Marshal(message)

@@ -22,7 +22,6 @@ var _ = Describe("Emitter", func() {
 		emitter      *Emitter
 		routes       []*eirini.Routes
 		messageCount int
-		useIngress   bool
 	)
 
 	const (
@@ -53,12 +52,6 @@ var _ = Describe("Emitter", func() {
 			App:     routes.Name,
 		}
 
-		if useIngress {
-			m.Host = kubeEndpoint
-			m.Port = httpPort
-			m.TLSPort = tlsPort
-		}
-
 		data, err := json.Marshal(m)
 		Expect(err).ToNot(HaveOccurred())
 		return data
@@ -71,12 +64,6 @@ var _ = Describe("Emitter", func() {
 			TLSPort: routes.ServiceTLSPort,
 			URIs:    routes.UnregisteredRoutes,
 			App:     routes.Name,
-		}
-
-		if useIngress {
-			m.Host = kubeEndpoint
-			m.Port = httpPort
-			m.TLSPort = tlsPort
 		}
 
 		data, err := json.Marshal(m)
@@ -147,7 +134,7 @@ var _ = Describe("Emitter", func() {
 		routes = []*eirini.Routes{&route}
 
 		messageCount = countMessages()
-		emitter = NewEmitter(publisher, workChannel, scheduler, kubeEndpoint, useIngress)
+		emitter = NewEmitter(publisher, workChannel, scheduler)
 		emitter.Start()
 	})
 
@@ -169,8 +156,6 @@ var _ = Describe("Emitter", func() {
 	})
 
 	Context("When the publisher returns an error", func() {
-		useIngress = true
-
 		BeforeEach(func() {
 			publisher.PublishReturns(errors.New("Failed to publish message"))
 		})
@@ -179,10 +164,10 @@ var _ = Describe("Emitter", func() {
 	})
 
 	Context("When not using an ingress", func() {
-		useIngress = false
-
 		BeforeEach(func() {
 			publisher.PublishReturns(errors.New("Failed to publish message"))
 		})
+
+		assertInteractionsWithFakes()
 	})
 })

@@ -27,7 +27,7 @@ var _ = Describe("Routes", func() {
 
 		BeforeEach(func() {
 			fakeClient = fake.NewSimpleClientset()
-			routeLister = NewServiceRouteLister(fakeClient, kubeNamespace)
+			routeLister = NewServiceRouteLister(fakeClient, kubeNamespace, true, "203.0.113.2")
 		})
 
 		JustBeforeEach(func() {
@@ -52,7 +52,26 @@ var _ = Describe("Routes", func() {
 				Expect(routes).To(HaveLen(1))
 				route := routes[0]
 				Expect(route.Routes).To(ContainElement("my.example.route"))
+				Expect(route.ServiceAddress).To(Equal("203.0.113.2"))
+				Expect(route.ServicePort).To(Equal(IngressHTTPPort))
+				Expect(route.ServiceTLSPort).To(Equal(IngressTLSPort))
 				Expect(route.Name).To(Equal(eirini.GetInternalServiceName("baldur")))
+			})
+
+			Context("When we don't use an ingress", func() {
+				BeforeEach(func() {
+					routeLister = NewServiceRouteLister(fakeClient, kubeNamespace, false, "203.0.113.3")
+				})
+
+				It("should return the correct routes", func() {
+					Expect(routes).To(HaveLen(1))
+					route := routes[0]
+					Expect(route.Routes).To(ContainElement("my.example.route"))
+					Expect(route.ServiceAddress).To(Equal("203.0.113.4"))
+					Expect(route.ServicePort).To(Equal(uint32(8080)))
+					Expect(route.ServiceTLSPort).To(Equal(uint32(0)))
+					Expect(route.Name).To(Equal(eirini.GetInternalServiceName("baldur")))
+				})
 			})
 
 			Context("When there are headless services", func() {
