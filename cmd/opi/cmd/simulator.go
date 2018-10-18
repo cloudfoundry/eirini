@@ -38,7 +38,7 @@ func simulate(cmd *cobra.Command, args []string) {
 	stager := &StagerSimulator{}
 	handler := handler.New(bifrost, stager, handlerLogger)
 
-	log.Fatal(http.ListenAndServe("0.0.0.0:8085", handler))
+	log.Fatal(http.ListenAndServe("127.0.0.1:8085", handler))
 }
 
 type DesirerSimulator struct{}
