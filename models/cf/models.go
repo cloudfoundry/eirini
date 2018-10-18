@@ -24,6 +24,7 @@ type DesireLRPRequest struct {
 	ProcessGUID             string            `json:"process_guid"`
 	DockerImageURL          string            `json:"docker_image"`
 	DropletHash             string            `json:"droplet_hash"`
+	DropletGUID             string            `json:"droplet_guid"`
 	StartCommand            string            `json:"start_command"`
 	Environment             map[string]string `json:"environment"`
 	NumInstances            int               `json:"instances"`

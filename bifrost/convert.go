@@ -89,15 +89,15 @@ func (c *DropletToImageConverter) dropletToImageURI(request cf.DesireLRPRequest,
 		return "", err
 	}
 
-	if err = c.stageRequest(vcap, request.DropletHash, dropletBytes); err != nil {
+	if err = c.pushToRegistry(vcap, request.DropletGUID, dropletBytes); err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf("%s/cloudfoundry/app-name:%s", c.registryIP, request.DropletHash), nil
+	return fmt.Sprintf("%s/cloudfoundry/app-name:%s", c.registryIP, request.DropletGUID), nil
 }
 
-func (c *DropletToImageConverter) stageRequest(vcap cf.VcapApp, dropletHash string, dropletBytes []byte) error {
-	registryStageURI := registryStageURI(c.registryURL, vcap.SpaceName, vcap.AppName, dropletHash)
+func (c *DropletToImageConverter) pushToRegistry(vcap cf.VcapApp, dropletGUID string, dropletBytes []byte) error {
+	registryStageURI := fmt.Sprintf("%s/v2/%s/%s/blobs/?guid=%s", c.registryURL, vcap.SpaceName, vcap.AppName, dropletGUID)
 	c.logger.Info("sending-request-to-registry", lager.Data{"request": registryStageURI})
 
 	req, err := http.NewRequest("POST", registryStageURI, bytes.NewReader(dropletBytes))
@@ -127,10 +127,7 @@ func mergeMaps(maps ...map[string]string) map[string]string {
 	for _, m := range maps {
 		for k, v := range m {
 			result[k] = v
-
 		}
-
 	}
 	return result
-
 }
