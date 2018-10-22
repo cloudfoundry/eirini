@@ -40,6 +40,7 @@ var _ = Describe("Desiretask", func() {
 	assertContainer := func(container v1.Container) {
 		Expect(container.Name).To(Equal("opi-task"))
 		Expect(container.Image).To(Equal(Image))
+		Expect(container.ImagePullPolicy).To(Equal(v1.PullAlways))
 
 		Expect(container.Env).To(ConsistOf(
 			v1.EnvVar{Name: eirini.EnvDownloadURL, Value: "example.com/download"},
