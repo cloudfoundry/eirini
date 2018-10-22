@@ -79,6 +79,7 @@ func initStager(cfg *eirini.Config) eirini.Stager {
 		CfPassword:        cfg.Properties.CfPassword,
 		APIAddress:        cfg.Properties.CcAPI,
 		EiriniAddress:     cfg.Properties.EiriniAddress,
+		Image:             getStagerImage(cfg),
 		SkipSslValidation: cfg.Properties.SkipSslValidation,
 	}
 
@@ -168,6 +169,14 @@ func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP 
 
 	go re.Start()
 	go rc.Start()
+}
+
+func getStagerImage(cfg *eirini.Config) string {
+	if len(cfg.Properties.StagerImageTag) != 0 {
+		return fmt.Sprintf("%s:%s", stager.Image, cfg.Properties.StagerImageTag)
+	}
+
+	return fmt.Sprintf("%s:%s", stager.Image, stager.DefaultTag)
 }
 
 func exitWithError(err error) {

@@ -35,6 +35,7 @@ var _ = Describe("Stager", func() {
 			CfPassword:        "not1234567",
 			APIAddress:        "api.bosh-lite.com",
 			EiriniAddress:     "http://opi.cf.internal",
+			Image:             "eirini/recipe:tagged",
 			SkipSslValidation: true,
 		}
 
@@ -109,7 +110,7 @@ var _ = Describe("Stager", func() {
 			Expect(taskDesirer.DesireStagingCallCount()).To(Equal(1))
 			task := taskDesirer.DesireStagingArgsForCall(0)
 			Expect(task).To(Equal(&opi.Task{
-				Image: "eirini/recipe",
+				Image: "eirini/recipe:tagged",
 				Env: map[string]string{
 					"HOWARD":                     "the alien",
 					eirini.EnvDownloadURL:        "example.com/download",
