@@ -14,7 +14,10 @@ import (
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
-const StagerImage = "eirini/recipe"
+const (
+	Image      = "eirini/recipe"
+	DefaultTag = "latest"
+)
 
 type Stager struct {
 	Desirer    opi.TaskDesirer
@@ -78,7 +81,7 @@ func (s *Stager) createStagingTask(stagingGUID string, request cc_messages.Stagi
 	stagingEnv := mergeEnvVriables(eiriniEnv, request.Environment)
 
 	stagingTask := &opi.Task{
-		Image: StagerImage,
+		Image: s.Config.Image,
 		Env:   stagingEnv,
 	}
 	return stagingTask, nil

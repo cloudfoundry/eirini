@@ -78,9 +78,10 @@ func toJob(task *opi.Task) *batch.Job {
 			Template: v1.PodTemplateSpec{
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
-						Name:  "opi-task",
-						Image: task.Image,
-						Env:   MapToEnvVar(task.Env),
+						Name:            "opi-task",
+						Image:           task.Image,
+						ImagePullPolicy: v1.PullAlways,
+						Env:             MapToEnvVar(task.Env),
 					}},
 					RestartPolicy: v1.RestartPolicyNever,
 				},

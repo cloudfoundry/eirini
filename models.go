@@ -63,6 +63,7 @@ type Properties struct {
 	CCCertsSecretName  string `yaml:"cc_certs_secret_name"`
 	RegistryAddress    string `yaml:"external_eirini_address"`
 	EiriniAddress      string `yaml:"eirini_address"`
+	StagerImageTag     string `yaml:"stager_image_tag"`
 	SkipSslValidation  bool   `yaml:"skip_ssl_validation"`
 	InsecureSkipVerify bool   `yaml:"insecure_skip_verify"`
 }
@@ -87,6 +88,7 @@ type StagerConfig struct {
 	CfPassword        string
 	APIAddress        string
 	EiriniAddress     string
+	Image             string
 	SkipSslValidation bool
 }
 

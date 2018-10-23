@@ -3,6 +3,7 @@
 set -euo pipefail
 
 readonly BASEDIR="$(cd $(dirname $0)/.. && pwd)"
+readonly TAG="${1?Provide a tag please}"
 
 main() {
   build-recipe
@@ -25,7 +26,7 @@ build-packs-builder() {
 
 build-image() {
   pushd "$BASEDIR"/image
-    docker build --build-arg buildpacks="$(< "buildpacks.json")" -t "eirini/recipe" .
+    docker build --build-arg buildpacks="$(< "buildpacks.json")" -t "eirini/recipe:${TAG}" .
   popd
 }
 
