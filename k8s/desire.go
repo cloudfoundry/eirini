@@ -24,10 +24,18 @@ type InstanceManager interface {
 	Update(lrp *opi.LRP) error
 }
 
-func NewDesirer(kubeNamespace string, clientset kubernetes.Interface, option InstanceOptionFunc, routesChan chan []*eirini.Routes) *Desirer {
+func NewDesirer(kubeNamespace string, clientset kubernetes.Interface, option InstanceOptionFunc, enableIngress bool, routesChan chan []*eirini.Routes) *Desirer {
+	var ingressManager IngressManager
+
+	if enableIngress {
+		ingressManager = NewIngressManager(clientset, kubeNamespace)
+	} else {
+		ingressManager = NewNoOpIngressManager()
+	}
+
 	return &Desirer{
 		InstanceManager: NewInstanceManager(clientset, kubeNamespace, option),
-		IngressManager:  NewIngressManager(clientset, kubeNamespace),
+		IngressManager:  ingressManager,
 		ServiceManager:  NewServiceManager(clientset, kubeNamespace, routesChan),
 	}
 }

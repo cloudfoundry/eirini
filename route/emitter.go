@@ -9,8 +9,6 @@ import (
 )
 
 const (
-	httpPort          = 80
-	tlsPort           = 443
 	registerSubject   = "router.register"
 	unregisterSubject = "router.unregister"
 )
@@ -28,18 +26,16 @@ func (p *NATSPublisher) Publish(subj string, data []byte) error {
 }
 
 type Emitter struct {
-	publisher    Publisher
-	scheduler    TaskScheduler
-	kubeEndpoint string
-	work         <-chan []*eirini.Routes
+	publisher Publisher
+	scheduler TaskScheduler
+	work      <-chan []*eirini.Routes
 }
 
-func NewEmitter(publisher Publisher, workChannel chan []*eirini.Routes, scheduler TaskScheduler, kubeEndpoint string) *Emitter {
+func NewEmitter(publisher Publisher, workChannel chan []*eirini.Routes, scheduler TaskScheduler) *Emitter {
 	return &Emitter{
-		publisher:    publisher,
-		scheduler:    scheduler,
-		work:         workChannel,
-		kubeEndpoint: kubeEndpoint,
+		publisher: publisher,
+		scheduler: scheduler,
+		work:      workChannel,
 	}
 }
 
@@ -53,7 +49,7 @@ func (e *Emitter) Start() {
 func (e *Emitter) emit(batch []*eirini.Routes) {
 	for _, route := range batch {
 		if len(route.Routes) != 0 {
-			err := e.publish(registerSubject, route.Routes, route.Name)
+			err := e.publish(registerSubject, route, false)
 			if err != nil {
 				fmt.Println("failed to publish registered route:", err.Error())
 			}
@@ -66,19 +62,24 @@ func (e *Emitter) emit(batch []*eirini.Routes) {
 }
 
 func (e *Emitter) unregisterRoute(route *eirini.Routes) {
-	err := e.publish(unregisterSubject, route.UnregisteredRoutes, route.Name)
+	err := e.publish(unregisterSubject, route, true)
 	if err != nil {
 		fmt.Println("failed to publish unregistered route:", err.Error())
 	}
 }
 
-func (e *Emitter) publish(subject string, routes []string, name string) error {
+func (e *Emitter) publish(subject string, route *eirini.Routes, unregister bool) error {
+
 	message := RegistryMessage{
-		Host:    e.kubeEndpoint,
-		Port:    httpPort,
-		TLSPort: tlsPort,
-		URIs:    routes,
-		App:     name,
+		Host:    route.ServiceAddress,
+		Port:    route.ServicePort,
+		TLSPort: route.ServiceTLSPort,
+		URIs:    route.Routes,
+		App:     route.Name,
+	}
+
+	if unregister {
+		message.URIs = route.UnregisteredRoutes
 	}
 
 	routeJSON, err := json.Marshal(message)

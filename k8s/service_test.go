@@ -57,6 +57,11 @@ var _ = Describe("Service", func() {
 				serviceName := eirini.GetInternalServiceName("baldur")
 				service, getErr := fakeClient.CoreV1().Services(namespace).Get(serviceName, meta.GetOptions{})
 				Expect(getErr).ToNot(HaveOccurred())
+
+				// The simple fake client can't assign a ClusterIP to our service,
+				// so we do it manually
+				service.Spec.ClusterIP = "203.0.113.4"
+
 				Expect(service).To(Equal(toService(lrp, namespace)))
 			})
 
@@ -217,7 +222,7 @@ var _ = Describe("Service", func() {
 		})
 	})
 
-	Context("When updating an service", func() {
+	Context("When updating a service", func() {
 		var (
 			err            error
 			lrp            *opi.LRP
@@ -330,6 +335,7 @@ func toService(lrp *opi.LRP, namespace string) *v1.Service {
 					Port: 8080,
 				},
 			},
+			ClusterIP: "203.0.113.4",
 			Selector: map[string]string{
 				"name": lrp.Name,
 			},

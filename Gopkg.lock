@@ -2,8 +2,10 @@
 
 
 [[projects]]
+  digest = "1:972f38a9c879a4920d1e3a3d3438104b6c06163bfa3e6f4064adb00468d40587"
   name = "cloud.google.com/go"
   packages = ["compute/metadata"]
+  pruneopts = ""
   revision = "c728a003b238b26cef9ab6753a5dc424b331c3ad"
   version = "v0.27.0"
 
@@ -776,7 +778,7 @@
     "google",
     "internal",
     "jws",
-    "jwt"
+    "jwt",
   ]
   pruneopts = ""
   revision = "dfbc86644130ce8e95021c2c5b424bf5d76274a7"
@@ -1050,7 +1052,7 @@
     "util/flowcontrol",
     "util/homedir",
     "util/integer",
-    "util/jsonpath"
+    "util/jsonpath",
   ]
   pruneopts = ""
   revision = "23781f4d6632d88e869066eaebb743857aa1ef9b"
@@ -1121,6 +1123,7 @@
     "k8s.io/client-go/kubernetes/fake",
     "k8s.io/client-go/kubernetes/typed/apps/v1beta2",
     "k8s.io/client-go/kubernetes/typed/core/v1",
+    "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/client-go/plugin/pkg/client/auth/oidc",
     "k8s.io/client-go/tools/clientcmd",
   ]
