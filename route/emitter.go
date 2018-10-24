@@ -49,7 +49,7 @@ func (e *Emitter) Start() {
 func (e *Emitter) emit(batch []*eirini.Routes) {
 	for _, route := range batch {
 		if len(route.Routes) != 0 {
-			err := e.publish(registerSubject, route, false)
+			err := e.publish(registerSubject, route)
 			if err != nil {
 				fmt.Println("failed to publish registered route:", err.Error())
 			}
@@ -62,14 +62,13 @@ func (e *Emitter) emit(batch []*eirini.Routes) {
 }
 
 func (e *Emitter) unregisterRoute(route *eirini.Routes) {
-	err := e.publish(unregisterSubject, route, true)
+	err := e.publish(unregisterSubject, route)
 	if err != nil {
 		fmt.Println("failed to publish unregistered route:", err.Error())
 	}
 }
 
-func (e *Emitter) publish(subject string, route *eirini.Routes, unregister bool) error {
-
+func (e *Emitter) publish(subject string, route *eirini.Routes) error {
 	message := RegistryMessage{
 		Host:    route.ServiceAddress,
 		Port:    route.ServicePort,
@@ -78,7 +77,7 @@ func (e *Emitter) publish(subject string, route *eirini.Routes, unregister bool)
 		App:     route.Name,
 	}
 
-	if unregister {
+	if subject == unregisterSubject {
 		message.URIs = route.UnregisteredRoutes
 	}
 

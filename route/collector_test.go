@@ -24,11 +24,7 @@ var _ = Describe("Collector", func() {
 		err              error
 	)
 
-	const (
-		appName  = "dora"
-		httpPort = 80
-		tlsPort  = 443
-	)
+	const appName = "dora"
 
 	BeforeEach(func() {
 		registeredRoutes = []string{"route1.app.com", "route2.app.com"}

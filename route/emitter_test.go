@@ -25,9 +25,6 @@ var _ = Describe("Emitter", func() {
 	)
 
 	const (
-		kubeEndpoint      = "example.com/kube"
-		httpPort          = 80
-		tlsPort           = 443
 		registerSubject   = "router.register"
 		unregisterSubject = "router.unregister"
 	)
@@ -154,14 +151,6 @@ var _ = Describe("Emitter", func() {
 	})
 
 	Context("When the publisher returns an error", func() {
-		BeforeEach(func() {
-			publisher.PublishReturns(errors.New("Failed to publish message"))
-		})
-
-		assertInteractionsWithFakes()
-	})
-
-	Context("When not using an ingress", func() {
 		BeforeEach(func() {
 			publisher.PublishReturns(errors.New("Failed to publish message"))
 		})
