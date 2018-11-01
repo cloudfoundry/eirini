@@ -5,42 +5,44 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
+	"io/ioutil"
 )
 
 type InMemoryStore struct {
-	data map[string]*bytes.Buffer
+	data map[string][]byte
 }
 
 func NewInMemoryStore() *InMemoryStore {
 	return &InMemoryStore{
-		data: make(map[string]*bytes.Buffer),
+		data: make(map[string][]byte),
 	}
 }
 
-func (s *InMemoryStore) Put(buf io.Reader) (id string, size int64, err error) {
-	sum := sha256.New()
-	stored := &bytes.Buffer{}
-	if size, err = io.Copy(io.MultiWriter(sum, stored), buf); err != nil {
+func (s *InMemoryStore) Put(buf io.Reader) (string, int64, error) {
+	data, err := ioutil.ReadAll(buf)
+	if err != nil {
+		return "", 0, err
+	}
+	id, size, err := getSha256(data)
+	if err != nil {
 		return "", 0, err
 	}
 
-	id = "sha256:" + hex.EncodeToString(sum.Sum(nil))
-	s.data[id] = stored
+	s.data[id] = data
 
 	return id, size, nil
 }
 
-func (s *InMemoryStore) PutWithID(guid string, buf io.Reader) (id string, size int64, err error) {
-	sum := sha256.New()
-	stored := &bytes.Buffer{}
-	if size, err = io.Copy(io.MultiWriter(sum, stored), buf); err != nil {
+func getSha256(data []byte) (string, int64, error) {
+	sha := sha256.New()
+	size, err := sha.Write(data)
+	if err != nil {
 		return "", 0, err
 	}
 
-	id = "sha256:" + hex.EncodeToString(sum.Sum(nil))
-	s.data[guid] = stored
+	id := "sha256:" + hex.EncodeToString(sha.Sum([]byte{}))
 
-	return id, size, nil
+	return id, int64(size), nil
 }
 
 func (s *InMemoryStore) Has(digest string) bool {
@@ -49,6 +51,9 @@ func (s *InMemoryStore) Has(digest string) bool {
 }
 
 func (s *InMemoryStore) Get(digest string, w io.Writer) error {
-	_, err := io.Copy(w, s.data[digest])
+	if _, ok := s.data[digest]; !ok {
+		return nil
+	}
+	_, err := io.Copy(w, bytes.NewBuffer(s.data[digest]))
 	return err
 }
