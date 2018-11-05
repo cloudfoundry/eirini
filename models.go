@@ -72,15 +72,6 @@ type Properties struct {
 //go:generate counterfeiter . RemoveCallbackFunc
 type RemoveCallbackFunc func(string) error
 
-type Routes struct {
-	ServiceAddress     string
-	ServicePort        uint32
-	ServiceTLSPort     uint32
-	Routes             []string
-	UnregisteredRoutes []string
-	Name               string
-}
-
 //go:generate counterfeiter . Stager
 type Stager interface {
 	Stage(string, cc_messages.StagingRequestFromCC) error //stage

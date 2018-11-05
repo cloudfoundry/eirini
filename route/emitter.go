@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"code.cloudfoundry.org/eirini"
 	nats "github.com/nats-io/go-nats"
 )
 
@@ -28,10 +27,10 @@ func (p *NATSPublisher) Publish(subj string, data []byte) error {
 type Emitter struct {
 	publisher Publisher
 	scheduler TaskScheduler
-	work      <-chan []*eirini.Routes
+	work      <-chan *Message
 }
 
-func NewEmitter(publisher Publisher, workChannel chan []*eirini.Routes, scheduler TaskScheduler) *Emitter {
+func NewEmitter(publisher Publisher, workChannel <-chan *Message, scheduler TaskScheduler) *Emitter {
 	return &Emitter{
 		publisher: publisher,
 		scheduler: scheduler,
@@ -46,33 +45,37 @@ func (e *Emitter) Start() {
 	})
 }
 
-func (e *Emitter) emit(batch []*eirini.Routes) {
-	for _, route := range batch {
-		if len(route.Routes) != 0 {
-			err := e.publish(registerSubject, route)
-			if err != nil {
-				fmt.Println("failed to publish registered route:", err.Error())
-			}
-		}
-
-		if len(route.UnregisteredRoutes) != 0 {
-			e.unregisterRoute(route)
-		}
-	}
+func (e *Emitter) emit(route *Message) {
+	e.registerRoutes(route)
+	e.unregisterRoutes(route)
 }
 
-func (e *Emitter) unregisterRoute(route *eirini.Routes) {
+func (e *Emitter) registerRoutes(route *Message) {
+	if len(route.Routes) == 0 {
+		return
+	}
+
+	err := e.publish(registerSubject, route)
+	if err != nil {
+		fmt.Println("failed to publish registered route:", err.Error())
+	}
+}
+func (e *Emitter) unregisterRoutes(route *Message) {
+	if len(route.UnregisteredRoutes) == 0 {
+		return
+	}
+
 	err := e.publish(unregisterSubject, route)
 	if err != nil {
 		fmt.Println("failed to publish unregistered route:", err.Error())
 	}
 }
 
-func (e *Emitter) publish(subject string, route *eirini.Routes) error {
+func (e *Emitter) publish(subject string, route *Message) error {
 	message := RegistryMessage{
-		Host:    route.ServiceAddress,
-		Port:    route.ServicePort,
-		TLSPort: route.ServiceTLSPort,
+		Host:    route.Address,
+		Port:    route.Port,
+		TLSPort: route.TLSPort,
 		URIs:    route.Routes,
 		App:     route.Name,
 	}

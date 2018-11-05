@@ -13,9 +13,11 @@ import (
 	"k8s.io/api/apps/v1beta2"
 	"k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+	testcore "k8s.io/client-go/testing"
 )
 
 const (
@@ -28,8 +30,7 @@ var _ = Describe("Statefulset", func() {
 	var (
 		err                   error
 		client                kubernetes.Interface
-		statefulSetManager    InstanceManager
-		serviceManager        *k8sfakes.FakeServiceManager
+		statefulSetDesirer    opi.Desirer
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
 		readinessProbeCreator *k8sfakes.FakeProbeCreator
 		lrps                  []*opi.LRP
@@ -55,7 +56,7 @@ var _ = Describe("Statefulset", func() {
 	})
 
 	JustBeforeEach(func() {
-		statefulSetManager = &StatefulSetManager{
+		statefulSetDesirer = &StatefulSetDesirer{
 			Client:                client,
 			Namespace:             namespace,
 			ServiceManager:        serviceManager,
@@ -71,7 +72,7 @@ var _ = Describe("Statefulset", func() {
 			livenessProbeCreator.Returns(&v1.Probe{})
 			readinessProbeCreator.Returns(&v1.Probe{})
 			lrp = createLRP("Baldur", "1234.5", "my.example.route")
-			err = statefulSetManager.Create(lrp)
+			err = statefulSetDesirer.Desire(lrp)
 		})
 
 		It("should not fail", func() {
@@ -85,11 +86,11 @@ var _ = Describe("Statefulset", func() {
 			Expect(statefulSet).To(Equal(toStatefulSet(lrp)))
 		})
 
-		It("creates a healthcheck probe", func() {
+		It("should create a healthcheck probe", func() {
 			Expect(livenessProbeCreator.CallCount()).To(Equal(1))
 		})
 
-		It("creates a readiness probe", func() {
+		It("should create a readiness probe", func() {
 			Expect(readinessProbeCreator.CallCount()).To(Equal(1))
 		})
 
@@ -139,7 +140,7 @@ var _ = Describe("Statefulset", func() {
 		})
 
 		JustBeforeEach(func() {
-			lrp, err = statefulSetManager.Get("odin")
+			lrp, err = statefulSetDesirer.Get("odin")
 		})
 
 		It("should not fail", func() {
@@ -152,58 +153,13 @@ var _ = Describe("Statefulset", func() {
 
 		Context("when the app does not exist", func() {
 			JustBeforeEach(func() {
-				lrp, err = statefulSetManager.Get("non-existent")
+				lrp, err = statefulSetDesirer.Get("non-existent")
 			})
 
 			It("should return an error", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-		})
-	})
-
-	Context("When checking if an app exists", func() {
-
-		var (
-			exists  bool
-			appName string
-		)
-
-		JustBeforeEach(func() {
-			exists, err = statefulSetManager.Exists(appName)
-		})
-
-		Context("when the app exists", func() {
-
-			BeforeEach(func() {
-				appName = "baldur"
-				lrp := createLRP(appName, "9012.3", "my.example.route")
-				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp))
-				Expect(createErr).ToNot(HaveOccurred())
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("shold return true", func() {
-				Expect(exists).To(Equal(true))
-			})
-		})
-
-		Context("when the app does not exist", func() {
-
-			BeforeEach(func() {
-				appName = "non-existent"
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("shold return true", func() {
-				Expect(exists).To(Equal(false))
-			})
 		})
 	})
 
@@ -233,7 +189,7 @@ var _ = Describe("Statefulset", func() {
 				})
 
 				JustBeforeEach(func() {
-					err = statefulSetManager.Update(&opi.LRP{
+					err = statefulSetDesirer.Update(&opi.LRP{
 						Name:            appName,
 						TargetInstances: 5,
 						Metadata:        map[string]string{cf.LastUpdated: "123214.2"}})
@@ -259,7 +215,7 @@ var _ = Describe("Statefulset", func() {
 			)
 
 			JustBeforeEach(func() {
-				err = statefulSetManager.Update(&opi.LRP{Name: appName, TargetInstances: 2})
+				err = statefulSetDesirer.Update(&opi.LRP{Name: appName, TargetInstances: 2})
 			})
 
 			It("should return an error", func() {
@@ -273,7 +229,12 @@ var _ = Describe("Statefulset", func() {
 		})
 	})
 
-	Context("List StatefulSets", func() {
+	Context("When listing apps", func() {
+
+		var (
+			actualLRPs []*opi.LRP
+			err        error
+		)
 
 		BeforeEach(func() {
 			for _, l := range lrps {
@@ -282,28 +243,51 @@ var _ = Describe("Statefulset", func() {
 			}
 		})
 
-		It("translates all existing statefulSets to opi.LRPs", func() {
-			actualLRPs, err := statefulSetManager.List()
+		JustBeforeEach(func() {
+			actualLRPs, err = statefulSetDesirer.List()
+		})
+
+		It("should not return an error", func() {
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("translates all existing statefulSets to opi.LRPs", func() {
 			Expect(actualLRPs).To(ConsistOf(lrps))
 		})
 
-		Context("When no statefulSets exist", func() {
+		Context("no statefulSets exist", func() {
 
 			BeforeEach(func() {
 				client = fake.NewSimpleClientset()
 				serviceManager = new(k8sfakes.FakeServiceManager)
 			})
 
-			It("returns an empy list of LRPs", func() {
-				actualLRPs, err := statefulSetManager.List()
+			It("should not return an error", func() {
 				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("returns an empy list of LRPs", func() {
 				Expect(actualLRPs).To(BeEmpty())
 			})
 		})
+
+		Context("fails to list the statefulsets", func() {
+
+			BeforeEach(func() {
+				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, errors.New("boom")
+				}
+				client.(*fake.Clientset).PrependReactor("list", "statefulsets", reaction)
+			})
+
+			It("should return an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+
+		})
 	})
 
-	Context("Delete a statefulSet", func() {
+	Context("Stop an LRP", func() {
 
 		BeforeEach(func() {
 			for _, l := range lrps {
@@ -313,7 +297,7 @@ var _ = Describe("Statefulset", func() {
 		})
 
 		It("deletes the statefulSet", func() {
-			err := statefulSetManager.Delete("odin")
+			err := statefulSetDesirer.Stop("odin")
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(listStatefulSets, timeout).Should(HaveLen(2))
@@ -334,7 +318,7 @@ var _ = Describe("Statefulset", func() {
 			var err error
 
 			JustBeforeEach(func() {
-				err = statefulSetManager.Delete("test-app-where-are-you")
+				err = statefulSetDesirer.Stop("test-app-where-are-you")
 			})
 
 			It("returns an error", func() {

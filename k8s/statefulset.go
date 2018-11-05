@@ -1,8 +1,6 @@
 package k8s
 
 import (
-	"fmt"
-
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"k8s.io/api/apps/v1beta2"
@@ -12,7 +10,7 @@ import (
 	types "k8s.io/client-go/kubernetes/typed/apps/v1beta2"
 )
 
-type StatefulSetManager struct {
+type StatefulSetDesirer struct {
 	Client                kubernetes.Interface
 	Namespace             string
 	ServiceManager        ServiceManager
@@ -23,8 +21,8 @@ type StatefulSetManager struct {
 //go:generate counterfeiter . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *v1.Probe
 
-func NewStatefulSetManager(client kubernetes.Interface, namespace string) InstanceManager {
-	return &StatefulSetManager{
+func NewStatefulSetDesirer(client kubernetes.Interface, namespace string) opi.Desirer {
+	return &StatefulSetDesirer{
 		Client:                client,
 		Namespace:             namespace,
 		ServiceManager:        NewServiceManager(client, namespace, nil),
@@ -33,7 +31,7 @@ func NewStatefulSetManager(client kubernetes.Interface, namespace string) Instan
 	}
 }
 
-func (m *StatefulSetManager) List() ([]*opi.LRP, error) {
+func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 	statefulsets, err := m.statefulSets().List(meta.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -44,7 +42,7 @@ func (m *StatefulSetManager) List() ([]*opi.LRP, error) {
 	return lrps, nil
 }
 
-func (m *StatefulSetManager) Delete(appName string) error {
+func (m *StatefulSetDesirer) Stop(appName string) error {
 	backgroundPropagation := meta.DeletePropagationBackground
 	if err := m.statefulSets().Delete(appName, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation}); err != nil {
 		return err
@@ -52,14 +50,12 @@ func (m *StatefulSetManager) Delete(appName string) error {
 	return m.ServiceManager.DeleteHeadless(appName)
 }
 
-func (m *StatefulSetManager) Create(lrp *opi.LRP) error {
-	if _, err := m.statefulSets().Create(m.toStatefulSet(lrp)); err != nil {
-		return err
-	}
-	return m.ServiceManager.CreateHeadless(lrp)
+func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
+	_, err := m.statefulSets().Create(m.toStatefulSet(lrp))
+	return err
 }
 
-func (m *StatefulSetManager) Update(lrp *opi.LRP) error {
+func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
 	statefulSet, err := m.statefulSets().Get(lrp.Name, meta.GetOptions{})
 	if err != nil {
 		return err
@@ -73,17 +69,7 @@ func (m *StatefulSetManager) Update(lrp *opi.LRP) error {
 	return err
 }
 
-func (m *StatefulSetManager) Exists(appName string) (bool, error) {
-	selector := fmt.Sprintf("name=%s", appName)
-	list, err := m.statefulSets().List(meta.ListOptions{LabelSelector: selector})
-	if err != nil {
-		return false, err
-	}
-
-	return len(list.Items) > 0, nil
-}
-
-func (m *StatefulSetManager) Get(appName string) (*opi.LRP, error) {
+func (m *StatefulSetDesirer) Get(appName string) (*opi.LRP, error) {
 	statefulSet, err := m.statefulSets().Get(appName, meta.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -94,7 +80,7 @@ func (m *StatefulSetManager) Get(appName string) (*opi.LRP, error) {
 	return lrp, nil
 }
 
-func (m *StatefulSetManager) statefulSets() types.StatefulSetInterface {
+func (m *StatefulSetDesirer) statefulSets() types.StatefulSetInterface {
 	return m.Client.AppsV1beta2().StatefulSets(m.Namespace)
 }
 
@@ -121,7 +107,7 @@ func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 	}
 }
 
-func (m *StatefulSetManager) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
+func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	envs := MapToEnvVar(lrp.Env)
 	envs = append(envs, v1.EnvVar{
 		Name: "POD_NAME",

@@ -14,6 +14,7 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/handler"
+	k8sroute "code.cloudfoundry.org/eirini/k8s/route"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/lager"
@@ -45,7 +46,7 @@ func connect(cmd *cobra.Command, args []string) {
 
 	stager := initStager(cfg)
 
-	workChan := make(chan []*eirini.Routes)
+	workChan := make(chan *route.Message)
 	bifrost := initBifrost(cfg, workChan)
 
 	launchRouteEmitter(
@@ -87,7 +88,7 @@ func initStager(cfg *eirini.Config) eirini.Stager {
 	return stager.New(taskDesirer, stagerCfg)
 }
 
-func initBifrost(cfg *eirini.Config, workChan chan []*eirini.Routes) eirini.Bifrost {
+func initBifrost(cfg *eirini.Config, workChan chan *route.Message) eirini.Bifrost {
 	cfClientConfig := &cfclient.Config{
 		SkipSslValidation: cfg.Properties.SkipSslValidation,
 		Username:          cfg.Properties.CfUsername,
@@ -110,7 +111,7 @@ func initBifrost(cfg *eirini.Config, workChan chan []*eirini.Routes) eirini.Bifr
 	kubeNamespace := cfg.Properties.KubeNamespace
 
 	clientset := createKubeClient(cfg)
-	desirer := k8s.NewDesirer(kubeNamespace, clientset, k8s.UseStatefulSets, cfg.Properties.UseIngress, workChan)
+	desirer := k8s.NewStatefulSetDesirer(clientset, kubeNamespace)
 
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
@@ -149,7 +150,7 @@ func initConnect() {
 	connectCmd.Flags().StringP("config", "c", "", "Path to the erini config file")
 }
 
-func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP string, workChan chan []*eirini.Routes, useIngress bool) {
+func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP string, workChan chan *route.Message, useIngress bool) {
 	nc, err := nats.Connect(fmt.Sprintf("nats://nats:%s@%s:4222", natsPassword, natsIP))
 	exitWithError(err)
 
@@ -158,18 +159,15 @@ func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP 
 
 	clientset, err := kubernetes.NewForConfig(config)
 	exitWithError(err)
-	lister := k8s.NewServiceRouteLister(clientset, namespace, useIngress, kubeEndpoint)
 
-	rc := route.Collector{
-		RouteLister: lister,
-		Work:        workChan,
-		Scheduler:   &route.TickerTaskScheduler{Ticker: time.NewTicker(time.Second * 15)},
-	}
-
+	syncPeriod := 10 * time.Second
+	instanceInformer := k8sroute.NewInstanceChangeInformer(clientset, syncPeriod, namespace)
+	uriInformer := k8sroute.NewURIChangeInformer(clientset, syncPeriod, namespace)
 	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{})
 
 	go re.Start()
-	go rc.Start()
+	go instanceInformer.Start(workChan)
+	go uriInformer.Start(workChan)
 }
 
 func getStagerImage(cfg *eirini.Config) string {
