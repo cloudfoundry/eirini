@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"k8s.io/api/apps/v1beta2"
@@ -13,7 +14,6 @@ import (
 type StatefulSetDesirer struct {
 	Client                kubernetes.Interface
 	Namespace             string
-	ServiceManager        ServiceManager
 	LivenessProbeCreator  ProbeCreator
 	ReadinessProbeCreator ProbeCreator
 }
@@ -25,7 +25,6 @@ func NewStatefulSetDesirer(client kubernetes.Interface, namespace string) opi.De
 	return &StatefulSetDesirer{
 		Client:                client,
 		Namespace:             namespace,
-		ServiceManager:        NewServiceManager(client, namespace, nil),
 		LivenessProbeCreator:  CreateLivenessProbe,
 		ReadinessProbeCreator: CreateReadinessProbe,
 	}
@@ -44,10 +43,7 @@ func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 
 func (m *StatefulSetDesirer) Stop(appName string) error {
 	backgroundPropagation := meta.DeletePropagationBackground
-	if err := m.statefulSets().Delete(appName, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation}); err != nil {
-		return err
-	}
-	return m.ServiceManager.DeleteHeadless(appName)
+	return m.statefulSets().Delete(appName, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
 }
 
 func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
@@ -100,9 +96,10 @@ func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 		Command:          s.Spec.Template.Spec.Containers[0].Command,
 		RunningInstances: int(s.Status.ReadyReplicas),
 		Metadata: map[string]string{
-			cf.ProcessGUID: s.Annotations[cf.ProcessGUID],
-			cf.LastUpdated: s.Annotations[cf.LastUpdated],
-			cf.VcapAppUris: s.Annotations[cf.VcapAppUris],
+			cf.ProcessGUID:          s.Annotations[cf.ProcessGUID],
+			cf.LastUpdated:          s.Annotations[cf.LastUpdated],
+			cf.VcapAppUris:          s.Annotations[cf.VcapAppUris],
+			eirini.RegisteredRoutes: s.Annotations[cf.VcapAppUris],
 		},
 	}
 }
@@ -164,6 +161,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	}
 
 	statefulSet.Annotations = lrp.Metadata
+	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
 
 	return statefulSet
 }

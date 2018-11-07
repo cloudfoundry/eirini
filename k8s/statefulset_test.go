@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"code.cloudfoundry.org/eirini"
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -50,7 +51,6 @@ var _ = Describe("Statefulset", func() {
 		}
 
 		client = fake.NewSimpleClientset()
-		serviceManager = new(k8sfakes.FakeServiceManager)
 		livenessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
 	})
@@ -59,7 +59,6 @@ var _ = Describe("Statefulset", func() {
 		statefulSetDesirer = &StatefulSetDesirer{
 			Client:                client,
 			Namespace:             namespace,
-			ServiceManager:        serviceManager,
 			LivenessProbeCreator:  livenessProbeCreator.Spy,
 			ReadinessProbeCreator: readinessProbeCreator.Spy,
 		}
@@ -86,18 +85,12 @@ var _ = Describe("Statefulset", func() {
 			Expect(statefulSet).To(Equal(toStatefulSet(lrp)))
 		})
 
-		It("should create a healthcheck probe", func() {
+		It("should creates a healthcheck probe", func() {
 			Expect(livenessProbeCreator.CallCount()).To(Equal(1))
 		})
 
-		It("should create a readiness probe", func() {
+		It("should creates a readiness probe", func() {
 			Expect(readinessProbeCreator.CallCount()).To(Equal(1))
-		})
-
-		It("should create a headless service", func() {
-			Expect(serviceManager.CreateHeadlessCallCount()).To(Equal(1))
-			headlessLRP := serviceManager.CreateHeadlessArgsForCall(0)
-			Expect(headlessLRP).To(Equal(lrp))
 		})
 
 		Context("When redeploying an existing LRP", func() {
@@ -105,21 +98,6 @@ var _ = Describe("Statefulset", func() {
 				lrp = createLRP("Baldur", "1234.5", "my.example.route")
 				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp))
 				Expect(createErr).ToNot(HaveOccurred())
-			})
-
-			It("should fail", func() {
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should not create headless service", func() {
-				Expect(serviceManager.CreateHeadlessCallCount()).To(Equal(0))
-			})
-		})
-
-		Context("When fails to create a headless service", func() {
-
-			BeforeEach(func() {
-				serviceManager.CreateHeadlessReturns(errors.New("oopsie"))
 			})
 
 			It("should fail", func() {
@@ -259,7 +237,6 @@ var _ = Describe("Statefulset", func() {
 
 			BeforeEach(func() {
 				client = fake.NewSimpleClientset()
-				serviceManager = new(k8sfakes.FakeServiceManager)
 			})
 
 			It("should not return an error", func() {
@@ -304,15 +281,6 @@ var _ = Describe("Statefulset", func() {
 			Expect(getStatefulSetNames(listStatefulSets())).To(ConsistOf("mimir", "thor"))
 		})
 
-		It("deletes the associated headless service", func() {
-			err := statefulSetManager.Delete("odin")
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(serviceManager.DeleteHeadlessCallCount()).To(Equal(1))
-			appName := serviceManager.DeleteHeadlessArgsForCall(0)
-			Expect(appName).To(Equal("odin"))
-		})
-
 		Context("when the statefulSet does not exist", func() {
 
 			var err error
@@ -322,23 +290,6 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			It("returns an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("does not delete a headless service", func() {
-				Expect(serviceManager.DeleteHeadlessCallCount()).To(Equal(0))
-			})
-
-		})
-
-		Context("when the headless service cannot be deleted", func() {
-
-			BeforeEach(func() {
-				serviceManager.DeleteHeadlessReturns(errors.New("oopsie"))
-			})
-
-			It("returns an error", func() {
-				err := statefulSetManager.Delete("test-app-where-are-you")
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -410,6 +361,7 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	}
 
 	statefulSet.Annotations = lrp.Metadata
+	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
 
 	return statefulSet
 }
