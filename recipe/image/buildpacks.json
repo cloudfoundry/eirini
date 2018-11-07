@@ -1,7 +1,7 @@
 [
   {
     "name": "staticfile_buildpack",
-    "uri": "https://github.com/SUSE/cf-staticfile-buildpack/releases/download/v1.4.20/staticfile-buildpack-v1.4.20.zip"
+    "uri": "https://github.com/SUSE/cf-staticfile-buildpack/archive/v1.4.20.zip"
   },
   {
     "name": "java_buildpack",
@@ -9,23 +9,23 @@
   },
   {
     "name": "ruby_buildpack",
-    "uri": "https://github.com/SUSE/cf-ruby-buildpack/releases/download/v1.7.18.2/ruby-buildpack-v1.7.18.2.zip"
+    "uri": "https://github.com/SUSE/cf-ruby-buildpack/archive/v1.7.18.2.zip"
   },
   {
     "name": "nodejs_buildpack",
-    "uri": "https://github.com/SUSE/cf-nodejs-buildpack/releases/download/v1.6.12/nodejs-buildpack-v1.6.12.zip"
+    "uri": "https://github.com/SUSE/cf-nodejs-buildpack/archive/v1.6.12.zip"
   },
   {
     "name": "go_buildpack",
-    "uri": "https://github.com/SUSE/cf-go-buildpack/releases/download/v1.8.22.1/go-buildpack-v1.8.22.1.zip"
+    "uri": "https://github.com/SUSE/cf-go-buildpack/archive/v1.8.22.1.zip"
   },
   {
     "name": "python_buildpack",
-    "uri": "https://github.com/SUSE/cf-python-buildpack/releases/download/v1.6.4/python-buildpack-v1.6.4.zip"
+    "uri": "https://github.com/SUSE/cf-python-buildpack/archive/v1.6.4.zip"
   },
   {
     "name": "php_buildpack",
-    "uri": "https://github.com/SUSE/cf-php-buildpack/releases/download/v4.3.53.1/php-buildpack-v4.3.53.1.zip"
+    "uri": "https://github.com/SUSE/cf-php-buildpack/archive/v4.3.53.1.zip"
   },
   {
     "name": "dotnet_core_buildpack",
@@ -33,6 +33,6 @@
   },
   {
     "name": "binary_buildpack",
-    "uri": "https://github.com/SUSE/cf-binary-buildpack/releases/download/v1.0.15/binary-buildpack-v1.0.15.zip"
+    "uri": "https://github.com/SUSE/cf-binary-buildpack/archive/v1.0.15.zip"
   }
 ]
