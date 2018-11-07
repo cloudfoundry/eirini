@@ -102,7 +102,7 @@ func (c *InstanceChangeInformer) getOwner(pod *v1.Pod) (*apps.StatefulSet, error
 	}
 
 	ownerName := ownerReferences[0].Name
-	return c.Client.Apps().StatefulSets(c.Namespace).Get(ownerName, meta.GetOptions{})
+	return c.Client.AppsV1().StatefulSets(c.Namespace).Get(ownerName, meta.GetOptions{})
 }
 
 func newRoutes(pod *v1.Pod) *route.Message {

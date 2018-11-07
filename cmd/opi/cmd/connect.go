@@ -46,17 +46,13 @@ func connect(cmd *cobra.Command, args []string) {
 
 	stager := initStager(cfg)
 
-	workChan := make(chan *route.Message)
-	bifrost := initBifrost(cfg, workChan)
+	bifrost := initBifrost(cfg)
 
 	launchRouteEmitter(
 		cfg.Properties.KubeConfig,
-		cfg.Properties.KubeEndpoint,
 		cfg.Properties.KubeNamespace,
 		cfg.Properties.NatsPassword,
 		cfg.Properties.NatsIP,
-		workChan,
-		cfg.Properties.UseIngress,
 	)
 
 	handlerLogger := lager.NewLogger("handler")
@@ -88,7 +84,7 @@ func initStager(cfg *eirini.Config) eirini.Stager {
 	return stager.New(taskDesirer, stagerCfg)
 }
 
-func initBifrost(cfg *eirini.Config, workChan chan *route.Message) eirini.Bifrost {
+func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	cfClientConfig := &cfclient.Config{
 		SkipSslValidation: cfg.Properties.SkipSslValidation,
 		Username:          cfg.Properties.CfUsername,
@@ -150,7 +146,7 @@ func initConnect() {
 	connectCmd.Flags().StringP("config", "c", "", "Path to the erini config file")
 }
 
-func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP string, workChan chan *route.Message, useIngress bool) {
+func launchRouteEmitter(kubeConf, namespace, natsPassword, natsIP string) {
 	nc, err := nats.Connect(fmt.Sprintf("nats://nats:%s@%s:4222", natsPassword, natsIP))
 	exitWithError(err)
 
@@ -161,6 +157,8 @@ func launchRouteEmitter(kubeConf, kubeEndpoint, namespace, natsPassword, natsIP 
 	exitWithError(err)
 
 	syncPeriod := 10 * time.Second
+	workChan := make(chan *route.Message)
+
 	instanceInformer := k8sroute.NewInstanceChangeInformer(clientset, syncPeriod, namespace)
 	uriInformer := k8sroute.NewURIChangeInformer(clientset, syncPeriod, namespace)
 	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{})

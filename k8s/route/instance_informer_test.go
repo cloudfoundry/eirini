@@ -97,7 +97,8 @@ var _ = Describe("InstanceChangeInformer", func() {
 				},
 			},
 		}
-		client.Apps().StatefulSets(namespace).Create(st)
+		_, err := client.AppsV1().StatefulSets(namespace).Create(st)
+		Expect(err).ToNot(HaveOccurred())
 
 		podWatcher.Add(pod0)
 		podWatcher.Add(pod1)

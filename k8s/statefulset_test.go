@@ -216,8 +216,8 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			for _, l := range lrps {
-				_, err := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l))
-				Expect(err).ToNot(HaveOccurred())
+				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l))
+				Expect(createErr).ToNot(HaveOccurred())
 			}
 		})
 

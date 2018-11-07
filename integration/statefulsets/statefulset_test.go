@@ -1,6 +1,6 @@
-package integration_test
-
 // +build integration
+
+package integration_test
 
 import (
 	"code.cloudfoundry.org/eirini"
@@ -18,9 +18,9 @@ import (
 var _ = Describe("StatefulSet Manager", func() {
 
 	var (
-		instanceManager k8s.InstanceManager
-		lrp             *opi.LRP
-		err             error
+		desirer opi.Desirer
+		lrp     *opi.LRP
+		err     error
 	)
 
 	BeforeEach(func() {
@@ -46,17 +46,16 @@ var _ = Describe("StatefulSet Manager", func() {
 	})
 
 	JustBeforeEach(func() {
-		instanceManager = k8s.NewInstanceManager(
+		desirer = k8s.NewStatefulSetDesirer(
 			clientset,
 			namespace,
-			k8s.UseStatefulSets,
 		)
 	})
 
 	Context("When creating a StatefulSet", func() {
 
 		JustBeforeEach(func() {
-			err = instanceManager.Create(lrp)
+			err = desirer.Desire(lrp)
 		})
 
 		It("should not fail", func() {
@@ -90,9 +89,9 @@ var _ = Describe("StatefulSet Manager", func() {
 	Context("When deleting a LRP", func() {
 
 		JustBeforeEach(func() {
-			err = instanceManager.Create(lrp)
+			err = desirer.Desire(lrp)
 			Expect(err).ToNot(HaveOccurred())
-			err = instanceManager.Delete("odin")
+			err = desirer.Stop("odin")
 		})
 
 		It("should not fail", func() {
@@ -115,13 +114,13 @@ var _ = Describe("StatefulSet Manager", func() {
 	Context("When getting an app", func() {
 
 		JustBeforeEach(func() {
-			err = instanceManager.Create(lrp)
+			err = desirer.Desire(lrp)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("correctly reports the running instances", func() {
 			Eventually(func() int {
-				l, e := instanceManager.Get("odin")
+				l, e := desirer.Get("odin")
 				Expect(e).ToNot(HaveOccurred())
 				return l.RunningInstances
 			}, timeout).Should(Equal(2))
@@ -146,7 +145,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 			It("correctly reports the running instances", func() {
 				Eventually(func() int {
-					lrp, err := instanceManager.Get("odin")
+					lrp, err := desirer.Get("odin")
 					Expect(err).ToNot(HaveOccurred())
 					return lrp.RunningInstances
 				}, timeout).Should(Equal(1))
