@@ -39,7 +39,8 @@ var _ = Describe("Emitter", func() {
 				"port": 8080,
 				"tls_port": 8443,
 				"uris": ["%s"],
-				"app": "app1"
+				"app": "app1",
+				"private_instance_id": "instance-id"
 			}`, route)))
 	}
 
@@ -53,6 +54,7 @@ var _ = Describe("Emitter", func() {
 			Routes:             []string{"route1.my.app.com"},
 			UnregisteredRoutes: []string{"removed.route1.my.app.com"},
 			Name:               "app1",
+			InstanceID:         "instance-id",
 			Address:            "203.0.113.2",
 			Port:               8080,
 			TLSPort:            8443,

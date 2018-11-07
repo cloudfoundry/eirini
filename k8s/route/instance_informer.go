@@ -32,7 +32,6 @@ func NewInstanceChangeInformer(client kubernetes.Interface, syncPeriod time.Dura
 		Cancel:     make(<-chan struct{}),
 		Logger:     lager.NewLogger("instance-change-informer"),
 	}
-
 }
 
 func (c *InstanceChangeInformer) Start(work chan<- *route.Message) {

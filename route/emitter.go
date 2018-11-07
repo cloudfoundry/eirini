@@ -73,11 +73,12 @@ func (e *Emitter) unregisterRoutes(route *Message) {
 
 func (e *Emitter) publish(subject string, route *Message) error {
 	message := RegistryMessage{
-		Host:    route.Address,
-		Port:    route.Port,
-		TLSPort: route.TLSPort,
-		URIs:    route.Routes,
-		App:     route.Name,
+		Host:              route.Address,
+		Port:              route.Port,
+		TLSPort:           route.TLSPort,
+		URIs:              route.Routes,
+		App:               route.Name,
+		PrivateInstanceID: route.InstanceID,
 	}
 
 	if subject == unregisterSubject {
