@@ -135,7 +135,7 @@ var _ = Describe("Emitter", func() {
 			task := scheduler.ScheduleArgsForCall(0)
 			workChannel <- routes
 
-			Expect(func() { task() }).To(Panic())
+			Expect(func() { _ = task() }).To(Panic())
 			Expect(publisher.PublishCallCount()).To(Equal(0))
 		})
 	})
