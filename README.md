@@ -39,19 +39,9 @@ Eirini has the following components, the first two are available as subcommands 
  
 # Tell me more 'bout OPI
 
-The really great thing about Diego is the high level abstractions above the
-level of containers and pods. Specifically, these are LRPs and Tasks. Actually,
-LRPs and Tasks are most of what you need to build both a PaaS and quite a lot
-of other things. And they're cross-cutting concepts that map nicely to all
-current orchestrators (for example to LRPs/Tasks directly in Diego, to
-Deployments/One-Off Tasks in Kube, and to Services and Containers in Swarm).
+The really great thing about Diego is the high level abstractions above the level of containers and pods. Specifically, these are LRPs and Tasks. Actually, LRPs and Tasks are most of what you need to build both a PaaS and quite a lot of other things. And they're cross-cutting concepts that map nicely to all current orchestrators (for example to LRPs/Tasks directly in Diego, to Deployments/One-Off Tasks in Kube, and to Services and Containers in Swarm).
 
-One of the great things about Bosh is the CPI abstraction that lets it work on
-any IaaS. But so far Cloud Foundry has been tightly coupled to one specific
-Orchestrator (Diego). This was fine for fast iteration, but now orchestration is
-increasingly commodotised it makes a lot of sense to abstract ourselves away
-from the details of scheduling so an operator can use whatever orchestrator he
-or she wants and higher level systems can support all of them for free.
+One of the great things about Bosh is the CPI abstraction that lets it work on any IaaS. But so far Cloud Foundry has been tightly coupled to one specific Orchestrator (Diego). This was fine for fast iteration, but now orchestration is increasingly commodotised it makes a lot of sense to abstract ourselves away from the details of scheduling so an operator can use whatever orchestrator he or she wants and higher level systems can support all of them for free.
 
 OPI uses the LRP/Task abstractions to do that.
 
