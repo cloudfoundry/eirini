@@ -2,6 +2,7 @@ package route
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	nats "github.com/nats-io/go-nats"
@@ -72,6 +73,10 @@ func (e *Emitter) unregisterRoutes(route *Message) {
 }
 
 func (e *Emitter) publish(subject string, route *Message) error {
+	if len(route.Address) == 0 {
+		panic(errors.New("route address missing"))
+	}
+
 	message := RegistryMessage{
 		Host:              route.Address,
 		Port:              route.Port,

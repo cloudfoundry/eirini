@@ -68,58 +68,75 @@ var _ = Describe("Emitter", func() {
 		close(workChannel)
 	})
 
-	JustBeforeEach(func() {
-		task := scheduler.ScheduleArgsForCall(0)
-		workChannel <- routes
-
-		err := task()
-		Expect(err).ToNot(HaveOccurred())
-	})
-
 	Context("When emitter is started", func() {
-		It("should publish the registered routes", func() {
-			assertPublishedRoutes("router.register", "route1.my.app.com", 0)
-		})
-		It("should publish the unregistered routes", func() {
-			assertPublishedRoutes("router.unregister", "removed.route1.my.app.com", 1)
-		})
-	})
 
-	Context("When there are no unregistered routes", func() {
+		JustBeforeEach(func() {
+			task := scheduler.ScheduleArgsForCall(0)
+			workChannel <- routes
 
-		BeforeEach(func() {
-			routes.UnregisteredRoutes = []string{}
-			publishCount = 1
-		})
-
-		It("should only publish the registered routes", func() {
-			assertPublishedRoutes("router.register", "route1.my.app.com", 0)
-		})
-	})
-
-	Context("When there are no registered routes", func() {
-
-		BeforeEach(func() {
-			routes.Routes = []string{}
-			publishCount = 1
-		})
-
-		It("should only publish the unregistered routes", func() {
-			assertPublishedRoutes("router.unregister", "removed.route1.my.app.com", 0)
-		})
-	})
-
-	Context("When the publisher returns an error", func() {
-
-		BeforeEach(func() {
-			publisher.PublishReturns(errors.New("Failed to publish message"))
+			err := task()
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should publish the registered routes", func() {
 			assertPublishedRoutes("router.register", "route1.my.app.com", 0)
 		})
+
 		It("should publish the unregistered routes", func() {
 			assertPublishedRoutes("router.unregister", "removed.route1.my.app.com", 1)
+		})
+
+		Context("When there are no unregistered routes", func() {
+
+			BeforeEach(func() {
+				routes.UnregisteredRoutes = []string{}
+				publishCount = 1
+			})
+
+			It("should only publish the registered routes", func() {
+				assertPublishedRoutes("router.register", "route1.my.app.com", 0)
+			})
+		})
+
+		Context("When there are no registered routes", func() {
+
+			BeforeEach(func() {
+				routes.Routes = []string{}
+				publishCount = 1
+			})
+
+			It("should only publish the unregistered routes", func() {
+				assertPublishedRoutes("router.unregister", "removed.route1.my.app.com", 0)
+			})
+		})
+
+		Context("When the publisher returns an error", func() {
+
+			BeforeEach(func() {
+				publisher.PublishReturns(errors.New("Failed to publish message"))
+			})
+
+			It("should publish the registered routes", func() {
+				assertPublishedRoutes("router.register", "route1.my.app.com", 0)
+			})
+			It("should publish the unregistered routes", func() {
+				assertPublishedRoutes("router.unregister", "removed.route1.my.app.com", 1)
+			})
+		})
+	})
+
+	Context("When the route message is invalid", func() {
+
+		BeforeEach(func() {
+			routes.Address = ""
+		})
+
+		It("should not publish a route", func() {
+			task := scheduler.ScheduleArgsForCall(0)
+			workChannel <- routes
+
+			Expect(func() { task() }).To(Panic())
+			Expect(publisher.PublishCallCount()).To(Equal(0))
 		})
 	})
 })

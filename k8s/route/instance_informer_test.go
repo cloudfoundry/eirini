@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/eirini/route"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	apps_v1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -102,6 +103,38 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 		podWatcher.Add(pod0)
 		podWatcher.Add(pod1)
+	})
+
+	Context("When a updated pod is missing its IP", func() {
+
+		BeforeEach(func() {
+			pod0 = createPod("mr-stateful-0")
+			pod1 = createPod("mr-stateful-1")
+		})
+
+		JustBeforeEach(func() {
+			pod0.Status = v1.PodStatus{Message: "where my IP at?"}
+			podWatcher.Modify(pod0)
+			pod1.Status = v1.PodStatus{PodIP: "50.60.70.80"}
+			podWatcher.Modify(pod1)
+		})
+
+		It("should not send a route for the pod", func() {
+			Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+				"Name": Equal("mr-stateful-0"),
+			}))))
+		})
+
+		It("should not prevent other routes to be sent", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+				Name:       "mr-stateful-1",
+				Routes:     []string{"mr-stateful.50.60.70.80.nip.io", "mr-bombastic.50.60.70.80.nip.io"},
+				InstanceID: "mr-stateful-1",
+				Address:    "50.60.70.80",
+				Port:       8080,
+				TLSPort:    0,
+			})))
+		})
 	})
 
 	Context("When an ip is assigned to pods", func() {

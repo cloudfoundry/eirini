@@ -60,20 +60,40 @@ func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<-
 		return
 	}
 
-	routes := newRoutes(deletedPod)
+	routes, err := route.NewMessage(
+		deletedPod.Name,
+		deletedPod.Name,
+		deletedPod.Status.PodIP,
+		getContainerPort(deletedPod),
+	)
+	if err != nil {
+		c.logError("failed-to-construct-a-route-message", err, deletedPod)
+		return
+	}
 	routes.UnregisteredRoutes = userDefinedRoutes
 	work <- routes
 }
 
 func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<- *route.Message) {
 	updatedPod := updatedObj.(*v1.Pod)
+
 	userDefinedRoutes, err := c.getUserDefinedRoutes(updatedPod)
 	if err != nil {
 		c.logError("failed-to-get-user-defined-routes", err, updatedPod)
 		return
 	}
 
-	routes := newRoutes(updatedPod)
+	routes, err := route.NewMessage(
+		updatedPod.Name,
+		updatedPod.Name,
+		updatedPod.Status.PodIP,
+		getContainerPort(updatedPod),
+	)
+	if err != nil {
+		c.logError("failed-to-construct-a-route-message", err, updatedPod)
+		return
+	}
+
 	routes.Routes = userDefinedRoutes
 	work <- routes
 }
@@ -103,16 +123,6 @@ func (c *InstanceChangeInformer) getOwner(pod *v1.Pod) (*apps.StatefulSet, error
 
 	ownerName := ownerReferences[0].Name
 	return c.Client.AppsV1().StatefulSets(c.Namespace).Get(ownerName, meta.GetOptions{})
-}
-
-func newRoutes(pod *v1.Pod) *route.Message {
-	return &route.Message{
-		Name:       pod.Name,
-		InstanceID: pod.Name,
-		Address:    pod.Status.PodIP,
-		Port:       getContainerPort(pod),
-		TLSPort:    0,
-	}
 }
 
 func getContainerPort(pod *v1.Pod) uint32 {
