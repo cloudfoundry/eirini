@@ -60,6 +60,7 @@ func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
 	count := int32(lrp.TargetInstances)
 	statefulSet.Spec.Replicas = &count
 	statefulSet.Annotations[cf.LastUpdated] = lrp.Metadata[cf.LastUpdated]
+	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
 
 	_, err = m.statefulSets().Update(statefulSet)
 	return err

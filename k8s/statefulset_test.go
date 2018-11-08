@@ -143,28 +143,29 @@ var _ = Describe("Statefulset", func() {
 
 	Context("When updating an app", func() {
 		Context("when the app exists", func() {
+
+			var (
+				err     error
+				appName string
+			)
+
+			getStatefulSet := func(appName string) *v1beta2.StatefulSet {
+				statefulSet, getErr := client.AppsV1beta2().StatefulSets(namespace).Get(appName, meta.GetOptions{})
+				Expect(getErr).ToNot(HaveOccurred())
+				return statefulSet
+			}
+
+			BeforeEach(func() {
+				appName = "update"
+
+				lrp := createLRP("update", "7653.2", `["my.example.route"]`)
+
+				statefulSet := toStatefulSet(lrp)
+				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(statefulSet)
+				Expect(createErr).NotTo(HaveOccurred())
+			})
+
 			Context("with replica count modified", func() {
-
-				var (
-					err     error
-					appName string
-				)
-
-				getStatefulSet := func(appName string) *v1beta2.StatefulSet {
-					statefulSet, getErr := client.AppsV1beta2().StatefulSets(namespace).Get(appName, meta.GetOptions{})
-					Expect(getErr).ToNot(HaveOccurred())
-					return statefulSet
-				}
-
-				BeforeEach(func() {
-					appName = "update"
-
-					lrp := createLRP("update", "7653.2", "my.example.route")
-
-					statefulSet := toStatefulSet(lrp)
-					_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(statefulSet)
-					Expect(createErr).NotTo(HaveOccurred())
-				})
 
 				JustBeforeEach(func() {
 					err = statefulSetDesirer.Update(&opi.LRP{
@@ -181,6 +182,21 @@ var _ = Describe("Statefulset", func() {
 					Eventually(func() int32 {
 						return *getStatefulSet(appName).Spec.Replicas
 					}, timeout).Should(Equal(int32(5)))
+				})
+			})
+
+			Context("with modified routes", func() {
+
+				JustBeforeEach(func() {
+					err = statefulSetDesirer.Update(&opi.LRP{
+						Name:     appName,
+						Metadata: map[string]string{cf.VcapAppUris: `["my.example.route", "my.second.example.route"]`}})
+				})
+
+				It("should update the stored routes", func() {
+					Eventually(func() string {
+						return getStatefulSet(appName).Annotations[eirini.RegisteredRoutes]
+					}, 1*time.Second).Should(Equal(`["my.example.route", "my.second.example.route"]`))
 				})
 			})
 		})
