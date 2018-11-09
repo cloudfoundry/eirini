@@ -70,6 +70,7 @@ func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<-
 		c.logError("failed-to-construct-a-route-message", err, deletedPod)
 		return
 	}
+
 	routes.UnregisteredRoutes = userDefinedRoutes
 	work <- routes
 }

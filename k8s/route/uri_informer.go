@@ -41,8 +41,11 @@ func (c *URIChangeInformer) Start(work chan<- *route.Message) {
 
 	informer := factory.Apps().V1().StatefulSets().Informer()
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		UpdateFunc: func(oldObj interface{}, updatedObj interface{}) {
+		UpdateFunc: func(oldObj, updatedObj interface{}) {
 			c.onUpdate(oldObj, updatedObj, work)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.onDelete(obj, work)
 		},
 	})
 
@@ -65,9 +68,34 @@ func (c *URIChangeInformer) onUpdate(oldObj, updatedObj interface{}, work chan<-
 
 	removedRoutes := oldSet.Difference(updatedSet)
 
-	pods, err := c.getChildrenPods(updatedStatefulSet)
+	c.sendRoutesForAllPods(
+		work,
+		updatedStatefulSet,
+		toStringSlice(updatedSet),
+		toStringSlice(removedRoutes),
+	)
+}
+
+func (c *URIChangeInformer) onDelete(obj interface{}, work chan<- *route.Message) {
+	deletedStatefulSet := obj.(*apps_v1.StatefulSet)
+	routes, err := decodeRoutes(deletedStatefulSet.Annotations[eirini.RegisteredRoutes])
 	if err != nil {
-		c.logError("failed-to-get-child-pods", err, updatedStatefulSet)
+		c.logError("failed-to-get-routes", err, deletedStatefulSet)
+		return
+	}
+
+	c.sendRoutesForAllPods(
+		work,
+		deletedStatefulSet,
+		[]string{},
+		routes,
+	)
+}
+
+func (c *URIChangeInformer) sendRoutesForAllPods(work chan<- *route.Message, statefulset *apps_v1.StatefulSet, registerRoutes, unregisterRoutes []string) {
+	pods, err := c.getChildrenPods(statefulset)
+	if err != nil {
+		c.logError("failed-to-get-child-pods", err, statefulset)
 		return
 	}
 	for _, pod := range pods {
@@ -78,11 +106,12 @@ func (c *URIChangeInformer) onUpdate(oldObj, updatedObj interface{}, work chan<-
 			getContainerPort(&pod),
 		)
 		if err != nil {
-			c.logPodError("failed-to-construct-a-route-message", err, updatedStatefulSet, &pod)
+			c.logPodError("failed-to-construct-a-route-message", err, statefulset, &pod)
 			return
 		}
-		podRoute.Routes = toStringSlice(updatedSet)
-		podRoute.UnregisteredRoutes = toStringSlice(removedRoutes)
+
+		podRoute.Routes = registerRoutes
+		podRoute.UnregisteredRoutes = unregisterRoutes
 		work <- podRoute
 	}
 }

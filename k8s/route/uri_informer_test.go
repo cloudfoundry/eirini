@@ -217,6 +217,39 @@ var _ = Describe("URIChangeInformer", func() {
 				return logger.LogMessages()
 			}, routeMessageTimeout).Should(ContainElement("test.failed-to-get-child-pods"))
 		})
+	})
+
+	Context("When the app is deleted", func() {
+
+		JustBeforeEach(func() {
+			watcher.Delete(statefulset)
+		})
+
+		It("should unregister all routes for the first pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-0"),
+				"Routes":             BeEmpty(),
+				"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io", "mr-stateful.50.60.70.80.nip.io"),
+				"InstanceID":         Equal("mr-stateful-0"),
+				"Address":            Equal("10.20.30.40"),
+				"Port":               BeNumerically("==", 8080),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+
+		})
+
+		It("should unregister all routes for the second pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-1"),
+				"Routes":             BeEmpty(),
+				"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io", "mr-stateful.50.60.70.80.nip.io"),
+				"InstanceID":         Equal("mr-stateful-1"),
+				"Address":            Equal("50.60.70.80"),
+				"Port":               BeNumerically("==", 8080),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+
+		})
 
 	})
 })
