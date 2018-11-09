@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"k8s.io/client-go/kubernetes"
@@ -132,7 +133,7 @@ func createKubeClient(cfg *eirini.Config) kubernetes.Interface {
 }
 
 func setConfigFromFile(path string) *eirini.Config {
-	fileBytes, err := ioutil.ReadFile(path)
+	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
 	exitWithError(err)
 
 	var Conf eirini.Config

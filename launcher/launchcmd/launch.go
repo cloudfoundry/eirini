@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"syscall"
 )
@@ -41,7 +42,7 @@ func main() {
 
 	args := []string{launcherPath, "/home/vcap/app", command, ""}
 
-	err = syscall.Exec(launcherPath, args, os.Environ())
+	err = syscall.Exec(launcherPath, args, os.Environ()) //#nosec
 	check(err, "execute launcher")
 }
 
@@ -56,7 +57,7 @@ func parsePodIndex() (string, error) {
 }
 
 func readCommand(path string) string {
-	stagingInfo, err := os.Open(path)
+	stagingInfo, err := os.Open(filepath.Clean(path))
 	check(err, "read start command")
 	var info struct {
 		StartCommand string `json:"start_command"`

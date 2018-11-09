@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 )
@@ -25,7 +26,7 @@ func (u *DropletUploader) Upload(path, url string) error {
 }
 
 func (u *DropletUploader) uploadFile(fileLocation, url string) error {
-	sourceFile, err := os.Open(fileLocation)
+	sourceFile, err := os.Open(filepath.Clean(fileLocation))
 	if err != nil {
 		return err
 	}

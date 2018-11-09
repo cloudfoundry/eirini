@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"code.cloudfoundry.org/eirini/blobondemand"
 	"code.cloudfoundry.org/eirini/registry"
@@ -22,7 +23,7 @@ func reg(cmd *cobra.Command, args []string) {
 	path, err := cmd.Flags().GetString("rootfs")
 	exitWithError(err)
 
-	rootfsTar, err := os.Open(path)
+	rootfsTar, err := os.Open(filepath.Clean(path))
 	exitWithError(err)
 
 	rootfsDigest, rootfsSize, err := blobstore.Put(rootfsTar)

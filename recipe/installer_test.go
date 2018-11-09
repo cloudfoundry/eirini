@@ -120,7 +120,7 @@ var _ = Describe("PackageInstaller", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(zipFilePath).Should(BeAnExistingFile())
 
-				file, readErr := ioutil.ReadFile(zipFilePath)
+				file, readErr := ioutil.ReadFile(filepath.Clean(zipFilePath))
 				Expect(readErr).ToNot(HaveOccurred())
 				Expect(string(file)).To(Equal(expectedZipContents))
 			})

@@ -60,7 +60,7 @@ var _ = Describe("Unzip function", func() {
 
 		assertFileContents := func(file string, expectedContent string) {
 			path := filepath.Join(targetDir, file)
-			content, ioErr := ioutil.ReadFile(path)
+			content, ioErr := ioutil.ReadFile(filepath.Clean(path))
 			Expect(ioErr).ToNot(HaveOccurred())
 			Expect(content).To(Equal([]byte(expectedContent)))
 		}

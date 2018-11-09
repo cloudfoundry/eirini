@@ -91,7 +91,7 @@ func createHTTPClient() *http.Client {
 		panic(err)
 	}
 
-	cacert, err := ioutil.ReadFile(cacertLocation)
+	cacert, err := ioutil.ReadFile(filepath.Clean(cacertLocation))
 	if err != nil {
 		panic(err)
 	}

@@ -28,7 +28,7 @@ var _ = Describe("Launch", func() {
 		})
 
 		JustBeforeEach(func() {
-			cmd := exec.Command(launchPath, mockLauncher)
+			cmd := exec.Command(launchPath, mockLauncher) //#nosec
 			cmd.Env = envs
 			session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
@@ -118,7 +118,7 @@ var _ = Describe("Launch", func() {
 		})
 
 		JustBeforeEach(func() {
-			cmd := exec.Command(launchPath)
+			cmd := exec.Command(launchPath) //#nosec
 			cmd.Env = envs
 			session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())

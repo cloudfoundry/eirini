@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"code.cloudfoundry.org/bbs/models"
 	bap "code.cloudfoundry.org/buildpackapplifecycle"
@@ -24,7 +25,7 @@ type IOCommander struct {
 }
 
 func (c *IOCommander) Exec(cmd string, args ...string) error {
-	command := exec.Command(cmd, args...)
+	command := exec.Command(cmd, args...) //#nosec
 	command.Stdout = c.Stdout
 	command.Stderr = c.Stderr
 	command.Stdin = c.Stdin
@@ -148,7 +149,7 @@ func respondWithFailure(failure error, recipeConf Config) {
 }
 
 func getStagingResult(path string) (bap.StagingResult, error) {
-	contents, err := ioutil.ReadFile(path)
+	contents, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return bap.StagingResult{}, errors.Wrap(err, "failed to read result.json")
 	}

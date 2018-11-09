@@ -22,7 +22,7 @@ func (u *Unzipper) Extract(src, targetDir string) error {
 	defer reader.Close()
 
 	for _, file := range reader.File {
-		destPath := filepath.Join(targetDir, file.Name)
+		destPath := filepath.Join(filepath.Clean(targetDir), filepath.Clean(file.Name))
 
 		if file.FileInfo().IsDir() {
 			if err := os.MkdirAll(destPath, file.Mode()); err != nil {

@@ -177,7 +177,10 @@ func writeUpdateErrorResponse(w http.ResponseWriter, err error, statusCode int) 
 		},
 	}
 
-	body, _ := json.Marshal(response)
+	body, marshalError := json.Marshal(response)
+	if marshalError != nil {
+		panic(marshalError)
+	}
 
 	_, err = w.Write(body)
 	return err
