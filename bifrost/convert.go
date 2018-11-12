@@ -89,11 +89,11 @@ func (c *DropletToImageConverter) dropletToImageURI(request cf.DesireLRPRequest,
 		return "", err
 	}
 
-	if err = c.pushToRegistry(vcap, request.DropletGUID, dropletBytes); err != nil {
+	if err = c.pushToRegistry(vcap, request.DropletHash, dropletBytes); err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf("%s/cloudfoundry/app-name:%s", c.registryIP, request.DropletGUID), nil
+	return fmt.Sprintf("%s/cloudfoundry/%s:%s", c.registryIP, request.DropletGUID, request.DropletHash), nil
 }
 
 func (c *DropletToImageConverter) pushToRegistry(vcap cf.VcapApp, dropletGUID string, dropletBytes []byte) error {

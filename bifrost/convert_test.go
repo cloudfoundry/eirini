@@ -148,7 +148,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				})
 
 				It("should convert droplet apps via the special registry URL", func() {
-					Expect(lrp.Image).To(Equal("eirini-registry.service.cf.internal/cloudfoundry/app-name:the-droplet-guid"))
+					Expect(lrp.Image).To(Equal("eirini-registry.service.cf.internal/cloudfoundry/the-droplet-guid:the-droplet-hash"))
 				})
 
 				verifyLRPConvertedSuccessfully()
