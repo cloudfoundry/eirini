@@ -32,7 +32,6 @@ func New(target string, options ...Option) (*CredHub, error) {
 	}
 
 	credhub.Auth, err = credhub.authBuilder(credhub)
-
 	if err != nil {
 		return nil, err
 	}

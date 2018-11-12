@@ -1,18 +1,18 @@
 // +build !windows
 
-package dockerfile // import "github.com/docker/docker/builder/dockerfile"
+package dockerfile
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 )
 
-// normalizeWorkdir normalizes a user requested working directory in a
-// platform semantically consistent way.
-func normalizeWorkdir(_ string, current string, requested string) (string, error) {
+// normaliseWorkdir normalises a user requested working directory in a
+// platform sematically consistent way.
+func normaliseWorkdir(current string, requested string) (string, error) {
 	if requested == "" {
-		return "", errors.New("cannot normalize nothing")
+		return "", fmt.Errorf("cannot normalise nothing")
 	}
 	current = filepath.FromSlash(current)
 	requested = filepath.FromSlash(requested)
@@ -20,4 +20,8 @@ func normalizeWorkdir(_ string, current string, requested string) (string, error
 		return filepath.Join(string(os.PathSeparator), current, requested), nil
 	}
 	return requested, nil
+}
+
+func errNotJSON(command, _ string) error {
+	return fmt.Errorf("%s requires the arguments to be in JSON form", command)
 }

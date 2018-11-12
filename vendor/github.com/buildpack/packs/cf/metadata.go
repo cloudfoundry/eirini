@@ -13,7 +13,11 @@ type DropletMetadata struct {
 func (d *DropletMetadata) Buildpacks() []packs.BuildpackMetadata {
 	var out []packs.BuildpackMetadata
 	for _, bp := range d.LifecycleMetadata.Buildpacks {
-		out = append(out, packs.BuildpackMetadata(bp))
+		out = append(out, packs.BuildpackMetadata{
+			Key:     bp.Key,
+			Name:    bp.Name,
+			Version: bp.Version,
+		})
 	}
 	return out
 }

@@ -1,6 +1,6 @@
-// +build !linux
+// +build !linux,!solaris
 
-package cluster // import "github.com/docker/docker/daemon/cluster"
+package cluster
 
 import "net"
 

@@ -10,37 +10,67 @@ import (
 	"code.cloudfoundry.org/cli/api/cloudcontroller"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2/internal"
+	"code.cloudfoundry.org/cli/types"
 )
 
 // Buildpack represents a Cloud Controller Buildpack.
 type Buildpack struct {
-	Enabled  bool   `json:"enabled"`
-	GUID     string `json:"guid,omitempty"`
-	Name     string `json:"name"`
-	Position int    `json:"position,omitempty"`
+	Locked   types.NullBool
+	Enabled  types.NullBool
+	GUID     string
+	Name     string
+	Position types.NullInt
+	Stack    string
+}
+
+func (buildpack Buildpack) MarshalJSON() ([]byte, error) {
+	ccBuildpack := struct {
+		Locked   *bool  `json:"locked,omitempty"`
+		Enabled  *bool  `json:"enabled,omitempty"`
+		Name     string `json:"name"`
+		Position *int   `json:"position,omitempty"`
+		Stack    string `json:"stack,omitempty"`
+	}{
+		Name:  buildpack.Name,
+		Stack: buildpack.Stack,
+	}
+
+	if buildpack.Position.IsSet {
+		ccBuildpack.Position = &buildpack.Position.Value
+	}
+	if buildpack.Enabled.IsSet {
+		ccBuildpack.Enabled = &buildpack.Enabled.Value
+	}
+	if buildpack.Locked.IsSet {
+		ccBuildpack.Locked = &buildpack.Locked.Value
+	}
+
+	return json.Marshal(ccBuildpack)
 }
 
 func (buildpack *Buildpack) UnmarshalJSON(data []byte) error {
 	var alias struct {
-		Metadata struct {
-			GUID string `json:"guid"`
-		} `json:"metadata"`
-		Entity struct {
-			Name     string `json:"name"`
-			Position int    `json:"position"`
-			Enabled  bool   `json:"enabled"`
+		Metadata internal.Metadata `json:"metadata"`
+		Entity   struct {
+			Locked   types.NullBool `json:"locked"`
+			Enabled  types.NullBool `json:"enabled"`
+			Name     string         `json:"name"`
+			Position types.NullInt  `json:"position"`
+			Stack    string         `json:"stack"`
 		} `json:"entity"`
 	}
+
 	err := json.Unmarshal(data, &alias)
 	if err != nil {
 		return err
 	}
 
+	buildpack.Locked = alias.Entity.Locked
 	buildpack.Enabled = alias.Entity.Enabled
 	buildpack.GUID = alias.Metadata.GUID
 	buildpack.Name = alias.Entity.Name
 	buildpack.Position = alias.Entity.Position
-
+	buildpack.Stack = alias.Entity.Stack
 	return nil
 }
 
@@ -58,6 +88,7 @@ func (client *Client) CreateBuildpack(buildpack Buildpack) (Buildpack, Warnings,
 	if err != nil {
 		return Buildpack{}, nil, err
 	}
+
 	var createdBuildpack Buildpack
 	response := cloudcontroller.Response{
 		Result: &createdBuildpack,
@@ -94,7 +125,9 @@ func (client *Client) GetBuildpacks(filters ...Filter) ([]Buildpack, Warnings, e
 	return buildpacks, warnings, err
 }
 
-// UpdateBuildpack updates the buildpack with the provided GUID and returns the updated buildpack.
+// UpdateBuildpack updates the buildpack with the provided GUID and returns the
+// updated buildpack. Note: Stack cannot be updated without uploading a new
+// buildpack.
 func (client *Client) UpdateBuildpack(buildpack Buildpack) (Buildpack, Warnings, error) {
 	body, err := json.Marshal(buildpack)
 	if err != nil {
@@ -256,6 +289,5 @@ func (client *Client) uploadBuildpackAsynchronously(request *cloudcontroller.Req
 			break // for for
 		}
 	}
-
 	return buildpack, response.Warnings, firstError
 }

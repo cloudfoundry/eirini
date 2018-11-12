@@ -1,6 +1,7 @@
 package ccv2_test
 
 import (
+	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
@@ -18,8 +19,74 @@ var _ = Describe("Domain", func() {
 		client = NewTestClient()
 	})
 
+	Describe("CreateSharedDomain", func() {
+		var (
+			domain          string
+			routerGroupGUID string
+		)
+
+		When("no errors are encountered", func() {
+			BeforeEach(func() {
+				response := `{
+											"metadata": {
+												"guid": "43436c2d-2b4f-45c2-9f50-e530e1cedba6",
+												"url": "/v2/shared_domains/43436c2d-2b4f-45c2-9f50-e530e1cedba6",
+												"created_at": "2016-06-08T16:41:37Z",
+												"updated_at": "2016-06-08T16:41:26Z"
+											},
+											"entity": {
+												"name": "example.com",
+												"internal": false,
+												"router_group_guid": "some-guid",
+												"router_group_type": "tcp"
+											}
+										}
+										`
+				domain = "some-domain-name.com"
+				routerGroupGUID = "some-guid"
+				body := fmt.Sprintf(`{"name":"%s","router_group_guid":"%s"}`, domain, routerGroupGUID)
+				server.AppendHandlers(
+					CombineHandlers(
+						VerifyRequest(http.MethodPost, "/v2/shared_domains"),
+						VerifyBody([]byte(body)),
+						RespondWith(http.StatusCreated, response, http.Header{"X-Cf-Warnings": {"warning-1,warning-2"}}),
+					))
+			})
+
+			It("should call the API and return all warnings", func() {
+				warnings, err := client.CreateSharedDomain(domain, routerGroupGUID)
+				Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		When("the API returns an unauthorized error", func() {
+			BeforeEach(func() {
+				response := `{
+											"description": "You are not authorized to perform the requested action",
+											"error_code": "CF-NotAuthorized",
+											"code": 10003
+										}`
+				domain = "some-domain-name.com"
+				body := fmt.Sprintf(`{"name":"%s"}`, domain)
+				server.AppendHandlers(
+					CombineHandlers(
+						VerifyRequest(http.MethodPost, "/v2/shared_domains"),
+						VerifyBody([]byte(body)),
+						RespondWith(http.StatusForbidden, response, http.Header{"X-Cf-Warnings": {"this is your final warning"}}),
+					))
+			})
+
+			It("should return the error and all warnings", func() {
+				warnings, err := client.CreateSharedDomain(domain, "")
+				Expect(warnings).To(ConsistOf("this is your final warning"))
+				Expect(err).To(MatchError(ccerror.ForbiddenError{Message: "You are not authorized to perform the requested action"}))
+			})
+		})
+	})
+
 	Describe("GetSharedDomain", func() {
-		Context("when the shared domain exists", func() {
+		When("the shared domain exists", func() {
 			BeforeEach(func() {
 				response := `{
 						"metadata": {
@@ -54,7 +121,7 @@ var _ = Describe("Domain", func() {
 			})
 		})
 
-		Context("when the shared domain does not exist", func() {
+		When("the shared domain does not exist", func() {
 			BeforeEach(func() {
 				response := `{
 					"code": 130002,
@@ -80,7 +147,7 @@ var _ = Describe("Domain", func() {
 	})
 
 	Describe("GetPrivateDomain", func() {
-		Context("when the private domain exists", func() {
+		When("the private domain exists", func() {
 			BeforeEach(func() {
 				response := `{
 						"metadata": {
@@ -111,7 +178,7 @@ var _ = Describe("Domain", func() {
 			})
 		})
 
-		Context("when the private domain does not exist", func() {
+		When("the private domain does not exist", func() {
 			BeforeEach(func() {
 				response := `{
 					"code": 130002,
@@ -137,7 +204,7 @@ var _ = Describe("Domain", func() {
 	})
 
 	Describe("GetPrivateDomains", func() {
-		Context("when the cloud controller does not return an error", func() {
+		When("the cloud controller does not return an error", func() {
 			BeforeEach(func() {
 				response1 := `{
 					"next_url": "/v2/private_domains?q=name%20IN%20domain-name-1,domain-name-2,domain-name-3,domain-name-4&page=2",
@@ -228,7 +295,7 @@ var _ = Describe("Domain", func() {
 			})
 		})
 
-		Context("when the cloud controller returns an error", func() {
+		When("the cloud controller returns an error", func() {
 			BeforeEach(func() {
 				response := `{
 					"code": 1,
@@ -260,7 +327,7 @@ var _ = Describe("Domain", func() {
 	})
 
 	Describe("GetSharedDomains", func() {
-		Context("when the cloud controller does not return an error", func() {
+		When("the cloud controller does not return an error", func() {
 			BeforeEach(func() {
 				response1 := `{
 					"next_url": "/v2/shared_domains?q=name%20IN%20domain-name-1,domain-name-2,domain-name-3,domain-name-4&page=2",
@@ -367,7 +434,7 @@ var _ = Describe("Domain", func() {
 			})
 		})
 
-		Context("when the cloud controller returns an error", func() {
+		When("the cloud controller returns an error", func() {
 			BeforeEach(func() {
 				response := `{
 					"code": 1,
@@ -399,7 +466,7 @@ var _ = Describe("Domain", func() {
 	})
 
 	Describe("GetOrganizationPrivateDomains", func() {
-		Context("when the cloud controller does not return an error", func() {
+		When("the cloud controller does not return an error", func() {
 			BeforeEach(func() {
 				response1 := `{
 					"next_url": "/v2/organizations/some-org-guid/private_domains?page=2",
@@ -486,7 +553,7 @@ var _ = Describe("Domain", func() {
 			})
 		})
 
-		Context("when the client includes includes query parameters for name", func() {
+		When("the client includes includes query parameters for name", func() {
 			It("it includes the query parameters in the request", func() {
 				server.AppendHandlers(
 					CombineHandlers(
@@ -503,7 +570,7 @@ var _ = Describe("Domain", func() {
 			})
 		})
 
-		Context("when the cloud controller returns an error", func() {
+		When("the cloud controller returns an error", func() {
 			BeforeEach(func() {
 				response := `{
 					   "description": "The organization could not be found: glah",

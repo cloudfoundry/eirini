@@ -1,0 +1,33 @@
+#!/bin/bash
+
+function run_linters {
+    echo "Installing linters"
+    go get -u github.com/alecthomas/gometalinter
+    gometalinter --install
+
+    echo "Running Linters"
+
+    if [ "$1" = "" ]; then
+        go_loggregator_pkg="./..."
+    else
+        go_loggregator_pkg="$1"
+    fi
+
+    gometalinter --vendor \
+      --disable-all "$go_loggregator_pkg" \
+      --skip rpc \
+      --enable "vet" \
+      --enable "deadcode" \
+      --enable "golint" \
+      --enable "maligned" \
+      --enable "structcheck" \
+      --enable "varcheck" \
+      --enable "errcheck" \
+      --enable "ineffassign" \
+      --enable "interfacer" \
+      --enable "megacheck"
+
+    return 0
+}
+
+run_linters "$@"

@@ -107,6 +107,7 @@ Follow these download links for [Mac OS X 64 bit](https://packages.cloudfoundry.
 
 * In Cygwin and Git Bash on Windows, interactive password prompts (in `cf login`) do not work ([issue #171](https://github.com/cloudfoundry/cli/issues/171)). Please use alternative commands (`cf api` and `cf auth` to `cf login`) to work around this.
 * On Windows, `cf ssh` may not display correctly if the `TERM` is not set. We've found that setting `TERM` to `msys` fixes some of these issues.
+* On Windows, `cf ssh` will hang when run from the MINGW32 or MINGW64 shell. A workaround is to use PowerShell instead.
 * CF CLI/GoLang do not use OpenSSL. Custom/Self Signed Certificates need to be [installed in specific locations](https://docs.cloudfoundry.org/cf-cli/self-signed.html) in order to `login`/`auth` without `--skip-ssl-validation`.
 * API tracing to terminal (using `CF_TRACE=true`, `-v` option or `cf config --trace`) doesn't work well with some CLI plugin commands. Trace to file works fine. On Linux, `CF_TRACE=/dev/stdout` works too. See [this Diego-Enabler plugin issue](https://github.com/cloudfoundry-attic/Diego-Enabler/issues/6) for more information.
 * .cfignore used in `cf push` must be in UTF-8 encoding for CLI to interpret correctly.
@@ -122,7 +123,15 @@ If the error remains or feature still missing, check the [open issues](https://g
 
 ## Plugin Development
 
-For development guide on writing a cli plugin, see [here](https://github.com/cloudfoundry/cli/tree/master/plugin/plugin_examples).
+The CF CLI supports external code execution via the plugins API. For more
+information follow:
+
+* [The CF CLI plugin development guide](https://github.com/cloudfoundry/cli/tree/master/plugin/plugin_examples)
+* [The official plugins repository](https://plugins.cloudfoundry.org/)
+
+When importing the plugin code use `import "code.cloudfoundry.org/cli/plugin"`.
+Older plugins that import `github.com/cloudfoundry/cli/plugin` will still work
+as long they vendor the plugins directory.
 
 ## Contributing & Build Instructions
 

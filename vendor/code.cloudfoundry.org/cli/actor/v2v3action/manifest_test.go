@@ -11,6 +11,7 @@ import (
 	. "code.cloudfoundry.org/cli/actor/v2v3action"
 	"code.cloudfoundry.org/cli/actor/v2v3action/v2v3actionfakes"
 	"code.cloudfoundry.org/cli/actor/v3action"
+	"code.cloudfoundry.org/cli/api/cloudcontroller/ccversion"
 	"code.cloudfoundry.org/cli/types"
 	"code.cloudfoundry.org/cli/util/manifest"
 )
@@ -50,7 +51,7 @@ var _ = Describe("Manifest", func() {
 		Expect(appSpaceArg).To(Equal(appSpace))
 	})
 
-	Context("when v2Actor.CreateManifestApplication succeeds", func() {
+	When("v2Actor.CreateManifestApplication succeeds", func() {
 		BeforeEach(func() {
 			v2Application := manifest.Application{
 				Buildpacks: []string{"some-buildpack"},
@@ -59,7 +60,7 @@ var _ = Describe("Manifest", func() {
 			fakeV2Actor.CreateApplicationManifestByNameAndSpaceReturns(v2Application, v2action.Warnings{"v2-action-warnings"}, nil)
 		})
 
-		Context("when the cc returns an invalid semver", func() {
+		When("the cc returns an invalid semver", func() {
 			BeforeEach(func() {
 				fakeV3Actor.CloudControllerAPIVersionReturns("i am invalid")
 			})
@@ -71,9 +72,9 @@ var _ = Describe("Manifest", func() {
 
 		})
 
-		Context("when the cc has a v3 buildpacks endpoint ( >= v3.25)", func() {
+		When("the cc has a v3 buildpacks endpoint ( >= v3.25)", func() {
 			BeforeEach(func() {
-				fakeV3Actor.CloudControllerAPIVersionReturns("3.25.0")
+				fakeV3Actor.CloudControllerAPIVersionReturns(ccversion.MinVersionManifestBuildpacksV3)
 			})
 
 			It("Calls the v3actor.GetApplicationByNameAndSpace with the appName and appSpace", func() {
@@ -83,7 +84,7 @@ var _ = Describe("Manifest", func() {
 				Expect(appSpaceArg).To(Equal(appSpace))
 			})
 
-			Context("when the v3Actor.GetApplicationByNameAndSpace succeeds", func() {
+			When("the v3Actor.GetApplicationByNameAndSpace succeeds", func() {
 				BeforeEach(func() {
 					v3Application := v3action.Application{LifecycleBuildpacks: []string{"some-buildpack"}}
 					fakeV3Actor.GetApplicationByNameAndSpaceReturns(v3Application, v3action.Warnings{"v3-action-warnings"}, nil)
@@ -99,7 +100,7 @@ var _ = Describe("Manifest", func() {
 				})
 			})
 
-			Context("when the v3Actor.GetApplicationByNameAndSpace fails", func() {
+			When("the v3Actor.GetApplicationByNameAndSpace fails", func() {
 				BeforeEach(func() {
 					fakeV3Actor.GetApplicationByNameAndSpaceReturns(v3action.Application{}, v3action.Warnings{"v3-action-warnings"}, errors.New("i'm a v3 error"))
 				})
@@ -111,9 +112,9 @@ var _ = Describe("Manifest", func() {
 			})
 		})
 
-		Context("when the cc does not have a v3 buildpacks endpoint ( < v3.25)", func() {
+		When("the cc does not have a v3 buildpacks endpoint ( < v3.25)", func() {
 			BeforeEach(func() {
-				fakeV3Actor.CloudControllerAPIVersionReturns("3.24.0")
+				fakeV3Actor.CloudControllerAPIVersionReturns(ccversion.MinV3ClientVersion)
 			})
 
 			It("does not call the v3actor.GetApplicationByNameAndSpace", func() {
@@ -131,7 +132,7 @@ var _ = Describe("Manifest", func() {
 		})
 	})
 
-	Context("when v2Actor.CreateManifestApplication fails", func() {
+	When("v2Actor.CreateManifestApplication fails", func() {
 		BeforeEach(func() {
 			fakeV2Actor.CreateApplicationManifestByNameAndSpaceReturns(manifest.Application{}, v2action.Warnings{"v2-action-warnings"}, errors.New("spaghetti"))
 		})

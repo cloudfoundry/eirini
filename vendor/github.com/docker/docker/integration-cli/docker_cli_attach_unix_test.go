@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/integration-cli/checker"
+	"github.com/docker/docker/pkg/integration/checker"
 	"github.com/docker/docker/pkg/stringid"
 	"github.com/go-check/check"
 	"github.com/kr/pty"
@@ -69,10 +69,10 @@ func (s *DockerSuite) TestAttachAfterDetach(c *check.C) {
 	cmd.Stdout = tty
 	cmd.Stderr = tty
 
-	cmdExit := make(chan error)
+	errChan := make(chan error)
 	go func() {
-		cmdExit <- cmd.Run()
-		close(cmdExit)
+		errChan <- cmd.Run()
+		close(errChan)
 	}()
 
 	c.Assert(waitRun(name), check.IsNil)
@@ -82,7 +82,12 @@ func (s *DockerSuite) TestAttachAfterDetach(c *check.C) {
 	cpty.Write([]byte{17})
 
 	select {
-	case <-cmdExit:
+	case err := <-errChan:
+		if err != nil {
+			buff := make([]byte, 200)
+			tty.Read(buff)
+			c.Fatalf("%s: %s", err, buff)
+		}
 	case <-time.After(5 * time.Second):
 		c.Fatal("timeout while detaching")
 	}
@@ -97,7 +102,6 @@ func (s *DockerSuite) TestAttachAfterDetach(c *check.C) {
 
 	err = cmd.Start()
 	c.Assert(err, checker.IsNil)
-	defer cmd.Process.Kill()
 
 	bytes := make([]byte, 10)
 	var nBytes int
@@ -120,7 +124,11 @@ func (s *DockerSuite) TestAttachAfterDetach(c *check.C) {
 		c.Fatal("timeout waiting for attach read")
 	}
 
+	err = cmd.Wait()
+	c.Assert(err, checker.IsNil)
+
 	c.Assert(string(bytes[:nBytes]), checker.Contains, "/ #")
+
 }
 
 // TestAttachDetach checks that attach in tty mode can be detached using the long container ID
@@ -165,7 +173,7 @@ func (s *DockerSuite) TestAttachDetach(c *check.C) {
 	c.Assert(running, checker.Equals, "true", check.Commentf("expected container to still be running"))
 
 	go func() {
-		dockerCmdWithResult("kill", id)
+		dockerCmd(c, "kill", id)
 	}()
 
 	select {
@@ -217,7 +225,7 @@ func (s *DockerSuite) TestAttachDetachTruncatedID(c *check.C) {
 	c.Assert(running, checker.Equals, "true", check.Commentf("expected container to still be running"))
 
 	go func() {
-		dockerCmdWithResult("kill", id)
+		dockerCmd(c, "kill", id)
 	}()
 
 	select {

@@ -30,7 +30,7 @@ func (c Credential) convertToMap() (map[string]interface{}, error) {
 	if ok {
 		result["value"] = c.Value
 	} else {
-		value, ok := c.Value.(map[string]interface{})
+		value, ok := c.Value.(interface{})
 		if !ok {
 			return nil, errors.NewCatchAllError()
 		}

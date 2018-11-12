@@ -15,7 +15,7 @@ var _ = Describe("Port", func() {
 	})
 
 	Describe("UnmarshalFlag", func() {
-		Context("when the empty string is provided", func() {
+		When("the empty string is provided", func() {
 			It("sets IsSet to false", func() {
 				err := port.UnmarshalFlag("")
 				Expect(err).ToNot(HaveOccurred())
@@ -23,9 +23,9 @@ var _ = Describe("Port", func() {
 			})
 		})
 
-		Context("when an invalid integer is provided", func() {
+		When("an invalid integer is provided", func() {
 			It("returns an error", func() {
-				err := port.UnmarshalFlag("abcdef")
+				err := port.IsValidValue("abcdef")
 				Expect(err).To(MatchError(&flags.Error{
 					Type:    flags.ErrRequired,
 					Message: "invalid argument for flag '--port' (expected int > 0)",
@@ -34,9 +34,9 @@ var _ = Describe("Port", func() {
 			})
 		})
 
-		Context("when a negative integer is provided", func() {
+		When("a negative integer is provided", func() {
 			It("returns an error", func() {
-				err := port.UnmarshalFlag("-10")
+				err := port.IsValidValue("-10")
 				Expect(err).To(MatchError(&flags.Error{
 					Type:    flags.ErrRequired,
 					Message: "invalid argument for flag '--port' (expected int > 0)",
@@ -45,9 +45,9 @@ var _ = Describe("Port", func() {
 			})
 		})
 
-		Context("when a valid integer is provided", func() {
+		When("a valid integer is provided", func() {
 			It("stores the integer and sets IsSet to true", func() {
-				err := port.UnmarshalFlag("0")
+				err := port.IsValidValue("0")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(port).To(Equal(Port{NullInt: types.NullInt{Value: 0, IsSet: true}}))
 			})

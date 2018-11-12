@@ -67,7 +67,7 @@ var _ = Describe("install-plugin command", func() {
 			cmd.OptionalArgs.PluginNameOrLocation = "some-path"
 		})
 
-		Context("when the local file does not exist", func() {
+		When("the local file does not exist", func() {
 			BeforeEach(func() {
 				fakeActor.FileExistsReturns(false)
 			})
@@ -75,23 +75,23 @@ var _ = Describe("install-plugin command", func() {
 			It("does not print installation messages and returns a FileNotFoundError", func() {
 				Expect(executeErr).To(MatchError(translatableerror.PluginNotFoundOnDiskOrInAnyRepositoryError{PluginName: "some-path", BinaryName: "faceman"}))
 
-				Expect(testUI.Out).ToNot(Say("Attention: Plugins are binaries written by potentially untrusted authors\\."))
-				Expect(testUI.Out).ToNot(Say("Installing plugin some-path\\.\\.\\."))
+				Expect(testUI.Out).ToNot(Say(`Attention: Plugins are binaries written by potentially untrusted authors\.`))
+				Expect(testUI.Out).ToNot(Say(`Installing plugin some-path\.\.\.`))
 			})
 		})
 
-		Context("when the file exists", func() {
+		When("the file exists", func() {
 			BeforeEach(func() {
 				fakeActor.CreateExecutableCopyReturns("copy-path", nil)
 				fakeActor.FileExistsReturns(true)
 			})
 
-			Context("when the -f argument is given", func() {
+			When("the -f argument is given", func() {
 				BeforeEach(func() {
 					cmd.Force = true
 				})
 
-				Context("when the plugin is invalid", func() {
+				When("the plugin is invalid", func() {
 					var returnedErr error
 
 					BeforeEach(func() {
@@ -106,7 +106,7 @@ var _ = Describe("install-plugin command", func() {
 					})
 				})
 
-				Context("when the plugin is valid but generates an error when fetching metadata", func() {
+				When("the plugin is valid but generates an error when fetching metadata", func() {
 					var wrappedErr error
 
 					BeforeEach(func() {
@@ -121,7 +121,7 @@ var _ = Describe("install-plugin command", func() {
 					})
 				})
 
-				Context("when the plugin is already installed", func() {
+				When("the plugin is already installed", func() {
 					var (
 						plugin    configv3.Plugin
 						newPlugin configv3.Plugin
@@ -147,7 +147,7 @@ var _ = Describe("install-plugin command", func() {
 						fakeConfig.GetPluginCaseInsensitiveReturns(plugin, true)
 					})
 
-					Context("when an error is encountered uninstalling the existing plugin", func() {
+					When("an error is encountered uninstalling the existing plugin", func() {
 						BeforeEach(func() {
 							expectedErr = errors.New("uninstall plugin error")
 							fakeActor.UninstallPluginReturns(expectedErr)
@@ -156,22 +156,22 @@ var _ = Describe("install-plugin command", func() {
 						It("returns the error", func() {
 							Expect(executeErr).To(MatchError(expectedErr))
 
-							Expect(testUI.Out).ToNot(Say("Plugin some-plugin successfully uninstalled\\."))
+							Expect(testUI.Out).ToNot(Say(`Plugin some-plugin successfully uninstalled\.`))
 						})
 					})
 
-					Context("when no errors are encountered uninstalling the existing plugin", func() {
+					When("no errors are encountered uninstalling the existing plugin", func() {
 						It("uninstalls the existing plugin and installs the current plugin", func() {
 							Expect(executeErr).ToNot(HaveOccurred())
 
-							Expect(testUI.Out).To(Say("Attention: Plugins are binaries written by potentially untrusted authors\\."))
-							Expect(testUI.Out).To(Say("Install and use plugins at your own risk\\."))
-							Expect(testUI.Out).To(Say("Plugin some-plugin 1\\.2\\.2 is already installed\\. Uninstalling existing plugin\\.\\.\\."))
+							Expect(testUI.Out).To(Say(`Attention: Plugins are binaries written by potentially untrusted authors\.`))
+							Expect(testUI.Out).To(Say(`Install and use plugins at your own risk\.`))
+							Expect(testUI.Out).To(Say(`Plugin some-plugin 1\.2\.2 is already installed\. Uninstalling existing plugin\.\.\.`))
 							Expect(testUI.Out).To(Say("OK"))
-							Expect(testUI.Out).To(Say("Plugin some-plugin successfully uninstalled\\."))
-							Expect(testUI.Out).To(Say("Installing plugin some-plugin\\.\\.\\."))
+							Expect(testUI.Out).To(Say(`Plugin some-plugin successfully uninstalled\.`))
+							Expect(testUI.Out).To(Say(`Installing plugin some-plugin\.\.\.`))
 							Expect(testUI.Out).To(Say("OK"))
-							Expect(testUI.Out).To(Say("Plugin some-plugin 1\\.2\\.3 successfully installed\\."))
+							Expect(testUI.Out).To(Say(`Plugin some-plugin 1\.2\.3 successfully installed\.`))
 
 							Expect(fakeActor.FileExistsCallCount()).To(Equal(1))
 							Expect(fakeActor.FileExistsArgsForCall(0)).To(Equal("some-path"))
@@ -193,7 +193,7 @@ var _ = Describe("install-plugin command", func() {
 							Expect(installedPlugin).To(Equal(newPlugin))
 						})
 
-						Context("when an error is encountered installing the plugin", func() {
+						When("an error is encountered installing the plugin", func() {
 							BeforeEach(func() {
 								expectedErr = errors.New("install plugin error")
 								fakeActor.InstallPluginFromPathReturns(expectedErr)
@@ -202,13 +202,13 @@ var _ = Describe("install-plugin command", func() {
 							It("returns the error", func() {
 								Expect(executeErr).To(MatchError(expectedErr))
 
-								Expect(testUI.Out).ToNot(Say("Plugin some-plugin 1\\.2\\.3 successfully installed\\."))
+								Expect(testUI.Out).ToNot(Say(`Plugin some-plugin 1\.2\.3 successfully installed\.`))
 							})
 						})
 					})
 				})
 
-				Context("when the plugin is not already installed", func() {
+				When("the plugin is not already installed", func() {
 					var plugin configv3.Plugin
 
 					BeforeEach(func() {
@@ -226,11 +226,11 @@ var _ = Describe("install-plugin command", func() {
 					It("installs the plugin", func() {
 						Expect(executeErr).ToNot(HaveOccurred())
 
-						Expect(testUI.Out).To(Say("Attention: Plugins are binaries written by potentially untrusted authors\\."))
-						Expect(testUI.Out).To(Say("Install and use plugins at your own risk\\."))
-						Expect(testUI.Out).To(Say("Installing plugin some-plugin\\.\\.\\."))
+						Expect(testUI.Out).To(Say(`Attention: Plugins are binaries written by potentially untrusted authors\.`))
+						Expect(testUI.Out).To(Say(`Install and use plugins at your own risk\.`))
+						Expect(testUI.Out).To(Say(`Installing plugin some-plugin\.\.\.`))
 						Expect(testUI.Out).To(Say("OK"))
-						Expect(testUI.Out).To(Say("Plugin some-plugin 1\\.2\\.3 successfully installed\\."))
+						Expect(testUI.Out).To(Say(`Plugin some-plugin 1\.2\.3 successfully installed\.`))
 
 						Expect(fakeActor.FileExistsCallCount()).To(Equal(1))
 						Expect(fakeActor.FileExistsArgsForCall(0)).To(Equal("some-path"))
@@ -256,7 +256,7 @@ var _ = Describe("install-plugin command", func() {
 						Expect(fakeActor.UninstallPluginCallCount()).To(Equal(0))
 					})
 
-					Context("when there is an error making an executable copy of the plugin binary", func() {
+					When("there is an error making an executable copy of the plugin binary", func() {
 						BeforeEach(func() {
 							expectedErr = errors.New("create executable copy error")
 							fakeActor.CreateExecutableCopyReturns("", expectedErr)
@@ -267,7 +267,7 @@ var _ = Describe("install-plugin command", func() {
 						})
 					})
 
-					Context("when an error is encountered installing the plugin", func() {
+					When("an error is encountered installing the plugin", func() {
 						BeforeEach(func() {
 							expectedErr = errors.New("install plugin error")
 							fakeActor.InstallPluginFromPathReturns(expectedErr)
@@ -276,18 +276,18 @@ var _ = Describe("install-plugin command", func() {
 						It("returns the error", func() {
 							Expect(executeErr).To(MatchError(expectedErr))
 
-							Expect(testUI.Out).ToNot(Say("Plugin some-plugin 1\\.2\\.3 successfully installed\\."))
+							Expect(testUI.Out).ToNot(Say(`Plugin some-plugin 1\.2\.3 successfully installed\.`))
 						})
 					})
 				})
 			})
 
-			Context("when the -f argument is not given (user is prompted for confirmation)", func() {
+			When("the -f argument is not given (user is prompted for confirmation)", func() {
 				BeforeEach(func() {
 					cmd.Force = false
 				})
 
-				Context("when the user chooses no", func() {
+				When("the user chooses no", func() {
 					BeforeEach(func() {
 						input.Write([]byte("n\n"))
 					})
@@ -295,11 +295,11 @@ var _ = Describe("install-plugin command", func() {
 					It("cancels plugin installation", func() {
 						Expect(executeErr).ToNot(HaveOccurred())
 
-						Expect(testUI.Out).To(Say("Plugin installation cancelled\\."))
+						Expect(testUI.Out).To(Say(`Plugin installation cancelled\.`))
 					})
 				})
 
-				Context("when the user chooses the default", func() {
+				When("the user chooses the default", func() {
 					BeforeEach(func() {
 						input.Write([]byte("\n"))
 					})
@@ -307,11 +307,11 @@ var _ = Describe("install-plugin command", func() {
 					It("cancels plugin installation", func() {
 						Expect(executeErr).ToNot(HaveOccurred())
 
-						Expect(testUI.Out).To(Say("Plugin installation cancelled\\."))
+						Expect(testUI.Out).To(Say(`Plugin installation cancelled\.`))
 					})
 				})
 
-				Context("when the user input is invalid", func() {
+				When("the user input is invalid", func() {
 					BeforeEach(func() {
 						input.Write([]byte("e\n"))
 					})
@@ -323,12 +323,12 @@ var _ = Describe("install-plugin command", func() {
 					})
 				})
 
-				Context("when the user chooses yes", func() {
+				When("the user chooses yes", func() {
 					BeforeEach(func() {
 						input.Write([]byte("y\n"))
 					})
 
-					Context("when the plugin is not already installed", func() {
+					When("the plugin is not already installed", func() {
 						var plugin configv3.Plugin
 
 						BeforeEach(func() {
@@ -346,12 +346,12 @@ var _ = Describe("install-plugin command", func() {
 						It("installs the plugin", func() {
 							Expect(executeErr).ToNot(HaveOccurred())
 
-							Expect(testUI.Out).To(Say("Attention: Plugins are binaries written by potentially untrusted authors\\."))
-							Expect(testUI.Out).To(Say("Install and use plugins at your own risk\\."))
-							Expect(testUI.Out).To(Say("Do you want to install the plugin some-path\\? \\[yN\\]"))
-							Expect(testUI.Out).To(Say("Installing plugin some-plugin\\.\\.\\."))
+							Expect(testUI.Out).To(Say(`Attention: Plugins are binaries written by potentially untrusted authors\.`))
+							Expect(testUI.Out).To(Say(`Install and use plugins at your own risk\.`))
+							Expect(testUI.Out).To(Say(`Do you want to install the plugin some-path\? \[yN\]`))
+							Expect(testUI.Out).To(Say(`Installing plugin some-plugin\.\.\.`))
 							Expect(testUI.Out).To(Say("OK"))
-							Expect(testUI.Out).To(Say("Plugin some-plugin 1\\.2\\.3 successfully installed\\."))
+							Expect(testUI.Out).To(Say(`Plugin some-plugin 1\.2\.3 successfully installed\.`))
 
 							Expect(fakeActor.FileExistsCallCount()).To(Equal(1))
 							Expect(fakeActor.FileExistsArgsForCall(0)).To(Equal("some-path"))
@@ -372,7 +372,7 @@ var _ = Describe("install-plugin command", func() {
 						})
 					})
 
-					Context("when the plugin is already installed", func() {
+					When("the plugin is already installed", func() {
 						BeforeEach(func() {
 							fakeConfig.GetPluginCaseInsensitiveReturns(configv3.Plugin{
 								Name: "some-plugin",
@@ -431,17 +431,17 @@ var _ = Describe("install-plugin command", func() {
 		})
 
 		It("displays the plugin warning", func() {
-			Expect(testUI.Out).To(Say("Attention: Plugins are binaries written by potentially untrusted authors\\."))
-			Expect(testUI.Out).To(Say("Install and use plugins at your own risk\\."))
+			Expect(testUI.Out).To(Say(`Attention: Plugins are binaries written by potentially untrusted authors\.`))
+			Expect(testUI.Out).To(Say(`Install and use plugins at your own risk\.`))
 		})
 
-		Context("when the -f argument is given", func() {
+		When("the -f argument is given", func() {
 			BeforeEach(func() {
 				cmd.Force = true
 			})
 
 			It("begins downloading the plugin", func() {
-				Expect(testUI.Out).To(Say("Starting download of plugin binary from URL\\.\\.\\."))
+				Expect(testUI.Out).To(Say(`Starting download of plugin binary from URL\.\.\.`))
 
 				Expect(fakeActor.DownloadExecutableBinaryFromURLCallCount()).To(Equal(1))
 				url, tempPluginDir, proxyReader := fakeActor.DownloadExecutableBinaryFromURLArgsForCall(0)
@@ -451,7 +451,7 @@ var _ = Describe("install-plugin command", func() {
 				Expect(proxyReader).To(Equal(fakeProgressBar))
 			})
 
-			Context("When getting the binary fails", func() {
+			When("getting the binary fails", func() {
 				BeforeEach(func() {
 					expectedErr = errors.New("some-error")
 					fakeActor.DownloadExecutableBinaryFromURLReturns("", expectedErr)
@@ -464,7 +464,7 @@ var _ = Describe("install-plugin command", func() {
 					Expect(fakeActor.GetAndValidatePluginCallCount()).To(Equal(0))
 				})
 
-				Context("when a 4xx or 5xx status is encountered while downloading the plugin", func() {
+				When("a 4xx or 5xx status is encountered while downloading the plugin", func() {
 					BeforeEach(func() {
 						fakeActor.DownloadExecutableBinaryFromURLReturns("", pluginerror.RawHTTPStatusError{Status: "some-status"})
 					})
@@ -474,7 +474,7 @@ var _ = Describe("install-plugin command", func() {
 					})
 				})
 
-				Context("when a SSL error is encountered while downloading the plugin", func() {
+				When("a SSL error is encountered while downloading the plugin", func() {
 					BeforeEach(func() {
 						fakeActor.DownloadExecutableBinaryFromURLReturns("", pluginerror.UnverifiedServerError{})
 					})
@@ -485,7 +485,7 @@ var _ = Describe("install-plugin command", func() {
 				})
 			})
 
-			Context("when getting the binary succeeds", func() {
+			When("getting the binary succeeds", func() {
 				BeforeEach(func() {
 					fakeActor.DownloadExecutableBinaryFromURLReturns("some-path", nil)
 					fakeActor.CreateExecutableCopyReturns(executablePluginPath, nil)
@@ -510,7 +510,7 @@ var _ = Describe("install-plugin command", func() {
 					Expect(pluginDirArg).To(ContainSubstring("temp"))
 				})
 
-				Context("when the plugin is invalid", func() {
+				When("the plugin is invalid", func() {
 					var returnedErr error
 
 					BeforeEach(func() {
@@ -525,7 +525,7 @@ var _ = Describe("install-plugin command", func() {
 					})
 				})
 
-				Context("when the plugin is valid", func() {
+				When("the plugin is valid", func() {
 					var newPlugin configv3.Plugin
 
 					BeforeEach(func() {
@@ -548,16 +548,16 @@ var _ = Describe("install-plugin command", func() {
 						fakeActor.GetAndValidatePluginReturns(newPlugin, nil)
 					})
 
-					Context("when the plugin is already installed", func() {
+					When("the plugin is already installed", func() {
 						BeforeEach(func() {
 							fakeConfig.GetPluginCaseInsensitiveReturns(plugin, true)
 						})
 
 						It("displays uninstall message", func() {
-							Expect(testUI.Out).To(Say("Plugin %s 1\\.2\\.2 is already installed\\. Uninstalling existing plugin\\.\\.\\.", pluginName))
+							Expect(testUI.Out).To(Say(`Plugin %s 1\.2\.2 is already installed\. Uninstalling existing plugin\.\.\.`, pluginName))
 						})
 
-						Context("when an error is encountered uninstalling the existing plugin", func() {
+						When("an error is encountered uninstalling the existing plugin", func() {
 							BeforeEach(func() {
 								expectedErr = errors.New("uninstall plugin error")
 								fakeActor.UninstallPluginReturns(expectedErr)
@@ -566,26 +566,26 @@ var _ = Describe("install-plugin command", func() {
 							It("returns the error", func() {
 								Expect(executeErr).To(MatchError(expectedErr))
 
-								Expect(testUI.Out).ToNot(Say("Plugin some-plugin successfully uninstalled\\."))
+								Expect(testUI.Out).ToNot(Say(`Plugin some-plugin successfully uninstalled\.`))
 							})
 						})
 
-						Context("when no errors are encountered uninstalling the existing plugin", func() {
+						When("no errors are encountered uninstalling the existing plugin", func() {
 							It("displays uninstall message", func() {
-								Expect(testUI.Out).To(Say("Plugin %s successfully uninstalled\\.", pluginName))
+								Expect(testUI.Out).To(Say(`Plugin %s successfully uninstalled\.`, pluginName))
 							})
 
-							Context("when no errors are encountered installing the plugin", func() {
+							When("no errors are encountered installing the plugin", func() {
 								It("uninstalls the existing plugin and installs the current plugin", func() {
 									Expect(executeErr).ToNot(HaveOccurred())
 
-									Expect(testUI.Out).To(Say("Installing plugin %s\\.\\.\\.", pluginName))
+									Expect(testUI.Out).To(Say(`Installing plugin %s\.\.\.`, pluginName))
 									Expect(testUI.Out).To(Say("OK"))
-									Expect(testUI.Out).To(Say("Plugin %s 1\\.2\\.3 successfully installed\\.", pluginName))
+									Expect(testUI.Out).To(Say(`Plugin %s 1\.2\.3 successfully installed\.`, pluginName))
 								})
 							})
 
-							Context("when an error is encountered installing the plugin", func() {
+							When("an error is encountered installing the plugin", func() {
 								BeforeEach(func() {
 									expectedErr = errors.New("install plugin error")
 									fakeActor.InstallPluginFromPathReturns(expectedErr)
@@ -594,19 +594,19 @@ var _ = Describe("install-plugin command", func() {
 								It("returns the error", func() {
 									Expect(executeErr).To(MatchError(expectedErr))
 
-									Expect(testUI.Out).ToNot(Say("Plugin some-plugin 1\\.2\\.3 successfully installed\\."))
+									Expect(testUI.Out).ToNot(Say(`Plugin some-plugin 1\.2\.3 successfully installed\.`))
 								})
 							})
 						})
 					})
 
-					Context("when the plugin is not already installed", func() {
+					When("the plugin is not already installed", func() {
 						It("installs the plugin", func() {
 							Expect(executeErr).ToNot(HaveOccurred())
 
-							Expect(testUI.Out).To(Say("Installing plugin %s\\.\\.\\.", pluginName))
+							Expect(testUI.Out).To(Say(`Installing plugin %s\.\.\.`, pluginName))
 							Expect(testUI.Out).To(Say("OK"))
-							Expect(testUI.Out).To(Say("Plugin %s 1\\.2\\.3 successfully installed\\.", pluginName))
+							Expect(testUI.Out).To(Say(`Plugin %s 1\.2\.3 successfully installed\.`, pluginName))
 
 							Expect(fakeActor.UninstallPluginCallCount()).To(Equal(0))
 						})
@@ -615,7 +615,7 @@ var _ = Describe("install-plugin command", func() {
 			})
 		})
 
-		Context("when the -f argument is not given (user is prompted for confirmation)", func() {
+		When("the -f argument is not given (user is prompted for confirmation)", func() {
 			BeforeEach(func() {
 				plugin = configv3.Plugin{
 					Name: pluginName,
@@ -631,7 +631,7 @@ var _ = Describe("install-plugin command", func() {
 				fakeActor.CreateExecutableCopyReturns("executable-path", nil)
 			})
 
-			Context("when the user chooses no", func() {
+			When("the user chooses no", func() {
 				BeforeEach(func() {
 					input.Write([]byte("n\n"))
 				})
@@ -639,11 +639,11 @@ var _ = Describe("install-plugin command", func() {
 				It("cancels plugin installation", func() {
 					Expect(executeErr).ToNot(HaveOccurred())
 
-					Expect(testUI.Out).To(Say("Plugin installation cancelled\\."))
+					Expect(testUI.Out).To(Say(`Plugin installation cancelled\.`))
 				})
 			})
 
-			Context("when the user chooses the default", func() {
+			When("the user chooses the default", func() {
 				BeforeEach(func() {
 					input.Write([]byte("\n"))
 				})
@@ -651,11 +651,11 @@ var _ = Describe("install-plugin command", func() {
 				It("cancels plugin installation", func() {
 					Expect(executeErr).ToNot(HaveOccurred())
 
-					Expect(testUI.Out).To(Say("Plugin installation cancelled\\."))
+					Expect(testUI.Out).To(Say(`Plugin installation cancelled\.`))
 				})
 			})
 
-			Context("when the user input is invalid", func() {
+			When("the user input is invalid", func() {
 				BeforeEach(func() {
 					input.Write([]byte("e\n"))
 				})
@@ -667,12 +667,12 @@ var _ = Describe("install-plugin command", func() {
 				})
 			})
 
-			Context("when the user chooses yes", func() {
+			When("the user chooses yes", func() {
 				BeforeEach(func() {
 					input.Write([]byte("y\n"))
 				})
 
-				Context("when the plugin is not already installed", func() {
+				When("the plugin is not already installed", func() {
 					BeforeEach(func() {
 						fakeActor.GetAndValidatePluginReturns(plugin, nil)
 					})
@@ -680,13 +680,13 @@ var _ = Describe("install-plugin command", func() {
 					It("installs the plugin", func() {
 						Expect(executeErr).ToNot(HaveOccurred())
 
-						Expect(testUI.Out).To(Say("Attention: Plugins are binaries written by potentially untrusted authors\\."))
-						Expect(testUI.Out).To(Say("Install and use plugins at your own risk\\."))
-						Expect(testUI.Out).To(Say("Do you want to install the plugin %s\\? \\[yN\\]", cmd.OptionalArgs.PluginNameOrLocation))
-						Expect(testUI.Out).To(Say("Starting download of plugin binary from URL\\.\\.\\."))
-						Expect(testUI.Out).To(Say("Installing plugin %s\\.\\.\\.", pluginName))
+						Expect(testUI.Out).To(Say(`Attention: Plugins are binaries written by potentially untrusted authors\.`))
+						Expect(testUI.Out).To(Say(`Install and use plugins at your own risk\.`))
+						Expect(testUI.Out).To(Say(`Do you want to install the plugin %s\? \[yN\]`, cmd.OptionalArgs.PluginNameOrLocation))
+						Expect(testUI.Out).To(Say(`Starting download of plugin binary from URL\.\.\.`))
+						Expect(testUI.Out).To(Say(`Installing plugin %s\.\.\.`, pluginName))
 						Expect(testUI.Out).To(Say("OK"))
-						Expect(testUI.Out).To(Say("Plugin %s 1\\.2\\.3 successfully installed\\.", pluginName))
+						Expect(testUI.Out).To(Say(`Plugin %s 1\.2\.3 successfully installed\.`, pluginName))
 
 						Expect(fakeActor.DownloadExecutableBinaryFromURLCallCount()).To(Equal(1))
 						url, tempPluginDir, proxyReader := fakeActor.DownloadExecutableBinaryFromURLArgsForCall(0)
@@ -717,7 +717,7 @@ var _ = Describe("install-plugin command", func() {
 					})
 				})
 
-				Context("when the plugin is already installed", func() {
+				When("the plugin is already installed", func() {
 					BeforeEach(func() {
 						fakeConfig.GetPluginCaseInsensitiveReturns(configv3.Plugin{
 							Name: "some-plugin",

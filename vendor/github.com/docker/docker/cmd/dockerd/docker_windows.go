@@ -1,38 +1,18 @@
 package main
 
 import (
-	"path/filepath"
+	"sync/atomic"
 
 	_ "github.com/docker/docker/autogen/winresources/dockerd"
-	"github.com/sirupsen/logrus"
 )
 
-func runDaemon(opts *daemonOptions) error {
-	daemonCli := NewDaemonCli()
+//go:cgo_import_dynamic main.dummy CommandLineToArgvW%2 "shell32.dll"
 
-	// On Windows, this may be launching as a service or with an option to
-	// register the service.
-	stop, runAsService, err := initService(daemonCli)
-	if err != nil {
-		logrus.Fatal(err)
-	}
+var dummy uintptr
 
-	if stop {
-		return nil
-	}
-
-	// Windows specific settings as these are not defaulted.
-	if opts.configFile == "" {
-		opts.configFile = filepath.Join(opts.daemonConfig.Root, `config\daemon.json`)
-	}
-	if runAsService {
-		// If Windows SCM manages the service - no need for PID files
-		opts.daemonConfig.Pidfile = ""
-	} else if opts.daemonConfig.Pidfile == "" {
-		opts.daemonConfig.Pidfile = filepath.Join(opts.daemonConfig.Root, "docker.pid")
-	}
-
-	err = daemonCli.start(opts)
-	notifyShutdown(err)
-	return err
+func init() {
+	// Ensure that this import is not removed by the linker. This is used to
+	// ensure that shell32.dll is loaded by the system loader, preventing
+	// go#15286 from triggering on Nano Server TP5.
+	atomic.LoadUintptr(&dummy)
 }

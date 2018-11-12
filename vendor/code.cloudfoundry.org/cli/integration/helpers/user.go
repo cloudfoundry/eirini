@@ -54,3 +54,41 @@ func GetUsers() []User {
 
 	return allUsers
 }
+
+func CreateUser() (string, string) {
+	username := NewUsername()
+	password := RandomName()
+
+	// env := map[string]string{
+	// 	"NEW_USER_PASSWORD": password,
+	// }
+
+	// session := CFWithEnv(env, "create-user", username, "$NEW_USER_PASSWORD")
+	session := CF("create-user", username, password)
+	Eventually(session).Should(Exit(0))
+
+	return username, password
+}
+
+func DeleteUser(username string) {
+	session := CF("delete-user", username, "-f")
+	Eventually(session).Should(Exit(0))
+}
+
+func CreateUserInOrgRole(org, role string) (string, string) {
+	username, password := CreateUser()
+
+	session := CF("set-org-role", username, org, role)
+	Eventually(session).Should(Exit(0))
+
+	return username, password
+}
+
+func CreateUserInSpaceRole(org, space, role string) (string, string) {
+	username, password := CreateUser()
+
+	session := CF("set-space-role", username, org, space, role)
+	Eventually(session).Should(Exit(0))
+
+	return username, password
+}

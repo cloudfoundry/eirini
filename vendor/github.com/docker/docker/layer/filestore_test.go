@@ -1,4 +1,4 @@
-package layer // import "github.com/docker/docker/layer"
+package layer
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/opencontainers/go-digest"
+	"github.com/docker/distribution/digest"
 )
 
 func randomLayerID(seed int64) ChainID {
@@ -24,12 +24,12 @@ func newFileMetadataStore(t *testing.T) (*fileMetadataStore, string, func()) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fms, err := newFSMetadataStore(td)
+	fms, err := NewFSMetadataStore(td)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return fms, td, func() {
+	return fms.(*fileMetadataStore), td, func() {
 		if err := os.RemoveAll(td); err != nil {
 			t.Logf("Failed to cleanup %q: %s", td, err)
 		}

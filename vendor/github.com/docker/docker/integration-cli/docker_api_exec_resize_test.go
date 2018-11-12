@@ -9,9 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/docker/docker/api/types/versions"
-	"github.com/docker/docker/integration-cli/checker"
-	"github.com/docker/docker/internal/test/request"
+	"github.com/docker/docker/pkg/integration/checker"
 	"github.com/go-check/check"
 )
 
@@ -21,13 +19,9 @@ func (s *DockerSuite) TestExecResizeAPIHeightWidthNoInt(c *check.C) {
 	cleanedContainerID := strings.TrimSpace(out)
 
 	endpoint := "/exec/" + cleanedContainerID + "/resize?h=foo&w=bar"
-	res, _, err := request.Post(endpoint)
+	status, _, err := sockRequest("POST", endpoint, nil)
 	c.Assert(err, checker.IsNil)
-	if versions.LessThan(testEnv.DaemonAPIVersion(), "1.32") {
-		c.Assert(res.StatusCode, checker.Equals, http.StatusInternalServerError)
-	} else {
-		c.Assert(res.StatusCode, checker.Equals, http.StatusBadRequest)
-	}
+	c.Assert(status, checker.Equals, http.StatusInternalServerError)
 }
 
 // Part of #14845
@@ -41,19 +35,16 @@ func (s *DockerSuite) TestExecResizeImmediatelyAfterExecStart(c *check.C) {
 			"Cmd":         []string{"/bin/sh"},
 		}
 		uri := fmt.Sprintf("/containers/%s/exec", name)
-		res, body, err := request.Post(uri, request.JSONBody(data))
+		status, body, err := sockRequest("POST", uri, data)
 		if err != nil {
 			return err
 		}
-		if res.StatusCode != http.StatusCreated {
-			return fmt.Errorf("POST %s is expected to return %d, got %d", uri, http.StatusCreated, res.StatusCode)
+		if status != http.StatusCreated {
+			return fmt.Errorf("POST %s is expected to return %d, got %d", uri, http.StatusCreated, status)
 		}
 
-		buf, err := request.ReadBody(body)
-		c.Assert(err, checker.IsNil)
-
 		out := map[string]string{}
-		err = json.Unmarshal(buf, &out)
+		err = json.Unmarshal(body, &out)
 		if err != nil {
 			return fmt.Errorf("ExecCreate returned invalid json. Error: %q", err.Error())
 		}
@@ -64,13 +55,13 @@ func (s *DockerSuite) TestExecResizeImmediatelyAfterExecStart(c *check.C) {
 		}
 
 		payload := bytes.NewBufferString(`{"Tty":true}`)
-		conn, _, err := sockRequestHijack("POST", fmt.Sprintf("/exec/%s/start", execID), payload, "application/json", daemonHost())
+		conn, _, err := sockRequestHijack("POST", fmt.Sprintf("/exec/%s/start", execID), payload, "application/json")
 		if err != nil {
 			return fmt.Errorf("Failed to start the exec: %q", err.Error())
 		}
 		defer conn.Close()
 
-		_, rc, err := request.Post(fmt.Sprintf("/exec/%s/resize?h=24&w=80", execID), request.ContentType("text/plain"))
+		_, rc, err := sockRequestRaw("POST", fmt.Sprintf("/exec/%s/resize?h=24&w=80", execID), nil, "text/plain")
 		// It's probably a panic of the daemon if io.ErrUnexpectedEOF is returned.
 		if err == io.ErrUnexpectedEOF {
 			return fmt.Errorf("The daemon might have crashed.")

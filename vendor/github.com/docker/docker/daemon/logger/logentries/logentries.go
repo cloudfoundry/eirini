@@ -1,15 +1,13 @@
 // Package logentries provides the log driver for forwarding server logs
 // to logentries endpoints.
-package logentries // import "github.com/docker/docker/daemon/logger/logentries"
+package logentries
 
 import (
 	"fmt"
-	"strconv"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/bsphere/le_go"
 	"github.com/docker/docker/daemon/logger"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 type logentries struct {
@@ -18,13 +16,11 @@ type logentries struct {
 	containerName string
 	writer        *le_go.Logger
 	extra         map[string]string
-	lineOnly      bool
 }
 
 const (
-	name     = "logentries"
-	token    = "logentries-token"
-	lineonly = "line-only"
+	name  = "logentries"
+	token = "logentries-token"
 )
 
 func init() {
@@ -39,49 +35,33 @@ func init() {
 // New creates a logentries logger using the configuration passed in on
 // the context. The supported context configuration variable is
 // logentries-token.
-func New(info logger.Info) (logger.Logger, error) {
-	logrus.WithField("container", info.ContainerID).
-		WithField("token", info.Config[token]).
-		WithField("line-only", info.Config[lineonly]).
+func New(ctx logger.Context) (logger.Logger, error) {
+	logrus.WithField("container", ctx.ContainerID).
+		WithField("token", ctx.Config[token]).
 		Debug("logging driver logentries configured")
 
-	log, err := le_go.Connect(info.Config[token])
+	log, err := le_go.Connect(ctx.Config[token])
 	if err != nil {
-		return nil, errors.Wrap(err, "error connecting to logentries")
-	}
-	var lineOnly bool
-	if info.Config[lineonly] != "" {
-		if lineOnly, err = strconv.ParseBool(info.Config[lineonly]); err != nil {
-			return nil, errors.Wrap(err, "error parsing lineonly option")
-		}
+		return nil, err
 	}
 	return &logentries{
-		containerID:   info.ContainerID,
-		containerName: info.ContainerName,
+		containerID:   ctx.ContainerID,
+		containerName: ctx.ContainerName,
 		writer:        log,
-		lineOnly:      lineOnly,
 	}, nil
 }
 
 func (f *logentries) Log(msg *logger.Message) error {
-	if !f.lineOnly {
-		data := map[string]string{
-			"container_id":   f.containerID,
-			"container_name": f.containerName,
-			"source":         msg.Source,
-			"log":            string(msg.Line),
-		}
-		for k, v := range f.extra {
-			data[k] = v
-		}
-		ts := msg.Timestamp
-		logger.PutMessage(msg)
-		f.writer.Println(f.tag, ts, data)
-	} else {
-		line := string(msg.Line)
-		logger.PutMessage(msg)
-		f.writer.Println(line)
+	data := map[string]string{
+		"container_id":   f.containerID,
+		"container_name": f.containerName,
+		"source":         msg.Source,
+		"log":            string(msg.Line),
 	}
+	for k, v := range f.extra {
+		data[k] = v
+	}
+	f.writer.Println(f.tag, msg.Timestamp, data)
 	return nil
 }
 
@@ -98,7 +78,6 @@ func ValidateLogOpt(cfg map[string]string) error {
 	for key := range cfg {
 		switch key {
 		case "env":
-		case "env-regex":
 		case "labels":
 		case "tag":
 		case key:

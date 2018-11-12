@@ -1,38 +1,38 @@
 [
   {
     "name": "staticfile_buildpack",
-    "uri": "https://github.com/cloudfoundry/staticfile-buildpack/releases/download/v1.4.27/staticfile-buildpack-v1.4.27.zip"
+    "uri": "https://github.com/cloudfoundry/staticfile-buildpack/releases/download/v1.4.31/staticfile-buildpack-cflinuxfs2-v1.4.31.zip"
   },
   {
     "name": "java_buildpack",
-    "uri": "https://github.com/cloudfoundry/java-buildpack/releases/download/v4.12/java-buildpack-v4.12.zip"
+    "uri": "https://github.com/cloudfoundry/java-buildpack/releases/download/v4.15/java-buildpack-v4.15.zip"
   },
   {
     "name": "ruby_buildpack",
-    "uri": "https://github.com/cloudfoundry/ruby-buildpack/releases/download/v1.7.18/ruby-buildpack-v1.7.18.zip"
+    "uri": "https://github.com/cloudfoundry/ruby-buildpack/releases/download/v1.7.22/ruby-buildpack-cflinuxfs2-v1.7.22.zip"
   },
   {
     "name": "nodejs_buildpack",
-    "uri": "https://github.com/cloudfoundry/nodejs-buildpack/releases/download/v1.6.24/nodejs-buildpack-v1.6.24.zip"
+    "uri": "https://github.com/cloudfoundry/nodejs-buildpack/releases/download/v1.6.30/nodejs-buildpack-cflinuxfs2-v1.6.30.zip"
   },
   {
     "name": "go_buildpack",
-    "uri": "https://github.com/cloudfoundry/go-buildpack/releases/download/v1.8.22/go-buildpack-v1.8.22.zip"
+    "uri": "https://github.com/cloudfoundry/go-buildpack/releases/download/v1.8.26/go-buildpack-cflinuxfs2-v1.8.26.zip"
   },
   {
     "name": "python_buildpack",
-    "uri": "https://github.com/cloudfoundry/python-buildpack/releases/download/v1.6.15/python-buildpack-v1.6.15.zip"
+    "uri": "https://github.com/cloudfoundry/python-buildpack/releases/download/v1.6.20/python-buildpack-cflinuxfs2-v1.6.20.zip"
   },
   {
     "name": "php_buildpack",
-    "uri": "https://github.com/cloudfoundry/php-buildpack/releases/download/v4.3.55/php-buildpack-v4.3.55.zip"
+    "uri": "https://github.com/cloudfoundry/php-buildpack/releases/download/v4.3.59/php-buildpack-cflinuxfs2-v4.3.59.zip"
   },
   {
     "name": "dotnet_core_buildpack",
-    "uri": "https://github.com/cloudfoundry/dotnet-core-buildpack/releases/download/v2.0.6/dotnet-core-buildpack-v2.0.6.zip"
+    "uri": "https://github.com/cloudfoundry/dotnet-core-buildpack/releases/download/v2.1.4/dotnet-core-buildpack-cflinuxfs2-v2.1.4.zip"
   },
   {
     "name": "binary_buildpack",
-    "uri": "https://github.com/cloudfoundry/binary-buildpack/releases/download/v1.0.18/binary-buildpack-v1.0.18.zip"
+    "uri": "https://github.com/cloudfoundry/binary-buildpack/releases/download/v1.0.24/binary-buildpack-cflinuxfs2-v1.0.24.zip"
   }
 ]

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/cloudfoundry/bosh-utils/httpclient"
 
@@ -103,6 +104,7 @@ var _ = Describe("RequestRetryable", func() {
 			BeforeEach(func() {
 				seekableReaderCloser = NewSeekableReadClose([]byte("hello from seekable"))
 				request.Body = seekableReaderCloser
+				request.GetBody = nil
 				requestRetryable = httpclient.NewRequestRetryable(request, httpclient.DefaultClient, logger, nil)
 			})
 
@@ -284,10 +286,11 @@ var _ = Describe("RequestRetryable", func() {
 })
 
 type seekableReadClose struct {
-	Seeked     bool
-	closed     bool
-	content    []byte
-	readCloser io.ReadCloser
+	Seeked          bool
+	closed          bool
+	content         []byte
+	readCloser      io.ReadCloser
+	readCloserMutex sync.Mutex
 }
 
 func NewSeekableReadClose(content []byte) *seekableReadClose {
@@ -299,12 +302,18 @@ func NewSeekableReadClose(content []byte) *seekableReadClose {
 }
 
 func (s *seekableReadClose) Seek(offset int64, whence int) (ret int64, err error) {
+	s.readCloserMutex.Lock()
+	defer s.readCloserMutex.Unlock()
+
 	s.readCloser = ioutil.NopCloser(bytes.NewReader(s.content))
 	s.Seeked = true
 	return 0, nil
 }
 
 func (s *seekableReadClose) Read(p []byte) (n int, err error) {
+	s.readCloserMutex.Lock()
+	defer s.readCloserMutex.Unlock()
+
 	return s.readCloser.Read(p)
 }
 

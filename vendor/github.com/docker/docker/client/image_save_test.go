@@ -1,14 +1,16 @@
-package client // import "github.com/docker/docker/client"
+package client
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"reflect"
-	"strings"
 	"testing"
+
+	"golang.org/x/net/context"
+
+	"strings"
 )
 
 func TestImageSaveError(t *testing.T) {

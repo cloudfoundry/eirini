@@ -1,6 +1,6 @@
-// +build !linux,!windows
+// +build !linux
 
-package daemon // import "github.com/docker/docker/daemon"
+package daemon
 
 func secretsSupported() bool {
 	return false

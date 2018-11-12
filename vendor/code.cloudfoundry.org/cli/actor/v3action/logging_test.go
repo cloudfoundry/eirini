@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"code.cloudfoundry.org/cli/actor/actionerror"
 	. "code.cloudfoundry.org/cli/actor/v3action"
 	"code.cloudfoundry.org/cli/actor/v3action/v3actionfakes"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
@@ -16,26 +17,26 @@ import (
 var _ = Describe("Logging Actions", func() {
 	var (
 		actor                     *Actor
-		fakeNOAAClient            *v3actionfakes.FakeNOAAClient
 		fakeCloudControllerClient *v3actionfakes.FakeCloudControllerClient
+		fakeConfig                *v3actionfakes.FakeConfig
+		fakeNOAAClient            *v3actionfakes.FakeNOAAClient
 	)
 
 	BeforeEach(func() {
+		actor, fakeCloudControllerClient, fakeConfig, _, _ = NewTestActor()
 		fakeNOAAClient = new(v3actionfakes.FakeNOAAClient)
-		fakeCloudControllerClient = new(v3actionfakes.FakeCloudControllerClient)
-		actor = NewActor(fakeCloudControllerClient, nil, nil, nil)
 	})
 
 	Describe("LogMessage", func() {
 		Describe("Staging", func() {
-			Context("when the log is a staging log", func() {
+			When("the log is a staging log", func() {
 				It("returns true", func() {
 					message := NewLogMessage("", 0, time.Now(), "STG", "")
 					Expect(message.Staging()).To(BeTrue())
 				})
 			})
 
-			Context("when the log is any other kind of log", func() {
+			When("the log is any other kind of log", func() {
 				It("returns true", func() {
 					message := NewLogMessage("", 0, time.Now(), "APP", "")
 					Expect(message.Staging()).To(BeFalse())
@@ -48,26 +49,17 @@ var _ = Describe("Logging Actions", func() {
 		var (
 			expectedAppGUID string
 
-			messages    <-chan *LogMessage
-			errs        <-chan error
-			eventStream chan *events.LogMessage
-			errStream   chan error
+			messages <-chan *LogMessage
+			errs     <-chan error
+
+			message *LogMessage
 		)
 
 		BeforeEach(func() {
 			expectedAppGUID = "some-app-guid"
-
-			eventStream = make(chan *events.LogMessage, 100)
-			errStream = make(chan error)
 		})
 
-		// If tests panic due to this close, it is likely you have a failing
-		// expectation and the channels are being closed because the test has
-		// failed/short circuited and is going through teardown.
 		AfterEach(func() {
-			close(eventStream)
-			close(errStream)
-
 			Eventually(messages).Should(BeClosed())
 			Eventually(errs).Should(BeClosed())
 		})
@@ -76,13 +68,25 @@ var _ = Describe("Logging Actions", func() {
 			messages, errs = actor.GetStreamingLogs(expectedAppGUID, fakeNOAAClient)
 		})
 
-		Context("when receiving events", func() {
+		When("receiving events", func() {
 			BeforeEach(func() {
+				fakeConfig.DialTimeoutReturns(60 * time.Minute)
+
 				fakeNOAAClient.TailingLogsStub = func(appGUID string, authToken string) (<-chan *events.LogMessage, <-chan error) {
 					Expect(appGUID).To(Equal(expectedAppGUID))
 					Expect(authToken).To(BeEmpty())
 
+					Expect(fakeNOAAClient.SetOnConnectCallbackCallCount()).To(Equal(1))
+					onConnectOrOnRetry := fakeNOAAClient.SetOnConnectCallbackArgsForCall(0)
+
+					eventStream := make(chan *events.LogMessage)
+					errStream := make(chan error, 1)
+
 					go func() {
+						defer close(eventStream)
+						defer close(errStream)
+						onConnectOrOnRetry()
+
 						outMessage := events.LogMessage_OUT
 						ts1 := int64(10)
 						sourceType := "some-source-type"
@@ -106,67 +110,56 @@ var _ = Describe("Logging Actions", func() {
 							SourceType:     &sourceType,
 							SourceInstance: &sourceInstance,
 						}
+
+						ts3 := int64(0)
+						eventStream <- &events.LogMessage{
+							Message:        []byte("message-3"),
+							MessageType:    &outMessage,
+							Timestamp:      &ts3,
+							SourceType:     &sourceType,
+							SourceInstance: &sourceInstance,
+						}
+
+						ts4 := int64(15)
+						eventStream <- &events.LogMessage{
+							Message:        []byte("message-4"),
+							MessageType:    &errMessage,
+							Timestamp:      &ts4,
+							SourceType:     &sourceType,
+							SourceInstance: &sourceInstance,
+						}
 					}()
 
 					return eventStream, errStream
 				}
 			})
 
-			It("converts them to log messages and passes them through the messages channel", func() {
-				message := <-messages
+			It("converts them to log messages, sorts them, and passes them through the messages channel", func() {
+				Eventually(messages).Should(Receive(&message))
+				Expect(message.Message()).To(Equal("message-3"))
+				Expect(message.Type()).To(Equal("OUT"))
+				Expect(message.Timestamp()).To(Equal(time.Unix(0, 0)))
+				Expect(message.SourceType()).To(Equal("some-source-type"))
+				Expect(message.SourceInstance()).To(Equal("some-source-instance"))
+
+				Eventually(messages).Should(Receive(&message))
 				Expect(message.Message()).To(Equal("message-1"))
 				Expect(message.Type()).To(Equal("OUT"))
 				Expect(message.Timestamp()).To(Equal(time.Unix(0, 10)))
-				Expect(message.SourceType()).To(Equal("some-source-type"))
-				Expect(message.SourceInstance()).To(Equal("some-source-instance"))
 
-				message = <-messages
-				Expect(message.Message()).To(Equal("message-2"))
+				Eventually(messages).Should(Receive(&message))
+				Expect(message.Message()).To(Equal("message-4"))
 				Expect(message.Type()).To(Equal("ERR"))
-				Expect(message.Timestamp()).To(Equal(time.Unix(0, 20)))
-				Expect(message.SourceType()).To(Equal("some-source-type"))
-				Expect(message.SourceInstance()).To(Equal("some-source-instance"))
-			})
-
-			It("sorts the logs by timestamp", func() {
-				outMessage := events.LogMessage_OUT
-				sourceType := "some-source-type"
-				sourceInstance := "some-source-instance"
-
-				ts3 := int64(0)
-				eventStream <- &events.LogMessage{
-					Message:        []byte("message-3"),
-					MessageType:    &outMessage,
-					Timestamp:      &ts3,
-					SourceType:     &sourceType,
-					SourceInstance: &sourceInstance,
-				}
-
-				errMessage := events.LogMessage_ERR
-				ts4 := int64(15)
-				eventStream <- &events.LogMessage{
-					Message:        []byte("message-4"),
-					MessageType:    &errMessage,
-					Timestamp:      &ts4,
-					SourceType:     &sourceType,
-					SourceInstance: &sourceInstance,
-				}
-
-				message := <-messages
-				Expect(message.Timestamp()).To(Equal(time.Unix(0, 0)))
-
-				message = <-messages
-				Expect(message.Timestamp()).To(Equal(time.Unix(0, 10)))
-
-				message = <-messages
 				Expect(message.Timestamp()).To(Equal(time.Unix(0, 15)))
 
-				message = <-messages
+				Eventually(messages).Should(Receive(&message))
+				Expect(message.Message()).To(Equal("message-2"))
+				Expect(message.Type()).To(Equal("ERR"))
 				Expect(message.Timestamp()).To(Equal(time.Unix(0, 20)))
 			})
 		})
 
-		Context("when receiving errors", func() {
+		When("receiving errors", func() {
 			var (
 				err1 error
 				err2 error
@@ -176,9 +169,21 @@ var _ = Describe("Logging Actions", func() {
 
 			Describe("nil error", func() {
 				BeforeEach(func() {
+					fakeConfig.DialTimeoutReturns(time.Minute)
+
 					waiting = make(chan bool)
 					fakeNOAAClient.TailingLogsStub = func(_ string, _ string) (<-chan *events.LogMessage, <-chan error) {
+						eventStream := make(chan *events.LogMessage)
+						errStream := make(chan error, 1)
+
+						Expect(fakeNOAAClient.SetOnConnectCallbackCallCount()).To(Equal(1))
+						onConnectOrOnRetry := fakeNOAAClient.SetOnConnectCallbackArgsForCall(0)
+
 						go func() {
+							defer close(eventStream)
+							defer close(errStream)
+							onConnectOrOnRetry()
+
 							errStream <- nil
 							close(waiting)
 						}()
@@ -195,11 +200,18 @@ var _ = Describe("Logging Actions", func() {
 
 			Describe("unexpected error", func() {
 				BeforeEach(func() {
+					fakeConfig.DialTimeoutReturns(time.Microsecond) // tests don't care about this timeout, ignore it
+
 					err1 = errors.New("ZOMG")
 					err2 = errors.New("Fiddlesticks")
 
 					fakeNOAAClient.TailingLogsStub = func(_ string, _ string) (<-chan *events.LogMessage, <-chan error) {
+						eventStream := make(chan *events.LogMessage)
+						errStream := make(chan error, 1)
+
 						go func() {
+							defer close(eventStream)
+							defer close(errStream)
 							errStream <- err1
 							errStream <- err2
 						}()
@@ -215,11 +227,25 @@ var _ = Describe("Logging Actions", func() {
 			})
 
 			Describe("NOAA's RetryError", func() {
-				Context("when NOAA is able to recover", func() {
+				When("NOAA is able to recover", func() {
 					BeforeEach(func() {
+						fakeConfig.DialTimeoutReturns(60 * time.Minute)
+
 						fakeNOAAClient.TailingLogsStub = func(_ string, _ string) (<-chan *events.LogMessage, <-chan error) {
+							eventStream := make(chan *events.LogMessage)
+							errStream := make(chan error, 1)
+
+							Expect(fakeNOAAClient.SetOnConnectCallbackCallCount()).To(Equal(1))
+							onConnectOrOnRetry := fakeNOAAClient.SetOnConnectCallbackArgsForCall(0)
+
 							go func() {
+								defer close(eventStream)
+								defer close(errStream)
+
+								// can be called multiple times. Should be resilient to that
+								onConnectOrOnRetry()
 								errStream <- noaaErrors.NewRetryError(errors.New("error 1"))
+								onConnectOrOnRetry()
 
 								outMessage := events.LogMessage_OUT
 								ts1 := int64(10)
@@ -244,29 +270,61 @@ var _ = Describe("Logging Actions", func() {
 						Consistently(errs).ShouldNot(Receive())
 					})
 				})
+
+				When("NOAA has trouble connecting", func() {
+					BeforeEach(func() {
+						fakeConfig.DialTimeoutReturns(time.Microsecond)
+						fakeNOAAClient.TailingLogsStub = func(_ string, _ string) (<-chan *events.LogMessage, <-chan error) {
+							eventStream := make(chan *events.LogMessage)
+							errStream := make(chan error, 1)
+
+							go func() {
+								defer close(eventStream)
+								defer close(errStream)
+
+								// explicitly skip the on call to simulate ready never being triggered
+
+								errStream <- noaaErrors.NewRetryError(errors.New("error 1"))
+
+								outMessage := events.LogMessage_OUT
+								ts1 := int64(10)
+								sourceType := "some-source-type"
+								sourceInstance := "some-source-instance"
+
+								eventStream <- &events.LogMessage{
+									Message:        []byte("message-1"),
+									MessageType:    &outMessage,
+									Timestamp:      &ts1,
+									SourceType:     &sourceType,
+									SourceInstance: &sourceInstance,
+								}
+							}()
+
+							return eventStream, errStream
+						}
+					})
+
+					It("returns a NOAATimeoutError and continues", func() {
+						Eventually(errs).Should(Receive(MatchError(actionerror.NOAATimeoutError{})))
+						Eventually(messages).Should(Receive())
+
+						Expect(fakeConfig.DialTimeoutCallCount()).To(Equal(1))
+					})
+				})
 			})
 		})
 	})
 
 	Describe("GetStreamingLogsForApplicationByNameAndSpace", func() {
-		Context("when the application can be found", func() {
+		When("the application can be found", func() {
 			var (
 				expectedAppGUID string
-
-				eventStream chan *events.LogMessage
-				errStream   chan error
 
 				messages <-chan *LogMessage
 				logErrs  <-chan error
 			)
 
-			// If tests panic due to this close, it is likely you have a failing
-			// expectation and the channels are being closed because the test has
-			// failed/short circuited and is going through teardown.
 			AfterEach(func() {
-				close(eventStream)
-				close(errStream)
-
 				Eventually(messages).Should(BeClosed())
 				Eventually(logErrs).Should(BeClosed())
 			})
@@ -274,8 +332,6 @@ var _ = Describe("Logging Actions", func() {
 			BeforeEach(func() {
 				expectedAppGUID = "some-app-guid"
 
-				eventStream = make(chan *events.LogMessage)
-				errStream = make(chan error)
 				fakeCloudControllerClient.GetApplicationsReturns(
 					[]ccv3.Application{
 						{
@@ -287,11 +343,24 @@ var _ = Describe("Logging Actions", func() {
 					nil,
 				)
 
+				fakeConfig.DialTimeoutReturns(60 * time.Minute)
+
 				fakeNOAAClient.TailingLogsStub = func(appGUID string, authToken string) (<-chan *events.LogMessage, <-chan error) {
 					Expect(appGUID).To(Equal(expectedAppGUID))
 					Expect(authToken).To(BeEmpty())
 
+					Expect(fakeNOAAClient.SetOnConnectCallbackCallCount()).To(Equal(1))
+					onConnectOrOnRetry := fakeNOAAClient.SetOnConnectCallbackArgsForCall(0)
+
+					eventStream := make(chan *events.LogMessage)
+					errStream := make(chan error, 1)
+
 					go func() {
+						defer close(eventStream)
+						defer close(errStream)
+
+						onConnectOrOnRetry()
+
 						outMessage := events.LogMessage_OUT
 						ts1 := int64(10)
 						sourceType := "some-source-type"
@@ -345,7 +414,7 @@ var _ = Describe("Logging Actions", func() {
 			})
 		})
 
-		Context("when finding the application errors", func() {
+		When("finding the application errors", func() {
 			var expectedErr error
 
 			BeforeEach(func() {

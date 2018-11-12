@@ -21,7 +21,7 @@ type node struct {
 func (n *node) parse(f func(*testing.T, G, S)) Plan {
 	// TODO: validate Options
 	plan := Plan{
-		Text: n.text[0],
+		Text: strings.Join(n.text, "/"),
 		Seed: n.seed,
 	}
 	f(nil, func(text string, f func(), opts ...Option) {

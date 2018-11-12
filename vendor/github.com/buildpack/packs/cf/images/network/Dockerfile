@@ -1,9 +1,7 @@
 ARG stack
 FROM packs/${stack}
 
-ARG port=8080
-
-EXPOSE ${port}
+EXPOSE 8080
 
 RUN \
   apt-get update && \

@@ -1,6 +1,6 @@
 // +build linux,cgo,!static_build,journald
 
-package journald // import "github.com/docker/docker/daemon/logger/journald"
+package journald
 
 // #include <sys/types.h>
 // #include <sys/poll.h>
@@ -155,31 +155,27 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/coreos/go-systemd/journal"
-	"github.com/docker/docker/api/types/backend"
 	"github.com/docker/docker/daemon/logger"
-	"github.com/sirupsen/logrus"
 )
 
 func (s *journald) Close() error {
-	s.mu.Lock()
-	s.closed = true
+	s.readers.mu.Lock()
 	for reader := range s.readers.readers {
 		reader.Close()
 	}
-	s.mu.Unlock()
+	s.readers.mu.Unlock()
 	return nil
 }
 
-func (s *journald) drainJournal(logWatcher *logger.LogWatcher, j *C.sd_journal, oldCursor *C.char, untilUnixMicro uint64) (*C.char, bool) {
+func (s *journald) drainJournal(logWatcher *logger.LogWatcher, config logger.ReadConfig, j *C.sd_journal, oldCursor *C.char) *C.char {
 	var msg, data, cursor *C.char
 	var length C.size_t
 	var stamp C.uint64_t
 	var priority, partial C.int
-	var done bool
 
-	// Walk the journal from here forward until we run out of new entries
-	// or we reach the until value (if provided).
+	// Walk the journal from here forward until we run out of new entries.
 drain:
 	for {
 		// Try not to send a given entry twice.
@@ -197,12 +193,6 @@ drain:
 			if C.sd_journal_get_realtime_usec(j, &stamp) != 0 {
 				break
 			}
-			// Break if the timestamp exceeds any provided until flag.
-			if untilUnixMicro != 0 && untilUnixMicro < uint64(stamp) {
-				done = true
-				break
-			}
-
 			// Set up the time and text of the entry.
 			timestamp := time.Unix(int64(stamp)/1000000, (int64(stamp)%1000000)*1000)
 			line := C.GoBytes(unsafe.Pointer(msg), C.int(length))
@@ -222,11 +212,14 @@ drain:
 				source = "stdout"
 			}
 			// Retrieve the values of any variables we're adding to the journal.
-			var attrs []backend.LogAttr
+			attrs := make(map[string]string)
 			C.sd_journal_restart_data(j)
 			for C.get_attribute_field(j, &data, &length) > C.int(0) {
 				kv := strings.SplitN(C.GoStringN(data, C.int(length)), "=", 2)
-				attrs = append(attrs, backend.LogAttr{Key: kv[0], Value: kv[1]})
+				attrs[kv[0]] = kv[1]
+			}
+			if len(attrs) == 0 {
+				attrs = nil
 			}
 			// Send the log message.
 			logWatcher.Msg <- &logger.Message{
@@ -244,65 +237,41 @@ drain:
 
 	// free(NULL) is safe
 	C.free(unsafe.Pointer(oldCursor))
-	if C.sd_journal_get_cursor(j, &cursor) != 0 {
-		// ensure that we won't be freeing an address that's invalid
-		cursor = nil
-	}
-	return cursor, done
+	C.sd_journal_get_cursor(j, &cursor)
+	return cursor
 }
 
-func (s *journald) followJournal(logWatcher *logger.LogWatcher, j *C.sd_journal, pfd [2]C.int, cursor *C.char, untilUnixMicro uint64) *C.char {
-	s.mu.Lock()
+func (s *journald) followJournal(logWatcher *logger.LogWatcher, config logger.ReadConfig, j *C.sd_journal, pfd [2]C.int, cursor *C.char) *C.char {
+	s.readers.mu.Lock()
 	s.readers.readers[logWatcher] = logWatcher
-	if s.closed {
-		// the journald Logger is closed, presumably because the container has been
-		// reset.  So we shouldn't follow, because we'll never be woken up.  But we
-		// should make one more drainJournal call to be sure we've got all the logs.
-		// Close pfd[1] so that one drainJournal happens, then cleanup, then return.
-		C.close(pfd[1])
-	}
-	s.mu.Unlock()
-
-	newCursor := make(chan *C.char)
-
+	s.readers.mu.Unlock()
 	go func() {
-		for {
-			// Keep copying journal data out until we're notified to stop
-			// or we hit an error.
-			status := C.wait_for_data_cancelable(j, pfd[0])
-			if status < 0 {
-				cerrstr := C.strerror(C.int(-status))
-				errstr := C.GoString(cerrstr)
-				fmtstr := "error %q while attempting to follow journal for container %q"
-				logrus.Errorf(fmtstr, errstr, s.vars["CONTAINER_ID_FULL"])
-				break
-			}
-
-			var done bool
-			cursor, done = s.drainJournal(logWatcher, j, cursor, untilUnixMicro)
-
-			if status != 1 || done {
-				// We were notified to stop
-				break
-			}
+		// Keep copying journal data out until we're notified to stop
+		// or we hit an error.
+		status := C.wait_for_data_cancelable(j, pfd[0])
+		for status == 1 {
+			cursor = s.drainJournal(logWatcher, config, j, cursor)
+			status = C.wait_for_data_cancelable(j, pfd[0])
 		}
-
+		if status < 0 {
+			cerrstr := C.strerror(C.int(-status))
+			errstr := C.GoString(cerrstr)
+			fmtstr := "error %q while attempting to follow journal for container %q"
+			logrus.Errorf(fmtstr, errstr, s.vars["CONTAINER_ID_FULL"])
+		}
 		// Clean up.
 		C.close(pfd[0])
-		s.mu.Lock()
+		s.readers.mu.Lock()
 		delete(s.readers.readers, logWatcher)
-		s.mu.Unlock()
+		s.readers.mu.Unlock()
+		C.sd_journal_close(j)
 		close(logWatcher.Msg)
-		newCursor <- cursor
 	}()
-
 	// Wait until we're told to stop.
 	select {
-	case cursor = <-newCursor:
 	case <-logWatcher.WatchClose():
 		// Notify the other goroutine that its work is done.
 		C.close(pfd[1])
-		cursor = <-newCursor
 	}
 
 	return cursor
@@ -313,7 +282,6 @@ func (s *journald) readLogs(logWatcher *logger.LogWatcher, config logger.ReadCon
 	var cmatch, cursor *C.char
 	var stamp C.uint64_t
 	var sinceUnixMicro uint64
-	var untilUnixMicro uint64
 	var pipes [2]C.int
 
 	// Get a handle to the journal.
@@ -330,9 +298,9 @@ func (s *journald) readLogs(logWatcher *logger.LogWatcher, config logger.ReadCon
 	following := false
 	defer func(pfollowing *bool) {
 		if !*pfollowing {
+			C.sd_journal_close(j)
 			close(logWatcher.Msg)
 		}
-		C.sd_journal_close(j)
 	}(&following)
 	// Remove limits on the size of data items that we'll retrieve.
 	rc = C.sd_journal_set_data_threshold(j, C.size_t(0))
@@ -353,19 +321,10 @@ func (s *journald) readLogs(logWatcher *logger.LogWatcher, config logger.ReadCon
 		nano := config.Since.UnixNano()
 		sinceUnixMicro = uint64(nano / 1000)
 	}
-	// If we have an until value, convert it too
-	if !config.Until.IsZero() {
-		nano := config.Until.UnixNano()
-		untilUnixMicro = uint64(nano / 1000)
-	}
 	if config.Tail > 0 {
 		lines := config.Tail
-		// If until time provided, start from there.
-		// Otherwise start at the end of the journal.
-		if untilUnixMicro != 0 && C.sd_journal_seek_realtime_usec(j, C.uint64_t(untilUnixMicro)) < 0 {
-			logWatcher.Err <- fmt.Errorf("error seeking provided until value")
-			return
-		} else if C.sd_journal_seek_tail(j) < 0 {
+		// Start at the end of the journal.
+		if C.sd_journal_seek_tail(j) < 0 {
 			logWatcher.Err <- fmt.Errorf("error seeking to end of journal")
 			return
 		}
@@ -381,7 +340,8 @@ func (s *journald) readLogs(logWatcher *logger.LogWatcher, config logger.ReadCon
 			if C.sd_journal_get_realtime_usec(j, &stamp) != 0 {
 				break
 			} else {
-				// Compare the timestamp on the entry to our threshold value.
+				// Compare the timestamp on the entry
+				// to our threshold value.
 				if sinceUnixMicro != 0 && sinceUnixMicro > uint64(stamp) {
 					break
 				}
@@ -410,7 +370,7 @@ func (s *journald) readLogs(logWatcher *logger.LogWatcher, config logger.ReadCon
 			return
 		}
 	}
-	cursor, _ = s.drainJournal(logWatcher, j, nil, untilUnixMicro)
+	cursor = s.drainJournal(logWatcher, config, j, nil)
 	if config.Follow {
 		// Allocate a descriptor for following the journal, if we'll
 		// need one.  Do it here so that we can report if it fails.
@@ -422,7 +382,7 @@ func (s *journald) readLogs(logWatcher *logger.LogWatcher, config logger.ReadCon
 			if C.pipe(&pipes[0]) == C.int(-1) {
 				logWatcher.Err <- fmt.Errorf("error opening journald close notification pipe")
 			} else {
-				cursor = s.followJournal(logWatcher, j, pipes, cursor, untilUnixMicro)
+				cursor = s.followJournal(logWatcher, config, j, pipes, cursor)
 				// Let followJournal handle freeing the journal context
 				// object and closing the channel.
 				following = true

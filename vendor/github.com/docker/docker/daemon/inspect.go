@@ -1,7 +1,6 @@
-package daemon // import "github.com/docker/docker/daemon"
+package daemon
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -12,9 +11,6 @@ import (
 	"github.com/docker/docker/api/types/versions/v1p20"
 	"github.com/docker/docker/container"
 	"github.com/docker/docker/daemon/network"
-	"github.com/docker/docker/errdefs"
-	volumestore "github.com/docker/docker/volume/store"
-	"github.com/docker/go-connections/nat"
 )
 
 // ContainerInspect returns low-level information about a
@@ -39,22 +35,21 @@ func (daemon *Daemon) ContainerInspectCurrent(name string, size bool) (*types.Co
 	}
 
 	container.Lock()
+	defer container.Unlock()
 
-	base, err := daemon.getInspectData(container)
+	base, err := daemon.getInspectData(container, size)
 	if err != nil {
-		container.Unlock()
 		return nil, err
 	}
 
 	apiNetworks := make(map[string]*networktypes.EndpointSettings)
 	for name, epConf := range container.NetworkSettings.Networks {
 		if epConf.EndpointSettings != nil {
-			// We must make a copy of this pointer object otherwise it can race with other operations
-			apiNetworks[name] = epConf.EndpointSettings.Copy()
+			apiNetworks[name] = epConf.EndpointSettings
 		}
 	}
 
-	mountPoints := container.GetMountPoints()
+	mountPoints := addMountPoints(container)
 	networkSettings := &types.NetworkSettings{
 		NetworkSettingsBase: types.NetworkSettingsBase{
 			Bridge:                 container.NetworkSettings.Bridge,
@@ -62,26 +57,13 @@ func (daemon *Daemon) ContainerInspectCurrent(name string, size bool) (*types.Co
 			HairpinMode:            container.NetworkSettings.HairpinMode,
 			LinkLocalIPv6Address:   container.NetworkSettings.LinkLocalIPv6Address,
 			LinkLocalIPv6PrefixLen: container.NetworkSettings.LinkLocalIPv6PrefixLen,
+			Ports:                  container.NetworkSettings.Ports,
 			SandboxKey:             container.NetworkSettings.SandboxKey,
 			SecondaryIPAddresses:   container.NetworkSettings.SecondaryIPAddresses,
 			SecondaryIPv6Addresses: container.NetworkSettings.SecondaryIPv6Addresses,
 		},
 		DefaultNetworkSettings: daemon.getDefaultNetworkSettings(container.NetworkSettings.Networks),
 		Networks:               apiNetworks,
-	}
-
-	ports := make(nat.PortMap, len(container.NetworkSettings.Ports))
-	for k, pm := range container.NetworkSettings.Ports {
-		ports[k] = pm
-	}
-	networkSettings.NetworkSettingsBase.Ports = ports
-
-	container.Unlock()
-
-	if size {
-		sizeRw, sizeRootFs := daemon.imageService.GetContainerLayerSize(base.ID)
-		base.SizeRw = &sizeRw
-		base.SizeRootFs = &sizeRootFs
 	}
 
 	return &types.ContainerJSON{
@@ -102,12 +84,12 @@ func (daemon *Daemon) containerInspect120(name string) (*v1p20.ContainerJSON, er
 	container.Lock()
 	defer container.Unlock()
 
-	base, err := daemon.getInspectData(container)
+	base, err := daemon.getInspectData(container, false)
 	if err != nil {
 		return nil, err
 	}
 
-	mountPoints := container.GetMountPoints()
+	mountPoints := addMountPoints(container)
 	config := &v1p20.ContainerConfig{
 		Config:          container.Config,
 		MacAddress:      container.Config.MacAddress,
@@ -125,7 +107,7 @@ func (daemon *Daemon) containerInspect120(name string) (*v1p20.ContainerJSON, er
 	}, nil
 }
 
-func (daemon *Daemon) getInspectData(container *container.Container) (*types.ContainerJSONBase, error) {
+func (daemon *Daemon) getInspectData(container *container.Container, size bool) (*types.ContainerJSONBase, error) {
 	// make a copy to play with
 	hostConfig := *container.HostConfig
 
@@ -141,7 +123,7 @@ func (daemon *Daemon) getInspectData(container *container.Container) (*types.Con
 	var containerHealth *types.Health
 	if container.State.Health != nil {
 		containerHealth = &types.Health{
-			Status:        container.State.Health.Status(),
+			Status:        container.State.Health.Status,
 			FailingStreak: container.State.Health.FailingStreak,
 			Log:           append([]*types.HealthcheckResult{}, container.State.Health.Log...),
 		}
@@ -156,7 +138,7 @@ func (daemon *Daemon) getInspectData(container *container.Container) (*types.Con
 		Dead:       container.State.Dead,
 		Pid:        container.State.Pid,
 		ExitCode:   container.State.ExitCode(),
-		Error:      container.State.ErrorMsg,
+		Error:      container.State.Error(),
 		StartedAt:  container.State.StartedAt.Format(time.RFC3339Nano),
 		FinishedAt: container.State.FinishedAt.Format(time.RFC3339Nano),
 		Health:     containerHealth,
@@ -173,11 +155,20 @@ func (daemon *Daemon) getInspectData(container *container.Container) (*types.Con
 		Name:         container.Name,
 		RestartCount: container.RestartCount,
 		Driver:       container.Driver,
-		Platform:     container.OS,
 		MountLabel:   container.MountLabel,
 		ProcessLabel: container.ProcessLabel,
 		ExecIDs:      container.GetExecIDs(),
 		HostConfig:   &hostConfig,
+	}
+
+	var (
+		sizeRw     int64
+		sizeRootFs int64
+	)
+	if size {
+		sizeRw, sizeRootFs = daemon.getSize(container)
+		contJSONBase.SizeRw = &sizeRw
+		contJSONBase.SizeRootFs = &sizeRootFs
 	}
 
 	// Now set any platform-specific fields
@@ -185,24 +176,14 @@ func (daemon *Daemon) getInspectData(container *container.Container) (*types.Con
 
 	contJSONBase.GraphDriver.Name = container.Driver
 
-	if container.RWLayer == nil {
-		if container.Dead {
-			return contJSONBase, nil
-		}
-		return nil, errdefs.System(errors.New("RWLayer of container " + container.ID + " is unexpectedly nil"))
-	}
-
 	graphDriverData, err := container.RWLayer.Metadata()
 	// If container is marked as Dead, the container's graphdriver metadata
 	// could have been removed, it will cause error if we try to get the metadata,
 	// we can ignore the error if the container is dead.
-	if err != nil {
-		if !container.Dead {
-			return nil, errdefs.System(err)
-		}
-	} else {
-		contJSONBase.GraphDriver.Data = graphDriverData
+	if err != nil && !container.Dead {
+		return nil, err
 	}
+	contJSONBase.GraphDriver.Data = graphDriverData
 
 	return contJSONBase, nil
 }
@@ -210,13 +191,9 @@ func (daemon *Daemon) getInspectData(container *container.Container) (*types.Con
 // ContainerExecInspect returns low-level information about the exec
 // command. An error is returned if the exec cannot be found.
 func (daemon *Daemon) ContainerExecInspect(id string) (*backend.ExecInspect, error) {
-	e := daemon.execCommands.Get(id)
-	if e == nil {
-		return nil, errExecNotFound(id)
-	}
-
-	if container := daemon.containers.Get(e.ContainerID); container == nil {
-		return nil, errExecNotFound(id)
+	e, err := daemon.getExecConfig(id)
+	if err != nil {
+		return nil, err
 	}
 
 	pc := inspectExecProcessConfig(e)
@@ -241,10 +218,7 @@ func (daemon *Daemon) ContainerExecInspect(id string) (*backend.ExecInspect, err
 func (daemon *Daemon) VolumeInspect(name string) (*types.Volume, error) {
 	v, err := daemon.volumes.Get(name)
 	if err != nil {
-		if volumestore.IsNotExist(err) {
-			return nil, volumeNotFound(name)
-		}
-		return nil, errdefs.System(err)
+		return nil, err
 	}
 	apiV := volumeToAPIType(v)
 	apiV.Mountpoint = v.Path()

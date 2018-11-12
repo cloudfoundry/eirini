@@ -1,6 +1,6 @@
 // +build linux
 
-package aufs // import "github.com/docker/docker/daemon/graphdriver/aufs"
+package aufs
 
 import (
 	"bufio"
@@ -15,7 +15,7 @@ func loadIds(root string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var out []string
+	out := []string{}
 	for _, d := range dirs {
 		if !d.IsDir() {
 			out = append(out, d.Name())
@@ -36,7 +36,7 @@ func getParentIDs(root, id string) ([]string, error) {
 	}
 	defer f.Close()
 
-	var out []string
+	out := []string{}
 	s := bufio.NewScanner(f)
 
 	for s.Scan() {

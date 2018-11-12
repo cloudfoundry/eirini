@@ -1,4 +1,4 @@
-package opts // import "github.com/docker/docker/opts"
+package opts
 
 // QuotedString is a string that may have extra quotes around the value. The
 // quotes are stripped from the value.
@@ -18,7 +18,7 @@ func (s *QuotedString) Type() string {
 }
 
 func (s *QuotedString) String() string {
-	return *s.value
+	return string(*s.value)
 }
 
 func trimQuotes(value string) string {

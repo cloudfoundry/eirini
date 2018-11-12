@@ -15,7 +15,7 @@ docker pull "cloudfoundry/${stack}"
 
 build() { docker build --build-arg "stack=${stack}" "$@"; }
 
-build -t "packs/${stack}:latest" -f images/Dockerfile.base ..
+build -t "packs/${stack}:latest" -f images/base.Dockerfile ..
 
 build -t "packs/${stack}:build" --build-arg buildpacks="$(jq -cM . "${stack}.json")" images/build
 build -t "packs/${stack}:run" images/run

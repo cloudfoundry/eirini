@@ -325,6 +325,7 @@ my-ca
 		session := runCommand("get", "-n", "injected")
 
 		Eventually(session).Should(Exit(0))
-		Eventually(session.Out).Should(Say("et''%/7\\(V&`|\\?m\\|Ckih\\$" + TIMESTAMP))
+		outStr := "et''%/7\\(V&`|\\?m\\|Ckih\\$"
+		Eventually(session.Out).Should(Say(outStr + TIMESTAMP))
 	})
 })

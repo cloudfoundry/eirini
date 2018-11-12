@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -40,14 +41,25 @@ func GetAPI() string {
 	return apiURL
 }
 
-func LoginCF() string {
-	username, password := GetCredentials()
+func LoginAs(username, password string) {
 	env := map[string]string{
 		"CF_USERNAME": username,
 		"CF_PASSWORD": password,
 	}
-	Eventually(CFWithEnv(env, "auth")).Should(Exit(0))
 
+	for i := 0; i < 3; i++ {
+		session := CFWithEnv(env, "auth")
+		Eventually(session).Should(Exit())
+		if session.ExitCode() == 0 {
+			break
+		}
+		time.Sleep(3 * time.Second)
+	}
+}
+
+func LoginCF() string {
+	username, password := GetCredentials()
+	LoginAs(username, password)
 	return username
 }
 
@@ -75,6 +87,19 @@ func GetCredentials() (string, string) {
 	return username, password
 }
 
+// GetOIDCCredentials returns back the username and the password for OIDC origin.
+func GetOIDCCredentials() (string, string) {
+	username := os.Getenv("CF_INT_OIDC_USERNAME")
+	if username == "" {
+		username = "admin_oidc"
+	}
+	password := os.Getenv("CF_INT_OIDC_PASSWORD")
+	if password == "" {
+		password = "admin"
+	}
+	return username, password
+}
+
 func LogoutCF() {
 	Eventually(CF("logout")).Should(Exit(0))
 }
@@ -96,4 +121,25 @@ func SetupCF(org string, space string) {
 	LoginCF()
 	CreateOrgAndSpace(org, space)
 	TargetOrgAndSpace(org, space)
+}
+
+func SwitchToNoRole() string {
+	username, password := CreateUser()
+	LogoutCF()
+	LoginAs(username, password)
+	return username
+}
+
+func SwitchToOrgRole(org, role string) string {
+	username, password := CreateUserInOrgRole(org, role)
+	LogoutCF()
+	LoginAs(username, password)
+	return username
+}
+
+func SwitchToSpaceRole(org, space, role string) string {
+	username, password := CreateUserInSpaceRole(org, space, role)
+	LogoutCF()
+	LoginAs(username, password)
+	return username
 }

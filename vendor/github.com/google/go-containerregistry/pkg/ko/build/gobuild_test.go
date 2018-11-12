@@ -99,12 +99,12 @@ func TestGoBuildNoKoData(t *testing.T) {
 
 	img, err := ng.Build(filepath.Join(importpath, "cmd", "crane"))
 	if err != nil {
-		t.Fatalf("Build() = %v", err)
+		t.Errorf("Build() = %v", err)
 	}
 
 	ls, err := img.Layers()
 	if err != nil {
-		t.Fatalf("Layers() = %v", err)
+		t.Errorf("Layers() = %v", err)
 	}
 
 	// Check that we have the expected number of layers.
@@ -115,11 +115,12 @@ func TestGoBuildNoKoData(t *testing.T) {
 		}
 	})
 
-	// Check that rebuilding the image again results in the same image digest.
+	// While we have a randomized base image, the application layer should be completely deterministic.
+	// Check that when given fixed build outputs we get a fixed layer hash.
 	t.Run("check determinism", func(t *testing.T) {
 		expectedHash := v1.Hash{
 			Algorithm: "sha256",
-			Hex:       "a688c9bc444d0a34cbc24abd62aa2fa263f61f2060963bb7a4fc3fa92075a2bf",
+			Hex:       "a7be3daf6084d1ec81ca903599d23a514903c9e875d60414ff8009994615bd70",
 		}
 		appLayer := ls[baseLayers+1]
 
@@ -176,12 +177,12 @@ func TestGoBuild(t *testing.T) {
 
 	img, err := ng.Build(filepath.Join(importpath, "cmd", "ko", "test"))
 	if err != nil {
-		t.Fatalf("Build() = %v", err)
+		t.Errorf("Build() = %v", err)
 	}
 
 	ls, err := img.Layers()
 	if err != nil {
-		t.Fatalf("Layers() = %v", err)
+		t.Errorf("Layers() = %v", err)
 	}
 
 	// Check that we have the expected number of layers.
@@ -192,11 +193,12 @@ func TestGoBuild(t *testing.T) {
 		}
 	})
 
-	// Check that rebuilding the image again results in the same image digest.
+	// While we have a randomized base image, the application layer should be completely deterministic.
+	// Check that when given fixed build outputs we get a fixed layer hash.
 	t.Run("check determinism", func(t *testing.T) {
 		expectedHash := v1.Hash{
 			Algorithm: "sha256",
-			Hex:       "71912d718600c5a2b8db3a127a14073bba61dded0dac8e1a6ebdeb4a37f2ce8d",
+			Hex:       "9b5d822a4d4c0d1afab5dbe85b38e922240a7bf3b2bbbeff53189fe46f3a7b84",
 		}
 		appLayer := ls[baseLayers+1]
 
@@ -207,10 +209,12 @@ func TestGoBuild(t *testing.T) {
 		}
 	})
 
-	t.Run("check app layer contents", func(t *testing.T) {
+	// Check that the kodata layer contains the expected data (even though it was a symlink
+	// outside kodata).
+	t.Run("check kodata", func(t *testing.T) {
 		expectedHash := v1.Hash{
 			Algorithm: "sha256",
-			Hex:       "63b6e090921b79b61e7f5fba44d2ea0f81215d9abac3d005dda7cb9a1f8a025d",
+			Hex:       "7a7bafbc2ae1bf844c47b33025dd459913a3fece0a94b1f3ced860675be2b79c",
 		}
 		appLayer := ls[baseLayers]
 
@@ -221,21 +225,6 @@ func TestGoBuild(t *testing.T) {
 		}
 
 		r, err := appLayer.Uncompressed()
-		if err != nil {
-			t.Errorf("Uncompressed() = %v", err)
-		}
-		defer r.Close()
-		tr := tar.NewReader(r)
-		if _, err := tr.Next(); err == io.EOF {
-			t.Errorf("Layer contained no files")
-		}
-	})
-
-	// Check that the kodata layer contains the expected data (even though it was a symlink
-	// outside kodata).
-	t.Run("check kodata", func(t *testing.T) {
-		dataLayer := ls[baseLayers]
-		r, err := dataLayer.Uncompressed()
 		if err != nil {
 			t.Errorf("Uncompressed() = %v", err)
 		}

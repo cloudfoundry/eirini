@@ -51,13 +51,14 @@ func (org *Organization) UnmarshalJSON(data []byte) error {
 }
 
 type createOrganizationRequestBody struct {
-	Name string `json:"name"`
+	Name                string `json:"name"`
+	QuotaDefinitionGUID string `json:"quota_definition_guid,omitempty"`
 }
 
-func (client *Client) CreateOrganization(orgName string) (Organization, Warnings, error) {
-
+func (client *Client) CreateOrganization(orgName string, quotaGUID string) (Organization, Warnings, error) {
 	requestBody := createOrganizationRequestBody{
-		Name: orgName,
+		Name:                orgName,
+		QuotaDefinitionGUID: quotaGUID,
 	}
 
 	bodyBytes, err := json.Marshal(requestBody)
@@ -69,11 +70,10 @@ func (client *Client) CreateOrganization(orgName string) (Organization, Warnings
 		RequestName: internal.PostOrganizationRequest,
 		Body:        bytes.NewReader(bodyBytes),
 	})
-	/*
-		if err != nil {
-			return Organization{}, nil, err
-		}
-	*/
+
+	if err != nil {
+		return Organization{}, nil, err
+	}
 
 	var org Organization
 	response := cloudcontroller.Response{
@@ -156,4 +156,98 @@ func (client *Client) GetOrganizations(filters ...Filter) ([]Organization, Warni
 	})
 
 	return fullOrgsList, warnings, err
+}
+
+type updateOrgManagerByUsernameRequestBody struct {
+	Username string `json:"username"`
+}
+
+// UpdateOrganizationManager assigns the org manager role to the UAA user or client with the provided ID.
+func (client *Client) UpdateOrganizationManager(guid string, uaaID string) (Warnings, error) {
+	request, err := client.newHTTPRequest(requestOptions{
+		RequestName: internal.PutOrganizationManagerRequest,
+		URIParams:   Params{"organization_guid": guid, "manager_guid": uaaID},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	response := cloudcontroller.Response{}
+	err = client.connection.Make(request, &response)
+
+	return response.Warnings, err
+}
+
+// UpdateOrganizationManagerByUsername assigns the org manager role to the user with the provided name.
+func (client *Client) UpdateOrganizationManagerByUsername(guid string, username string) (Warnings, error) {
+	requestBody := updateOrgManagerByUsernameRequestBody{
+		Username: username,
+	}
+
+	body, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := client.newHTTPRequest(requestOptions{
+		RequestName: internal.PutOrganizationManagerByUsernameRequest,
+		Body:        bytes.NewReader(body),
+		URIParams:   Params{"organization_guid": guid},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	response := cloudcontroller.Response{}
+	err = client.connection.Make(request, &response)
+
+	return response.Warnings, err
+}
+
+// UpdateOrganizationUser makes the user or client with the given UAA ID a
+// member of the org.
+func (client *Client) UpdateOrganizationUser(guid string, uaaID string) (Warnings, error) {
+	request, err := client.newHTTPRequest(requestOptions{
+		RequestName: internal.PutOrganizationUserRequest,
+		URIParams:   Params{"organization_guid": guid, "user_guid": uaaID},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	response := cloudcontroller.Response{}
+	err = client.connection.Make(request, &response)
+
+	return response.Warnings, err
+}
+
+type updateOrgUserByUsernameRequestBody struct {
+	Username string `json:"username"`
+}
+
+// UpdateOrganizationUserByUsername makes the user with the given username a member of
+// the org.
+func (client Client) UpdateOrganizationUserByUsername(orgGUID string, username string) (Warnings, error) {
+	requestBody := updateOrgUserByUsernameRequestBody{
+		Username: username,
+	}
+
+	body, err := json.Marshal(requestBody)
+	if err != nil {
+		return Warnings{}, err
+	}
+
+	request, err := client.newHTTPRequest(requestOptions{
+		RequestName: internal.PutOrganizationUserByUsernameRequest,
+		Body:        bytes.NewReader(body),
+		URIParams:   Params{"organization_guid": orgGUID},
+	})
+	if err != nil {
+		return Warnings{}, err
+	}
+
+	response := cloudcontroller.Response{}
+	err = client.connection.Make(request, &response)
+
+	return response.Warnings, err
 }

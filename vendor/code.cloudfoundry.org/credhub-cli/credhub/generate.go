@@ -2,6 +2,8 @@ package credhub
 
 import (
 	"encoding/json"
+	"io"
+	"io/ioutil"
 	"net/http"
 
 	"code.cloudfoundry.org/credhub-cli/credhub/credentials"
@@ -75,6 +77,7 @@ func (ch *CredHub) generateCredential(name, credType string, gen interface{}, ov
 	}
 
 	defer resp.Body.Close()
+	defer io.Copy(ioutil.Discard, resp.Body)
 	dec := json.NewDecoder(resp.Body)
 
 	if err := ch.checkForServerError(resp); err != nil {

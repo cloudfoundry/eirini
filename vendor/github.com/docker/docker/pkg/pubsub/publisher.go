@@ -1,4 +1,4 @@
-package pubsub // import "github.com/docker/docker/pkg/pubsub"
+package pubsub
 
 import (
 	"sync"
@@ -47,16 +47,6 @@ func (p *Publisher) Subscribe() chan interface{} {
 // SubscribeTopic adds a new subscriber that filters messages sent by a topic.
 func (p *Publisher) SubscribeTopic(topic topicFunc) chan interface{} {
 	ch := make(chan interface{}, p.buffer)
-	p.m.Lock()
-	p.subscribers[ch] = topic
-	p.m.Unlock()
-	return ch
-}
-
-// SubscribeTopicWithBuffer adds a new subscriber that filters messages sent by a topic.
-// The returned channel has a buffer of the specified size.
-func (p *Publisher) SubscribeTopicWithBuffer(topic topicFunc, buffer int) chan interface{} {
-	ch := make(chan interface{}, buffer)
 	p.m.Lock()
 	p.subscribers[ch] = topic
 	p.m.Unlock()

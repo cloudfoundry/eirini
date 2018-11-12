@@ -120,7 +120,7 @@ func Example() {
 		}
 
 		// Use the generated certificate's values to create a new certificate
-		dupCert, err := ch.SetCertificate(path+"dup-cert", cert.Value, credhub.NoOverwrite)
+		dupCert, err := ch.SetCertificate(path+"dup-cert", cert.Value)
 		if err != nil {
 			panic("couldn't create certificate")
 		}

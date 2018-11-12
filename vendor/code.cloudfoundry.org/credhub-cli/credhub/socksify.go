@@ -49,7 +49,6 @@ func SOCKS5DialFuncFromEnvironment(origDialer DialFunc, socks5Proxy ProxyDialer)
 			username = proxyURL.User.Username()
 		}
 
-
 		if len(proxySSHKeyPath) == 0 {
 			return origDialer
 		}
@@ -75,7 +74,7 @@ func SOCKS5DialFuncFromEnvironment(origDialer DialFunc, socks5Proxy ProxyDialer)
 			mut.Lock()
 			defer mut.Unlock()
 			if dialer == nil {
-				proxyDialer, err := socks5Proxy.Dialer(username,string(proxySSHKey), proxyURL.Host)
+				proxyDialer, err := socks5Proxy.Dialer(username, string(proxySSHKey), proxyURL.Host)
 				if err != nil {
 					return nil, err
 				}

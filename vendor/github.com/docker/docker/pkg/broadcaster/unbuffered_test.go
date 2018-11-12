@@ -1,9 +1,10 @@
-package broadcaster // import "github.com/docker/docker/pkg/broadcaster"
+package broadcaster
 
 import (
 	"bytes"
 	"errors"
 	"strings"
+
 	"testing"
 )
 

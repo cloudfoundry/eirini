@@ -1,10 +1,8 @@
 // +build !windows
 
-package layer // import "github.com/docker/docker/layer"
+package layer
 
-import (
-	"testing"
-)
+import "testing"
 
 func graphDiffSize(ls Store, l Layer) (int64, error) {
 	cl := getCachedLayer(l)

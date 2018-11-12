@@ -1,6 +1,6 @@
-// +build !linux,!freebsd
+// +build !linux,!freebsd,!solaris
 
-package zfs // import "github.com/docker/docker/daemon/graphdriver/zfs"
+package zfs
 
 func checkRootdirFs(rootdir string) error {
 	return nil

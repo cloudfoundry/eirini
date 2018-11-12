@@ -8,10 +8,9 @@ image_resource:
 
 inputs:
 - name: cli
-- name: cli-integration
   path: go/src/code.cloudfoundry.org/cli
 - name: cf-cli-binaries
-- name: bosh-lite-lock
+- name: bosh-lock
 - name: vars-store
 
 params:
@@ -22,6 +21,8 @@ params:
   CF_INT_DOCKER_USERNAME:
   CF_INT_DOCKER_PASSWORD:
   CF_INT_IGNORE_API_VERSION_CHECK:
+  HONEYCOMB_WRITE_KEY:
+  HONEYCOMB_DATASET: "Integration Linux"
   NODES: 16
 
 run:
@@ -31,12 +32,27 @@ run:
   - |
     set -e
 
-    ENV=$(cat bosh-lite-lock/name | cut -d "." -f 1)
-    export CF_INT_PASSWORD=$(bosh int vars-store/ci/infrastructure/$ENV/deployment-vars.yml --path /cf_admin_password)
+    ENV=$(cat bosh-lock/name | cut -d "." -f 1)
+
+    if [[ $ENV == "homeroom" ]]; then
+      export CF_INT_PASSWORD=$(bosh int vars-store/ci/infrastructure/$ENV/deployment-vars.yml --path /cf_admin_password)
+      export CF_INT_OIDC_USERNAME="admin"
+      export CF_INT_OIDC_PASSWORD=$CF_INT_PASSWORD
+    else
+      pushd vars-store/ci/infrastructure/$ENV
+        eval "$(bbl print-env)"
+      popd
+
+      credhub login
+      export CF_INT_PASSWORD=$(credhub get -n /bosh-$ENV/cf/cf_admin_password | bosh interpolate --path /value -)
+
+      export CF_INT_OIDC_USERNAME="admin-oidc"
+      export CF_INT_OIDC_PASSWORD=$(credhub get -n /bosh-$ENV/cf/uaa_oidc_admin_password | bosh interpolate --path /value -)
+    fi
 
     set -x
 
-    domain=$(cat bosh-lite-lock/name)
+    domain=$(cat bosh-lock/name)
     export CF_INT_API="https://api.${domain}"
     export CF_DIAL_TIMEOUT=15
 
@@ -54,5 +70,7 @@ run:
 
     go get -u github.com/onsi/ginkgo/ginkgo
 
-    ginkgo -r -nodes=$NODES -flakeAttempts=2 -slowSpecThreshold=60 -randomizeAllSpecs integration/isolated integration/plugin integration/push
-    ginkgo -r -flakeAttempts=2 -slowSpecThreshold=60 -randomizeAllSpecs integration/global
+    export RUN_ID=$(openssl rand -hex 16)
+
+    ginkgo -r -nodes=$NODES -flakeAttempts=2 -slowSpecThreshold=60 -randomizeAllSpecs integration/shared/isolated integration/v6/isolated integration/shared/plugin integration/v6/push
+    ginkgo -r -flakeAttempts=2 -slowSpecThreshold=60 -randomizeAllSpecs integration/shared/global integration/v6/global

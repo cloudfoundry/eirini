@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"fmt"
 	"sort"
 
 	uuid "github.com/nu7hatch/gouuid"
@@ -84,8 +85,19 @@ func NewUsername() string {
 	return PrefixedRandomName("INTEGRATION-USER")
 }
 
-func NewBuildpack() string {
+func NewBuildpackName() string {
 	return PrefixedRandomName("INTEGRATION-BUILDPACK")
+}
+
+func NewStackName() string {
+	return PrefixedRandomName("INTEGRATION-STACK")
+}
+
+func NewDomainName(prefix ...string) string {
+	if len(prefix) > 0 {
+		return fmt.Sprintf("integration-%s.com", PrefixedRandomName(prefix[0]))
+	}
+	return fmt.Sprintf("integration%s.com", PrefixedRandomName(""))
 }
 
 func PrefixedRandomName(namePrefix string) string {

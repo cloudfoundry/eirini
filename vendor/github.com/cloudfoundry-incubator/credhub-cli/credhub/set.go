@@ -8,6 +8,7 @@ import (
 
 	"code.cloudfoundry.org/credhub-cli/credhub/credentials"
 	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
+	"github.com/hashicorp/go-version"
 )
 
 // SetValue sets a value credential with a user-provided value.
@@ -80,8 +81,23 @@ func (ch *CredHub) setCredential(name, credType string, value interface{}, cred 
 	requestBody["type"] = credType
 	requestBody["value"] = value
 
-	resp, err := ch.Request(http.MethodPut, "/api/v1/data", nil, requestBody, true)
+	if ch.cachedServerVersion == "" {
+		serverVersion, err := ch.ServerVersion()
+		if err != nil {
+			return err
+		}
+		ch.cachedServerVersion = serverVersion.String()
+	}
 
+	serverVersion, err := version.NewVersion(ch.cachedServerVersion)
+	if err != nil {
+		return err
+	}
+	if serverVersion.Segments()[0] < 2 {
+		requestBody["mode"] = "overwrite"
+	}
+
+	resp, err := ch.Request(http.MethodPut, "/api/v1/data", nil, requestBody, true)
 	if err != nil {
 		return err
 	}

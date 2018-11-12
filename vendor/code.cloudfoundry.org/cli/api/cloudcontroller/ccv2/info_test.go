@@ -74,7 +74,7 @@ var _ = Describe("Info", func() {
 		})
 	})
 
-	Context("when the API response gives a bad API endpoint", func() {
+	When("the API response gives a bad API endpoint", func() {
 		BeforeEach(func() {
 			response := `i am banana`
 			server.AppendHandlers(
@@ -87,7 +87,7 @@ var _ = Describe("Info", func() {
 
 		It("returns back an APINotFoundError", func() {
 			_, _, err := client.Info()
-			Expect(err).To(MatchError(ccerror.APINotFoundError{URL: server.URL()}))
+			Expect(err).To(MatchError(ccerror.APINotFoundError{URL: server.URL() + "/"}))
 		})
 	})
 })

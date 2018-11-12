@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/credhub-cli/credhub/credentials"
+	"strings"
 )
 
 // GetById returns a credential version by ID. The returned credential will be encoded as a map and may be of any type.
@@ -112,7 +113,7 @@ func (ch *CredHub) makeCredentialGetRequest(query url.Values, cred interface{}) 
 	resp, err := ch.Request(http.MethodGet, "/api/v1/data", query, nil, true)
 
 	if err != nil {
-		return err
+		return addErrorDescription(err, " making an http request")
 	}
 
 	defer resp.Body.Close()
@@ -122,7 +123,7 @@ func (ch *CredHub) makeCredentialGetRequest(query url.Values, cred interface{}) 
 	response := make(map[string][]json.RawMessage)
 
 	if err := dec.Decode(&response); err != nil {
-		return err
+		return addErrorDescription(err, " while decoding http response")
 	}
 
 	var ok bool
@@ -186,4 +187,11 @@ func (ch *CredHub) makeMultiCredentialGetRequest(query url.Values) ([]credential
 	}
 
 	return data, nil
+}
+
+func addErrorDescription(err error, message string) error {
+	if strings.HasSuffix(err.Error(), message) {
+		return err
+	}
+	return errors.New(err.Error() + message)
 }

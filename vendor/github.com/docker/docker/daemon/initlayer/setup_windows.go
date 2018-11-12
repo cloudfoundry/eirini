@@ -1,9 +1,6 @@
-package initlayer // import "github.com/docker/docker/daemon/initlayer"
+// +build windows
 
-import (
-	"github.com/docker/docker/pkg/containerfs"
-	"github.com/docker/docker/pkg/idtools"
-)
+package initlayer
 
 // Setup populates a directory with mountpoints suitable
 // for bind-mounting dockerinit into the container. The mountpoint is simply an
@@ -11,6 +8,6 @@ import (
 //
 // This extra layer is used by all containers as the top-most ro layer. It protects
 // the container from unwanted side-effects on the rw layer.
-func Setup(initLayer containerfs.ContainerFS, rootIDs idtools.IDPair) error {
+func Setup(initLayer string, rootUID, rootGID int) error {
 	return nil
 }

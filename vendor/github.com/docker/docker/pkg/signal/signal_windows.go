@@ -1,4 +1,6 @@
-package signal // import "github.com/docker/docker/pkg/signal"
+// +build windows
+
+package signal
 
 import (
 	"syscall"

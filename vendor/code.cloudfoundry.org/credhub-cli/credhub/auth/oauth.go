@@ -2,11 +2,11 @@ package auth
 
 import (
 	"bytes"
-	"strings"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 )
 

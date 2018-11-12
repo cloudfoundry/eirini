@@ -16,17 +16,17 @@ var _ = Describe("Instances", func() {
 	})
 
 	Describe("UnmarshalFlag", func() {
-		Context("when the empty string is provided", func() {
+		When("the empty string is provided", func() {
 			It("sets IsSet to false", func() {
-				err := instances.UnmarshalFlag("")
+				err := instances.IsValidValue("")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(instances).To(Equal(Instances{NullInt: types.NullInt{Value: 0, IsSet: false}}))
 			})
 		})
 
-		Context("when an invalid integer is provided", func() {
+		When("an invalid integer is provided", func() {
 			It("returns an error", func() {
-				err := instances.UnmarshalFlag("abcdef")
+				err := instances.IsValidValue("abcdef")
 				Expect(err).To(MatchError(&flags.Error{
 					Type:    flags.ErrRequired,
 					Message: "invalid argument for flag '-i' (expected int > 0)",
@@ -35,9 +35,9 @@ var _ = Describe("Instances", func() {
 			})
 		})
 
-		Context("when a negative integer is provided", func() {
+		When("a negative integer is provided", func() {
 			It("returns an error", func() {
-				err := instances.UnmarshalFlag("-10")
+				err := instances.IsValidValue("-10")
 				Expect(err).To(MatchError(&flags.Error{
 					Type:    flags.ErrRequired,
 					Message: "invalid argument for flag '-i' (expected int > 0)",
@@ -46,9 +46,9 @@ var _ = Describe("Instances", func() {
 			})
 		})
 
-		Context("when a valid integer is provided", func() {
+		When("a valid integer is provided", func() {
 			It("stores the integer and sets IsSet to true", func() {
-				err := instances.UnmarshalFlag("0")
+				err := instances.IsValidValue("0")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(instances).To(Equal(Instances{NullInt: types.NullInt{Value: 0, IsSet: true}}))
 			})

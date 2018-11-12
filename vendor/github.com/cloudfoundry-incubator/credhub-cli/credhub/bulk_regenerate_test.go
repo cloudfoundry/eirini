@@ -2,8 +2,8 @@ package credhub_test
 
 import (
 	"bytes"
-	"encoding/json"
 	. "code.cloudfoundry.org/credhub-cli/credhub"
+	"encoding/json"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"io/ioutil"

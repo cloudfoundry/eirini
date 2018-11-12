@@ -3,7 +3,6 @@ package commands_test
 import (
 	"net/http"
 
-	"code.cloudfoundry.org/credhub-cli/credhub"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
@@ -183,7 +182,7 @@ Failed to set: 0
 
 	Describe("when importing file with no name specified", func() {
 		It("passes through the server error", func() {
-			jsonBody := `{"name":"","type":"password","value":"test-password","overwrite":true}`
+			jsonBody := `{"name":"","type":"password","value":"test-password"}`
 			SetupPutBadRequestServer(jsonBody)
 
 			session := runCommand("import", "-f", "../test/test_import_missing_name.yml")
@@ -206,8 +205,8 @@ Failed to set: 0
 		It("should display error message", func() {
 			error := "The request does not include a valid type. Valid values include 'value', 'json', 'password', 'user', 'certificate', 'ssh' and 'rsa'."
 
-			request := `{"type":"invalid_type","name":"/test/invalid_type","value":"some string","overwrite":true}`
-			request1 := `{"type":"invalid_type","name":"/test/invalid_type1","value":"some string","overwrite":true}`
+			request := `{"type":"invalid_type","name":"/test/invalid_type","value":"some string"}`
+			request1 := `{"type":"invalid_type","name":"/test/invalid_type1","value":"some string"}`
 			server.AppendHandlers(
 				CombineHandlers(
 					VerifyRequest("PUT", "/api/v1/data"),
@@ -218,7 +217,7 @@ Failed to set: 0
 					VerifyJSON(request1),
 					RespondWith(http.StatusBadRequest, `{"error": "`+error+`"}`)),
 			)
-			SetupPutUserServer("/test/user", `{"username": "covfefe", "password": "test-user-password"}`, "covfefe", "test-user-password", "P455W0rd-H45H", credhub.Overwrite)
+			SetupPutUserServer("/test/user", `{"username": "covfefe", "password": "test-user-password"}`, "covfefe", "test-user-password", "P455W0rd-H45H")
 
 			session := runCommand("import", "-f", "../test/test_import_partial_fail_set.yml")
 			summaryMessage := `Import complete.
@@ -249,14 +248,14 @@ Failed to set: 2
 })
 
 func setUpImportRequests() {
-	SetupOverwritePutValueServer("/test/password", "password", "test-password-value", credhub.Overwrite)
-	SetupOverwritePutValueServer("/test/value", "value", "test-value", credhub.Overwrite)
+	SetupPutValueServer("/test/password", "password", "test-password-value")
+	SetupPutValueServer("/test/value", "value", "test-value")
 	SetupPutCertificateServer("/test/certificate",
 		`ca-certificate`,
 		`certificate`,
 		`private-key`)
-	SetupPutRsaServer("/test/rsa", "rsa", "public-key", "private-key", credhub.Overwrite)
-	SetupPutRsaServer("/test/ssh", "ssh", "ssh-public-key", "private-key", credhub.Overwrite)
-	SetupPutUserServer("/test/user", `{"username": "covfefe", "password": "test-user-password"}`, "covfefe", "test-user-password", "P455W0rd-H45H", credhub.Overwrite)
+	SetupPutRsaServer("/test/rsa", "rsa", "public-key", "private-key")
+	SetupPutRsaServer("/test/ssh", "ssh", "ssh-public-key", "private-key")
+	SetupPutUserServer("/test/user", `{"username": "covfefe", "password": "test-user-password"}`, "covfefe", "test-user-password", "P455W0rd-H45H")
 	setupPutJsonServer("/test/json", `{"1":"key is not a string","3.14":"pi","true":"key is a bool","arbitrary_object":{"nested_array":["array_val1",{"array_object_subvalue":"covfefe"}]}}`)
 }

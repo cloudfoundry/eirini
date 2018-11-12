@@ -1,4 +1,4 @@
-package time // import "github.com/docker/docker/api/types/time"
+package time
 
 import (
 	"fmt"
@@ -49,8 +49,8 @@ func TestGetTimestamp(t *testing.T) {
 		{"1.5h", fmt.Sprintf("%d", now.Add(-90*time.Minute).Unix()), false},
 		{"1h30m", fmt.Sprintf("%d", now.Add(-90*time.Minute).Unix()), false},
 
-		{"invalid", "", true},
-		{"", "", true},
+		// String fallback
+		{"invalid", "invalid", false},
 	}
 
 	for _, c := range cases {

@@ -1,6 +1,6 @@
 // +build !windows
 
-package runconfig // import "github.com/docker/docker/runconfig"
+package runconfig
 
 import (
 	"github.com/docker/docker/api/types/container"
@@ -53,7 +53,7 @@ func (w *ContainerConfigWrapper) getHostConfig() *container.HostConfig {
 
 	// Make sure NetworkMode has an acceptable value. We do this to ensure
 	// backwards compatible API behavior.
-	SetDefaultNetModeIfBlank(hc)
+	hc = SetDefaultNetModeIfBlank(hc)
 
 	return hc
 }

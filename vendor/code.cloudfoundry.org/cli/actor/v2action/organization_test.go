@@ -9,19 +9,23 @@ import (
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2/constant"
+	uaaconst "code.cloudfoundry.org/cli/api/uaa/constant"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 )
 
 var _ = Describe("Org Actions", func() {
 	var (
 		actor                     *Actor
 		fakeCloudControllerClient *v2actionfakes.FakeCloudControllerClient
+		fakeConfig                *v2actionfakes.FakeConfig
 	)
 
 	BeforeEach(func() {
 		fakeCloudControllerClient = new(v2actionfakes.FakeCloudControllerClient)
-		actor = NewActor(fakeCloudControllerClient, nil, nil)
+		fakeConfig = new(v2actionfakes.FakeConfig)
+		actor = NewActor(fakeCloudControllerClient, nil, fakeConfig)
 	})
 
 	Describe("GetOrganization", func() {
@@ -35,7 +39,7 @@ var _ = Describe("Org Actions", func() {
 			org, warnings, err = actor.GetOrganization("some-org-guid")
 		})
 
-		Context("when the org exists", func() {
+		When("the org exists", func() {
 			BeforeEach(func() {
 				fakeCloudControllerClient.GetOrganizationReturns(
 					ccv2.Organization{
@@ -62,7 +66,7 @@ var _ = Describe("Org Actions", func() {
 			})
 		})
 
-		Context("when the org does not exist", func() {
+		When("the org does not exist", func() {
 			BeforeEach(func() {
 				fakeCloudControllerClient.GetOrganizationReturns(
 					ccv2.Organization{},
@@ -77,7 +81,7 @@ var _ = Describe("Org Actions", func() {
 			})
 		})
 
-		Context("when client returns an error", func() {
+		When("client returns an error", func() {
 			var expectedErr error
 
 			BeforeEach(func() {
@@ -107,7 +111,7 @@ var _ = Describe("Org Actions", func() {
 			org, warnings, err = actor.GetOrganizationByName("some-org")
 		})
 
-		Context("when the org exists", func() {
+		When("the org exists", func() {
 			BeforeEach(func() {
 				fakeCloudControllerClient.GetOrganizationsReturns(
 					[]ccv2.Organization{
@@ -133,7 +137,7 @@ var _ = Describe("Org Actions", func() {
 			})
 		})
 
-		Context("when the org does not exist", func() {
+		When("the org does not exist", func() {
 			BeforeEach(func() {
 				fakeCloudControllerClient.GetOrganizationsReturns(
 					[]ccv2.Organization{},
@@ -147,7 +151,7 @@ var _ = Describe("Org Actions", func() {
 			})
 		})
 
-		Context("when multiple orgs exist with the same name", func() {
+		When("multiple orgs exist with the same name", func() {
 			BeforeEach(func() {
 				fakeCloudControllerClient.GetOrganizationsReturns(
 					[]ccv2.Organization{
@@ -164,7 +168,7 @@ var _ = Describe("Org Actions", func() {
 			})
 		})
 
-		Context("when an error is encountered", func() {
+		When("an error is encountered", func() {
 			var returnedErr error
 
 			BeforeEach(func() {
@@ -186,41 +190,254 @@ var _ = Describe("Org Actions", func() {
 		})
 	})
 
-	Describe("CreateOrganization", func() {
+	Describe("GrantOrgManagerByUsername", func() {
 		var (
-			org      Organization
+			guid     string
+			username string
 			warnings Warnings
 			err      error
 		)
 
 		JustBeforeEach(func() {
-			org, warnings, err = actor.CreateOrganization("some-org")
+			warnings, err = actor.GrantOrgManagerByUsername(guid, username)
 		})
 
-		Context("the organization is created successfully", func() {
-			BeforeEach(func() {
-				fakeCloudControllerClient.CreateOrganizationReturns(
-					ccv2.Organization{
-						GUID:                "some-org-guid",
-						Name:                "some-org",
-						QuotaDefinitionGUID: "some-quota-definition-guid",
-					},
-					ccv2.Warnings{"warning-1", "warning-2"},
-					nil)
+		When("acting as a user", func() {
+			When("making the user an org manager succeeds", func() {
+				BeforeEach(func() {
+					guid = "some-guid"
+					username = "some-user"
+
+					fakeCloudControllerClient.UpdateOrganizationManagerByUsernameReturns(
+						ccv2.Warnings{"warning-1", "warning-2"},
+						nil,
+					)
+				})
+
+				It("returns warnings", func() {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(fakeCloudControllerClient.UpdateOrganizationManagerByUsernameCallCount()).To(Equal(1))
+					orgGuid, user := fakeCloudControllerClient.UpdateOrganizationManagerByUsernameArgsForCall(0)
+					Expect(orgGuid).To(Equal("some-guid"))
+					Expect(user).To(Equal("some-user"))
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+				})
 			})
 
-			It("returns the org and all warnings", func() {
-				Expect(err).ToNot(HaveOccurred())
+			When("making the user an org manager fails", func() {
+				BeforeEach(func() {
+					fakeCloudControllerClient.UpdateOrganizationManagerByUsernameReturns(
+						ccv2.Warnings{"warning-1", "warning-2"},
+						errors.New("some-error"),
+					)
+				})
 
-				Expect(org.GUID).To(Equal("some-org-guid"))
-				Expect(org.Name).To(Equal("some-org"))
-				Expect(org.QuotaDefinitionGUID).To(Equal("some-quota-definition-guid"))
+				It("returns the error and all warnings", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+					Expect(err).To(MatchError("some-error"))
+				})
+			})
+		})
 
-				Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+		When("acting as a client", func() {
+			BeforeEach(func() {
+				fakeConfig.UAAGrantTypeReturns(string(uaaconst.GrantTypeClientCredentials))
+			})
 
-				Expect(fakeCloudControllerClient.CreateOrganizationCallCount()).To(Equal(1))
-				orgName := fakeCloudControllerClient.CreateOrganizationArgsForCall(0)
-				Expect(orgName).To(Equal("some-org"))
+			When("making the client an org manager succeeds", func() {
+				BeforeEach(func() {
+					guid = "some-guid"
+					username = "some-client-id"
+
+					fakeCloudControllerClient.UpdateOrganizationManagerReturns(
+						ccv2.Warnings{"warning-1", "warning-2"},
+						nil,
+					)
+				})
+
+				It("returns warnings", func() {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(fakeCloudControllerClient.UpdateOrganizationManagerCallCount()).To(Equal(1))
+					orgGuid, user := fakeCloudControllerClient.UpdateOrganizationManagerArgsForCall(0)
+					Expect(orgGuid).To(Equal("some-guid"))
+					Expect(user).To(Equal("some-client-id"))
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+				})
+			})
+
+			When("making the client an org manager fails", func() {
+				BeforeEach(func() {
+					fakeCloudControllerClient.UpdateOrganizationManagerReturns(
+						ccv2.Warnings{"warning-1", "warning-2"},
+						errors.New("some-error"),
+					)
+				})
+
+				It("returns the error and all warnings", func() {
+					Expect(err).To(HaveOccurred())
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+					Expect(err).To(MatchError("some-error"))
+				})
+			})
+		})
+	})
+
+	Describe("CreateOrganization", func() {
+		var (
+			quotaName string
+
+			org        Organization
+			warnings   Warnings
+			executeErr error
+		)
+
+		JustBeforeEach(func() {
+			org, warnings, executeErr = actor.CreateOrganization("some-org", quotaName)
+		})
+
+		When("a quota is not specified", func() {
+			BeforeEach(func() {
+				quotaName = ""
+			})
+
+			When("the organization is created successfully", func() {
+				BeforeEach(func() {
+					fakeCloudControllerClient.CreateOrganizationReturns(
+						ccv2.Organization{
+							GUID: "some-org-guid",
+							Name: "some-org",
+						},
+						ccv2.Warnings{"warning-1", "warning-2"},
+						nil)
+				})
+
+				It("returns the org and all warnings", func() {
+					Expect(executeErr).ToNot(HaveOccurred())
+
+					Expect(org.GUID).To(Equal("some-org-guid"))
+					Expect(org.Name).To(Equal("some-org"))
+
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+					Expect(fakeCloudControllerClient.GetOrganizationQuotasCallCount()).To(Equal(0))
+					Expect(fakeCloudControllerClient.CreateOrganizationCallCount()).To(Equal(1))
+					orgName, quotaGUID := fakeCloudControllerClient.CreateOrganizationArgsForCall(0)
+					Expect(quotaGUID).To(BeEmpty())
+					Expect(orgName).To(Equal("some-org"))
+				})
+			})
+
+			When("creating the organzation fails", func() {
+				BeforeEach(func() {
+					fakeCloudControllerClient.CreateOrganizationReturns(
+						ccv2.Organization{},
+						ccv2.Warnings{"warning-1", "warning-2"},
+						errors.New("couldn't make it"))
+				})
+
+				It("returns the error and warnings", func() {
+					Expect(executeErr).To(MatchError("couldn't make it"))
+					Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+
+					Expect(fakeCloudControllerClient.CreateOrganizationCallCount()).To(Equal(1))
+				})
+
+				When("the organization name already exists", func() {
+					BeforeEach(func() {
+						fakeCloudControllerClient.CreateOrganizationReturns(
+							ccv2.Organization{},
+							ccv2.Warnings{"warning-1", "warning-2"},
+							ccerror.OrganizationNameTakenError{Message: "name is taken"},
+						)
+					})
+
+					It("wraps the error in an action error", func() {
+						Expect(executeErr).To(MatchError(actionerror.OrganizationNameTakenError{Name: "some-org"}))
+						Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+						Expect(fakeCloudControllerClient.CreateOrganizationCallCount()).To(Equal(1))
+					})
+				})
+			})
+		})
+
+		When("a quota name is specified", func() {
+			BeforeEach(func() {
+				quotaName = "some-quota"
+			})
+
+			When("the fetching the quota succeeds", func() {
+				BeforeEach(func() {
+					fakeCloudControllerClient.GetOrganizationQuotasReturns(
+						[]ccv2.OrganizationQuota{
+							{
+								GUID: "some-quota-definition-guid",
+								Name: "some-quota",
+							},
+						},
+						ccv2.Warnings{"quota-warning-1", "quota-warning-2"},
+						nil)
+				})
+
+				When("creating the org succeeds", func() {
+					BeforeEach(func() {
+						fakeCloudControllerClient.CreateOrganizationReturns(
+							ccv2.Organization{
+								GUID:                "some-org-guid",
+								Name:                "some-org",
+								QuotaDefinitionGUID: "some-quota-definition-guid",
+							},
+							ccv2.Warnings{"warning-1", "warning-2"},
+							nil)
+					})
+
+					It("includes that quota's guid when creating the org", func() {
+						Expect(executeErr).ToNot(HaveOccurred())
+						Expect(warnings).To(ConsistOf("quota-warning-1", "quota-warning-2", "warning-1", "warning-2"))
+						Expect(org).To(MatchFields(IgnoreExtras, Fields{
+							"GUID":                Equal("some-org-guid"),
+							"Name":                Equal("some-org"),
+							"QuotaDefinitionGUID": Equal("some-quota-definition-guid"),
+						}))
+
+						Expect(fakeCloudControllerClient.CreateOrganizationCallCount()).To(Equal(1))
+						orgName, quotaGUID := fakeCloudControllerClient.CreateOrganizationArgsForCall(0)
+						Expect(quotaGUID).To(Equal("some-quota-definition-guid"))
+						Expect(orgName).To(Equal("some-org"))
+					})
+				})
+
+				When("creating the org fails", func() {
+					BeforeEach(func() {
+						fakeCloudControllerClient.CreateOrganizationReturns(
+							ccv2.Organization{},
+							ccv2.Warnings{"warning-1", "warning-2"},
+							errors.New("couldn't make it"))
+					})
+
+					It("returns the error and warnings", func() {
+						Expect(executeErr).To(MatchError("couldn't make it"))
+						Expect(warnings).To(ConsistOf("quota-warning-1", "quota-warning-2", "warning-1", "warning-2"))
+
+						Expect(fakeCloudControllerClient.CreateOrganizationCallCount()).To(Equal(1))
+					})
+				})
+			})
+
+			When("fetching the quota fails", func() {
+				BeforeEach(func() {
+					fakeCloudControllerClient.GetOrganizationQuotasReturns(
+						nil,
+						ccv2.Warnings{"quota-warning-1", "quota-warning-2"},
+						errors.New("no quota found"))
+				})
+
+				It("returns warnings and the error, and does not try to create the org", func() {
+					Expect(executeErr).To(MatchError("no quota found"))
+					Expect(warnings).To(ConsistOf("quota-warning-1", "quota-warning-2"))
+
+					Expect(fakeCloudControllerClient.GetOrganizationQuotasCallCount()).To(Equal(1))
+					Expect(fakeCloudControllerClient.CreateOrganizationCallCount()).To(Equal(0))
+				})
 			})
 		})
 	})
@@ -276,7 +493,7 @@ var _ = Describe("Org Actions", func() {
 			})
 		})
 
-		Context("when getting the org returns an error", func() {
+		When("getting the org returns an error", func() {
 			BeforeEach(func() {
 				fakeCloudControllerClient.GetOrganizationsReturns(
 					[]ccv2.Organization{},
@@ -295,7 +512,7 @@ var _ = Describe("Org Actions", func() {
 			})
 		})
 
-		Context("when the delete returns an error", func() {
+		When("the delete returns an error", func() {
 			var returnedErr error
 
 			BeforeEach(func() {
@@ -321,7 +538,7 @@ var _ = Describe("Org Actions", func() {
 			})
 		})
 
-		Context("when the job polling has an error", func() {
+		When("the job polling has an error", func() {
 			var expectedErr error
 			BeforeEach(func() {
 				fakeCloudControllerClient.GetOrganizationsReturns([]ccv2.Organization{
@@ -353,7 +570,7 @@ var _ = Describe("Org Actions", func() {
 			orgs, warnings, err = actor.GetOrganizations()
 		})
 
-		Context("when there are multiple organizations", func() {
+		When("there are multiple organizations", func() {
 			BeforeEach(func() {
 				fakeCloudControllerClient.GetOrganizationsReturns(
 					[]ccv2.Organization{
@@ -383,7 +600,7 @@ var _ = Describe("Org Actions", func() {
 			})
 		})
 
-		Context("when there are no orgs", func() {
+		When("there are no orgs", func() {
 			BeforeEach(func() {
 				fakeCloudControllerClient.GetOrganizationsReturns(
 					[]ccv2.Organization{},
@@ -400,7 +617,7 @@ var _ = Describe("Org Actions", func() {
 			})
 		})
 
-		Context("when client returns an error", func() {
+		When("client returns an error", func() {
 			var expectedErr error
 
 			BeforeEach(func() {

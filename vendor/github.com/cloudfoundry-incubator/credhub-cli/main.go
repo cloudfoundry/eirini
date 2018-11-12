@@ -58,7 +58,9 @@ func main() {
 					cfg.AccessToken,
 					cfg.RefreshToken,
 					useClientCredentials,
-				)))
+				)),
+				credhub.ServerVersion(cfg.ServerVersion),
+			)
 			if err != nil {
 				return err
 			}

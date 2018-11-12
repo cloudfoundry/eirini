@@ -15,8 +15,8 @@ resources:
     ignore_paths: &ciPaths
     - bin
     - ci
-    - integration
-    - Makefile
+    - README.md
+    - .github
 
 - name: cli-i18n
   type: git
@@ -31,19 +31,17 @@ resources:
     branch: master
     paths: *ciPaths
 
-- name: cli-integration
-  type: git
-  source:
-    uri: https://github.com/cloudfoundry/cli
-    branch: master
-    paths:
-    - integration
-
 - name: cf-acceptance-tests
   type: git
   source:
     uri: https://github.com/cloudfoundry/cf-acceptance-tests
     branch: master
+
+- name: cf-deployment-concourse-tasks
+  type: git
+  source:
+    uri: https://github.com/cloudfoundry/cf-deployment-concourse-tasks
+    tag_filter: v7.*
 
 - name: cf-cli-binaries
   type: s3
@@ -271,7 +269,7 @@ jobs:
            channel: '#cli-eng'
            text: |
              Linux unit tests failed :(
-             https://wings.pivotal.io/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+             $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
     - task: units-osx
       file: cli-ci/ci/cli/tasks/units-osx.yml
       on_failure:
@@ -280,7 +278,7 @@ jobs:
            channel: '#cli-eng'
            text: |
              OS X unit tests failed :(
-             https://wings.pivotal.io/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+             $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
     - task: units-windows
       file: cli-ci/ci/cli/tasks/units-windows.yml
       on_failure:
@@ -289,7 +287,7 @@ jobs:
            channel: '#cli-eng'
            text: |
              Windows unit tests failed :(
-             https://wings.pivotal.io/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+             $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
 
 - name: build-binaries
   serial: true
@@ -303,21 +301,32 @@ jobs:
   - task: build-i18n
     file: cli-ci/ci/cli/tasks/generate-i18n-resources.yml
     on_failure:
-       put: slack-alert
-       params:
-         channel: '#cli-eng'
-         text: |
-           i18n generation failed :(
-           https://wings.pivotal.io/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+      put: slack-alert
+      params:
+        channel: '#cli-eng'
+        text: |
+          i18n generation failed :(
+          $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
   - task: build
     file: cli-ci/ci/cli/tasks/build-binaries.yml
     on_failure:
-       put: slack-alert
-       params:
-         channel: '#cli-eng'
-         text: |
-           build binaries failed :(
-           https://wings.pivotal.io/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+      put: slack-alert
+      params:
+        channel: '#cli-eng'
+        text: |
+          build binaries failed :(
+          $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+  - task: build-osx
+    file: cli-ci/ci/cli/tasks/build-osx-binary.yml
+    on_failure:
+      put: slack-alert
+      params:
+        channel: '#cli-eng'
+        text: |
+          build OS X binaries failed :(
+          $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+  - task: combine-binaries	
+    file: cli-ci/ci/cli/tasks/combine-binaries.yml
   - put: cf-cli-binaries
     params:
       file: compiled/cf-cli-binaries.tgz
@@ -332,9 +341,8 @@ jobs:
       passed: [build-binaries]
       trigger: true
     - get: cli-ci
-    - get: cli-integration
     - get: vars-store
-    - put: bosh-lite-lock
+    - put: bosh-lock
       resource: gcp-bosh-pool
       params:
         acquire: true
@@ -349,7 +357,7 @@ jobs:
           channel: '#cli-eng'
           text: |
             Linux integration failed :(
-            https://wings.pivotal.io/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+            $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
       ensure:
         task: cleanup-integration
         file: cli-ci/ci/cli/tasks/cleanup-integration.yml
@@ -360,10 +368,11 @@ jobs:
         CF_INT_DOCKER_USERNAME: ((dockerhub-username))
         CF_INT_DOCKER_PASSWORD: ((dockerhub-password))
         CF_INT_IGNORE_API_VERSION_CHECK: false
+        HONEYCOMB_WRITE_KEY: ((honeycomb-writer-key))
   ensure:
     put: gcp-bosh-pool
     params:
-      release: bosh-lite-lock
+      release: bosh-lock
 
 - name: integration-windows
   serial: true
@@ -375,9 +384,8 @@ jobs:
       passed: [build-binaries]
       trigger: true
     - get: cli-ci
-    - get: cli-integration
     - get: vars-store
-    - put: bosh-lite-lock
+    - put: bosh-lock
       resource: gcp-bosh-pool
       params:
         acquire: true
@@ -396,14 +404,14 @@ jobs:
           channel: '#cli-eng'
           text: |
             Windows integration failed :(
-            https://wings.pivotal.io/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+            $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
       ensure:
         task: cleanup-integration
         file: cli-ci/ci/cli/tasks/cleanup-integration.yml
   ensure:
     put: gcp-bosh-pool
     params:
-      release: bosh-lite-lock
+      release: bosh-lock
 
 - name: integration-experimental
   serial: true
@@ -415,9 +423,8 @@ jobs:
       passed: [build-binaries]
       trigger: true
     - get: cli-ci
-    - get: cli-integration
     - get: vars-store
-    - put: bosh-lite-lock
+    - put: bosh-lock
       resource: gcp-bosh-pool
       params:
         acquire: true
@@ -436,7 +443,7 @@ jobs:
           channel: '#cli-eng'
           text: |
             Windows integration-experimental failed :(
-            https://wings.pivotal.io/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+            $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
       ensure:
         task: cleanup-integration
         file: cli-ci/ci/cli/tasks/cleanup-integration.yml
@@ -448,7 +455,7 @@ jobs:
           channel: '#cli-eng'
           text: |
             Linux integration-experimental failed :(
-            https://wings.pivotal.io/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+            $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
       ensure:
         task: cleanup-integration
         file: cli-ci/ci/cli/tasks/cleanup-integration.yml
@@ -457,7 +464,7 @@ jobs:
   ensure:
     put: gcp-bosh-pool
     params:
-      release: bosh-lite-lock
+      release: bosh-lock
 
 - name: integration-legacy
   serial: true
@@ -469,9 +476,8 @@ jobs:
       passed: [build-binaries]
       trigger: true
     - get: cli-ci
-    - get: cli-integration
     - get: vars-store
-    - put: bosh-lite-lock
+    - put: bosh-lock
       resource: legacy-gcp-bosh-pool
       params:
         acquire: true
@@ -486,13 +492,14 @@ jobs:
         <<: *integration_params
         CF_INT_IGNORE_API_VERSION_CHECK: false
         NODES: 12
+        HONEYCOMB_DATASET: "Integration Legacy"
       on_failure:
         put: slack-alert
         params:
           channel: '#cli-eng'
           text: |
             Legacy integration failed :(
-            https://wings.pivotal.io/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+            $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
       ensure:
         task: cleanup-integration
         file: cli-ci/ci/cli/tasks/cleanup-integration.yml
@@ -501,7 +508,7 @@ jobs:
   ensure:
     put: legacy-gcp-bosh-pool
     params:
-      release: bosh-lite-lock
+      release: bosh-lock
 
 - name: create-installers
   serial: true
@@ -591,12 +598,13 @@ jobs:
     - get: cli
       passed: [integration-linux, integration-windows, integration-experimental, integration-legacy]
     - get: cf-acceptance-tests
+    - get: cf-deployment-concourse-tasks
     - get: cf-cli-binaries
       passed: [integration-linux, integration-windows, integration-experimental, integration-legacy]
       trigger: true
     - get: cli-ci
     - get: vars-store
-    - put: bosh-lite-lock
+    - put: bosh-lock
       resource: gcp-bosh-pool
       params:
         acquire: true
@@ -611,22 +619,29 @@ jobs:
         CF_PUSH_TIMEOUT: 210
         DEFAULT_TIMEOUT: 60
         LONG_CURL_TIMEOUT: 210
+    - task: extract-linux-binary
+      file: cli-ci/ci/cli/tasks/extract-linux-binary.yml
     - task: run-tests
-      file: cli-ci/ci/cli/tasks/cats-linux.yml
+      file: cf-deployment-concourse-tasks/run-cats-with-provided-cli/task.yml
+      input_mapping:
+        integration-config: cats-config
+        cf-cli: linux-cf-binary
       params:
-        BACKEND: diego
         NODES: 16
+        SKIP_REGEXP: "transparently proxies both reserved"
+        REPORTER_CONFIG_FILE_PATH: ""
+        FLAKE_ATTEMPTS: 2
       on_failure:
         put: slack-alert
         params:
           channel: '#cli-eng'
           text: |
             CATs Linux failed :(
-            https://wings.pivotal.io/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+            $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
   ensure:
     put: gcp-bosh-pool
     params:
-      release: bosh-lite-lock
+      release: bosh-lock
 
 
 - name: create-cli-base-image

@@ -1,4 +1,6 @@
-package plugin // import "github.com/docker/docker/plugin"
+// +build windows
+
+package plugin
 
 import (
 	"fmt"

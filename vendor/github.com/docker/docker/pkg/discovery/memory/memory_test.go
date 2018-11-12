@@ -1,4 +1,4 @@
-package memory // import "github.com/docker/docker/pkg/discovery/memory"
+package memory
 
 import (
 	"testing"

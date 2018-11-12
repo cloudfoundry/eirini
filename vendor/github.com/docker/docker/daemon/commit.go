@@ -1,7 +1,9 @@
-package daemon // import "github.com/docker/docker/daemon"
+package daemon
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"runtime"
 	"strings"
 	"time"
@@ -9,8 +11,12 @@ import (
 	"github.com/docker/docker/api/types/backend"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/builder/dockerfile"
-	"github.com/docker/docker/errdefs"
-	"github.com/pkg/errors"
+	"github.com/docker/docker/container"
+	"github.com/docker/docker/dockerversion"
+	"github.com/docker/docker/image"
+	"github.com/docker/docker/layer"
+	"github.com/docker/docker/pkg/ioutils"
+	"github.com/docker/docker/reference"
 )
 
 // merge merges two Config, the image container configuration (defaults values),
@@ -88,9 +94,6 @@ func merge(userConf, imageConf *containertypes.Config) error {
 			if userConf.Healthcheck.Timeout == 0 {
 				userConf.Healthcheck.Timeout = imageConf.Healthcheck.Timeout
 			}
-			if userConf.Healthcheck.StartPeriod == 0 {
-				userConf.Healthcheck.StartPeriod = imageConf.Healthcheck.StartPeriod
-			}
 			if userConf.Healthcheck.Retries == 0 {
 				userConf.Healthcheck.Retries = imageConf.Healthcheck.Retries
 			}
@@ -114,29 +117,18 @@ func merge(userConf, imageConf *containertypes.Config) error {
 	return nil
 }
 
-// CreateImageFromContainer creates a new image from a container. The container
-// config will be updated by applying the change set to the custom config, then
-// applying that config over the existing container config.
-func (daemon *Daemon) CreateImageFromContainer(name string, c *backend.CreateImageConfig) (string, error) {
+// Commit creates a new filesystem image from the current state of a container.
+// The image can optionally be tagged into a repository.
+func (daemon *Daemon) Commit(name string, c *backend.ContainerCommitConfig) (string, error) {
 	start := time.Now()
 	container, err := daemon.GetContainer(name)
 	if err != nil {
 		return "", err
 	}
 
-	// It is not possible to commit a running container on Windows
-	if (runtime.GOOS == "windows") && container.IsRunning() {
-		return "", errors.Errorf("%+v does not support commit of a running container", runtime.GOOS)
-	}
-
-	if container.IsDead() {
-		err := fmt.Errorf("You cannot commit container %s which is Dead", container.ID)
-		return "", errdefs.Conflict(err)
-	}
-
-	if container.IsRemovalInProgress() {
-		err := fmt.Errorf("You cannot commit container %s which is being removed", container.ID)
-		return "", errdefs.Conflict(err)
+	// It is not possible to commit a running container on Windows and on Solaris.
+	if (runtime.GOOS == "windows" || runtime.GOOS == "solaris") && container.IsRunning() {
+		return "", fmt.Errorf("%+v does not support commit of a running container", runtime.GOOS)
 	}
 
 	if c.Pause && !container.IsPaused() {
@@ -144,43 +136,136 @@ func (daemon *Daemon) CreateImageFromContainer(name string, c *backend.CreateIma
 		defer daemon.containerUnpause(container)
 	}
 
-	if c.Config == nil {
-		c.Config = container.Config
-	}
-	newConfig, err := dockerfile.BuildFromConfig(c.Config, c.Changes, container.OS)
-	if err != nil {
-		return "", err
-	}
-	if err := merge(newConfig, container.Config); err != nil {
-		return "", err
-	}
-
-	id, err := daemon.imageService.CommitImage(backend.CommitConfig{
-		Author:              c.Author,
-		Comment:             c.Comment,
-		Config:              newConfig,
-		ContainerConfig:     container.Config,
-		ContainerID:         container.ID,
-		ContainerMountLabel: container.MountLabel,
-		ContainerOS:         container.OS,
-		ParentImageID:       string(container.ImageID),
-	})
+	newConfig, err := dockerfile.BuildFromConfig(c.Config, c.Changes)
 	if err != nil {
 		return "", err
 	}
 
-	var imageRef string
-	if c.Repo != "" {
-		imageRef, err = daemon.imageService.TagImage(string(id), c.Repo, c.Tag)
-		if err != nil {
+	if c.MergeConfigs {
+		if err := merge(newConfig, container.Config); err != nil {
 			return "", err
 		}
 	}
-	daemon.LogContainerEventWithAttributes(container, "commit", map[string]string{
+
+	rwTar, err := daemon.exportContainerRw(container)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		if rwTar != nil {
+			rwTar.Close()
+		}
+	}()
+
+	var history []image.History
+	rootFS := image.NewRootFS()
+	osVersion := ""
+	var osFeatures []string
+
+	if container.ImageID != "" {
+		img, err := daemon.imageStore.Get(container.ImageID)
+		if err != nil {
+			return "", err
+		}
+		history = img.History
+		rootFS = img.RootFS
+		osVersion = img.OSVersion
+		osFeatures = img.OSFeatures
+	}
+
+	l, err := daemon.layerStore.Register(rwTar, rootFS.ChainID())
+	if err != nil {
+		return "", err
+	}
+	defer layer.ReleaseAndLog(daemon.layerStore, l)
+
+	h := image.History{
+		Author:     c.Author,
+		Created:    time.Now().UTC(),
+		CreatedBy:  strings.Join(container.Config.Cmd, " "),
+		Comment:    c.Comment,
+		EmptyLayer: true,
+	}
+
+	if diffID := l.DiffID(); layer.DigestSHA256EmptyTar != diffID {
+		h.EmptyLayer = false
+		rootFS.Append(diffID)
+	}
+
+	history = append(history, h)
+
+	config, err := json.Marshal(&image.Image{
+		V1Image: image.V1Image{
+			DockerVersion:   dockerversion.Version,
+			Config:          newConfig,
+			Architecture:    runtime.GOARCH,
+			OS:              runtime.GOOS,
+			Container:       container.ID,
+			ContainerConfig: *container.Config,
+			Author:          c.Author,
+			Created:         h.Created,
+		},
+		RootFS:     rootFS,
+		History:    history,
+		OSFeatures: osFeatures,
+		OSVersion:  osVersion,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	id, err := daemon.imageStore.Create(config)
+	if err != nil {
+		return "", err
+	}
+
+	if container.ImageID != "" {
+		if err := daemon.imageStore.SetParent(id, container.ImageID); err != nil {
+			return "", err
+		}
+	}
+
+	imageRef := ""
+	if c.Repo != "" {
+		newTag, err := reference.WithName(c.Repo) // todo: should move this to API layer
+		if err != nil {
+			return "", err
+		}
+		if c.Tag != "" {
+			if newTag, err = reference.WithTag(newTag, c.Tag); err != nil {
+				return "", err
+			}
+		}
+		if err := daemon.TagImageWithReference(id, newTag); err != nil {
+			return "", err
+		}
+		imageRef = newTag.String()
+	}
+
+	attributes := map[string]string{
 		"comment":  c.Comment,
 		"imageID":  id.String(),
 		"imageRef": imageRef,
-	})
+	}
+	daemon.LogContainerEventWithAttributes(container, "commit", attributes)
 	containerActions.WithValues("commit").UpdateSince(start)
 	return id.String(), nil
+}
+
+func (daemon *Daemon) exportContainerRw(container *container.Container) (io.ReadCloser, error) {
+	if err := daemon.Mount(container); err != nil {
+		return nil, err
+	}
+
+	archive, err := container.RWLayer.TarStream()
+	if err != nil {
+		daemon.Unmount(container) // logging is already handled in the `Unmount` function
+		return nil, err
+	}
+	return ioutils.NewReadCloserWrapper(archive, func() error {
+			archive.Close()
+			return container.RWLayer.Unmount()
+		}),
+		nil
 }

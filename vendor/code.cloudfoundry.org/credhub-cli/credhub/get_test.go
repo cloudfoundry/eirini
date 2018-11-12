@@ -834,7 +834,7 @@ var _ = Describe("Get", func() {
 
 	DescribeTable("request fails due to network error",
 		func(performAction func(*CredHub) error) {
-			networkError := errors.New("Network error occurred")
+			networkError := errors.New("Network error occurred making an http request")
 			dummyAuth := &DummyAuth{Error: networkError}
 			ch, err := New("https://example.com", Auth(dummyAuth.Builder()))
 			Expect(err).NotTo(HaveOccurred())

@@ -1,8 +1,7 @@
-package client // import "github.com/docker/docker/client"
+package client
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types"
+	"golang.org/x/net/context"
 )
 
 func TestImageImportError(t *testing.T) {
@@ -37,7 +37,7 @@ func TestImageImport(t *testing.T) {
 			}
 			repo := query.Get("repo")
 			if repo != "repository_name:imported" {
-				return nil, fmt.Errorf("repo not set in URL query properly. Expected 'repository_name:imported', got %s", repo)
+				return nil, fmt.Errorf("repo not set in URL query properly. Expected 'repository_name', got %s", repo)
 			}
 			tag := query.Get("tag")
 			if tag != "imported" {

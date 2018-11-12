@@ -1,6 +1,9 @@
 package ccv2
 
 import (
+	"bytes"
+	"encoding/json"
+
 	"code.cloudfoundry.org/cli/api/cloudcontroller"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2/constant"
@@ -11,6 +14,9 @@ import (
 type Domain struct {
 	// GUID is the unique domain identifier.
 	GUID string
+
+	// Internal indicates whether the domain is an internal domain.
+	Internal bool
 
 	// Name is the name given to the domain.
 	Name string
@@ -36,6 +42,7 @@ func (domain *Domain) UnmarshalJSON(data []byte) error {
 			Name            string `json:"name"`
 			RouterGroupGUID string `json:"router_group_guid"`
 			RouterGroupType string `json:"router_group_type"`
+			Internal        bool   `json:"internal"`
 		} `json:"entity"`
 	}
 	err := cloudcontroller.DecodeJSON(data, &ccDomain)
@@ -47,7 +54,34 @@ func (domain *Domain) UnmarshalJSON(data []byte) error {
 	domain.Name = ccDomain.Entity.Name
 	domain.RouterGroupGUID = ccDomain.Entity.RouterGroupGUID
 	domain.RouterGroupType = constant.RouterGroupType(ccDomain.Entity.RouterGroupType)
+	domain.Internal = ccDomain.Entity.Internal
 	return nil
+}
+
+type createSharedDomainBody struct {
+	Name            string `json:"name"`
+	RouterGroupGUID string `json:"router_group_guid,omitempty"`
+}
+
+func (client *Client) CreateSharedDomain(domainName string, routerGroupdGUID string) (Warnings, error) {
+	body := createSharedDomainBody{
+		Name:            domainName,
+		RouterGroupGUID: routerGroupdGUID,
+	}
+	bodyBytes, err := json.Marshal(body)
+	request, err := client.newHTTPRequest(requestOptions{
+		RequestName: internal.PostSharedDomainRequest,
+		Body:        bytes.NewReader(bodyBytes),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var response cloudcontroller.Response
+
+	err = client.connection.Make(request, &response)
+	return response.Warnings, err
 }
 
 // GetOrganizationPrivateDomains returns the private domains associated with an organization.

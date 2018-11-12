@@ -1,15 +1,15 @@
 // +build linux freebsd
 
-package graphtest // import "github.com/docker/docker/daemon/graphdriver/graphtest"
+package graphtest
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"testing"
 
-	contdriver "github.com/containerd/continuity/driver"
 	"github.com/docker/docker/pkg/stringid"
-	"github.com/gotestyourself/gotestyourself/assert"
 )
 
 // DriverBenchExists benchmarks calls to exist
@@ -245,13 +245,15 @@ func DriverBenchDeepLayerRead(b *testing.B, layerCount int, drivername string, d
 	for i := 0; i < b.N; i++ {
 
 		// Read content
-		c, err := contdriver.ReadFile(root, root.Join(root.Path(), "testfile.txt"))
+		c, err := ioutil.ReadFile(filepath.Join(root, "testfile.txt"))
 		if err != nil {
 			b.Fatal(err)
 		}
 
 		b.StopTimer()
-		assert.DeepEqual(b, content, c)
+		if bytes.Compare(c, content) != 0 {
+			b.Fatalf("Wrong content in file %v, expected %v", c, content)
+		}
 		b.StartTimer()
 	}
 }

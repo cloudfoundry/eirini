@@ -1,9 +1,9 @@
-package container // import "github.com/docker/docker/container"
+package container
 
 import (
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 const (

@@ -35,13 +35,15 @@ func main() {
 
 	supplyApp(inputDroplet, "/")
 
+	// Heroku Container Registry will break on chown
 	chownAll("heroku", "heroku", "/app")
 
 	err := os.Chdir("/app")
 	check(err, packs.CodeFailed, "change directory")
 
 	if command == "" {
-		command, err = readCommand()
+		processType := getProcessType()
+		command, err = readCommand(processType)
 		check(err, packs.CodeFailed, "please add a Procfile with a web process")
 	}
 
@@ -57,6 +59,13 @@ func main() {
 	check(err, packs.CodeFailedLaunch, "launch")
 }
 
+func getProcessType() string {
+	if value, ok := os.LookupEnv("DYNO"); ok {
+		return strings.Split(value, ".")[0]
+	}
+	return "web"
+}
+
 func supplyApp(tgz, dst string) {
 	if _, err := os.Stat(tgz); os.IsNotExist(err) {
 		return
@@ -67,16 +76,16 @@ func supplyApp(tgz, dst string) {
 	check(err, packs.CodeFailed, "untar", tgz, "to", dst)
 }
 
-func readCommand() (string, error) {
-	if command, err := parseProcfile("/app/Procfile"); err == nil {
+func readCommand(processType string) (string, error) {
+	if command, err := parseProcfile("/app/Procfile", processType); err == nil {
 		return command, nil
-	} else if command, err = parseReleaseYml("/app/release.yml"); err == nil {
+	} else if command, err = parseReleaseYml("/app/release.yml", processType); err == nil {
 		return command, nil
 	}
 	return "", ErrNoCommandFound("No command found, please specify one in your Procfile.")
 }
 
-func parseProcfile(path string) (string, error) {
+func parseProcfile(path, processType string) (string, error) {
 	if _, err := os.Stat(path); err == nil {
 		buf, err := ioutil.ReadFile(path)
 		procfile := string(buf)
@@ -91,7 +100,7 @@ func parseProcfile(path string) (string, error) {
 			}
 		}
 
-		if process, ok := processes["web:"]; ok {
+		if process, ok := processes[fmt.Sprintf("%s:", processType)]; ok {
 			return process, nil
 		}
 	}
@@ -99,7 +108,7 @@ func parseProcfile(path string) (string, error) {
 	return "", ErrProcfileNoProcess("No web process in Procfile.")
 }
 
-func parseReleaseYml(path string) (string, error) {
+func parseReleaseYml(path, processType string) (string, error) {
 	releaseYml, err := ioutil.ReadFile(path)
 	check(err, packs.CodeFailed, "read start command")
 	var info struct {
@@ -108,15 +117,15 @@ func parseReleaseYml(path string) (string, error) {
 	}
 	err = yaml.Unmarshal(releaseYml, &info)
 	if err == nil {
-		return info.DefaultProcessTypes["web"], nil
+		return info.DefaultProcessTypes[processType], nil
 	} else {
 		return "", err
 	}
 }
 
-func chownAll(user, group, path string) {
+func chownAll(user, group, path string) error {
 	err := exec.Command("chown", "-R", user+":"+group, path).Run()
-	check(err, packs.CodeFailed, "chown", path, "to", user+":"+group)
+	return err
 }
 
 func check(err error, code int, action ...string) {

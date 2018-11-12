@@ -1,11 +1,9 @@
-package daemon // import "github.com/docker/docker/daemon"
+package daemon
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/docker/docker/container"
-	"github.com/sirupsen/logrus"
 )
 
 // ContainerPause pauses a container
@@ -14,7 +12,12 @@ func (daemon *Daemon) ContainerPause(name string) error {
 	if err != nil {
 		return err
 	}
-	return daemon.containerPause(container)
+
+	if err := daemon.containerPause(container); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // containerPause pauses the container execution without stopping the process.
@@ -25,12 +28,12 @@ func (daemon *Daemon) containerPause(container *container.Container) error {
 
 	// We cannot Pause the container which is not running
 	if !container.Running {
-		return errNotRunning(container.ID)
+		return errNotRunning{container.ID}
 	}
 
 	// We cannot Pause the container which is already paused
 	if container.Paused {
-		return errNotPaused(container.ID)
+		return fmt.Errorf("Container %s is already paused", container.ID)
 	}
 
 	// We cannot Pause the container which is restarting
@@ -38,17 +41,8 @@ func (daemon *Daemon) containerPause(container *container.Container) error {
 		return errContainerIsRestarting(container.ID)
 	}
 
-	if err := daemon.containerd.Pause(context.Background(), container.ID); err != nil {
+	if err := daemon.containerd.Pause(container.ID); err != nil {
 		return fmt.Errorf("Cannot pause container %s: %s", container.ID, err)
-	}
-
-	container.Paused = true
-	daemon.setStateCounter(container)
-	daemon.updateHealthMonitor(container)
-	daemon.LogContainerEvent(container, "pause")
-
-	if err := container.CheckpointTo(daemon.containersReplica); err != nil {
-		logrus.WithError(err).Warn("could not save container to disk")
 	}
 
 	return nil

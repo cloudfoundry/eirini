@@ -1,4 +1,4 @@
-package nodes // import "github.com/docker/docker/pkg/discovery/nodes"
+package nodes
 
 import (
 	"testing"

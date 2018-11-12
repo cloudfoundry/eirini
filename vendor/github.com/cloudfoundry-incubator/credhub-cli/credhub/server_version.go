@@ -10,6 +10,10 @@ import (
 )
 
 func (ch *CredHub) ServerVersion() (*version.Version, error) {
+	if ch.cachedServerVersion != "" {
+		return version.NewVersion(ch.cachedServerVersion)
+	}
+
 	info, err := ch.Info()
 	if err != nil {
 		return nil, err

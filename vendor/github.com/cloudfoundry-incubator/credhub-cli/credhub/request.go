@@ -3,10 +3,13 @@ package credhub
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
+	"os"
 )
 
 // Request sends an authenticated request to the CredHub server.
@@ -49,7 +52,15 @@ func (ch *CredHub) request(client requester, method string, pathStr string, quer
 
 	req.Header.Set("Content-Type", "application/json")
 
+	if os.Getenv("CREDHUB_DEBUG") == "true" {
+		dumpRequest(req)
+	}
+
 	resp, err := client.Do(req)
+
+	if os.Getenv("CREDHUB_DEBUG") == "true" {
+		dumpResponse(resp)
+	}
 
 	if err != nil {
 		return resp, err
@@ -80,4 +91,20 @@ func (ch *CredHub) checkForServerError(resp *http.Response) error {
 	}
 
 	return nil
+}
+
+func dumpRequest(req *http.Request) {
+	dump, err := httputil.DumpRequestOut(req, true)
+	if err != nil {
+		fmt.Println("[DEBUG] An error occurred during request dump.", err.Error())
+	}
+	fmt.Println("[DEBUG]", string(dump))
+}
+
+func dumpResponse(resp *http.Response) {
+	dump, err := httputil.DumpResponse(resp, true)
+	if err != nil {
+		fmt.Println("[DEBUG] An error occurred during response dump.", err.Error())
+	}
+	fmt.Println("[DEBUG]", string(dump))
 }

@@ -1,7 +1,6 @@
-package daemon // import "github.com/docker/docker/daemon"
+package daemon
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,48 +8,13 @@ import (
 	"path/filepath"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/daemon/names"
+	"github.com/docker/docker/utils"
 )
 
 var (
-	validCheckpointNameChars   = names.RestrictedNameChars
-	validCheckpointNamePattern = names.RestrictedNamePattern
+	validCheckpointNameChars   = utils.RestrictedNameChars
+	validCheckpointNamePattern = utils.RestrictedNamePattern
 )
-
-// getCheckpointDir verifies checkpoint directory for create,remove, list options and checks if checkpoint already exists
-func getCheckpointDir(checkDir, checkpointID, ctrName, ctrID, ctrCheckpointDir string, create bool) (string, error) {
-	var checkpointDir string
-	var err2 error
-	if checkDir != "" {
-		checkpointDir = checkDir
-	} else {
-		checkpointDir = ctrCheckpointDir
-	}
-	checkpointAbsDir := filepath.Join(checkpointDir, checkpointID)
-	stat, err := os.Stat(checkpointAbsDir)
-	if create {
-		switch {
-		case err == nil && stat.IsDir():
-			err2 = fmt.Errorf("checkpoint with name %s already exists for container %s", checkpointID, ctrName)
-		case err != nil && os.IsNotExist(err):
-			err2 = os.MkdirAll(checkpointAbsDir, 0700)
-		case err != nil:
-			err2 = err
-		case err == nil:
-			err2 = fmt.Errorf("%s exists and is not a directory", checkpointAbsDir)
-		}
-	} else {
-		switch {
-		case err != nil:
-			err2 = fmt.Errorf("checkpoint %s does not exists for container %s", checkpointID, ctrName)
-		case err == nil && stat.IsDir():
-			err2 = nil
-		case err == nil:
-			err2 = fmt.Errorf("%s exists and is not a directory", checkpointAbsDir)
-		}
-	}
-	return checkpointAbsDir, err2
-}
 
 // CheckpointCreate checkpoints the process running in a container with CRIU
 func (daemon *Daemon) CheckpointCreate(name string, config types.CheckpointCreateOptions) error {
@@ -63,22 +27,19 @@ func (daemon *Daemon) CheckpointCreate(name string, config types.CheckpointCreat
 		return fmt.Errorf("Container %s not running", name)
 	}
 
-	if container.Config.Tty {
-		return fmt.Errorf("checkpoint not support on containers with tty")
+	var checkpointDir string
+	if config.CheckpointDir != "" {
+		checkpointDir = config.CheckpointDir
+	} else {
+		checkpointDir = container.CheckpointDir()
 	}
 
 	if !validCheckpointNamePattern.MatchString(config.CheckpointID) {
 		return fmt.Errorf("Invalid checkpoint ID (%s), only %s are allowed", config.CheckpointID, validCheckpointNameChars)
 	}
 
-	checkpointDir, err := getCheckpointDir(config.CheckpointDir, config.CheckpointID, name, container.ID, container.CheckpointDir(), true)
+	err = daemon.containerd.CreateCheckpoint(container.ID, config.CheckpointID, checkpointDir, config.Exit)
 	if err != nil {
-		return fmt.Errorf("cannot checkpoint container %s: %s", name, err)
-	}
-
-	err = daemon.containerd.CreateCheckpoint(context.Background(), container.ID, checkpointDir, config.Exit)
-	if err != nil {
-		os.RemoveAll(checkpointDir)
 		return fmt.Errorf("Cannot checkpoint container %s: %s", name, err)
 	}
 
@@ -93,11 +54,15 @@ func (daemon *Daemon) CheckpointDelete(name string, config types.CheckpointDelet
 	if err != nil {
 		return err
 	}
-	checkpointDir, err := getCheckpointDir(config.CheckpointDir, config.CheckpointID, name, container.ID, container.CheckpointDir(), false)
-	if err == nil {
-		return os.RemoveAll(filepath.Join(checkpointDir, config.CheckpointID))
+
+	var checkpointDir string
+	if config.CheckpointDir != "" {
+		checkpointDir = config.CheckpointDir
+	} else {
+		checkpointDir = container.CheckpointDir()
 	}
-	return err
+
+	return os.RemoveAll(filepath.Join(checkpointDir, config.CheckpointID))
 }
 
 // CheckpointList lists all checkpoints of the specified container
@@ -109,9 +74,11 @@ func (daemon *Daemon) CheckpointList(name string, config types.CheckpointListOpt
 		return nil, err
 	}
 
-	checkpointDir, err := getCheckpointDir(config.CheckpointDir, "", name, container.ID, container.CheckpointDir(), false)
-	if err != nil {
-		return nil, err
+	var checkpointDir string
+	if config.CheckpointDir != "" {
+		checkpointDir = config.CheckpointDir
+	} else {
+		checkpointDir = container.CheckpointDir()
 	}
 
 	if err := os.MkdirAll(checkpointDir, 0755); err != nil {

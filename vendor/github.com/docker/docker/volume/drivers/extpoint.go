@@ -1,27 +1,35 @@
 //go:generate pluginrpc-gen -i $GOFILE -o proxy.go -type volumeDriver -name VolumeDriver
 
-package drivers // import "github.com/docker/docker/volume/drivers"
+package volumedrivers
 
 import (
 	"fmt"
-	"sort"
 	"sync"
 
-	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/locker"
 	getter "github.com/docker/docker/pkg/plugingetter"
-	"github.com/docker/docker/pkg/plugins"
 	"github.com/docker/docker/volume"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
+// currently created by hand. generation tool would generate this like:
+// $ extpoint-gen Driver > volume/extpoint.go
+
+var drivers = &driverExtpoint{
+	extensions: make(map[string]volume.Driver),
+	driverLock: &locker.Locker{},
+}
+
 const extName = "VolumeDriver"
+
+// NewVolumeDriver returns a driver has the given name mapped on the given client.
+func NewVolumeDriver(name string, baseHostPath string, c client) volume.Driver {
+	proxy := &volumeDriverProxy{c}
+	return &volumeDriverAdapter{name: name, baseHostPath: baseHostPath, proxy: proxy}
+}
 
 // volumeDriver defines the available functions that volume plugins must implement.
 // This interface is only defined to generate the proxy objects.
 // It's not intended to be public or reused.
-// nolint: deadcode
 type volumeDriver interface {
 	// Create a volume with the given name
 	Create(name string, opts map[string]string) (err error)
@@ -41,75 +49,87 @@ type volumeDriver interface {
 	Capabilities() (capabilities volume.Capability, err error)
 }
 
-// Store is an in-memory store for volume drivers
-type Store struct {
-	extensions   map[string]volume.Driver
-	mu           sync.Mutex
+type driverExtpoint struct {
+	extensions map[string]volume.Driver
+	sync.Mutex
 	driverLock   *locker.Locker
-	pluginGetter getter.PluginGetter
+	plugingetter getter.PluginGetter
 }
 
-// NewStore creates a new volume driver store
-func NewStore(pg getter.PluginGetter) *Store {
-	return &Store{
-		extensions:   make(map[string]volume.Driver),
-		driverLock:   locker.New(),
-		pluginGetter: pg,
+// RegisterPluginGetter sets the plugingetter
+func RegisterPluginGetter(plugingetter getter.PluginGetter) {
+	drivers.plugingetter = plugingetter
+}
+
+// Register associates the given driver to the given name, checking if
+// the name is already associated
+func Register(extension volume.Driver, name string) bool {
+	if name == "" {
+		return false
 	}
+
+	drivers.Lock()
+	defer drivers.Unlock()
+
+	_, exists := drivers.extensions[name]
+	if exists {
+		return false
+	}
+
+	if err := validateDriver(extension); err != nil {
+		return false
+	}
+
+	drivers.extensions[name] = extension
+
+	return true
 }
 
-type driverNotFoundError string
+// Unregister dissociates the name from its driver, if the association exists.
+func Unregister(name string) bool {
+	drivers.Lock()
+	defer drivers.Unlock()
 
-func (e driverNotFoundError) Error() string {
-	return "volume driver not found: " + string(e)
+	_, exists := drivers.extensions[name]
+	if !exists {
+		return false
+	}
+	delete(drivers.extensions, name)
+	return true
 }
-
-func (driverNotFoundError) NotFound() {}
 
 // lookup returns the driver associated with the given name. If a
 // driver with the given name has not been registered it checks if
 // there is a VolumeDriver plugin available with the given name.
-func (s *Store) lookup(name string, mode int) (volume.Driver, error) {
-	if name == "" {
-		return nil, errdefs.InvalidParameter(errors.New("driver name cannot be empty"))
-	}
-	s.driverLock.Lock(name)
-	defer s.driverLock.Unlock(name)
+func lookup(name string, mode int) (volume.Driver, error) {
+	drivers.driverLock.Lock(name)
+	defer drivers.driverLock.Unlock(name)
 
-	s.mu.Lock()
-	ext, ok := s.extensions[name]
-	s.mu.Unlock()
+	drivers.Lock()
+	ext, ok := drivers.extensions[name]
+	drivers.Unlock()
 	if ok {
 		return ext, nil
 	}
-	if s.pluginGetter != nil {
-		p, err := s.pluginGetter.Get(name, extName, mode)
+	if drivers.plugingetter != nil {
+		p, err := drivers.plugingetter.Get(name, extName, mode)
 		if err != nil {
-			return nil, errors.Wrap(err, "error looking up volume plugin "+name)
+			return nil, fmt.Errorf("Error looking up volume plugin %s: %v", name, err)
 		}
 
-		d, err := makePluginAdapter(p)
-		if err != nil {
-			return nil, errors.Wrap(err, "error making plugin client")
-		}
+		d := NewVolumeDriver(p.Name(), p.BasePath(), p.Client())
 		if err := validateDriver(d); err != nil {
-			if mode > 0 {
-				// Undo any reference count changes from the initial `Get`
-				if _, err := s.pluginGetter.Get(name, extName, mode*-1); err != nil {
-					logrus.WithError(err).WithField("action", "validate-driver").WithField("plugin", name).Error("error releasing reference to plugin")
-				}
-			}
 			return nil, err
 		}
 
 		if p.IsV1() {
-			s.mu.Lock()
-			s.extensions[name] = d
-			s.mu.Unlock()
+			drivers.Lock()
+			drivers.extensions[name] = d
+			drivers.Unlock()
 		}
 		return d, nil
 	}
-	return nil, driverNotFoundError(name)
+	return nil, fmt.Errorf("Error looking up volume plugin %s", name)
 }
 
 func validateDriver(vd volume.Driver) error {
@@ -120,116 +140,76 @@ func validateDriver(vd volume.Driver) error {
 	return nil
 }
 
-// Register associates the given driver to the given name, checking if
-// the name is already associated
-func (s *Store) Register(d volume.Driver, name string) bool {
-	if name == "" {
-		return false
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if _, exists := s.extensions[name]; exists {
-		return false
-	}
-
-	if err := validateDriver(d); err != nil {
-		return false
-	}
-
-	s.extensions[name] = d
-	return true
-}
-
 // GetDriver returns a volume driver by its name.
 // If the driver is empty, it looks for the local driver.
-func (s *Store) GetDriver(name string) (volume.Driver, error) {
-	return s.lookup(name, getter.Lookup)
+func GetDriver(name string) (volume.Driver, error) {
+	if name == "" {
+		name = volume.DefaultDriverName
+	}
+	return lookup(name, getter.LOOKUP)
 }
 
 // CreateDriver returns a volume driver by its name and increments RefCount.
 // If the driver is empty, it looks for the local driver.
-func (s *Store) CreateDriver(name string) (volume.Driver, error) {
-	return s.lookup(name, getter.Acquire)
+func CreateDriver(name string) (volume.Driver, error) {
+	if name == "" {
+		name = volume.DefaultDriverName
+	}
+	return lookup(name, getter.ACQUIRE)
 }
 
-// ReleaseDriver returns a volume driver by its name and decrements RefCount..
+// RemoveDriver returns a volume driver by its name and decrements RefCount..
 // If the driver is empty, it looks for the local driver.
-func (s *Store) ReleaseDriver(name string) (volume.Driver, error) {
-	return s.lookup(name, getter.Release)
+func RemoveDriver(name string) (volume.Driver, error) {
+	if name == "" {
+		name = volume.DefaultDriverName
+	}
+	return lookup(name, getter.RELEASE)
 }
 
 // GetDriverList returns list of volume drivers registered.
 // If no driver is registered, empty string list will be returned.
-func (s *Store) GetDriverList() []string {
+func GetDriverList() []string {
 	var driverList []string
-	s.mu.Lock()
-	for driverName := range s.extensions {
+	drivers.Lock()
+	for driverName := range drivers.extensions {
 		driverList = append(driverList, driverName)
 	}
-	s.mu.Unlock()
-	sort.Strings(driverList)
+	drivers.Unlock()
 	return driverList
 }
 
 // GetAllDrivers lists all the registered drivers
-func (s *Store) GetAllDrivers() ([]volume.Driver, error) {
+func GetAllDrivers() ([]volume.Driver, error) {
 	var plugins []getter.CompatPlugin
-	if s.pluginGetter != nil {
+	if drivers.plugingetter != nil {
 		var err error
-		plugins, err = s.pluginGetter.GetAllByCap(extName)
+		plugins, err = drivers.plugingetter.GetAllByCap(extName)
 		if err != nil {
 			return nil, fmt.Errorf("error listing plugins: %v", err)
 		}
 	}
 	var ds []volume.Driver
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	drivers.Lock()
+	defer drivers.Unlock()
 
-	for _, d := range s.extensions {
+	for _, d := range drivers.extensions {
 		ds = append(ds, d)
 	}
 
 	for _, p := range plugins {
 		name := p.Name()
-
-		if _, ok := s.extensions[name]; ok {
+		ext, ok := drivers.extensions[name]
+		if ok {
 			continue
 		}
 
-		ext, err := makePluginAdapter(p)
-		if err != nil {
-			return nil, errors.Wrap(err, "error making plugin client")
-		}
+		ext = NewVolumeDriver(name, p.BasePath(), p.Client())
 		if p.IsV1() {
-			s.extensions[name] = ext
+			drivers.extensions[name] = ext
 		}
 		ds = append(ds, ext)
 	}
 	return ds, nil
-}
-
-func makePluginAdapter(p getter.CompatPlugin) (*volumeDriverAdapter, error) {
-	if pc, ok := p.(getter.PluginWithV1Client); ok {
-		return &volumeDriverAdapter{name: p.Name(), scopePath: p.ScopedPath, proxy: &volumeDriverProxy{pc.Client()}}, nil
-	}
-
-	pa, ok := p.(getter.PluginAddr)
-	if !ok {
-		return nil, errdefs.System(errors.Errorf("got unknown plugin instance %T", p))
-	}
-
-	if pa.Protocol() != plugins.ProtocolSchemeHTTPV1 {
-		return nil, errors.Errorf("plugin protocol not supported: %s", p)
-	}
-
-	addr := pa.Addr()
-	client, err := plugins.NewClientWithTimeout(addr.Network()+"://"+addr.String(), nil, pa.Timeout())
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating plugin client")
-	}
-
-	return &volumeDriverAdapter{name: p.Name(), scopePath: p.ScopedPath, proxy: &volumeDriverProxy{client}}, nil
 }

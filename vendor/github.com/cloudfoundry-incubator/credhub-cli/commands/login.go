@@ -7,6 +7,7 @@ import (
 
 	"code.cloudfoundry.org/credhub-cli/config"
 	"code.cloudfoundry.org/credhub-cli/credhub"
+	"code.cloudfoundry.org/credhub-cli/credhub/auth"
 	"code.cloudfoundry.org/credhub-cli/credhub/auth/uaa"
 	"code.cloudfoundry.org/credhub-cli/errors"
 	"code.cloudfoundry.org/credhub-cli/util"
@@ -53,8 +54,6 @@ func (c *LoginCommand) Execute([]string) error {
 			return errors.NewNetworkError(err)
 		}
 		c.config.AuthURL = credhubInfo.AuthServer.URL
-
-		c.config.ServerVersion = credhubInfo.App.Version
 
 		err = verifyAuthServerConnection(c.config, c.SkipTlsValidation)
 		if err != nil {
@@ -105,6 +104,24 @@ func (c *LoginCommand) Execute([]string) error {
 
 	c.config.RefreshToken = refreshToken
 
+	credhubClient, err = credhub.New(c.config.ApiURL,
+		credhub.CaCerts(c.config.CaCerts...),
+		credhub.SkipTLSValidation(c.config.InsecureSkipVerify),
+		credhub.AuthURL(c.config.AuthURL),
+		credhub.Auth(auth.Uaa(c.ClientName, c.ClientSecret, "", "", c.config.AccessToken, "", true)),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	version, err := credhubClient.ServerVersion()
+	if err != nil {
+		return err
+	}
+
+	c.config.ServerVersion = version.String()
+
 	if err := config.WriteConfig(c.config); err != nil {
 		return err
 	}
@@ -135,7 +152,7 @@ func validateParameters(cmd *LoginCommand) error {
 
 		return nil
 
-	// Intent is SSO passcode
+		// Intent is SSO passcode
 	case cmd.SSOPasscode != "":
 		// Make sure nothing else is specified
 		if cmd.ClientName != "" || cmd.ClientSecret != "" || cmd.Username != "" || cmd.Password != "" || cmd.SSO {
@@ -144,7 +161,7 @@ func validateParameters(cmd *LoginCommand) error {
 
 		return nil
 
-	// Intent is to be prompted for token
+		// Intent is to be prompted for token
 	case cmd.SSO:
 		// Make sure nothing else is specified
 		if cmd.ClientName != "" || cmd.ClientSecret != "" || cmd.Username != "" || cmd.Password != "" || cmd.SSOPasscode != "" {
@@ -153,7 +170,7 @@ func validateParameters(cmd *LoginCommand) error {
 
 		return nil
 
-	// Intent is username/password
+		// Intent is username/password
 	default:
 		// Make sure nothing else is specified
 		if cmd.ClientName != "" || cmd.ClientSecret != "" || cmd.SSO || cmd.SSOPasscode != "" {

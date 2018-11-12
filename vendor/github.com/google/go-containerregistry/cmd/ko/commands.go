@@ -90,10 +90,7 @@ func addKubeCommands(topLevel *cobra.Command) {
   #   ko.local/<import path>
   # Then, feed the resulting yaml into "kubectl apply".
   # This always preserves import paths.
-  ko apply --local -f config/
-  
-  # Apply from stdin:
-  cat config.yaml | ko apply -f -`,
+  ko apply --local -f config/`,
 		Args: cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			// TODO(mattmoor): Use io.Pipe to avoid buffering the whole thing.

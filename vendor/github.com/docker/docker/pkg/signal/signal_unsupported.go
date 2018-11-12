@@ -1,6 +1,6 @@
-// +build !linux,!darwin,!freebsd,!windows
+// +build !linux,!darwin,!freebsd,!windows,!solaris
 
-package signal // import "github.com/docker/docker/pkg/signal"
+package signal
 
 import (
 	"syscall"

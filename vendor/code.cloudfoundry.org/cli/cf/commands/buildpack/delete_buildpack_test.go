@@ -93,7 +93,7 @@ var _ = Describe("delete-buildpack command", func() {
 			})
 		})
 
-		PContext("when multiple buildpacks with the same name exist", func() {
+		Context("when multiple buildpacks with the same name exist", func() {
 			Context("the stack is not specified", func() {
 				BeforeEach(func() {
 					ui = &testterm.FakeUI{Inputs: []string{"y"}}
@@ -127,7 +127,7 @@ var _ = Describe("delete-buildpack command", func() {
 				})
 			})
 
-			PContext("the stack is specified", func() {
+			Context("the stack is specified", func() {
 				Context("and is found", func() {
 					BeforeEach(func() {
 						buildpackRepo.FindByNameAndStackBuildpack = models.Buildpack{
@@ -153,6 +153,7 @@ var _ = Describe("delete-buildpack command", func() {
 						))
 					})
 				})
+
 				Context("buildpack not found", func() {
 					BeforeEach(func() {
 						ui = &testterm.FakeUI{Inputs: []string{"y"}}
@@ -170,7 +171,7 @@ var _ = Describe("delete-buildpack command", func() {
 							[]string{"OK"},
 						))
 
-						Expect(ui.WarnOutputs).To(ContainSubstrings([]string{"my-buildpack", "does not exist"}))
+						Expect(ui.WarnOutputs).To(ContainSubstrings([]string{"Buildpack my-buildpack with stack my-stack not found."}))
 					})
 				})
 			})

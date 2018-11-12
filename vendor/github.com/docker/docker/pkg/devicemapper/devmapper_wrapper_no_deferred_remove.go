@@ -1,10 +1,8 @@
-// +build linux,cgo
-// +build !libdm_dlsym_deferred_remove,libdm_no_deferred_remove
+// +build linux,libdm_no_deferred_remove
 
-package devicemapper // import "github.com/docker/docker/pkg/devicemapper"
+package devicemapper
 
-// LibraryDeferredRemovalSupport tells if the feature is supported by the
-// current Docker invocation.
+// LibraryDeferredRemovalSupport is not supported when statically linked.
 const LibraryDeferredRemovalSupport = false
 
 func dmTaskDeferredRemoveFct(task *cdmTask) int {

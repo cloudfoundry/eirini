@@ -42,7 +42,7 @@ func main() {
 
 func export() error {
 	if useHelpers {
-		if err := img.SetupCredHelpers(os.Getenv("HOME"), repoName, stackName); err != nil {
+		if err := img.SetupCredHelpers(repoName, stackName); err != nil {
 			return packs.FailErr(err, "setup credential helpers")
 		}
 	}
@@ -82,7 +82,7 @@ func export() error {
 			return packs.FailErr(err, "transform", dropletPath, "into layer")
 		}
 		defer os.Remove(layer)
-		repoImage, err = img.Append(stackImage, layer)
+		repoImage, _, err = img.Append(stackImage, layer)
 		if err != nil {
 			return packs.FailErr(err, "append droplet to", stackName)
 		}
@@ -95,7 +95,7 @@ func export() error {
 			if err := json.Unmarshal([]byte(labels[packs.BuildLabel]), &metadata); err != nil {
 				return nil, err
 			}
-			oldStore, err := img.NewRegistry(metadata.Stack.Name + "@" + metadata.Stack.SHA)
+			oldStore, err := img.NewRegistry(metadata.RunImage.Name + "@" + metadata.RunImage.SHA)
 			if err != nil {
 				return nil, err
 			}
@@ -109,8 +109,8 @@ func export() error {
 	if err != nil {
 		return packs.FailErr(err, "get digest for", stackName)
 	}
-	metadata.Stack.Name = stackStore.Ref().Context().String()
-	metadata.Stack.SHA = stackDigest.String()
+	metadata.RunImage.Name = stackStore.Ref().Context().String()
+	metadata.RunImage.SHA = stackDigest.String()
 	buildJSON, err := json.Marshal(metadata)
 	if err != nil {
 		return packs.FailErr(err, "get encode metadata for", repoName)

@@ -1,6 +1,8 @@
 package ccv2
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/url"
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller"
@@ -10,18 +12,18 @@ import (
 
 // Space represents a Cloud Controller Space.
 type Space struct {
+	// AllowSSH specifies whether SSH is enabled for this space.
+	AllowSSH bool
+
 	// GUID is the unique space identifier.
 	GUID string
-
-	// OrganizationGUID is the unique identifier of the organization this space
-	// belongs to.
-	OrganizationGUID string
 
 	// Name is the name given to the space.
 	Name string
 
-	// AllowSSH specifies whether SSH is enabled for this space.
-	AllowSSH bool
+	// OrganizationGUID is the unique identifier of the organization this space
+	// belongs to.
+	OrganizationGUID string
 
 	// SpaceQuotaDefinitionGUID is the unique identifier of the space quota
 	// defined for this space.
@@ -50,6 +52,40 @@ func (space *Space) UnmarshalJSON(data []byte) error {
 	space.SpaceQuotaDefinitionGUID = ccSpace.Entity.SpaceQuotaDefinitionGUID
 	space.OrganizationGUID = ccSpace.Entity.OrganizationGUID
 	return nil
+}
+
+type createSpaceRequestBody struct {
+	Name             string `json:"name"`
+	OrganizationGUID string `json:"organization_guid"`
+}
+
+// CreateSpace creates a new space with the provided spaceName in the org with
+// the provided orgGUID.
+func (client *Client) CreateSpace(spaceName string, orgGUID string) (Space, Warnings, error) {
+	requestBody := createSpaceRequestBody{
+		Name:             spaceName,
+		OrganizationGUID: orgGUID,
+	}
+
+	bodyBytes, _ := json.Marshal(requestBody)
+
+	request, err := client.newHTTPRequest(requestOptions{
+		RequestName: internal.PostSpaceRequest,
+		Body:        bytes.NewReader(bodyBytes),
+	})
+
+	if err != nil {
+		return Space{}, nil, err
+	}
+
+	var space Space
+	response := cloudcontroller.Response{
+		Result: &space,
+	}
+
+	err = client.connection.Make(request, &response)
+
+	return space, response.Warnings, err
 }
 
 // DeleteSpace deletes the Space associated with the provided
@@ -157,4 +193,99 @@ func (client *Client) GetSpaces(filters ...Filter) ([]Space, Warnings, error) {
 	})
 
 	return fullSpacesList, warnings, err
+}
+
+// UpdateSpaceDeveloper grants the space developer role to the user or client
+// associated with the given UAA ID.
+func (client *Client) UpdateSpaceDeveloper(spaceGUID string, uaaID string) (Warnings, error) {
+	request, err := client.newHTTPRequest(requestOptions{
+		RequestName: internal.PutSpaceDeveloperRequest,
+		URIParams: map[string]string{
+			"space_guid":     spaceGUID,
+			"developer_guid": uaaID,
+		},
+	})
+	if err != nil {
+		return Warnings{}, err
+	}
+
+	response := cloudcontroller.Response{}
+	err = client.connection.Make(request, &response)
+	return response.Warnings, err
+}
+
+type updateRoleRequestBody struct {
+	Username string `json:"username"`
+}
+
+// UpdateSpaceDeveloperByUsername grants the given username the space developer role.
+func (client *Client) UpdateSpaceDeveloperByUsername(spaceGUID string, username string) (Warnings, error) {
+	requestBody := updateRoleRequestBody{
+		Username: username,
+	}
+
+	bodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return Warnings{}, err
+	}
+
+	request, err := client.newHTTPRequest(requestOptions{
+		RequestName: internal.PutSpaceDeveloperByUsernameRequest,
+		URIParams:   map[string]string{"space_guid": spaceGUID},
+		Body:        bytes.NewReader(bodyBytes),
+	})
+	if err != nil {
+		return Warnings{}, err
+	}
+
+	response := cloudcontroller.Response{}
+	err = client.connection.Make(request, &response)
+
+	return Warnings(response.Warnings), err
+}
+
+// UpdateSpaceManager grants the space manager role to the user or client
+// associated with the given UAA ID.
+func (client *Client) UpdateSpaceManager(spaceGUID string, uaaID string) (Warnings, error) {
+	request, err := client.newHTTPRequest(requestOptions{
+		RequestName: internal.PutSpaceManagerRequest,
+		URIParams: map[string]string{
+			"space_guid":   spaceGUID,
+			"manager_guid": uaaID,
+		},
+	})
+	if err != nil {
+		return Warnings{}, err
+	}
+
+	response := cloudcontroller.Response{}
+	err = client.connection.Make(request, &response)
+	return response.Warnings, err
+}
+
+// UpdateSpaceManagerByUsername grants the given username the space manager role.
+func (client *Client) UpdateSpaceManagerByUsername(spaceGUID string, username string) (Warnings, error) {
+	requestBody := updateRoleRequestBody{
+		Username: username,
+	}
+
+	bodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return Warnings{}, err
+	}
+	request, err := client.newHTTPRequest(requestOptions{
+		RequestName: internal.PutSpaceManagerByUsernameRequest,
+		URIParams:   map[string]string{"space_guid": spaceGUID},
+		Body:        bytes.NewReader(bodyBytes),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	response := cloudcontroller.Response{}
+
+	err = client.connection.Make(request, &response)
+
+	return response.Warnings, err
 }

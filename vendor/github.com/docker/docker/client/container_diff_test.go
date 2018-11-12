@@ -1,8 +1,7 @@
-package client // import "github.com/docker/docker/client"
+package client
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,7 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types"
+	"golang.org/x/net/context"
 )
 
 func TestContainerDiffError(t *testing.T) {
@@ -31,7 +31,7 @@ func TestContainerDiff(t *testing.T) {
 			if !strings.HasPrefix(req.URL.Path, expectedURL) {
 				return nil, fmt.Errorf("Expected URL '%s', got '%s'", expectedURL, req.URL)
 			}
-			b, err := json.Marshal([]container.ContainerChangeResponseItem{
+			b, err := json.Marshal([]types.ContainerChange{
 				{
 					Kind: 0,
 					Path: "/path/1",

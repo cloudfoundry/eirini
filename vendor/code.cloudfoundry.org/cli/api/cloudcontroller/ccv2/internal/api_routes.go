@@ -33,6 +33,7 @@ const (
 	GetInfoRequest                                       = "GetInfo"
 	GetJobRequest                                        = "GetJob"
 	GetOrganizationPrivateDomainsRequest                 = "GetOrganizationPrivateDomains"
+	GetOrganizationQuotaDefinitionsRequest               = "GetOrganizationQuotaDefinitions"
 	GetOrganizationQuotaDefinitionRequest                = "GetOrganizationQuotaDefinition"
 	GetOrganizationRequest                               = "GetOrganization"
 	GetOrganizationsRequest                              = "GetOrganizations"
@@ -64,6 +65,7 @@ const (
 	GetServicesRequest                                   = "GetServices"
 	GetSharedDomainRequest                               = "GetSharedDomain"
 	GetSharedDomainsRequest                              = "GetSharedDomains"
+	GetOrganizationSpaceQuotasRequest                    = "GetOrganizationSpaceQuotas"
 	GetSpaceQuotaDefinitionRequest                       = "GetSpaceQuotaDefinition"
 	GetSpaceRoutesRequest                                = "GetSpaceRoutes"
 	GetSpaceSecurityGroupsRequest                        = "GetSpaceSecurityGroups"
@@ -81,14 +83,26 @@ const (
 	PostOrganizationRequest                              = "PostOrganization"
 	PostRouteRequest                                     = "PostRoute"
 	PostServiceBindingRequest                            = "PostServiceBinding"
+	PostSharedDomainRequest                              = "PostSharedDomain"
+	PostServiceKeyRequest                                = "PostServiceKey"
+	PostSpaceRequest                                     = "PostSpace"
 	PostUserRequest                                      = "PostUser"
 	PutAppBitsRequest                                    = "PutAppBits"
 	PutAppRequest                                        = "PutApp"
 	PutBuildpackRequest                                  = "PutBuildpack"
 	PutBuildpackBitsRequest                              = "PutBuildpackBits"
 	PutDropletRequest                                    = "PutDroplet"
+	PutOrganizationManagerByUsernameRequest              = "PutOrganizationManagerByUsername"
+	PutOrganizationManagerRequest                        = "PutOrganizationManager"
+	PutOrganizationUserRequest                           = "PutOrganizationUser"
+	PutOrganizationUserByUsernameRequest                 = "PutOrganizationUserByUsername"
 	PutResourceMatchRequest                              = "PutResourceMatch"
 	PutRouteAppRequest                                   = "PutRouteApp"
+	PutSpaceQuotaRequest                                 = "PutSpaceQuotaRequest"
+	PutSpaceDeveloperRequest                             = "PutSpaceDeveloper"
+	PutSpaceDeveloperByUsernameRequest                   = "PutSpaceDeveloperByUsername"
+	PutSpaceManagerRequest                               = "PutSpaceManager"
+	PutSpaceManagerByUsernameRequest                     = "PutSpaceManagerByUsername"
 	PutSecurityGroupSpaceRequest                         = "PutSecurityGroupSpace"
 	PutSecurityGroupStagingSpaceRequest                  = "PutSecurityGroupStagingSpace"
 )
@@ -118,10 +132,15 @@ var APIRoutes = rata.Routes{
 	{Path: "/v2/organizations", Method: http.MethodPost, Name: PostOrganizationRequest},
 	{Path: "/v2/organizations/:organization_guid", Method: http.MethodDelete, Name: DeleteOrganizationRequest},
 	{Path: "/v2/organizations/:organization_guid", Method: http.MethodGet, Name: GetOrganizationRequest},
+	{Path: "/v2/organizations/:organization_guid/managers", Method: http.MethodPut, Name: PutOrganizationManagerByUsernameRequest},
+	{Path: "/v2/organizations/:organization_guid/managers/:manager_guid", Method: http.MethodPut, Name: PutOrganizationManagerRequest},
 	{Path: "/v2/organizations/:organization_guid/private_domains", Method: http.MethodGet, Name: GetOrganizationPrivateDomainsRequest},
+	{Path: "/v2/organizations/:organization_guid/users", Method: http.MethodPut, Name: PutOrganizationUserByUsernameRequest},
+	{Path: "/v2/organizations/:organization_guid/users/:user_guid", Method: http.MethodPut, Name: PutOrganizationUserRequest},
 	{Path: "/v2/private_domains", Method: http.MethodGet, Name: GetPrivateDomainsRequest},
 	{Path: "/v2/private_domains/:private_domain_guid", Method: http.MethodGet, Name: GetPrivateDomainRequest},
 	{Path: "/v2/quota_definitions/:organization_quota_guid", Method: http.MethodGet, Name: GetOrganizationQuotaDefinitionRequest},
+	{Path: "/v2/quota_definitions", Method: http.MethodGet, Name: GetOrganizationQuotaDefinitionsRequest},
 	{Path: "/v2/resource_match", Method: http.MethodPut, Name: PutResourceMatchRequest},
 	{Path: "/v2/route_mappings", Method: http.MethodGet, Name: GetRouteMappingsRequest},
 	{Path: "/v2/route_mappings/:route_mapping_guid", Method: http.MethodGet, Name: GetRouteMappingRequest},
@@ -152,20 +171,29 @@ var APIRoutes = rata.Routes{
 	{Path: "/v2/service_instances/:service_instance_guid/service_bindings", Method: http.MethodGet, Name: GetServiceInstanceServiceBindingsRequest},
 	{Path: "/v2/service_instances/:service_instance_guid/shared_from", Method: http.MethodGet, Name: GetServiceInstanceSharedFromRequest},
 	{Path: "/v2/service_instances/:service_instance_guid/shared_to", Method: http.MethodGet, Name: GetServiceInstanceSharedToRequest},
+	{Path: "/v2/service_keys", Method: http.MethodPost, Name: PostServiceKeyRequest},
 	{Path: "/v2/service_plan_visibilities", Method: http.MethodGet, Name: GetServicePlanVisibilitiesRequest},
 	{Path: "/v2/service_plans", Method: http.MethodGet, Name: GetServicePlansRequest},
 	{Path: "/v2/service_plans/:service_plan_guid", Method: http.MethodGet, Name: GetServicePlanRequest},
 	{Path: "/v2/services", Method: http.MethodGet, Name: GetServicesRequest},
 	{Path: "/v2/services/:service_guid", Method: http.MethodGet, Name: GetServiceRequest},
 	{Path: "/v2/shared_domains", Method: http.MethodGet, Name: GetSharedDomainsRequest},
+	{Path: "/v2/shared_domains", Method: http.MethodPost, Name: PostSharedDomainRequest},
 	{Path: "/v2/shared_domains/:shared_domain_guid", Method: http.MethodGet, Name: GetSharedDomainRequest},
+	{Path: "/v2/organizations/:organization_guid/space_quota_definitions", Method: http.MethodGet, Name: GetOrganizationSpaceQuotasRequest},
+	{Path: "/v2/space_quota_definitions/:space_quota_guid/spaces/:space_guid", Method: http.MethodPut, Name: PutSpaceQuotaRequest},
 	{Path: "/v2/space_quota_definitions/:space_quota_guid", Method: http.MethodGet, Name: GetSpaceQuotaDefinitionRequest},
 	{Path: "/v2/spaces", Method: http.MethodGet, Name: GetSpacesRequest},
+	{Path: "/v2/spaces", Method: http.MethodPost, Name: PostSpaceRequest},
+	{Path: "/v2/spaces/:space_guid/developers", Method: http.MethodPut, Name: PutSpaceDeveloperByUsernameRequest},
+	{Path: "/v2/spaces/:space_guid/developers/:developer_guid", Method: http.MethodPut, Name: PutSpaceDeveloperRequest},
 	{Path: "/v2/spaces/:guid/service_instances", Method: http.MethodGet, Name: GetSpaceServiceInstancesRequest},
 	{Path: "/v2/spaces/:space_guid", Method: http.MethodDelete, Name: DeleteSpaceRequest},
 	{Path: "/v2/spaces/:space_guid/routes", Method: http.MethodGet, Name: GetSpaceRoutesRequest},
 	{Path: "/v2/spaces/:space_guid/security_groups", Method: http.MethodGet, Name: GetSpaceSecurityGroupsRequest},
 	{Path: "/v2/spaces/:space_guid/staging_security_groups", Method: http.MethodGet, Name: GetSpaceStagingSecurityGroupsRequest},
+	{Path: "/v2/spaces/:space_guid/managers", Method: http.MethodPut, Name: PutSpaceManagerByUsernameRequest},
+	{Path: "/v2/spaces/:space_guid/managers/:manager_guid", Method: http.MethodPut, Name: PutSpaceManagerRequest},
 	{Path: "/v2/stacks", Method: http.MethodGet, Name: GetStacksRequest},
 	{Path: "/v2/stacks/:stack_guid", Method: http.MethodGet, Name: GetStackRequest},
 	{Path: "/v2/user_provided_service_instances", Method: http.MethodGet, Name: GetUserProvidedServiceInstancesRequest},

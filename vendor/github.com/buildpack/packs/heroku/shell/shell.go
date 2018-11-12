@@ -2,13 +2,33 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"strings"
-	"syscall"
-
 	"github.com/buildpack/packs"
 	herokuapp "github.com/buildpack/packs/heroku/app"
+	"os"
+	"runtime"
+	"strings"
+	"syscall"
 )
+
+const shellScript = `
+cd $1
+
+if [ -n "$(ls ../profile.d/* 2> /dev/null)" ]; then
+  for env_file in ../profile.d/*; do
+    source $env_file
+  done
+fi
+
+if [ -n "$(ls .profile.d/* 2> /dev/null)" ]; then
+  for env_file in .profile.d/*; do
+    source $env_file
+  done
+fi
+
+shift
+
+exec bash
+`
 
 func main() {
 	err := os.Chdir("/app")
@@ -21,8 +41,12 @@ func main() {
 		check(err, packs.CodeInvalidEnv, "set app env")
 	}
 
-	args := append([]string{"/lifecycle/shell", "/app"}, os.Args[1:]...)
-	err = syscall.Exec("/lifecycle/shell", args, os.Environ())
+	runtime.GOMAXPROCS(1)
+
+	err = syscall.Exec("/bin/bash", []string{
+		"bash", "-c", shellScript, "bash", "/app",
+	}, os.Environ())
+
 	check(err, packs.CodeFailedLaunch, "run")
 }
 

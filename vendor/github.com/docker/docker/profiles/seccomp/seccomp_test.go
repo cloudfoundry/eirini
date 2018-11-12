@@ -1,6 +1,6 @@
 // +build linux
 
-package seccomp // import "github.com/docker/docker/profiles/seccomp"
+package seccomp
 
 import (
 	"io/ioutil"

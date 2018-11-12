@@ -19,8 +19,8 @@ var _ = Describe("Service", func() {
 	})
 
 	Describe("GetService", func() {
-		Context("when the service exists", func() {
-			Context("when the value of the 'extra' json key is non-empty", func() {
+		When("the service exists", func() {
+			When("the value of the 'extra' json key is non-empty", func() {
 				BeforeEach(func() {
 					response := `{
 						"metadata": {
@@ -29,7 +29,6 @@ var _ = Describe("Service", func() {
 						"entity": {
 							"label": "some-service",
 							"description": "some-description",
-							"documentation_url": "some-url",
 							"extra": "{\"provider\":{\"name\":\"The name\"},\"listing\":{\"imageUrl\":\"http://catgifpage.com/cat.gif\",\"blurb\":\"fake broker that is fake\",\"longDescription\":\"A long time ago, in a galaxy far far away...\"},\"displayName\":\"The Fake Broker\",\"shareable\":true}"
 						}
 					}`
@@ -46,10 +45,9 @@ var _ = Describe("Service", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					Expect(service).To(Equal(Service{
-						GUID:             "some-service-guid",
-						Label:            "some-service",
-						Description:      "some-description",
-						DocumentationURL: "some-url",
+						GUID:        "some-service-guid",
+						Label:       "some-service",
+						Description: "some-description",
 						Extra: ServiceExtra{
 							Shareable: true,
 						},
@@ -58,7 +56,7 @@ var _ = Describe("Service", func() {
 				})
 			})
 
-			Context("when the value of the 'extra' json key is null", func() {
+			When("the value of the 'extra' json key is null", func() {
 				BeforeEach(func() {
 					response := `{
 						"metadata": {
@@ -87,7 +85,7 @@ var _ = Describe("Service", func() {
 				})
 			})
 
-			Context("when the value of the 'extra' json key is the empty string", func() {
+			When("the value of the 'extra' json key is the empty string", func() {
 				BeforeEach(func() {
 					response := `{
 						"metadata": {
@@ -116,7 +114,7 @@ var _ = Describe("Service", func() {
 				})
 			})
 
-			Context("when the key 'extra' is not in the json response", func() {
+			When("the key 'extra' is not in the json response", func() {
 				BeforeEach(func() {
 					response := `{
 						"metadata": {
@@ -141,9 +139,99 @@ var _ = Describe("Service", func() {
 					}))
 				})
 			})
+
+			When("the documentation url is set", func() {
+				Context("in the entity structure", func() {
+					BeforeEach(func() {
+						response := `{
+						"metadata": {
+							"guid": "some-service-guid"
+						},
+						"entity": {
+							"documentation_url": "some-url"
+						}
+					}`
+						server.AppendHandlers(
+							CombineHandlers(
+								VerifyRequest(http.MethodGet, "/v2/services/some-service-guid"),
+								RespondWith(http.StatusOK, response, http.Header{"X-Cf-Warnings": {"this is a warning"}}),
+							),
+						)
+					})
+
+					It("returns the documentation url correctly", func() {
+						service, _, err := client.GetService("some-service-guid")
+						Expect(err).NotTo(HaveOccurred())
+
+						Expect(service).To(Equal(Service{
+							GUID:             "some-service-guid",
+							DocumentationURL: "some-url",
+						}))
+					})
+				})
+
+				Context("in the extra structure", func() {
+					BeforeEach(func() {
+						response := `{
+						"metadata": {
+							"guid": "some-service-guid"
+						},
+						"entity": {
+							"extra": "{\"documentationUrl\":\"some-url\"}"
+						}
+					}`
+						server.AppendHandlers(
+							CombineHandlers(
+								VerifyRequest(http.MethodGet, "/v2/services/some-service-guid"),
+								RespondWith(http.StatusOK, response, http.Header{"X-Cf-Warnings": {"this is a warning"}}),
+							),
+						)
+					})
+
+					It("returns the documentation url correctly", func() {
+						service, _, err := client.GetService("some-service-guid")
+						Expect(err).NotTo(HaveOccurred())
+
+						Expect(service).To(Equal(Service{
+							GUID:             "some-service-guid",
+							DocumentationURL: "some-url",
+						}))
+					})
+				})
+
+				Context("in both the entity and extra structures", func() {
+					BeforeEach(func() {
+						response := `{
+						"metadata": {
+							"guid": "some-service-guid"
+						},
+						"entity": {
+							"documentation_url": "entity-url",
+							"extra": "{\"documentationUrl\":\"some-url\"}"
+						}
+					}`
+						server.AppendHandlers(
+							CombineHandlers(
+								VerifyRequest(http.MethodGet, "/v2/services/some-service-guid"),
+								RespondWith(http.StatusOK, response, http.Header{"X-Cf-Warnings": {"this is a warning"}}),
+							),
+						)
+					})
+
+					It("prioritises the entity structure", func() {
+						service, _, err := client.GetService("some-service-guid")
+						Expect(err).NotTo(HaveOccurred())
+
+						Expect(service).To(Equal(Service{
+							GUID:             "some-service-guid",
+							DocumentationURL: "entity-url",
+						}))
+					})
+				})
+			})
 		})
 
-		Context("when the service does not exist (testing general error case)", func() {
+		When("the service does not exist (testing general error case)", func() {
 			BeforeEach(func() {
 				response := `{
 					"description": "The service could not be found: non-existant-service-guid",
@@ -180,7 +268,7 @@ var _ = Describe("Service", func() {
 			})
 		})
 
-		Context("when the cc returns back services", func() {
+		When("the cc returns back services", func() {
 			BeforeEach(func() {
 				response1 := `{
 					"next_url": "/v2/services?q=label:some-label&page=2",
@@ -252,7 +340,7 @@ var _ = Describe("Service", func() {
 			})
 		})
 
-		Context("when the cc returns an error", func() {
+		When("the cc returns an error", func() {
 			BeforeEach(func() {
 				response := `{
 					"description": "Some description.",

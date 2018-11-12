@@ -43,7 +43,7 @@ var _ = Describe("Translatable Errors", func() {
 		Entry("AppNotFoundInManifestError", AppNotFoundInManifestError{}),
 		Entry("ArgumentCombinationError", ArgumentCombinationError{}),
 		Entry("AssignDropletError", AssignDropletError{}),
-		Entry("BadCredentialsError", BadCredentialsError{}),
+		Entry("BadCredentialsError", UnauthorizedError{}),
 		Entry("BuildpackNotFoundError", BuildpackNotFoundError{}),
 		Entry("CFNetworkingEndpointNotFoundError", CFNetworkingEndpointNotFoundError{}),
 		Entry("CommandLineArgsWithMultipleAppsError", CommandLineArgsWithMultipleAppsError{}),
@@ -71,7 +71,7 @@ var _ = Describe("Translatable Errors", func() {
 		Entry("LifecycleMinimumAPIVersionNotMetError", LifecycleMinimumAPIVersionNotMetError{}),
 		Entry("ManifestCreationError", ManifestCreationError{}),
 		Entry("ManifestFileNotFoundInDirectoryError", ManifestFileNotFoundInDirectoryError{}),
-		Entry("MinimumAPIVersionNotMetError", MinimumAPIVersionNotMetError{}),
+		Entry("MinimumCFAPIVersionNotMetError", MinimumCFAPIVersionNotMetError{}),
 		Entry("MinimumCLIVersionNotMetError", MinimumCLIVersionNotMetError{}),
 		Entry("MissingCredentialsError", MissingCredentialsError{}),
 		Entry("MultiError", MultiError{}),
@@ -85,6 +85,7 @@ var _ = Describe("Translatable Errors", func() {
 		Entry("NoSpaceTargetedError", NoSpaceTargetedError{}),
 		Entry("NotLoggedInError", NotLoggedInError{}),
 		Entry("OrgNotFoundError", OrganizationNotFoundError{}),
+		Entry("OrganizationQuotaNotFoundForNameError", OrganizationQuotaNotFoundForNameError{}),
 		Entry("ParseArgumentError", ParseArgumentError{}),
 		Entry("PasswordGrantTypeLogoutRequiredError", PasswordGrantTypeLogoutRequiredError{}),
 		Entry("PluginAlreadyInstalledError", PluginAlreadyInstalledError{}),
@@ -112,6 +113,7 @@ var _ = Describe("Translatable Errors", func() {
 		Entry("ServiceInstanceNotFoundError", ServiceInstanceNotFoundError{}),
 		Entry("SharedServiceInstanceNotFoundError", SharedServiceInstanceNotFoundError{}),
 		Entry("SpaceNotFoundError", SpaceNotFoundError{}),
+		Entry("SpaceQuotaNotFoundByNameError", SpaceQuotaNotFoundByNameError{}),
 		Entry("SSHUnableToAuthenticateError", SSHUnableToAuthenticateError{}),
 		Entry("SSLCertError", SSLCertError{}),
 		Entry("StackNotFoundError with name", SpaceNotFoundError{Name: "steve"}),
@@ -129,14 +131,14 @@ var _ = Describe("Translatable Errors", func() {
 	)
 
 	Describe("PluginInvalidError", func() {
-		Context("when the wrapped error is nil", func() {
+		When("the wrapped error is nil", func() {
 			It("does not concatenate the nil error in the returned Error()", func() {
 				err := PluginInvalidError{}
 				Expect(err.Error()).To(Equal("File is not a valid cf CLI plugin binary."))
 			})
 		})
 
-		Context("when the wrapped error is not nil", func() {
+		When("the wrapped error is not nil", func() {
 			It("does prepends the error message in the returned Error()", func() {
 				err := PluginInvalidError{Err: errors.New("ello")}
 				Expect(err.Error()).To(Equal("ello\nFile is not a valid cf CLI plugin binary."))

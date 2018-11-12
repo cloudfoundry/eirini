@@ -1,19 +1,20 @@
-package distribution // import "github.com/docker/docker/distribution"
+package distribution
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"runtime"
+	"os"
 	"strings"
 	"testing"
 
-	"github.com/docker/distribution/reference"
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	registrytypes "github.com/docker/docker/api/types/registry"
+	"github.com/docker/docker/reference"
 	"github.com/docker/docker/registry"
-	"github.com/sirupsen/logrus"
+	"github.com/docker/docker/utils"
+	"golang.org/x/net/context"
 )
 
 const secretRegistryToken = "mysecrettoken"
@@ -37,6 +38,12 @@ func (h *tokenPassThruHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
 func testTokenPassThru(t *testing.T, ts *httptest.Server) {
+	tmp, err := utils.TestDirectory("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmp)
+
 	uri, err := url.Parse(ts.URL)
 	if err != nil {
 		t.Fatalf("could not parse url from test server: %v", err)
@@ -49,10 +56,11 @@ func testTokenPassThru(t *testing.T, ts *httptest.Server) {
 		Official:     false,
 		TrimHostname: false,
 		TLSConfig:    nil,
+		//VersionHeader: "verheader",
 	}
-	n, _ := reference.ParseNormalizedNamed("testremotename")
+	n, _ := reference.ParseNamed("testremotename")
 	repoInfo := &registry.RepositoryInfo{
-		Name: n,
+		Named: n,
 		Index: &registrytypes.IndexInfo{
 			Name:     "testrepo",
 			Mirrors:  nil,
@@ -84,7 +92,7 @@ func testTokenPassThru(t *testing.T, ts *httptest.Server) {
 	logrus.Debug("About to pull")
 	// We expect it to fail, since we haven't mock'd the full registry exchange in our handler above
 	tag, _ := reference.WithTag(n, "tag_goes_here")
-	_ = p.pullV2Repository(ctx, tag, runtime.GOOS)
+	_ = p.pullV2Repository(ctx, tag)
 }
 
 func TestTokenPassThru(t *testing.T) {

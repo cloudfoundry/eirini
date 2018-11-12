@@ -1,8 +1,8 @@
 // +build !linux
 
-package daemon // import "github.com/docker/docker/daemon"
+package daemon
 
-// ModifyRootKeyLimit is a noop on unsupported platforms.
+// ModifyRootKeyLimit is an noop on unsupported platforms.
 func ModifyRootKeyLimit() error {
 	return nil
 }

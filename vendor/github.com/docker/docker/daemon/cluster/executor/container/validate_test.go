@@ -1,4 +1,4 @@
-package container // import "github.com/docker/docker/daemon/cluster/executor/container"
+package container
 
 import (
 	"io/ioutil"
@@ -12,7 +12,7 @@ import (
 )
 
 func newTestControllerWithMount(m api.Mount) (*controller, error) {
-	return newController(&daemon.Daemon{}, nil, &api.Task{
+	return newController(&daemon.Daemon{}, &api.Task{
 		ID:        stringid.GenerateRandomID(),
 		ServiceID: stringid.GenerateRandomID(),
 		Spec: api.TaskSpec{
@@ -26,8 +26,7 @@ func newTestControllerWithMount(m api.Mount) (*controller, error) {
 				},
 			},
 		},
-	}, nil,
-		nil)
+	}, nil)
 }
 
 func TestControllerValidateMountBind(t *testing.T) {

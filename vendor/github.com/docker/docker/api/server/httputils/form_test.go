@@ -1,4 +1,4 @@
-package httputils // import "github.com/docker/docker/api/server/httputils"
+package httputils
 
 import (
 	"net/http"
@@ -100,6 +100,6 @@ func TestInt64ValueOrDefaultWithError(t *testing.T) {
 
 	_, err := Int64ValueOrDefault(r, "test", -1)
 	if err == nil {
-		t.Fatal("Expected an error.")
+		t.Fatalf("Expected an error.")
 	}
 }

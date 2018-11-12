@@ -40,19 +40,19 @@ var _ = Describe("plugins Command", func() {
 		executeErr = cmd.Execute(nil)
 	})
 
-	Context("when there are no plugins installed", func() {
+	When("there are no plugins installed", func() {
 		It("displays the empty table", func() {
 			Expect(executeErr).NotTo(HaveOccurred())
 
 			Expect(testUI.Out).To(Say("Listing installed plugins..."))
 			Expect(testUI.Out).To(Say(""))
-			Expect(testUI.Out).To(Say("plugin\\s+version\\s+command name\\s+command help"))
+			Expect(testUI.Out).To(Say(`plugin\s+version\s+command name\s+command help`))
 			Expect(testUI.Out).To(Say(""))
-			Expect(testUI.Out).To(Say("Use 'faceman repo-plugins' to list plugins in registered repos available to install\\."))
+			Expect(testUI.Out).To(Say(`Use 'faceman repo-plugins' to list plugins in registered repos available to install\.`))
 			Expect(testUI.Out).ToNot(Say("[A-Za-z0-9]+"))
 		})
 
-		Context("when the --checksum flag is provided", func() {
+		When("the --checksum flag is provided", func() {
 			BeforeEach(func() {
 				cmd.Checksum = true
 			})
@@ -62,14 +62,14 @@ var _ = Describe("plugins Command", func() {
 
 				Expect(testUI.Out).To(Say("Computing sha1 for installed plugins, this may take a while..."))
 				Expect(testUI.Out).To(Say(""))
-				Expect(testUI.Out).To(Say("plugin\\s+version\\s+sha1"))
+				Expect(testUI.Out).To(Say(`plugin\s+version\s+sha1`))
 				Expect(testUI.Out).ToNot(Say("[A-Za-z0-9]+"))
 			})
 		})
 
 	})
 
-	Context("when there are plugins installed", func() {
+	When("there are plugins installed", func() {
 		var plugins []configv3.Plugin
 
 		BeforeEach(func() {
@@ -120,16 +120,16 @@ var _ = Describe("plugins Command", func() {
 
 			Expect(testUI.Out).To(Say("Listing installed plugins..."))
 			Expect(testUI.Out).To(Say(""))
-			Expect(testUI.Out).To(Say("plugin\\s+version\\s+command name\\s+command help"))
-			Expect(testUI.Out).To(Say("Sorted-first\\s+1\\.1\\.0\\s+command-1, c\\s+help-command-1"))
-			Expect(testUI.Out).To(Say("Sorted-first\\s+1\\.1\\.0\\s+command-2\\s+help-command-2"))
-			Expect(testUI.Out).To(Say("sorted-second\\s+N/A\\s+bar\\s+help-bar"))
-			Expect(testUI.Out).To(Say("sorted-second\\s+N/A\\s+foo\\s+help-foo"))
+			Expect(testUI.Out).To(Say(`plugin\s+version\s+command name\s+command help`))
+			Expect(testUI.Out).To(Say(`Sorted-first\s+1\.1\.0\s+command-1, c\s+help-command-1`))
+			Expect(testUI.Out).To(Say(`Sorted-first\s+1\.1\.0\s+command-2\s+help-command-2`))
+			Expect(testUI.Out).To(Say(`sorted-second\s+N/A\s+bar\s+help-bar`))
+			Expect(testUI.Out).To(Say(`sorted-second\s+N/A\s+foo\s+help-foo`))
 			Expect(testUI.Out).To(Say(""))
-			Expect(testUI.Out).To(Say("Use 'faceman repo-plugins' to list plugins in registered repos available to install\\."))
+			Expect(testUI.Out).To(Say(`Use 'faceman repo-plugins' to list plugins in registered repos available to install\.`))
 		})
 
-		Context("when the --checksum flag is provided", func() {
+		When("the --checksum flag is provided", func() {
 			var (
 				file *os.File
 			)
@@ -160,18 +160,18 @@ var _ = Describe("plugins Command", func() {
 
 				Expect(testUI.Out).To(Say("Computing sha1 for installed plugins, this may take a while..."))
 				Expect(testUI.Out).To(Say(""))
-				Expect(testUI.Out).To(Say("plugin\\s+version\\s+sha1"))
-				Expect(testUI.Out).To(Say("Sorted-first\\s+1\\.1\\.0\\s+2142a57cb8587400fa7f4ee492f25cf07567f4a5"))
-				Expect(testUI.Out).To(Say("sorted-second\\s+N/A\\s+N/A"))
+				Expect(testUI.Out).To(Say(`plugin\s+version\s+sha1`))
+				Expect(testUI.Out).To(Say(`Sorted-first\s+1\.1\.0\s+2142a57cb8587400fa7f4ee492f25cf07567f4a5`))
+				Expect(testUI.Out).To(Say(`sorted-second\s+N/A\s+N/A`))
 			})
 		})
 
-		Context("when the --outdated flag is provided", func() {
+		When("the --outdated flag is provided", func() {
 			BeforeEach(func() {
 				cmd.Outdated = true
 			})
 
-			Context("when there are no repositories", func() {
+			When("there are no repositories", func() {
 				BeforeEach(func() {
 					fakeConfig.PluginRepositoriesReturns(nil)
 				})
@@ -182,7 +182,7 @@ var _ = Describe("plugins Command", func() {
 				})
 			})
 
-			Context("when there are repositories", func() {
+			When("there are repositories", func() {
 				BeforeEach(func() {
 					fakeConfig.PluginRepositoriesReturns([]configv3.PluginRepository{
 						{Name: "repo-1", URL: "https://repo-1.plugins.com"},
@@ -190,7 +190,7 @@ var _ = Describe("plugins Command", func() {
 					})
 				})
 
-				Context("when the actor returns GettingRepositoryError", func() {
+				When("the actor returns GettingRepositoryError", func() {
 					BeforeEach(func() {
 						fakeActor.GetOutdatedPluginsReturns(nil, actionerror.GettingPluginRepositoryError{
 							Name:    "repo-1",
@@ -207,19 +207,19 @@ var _ = Describe("plugins Command", func() {
 					})
 				})
 
-				Context("when there are no outdated plugins", func() {
+				When("there are no outdated plugins", func() {
 					It("displays the empty outdated table", func() {
 						Expect(executeErr).NotTo(HaveOccurred())
 
 						Expect(testUI.Out).To(Say("Searching repo-1, repo-2 for newer versions of installed plugins..."))
 						Expect(testUI.Out).To(Say(""))
-						Expect(testUI.Out).To(Say("plugin\\s+version\\s+latest version\\n\\nUse 'faceman install-plugin' to update a plugin to the latest version\\."))
+						Expect(testUI.Out).To(Say(`plugin\s+version\s+latest version\n\nUse 'faceman install-plugin' to update a plugin to the latest version\.`))
 
 						Expect(fakeActor.GetOutdatedPluginsCallCount()).To(Equal(1))
 					})
 				})
 
-				Context("when plugins are outdated", func() {
+				When("plugins are outdated", func() {
 					BeforeEach(func() {
 						fakeActor.GetOutdatedPluginsReturns([]pluginaction.OutdatedPlugin{
 							{Name: "plugin-1", CurrentVersion: "1.0.0", LatestVersion: "2.0.0"},
@@ -234,11 +234,11 @@ var _ = Describe("plugins Command", func() {
 
 						Expect(testUI.Out).To(Say("Searching repo-1, repo-2 for newer versions of installed plugins..."))
 						Expect(testUI.Out).To(Say(""))
-						Expect(testUI.Out).To(Say("plugin\\s+version\\s+latest version"))
-						Expect(testUI.Out).To(Say("plugin-1\\s+1.0.0\\s+2.0.0"))
-						Expect(testUI.Out).To(Say("plugin-2\\s+2.0.0\\s+3.0.0"))
+						Expect(testUI.Out).To(Say(`plugin\s+version\s+latest version`))
+						Expect(testUI.Out).To(Say(`plugin-1\s+1.0.0\s+2.0.0`))
+						Expect(testUI.Out).To(Say(`plugin-2\s+2.0.0\s+3.0.0`))
 						Expect(testUI.Out).To(Say(""))
-						Expect(testUI.Out).To(Say("Use 'faceman install-plugin' to update a plugin to the latest version\\."))
+						Expect(testUI.Out).To(Say(`Use 'faceman install-plugin' to update a plugin to the latest version\.`))
 					})
 				})
 			})

@@ -1,7 +1,6 @@
-package server // import "github.com/docker/docker/api/server"
+package server
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,6 +9,8 @@ import (
 	"github.com/docker/docker/api"
 	"github.com/docker/docker/api/server/httputils"
 	"github.com/docker/docker/api/server/middleware"
+
+	"golang.org/x/net/context"
 )
 
 func TestMiddlewares(t *testing.T) {
@@ -28,7 +29,7 @@ func TestMiddlewares(t *testing.T) {
 
 	localHandler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 		if httputils.VersionFromContext(ctx) == "" {
-			t.Fatal("Expected version, got empty string")
+			t.Fatalf("Expected version, got empty string")
 		}
 
 		if sv := w.Header().Get("Server"); !strings.Contains(sv, "Docker/0.1omega2") {

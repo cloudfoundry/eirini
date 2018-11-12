@@ -1,30 +1,28 @@
-package opts // import "github.com/docker/docker/opts"
+package opts
 
 import (
+	"github.com/docker/docker/pkg/testutil/assert"
 	"testing"
-
-	"github.com/gotestyourself/gotestyourself/assert"
-	is "github.com/gotestyourself/gotestyourself/assert/cmp"
 )
 
 func TestQuotedStringSetWithQuotes(t *testing.T) {
 	value := ""
 	qs := NewQuotedString(&value)
-	assert.Check(t, qs.Set(`"something"`))
-	assert.Check(t, is.Equal("something", qs.String()))
-	assert.Check(t, is.Equal("something", value))
+	assert.NilError(t, qs.Set("\"something\""))
+	assert.Equal(t, qs.String(), "something")
+	assert.Equal(t, value, "something")
 }
 
 func TestQuotedStringSetWithMismatchedQuotes(t *testing.T) {
 	value := ""
 	qs := NewQuotedString(&value)
-	assert.Check(t, qs.Set(`"something'`))
-	assert.Check(t, is.Equal(`"something'`, qs.String()))
+	assert.NilError(t, qs.Set("\"something'"))
+	assert.Equal(t, qs.String(), "\"something'")
 }
 
 func TestQuotedStringSetWithNoQuotes(t *testing.T) {
 	value := ""
 	qs := NewQuotedString(&value)
-	assert.Check(t, qs.Set("something"))
-	assert.Check(t, is.Equal("something", qs.String()))
+	assert.NilError(t, qs.Set("something"))
+	assert.Equal(t, qs.String(), "something")
 }

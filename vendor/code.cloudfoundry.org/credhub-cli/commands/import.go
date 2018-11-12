@@ -7,7 +7,6 @@ import (
 
 	"reflect"
 
-	"code.cloudfoundry.org/credhub-cli/credhub"
 	"code.cloudfoundry.org/credhub-cli/errors"
 	"code.cloudfoundry.org/credhub-cli/models"
 )
@@ -46,7 +45,7 @@ func (c *ImportCommand) setCredentials(bulkImport models.CredentialBulkImport) e
 			name = ""
 		}
 
-		result, err := c.client.SetCredential(name, credential["type"].(string), credential["value"], credhub.Overwrite)
+		result, err := c.client.SetCredential(name, credential["type"].(string), credential["value"])
 
 		if err != nil {
 			if isAuthenticationError(err) {

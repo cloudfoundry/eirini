@@ -1,7 +1,6 @@
-package xfer // import "github.com/docker/docker/distribution/xfer"
+package xfer
 
 import (
-	"context"
 	"errors"
 	"sync/atomic"
 	"testing"
@@ -10,6 +9,7 @@ import (
 	"github.com/docker/distribution"
 	"github.com/docker/docker/layer"
 	"github.com/docker/docker/pkg/progress"
+	"golang.org/x/net/context"
 )
 
 const maxUploadConcurrency = 3
@@ -79,7 +79,7 @@ func uploadDescriptors(currentUploads *int32) []UploadDescriptor {
 }
 
 func TestSuccessfulUpload(t *testing.T) {
-	lum := NewLayerUploadManager(maxUploadConcurrency, func(m *LayerUploadManager) { m.waitDuration = time.Millisecond })
+	lum := NewLayerUploadManager(maxUploadConcurrency)
 
 	progressChan := make(chan progress.Progress)
 	progressDone := make(chan struct{})
@@ -105,7 +105,7 @@ func TestSuccessfulUpload(t *testing.T) {
 }
 
 func TestCancelledUpload(t *testing.T) {
-	lum := NewLayerUploadManager(maxUploadConcurrency, func(m *LayerUploadManager) { m.waitDuration = time.Millisecond })
+	lum := NewLayerUploadManager(maxUploadConcurrency)
 
 	progressChan := make(chan progress.Progress)
 	progressDone := make(chan struct{})

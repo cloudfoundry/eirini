@@ -115,7 +115,7 @@ func build(ip string) (string, error) {
 	return file, nil
 }
 
-func tarBinary(binary string) (*bytes.Buffer, error) {
+func tarBinary(binary string) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 	tw := tar.NewWriter(buf)
 	defer tw.Close()
@@ -130,9 +130,8 @@ func tarBinary(binary string) (*bytes.Buffer, error) {
 		return nil, err
 	}
 	header := &tar.Header{
-		Name:     appPath,
-		Size:     stat.Size(),
-		Typeflag: tar.TypeReg,
+		Name: appPath,
+		Size: stat.Size(),
 		// Use a fixed Mode, so that this isn't sensitive to the directory and umask
 		// under which it was created. Additionally, windows can only set 0222,
 		// 0444, or 0666, none of which are executable.
@@ -147,7 +146,7 @@ func tarBinary(binary string) (*bytes.Buffer, error) {
 		return nil, err
 	}
 
-	return buf, nil
+	return buf.Bytes(), nil
 }
 
 func kodataPath(s string) (string, error) {
@@ -161,7 +160,7 @@ func kodataPath(s string) (string, error) {
 // Where kodata lives in the image.
 const kodataRoot = "/var/run/ko"
 
-func tarKoData(importpath string) (*bytes.Buffer, error) {
+func tarKoData(importpath string) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 	tw := tar.NewWriter(buf)
 	defer tw.Close()
@@ -174,10 +173,12 @@ func tarKoData(importpath string) (*bytes.Buffer, error) {
 	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if path == root {
 			// Add an entry for /var/run/ko
-			return tw.WriteHeader(&tar.Header{
+			header := &tar.Header{
 				Name:     kodataRoot,
 				Typeflag: tar.TypeDir,
-			})
+			}
+			// write the header to the tarball archive
+			return tw.WriteHeader(header)
 		}
 		if err != nil {
 			return err
@@ -202,15 +203,15 @@ func tarKoData(importpath string) (*bytes.Buffer, error) {
 
 		// Copy the file into the image tarball.
 		newPath := filepath.Join(kodataRoot, path[len(root):])
-		if err := tw.WriteHeader(&tar.Header{
-			Name:     newPath,
-			Size:     info.Size(),
-			Typeflag: tar.TypeReg,
+		header := &tar.Header{
+			Name: newPath,
+			Size: info.Size(),
 			// Use a fixed Mode, so that this isn't sensitive to the directory and umask
 			// under which it was created. Additionally, windows can only set 0222,
 			// 0444, or 0666, none of which are executable.
 			Mode: 0555,
-		}); err != nil {
+		}
+		if err := tw.WriteHeader(header); err != nil {
 			return err
 		}
 		_, err = io.Copy(tw, file)
@@ -220,7 +221,7 @@ func tarKoData(importpath string) (*bytes.Buffer, error) {
 		return nil, err
 	}
 
-	return buf, nil
+	return buf.Bytes(), nil
 }
 
 // Build implements build.Interface
@@ -234,11 +235,10 @@ func (gb *gobuild) Build(s string) (v1.Image, error) {
 
 	var layers []v1.Layer
 	// Create a layer from the kodata directory under this import path.
-	dataLayerBuf, err := tarKoData(s)
+	dataLayerBytes, err := tarKoData(s)
 	if err != nil {
 		return nil, err
 	}
-	dataLayerBytes := dataLayerBuf.Bytes()
 	dataLayer, err := tarball.LayerFromOpener(func() (io.ReadCloser, error) {
 		return v1util.NopReadCloser(bytes.NewBuffer(dataLayerBytes)), nil
 	})
@@ -248,11 +248,10 @@ func (gb *gobuild) Build(s string) (v1.Image, error) {
 	layers = append(layers, dataLayer)
 
 	// Construct a tarball with the binary and produce a layer.
-	binaryLayerBuf, err := tarBinary(file)
+	binaryLayerBytes, err := tarBinary(file)
 	if err != nil {
 		return nil, err
 	}
-	binaryLayerBytes := binaryLayerBuf.Bytes()
 	binaryLayer, err := tarball.LayerFromOpener(func() (io.ReadCloser, error) {
 		return v1util.NopReadCloser(bytes.NewBuffer(binaryLayerBytes)), nil
 	})

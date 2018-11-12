@@ -83,6 +83,11 @@ var _ = Describe("Applications", func() {
 						GUID:      "some-app-guid",
 						SpaceGUID: "some-space-guid",
 					},
+					Stack: v2action.Stack{
+						Name:        "some-stack-name",
+						GUID:        "some-stack-guid",
+						Description: "some-stack-description",
+					},
 				},
 				CurrentApplication: Application{
 					Application: v2action.Application{
@@ -99,7 +104,7 @@ var _ = Describe("Applications", func() {
 			returnedConfig, event, warnings, executeErr = actor.UpdateApplication(config)
 		})
 
-		Context("when the update is successful", func() {
+		When("the update is successful", func() {
 			BeforeEach(func() {
 				updatedApplication = v2action.Application{
 					Name:      "some-app-name",
@@ -128,7 +133,7 @@ var _ = Describe("Applications", func() {
 			})
 		})
 
-		Context("when the update errors", func() {
+		When("the update errors", func() {
 			var expectedErr error
 			BeforeEach(func() {
 				expectedErr = errors.New("oh my")
@@ -142,7 +147,7 @@ var _ = Describe("Applications", func() {
 		})
 
 		Context("State", func() {
-			Context("when the state is not being updated", func() {
+			When("the state is not being updated", func() {
 				BeforeEach(func() {
 					config.CurrentApplication.State = "some-state"
 					config.DesiredApplication.State = "some-state"
@@ -162,7 +167,7 @@ var _ = Describe("Applications", func() {
 		})
 
 		Context("StackGUID", func() {
-			Context("when the stack guid is not being updated", func() {
+			When("the stack guid is not being updated", func() {
 				BeforeEach(func() {
 					config.CurrentApplication.StackGUID = "some-stack-guid"
 					config.DesiredApplication.StackGUID = "some-stack-guid"
@@ -192,7 +197,7 @@ var _ = Describe("Applications", func() {
 				buildpacks = nil
 			})
 
-			Context("when buildpack is set", func() {
+			When("buildpack is set", func() {
 				BeforeEach(func() {
 					buildpack = types.FilteredString{Value: "ruby", IsSet: true}
 					config.DesiredApplication.Buildpack = buildpack
@@ -213,7 +218,7 @@ var _ = Describe("Applications", func() {
 				})
 			})
 
-			Context("when builpacks is set as an empty array (autodetect)", func() {
+			When("buildpacks is set as an empty array (autodetect)", func() {
 				BeforeEach(func() {
 					buildpacks = []string{}
 					config.DesiredApplication.Buildpacks = buildpacks
@@ -237,7 +242,7 @@ var _ = Describe("Applications", func() {
 				})
 			})
 
-			Context("when buildpacks is set with one buildpack", func() {
+			When("buildpacks is set with one buildpack", func() {
 				BeforeEach(func() {
 					buildpacks = []string{"ruby"}
 					config.DesiredApplication.Buildpacks = buildpacks
@@ -260,7 +265,7 @@ var _ = Describe("Applications", func() {
 					Expect(returnedConfig.DesiredApplication.Application).To(Equal(updatedApplication))
 				})
 
-				Context("when that buildpack is default/null", func() {
+				When("that buildpack is default/null", func() {
 					BeforeEach(func() {
 						buildpacks = []string{"default"}
 						config.DesiredApplication.Buildpacks = buildpacks
@@ -282,7 +287,7 @@ var _ = Describe("Applications", func() {
 				})
 			})
 
-			Context("when buildpacks is set with more than one buildpack", func() {
+			When("buildpacks is set with more than one buildpack", func() {
 				BeforeEach(func() {
 					buildpacks = []string{"ruby", "java"}
 					config.DesiredApplication.Buildpacks = buildpacks
@@ -301,7 +306,7 @@ var _ = Describe("Applications", func() {
 					Expect(returnedConfig.DesiredApplication.Application).To(Equal(updatedApplication))
 				})
 
-				Context("when the v3 update is successful", func() {
+				When("the v3 update is successful", func() {
 					var submitApp v3action.Application
 
 					BeforeEach(func() {
@@ -310,6 +315,7 @@ var _ = Describe("Applications", func() {
 						submitApp = v3action.Application{
 							Name:                updatedApplication.Name,
 							GUID:                updatedApplication.GUID,
+							StackName:           config.DesiredApplication.Stack.Name,
 							LifecycleBuildpacks: []string{"ruby", "java"},
 							LifecycleType:       constant.AppLifecycleTypeBuildpack,
 						}
@@ -329,7 +335,7 @@ var _ = Describe("Applications", func() {
 					})
 				})
 
-				Context("when the v3 update fails", func() {
+				When("the v3 update fails", func() {
 					BeforeEach(func() {
 						fakeV2Actor.UpdateApplicationReturns(v2action.Application{}, v2action.Warnings{"v2-create-application-warnings"}, nil)
 						fakeV3Actor.UpdateApplicationReturns(v3action.Application{}, v3action.Warnings{"v3-update-application-warnings"}, errors.New("boom"))
@@ -374,7 +380,7 @@ var _ = Describe("Applications", func() {
 			returnedConfig, event, warnings, executeErr = actor.CreateApplication(config)
 		})
 
-		Context("when the creation is successful", func() {
+		When("the creation is successful", func() {
 			BeforeEach(func() {
 				createdApplication = v2action.Application{
 					Name:      "some-app-name",
@@ -402,7 +408,7 @@ var _ = Describe("Applications", func() {
 			})
 		})
 
-		Context("when the creation errors", func() {
+		When("the creation errors", func() {
 			var expectedErr error
 
 			BeforeEach(func() {
@@ -422,7 +428,7 @@ var _ = Describe("Applications", func() {
 				buildpacks []string
 			)
 
-			Context("when buildpack is set", func() {
+			When("buildpack is set", func() {
 				BeforeEach(func() {
 					buildpack = types.FilteredString{Value: "ruby", IsSet: true}
 					config.DesiredApplication.Buildpack = buildpack
@@ -443,7 +449,7 @@ var _ = Describe("Applications", func() {
 				})
 			})
 
-			Context("when buildpacks is set with one buildpack", func() {
+			When("buildpacks is set with one buildpack", func() {
 				BeforeEach(func() {
 					buildpacks = []string{"ruby"}
 					config.DesiredApplication.Buildpacks = buildpacks
@@ -467,7 +473,7 @@ var _ = Describe("Applications", func() {
 				})
 			})
 
-			Context("when buildpacks is set with more than one buildpack", func() {
+			When("buildpacks is set with more than one buildpack", func() {
 				BeforeEach(func() {
 					buildpacks = []string{"ruby", "java"}
 					config.DesiredApplication.Buildpacks = buildpacks
@@ -486,7 +492,7 @@ var _ = Describe("Applications", func() {
 					Expect(returnedConfig.DesiredApplication.Application).To(Equal(createdApplication))
 				})
 
-				Context("when the v3 update is successful", func() {
+				When("the v3 update is successful", func() {
 					var submitApp v3action.Application
 
 					BeforeEach(func() {
@@ -495,6 +501,7 @@ var _ = Describe("Applications", func() {
 						submitApp = v3action.Application{
 							Name:                createdApplication.Name,
 							GUID:                createdApplication.GUID,
+							StackName:           config.DesiredApplication.Stack.Name,
 							LifecycleBuildpacks: []string{"ruby", "java"},
 							LifecycleType:       constant.AppLifecycleTypeBuildpack,
 						}
@@ -514,7 +521,7 @@ var _ = Describe("Applications", func() {
 					})
 				})
 
-				Context("when the v3 update fails", func() {
+				When("the v3 update fails", func() {
 					BeforeEach(func() {
 						fakeV2Actor.CreateApplicationReturns(v2action.Application{}, v2action.Warnings{"v2-create-application-warnings"}, nil)
 						fakeV3Actor.UpdateApplicationReturns(v3action.Application{}, v3action.Warnings{"v3-update-application-warnings"}, errors.New("boom"))
@@ -554,7 +561,7 @@ var _ = Describe("Applications", func() {
 			found, app, warnings, executeErr = actor.FindOrReturnPartialApp(appName, spaceGUID)
 		})
 
-		Context("when the app exists", func() {
+		When("the app exists", func() {
 			BeforeEach(func() {
 				expectedApp = v2action.Application{
 					GUID:      "some-app-guid",
@@ -565,7 +572,7 @@ var _ = Describe("Applications", func() {
 			})
 
 			Describe("buildpacks", func() {
-				Context("when getting the app returns an API not found error", func() {
+				When("getting the app returns an API not found error", func() {
 					BeforeEach(func() {
 						fakeV3Actor.GetApplicationByNameAndSpaceReturns(v3action.Application{}, v3action.Warnings{"some-v3-app-warning"}, ccerror.APINotFoundError{})
 					})
@@ -578,7 +585,7 @@ var _ = Describe("Applications", func() {
 					})
 				})
 
-				Context("when getting the app returns a generic error", func() {
+				When("getting the app returns a generic error", func() {
 					BeforeEach(func() {
 						fakeV3Actor.GetApplicationByNameAndSpaceReturns(v3action.Application{}, v3action.Warnings{"some-v3-app-warning"}, errors.New("some-generic-error"))
 					})
@@ -590,7 +597,7 @@ var _ = Describe("Applications", func() {
 					})
 				})
 
-				Context("when getting the app is successful", func() {
+				When("getting the app is successful", func() {
 					BeforeEach(func() {
 						fakeV3Actor.GetApplicationByNameAndSpaceReturns(
 							v3action.Application{LifecycleBuildpacks: []string{"buildpack-1", "buildpack-2"}},
@@ -607,7 +614,7 @@ var _ = Describe("Applications", func() {
 				})
 			})
 
-			Context("when retrieving the stack is successful", func() {
+			When("retrieving the stack is successful", func() {
 				BeforeEach(func() {
 					expectedStack = v2action.Stack{
 						Name: "some-stack",
@@ -627,7 +634,7 @@ var _ = Describe("Applications", func() {
 				})
 			})
 
-			Context("when retrieving the stack errors", func() {
+			When("retrieving the stack errors", func() {
 				var expectedErr error
 
 				BeforeEach(func() {
@@ -650,7 +657,7 @@ var _ = Describe("Applications", func() {
 			})
 		})
 
-		Context("when the app does not exist", func() {
+		When("the app does not exist", func() {
 			BeforeEach(func() {
 				fakeV2Actor.GetApplicationByNameAndSpaceReturns(v2action.Application{}, v2action.Warnings{"some-app-warning-1", "some-app-warning-2"}, actionerror.ApplicationNotFoundError{})
 			})
@@ -668,7 +675,7 @@ var _ = Describe("Applications", func() {
 			})
 		})
 
-		Context("when retrieving the app errors", func() {
+		When("retrieving the app errors", func() {
 			var expectedErr error
 			BeforeEach(func() {
 				expectedErr = errors.New("dios mio")

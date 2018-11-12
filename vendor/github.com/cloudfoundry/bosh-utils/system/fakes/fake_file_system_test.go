@@ -22,6 +22,91 @@ var _ = Describe("FakeFileSystem", func() {
 		fs = NewFakeFileSystem()
 	})
 
+	Describe("MkdirAll", func() {
+		It("creates a directory", func() {
+			err := fs.MkdirAll("/potato", 0750)
+			Expect(err).ToNot(HaveOccurred())
+
+			fi, err := fs.Stat("/potato")
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(fi.IsDir()).To(BeTrue())
+			Expect(fi.Mode()).To(Equal(os.FileMode(0750)))
+		})
+
+		It("works with Windows style pathing", func() {
+			err := fs.MkdirAll("C:/potato", 0750)
+			Expect(err).ToNot(HaveOccurred())
+
+			fi, err := fs.Stat("C:/potato")
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(fi.IsDir()).To(BeTrue())
+			Expect(fi.Mode()).To(Equal(os.FileMode(0750)))
+		})
+
+		It("can create the root directory", func() {
+			err := fs.MkdirAll("/", 0750)
+			Expect(err).ToNot(HaveOccurred())
+
+			fi, err := fs.Stat("/")
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(fi.IsDir()).To(BeTrue())
+			Expect(fi.Mode()).To(Equal(os.FileMode(0750)))
+		})
+
+		It("creates all directories it needs to", func() {
+			segments := []string{"C:/potato", "with", "a", "subdirectory"}
+			err := fs.MkdirAll(filepath.Join(segments...), 0750)
+			Expect(err).ToNot(HaveOccurred())
+
+			var path string
+			for _, segment := range segments {
+				path = filepath.Join(path, segment)
+
+				fi, err := fs.Stat(path)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(fi.IsDir()).To(BeTrue())
+				Expect(fi.Mode()).To(Equal(os.FileMode(0750)))
+			}
+		})
+
+		It("does not overwrite existing directories", func() {
+			err := fs.MkdirAll("/potato", 0700)
+			Expect(err).ToNot(HaveOccurred())
+
+			err = fs.MkdirAll("/potato/subdir", 0750)
+			Expect(err).ToNot(HaveOccurred())
+
+			fi, err := fs.Stat("/potato")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(fi.IsDir()).To(BeTrue())
+			Expect(fi.Mode()).To(Equal(os.FileMode(0700)))
+		})
+
+		It("doesn't allow directories to be made in files", func() {
+			err := fs.WriteFileString("/potato", "I am a file")
+			Expect(err).ToNot(HaveOccurred())
+
+			err = fs.MkdirAll("/potato/subdir", 0750)
+			Expect(err).To(HaveOccurred())
+
+			err = fs.MkdirAll("/potato/subdir/another", 0750)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("handles relative paths", func() {
+			err := fs.MkdirAll("potato", 0750)
+			Expect(err).ToNot(HaveOccurred())
+
+			fi, err := fs.Stat("potato")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(fi.IsDir()).To(BeTrue())
+			Expect(fi.Mode()).To(Equal(os.FileMode(0750)))
+		})
+	})
+
 	Describe("RemoveAll", func() {
 		It("removes the specified file", func() {
 			fs.WriteFileString("foobar", "asdfghjk")
@@ -133,27 +218,56 @@ var _ = Describe("FakeFileSystem", func() {
 			}
 		})
 
-		It("recursively copies directory contents", func() {
+		It("recursively copies directory and directory contents", func() {
 			srcPath := fixtureDirPath
-			dstPath, err := fs.TempDir("CopyDirTestDir")
+			tmpDir, err := fs.TempDir("CopyDirTestDir")
 			Expect(err).ToNot(HaveOccurred())
-			defer fs.RemoveAll(dstPath)
+			defer fs.RemoveAll(tmpDir)
 
-			err = fs.CopyDir(srcPath, dstPath)
+			destPath := filepath.Join(tmpDir, "dest")
+
+			err = fs.CopyDir(srcPath, destPath)
 			Expect(err).ToNot(HaveOccurred())
 
 			for fixtureFile := range fixtureFiles {
 				srcContents, err := fs.ReadFile(filepath.Join(srcPath, fixtureFile))
 				Expect(err).ToNot(HaveOccurred())
 
-				dstContents, err := fs.ReadFile(filepath.Join(dstPath, fixtureFile))
+				dstContents, err := fs.ReadFile(filepath.Join(destPath, fixtureFile))
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(srcContents).To(Equal(dstContents), "Copied file does not match source file: '%s", fixtureFile)
 			}
 
-			err = fs.RemoveAll(dstPath)
+			_, err = fs.Stat(destPath)
 			Expect(err).ToNot(HaveOccurred())
+
+			err = fs.RemoveAll(tmpDir)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("preserves file permissions", func() {
+			srcPath, err := fs.TempDir("CopyDirTestSrc")
+			Expect(err).ToNot(HaveOccurred())
+
+			readOnly := filepath.Join(srcPath, "readonly.txt")
+			err = fs.WriteFileString(readOnly, "readonly")
+			Expect(err).ToNot(HaveOccurred())
+
+			err = fs.Chmod(readOnly, 0400)
+			Expect(err).ToNot(HaveOccurred())
+
+			dstPath, err := fs.TempDir("CopyDirTestDest")
+			Expect(err).ToNot(HaveOccurred())
+			defer fs.RemoveAll(dstPath)
+
+			err = fs.CopyDir(srcPath, dstPath)
+			Expect(err).ToNot(HaveOccurred())
+
+			fi, err := fs.Stat(filepath.Join(dstPath, "readonly.txt"))
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(fi.Mode()).To(Equal(os.FileMode(0400)))
 		})
 	})
 
@@ -200,6 +314,21 @@ var _ = Describe("FakeFileSystem", func() {
 			Expect(newStat.Username).To(Equal(oldStat.Username))
 			Expect(newStat.Groupname).To(Equal(oldStat.Groupname))
 			Expect(newStat.Flags).To(Equal(oldStat.Flags))
+		})
+
+		It("renames the contents of subdirectories", func() {
+			err := fs.MkdirAll("originaldir", 0700)
+			Expect(err).ToNot(HaveOccurred())
+
+			err = fs.WriteFileString("originaldir/file.txt", "contents!")
+			Expect(err).ToNot(HaveOccurred())
+
+			err = fs.Rename("originaldir", "newdir")
+			Expect(err).ToNot(HaveOccurred())
+
+			contents, err := fs.ReadFileString("newdir/file.txt")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(contents).To(Equal("contents!"))
 		})
 	})
 

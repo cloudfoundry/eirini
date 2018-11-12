@@ -1,12 +1,11 @@
-package daemon // import "github.com/docker/docker/daemon"
+package daemon
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
 
-	containertypes "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/go-units"
 )
 
@@ -24,7 +23,7 @@ import (
 //    task manager does and use the private working set as the memory counter.
 //    We could return more info for those who really understand how memory
 //    management works in Windows if we introduced a "raw" stats (above).
-func (daemon *Daemon) ContainerTop(name string, psArgs string) (*containertypes.ContainerTopOKBody, error) {
+func (daemon *Daemon) ContainerTop(name string, psArgs string) (*types.ContainerProcessList, error) {
 	// It's not at all an equivalent to linux 'ps' on Windows
 	if psArgs != "" {
 		return nil, errors.New("Windows does not support arguments to top")
@@ -35,19 +34,11 @@ func (daemon *Daemon) ContainerTop(name string, psArgs string) (*containertypes.
 		return nil, err
 	}
 
-	if !container.IsRunning() {
-		return nil, errNotRunning(container.ID)
-	}
-
-	if container.IsRestarting() {
-		return nil, errContainerIsRestarting(container.ID)
-	}
-
-	s, err := daemon.containerd.Summary(context.Background(), container.ID)
+	s, err := daemon.containerd.Summary(container.ID)
 	if err != nil {
 		return nil, err
 	}
-	procList := &containertypes.ContainerTopOKBody{}
+	procList := &types.ContainerProcessList{}
 	procList.Titles = []string{"Name", "PID", "CPU", "Private Working Set"}
 
 	for _, j := range s {
@@ -58,6 +49,5 @@ func (daemon *Daemon) ContainerTop(name string, psArgs string) (*containertypes.
 			fmt.Sprintf("%02d:%02d:%02d.%03d", int(d.Hours()), int(d.Minutes())%60, int(d.Seconds())%60, int(d.Nanoseconds()/1000000)%1000),
 			units.HumanSize(float64(j.MemoryWorkingSetPrivateBytes))})
 	}
-
 	return procList, nil
 }

@@ -2,7 +2,6 @@ package img
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -13,17 +12,16 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 )
 
-func Append(base v1.Image, tar string) (v1.Image, error) {
+func Append(base v1.Image, tar string) (v1.Image, v1.Layer, error) {
 	layer, err := tarball.LayerFromFile(tar)
 	if err != nil {
-		return nil, fmt.Errorf("get layer from file: %s", err)
+		return nil, nil, err
 	}
-
 	image, err := mutate.AppendLayers(base, layer)
 	if err != nil {
-		return nil, fmt.Errorf("append layer: %s", err)
+		return nil, nil, err
 	}
-	return image, nil
+	return image, layer, nil
 }
 
 type ImageFinder func(labels map[string]string) (v1.Image, error)
@@ -35,11 +33,11 @@ func Rebase(orig v1.Image, newBase v1.Image, oldBaseFinder ImageFinder) (v1.Imag
 	}
 	oldBase, err := oldBaseFinder(origConfig.Config.Labels)
 	if err != nil {
-		return nil, fmt.Errorf("find old base: %s", err)
+		return nil, err
 	}
 	image, err := mutate.Rebase(orig, oldBase, newBase, nil)
 	if err != nil {
-		return nil, fmt.Errorf("rebase image: %s", err)
+		return nil, err
 	}
 	return image, nil
 }
@@ -57,9 +55,12 @@ func Label(image v1.Image, k, v string) (v1.Image, error) {
 	return mutate.Config(image, config)
 }
 
-func SetupCredHelpers(configPath string, refs ...string) error {
-	// configPath := filepath.Join(homePath, ".docker", "config.json")
+func SetupCredHelpers(refs ...string) error {
+	dockerPath := filepath.Join(os.Getenv("HOME"), ".docker")
+	configPath := filepath.Join(dockerPath, "config.json")
 	config := map[string]interface{}{}
+	credHelpers := map[string]string{}
+	config["credHelpers"] = credHelpers
 	if f, err := os.Open(configPath); err == nil {
 		err := json.NewDecoder(f).Decode(&config)
 		if f.Close(); err != nil {
@@ -67,13 +68,6 @@ func SetupCredHelpers(configPath string, refs ...string) error {
 		}
 	} else if !os.IsNotExist(err) {
 		return err
-	}
-	var credHelpers map[string]interface{}
-	if hash, ok := config["credHelpers"].(map[string]interface{}); ok {
-		credHelpers = hash
-	} else {
-		credHelpers = make(map[string]interface{})
-		config["credHelpers"] = credHelpers
 	}
 	added := false
 	for _, refStr := range refs {
@@ -101,7 +95,7 @@ func SetupCredHelpers(configPath string, refs ...string) error {
 	if !added {
 		return nil
 	}
-	if err := os.MkdirAll(filepath.Dir(configPath), 0777); err != nil {
+	if err := os.MkdirAll(dockerPath, 0777); err != nil {
 		return err
 	}
 	f, err := os.Create(configPath)

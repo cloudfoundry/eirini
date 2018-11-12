@@ -50,7 +50,7 @@ var _ = Describe("JSONConfig", func() {
 	})
 
 	Describe("CurrentUser", func() {
-		Context("when using client credentials and the user token is set", func() {
+		When("using client credentials and the user token is set", func() {
 			It("returns the user", func() {
 				config = &Config{
 					ConfigFile: JSONConfig{
@@ -66,7 +66,7 @@ var _ = Describe("JSONConfig", func() {
 			})
 		})
 
-		Context("when using user/password and the user token is set", func() {
+		When("using user/password and the user token is set", func() {
 			It("returns the user", func() {
 				config = &Config{
 					ConfigFile: JSONConfig{
@@ -82,7 +82,7 @@ var _ = Describe("JSONConfig", func() {
 			})
 		})
 
-		Context("when the user token is blank", func() {
+		When("the user token is blank", func() {
 			It("returns the user", func() {
 				config = new(Config)
 				user, err := config.CurrentUser()
@@ -92,8 +92,47 @@ var _ = Describe("JSONConfig", func() {
 		})
 	})
 
+	Describe("CurrentUserName", func() {
+		When("using client credentials and the user token is set", func() {
+			It("returns the username", func() {
+				config = &Config{
+					ConfigFile: JSONConfig{
+						AccessToken: AccessTokenForClientUsers,
+					},
+				}
+
+				username, err := config.CurrentUserName()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(username).To(Equal("potato-face"))
+			})
+		})
+
+		When("using user/password and the user token is set", func() {
+			It("returns the username", func() {
+				config = &Config{
+					ConfigFile: JSONConfig{
+						AccessToken: AccessTokenForHumanUsers,
+					},
+				}
+
+				username, err := config.CurrentUserName()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(username).To(Equal("admin"))
+			})
+		})
+
+		When("the user token is blank", func() {
+			It("returns an empty string", func() {
+				config = new(Config)
+				username, err := config.CurrentUserName()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(username).To(BeEmpty())
+			})
+		})
+	})
+
 	Describe("HasTargetedOrganization", func() {
-		Context("when an organization is targeted", func() {
+		When("an organization is targeted", func() {
 			It("returns true", func() {
 				config = new(Config)
 				config.SetOrganizationInformation("guid-value-1", "my-org-name")
@@ -101,7 +140,7 @@ var _ = Describe("JSONConfig", func() {
 			})
 		})
 
-		Context("when an organization is not targeted", func() {
+		When("an organization is not targeted", func() {
 			It("returns false", func() {
 				config = new(Config)
 				Expect(config.HasTargetedOrganization()).To(BeFalse())
@@ -110,7 +149,7 @@ var _ = Describe("JSONConfig", func() {
 	})
 
 	Describe("HasTargetedSpace", func() {
-		Context("when an space is targeted", func() {
+		When("an space is targeted", func() {
 			It("returns true", func() {
 				config = new(Config)
 				config.SetSpaceInformation("guid-value-1", "my-org-name", true)
@@ -118,7 +157,7 @@ var _ = Describe("JSONConfig", func() {
 			})
 		})
 
-		Context("when an space is not targeted", func() {
+		When("an space is not targeted", func() {
 			It("returns false", func() {
 				config = new(Config)
 				Expect(config.HasTargetedSpace()).To(BeFalse())
@@ -139,7 +178,7 @@ var _ = Describe("JSONConfig", func() {
 	})
 
 	Describe("OverallPollingTimeout", func() {
-		Context("when AsyncTimeout is set in config", func() {
+		When("AsyncTimeout is set in config", func() {
 			BeforeEach(func() {
 				rawConfig := `{ "AsyncTimeout":5 }`
 				setConfig(homeDir, rawConfig)
@@ -347,6 +386,22 @@ var _ = Describe("JSONConfig", func() {
 			}
 
 			Expect(config.TargetedOrganization()).To(Equal(organization))
+		})
+	})
+
+	Describe("TargetedOrganizationName", func() {
+		It("returns the name of targeted organization", func() {
+			organization := Organization{
+				GUID: "some-guid",
+				Name: "some-org",
+			}
+			config = &Config{
+				ConfigFile: JSONConfig{
+					TargetedOrganization: organization,
+				},
+			}
+
+			Expect(config.TargetedOrganizationName()).To(Equal(organization.Name))
 		})
 	})
 

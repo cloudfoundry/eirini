@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"code.cloudfoundry.org/credhub-cli/credhub"
 	"code.cloudfoundry.org/credhub-cli/credhub/credentials"
 	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
 	"code.cloudfoundry.org/credhub-cli/errors"
@@ -18,7 +17,6 @@ import (
 type SetCommand struct {
 	CredentialIdentifier string `short:"n" required:"yes" long:"name" description:"Name of the credential to set"`
 	Type                 string `short:"t" long:"type" description:"Sets the credential type. Valid types include 'value', 'json', 'password', 'user', 'certificate', 'ssh' and 'rsa'."`
-	NoOverwrite          bool   `short:"O" long:"no-overwrite" description:"Credential is not modified if stored value already exists"`
 	Value                string `short:"v" long:"value" description:"[Value, JSON] Sets the value for the credential"`
 	CaName               string `short:"m" long:"ca-name" description:"[Certificate] Sets the root CA to a stored CA credential"`
 	Root                 string `short:"r" long:"root" description:"[Certificate] Sets the root CA from file or value"`
@@ -92,12 +90,6 @@ func (c *SetCommand) setFieldsFromFileOrString() error {
 }
 
 func (c *SetCommand) setCredential() (credentials.Credential, error) {
-	mode := credhub.Overwrite
-
-	if c.NoOverwrite {
-		mode = credhub.NoOverwrite
-	}
-
 	var value interface{}
 
 	switch c.Type {
@@ -134,7 +126,7 @@ func (c *SetCommand) setCredential() (credentials.Credential, error) {
 	default:
 		value = values.Value(c.Value)
 	}
-	return c.client.SetCredential(c.CredentialIdentifier, c.Type, value, mode)
+	return c.client.SetCredential(c.CredentialIdentifier, c.Type, value)
 }
 
 func promptForInput(prompt string, value *string) {

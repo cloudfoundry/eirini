@@ -1,4 +1,6 @@
-package cluster // import "github.com/docker/docker/daemon/cluster"
+// +build linux
+
+package cluster
 
 import (
 	"net"

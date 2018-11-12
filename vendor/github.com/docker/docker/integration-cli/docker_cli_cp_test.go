@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker/docker/integration-cli/checker"
+	"github.com/docker/docker/pkg/integration/checker"
+	icmd "github.com/docker/docker/pkg/integration/cmd"
 	"github.com/go-check/check"
-	"github.com/gotestyourself/gotestyourself/icmd"
 )
 
 const (
@@ -27,7 +27,7 @@ const (
 
 // Ensure that an all-local path case returns an error.
 func (s *DockerSuite) TestCpLocalOnly(c *check.C) {
-	err := runDockerCp(c, "foo", "bar", nil)
+	err := runDockerCp(c, "foo", "bar")
 	c.Assert(err, checker.NotNil)
 
 	c.Assert(err.Error(), checker.Contains, "must specify at least one container source")
@@ -379,7 +379,7 @@ func (s *DockerSuite) TestCpSymlinkComponent(c *check.C) {
 
 // Check that cp with unprivileged user doesn't return any error
 func (s *DockerSuite) TestCpUnprivilegedUser(c *check.C) {
-	testRequires(c, DaemonIsLinux, SameHostDaemon)
+	testRequires(c, DaemonIsLinux)
 	testRequires(c, UnixCli) // uses chmod/su: not available on windows
 
 	out, _ := dockerCmd(c, "run", "-d", "busybox", "/bin/sh", "-c", "touch "+cpTestName)
@@ -421,7 +421,7 @@ func (s *DockerSuite) TestCpSpecialFiles(c *check.C) {
 	// Copy actual /etc/resolv.conf
 	dockerCmd(c, "cp", containerID+":/etc/resolv.conf", outDir)
 
-	expected := readContainerFile(c, containerID, "resolv.conf")
+	expected, err := readContainerFile(containerID, "resolv.conf")
 	actual, err := ioutil.ReadFile(outDir + "/resolv.conf")
 
 	// Expected copied file to be duplicate of the container resolvconf
@@ -430,7 +430,7 @@ func (s *DockerSuite) TestCpSpecialFiles(c *check.C) {
 	// Copy actual /etc/hosts
 	dockerCmd(c, "cp", containerID+":/etc/hosts", outDir)
 
-	expected = readContainerFile(c, containerID, "hosts")
+	expected, err = readContainerFile(containerID, "hosts")
 	actual, err = ioutil.ReadFile(outDir + "/hosts")
 
 	// Expected copied file to be duplicate of the container hosts
@@ -439,9 +439,8 @@ func (s *DockerSuite) TestCpSpecialFiles(c *check.C) {
 	// Copy actual /etc/resolv.conf
 	dockerCmd(c, "cp", containerID+":/etc/hostname", outDir)
 
-	expected = readContainerFile(c, containerID, "hostname")
+	expected, err = readContainerFile(containerID, "hostname")
 	actual, err = ioutil.ReadFile(outDir + "/hostname")
-	c.Assert(err, checker.IsNil)
 
 	// Expected copied file to be duplicate of the container resolvconf
 	c.Assert(bytes.Equal(actual, expected), checker.True)
@@ -534,7 +533,6 @@ func (s *DockerSuite) TestCpToDot(c *check.C) {
 	c.Assert(os.Chdir(tmpdir), checker.IsNil)
 	dockerCmd(c, "cp", containerID+":/test", ".")
 	content, err := ioutil.ReadFile("./test")
-	c.Assert(err, checker.IsNil)
 	c.Assert(string(content), checker.Equals, "lololol\n")
 }
 
@@ -547,7 +545,7 @@ func (s *DockerSuite) TestCpToStdout(c *check.C) {
 	// failed to set up container
 	c.Assert(strings.TrimSpace(out), checker.Equals, "0")
 
-	out, err := RunCommandPipelineWithOutput(
+	out, _, err := runCommandPipelineWithOutput(
 		exec.Command(dockerBinary, "cp", containerID+":/test", "-"),
 		exec.Command("tar", "-vtf", "-"))
 
@@ -573,7 +571,6 @@ func (s *DockerSuite) TestCpNameHasColon(c *check.C) {
 	defer os.RemoveAll(tmpdir)
 	dockerCmd(c, "cp", containerID+":/te:s:t", tmpdir)
 	content, err := ioutil.ReadFile(tmpdir + "/te:s:t")
-	c.Assert(err, checker.IsNil)
 	c.Assert(string(content), checker.Equals, "lololol\n")
 }
 
@@ -655,7 +652,6 @@ func (s *DockerSuite) TestCpSymlinkFromConToHostFollowSymlink(c *check.C) {
 	dockerCmd(c, "cp", "-L", cleanedContainerID+":"+"/dir_link", expectedPath)
 
 	actual, err = ioutil.ReadFile(expectedPath)
-	c.Assert(err, checker.IsNil)
 
 	if !bytes.Equal(actual, expected) {
 		c.Fatalf("Expected copied file to be duplicate of the container symbol link target")

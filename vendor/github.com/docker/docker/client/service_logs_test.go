@@ -1,8 +1,7 @@
-package client // import "github.com/docker/docker/client"
+package client
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,8 +13,8 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/gotestyourself/gotestyourself/assert"
-	is "github.com/gotestyourself/gotestyourself/assert/cmp"
+
+	"golang.org/x/net/context"
 )
 
 func TestServiceLogsError(t *testing.T) {
@@ -23,11 +22,15 @@ func TestServiceLogsError(t *testing.T) {
 		client: newMockClient(errorMock(http.StatusInternalServerError, "Server error")),
 	}
 	_, err := client.ServiceLogs(context.Background(), "service_id", types.ContainerLogsOptions{})
-	assert.Check(t, is.Error(err, "Error response from daemon: Server error"))
+	if err == nil || err.Error() != "Error response from daemon: Server error" {
+		t.Fatalf("expected a Server Error, got %v", err)
+	}
 	_, err = client.ServiceLogs(context.Background(), "service_id", types.ContainerLogsOptions{
 		Since: "2006-01-02TZ",
 	})
-	assert.Check(t, is.ErrorContains(err, `parsing time "2006-01-02TZ"`))
+	if err == nil || !strings.Contains(err.Error(), `parsing time "2006-01-02TZ"`) {
+		t.Fatalf("expected a 'parsing time' error, got %v", err)
+	}
 }
 
 func TestServiceLogs(t *testing.T) {
@@ -35,7 +38,6 @@ func TestServiceLogs(t *testing.T) {
 	cases := []struct {
 		options             types.ContainerLogsOptions
 		expectedQueryParams map[string]string
-		expectedError       string
 	}{
 		{
 			expectedQueryParams: map[string]string{
@@ -69,27 +71,21 @@ func TestServiceLogs(t *testing.T) {
 		},
 		{
 			options: types.ContainerLogsOptions{
-				// timestamp will be passed as is
-				Since: "1136073600.000000001",
+				// An complete invalid date, timestamp or go duration will be
+				// passed as is
+				Since: "invalid but valid",
 			},
 			expectedQueryParams: map[string]string{
 				"tail":  "",
-				"since": "1136073600.000000001",
+				"since": "invalid but valid",
 			},
-		},
-		{
-			options: types.ContainerLogsOptions{
-				// An complete invalid date will not be passed
-				Since: "invalid value",
-			},
-			expectedError: `invalid value for "since": failed to parse value as time or duration: "invalid value"`,
 		},
 	}
 	for _, logCase := range cases {
 		client := &Client{
 			client: newMockClient(func(r *http.Request) (*http.Response, error) {
 				if !strings.HasPrefix(r.URL.Path, expectedURL) {
-					return nil, fmt.Errorf("expected URL '%s', got '%s'", expectedURL, r.URL)
+					return nil, fmt.Errorf("Expected URL '%s', got '%s'", expectedURL, r.URL)
 				}
 				// Check query parameters
 				query := r.URL.Query()
@@ -106,15 +102,17 @@ func TestServiceLogs(t *testing.T) {
 			}),
 		}
 		body, err := client.ServiceLogs(context.Background(), "service_id", logCase.options)
-		if logCase.expectedError != "" {
-			assert.Check(t, is.Error(err, logCase.expectedError))
-			continue
+		if err != nil {
+			t.Fatal(err)
 		}
-		assert.NilError(t, err)
 		defer body.Close()
 		content, err := ioutil.ReadAll(body)
-		assert.NilError(t, err)
-		assert.Check(t, is.Contains(string(content), "response"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(content) != "response" {
+			t.Fatalf("expected response to contain 'response', got %s", string(content))
+		}
 	}
 }
 

@@ -1,10 +1,10 @@
-package loggerutils // import "github.com/docker/docker/daemon/logger/loggerutils"
+package loggerutils
 
 import (
 	"bytes"
 
 	"github.com/docker/docker/daemon/logger"
-	"github.com/docker/docker/daemon/logger/templates"
+	"github.com/docker/docker/utils/templates"
 )
 
 // DefaultTemplate defines the defaults template logger should use.
@@ -12,8 +12,8 @@ const DefaultTemplate = "{{.ID}}"
 
 // ParseLogTag generates a context aware tag for consistency across different
 // log drivers based on the context of the running container.
-func ParseLogTag(info logger.Info, defaultTemplate string) (string, error) {
-	tagTemplate := info.Config["tag"]
+func ParseLogTag(ctx logger.Context, defaultTemplate string) (string, error) {
+	tagTemplate := ctx.Config["tag"]
 	if tagTemplate == "" {
 		tagTemplate = defaultTemplate
 	}
@@ -23,7 +23,7 @@ func ParseLogTag(info logger.Info, defaultTemplate string) (string, error) {
 		return "", err
 	}
 	buf := new(bytes.Buffer)
-	if err := tmpl.Execute(buf, &info); err != nil {
+	if err := tmpl.Execute(buf, &ctx); err != nil {
 		return "", err
 	}
 

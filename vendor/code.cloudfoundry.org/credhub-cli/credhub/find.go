@@ -19,21 +19,6 @@ func (ch *CredHub) FindByPath(path string) (credentials.FindResults, error) {
 	return ch.findByPathOrNameLike("path", path)
 }
 
-// FindAllPaths retrieves a list of all paths which contain credentials.
-func (ch *CredHub) FindAllPaths() (credentials.Paths, error) {
-	var paths credentials.Paths
-
-	body, err := ch.find("paths", "true")
-
-	if err != nil {
-		return paths, err
-	}
-
-	err = json.Unmarshal(body, &paths)
-
-	return paths, err
-}
-
 func (ch *CredHub) findByPathOrNameLike(key, value string) (credentials.FindResults, error) {
 	var creds credentials.FindResults
 	body, err := ch.find(key, value)

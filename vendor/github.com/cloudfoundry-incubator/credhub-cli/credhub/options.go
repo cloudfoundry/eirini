@@ -87,3 +87,10 @@ func ClientCert(certificate, key string) Option {
 		return nil
 	}
 }
+
+func ServerVersion(version string) Option {
+	return func(c *CredHub) error {
+		c.cachedServerVersion = version
+		return nil
+	}
+}

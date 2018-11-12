@@ -8,10 +8,9 @@ image_resource:
 
 inputs:
 - name: cli
-- name: cli-integration
   path: go/src/code.cloudfoundry.org/cli
 - name: cf-cli-binaries
-- name: bosh-lite-lock
+- name: bosh-lock
 - name: vars-store
 
 params:
@@ -20,6 +19,8 @@ params:
   CF_INT_DOCKER_IMAGE:
   CF_INT_DOCKER_USERNAME:
   CF_INT_DOCKER_PASSWORD:
+  HONEYCOMB_WRITE_KEY:
+  HONEYCOMB_DATASET: "Integration Linux"
 
 run:
   path: bash
@@ -28,12 +29,18 @@ run:
   - |
     set -e
 
-    ENV=$(cat bosh-lite-lock/name | cut -d "." -f 1)
-    export CF_INT_PASSWORD=$(bosh int vars-store/ci/infrastructure/$ENV/deployment-vars.yml --path /cf_admin_password)
+    ENV=$(cat bosh-lock/name | cut -d "." -f 1)
+
+    pushd vars-store/ci/infrastructure/$ENV
+      eval "$(bbl print-env)"
+    popd
+
+    credhub login
+    export CF_INT_PASSWORD=$(credhub get -n /bosh-$ENV/cf/cf_admin_password | bosh interpolate --path /value -)
 
     set -x
 
-    domain=$(cat bosh-lite-lock/name)
+    domain=$(cat bosh-lock/name)
     export CF_INT_API="https://api.${domain}"
     export CF_DIAL_TIMEOUT=15
 
@@ -42,6 +49,8 @@ run:
 
     go get -u github.com/onsi/ginkgo/ginkgo
 
+    export RUN_ID=$(openssl rand -hex 16)
+
     pushd cf-cli-binaries
       tar xvzf cf-cli-binaries.tgz
       chmod +x cf-cli_linux_x86-64
@@ -49,4 +58,4 @@ run:
     popd
 
     cd $GOPATH/src/code.cloudfoundry.org/cli
-    ginkgo -r -nodes=16 -flakeAttempts=2 -slowSpecThreshold=60 -randomizeAllSpecs integration/experimental
+    ginkgo -r -nodes=16 -flakeAttempts=2 -slowSpecThreshold=60 -randomizeAllSpecs integration/shared/experimental integration/v6/experimental

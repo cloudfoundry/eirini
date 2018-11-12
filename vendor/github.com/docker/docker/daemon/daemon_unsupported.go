@@ -1,5 +1,5 @@
-// +build !linux,!freebsd,!windows
+// +build !linux,!freebsd,!windows,!solaris
 
-package daemon // import "github.com/docker/docker/daemon"
+package daemon
 
 const platformSupported = false

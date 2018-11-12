@@ -7,7 +7,6 @@ import (
 	. "code.cloudfoundry.org/cli/api/uaa"
 	"code.cloudfoundry.org/cli/api/uaa/constant"
 	"code.cloudfoundry.org/cli/api/uaa/uaafakes"
-	"code.cloudfoundry.org/cli/integration/helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/ghttp"
@@ -30,6 +29,7 @@ var _ = Describe("Auth", func() {
 		var (
 			identity  string
 			secret    string
+			origin    string
 			grantType constant.GrantType
 
 			accessToken  string
@@ -37,19 +37,23 @@ var _ = Describe("Auth", func() {
 			executeErr   error
 		)
 
-		JustBeforeEach(func() {
-			accessToken, refreshToken, executeErr = client.Authenticate(identity, secret, grantType)
+		BeforeEach(func() {
+			identity = "some-identity"
+			secret = "some-secret"
 		})
 
-		Context("when no errors occur", func() {
-			Context("when the grant type is password", func() {
+		JustBeforeEach(func() {
+			accessToken, refreshToken, executeErr = client.Authenticate(identity, secret, origin, grantType)
+		})
+
+		When("no errors occur", func() {
+			When("the grant type is password and origin is not set", func() {
 				BeforeEach(func() {
 					response := `{
 						"access_token":"some-access-token",
 						"refresh_token":"some-refresh-token"
 					}`
-					identity = helpers.NewUsername()
-					secret = helpers.NewPassword()
+					origin = ""
 					grantType = constant.GrantTypePassword
 					server.AppendHandlers(
 						CombineHandlers(
@@ -70,14 +74,41 @@ var _ = Describe("Auth", func() {
 				})
 			})
 
-			Context("when the grant type is client credentials", func() {
+			When("the grant type is password and origin is set", func() {
+				BeforeEach(func() {
+					response := `{
+						"access_token":"some-access-token",
+						"refresh_token":"some-refresh-token"
+					}`
+					origin = "some-fake-origin"
+					grantType = constant.GrantTypePassword
+					expectedQuery := "login_hint=%7B%22origin%22%3A%22" + origin + "%22%7D"
+					server.AppendHandlers(
+						CombineHandlers(
+							verifyRequestHost(TestAuthorizationResource),
+							VerifyRequest(http.MethodPost, "/oauth/token", expectedQuery),
+							VerifyHeaderKV("Content-Type", "application/x-www-form-urlencoded"),
+							VerifyHeaderKV("Authorization", "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ="),
+							VerifyBody([]byte(fmt.Sprintf("grant_type=%s&password=%s&username=%s", grantType, secret, identity))),
+							RespondWith(http.StatusOK, response),
+						))
+				})
+
+				It("authenticates with the credentials provided", func() {
+					Expect(executeErr).NotTo(HaveOccurred())
+
+					Expect(accessToken).To(Equal("some-access-token"))
+					Expect(refreshToken).To(Equal("some-refresh-token"))
+				})
+			})
+
+			When("the grant type is client credentials", func() {
 				BeforeEach(func() {
 					response := `{
 						"access_token":"some-access-token"
 					}`
 
-					identity = helpers.NewUsername()
-					secret = helpers.NewPassword()
+					origin = ""
 					grantType = constant.GrantTypeClientCredentials
 					server.AppendHandlers(
 						CombineHandlers(
@@ -99,7 +130,7 @@ var _ = Describe("Auth", func() {
 			})
 		})
 
-		Context("when an error occurs", func() {
+		When("an error occurs", func() {
 			var response string
 
 			BeforeEach(func() {

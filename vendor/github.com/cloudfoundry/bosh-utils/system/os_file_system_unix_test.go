@@ -99,4 +99,31 @@ var _ = Describe("OS FileSystem", func() {
 			})
 		})
 	})
+
+	Describe("CopyDir", func() {
+		It("keeps the permissions", func() {
+			osFs := createOsFs()
+			srcPath, err := osFs.TempDir("CopyDirTestSrc")
+			Expect(err).ToNot(HaveOccurred())
+
+			readOnly := filepath.Join(srcPath, "readonly.txt")
+			err = osFs.WriteFileString(readOnly, "readonly")
+			Expect(err).ToNot(HaveOccurred())
+
+			err = osFs.Chmod(readOnly, 0400)
+			Expect(err).ToNot(HaveOccurred())
+
+			dstPath, err := osFs.TempDir("CopyDirTestDest")
+			Expect(err).ToNot(HaveOccurred())
+			defer osFs.RemoveAll(dstPath)
+
+			err = osFs.CopyDir(srcPath, dstPath)
+			Expect(err).ToNot(HaveOccurred())
+
+			fi, err := osFs.Stat(filepath.Join(dstPath, "readonly.txt"))
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(fi.Mode()).To(Equal(os.FileMode(0400)))
+		})
+	})
 })

@@ -76,9 +76,9 @@ var _ = Describe("ConvertToTranslatableError", func() {
 			actionerror.EmptyDirectoryError{Path: "some-filename"},
 			EmptyDirectoryError{Path: "some-filename"}),
 
-		Entry("actionerror.EmptyDirectoryError -> EmptyDirectoryError",
-			actionerror.EmptyDirectoryError{Path: "some-path"},
-			EmptyDirectoryError{Path: "some-path"}),
+		Entry("actionerror.EmptyBuildpackDirectoryError -> EmptyBuildpackDirectoryError",
+			actionerror.EmptyBuildpackDirectoryError{Path: "some-path"},
+			EmptyBuildpackDirectoryError{Path: "some-path"}),
 
 		Entry("actionerror.FileChangedError -> FileChangedError",
 			actionerror.FileChangedError{Filename: "some-filename"},
@@ -156,6 +156,10 @@ var _ = Describe("ConvertToTranslatableError", func() {
 			actionerror.OrganizationNotFoundError{Name: "some-org"},
 			OrganizationNotFoundError{Name: "some-org"}),
 
+		Entry("actionerror.OrganizationQuotaNotFoundForNameError -> OrganizationQuotaNotFoundForNameError",
+			actionerror.OrganizationQuotaNotFoundForNameError{Name: "some-quota"},
+			OrganizationQuotaNotFoundForNameError{Name: "some-quota"}),
+
 		Entry("actionerror.PasswordGrantTypeLogoutRequiredError -> PasswordGrantTypeLogoutRequiredError",
 			actionerror.PasswordGrantTypeLogoutRequiredError{},
 			PasswordGrantTypeLogoutRequiredError{}),
@@ -218,6 +222,11 @@ var _ = Describe("ConvertToTranslatableError", func() {
 			actionerror.RoutePathWithTCPDomainError{},
 			RoutePathWithTCPDomainError{}),
 
+		Entry("actionerror.RouterGroupNotFoundError -> RouterGroupNotFoundError",
+			actionerror.RouterGroupNotFoundError{Name: "some-group"},
+			RouterGroupNotFoundError{Name: "some-group"},
+		),
+
 		Entry("actionerror.SecurityGroupNotFoundError -> SecurityGroupNotFoundError",
 			actionerror.SecurityGroupNotFoundError{Name: "some-security-group"},
 			SecurityGroupNotFoundError{Name: "some-security-group"}),
@@ -241,6 +250,10 @@ var _ = Describe("ConvertToTranslatableError", func() {
 		Entry("actionerror.SpaceNotFoundError -> SpaceNotFoundError",
 			actionerror.SpaceNotFoundError{Name: "some-space"},
 			SpaceNotFoundError{Name: "some-space"}),
+
+		Entry("actionerror.SpaceQuotaNotFoundByNameError -> SpaceQuotaNotFoundByNameError",
+			actionerror.SpaceQuotaNotFoundByNameError{Name: "some-space"},
+			SpaceQuotaNotFoundByNameError{Name: "some-space"}),
 
 		Entry("actionerror.StackNotFoundError -> StackNotFoundError",
 			actionerror.StackNotFoundError{Name: "some-stack-name", GUID: "some-stack-guid"},
@@ -382,8 +395,8 @@ var _ = Describe("ConvertToTranslatableError", func() {
 
 		// UAA Errors
 		Entry("uaa.BadCredentialsError -> BadCredentialsError",
-			uaa.BadCredentialsError{},
-			BadCredentialsError{}),
+			uaa.UnauthorizedError{},
+			UnauthorizedError{}),
 
 		Entry("uaa.InsufficientScopeError -> UnauthorizedToPerformActionError",
 			uaa.InsufficientScopeError{},

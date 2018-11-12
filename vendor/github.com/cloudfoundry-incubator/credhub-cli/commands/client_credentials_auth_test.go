@@ -23,7 +23,7 @@ var _ = Describe("Find", func() {
 			server.RouteToHandler("GET", "/info",
 				RespondWith(http.StatusOK, `{
 				"app":{"name":"CredHub"},
-				"auth-server":{"url":"`+ authServer.URL()+ `"}
+				"auth-server":{"url":"`+authServer.URL()+`"}
 				}`),
 			)
 
@@ -67,7 +67,7 @@ var _ = Describe("Find", func() {
 			server.RouteToHandler("GET", "/info",
 				RespondWith(http.StatusOK, `{
 				"app":{"name":"CredHub"},
-				"auth-server":{"url":"`+ authServer.URL()+ `"}
+				"auth-server":{"url":"`+authServer.URL()+`"}
 				}`),
 			)
 
@@ -77,7 +77,7 @@ var _ = Describe("Find", func() {
 						VerifyRequest("GET", "/api/v1/data"),
 						RespondWith(http.StatusUnauthorized, `{"error": "access_token_expired"}`),
 					)(w, r)
-				} else if strings.HasSuffix(r.Header.Get("Authorization"), newAccessToken){
+				} else if strings.HasSuffix(r.Header.Get("Authorization"), newAccessToken) {
 					CombineHandlers(
 						VerifyRequest("GET", "/api/v1/data"),
 						RespondWith(http.StatusOK, responseJson),
@@ -91,7 +91,7 @@ var _ = Describe("Find", func() {
 				CombineHandlers(
 					VerifyBody([]byte(`client_id=credhub_cli&client_secret=&grant_type=refresh_token&refresh_token=erousflkajqwer&response_type=token`)),
 					RespondWith(http.StatusOK, `{
-						"access_token":"`+ newAccessToken+ `",
+						"access_token":"`+newAccessToken+`",
 						"refresh_token":"erousflkajqwer",
 						"token_type":"bearer"}`),
 				),

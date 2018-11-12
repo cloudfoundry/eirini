@@ -1,18 +1,9 @@
-package registry // import "github.com/docker/docker/registry"
+package registry
 
-import (
-	"os"
-	"testing"
-
-	"github.com/gotestyourself/gotestyourself/skip"
-)
+import "testing"
 
 func TestLookupV1Endpoints(t *testing.T) {
-	skip.If(t, os.Getuid() != 0, "skipping test that requires root")
-	s, err := NewService(ServiceOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	s := NewService(ServiceOptions{})
 
 	cases := []struct {
 		hostname    string

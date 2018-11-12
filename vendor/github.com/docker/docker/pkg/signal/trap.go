@@ -1,4 +1,4 @@
-package signal // import "github.com/docker/docker/pkg/signal"
+package signal
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 )
 
@@ -26,9 +27,7 @@ import (
 //   the docker daemon is not restarted and also running under systemd.
 //   Fixes https://github.com/docker/docker/issues/19728
 //
-func Trap(cleanup func(), logger interface {
-	Info(args ...interface{})
-}) {
+func Trap(cleanup func()) {
 	c := make(chan os.Signal, 1)
 	// we will handle INT, TERM, QUIT, SIGPIPE here
 	signals := []os.Signal{os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGPIPE}
@@ -41,7 +40,7 @@ func Trap(cleanup func(), logger interface {
 			}
 
 			go func(sig os.Signal) {
-				logger.Info(fmt.Sprintf("Processing signal '%v'", sig))
+				logrus.Infof("Processing signal '%v'", sig)
 				switch sig {
 				case os.Interrupt, syscall.SIGTERM:
 					if atomic.LoadUint32(&interruptCount) < 3 {
@@ -55,11 +54,11 @@ func Trap(cleanup func(), logger interface {
 						}
 					} else {
 						// 3 SIGTERM/INT signals received; force exit without cleanup
-						logger.Info("Forcing docker daemon shutdown without cleanup; 3 interrupts received")
+						logrus.Info("Forcing docker daemon shutdown without cleanup; 3 interrupts received")
 					}
 				case syscall.SIGQUIT:
 					DumpStacks("")
-					logger.Info("Forcing docker daemon shutdown without cleanup on SIGQUIT")
+					logrus.Info("Forcing docker daemon shutdown without cleanup on SIGQUIT")
 				}
 				//for the SIGINT/TERM, and SIGQUIT non-clean shutdown case, exit with 128 + signal #
 				os.Exit(128 + int(sig.(syscall.Signal)))

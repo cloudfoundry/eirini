@@ -1,4 +1,4 @@
-package opts // import "github.com/docker/docker/opts"
+package opts
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	// DefaultHTTPPort Default HTTP Port used if only the protocol is provided to -H flag e.g. dockerd -H tcp://
+	// DefaultHTTPPort Default HTTP Port used if only the protocol is provided to -H flag e.g. docker daemon -H tcp://
 	// These are the IANA registered port numbers for use with Docker
 	// see http://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?search=docker
 	DefaultHTTPPort = 2375 // Default HTTP Port
@@ -29,15 +29,15 @@ var (
 // ValidateHost validates that the specified string is a valid host and returns it.
 func ValidateHost(val string) (string, error) {
 	host := strings.TrimSpace(val)
-	// The empty string means default and is not handled by parseDaemonHost
+	// The empty string means default and is not handled by parseDockerDaemonHost
 	if host != "" {
-		_, err := parseDaemonHost(host)
+		_, err := parseDockerDaemonHost(host)
 		if err != nil {
 			return val, err
 		}
 	}
 	// Note: unlike most flag validators, we don't return the mutated value here
-	//       we need to know what the user entered later (using ParseHost) to adjust for TLS
+	//       we need to know what the user entered later (using ParseHost) to adjust for tls
 	return val, nil
 }
 
@@ -52,7 +52,7 @@ func ParseHost(defaultToTLS bool, val string) (string, error) {
 		}
 	} else {
 		var err error
-		host, err = parseDaemonHost(host)
+		host, err = parseDockerDaemonHost(host)
 		if err != nil {
 			return val, err
 		}
@@ -60,9 +60,9 @@ func ParseHost(defaultToTLS bool, val string) (string, error) {
 	return host, nil
 }
 
-// parseDaemonHost parses the specified address and returns an address that will be used as the host.
+// parseDockerDaemonHost parses the specified address and returns an address that will be used as the host.
 // Depending of the address specified, this may return one of the global Default* strings defined in hosts.go.
-func parseDaemonHost(addr string) (string, error) {
+func parseDockerDaemonHost(addr string) (string, error) {
 	addrParts := strings.SplitN(addr, "://", 2)
 	if len(addrParts) == 1 && addrParts[0] != "" {
 		addrParts = []string{"tcp", addrParts[0]}
@@ -148,18 +148,4 @@ func ParseTCPAddr(tryAddr string, defaultAddr string) (string, error) {
 	}
 
 	return fmt.Sprintf("tcp://%s%s", net.JoinHostPort(host, port), u.Path), nil
-}
-
-// ValidateExtraHost validates that the specified string is a valid extrahost and returns it.
-// ExtraHost is in the form of name:ip where the ip has to be a valid ip (IPv4 or IPv6).
-func ValidateExtraHost(val string) (string, error) {
-	// allow for IPv6 addresses in extra hosts by only splitting on first ":"
-	arr := strings.SplitN(val, ":", 2)
-	if len(arr) != 2 || len(arr[0]) == 0 {
-		return "", fmt.Errorf("bad format for add-host: %q", val)
-	}
-	if _, err := ValidateIPAddress(arr[1]); err != nil {
-		return "", fmt.Errorf("invalid IP address in add-host: %q", arr[1])
-	}
-	return val, nil
 }

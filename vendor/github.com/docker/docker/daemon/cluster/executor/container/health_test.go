@@ -1,9 +1,8 @@
 // +build !windows
 
-package container // import "github.com/docker/docker/daemon/cluster/executor/container"
+package container
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/docker/docker/daemon"
 	"github.com/docker/docker/daemon/events"
 	"github.com/docker/swarmkit/api"
+	"golang.org/x/net/context"
 )
 
 func TestHealthStates(t *testing.T) {
@@ -38,12 +38,14 @@ func TestHealthStates(t *testing.T) {
 	}
 
 	c := &container.Container{
-		ID:   "id",
-		Name: "name",
-		Config: &containertypes.Config{
-			Image: "image_name",
-			Labels: map[string]string{
-				"com.docker.swarm.task.id": "id",
+		CommonContainer: container.CommonContainer{
+			ID:   "id",
+			Name: "name",
+			Config: &containertypes.Config{
+				Image: "image_name",
+				Labels: map[string]string{
+					"com.docker.swarm.task.id": "id",
+				},
 			},
 		},
 	}
@@ -52,7 +54,7 @@ func TestHealthStates(t *testing.T) {
 		EventsService: e,
 	}
 
-	controller, err := newController(daemon, nil, task, nil, nil)
+	controller, err := newController(daemon, task, nil)
 	if err != nil {
 		t.Fatalf("create controller fail %v", err)
 	}
@@ -85,7 +87,7 @@ func TestHealthStates(t *testing.T) {
 			}
 		case <-timer.C:
 			if expectedErr != nil {
-				t.Fatal("time limit exceeded, didn't get expected error")
+				t.Fatalf("time limit exceeded, didn't get expected error")
 			}
 		}
 	}

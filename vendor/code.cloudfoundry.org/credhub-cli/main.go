@@ -1,4 +1,4 @@
-package main
+package main // import "code.cloudfoundry.org/credhub-cli"
 
 import (
 	"fmt"
@@ -58,7 +58,9 @@ func main() {
 					cfg.AccessToken,
 					cfg.RefreshToken,
 					useClientCredentials,
-				)))
+				)),
+				credhub.ServerVersion(cfg.ServerVersion),
+			)
 			if err != nil {
 				return err
 			}

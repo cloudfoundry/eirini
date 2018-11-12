@@ -36,12 +36,7 @@ type ImageLoader interface {
 
 // This is a variable so we can override in tests.
 var GetImageLoader = func() (ImageLoader, error) {
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		return nil, err
-	}
-	cli.NegotiateAPIVersion(context.Background())
-	return cli, nil
+	return client.NewEnvClient()
 }
 
 // WriteOptions are used to expose optional information to guide or

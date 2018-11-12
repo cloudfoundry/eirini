@@ -50,12 +50,12 @@ func Uaa(clientId, clientSecret, username, password, accessToken, refreshToken s
 		}
 
 		oauth := &OAuthStrategy{
-			Username:     username,
-			Password:     password,
-			ClientId:     clientId,
-			ClientSecret: clientSecret,
-			ApiClient:    httpClient,
-			OAuthClient:  &uaaClient,
+			Username:                username,
+			Password:                password,
+			ClientId:                clientId,
+			ClientSecret:            clientSecret,
+			ApiClient:               httpClient,
+			OAuthClient:             &uaaClient,
 			ClientCredentialRefresh: usingClientCrendentials,
 		}
 

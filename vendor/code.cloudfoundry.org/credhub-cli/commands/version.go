@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/credhub-cli/config"
-	"code.cloudfoundry.org/credhub-cli/errors"
 	"code.cloudfoundry.org/credhub-cli/version"
 )
 
@@ -19,14 +18,10 @@ func PrintVersion() error {
 	if cfg.ApiURL != "" {
 		credhubClient, err := initializeCredhubClient(cfg)
 
-		if err == nil || err.Error() != errors.NewRevokedTokenError().Error() {
-			_, err := credhubClient.FindAllPaths()
-
+		if err == nil {
+			version, err := credhubClient.ServerVersion()
 			if err == nil {
-				version, err := credhubClient.ServerVersion()
-				if err == nil {
-					credHubServerVersion = version.String()
-				}
+				credHubServerVersion = version.String()
 			}
 		}
 	}

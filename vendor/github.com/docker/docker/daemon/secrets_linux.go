@@ -1,4 +1,6 @@
-package daemon // import "github.com/docker/docker/daemon"
+// +build linux
+
+package daemon
 
 func secretsSupported() bool {
 	return true

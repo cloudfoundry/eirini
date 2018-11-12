@@ -1,18 +1,18 @@
-package daemon // import "github.com/docker/docker/daemon"
+// +build windows
+
+package daemon
 
 import (
 	"sort"
 
-	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/container"
-	"github.com/docker/docker/pkg/idtools"
-	volumemounts "github.com/docker/docker/volume/mounts"
+	"github.com/docker/docker/volume"
 )
 
 // setupMounts configures the mount points for a container by appending each
 // of the configured mounts on the container to the OCI mount structure
 // which will ultimately be passed into the oci runtime during container creation.
-// It also ensures each of the mounts are lexicographically sorted.
+// It also ensures each of the mounts are lexographically sorted.
 
 // BUGBUG TODO Windows containerd. This would be much better if it returned
 // an array of runtime spec mounts, not container mounts. Then no need to
@@ -20,11 +20,11 @@ import (
 
 func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, error) {
 	var mnts []container.Mount
-	for _, mount := range c.MountPoints { // type is volumemounts.MountPoint
+	for _, mount := range c.MountPoints { // type is volume.MountPoint
 		if err := daemon.lazyInitializeVolume(c.ID, mount); err != nil {
 			return nil, err
 		}
-		s, err := mount.Setup(c.MountLabel, idtools.IDPair{UID: 0, GID: 0}, nil)
+		s, err := mount.Setup(c.MountLabel, 0, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -42,10 +42,6 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 
 // setBindModeIfNull is platform specific processing which is a no-op on
 // Windows.
-func setBindModeIfNull(bind *volumemounts.MountPoint) {
+func setBindModeIfNull(bind *volume.MountPoint) {
 	return
-}
-
-func (daemon *Daemon) validateBindDaemonRoot(m mount.Mount) (bool, error) {
-	return false, nil
 }

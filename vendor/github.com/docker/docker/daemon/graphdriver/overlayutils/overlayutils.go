@@ -1,11 +1,10 @@
 // +build linux
 
-package overlayutils // import "github.com/docker/docker/daemon/graphdriver/overlayutils"
+package overlayutils
 
 import (
+	"errors"
 	"fmt"
-
-	"github.com/docker/docker/daemon/graphdriver"
 )
 
 // ErrDTypeNotSupported denotes that the backing filesystem doesn't support d_type.
@@ -14,12 +13,6 @@ func ErrDTypeNotSupported(driver, backingFs string) error {
 	if backingFs == "xfs" {
 		msg += " Reformat the filesystem with ftype=1 to enable d_type support."
 	}
-
-	if backingFs == "extfs" {
-		msg += " Reformat the filesystem (or use tune2fs) with -O filetype flag to enable d_type support."
-	}
-
-	msg += " Backing filesystems without d_type support are not supported."
-
-	return graphdriver.NotSupportedError(msg)
+	msg += " Running without d_type support will no longer be supported in Docker 1.16."
+	return errors.New(msg)
 }

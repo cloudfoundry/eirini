@@ -1,31 +1,32 @@
-package plugin // import "github.com/docker/docker/plugin"
+// +build linux
+
+package plugin
 
 import (
 	"encoding/json"
-	"net"
+	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 	"time"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/docker/distribution/digest"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/daemon/initlayer"
-	"github.com/docker/docker/errdefs"
-	"github.com/docker/docker/pkg/containerfs"
-	"github.com/docker/docker/pkg/idtools"
+	"github.com/docker/docker/libcontainerd"
 	"github.com/docker/docker/pkg/mount"
 	"github.com/docker/docker/pkg/plugins"
 	"github.com/docker/docker/pkg/stringid"
 	"github.com/docker/docker/plugin/v2"
-	"github.com/opencontainers/go-digest"
+	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/sys/unix"
 )
 
 func (pm *Manager) enable(p *v2.Plugin, c *controller, force bool) error {
 	p.Rootfs = filepath.Join(pm.config.Root, p.PluginObj.ID, "rootfs")
 	if p.IsEnabled() && !force {
-		return errors.Wrap(enabledError(p.Name()), "plugin already enabled")
+		return fmt.Errorf("plugin %s is already enabled", p.Name())
 	}
 	spec, err := p.InitSpec(pm.config.ExecRoot)
 	if err != nil {
@@ -40,7 +41,7 @@ func (pm *Manager) enable(p *v2.Plugin, c *controller, force bool) error {
 	pm.mu.Unlock()
 
 	var propRoot string
-	if p.PluginObj.Config.PropagatedMount != "" {
+	if p.PropagatedMount != "" {
 		propRoot = filepath.Join(filepath.Dir(p.Rootfs), "propagated-mount")
 
 		if err := os.MkdirAll(propRoot, 0755); err != nil {
@@ -50,67 +51,40 @@ func (pm *Manager) enable(p *v2.Plugin, c *controller, force bool) error {
 		if err := mount.MakeRShared(propRoot); err != nil {
 			return errors.Wrap(err, "error setting up propagated mount dir")
 		}
+
+		if err := mount.Mount(propRoot, p.PropagatedMount, "none", "rbind"); err != nil {
+			return errors.Wrap(err, "error creating mount for propagated mount")
+		}
 	}
 
-	rootFS := containerfs.NewLocalContainerFS(filepath.Join(pm.config.Root, p.PluginObj.ID, rootFSFileName))
-	if err := initlayer.Setup(rootFS, idtools.IDPair{UID: 0, GID: 0}); err != nil {
+	if err := initlayer.Setup(filepath.Join(pm.config.Root, p.PluginObj.ID, rootFSFileName), 0, 0); err != nil {
 		return errors.WithStack(err)
 	}
 
-	stdout, stderr := makeLoggerStreams(p.GetID())
-	if err := pm.executor.Create(p.GetID(), *spec, stdout, stderr); err != nil {
-		if p.PluginObj.Config.PropagatedMount != "" {
+	if err := pm.containerdClient.Create(p.GetID(), "", "", specs.Spec(*spec), attachToLog(p.GetID())); err != nil {
+		if p.PropagatedMount != "" {
+			if err := mount.Unmount(p.PropagatedMount); err != nil {
+				logrus.Warnf("Could not unmount %s: %v", p.PropagatedMount, err)
+			}
 			if err := mount.Unmount(propRoot); err != nil {
 				logrus.Warnf("Could not unmount %s: %v", propRoot, err)
 			}
 		}
 		return errors.WithStack(err)
 	}
+
 	return pm.pluginPostStart(p, c)
 }
 
 func (pm *Manager) pluginPostStart(p *v2.Plugin, c *controller) error {
-	sockAddr := filepath.Join(pm.config.ExecRoot, p.GetID(), p.GetSocket())
-	p.SetTimeout(time.Duration(c.timeoutInSecs) * time.Second)
-	addr := &net.UnixAddr{Net: "unix", Name: sockAddr}
-	p.SetAddr(addr)
-
-	if p.Protocol() == plugins.ProtocolSchemeHTTPV1 {
-		client, err := plugins.NewClientWithTimeout(addr.Network()+"://"+addr.String(), nil, p.Timeout())
-		if err != nil {
-			c.restart = false
-			shutdownPlugin(p, c, pm.executor)
-			return errors.WithStack(err)
-		}
-
-		p.SetPClient(client)
+	client, err := plugins.NewClientWithTimeout("unix://"+filepath.Join(pm.config.ExecRoot, p.GetID(), p.GetSocket()), nil, c.timeoutInSecs)
+	if err != nil {
+		c.restart = false
+		shutdownPlugin(p, c, pm.containerdClient)
+		return errors.WithStack(err)
 	}
 
-	// Initial sleep before net Dial to allow plugin to listen on socket.
-	time.Sleep(500 * time.Millisecond)
-	maxRetries := 3
-	var retries int
-	for {
-		// net dial into the unix socket to see if someone's listening.
-		conn, err := net.Dial("unix", sockAddr)
-		if err == nil {
-			conn.Close()
-			break
-		}
-
-		time.Sleep(3 * time.Second)
-		retries++
-
-		if retries > maxRetries {
-			logrus.Debugf("error net dialing plugin: %v", err)
-			c.restart = false
-			// While restoring plugins, we need to explicitly set the state to disabled
-			pm.config.Store.SetState(p, false)
-			shutdownPlugin(p, c, pm.executor)
-			return err
-		}
-
-	}
+	p.SetPClient(client)
 	pm.config.Store.SetState(p, true)
 	pm.config.Store.CallHandler(p)
 
@@ -118,14 +92,13 @@ func (pm *Manager) pluginPostStart(p *v2.Plugin, c *controller) error {
 }
 
 func (pm *Manager) restore(p *v2.Plugin) error {
-	stdout, stderr := makeLoggerStreams(p.GetID())
-	if err := pm.executor.Restore(p.GetID(), stdout, stderr); err != nil {
+	if err := pm.containerdClient.Restore(p.GetID(), attachToLog(p.GetID())); err != nil {
 		return err
 	}
 
 	if pm.config.LiveRestoreEnabled {
 		c := &controller{}
-		if isRunning, _ := pm.executor.IsRunning(p.GetID()); !isRunning {
+		if pids, _ := pm.containerdClient.GetPidsForContainer(p.GetID()); len(pids) == 0 {
 			// plugin is not running, so follow normal startup procedure
 			return pm.enable(p, c, true)
 		}
@@ -141,10 +114,10 @@ func (pm *Manager) restore(p *v2.Plugin) error {
 	return nil
 }
 
-func shutdownPlugin(p *v2.Plugin, c *controller, executor Executor) {
+func shutdownPlugin(p *v2.Plugin, c *controller, containerdClient libcontainerd.Client) {
 	pluginID := p.GetID()
 
-	err := executor.Signal(pluginID, int(unix.SIGTERM))
+	err := containerdClient.Signal(pluginID, int(syscall.SIGTERM))
 	if err != nil {
 		logrus.Errorf("Sending SIGTERM to plugin failed with error: %v", err)
 	} else {
@@ -153,14 +126,8 @@ func shutdownPlugin(p *v2.Plugin, c *controller, executor Executor) {
 			logrus.Debug("Clean shutdown of plugin")
 		case <-time.After(time.Second * 10):
 			logrus.Debug("Force shutdown plugin")
-			if err := executor.Signal(pluginID, int(unix.SIGKILL)); err != nil {
+			if err := containerdClient.Signal(pluginID, int(syscall.SIGKILL)); err != nil {
 				logrus.Errorf("Sending SIGKILL to plugin failed with error: %v", err)
-			}
-			select {
-			case <-c.exitChan:
-				logrus.Debug("SIGKILL plugin shutdown")
-			case <-time.After(time.Second * 10):
-				logrus.Debug("Force shutdown plugin FAILED")
 			}
 		}
 	}
@@ -168,11 +135,11 @@ func shutdownPlugin(p *v2.Plugin, c *controller, executor Executor) {
 
 func (pm *Manager) disable(p *v2.Plugin, c *controller) error {
 	if !p.IsEnabled() {
-		return errors.Wrap(errDisabled(p.Name()), "plugin is already disabled")
+		return fmt.Errorf("plugin %s is already disabled", p.Name())
 	}
 
 	c.restart = false
-	shutdownPlugin(p, c, pm.executor)
+	shutdownPlugin(p, c, pm.containerdClient)
 	pm.config.Store.SetState(p, false)
 	return pm.save(p)
 }
@@ -189,13 +156,10 @@ func (pm *Manager) Shutdown() {
 			logrus.Debug("Plugin active when liveRestore is set, skipping shutdown")
 			continue
 		}
-		if pm.executor != nil && p.IsEnabled() {
+		if pm.containerdClient != nil && p.IsEnabled() {
 			c.restart = false
-			shutdownPlugin(p, c, pm.executor)
+			shutdownPlugin(p, c, pm.containerdClient)
 		}
-	}
-	if err := mount.RecursiveUnmount(pm.config.Root); err != nil {
-		logrus.WithError(err).Warn("error cleaning up plugin mounts")
 	}
 }
 
@@ -207,17 +171,9 @@ func (pm *Manager) upgradePlugin(p *v2.Plugin, configDigest digest.Digest, blobs
 
 	pdir := filepath.Join(pm.config.Root, p.PluginObj.ID)
 	orig := filepath.Join(pdir, "rootfs")
-
-	// Make sure nothing is mounted
-	// This could happen if the plugin was disabled with `-f` with active mounts.
-	// If there is anything in `orig` is still mounted, this should error out.
-	if err := mount.RecursiveUnmount(orig); err != nil {
-		return errdefs.System(err)
-	}
-
 	backup := orig + "-old"
 	if err := os.Rename(orig, backup); err != nil {
-		return errors.Wrap(errdefs.System(err), "error backing up plugin data before upgrade")
+		return err
 	}
 
 	defer func() {
@@ -226,8 +182,9 @@ func (pm *Manager) upgradePlugin(p *v2.Plugin, configDigest digest.Digest, blobs
 				logrus.WithError(rmErr).WithField("dir", backup).Error("error cleaning up after failed upgrade")
 				return
 			}
-			if mvErr := os.Rename(backup, orig); mvErr != nil {
-				err = errors.Wrap(mvErr, "error restoring old plugin root on upgrade failure")
+
+			if err := os.Rename(backup, orig); err != nil {
+				err = errors.Wrap(err, "error restoring old plugin root on upgrade failure")
 			}
 			if rmErr := os.RemoveAll(tmpRootFSDir); rmErr != nil && !os.IsNotExist(rmErr) {
 				logrus.WithError(rmErr).WithField("plugin", p.Name()).Errorf("error cleaning up plugin upgrade dir: %s", tmpRootFSDir)
@@ -243,7 +200,7 @@ func (pm *Manager) upgradePlugin(p *v2.Plugin, configDigest digest.Digest, blobs
 	}()
 
 	if err := os.Rename(tmpRootFSDir, orig); err != nil {
-		return errors.Wrap(errdefs.System(err), "error upgrading")
+		return errors.Wrap(err, "error upgrading")
 	}
 
 	p.PluginObj.Config = config
@@ -267,7 +224,7 @@ func (pm *Manager) setupNewPlugin(configDigest digest.Digest, blobsums []digest.
 		return types.PluginConfig{}, errors.New("invalid config json")
 	}
 
-	requiredPrivileges := computePrivileges(config)
+	requiredPrivileges, err := computePrivileges(config)
 	if err != nil {
 		return types.PluginConfig{}, err
 	}
@@ -281,9 +238,9 @@ func (pm *Manager) setupNewPlugin(configDigest digest.Digest, blobsums []digest.
 }
 
 // createPlugin creates a new plugin. take lock before calling.
-func (pm *Manager) createPlugin(name string, configDigest digest.Digest, blobsums []digest.Digest, rootFSDir string, privileges *types.PluginPrivileges, opts ...CreateOpt) (p *v2.Plugin, err error) {
+func (pm *Manager) createPlugin(name string, configDigest digest.Digest, blobsums []digest.Digest, rootFSDir string, privileges *types.PluginPrivileges) (p *v2.Plugin, err error) {
 	if err := pm.config.Store.validateName(name); err != nil { // todo: this check is wrong. remove store
-		return nil, errdefs.InvalidParameter(err)
+		return nil, err
 	}
 
 	config, err := pm.setupNewPlugin(configDigest, blobsums, privileges)
@@ -301,9 +258,6 @@ func (pm *Manager) createPlugin(name string, configDigest digest.Digest, blobsum
 		Blobsums: blobsums,
 	}
 	p.InitEmptySettings()
-	for _, o := range opts {
-		o(p)
-	}
 
 	pdir := filepath.Join(pm.config.Root, p.PluginObj.ID)
 	if err := os.MkdirAll(pdir, 0700); err != nil {

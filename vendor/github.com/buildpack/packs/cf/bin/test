@@ -16,5 +16,5 @@ run() { docker run --rm -v "$(pwd)/..:/go/src/${repo}" -w "/go/src/${repo}/cf" "
 run "packs/${stack}-test" -run TestApp
 run --memory 100m "packs/${stack}-test" -run TestApp -memory 100
 
-run -v "/var/run/docker.sock:/var/run/docker.sock" "packs/${stack}-test" -run TestSystem
+run "packs/${stack}-test" -run TestSystem
 

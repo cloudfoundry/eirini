@@ -1,9 +1,8 @@
 package commands_test
 
 import (
-	"net/http"
-
 	"fmt"
+	"net/http"
 
 	"strings"
 
@@ -16,6 +15,8 @@ import (
 	. "github.com/onsi/gomega/gexec"
 	. "github.com/onsi/gomega/ghttp"
 )
+
+const versionTwo = "2.0.0"
 
 var _ = Describe("Login", func() {
 	var (
@@ -31,6 +32,8 @@ var _ = Describe("Login", func() {
 				"auth-server":{"url":"`+authServer.URL()+`"}
 				}`),
 		)
+		server.RouteToHandler("GET", "/version",
+			RespondWith(http.StatusOK, fmt.Sprintf(`{"version":"%s"}`, versionTwo)))
 
 		authServer.RouteToHandler("GET", "/info", RespondWith(http.StatusOK, ""))
 	})
@@ -197,7 +200,7 @@ var _ = Describe("Login", func() {
 			It("authenticates with the UAA server and does not save the access token", func() {
 				session := runCommandWithEnv([]string{"CREDHUB_CLIENT=test_client", "CREDHUB_SECRET=test_secret"}, "login")
 
-				Expect(uaaServer.ReceivedRequests()).Should(HaveLen(1))
+				Expect(uaaServer.ReceivedRequests()).Should(HaveLen(2))
 				Eventually(session).Should(Exit(0))
 				Eventually(session.Out).Should(Say("Login Successful"))
 				Eventually(session.Out.Contents()).ShouldNot(ContainSubstring("Setting the target url:"))
@@ -398,13 +401,14 @@ var _ = Describe("Login", func() {
 		It("sets the target to the server's url and auth server url", func() {
 			session := runCommand("login", "-u", "user", "-p", "pass", "-s", apiServer.URL())
 
-			Expect(apiServer.ReceivedRequests()).Should(HaveLen(1))
+			Expect(apiServer.ReceivedRequests()).Should(HaveLen(3))
 			Expect(uaaServer.ReceivedRequests()).Should(HaveLen(2))
 			Eventually(session).Should(Exit(0))
 			Eventually(session.Out).Should(Say("Login Successful"))
 			cfg := config.ReadConfig()
 			Expect(cfg.ApiURL).To(Equal(apiServer.URL()))
 			Expect(cfg.AuthURL).To(Equal(uaaServer.URL()))
+			Expect(cfg.ServerVersion).To(Equal(versionTwo))
 		})
 
 		Context("when the provided server url does not have a scheme specified", func() {
@@ -415,6 +419,8 @@ var _ = Describe("Login", func() {
 						"auth-server":{"url":"`+uaaServer.URL()+`"}
 						}`),
 				)
+				server.RouteToHandler("GET", "/version",
+					RespondWith(http.StatusOK, fmt.Sprintf(`{"version":"%s"}`, versionTwo)))
 
 				session := runCommand("login", "-u", "user", "-p", "pass", "-s", server.Addr(), "--skip-tls-validation")
 
@@ -609,7 +615,6 @@ var _ = Describe("Login", func() {
 			})
 		})
 
-
 		Context("when UAA client returns an error", func() {
 			Context("when client credentials are invalid", func() {
 				var (
@@ -787,7 +792,7 @@ var _ = Describe("Login", func() {
 						"refresh_token":"erousflkajqwer",
 						"token_type":"bearer",
 						"expires_in":3600}`),
-							))
+						))
 					badUaaServer.RouteToHandler("DELETE", "/oauth/token/revoke/"+VALID_ACCESS_TOKEN_JTI,
 						RespondWith(http.StatusOK, ""),
 					)
@@ -802,7 +807,7 @@ var _ = Describe("Login", func() {
 				})
 
 				It("fails to login", func() {
-					session = runCommand("login",  "--sso")
+					session = runCommand("login", "--sso")
 					Eventually(session).Should(Exit(1))
 					Eventually(session.Err).Should(Say("UAA error: unable to fetch metadata successfully"))
 					Expect(badUaaServer.ReceivedRequests()).Should(HaveLen(2))
@@ -877,5 +882,8 @@ func setupServer(theServer *Server, uaaUrl string) {
 					"app":{"name":"CredHub"},
 					"auth-server":{"url":"%s"}
 					}`, uaaUrl)),
+	)
+	theServer.RouteToHandler("GET", "/version",
+		RespondWith(http.StatusOK, fmt.Sprintf(`{"version":"%s"}`, versionTwo)),
 	)
 }

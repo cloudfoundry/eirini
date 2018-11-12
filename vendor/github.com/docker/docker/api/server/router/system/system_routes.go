@@ -1,12 +1,14 @@
-package system // import "github.com/docker/docker/api/server/router/system"
+package system
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/docker/docker/api"
+	"github.com/docker/docker/api/errors"
 	"github.com/docker/docker/api/server/httputils"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
@@ -15,8 +17,7 @@ import (
 	timetypes "github.com/docker/docker/api/types/time"
 	"github.com/docker/docker/api/types/versions"
 	"github.com/docker/docker/pkg/ioutils"
-	pkgerrors "github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
 )
 
 func optionsHandler(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
@@ -34,8 +35,8 @@ func (s *systemRouter) getInfo(ctx context.Context, w http.ResponseWriter, r *ht
 	if err != nil {
 		return err
 	}
-	if s.cluster != nil {
-		info.Swarm = s.cluster.Info()
+	if s.clusterProvider != nil {
+		info.Swarm = s.clusterProvider.Info()
 	}
 
 	if versions.LessThan(httputils.VersionFromContext(ctx), "1.25") {
@@ -64,33 +65,19 @@ func (s *systemRouter) getInfo(ctx context.Context, w http.ResponseWriter, r *ht
 
 func (s *systemRouter) getVersion(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	info := s.backend.SystemVersion()
+	info.APIVersion = api.DefaultVersion
 
 	return httputils.WriteJSON(w, http.StatusOK, info)
 }
 
 func (s *systemRouter) getDiskUsage(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
-	du, err := s.backend.SystemDiskUsage(ctx)
+	du, err := s.backend.SystemDiskUsage()
 	if err != nil {
 		return err
 	}
-	builderSize, err := s.builder.DiskUsage(ctx)
-	if err != nil {
-		return pkgerrors.Wrap(err, "error getting build cache usage")
-	}
-	du.BuilderSize = builderSize
 
 	return httputils.WriteJSON(w, http.StatusOK, du)
 }
-
-type invalidRequestError struct {
-	Err error
-}
-
-func (e invalidRequestError) Error() string {
-	return e.Err.Error()
-}
-
-func (e invalidRequestError) InvalidParameter() {}
 
 func (s *systemRouter) getEvents(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	if err := httputils.ParseForm(r); err != nil {
@@ -112,7 +99,7 @@ func (s *systemRouter) getEvents(ctx context.Context, w http.ResponseWriter, r *
 	)
 	if !until.IsZero() {
 		if until.Before(since) {
-			return invalidRequestError{fmt.Errorf("`since` time (%s) cannot be after `until` time (%s)", r.Form.Get("since"), r.Form.Get("until"))}
+			return errors.NewBadRequestError(fmt.Errorf("`since` time (%s) cannot be after `until` time (%s)", r.Form.Get("since"), r.Form.Get("until")))
 		}
 
 		now := time.Now()
@@ -121,11 +108,11 @@ func (s *systemRouter) getEvents(ctx context.Context, w http.ResponseWriter, r *
 
 		if !onlyPastEvents {
 			dur := until.Sub(now)
-			timeout = time.After(dur)
+			timeout = time.NewTimer(dur).C
 		}
 	}
 
-	ef, err := filters.FromJSON(r.Form.Get("filters"))
+	ef, err := filters.FromParam(r.Form.Get("filters"))
 	if err != nil {
 		return err
 	}

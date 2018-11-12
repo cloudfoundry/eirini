@@ -2,11 +2,14 @@ package v2action
 
 import (
 	"sort"
+	"sync"
 	"time"
 
+	"code.cloudfoundry.org/cli/actor/actionerror"
 	"github.com/cloudfoundry/noaa"
 	noaaErrors "github.com/cloudfoundry/noaa/errors"
 	"github.com/cloudfoundry/sonde-go/events"
+	log "github.com/sirupsen/logrus"
 )
 
 const StagingLog = "STG"
@@ -70,61 +73,19 @@ func (lm LogMessages) Swap(i, j int) {
 	lm[i], lm[j] = lm[j], lm[i]
 }
 
-func (Actor) GetStreamingLogs(appGUID string, client NOAAClient) (<-chan *LogMessage, <-chan error) {
+func (actor Actor) GetStreamingLogs(appGUID string, client NOAAClient) (<-chan *LogMessage, <-chan error) {
+	log.Info("Start Tailing Logs")
+
+	ready := actor.setOnConnectBlocker(client)
+
 	// Do not pass in token because client should have a TokenRefresher set
-	eventStream, errStream := client.TailingLogs(appGUID, "")
+	incomingLogStream, incomingErrStream := client.TailingLogs(appGUID, "")
 
-	messages := make(chan *LogMessage)
-	errs := make(chan error)
+	outgoingLogStream, outgoingErrStream := actor.blockOnConnect(ready)
 
-	go func() {
-		defer close(messages)
-		defer close(errs)
+	go actor.streamLogsBetween(incomingLogStream, incomingErrStream, outgoingLogStream, outgoingErrStream)
 
-		ticker := time.NewTicker(flushInterval)
-		defer ticker.Stop()
-
-		var logs LogMessages
-
-	dance:
-		for {
-			select {
-			case event, ok := <-eventStream:
-				if !ok {
-					break dance
-				}
-
-				logs = append(logs, &LogMessage{
-					message:        string(event.GetMessage()),
-					messageType:    event.GetMessageType(),
-					timestamp:      time.Unix(0, event.GetTimestamp()),
-					sourceInstance: event.GetSourceInstance(),
-					sourceType:     event.GetSourceType(),
-				})
-			case err, ok := <-errStream:
-				if !ok {
-					break dance
-				}
-
-				if _, ok := err.(noaaErrors.RetryError); ok {
-					break
-				}
-
-				if err != nil {
-					errs <- err
-				}
-			case <-ticker.C:
-				sort.Stable(logs)
-				for _, l := range logs {
-					messages <- l
-				}
-
-				logs = logs[0:0]
-			}
-		}
-	}()
-
-	return messages, errs
+	return outgoingLogStream, outgoingErrStream
 }
 
 func (actor Actor) GetRecentLogsForApplicationByNameAndSpace(appName string, spaceGUID string, client NOAAClient) ([]LogMessage, Warnings, error) {
@@ -164,4 +125,106 @@ func (actor Actor) GetStreamingLogsForApplicationByNameAndSpace(appName string, 
 	messages, logErrs := actor.GetStreamingLogs(app.GUID, client)
 
 	return messages, logErrs, allWarnings, err
+}
+
+func (actor Actor) blockOnConnect(ready <-chan bool) (chan *LogMessage, chan error) {
+	outgoingLogStream := make(chan *LogMessage)
+	outgoingErrStream := make(chan error, 1)
+
+	ticker := time.NewTicker(actor.Config.DialTimeout())
+
+dance:
+	for {
+		select {
+		case _, ok := <-ready:
+			if !ok {
+				break dance
+			}
+		case <-ticker.C:
+			outgoingErrStream <- actionerror.NOAATimeoutError{}
+			break dance
+		}
+	}
+
+	return outgoingLogStream, outgoingErrStream
+}
+
+func (Actor) flushLogs(logs LogMessages, outgoingLogStream chan<- *LogMessage) LogMessages {
+	sort.Stable(logs)
+	for _, l := range logs {
+		outgoingLogStream <- l
+	}
+	return LogMessages{}
+}
+
+func (Actor) setOnConnectBlocker(client NOAAClient) <-chan bool {
+	ready := make(chan bool)
+	var onlyRunOnInitialConnect sync.Once
+	callOnConnectOrRetry := func() {
+		onlyRunOnInitialConnect.Do(func() {
+			close(ready)
+		})
+	}
+
+	client.SetOnConnectCallback(callOnConnectOrRetry)
+
+	return ready
+}
+
+func (actor Actor) streamLogsBetween(incomingLogStream <-chan *events.LogMessage, incomingErrStream <-chan error, outgoingLogStream chan<- *LogMessage, outgoingErrStream chan<- error) {
+	log.Info("Processing Log Stream")
+
+	defer close(outgoingLogStream)
+	defer close(outgoingErrStream)
+
+	ticker := time.NewTicker(flushInterval)
+	defer ticker.Stop()
+
+	var logsToBeSorted LogMessages
+	var eventClosed, errClosed bool
+
+dance:
+	for {
+		select {
+		case event, ok := <-incomingLogStream:
+			if !ok {
+				if !errClosed {
+					log.Debug("logging event stream closed")
+				}
+				eventClosed = true
+				break
+			}
+
+			logsToBeSorted = append(logsToBeSorted, &LogMessage{
+				message:        string(event.GetMessage()),
+				messageType:    event.GetMessageType(),
+				timestamp:      time.Unix(0, event.GetTimestamp()),
+				sourceInstance: event.GetSourceInstance(),
+				sourceType:     event.GetSourceType(),
+			})
+		case err, ok := <-incomingErrStream:
+			if !ok {
+				if !errClosed {
+					log.Debug("logging error stream closed")
+				}
+				errClosed = true
+				break
+			}
+
+			if _, ok := err.(noaaErrors.RetryError); ok {
+				break
+			}
+
+			if err != nil {
+				outgoingErrStream <- err
+			}
+		case <-ticker.C:
+			log.Debug("processing logsToBeSorted")
+			logsToBeSorted = actor.flushLogs(logsToBeSorted, outgoingLogStream)
+			if eventClosed && errClosed {
+				log.Debug("stopping log processing")
+				break dance
+			}
+		}
+	}
 }

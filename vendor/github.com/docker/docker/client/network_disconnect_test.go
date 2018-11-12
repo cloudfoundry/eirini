@@ -1,8 +1,7 @@
-package client // import "github.com/docker/docker/client"
+package client
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types"
+	"golang.org/x/net/context"
 )
 
 func TestNetworkDisconnectError(t *testing.T) {

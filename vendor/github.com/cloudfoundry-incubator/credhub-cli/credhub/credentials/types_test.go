@@ -7,9 +7,9 @@ import (
 
 	. "code.cloudfoundry.org/credhub-cli/credhub/credentials"
 
+	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
 )
 
 var _ = Describe("Types", func() {

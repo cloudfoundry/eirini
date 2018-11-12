@@ -1,12 +1,12 @@
-package drivers // import "github.com/docker/docker/volume/drivers"
+package volumedrivers
 
 import (
 	"errors"
+	"path/filepath"
 	"strings"
-	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/volume"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -15,9 +15,9 @@ var (
 
 type volumeDriverAdapter struct {
 	name         string
-	scopePath    func(s string) string
+	baseHostPath string
 	capabilities *volume.Capability
-	proxy        volumeDriver
+	proxy        *volumeDriverProxy
 }
 
 func (a *volumeDriverAdapter) Name() string {
@@ -29,15 +29,22 @@ func (a *volumeDriverAdapter) Create(name string, opts map[string]string) (volum
 		return nil, err
 	}
 	return &volumeAdapter{
-		proxy:      a.proxy,
-		name:       name,
-		driverName: a.name,
-		scopePath:  a.scopePath,
+		proxy:        a.proxy,
+		name:         name,
+		driverName:   a.name,
+		baseHostPath: a.baseHostPath,
 	}, nil
 }
 
 func (a *volumeDriverAdapter) Remove(v volume.Volume) error {
 	return a.proxy.Remove(v.Name())
+}
+
+func hostPath(baseHostPath, path string) string {
+	if baseHostPath != "" {
+		path = filepath.Join(baseHostPath, path)
+	}
+	return path
 }
 
 func (a *volumeDriverAdapter) List() ([]volume.Volume, error) {
@@ -49,11 +56,11 @@ func (a *volumeDriverAdapter) List() ([]volume.Volume, error) {
 	var out []volume.Volume
 	for _, vp := range ls {
 		out = append(out, &volumeAdapter{
-			proxy:      a.proxy,
-			name:       vp.Name,
-			scopePath:  a.scopePath,
-			driverName: a.name,
-			eMount:     a.scopePath(vp.Mountpoint),
+			proxy:        a.proxy,
+			name:         vp.Name,
+			baseHostPath: a.baseHostPath,
+			driverName:   a.name,
+			eMount:       hostPath(a.baseHostPath, vp.Mountpoint),
 		})
 	}
 	return out, nil
@@ -71,13 +78,12 @@ func (a *volumeDriverAdapter) Get(name string) (volume.Volume, error) {
 	}
 
 	return &volumeAdapter{
-		proxy:      a.proxy,
-		name:       v.Name,
-		driverName: a.Name(),
-		eMount:     v.Mountpoint,
-		createdAt:  v.CreatedAt,
-		status:     v.Status,
-		scopePath:  a.scopePath,
+		proxy:        a.proxy,
+		name:         v.Name,
+		driverName:   a.Name(),
+		eMount:       v.Mountpoint,
+		status:       v.Status,
+		baseHostPath: a.baseHostPath,
 	}, nil
 }
 
@@ -94,7 +100,7 @@ func (a *volumeDriverAdapter) getCapabilities() volume.Capability {
 	if err != nil {
 		// `GetCapabilities` is a not a required endpoint.
 		// On error assume it's a local-only driver
-		logrus.Warnf("Volume driver %s returned an error while trying to query its capabilities, using default capabilities: %v", a.name, err)
+		logrus.Warnf("Volume driver %s returned an error while trying to query its capabilities, using default capabilties: %v", a.name, err)
 		return volume.Capability{Scope: volume.LocalScope}
 	}
 
@@ -114,19 +120,17 @@ func (a *volumeDriverAdapter) getCapabilities() volume.Capability {
 }
 
 type volumeAdapter struct {
-	proxy      volumeDriver
-	name       string
-	scopePath  func(string) string
-	driverName string
-	eMount     string    // ephemeral host volume path
-	createdAt  time.Time // time the directory was created
-	status     map[string]interface{}
+	proxy        *volumeDriverProxy
+	name         string
+	baseHostPath string
+	driverName   string
+	eMount       string // ephemeral host volume path
+	status       map[string]interface{}
 }
 
 type proxyVolume struct {
 	Name       string
 	Mountpoint string
-	CreatedAt  time.Time
 	Status     map[string]interface{}
 }
 
@@ -141,7 +145,7 @@ func (a *volumeAdapter) DriverName() string {
 func (a *volumeAdapter) Path() string {
 	if len(a.eMount) == 0 {
 		mountpoint, _ := a.proxy.Path(a.name)
-		a.eMount = a.scopePath(mountpoint)
+		a.eMount = hostPath(a.baseHostPath, mountpoint)
 	}
 	return a.eMount
 }
@@ -152,7 +156,7 @@ func (a *volumeAdapter) CachedPath() string {
 
 func (a *volumeAdapter) Mount(id string) (string, error) {
 	mountpoint, err := a.proxy.Mount(a.name, id)
-	a.eMount = a.scopePath(mountpoint)
+	a.eMount = hostPath(a.baseHostPath, mountpoint)
 	return a.eMount, err
 }
 
@@ -164,9 +168,6 @@ func (a *volumeAdapter) Unmount(id string) error {
 	return err
 }
 
-func (a *volumeAdapter) CreatedAt() (time.Time, error) {
-	return a.createdAt, nil
-}
 func (a *volumeAdapter) Status() map[string]interface{} {
 	out := make(map[string]interface{}, len(a.status))
 	for k, v := range a.status {

@@ -59,7 +59,7 @@ func NewClientWithCustomAPIVersion(apiVersion string, passed ...Config) *Client 
 	client := NewClient(config)
 	warnings, err := client.TargetCF(TargetSettings{
 		SkipSSLValidation: true,
-		URL:               server.URL(),
+		URL:               server.URL() + "/",
 	})
 	Expect(err).ToNot(HaveOccurred())
 	Expect(warnings).To(BeEmpty())
@@ -93,4 +93,8 @@ func SetupV2InfoResponse(apiVersion string) {
 			RespondWith(http.StatusOK, response),
 		),
 	)
+}
+
+func validateV2InfoPlusNumberOfRequests(numberOfPostInfoRequests int) {
+	Expect(server.ReceivedRequests()).To(HaveLen(numberOfPostInfoRequests + 1))
 }

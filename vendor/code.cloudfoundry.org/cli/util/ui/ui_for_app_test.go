@@ -40,7 +40,7 @@ var _ = Describe("UI", func() {
 				})
 
 				Expect(ui.Out).To(Say("\x1b\\[1mheader1\x1b\\[0m\\s+\x1b\\[1mheader2\x1b\\[0m\\s+\x1b\\[1mheader3\x1b\\[0m")) // Makes sure empty values are not bolded
-				Expect(ui.Out).To(Say("#0\\s+starting\\s+val1\\s+val2"))
+				Expect(ui.Out).To(Say(`#0\s+starting\s+val1\s+val2`))
 				Expect(ui.Out).To(Say("#1\\s+\x1b\\[31;1mdown\x1b\\[0m\\s+val1\\s+val2"))
 				Expect(ui.Out).To(Say("#2\\s+\x1b\\[31;1mcrashed\x1b\\[0m\\s+val1\\s+val2"))
 			})
@@ -66,7 +66,7 @@ var _ = Describe("UI", func() {
 				})
 
 				Expect(ui.Out).To(Say("\x1b\\[1mheader1\x1b\\[0m\\s+\x1b\\[1mheader2\x1b\\[0m\\s+\x1b\\[1mheader3\x1b\\[0m")) // Makes sure empty values are not bolded
-				Expect(ui.Out).To(Say("#0\\s+%s\\s+val1\\s+val2", ui.TranslateText("starting")))
+				Expect(ui.Out).To(Say(`#0\s+%s\s+val1\s+val2`, ui.TranslateText("starting")))
 				Expect(ui.Out).To(Say("#1\\s+\x1b\\[31;1m%s\x1b\\[0m\\s+val1\\s+val2", ui.TranslateText("down")))
 				Expect(ui.Out).To(Say("#2\\s+\x1b\\[31;1m%s\x1b\\[0m\\s+val1\\s+val2", ui.TranslateText("crashed")))
 			})
@@ -74,7 +74,7 @@ var _ = Describe("UI", func() {
 	})
 
 	Describe("DisplayKeyValueTableForApp", func() {
-		Context("when the app is running properly", func() {
+		When("the app is running properly", func() {
 			BeforeEach(func() {
 				ui.DisplayKeyValueTableForApp([][]string{
 					{"name:", "dora"},
@@ -90,7 +90,7 @@ var _ = Describe("UI", func() {
 			})
 		})
 
-		Context("when the app is stopped and has 0 instances", func() {
+		When("the app is stopped and has 0 instances", func() {
 			Context("in english", func() {
 				BeforeEach(func() {
 					ui.DisplayKeyValueTableForApp([][]string{
@@ -132,7 +132,7 @@ var _ = Describe("UI", func() {
 			})
 		})
 
-		Context("when the app is not stopped and has 0 instances", func() {
+		When("the app is not stopped and has 0 instances", func() {
 			Context("in english", func() {
 				BeforeEach(func() {
 					ui.DisplayKeyValueTableForApp([][]string{

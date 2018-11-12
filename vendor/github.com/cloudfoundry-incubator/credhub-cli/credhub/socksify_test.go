@@ -177,8 +177,8 @@ type FakeProxyDialer struct {
 		CallCount int
 		Receives  struct {
 			Username string
-			Key string
-			URL string
+			Key      string
+			URL      string
 		}
 		Returns struct {
 			DialFunc proxy.DialFunc

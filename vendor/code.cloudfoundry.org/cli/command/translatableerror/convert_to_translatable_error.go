@@ -42,6 +42,8 @@ func ConvertToTranslatableError(err error) error {
 		return EmptyBuildpacksError(e)
 	case actionerror.EmptyDirectoryError:
 		return EmptyDirectoryError(e)
+	case actionerror.EmptyBuildpackDirectoryError:
+		return EmptyBuildpackDirectoryError(e)
 	case actionerror.FileChangedError:
 		return FileChangedError(e)
 	case actionerror.GettingPluginRepositoryError:
@@ -82,6 +84,8 @@ func ConvertToTranslatableError(err error) error {
 		return NotLoggedInError(e)
 	case actionerror.OrganizationNotFoundError:
 		return OrganizationNotFoundError(e)
+	case actionerror.OrganizationQuotaNotFoundForNameError:
+		return OrganizationQuotaNotFoundForNameError(e)
 	case actionerror.PasswordGrantTypeLogoutRequiredError:
 		return PasswordGrantTypeLogoutRequiredError(e)
 	case actionerror.PluginCommandsConflictError:
@@ -106,6 +110,8 @@ func ConvertToTranslatableError(err error) error {
 		return RouteInDifferentSpaceError(e)
 	case actionerror.RoutePathWithTCPDomainError:
 		return RoutePathWithTCPDomainError(e)
+	case actionerror.RouterGroupNotFoundError:
+		return RouterGroupNotFoundError(e)
 	case actionerror.SecurityGroupNotFoundError:
 		return SecurityGroupNotFoundError(e)
 	case actionerror.ServiceInstanceNotFoundError:
@@ -121,6 +127,8 @@ func ConvertToTranslatableError(err error) error {
 		return SharedServiceInstanceNotFoundError(e)
 	case actionerror.SpaceNotFoundError:
 		return SpaceNotFoundError{Name: e.Name}
+	case actionerror.SpaceQuotaNotFoundByNameError:
+		return SpaceQuotaNotFoundByNameError{Name: e.Name}
 	case actionerror.StackNotFoundError:
 		return StackNotFoundError(e)
 	case actionerror.StagingTimeoutError:
@@ -188,8 +196,8 @@ func ConvertToTranslatableError(err error) error {
 		return SSHUnableToAuthenticateError{}
 
 	// UAA Errors
-	case uaa.BadCredentialsError:
-		return BadCredentialsError{}
+	case uaa.UnauthorizedError:
+		return UnauthorizedError(e)
 	case uaa.InsufficientScopeError:
 		return UnauthorizedToPerformActionError{}
 	case uaa.InvalidAuthTokenError:

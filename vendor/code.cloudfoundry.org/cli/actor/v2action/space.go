@@ -2,12 +2,54 @@ package v2action
 
 import (
 	"code.cloudfoundry.org/cli/actor/actionerror"
+	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2/constant"
+	uaaconst "code.cloudfoundry.org/cli/api/uaa/constant"
 )
 
 // Space represents a CLI Space
 type Space ccv2.Space
+
+func (actor Actor) CreateSpace(spaceName, orgName, quotaName string) (Space, Warnings, error) {
+	var allWarnings Warnings
+	org, getOrgWarnings, err := actor.GetOrganizationByName(orgName)
+	allWarnings = append(allWarnings, Warnings(getOrgWarnings)...)
+	if err != nil {
+		return Space{}, allWarnings, err
+	}
+
+	var spaceQuota SpaceQuota
+	if quotaName != "" {
+		var getQuotaWarnings Warnings
+		spaceQuota, getQuotaWarnings, err = actor.GetSpaceQuotaByName(quotaName, org.GUID)
+		allWarnings = append(allWarnings, Warnings(getQuotaWarnings)...)
+		if err != nil {
+			return Space{}, allWarnings, err
+		}
+	}
+
+	space, spaceWarnings, err := actor.CloudControllerClient.CreateSpace(spaceName, org.GUID)
+	allWarnings = append(allWarnings, Warnings(spaceWarnings)...)
+	if err != nil {
+		if _, ok := err.(ccerror.SpaceNameTakenError); ok {
+			return Space{}, allWarnings, actionerror.SpaceNameTakenError{Name: spaceName}
+		}
+		return Space{}, allWarnings, err
+	}
+
+	if quotaName != "" {
+		var setQuotaWarnings Warnings
+		setQuotaWarnings, err = actor.SetSpaceQuota(space.GUID, spaceQuota.GUID)
+		allWarnings = append(allWarnings, Warnings(setQuotaWarnings)...)
+
+		if err != nil {
+			return Space{}, allWarnings, err
+		}
+	}
+
+	return Space(space), allWarnings, err
+}
 
 func (actor Actor) DeleteSpaceByNameAndOrganizationName(spaceName string, orgName string) (Warnings, error) {
 	var allWarnings Warnings
@@ -82,4 +124,56 @@ func (actor Actor) GetSpaceByOrganizationAndName(orgGUID string, spaceName strin
 	}
 
 	return Space(ccv2Spaces[0]), Warnings(warnings), nil
+}
+
+// GrantSpaceManagerByUsername makes the provided user a Space Manager in the
+// space with the provided guid.
+func (actor Actor) GrantSpaceManagerByUsername(orgGUID string, spaceGUID string, username string) (Warnings, error) {
+	if actor.Config.UAAGrantType() == string(uaaconst.GrantTypeClientCredentials) {
+		return actor.grantSpaceManagerByClientCredentials(orgGUID, spaceGUID, username)
+	}
+
+	return actor.grantSpaceManagerByUsername(orgGUID, spaceGUID, username)
+}
+
+func (actor Actor) grantSpaceManagerByClientCredentials(orgGUID string, spaceGUID string, clientID string) (Warnings, error) {
+	ccv2Warnings, err := actor.CloudControllerClient.UpdateOrganizationUser(orgGUID, clientID)
+	warnings := Warnings(ccv2Warnings)
+	if err != nil {
+		return warnings, err
+	}
+
+	ccv2Warnings, err = actor.CloudControllerClient.UpdateSpaceManager(spaceGUID, clientID)
+	warnings = append(warnings, Warnings(ccv2Warnings)...)
+	if err != nil {
+		return warnings, err
+	}
+
+	return warnings, err
+}
+
+func (actor Actor) grantSpaceManagerByUsername(orgGUID string, spaceGUID string, username string) (Warnings, error) {
+	ccv2Warnings, err := actor.CloudControllerClient.UpdateOrganizationUserByUsername(orgGUID, username)
+	warnings := Warnings(ccv2Warnings)
+	if err != nil {
+		return warnings, err
+	}
+
+	ccv2Warnings, err = actor.CloudControllerClient.UpdateSpaceManagerByUsername(spaceGUID, username)
+	warnings = append(warnings, Warnings(ccv2Warnings)...)
+
+	return warnings, err
+}
+
+// GrantSpaceDeveloperByUsername makes the provided user a Space Developer in the
+// space with the provided guid.
+func (actor Actor) GrantSpaceDeveloperByUsername(spaceGUID string, username string) (Warnings, error) {
+	if actor.Config.UAAGrantType() == string(uaaconst.GrantTypeClientCredentials) {
+		warnings, err := actor.CloudControllerClient.UpdateSpaceDeveloper(spaceGUID, username)
+
+		return Warnings(warnings), err
+	}
+
+	warnings, err := actor.CloudControllerClient.UpdateSpaceDeveloperByUsername(spaceGUID, username)
+	return Warnings(warnings), err
 }

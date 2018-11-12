@@ -1,7 +1,23 @@
 # CLI Integration Tests
+
+## Introduction
+
 These are high-level tests for the CLI that make assertions about the behavior of the `cf` binary.
 
-These tests require that a `cf` binary built from the latest source is available in your `PATH`.
+On most systems `cf` points to an installed version. To test the latest source (most likely source that you're changing), ensure the dev `cf` binary is in your `PATH`:
+
+```
+[[ `which cf` = *"$GOPATH/src/code.cloudfoundry.org/cli/out"* ]] || 
+    export PATH="$GOPATH/src/code.cloudfoundry.org/cli/out:$PATH"
+```
+
+You'll also need to rebuild `cf` after making any relevant changes to the source:
+
+```
+make build
+```
+
+Running `make integration-tests` can be time-consuming, because it includes the unparallelized `global` suite. Best to constrain runs to relevant tests until a long break in your workday, when you can run `make integration-tests` and cover everything. If you're primarily working in code that is tested by the parallelized suites, running the rake tasks for those specific suites instead of `integration-tests` and setting the `NODES` environment variable to a higher value will improve your feedback cycle.
 
 ## Explanation of test suites
 - `global` suite is for tests that affect an entire CF instance. *These tests do not run in parallel.*
@@ -15,12 +31,12 @@ These tests rely on [ginkgo](https://github.com/onsi/ginkgo) to be installed.
 
 Run command for the `isolated`, `push` and `experimental` suite:
 ```
-ginkgo -p -r -randomizeAllSpecs -slowSpecThreshold=120 integration/isolated integration/push integration/experimental
+ginkgo -p -r -randomizeAllSpecs -slowSpecThreshold=120 integration/shared/isolated integration/v6/push integration/shared/experimental
 ```
 
 Run command for the `global` and `plugin` suites:
 ```
-ginkgo -r -randomizeAllSpecs -slowSpecThreshold=120 integration/global integration/plugin
+ginkgo -r -randomizeAllSpecs -slowSpecThreshold=120 integration/shared/global integration/shared/plugin
 ```
 
 ### Customizations (based on environment variables)
@@ -29,6 +45,8 @@ ginkgo -r -randomizeAllSpecs -slowSpecThreshold=120 integration/global integrati
 - `SKIP_SSL_VALIDATION` - If true, will skip SSL Validation. Will default `--skip-ssl-validation` if not set.
 - `CF_INT_USERNAME` - The CF Administrator username. Will default to `admin` if not set.
 - `CF_INT_PASSWORD` - The CF Administrator password. Will default to `admin` if not set.
+- `CF_INT_OIDC_USERNAME` - The admin user in the OIDC identity provider. Will default to `admin_oidc` if not set.
+- `CF_INT_OIDC_PASSWORD` - The admin password in the OIDC identity provider. Will default to `admin` if not set.
 - `CF_INT_DOCKER_IMAGE` - A private docker image used for the docker authentication tests.
 - `CF_INT_DOCKER_USERNAME` - The username for the private docker registry for `CF_INT_DOCKER_IMAGE`.
 - `CF_INT_DOCKER_PASSWORD` - The password for `CF_INT_DOCKER_USERNAME`.

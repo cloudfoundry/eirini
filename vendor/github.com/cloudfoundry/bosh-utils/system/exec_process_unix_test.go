@@ -82,7 +82,7 @@ var _ = Describe("execProcess", func() {
 		for _, keepAttached := range []bool{false} {
 			keepAttached := keepAttached
 
-			Describe(fmt.Sprintf("running with process attached=%b", keepAttached), func() {
+			Describe(fmt.Sprintf("running with process attached=%t", keepAttached), func() {
 				Context("when parent and child terminate after receiving SIGTERM", func() {
 					It("sends term signal to the whole group and returns with exit status that parent exited", func() {
 						command := exec.Command(filepath.Join(buildDir, "parent_term"))

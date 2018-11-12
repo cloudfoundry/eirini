@@ -1,5 +1,5 @@
 // +build !linux
 
-package daemon // import "github.com/docker/docker/daemon"
+package daemon
 
 var supportsSeccomp = false

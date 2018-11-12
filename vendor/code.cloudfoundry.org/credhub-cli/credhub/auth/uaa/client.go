@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -79,6 +80,7 @@ func (u *Client) Metadata() (*Metadata, error) {
 		return nil, err
 	}
 	defer response.Body.Close()
+	defer io.Copy(ioutil.Discard, response.Body)
 
 	if response.StatusCode != 200 {
 		return nil, errors.New("unable to fetch metadata successfully")
@@ -167,6 +169,7 @@ func (u *Client) tokenGrantRequest(headers url.Values) (token, error) {
 	}
 
 	defer response.Body.Close()
+	defer io.Copy(ioutil.Discard, response.Body)
 
 	decoder := json.NewDecoder(response.Body)
 

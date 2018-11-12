@@ -1,4 +1,4 @@
-package logger // import "github.com/docker/docker/daemon/logger"
+package logger
 
 import (
 	"bytes"
@@ -6,19 +6,12 @@ import (
 	"sync"
 	"time"
 
-	types "github.com/docker/docker/api/types/backend"
-	"github.com/docker/docker/pkg/stringid"
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 const (
-	// readSize is the maximum bytes read during a single read
-	// operation.
+	bufSize  = 16 * 1024
 	readSize = 2 * 1024
-
-	// defaultBufSize provides a reasonable default for loggers that do
-	// not have an external limit to impose on log line size.
-	defaultBufSize = 16 * 1024
 )
 
 // Copier can copy logs from specified sources to Logger and attach Timestamp.
@@ -51,20 +44,10 @@ func (c *Copier) Run() {
 
 func (c *Copier) copySrc(name string, src io.Reader) {
 	defer c.copyJobs.Done()
-
-	bufSize := defaultBufSize
-	if sizedLogger, ok := c.dst.(SizedLogger); ok {
-		bufSize = sizedLogger.BufSize()
-	}
 	buf := make([]byte, bufSize)
-
 	n := 0
 	eof := false
-	var partialid string
-	var partialTS time.Time
-	var ordinal int
-	firstPartial := true
-	hasMorePartial := false
+	msg := &Message{Source: name}
 
 	for {
 		select {
@@ -81,7 +64,6 @@ func (c *Copier) copySrc(name string, src io.Reader) {
 				read, err := src.Read(buf[n:upto])
 				if err != nil {
 					if err != io.EOF {
-						logReadsFailedCount.Inc(1)
 						logrus.Errorf("Error scanning log stream: %s", err)
 						return
 					}
@@ -95,33 +77,15 @@ func (c *Copier) copySrc(name string, src io.Reader) {
 			}
 			// Break up the data that we've buffered up into lines, and log each in turn.
 			p := 0
-
-			for q := bytes.IndexByte(buf[p:n], '\n'); q >= 0; q = bytes.IndexByte(buf[p:n], '\n') {
+			for q := bytes.Index(buf[p:n], []byte{'\n'}); q >= 0; q = bytes.Index(buf[p:n], []byte{'\n'}) {
+				msg.Line = buf[p : p+q]
+				msg.Timestamp = time.Now().UTC()
+				msg.Partial = false
 				select {
 				case <-c.closed:
 					return
 				default:
-					msg := NewMessage()
-					msg.Source = name
-					msg.Line = append(msg.Line, buf[p:p+q]...)
-
-					if hasMorePartial {
-						msg.PLogMetaData = &types.PartialLogMetaData{ID: partialid, Ordinal: ordinal, Last: true}
-
-						// reset
-						partialid = ""
-						ordinal = 0
-						firstPartial = true
-						hasMorePartial = false
-					}
-					if msg.PLogMetaData == nil {
-						msg.Timestamp = time.Now().UTC()
-					} else {
-						msg.Timestamp = partialTS
-					}
-
 					if logErr := c.dst.Log(msg); logErr != nil {
-						logWritesFailedCount.Inc(1)
 						logrus.Errorf("Failed to log msg %q for logger %s: %s", msg.Line, c.dst.Name(), logErr)
 					}
 				}
@@ -132,29 +96,10 @@ func (c *Copier) copySrc(name string, src io.Reader) {
 			// noting that it's a partial log line.
 			if eof || (p == 0 && n == len(buf)) {
 				if p < n {
-					msg := NewMessage()
-					msg.Source = name
-					msg.Line = append(msg.Line, buf[p:n]...)
-
-					// Generate unique partialID for first partial. Use it across partials.
-					// Record timestamp for first partial. Use it across partials.
-					// Initialize Ordinal for first partial. Increment it across partials.
-					if firstPartial {
-						msg.Timestamp = time.Now().UTC()
-						partialTS = msg.Timestamp
-						partialid = stringid.GenerateRandomID()
-						ordinal = 1
-						firstPartial = false
-						totalPartialLogs.Inc(1)
-					} else {
-						msg.Timestamp = partialTS
-					}
-					msg.PLogMetaData = &types.PartialLogMetaData{ID: partialid, Ordinal: ordinal, Last: false}
-					ordinal++
-					hasMorePartial = true
-
+					msg.Line = buf[p:n]
+					msg.Timestamp = time.Now().UTC()
+					msg.Partial = true
 					if logErr := c.dst.Log(msg); logErr != nil {
-						logWritesFailedCount.Inc(1)
 						logrus.Errorf("Failed to log msg %q for logger %s: %s", msg.Line, c.dst.Name(), logErr)
 					}
 					p = 0

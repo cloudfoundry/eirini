@@ -2,33 +2,79 @@
 
 set -eo pipefail
 
+usage() { echo "Usage: $0 [-b <base image; ubuntu:18.04>] [-l <lifecycle git ref>] [-s <image stack name; packs/v3>]" 1>&2; exit 1; }
+base=ubuntu:18.04
+lifecycle_ref=''
+stack=packs/v3
+
+while getopts ":b:l:s:" o; do
+  case "${o}" in
+    b)
+      base=${OPTARG}
+      [[ -n $stack ]] || usage
+      ;;
+    l)
+      lifecycle_ref=${OPTARG}
+      if [[ -n $lifecycle_ref && -d $lifecycle_ref ]]; then
+        lifecycle_ref=$(cd "$lifecycle_ref" && git rev-list HEAD -1)
+      fi
+      ;;
+    s)
+      stack=${OPTARG}
+      [[ -n $stack ]] || usage
+      ;;
+    *)
+      usage
+      ;;
+  esac
+done
+
 cd $(dirname "${BASH_SOURCE[0]}")/..
+samples_tgz=https://api.github.com/repos/buildpack/samples/tarball/nodejs-detect
+buildpacks_dir=$(pwd)/images/detect/buildpacks
 
-stack=$1
-samples_tgz=https://api.github.com/repos/buildpack/samples/tarball/master
-buildpack_dir=$(pwd)/images/detect/buildpacks
-nodejs_dir=$buildpack_dir/sh.packs.samples.buildpack.nodejs/latest
+rm -rf "$buildpacks_dir"
+mkdir -p "$buildpacks_dir"
 
-if [[ -z $stack ]]; then
-  >&2 echo "Stack not specified."
-  exit 1
-fi
+tar_compat=$(if tar --version | grep -q "GNU tar" ; then echo '--wildcards'; fi)
+curl -sSL "$samples_tgz" | tar -xzf - -C "$buildpacks_dir" --strip-components=1 ${tar_compat} 'buildpack-samples-*'
 
-rm -rf "$buildpack_dir"
-mkdir -p "$nodejs_dir"
+for buildpack in "nodejs" "java"; do
+  echo "--> Adding buildpack: ${buildpack}"
+  bp_dir=${buildpacks_dir}/sh.packs.samples.buildpack.${buildpack}
+  mkdir -p "${bp_dir}"
 
-curl -sSL "$samples_tgz" | tar -xzf - -C "$nodejs_dir" --strip-components=2 'buildpack-samples-*/nodejs-buildpack'
+  latest_dir=${bp_dir}/latest
+  mv "${buildpacks_dir}/${buildpack}-buildpack" "${latest_dir}"
 
-version_dir=$(dirname "$nodejs_dir")/$(cat "$nodejs_dir/buildpack.toml" | yj -t | jq -r .version)
-mv "$nodejs_dir" "$version_dir"
-ln -s "$version_dir" "$nodejs_dir"
+  version_dir=$(dirname "$latest_dir")/$(cat "$latest_dir/buildpack.toml" | yj -t | jq -r .version)
+  mv "$latest_dir" "$version_dir"
+  ln -s "$(basename "$version_dir")" "$latest_dir"
 
-echo 'groups = [{ repository = "packs/v3", buildpacks = ["sh.packs.samples.buildpack.nodejs"] }]' > "$buildpack_dir/order.toml"
+cat << TOML >> "$buildpacks_dir/order.toml"
+[[groups]]
+  repository = "packs/v3"
+  build-image = "packs/v3:build"
+  run-image = "packs/v3:run"
+  buildpacks = [
+    { id = "sh.packs.samples.buildpack.${buildpack}", version = "latest" }
+  ]
+TOML
+done
 
-docker pull "${stack}"
+docker pull "${base}"
 
-docker build --build-arg "stack=${stack}" -t packs/v3:latest -f images/Dockerfile.base .
-docker build -t packs/v3:detect images/detect
-docker build -t packs/v3:build images/build
-docker build -t packs/v3:run images/run
+base_args="--build-arg base=${base} ${lifecycle_ref:+--build-arg lifecycle_ref=${lifecycle_ref}}"
+common_args="--build-arg stack=${stack}"
+echo docker build $base_args -t "${stack}:latest" -f images/base.Dockerfile .
+docker build $base_args -t "${stack}:latest" -f images/base.Dockerfile .
+docker build $common_args -t "${stack}:detect" images/detect
+docker build $common_args -t "${stack}:analyze" images/analyze
+docker build $common_args -t "${stack}:build" images/build
+docker build $common_args -t "${stack}:export" images/export
+docker build $common_args -t "${stack}:run" images/run
 
+echo "To publish these images:"
+for tag in "latest" "detect" "analyze" "build" "export" "run"; do
+  echo "  docker push \"${stack}:${tag}\""
+done

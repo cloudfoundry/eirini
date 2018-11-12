@@ -22,6 +22,5 @@ func main() {
 		os.Exit(0)
 	})
 
-	fmt.Println("Fixture app about to listen on:", os.Getenv("PORT"))
 	log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
 }

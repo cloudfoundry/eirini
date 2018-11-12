@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/credhub-cli/commands"
-	"code.cloudfoundry.org/credhub-cli/credhub"
 	"code.cloudfoundry.org/credhub-cli/test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -133,7 +132,7 @@ var _ = Describe("Set", func() {
 
 	Describe("setting SSH secrets", func() {
 		It("puts a secret using explicit ssh type", func() {
-			SetupPutSshServer("foo-ssh-key", "ssh", "some-public-key", "some-private-key", credhub.Overwrite)
+			SetupPutSshServer("foo-ssh-key", "ssh", "some-public-key", "some-private-key")
 
 			session := runCommand("set", "-n", "foo-ssh-key", "-u", "some-public-key", "-p", "some-private-key", "-t", "ssh")
 
@@ -144,7 +143,7 @@ var _ = Describe("Set", func() {
 		})
 
 		It("puts a secret using values read from files", func() {
-			SetupPutSshServer("foo-ssh-key", "ssh", "some-public-key", "some-private-key", credhub.Overwrite)
+			SetupPutSshServer("foo-ssh-key", "ssh", "some-public-key", "some-private-key")
 
 			tempDir := test.CreateTempDir("sshFilesForTesting")
 			publicFileName := test.CreateCredentialFile(tempDir, "rsa.pub", "some-public-key")
@@ -162,16 +161,8 @@ var _ = Describe("Set", func() {
 			Eventually(string(session.Out.Contents())).Should(ContainSubstring("value: <redacted>"))
 		})
 
-		It("puts a secret specifying no-overwrite", func() {
-			SetupPutSshServer("foo-ssh-key", "ssh", "some-public-key", "some-private-key", credhub.NoOverwrite)
-
-			session := runCommand("set", "-n", "foo-ssh-key", "-t", "ssh", "-u", "some-public-key", "-p", "some-private-key", "--no-overwrite")
-
-			Eventually(session).Should(Exit(0))
-		})
-
 		It("puts a secret using explicit ssh type and returns in json format", func() {
-			SetupPutSshServer("foo-ssh-key", "ssh", "some-public-key", "some-private-key", credhub.Overwrite)
+			SetupPutSshServer("foo-ssh-key", "ssh", "some-public-key", "some-private-key")
 
 			session := runCommand("set", "-n", "foo-ssh-key", "-u", "some-public-key", "-p", "some-private-key", "-t", "ssh", "--output-json")
 
@@ -187,7 +178,7 @@ var _ = Describe("Set", func() {
 		})
 
 		It("accepts case-insensitive type", func() {
-			SetupPutSshServer("foo-ssh-key", "ssh", "some-public-key", "some-private-key", credhub.Overwrite)
+			SetupPutSshServer("foo-ssh-key", "ssh", "some-public-key", "some-private-key")
 
 			session := runCommand("set", "-n", "foo-ssh-key", "-u", "some-public-key", "-p", "some-private-key", "-t", "SSH")
 
@@ -198,7 +189,7 @@ var _ = Describe("Set", func() {
 		})
 
 		It("handles newline characters", func() {
-			SetupPutSshServer("foo-ssh-key", "ssh", `some\npublic\nkey`, `some\nprivate\nkey`, credhub.Overwrite)
+			SetupPutSshServer("foo-ssh-key", "ssh", `some\npublic\nkey`, `some\nprivate\nkey`)
 			session := runCommand("set", "-n", "foo-ssh-key", "-u", `some\npublic\nkey`, "-p", `some\nprivate\nkey`, "-t", "ssh", "--output-json")
 
 			responseJson := `{
@@ -216,7 +207,7 @@ var _ = Describe("Set", func() {
 
 	Describe("setting RSA secrets", func() {
 		It("puts a secret using explicit rsa type", func() {
-			SetupPutRsaServer("foo-rsa-key", "rsa", "some-public-key", "some-private-key", credhub.Overwrite)
+			SetupPutRsaServer("foo-rsa-key", "rsa", "some-public-key", "some-private-key")
 
 			session := runCommand("set", "-n", "foo-rsa-key", "-u", "some-public-key", "-p", "some-private-key", "-t", "rsa")
 
@@ -227,7 +218,7 @@ var _ = Describe("Set", func() {
 		})
 
 		It("puts a secret using values read from files", func() {
-			SetupPutRsaServer("foo-rsa-key", "rsa", "some-public-key", "some-private-key", credhub.Overwrite)
+			SetupPutRsaServer("foo-rsa-key", "rsa", "some-public-key", "some-private-key")
 
 			tempDir := test.CreateTempDir("rsaFilesForTesting")
 			publicFileName := test.CreateCredentialFile(tempDir, "rsa.pub", "some-public-key")
@@ -245,16 +236,8 @@ var _ = Describe("Set", func() {
 			Eventually(string(session.Out.Contents())).Should(ContainSubstring("value: <redacted>"))
 		})
 
-		It("puts a secret specifying no-overwrite", func() {
-			SetupPutRsaServer("foo-rsa-key", "rsa", "some-public-key", "some-private-key", credhub.NoOverwrite)
-
-			session := runCommand("set", "-n", "foo-rsa-key", "-t", "rsa", "-u", "some-public-key", "-p", "some-private-key", "--no-overwrite")
-
-			Eventually(session).Should(Exit(0))
-		})
-
 		It("puts a secret using explicit rsa type and returns in json format", func() {
-			SetupPutRsaServer("foo-rsa-key", "rsa", "some-public-key", "some-private-key", credhub.Overwrite)
+			SetupPutRsaServer("foo-rsa-key", "rsa", "some-public-key", "some-private-key")
 
 			session := runCommand("set", "-n", "foo-rsa-key", "-u", "some-public-key", "-p", "some-private-key", "-t", "rsa", "--output-json")
 
@@ -266,7 +249,7 @@ var _ = Describe("Set", func() {
 		})
 
 		It("accepts case-insensitive type", func() {
-			SetupPutRsaServer("foo-rsa-key", "rsa", "some-public-key", "some-private-key", credhub.Overwrite)
+			SetupPutRsaServer("foo-rsa-key", "rsa", "some-public-key", "some-private-key")
 
 			session := runCommand("set", "-n", "foo-rsa-key", "-u", "some-public-key", "-p", "some-private-key", "-t", "RSA")
 
@@ -277,7 +260,7 @@ var _ = Describe("Set", func() {
 		})
 
 		It("handles newline characters", func() {
-			SetupPutRsaServer("foo-rsa-key", "rsa", `some\npublic\nkey`, `some\nprivate\nkey`, credhub.Overwrite)
+			SetupPutRsaServer("foo-rsa-key", "rsa", `some\npublic\nkey`, `some\nprivate\nkey`)
 			session := runCommand("set", "-n", "foo-rsa-key", "-u", `some\npublic\nkey`, "-p", `some\nprivate\nkey`, "-t", "rsa", "--output-json")
 
 			Eventually(session).Should(Exit(0))
@@ -286,13 +269,6 @@ var _ = Describe("Set", func() {
 	})
 
 	Describe("setting password secrets", func() {
-		It("puts a secret specifying no-overwrite", func() {
-			SetupOverwritePutValueServer("my-password", "password", "potatoes", credhub.NoOverwrite)
-
-			session := runCommand("set", "-n", "my-password", "-t", "password", "-w", "potatoes", "--no-overwrite")
-
-			Eventually(session).Should(Exit(0))
-		})
 
 		It("puts a secret using explicit password type  and returns in yaml format", func() {
 			SetupPutValueServer("my-password", "password", "potatoes")
@@ -386,16 +362,6 @@ var _ = Describe("Set", func() {
 			Eventually(string(session.Out.Contents())).Should(ContainSubstring("value: <redacted>"))
 		})
 
-		It("puts a secret using explicit certificate type and string values with no-overwrite", func() {
-			SetupOverwritePutCertificateServer("my-secret", "my-ca", "my-cert", "my-priv", credhub.NoOverwrite)
-
-			session := runCommand("set", "-n", "my-secret",
-				"-t", "certificate", "--root", "my-ca",
-				"--certificate", "my-cert", "--private", "my-priv", "--no-overwrite")
-
-			Eventually(session).Should(Exit(0))
-		})
-
 		It("puts a secret using explicit certificate type and values read from files", func() {
 			SetupPutCertificateServer("my-secret", "my-ca", "my-cert", "my-priv")
 			tempDir := test.CreateTempDir("certFilesForTesting")
@@ -460,7 +426,7 @@ var _ = Describe("Set", func() {
 
 	Describe("setting User secrets", func() {
 		It("puts a secret using explicit user type", func() {
-			SetupPutUserServer("my-username-credential", `{"username": "my-username", "password": "test-password"}`, "my-username", "test-password", "passw0rd-H4$h", credhub.Overwrite)
+			SetupPutUserServer("my-username-credential", `{"username": "my-username", "password": "test-password"}`, "my-username", "test-password", "passw0rd-H4$h")
 
 			session := runCommand("set", "-n", "my-username-credential", "-z", "my-username", "-w", "test-password", "-t", "user")
 
@@ -471,16 +437,8 @@ var _ = Describe("Set", func() {
 			Eventually(string(session.Out.Contents())).Should(ContainSubstring(`version_created_at: "2016-01-01T12:00:00Z"`))
 		})
 
-		It("puts a secret specifying no-overwrite", func() {
-			SetupPutUserServer("my-username-credential", `{"username": "my-username", "password": "test-password"}`, "my-username", "test-password", "passw0rd-H4$h", credhub.NoOverwrite)
-
-			session := runCommand("set", "-n", "my-username-credential", "-t", "user", "-z", "my-username", "-w", "test-password", "--no-overwrite")
-
-			Eventually(session).Should(Exit(0))
-		})
-
 		It("should set password interactively for user", func() {
-			SetupPutUserServer("my-username-credential", `{"username": "my-username", "password": "test-password"}`, "my-username", "test-password", "passw0rd-H4$h", credhub.Overwrite)
+			SetupPutUserServer("my-username-credential", `{"username": "my-username", "password": "test-password"}`, "my-username", "test-password", "passw0rd-H4$h")
 
 			session := runCommandWithStdin(strings.NewReader("test-password\n"), "set", "-n", "my-username-credential", "-t", "user", "--username", "my-username")
 
@@ -491,7 +449,7 @@ var _ = Describe("Set", func() {
 		})
 
 		It("should set null username when it isn't provided", func() {
-			SetupPutUserWithoutUsernameServer("my-username-credential", `{"username":"","password": "test-password"}`, "test-password", "passw0rd-H4$h", credhub.Overwrite)
+			SetupPutUserWithoutUsernameServer("my-username-credential", `{"username":"","password": "test-password"}`, "test-password", "passw0rd-H4$h")
 
 			session := runCommandWithStdin(strings.NewReader("test-password\n"), "set", "-n", "my-username-credential", "-t", "user")
 
@@ -504,7 +462,7 @@ var _ = Describe("Set", func() {
 		})
 
 		It("puts a secret using explicit user type in json format", func() {
-			SetupPutUserServer("my-username-credential", `{"username": "my-username", "password": "test-password"}`, "my-username", "test-password", "passw0rd-H4$h", credhub.Overwrite)
+			SetupPutUserServer("my-username-credential", `{"username": "my-username", "password": "test-password"}`, "my-username", "test-password", "passw0rd-H4$h")
 
 			session := runCommand("set", "-n", "my-username-credential", "-z", "my-username", "-w", "test-password", "-t", "user",
 				"--output-json")
@@ -517,7 +475,7 @@ var _ = Describe("Set", func() {
 		})
 
 		It("accepts case-insensitive type", func() {
-			SetupPutUserServer("my-username-credential", `{"username": "my-username", "password": "test-password"}`, "my-username", "test-password", "passw0rd-H4$h", credhub.Overwrite)
+			SetupPutUserServer("my-username-credential", `{"username": "my-username", "password": "test-password"}`, "my-username", "test-password", "passw0rd-H4$h")
 
 			session := runCommand("set", "-n", "my-username-credential", "-z", "my-username", "-w", "test-password", "-t", "USER")
 
@@ -535,7 +493,6 @@ var _ = Describe("Set", func() {
 				commands.HaveFlag("name", "n"),
 				commands.HaveFlag("type", "t"),
 				commands.HaveFlag("value", "v"),
-				commands.HaveFlag("no-overwrite", "O"),
 				commands.HaveFlag("root", "r"),
 				commands.HaveFlag("certificate", "c"),
 				commands.HaveFlag("private", "p"),
@@ -573,9 +530,9 @@ var _ = Describe("Set", func() {
 	})
 })
 
-func SetupPutRsaServer(name, keyType, publicKey, privateKey string, overwrite credhub.Mode) {
+func SetupPutRsaServer(name, keyType, publicKey, privateKey string) {
 	var jsonRequest string
-	jsonRequest = fmt.Sprintf(RSA_SSH_CREDENTIAL_REQUEST_JSON, keyType, name, publicKey, privateKey, overwrite == credhub.Overwrite)
+	jsonRequest = fmt.Sprintf(RSA_SSH_CREDENTIAL_REQUEST_JSON, keyType, name, publicKey, privateKey)
 	server.AppendHandlers(
 		CombineHandlers(
 			VerifyRequest("PUT", "/api/v1/data"),
@@ -585,9 +542,9 @@ func SetupPutRsaServer(name, keyType, publicKey, privateKey string, overwrite cr
 	)
 }
 
-func SetupPutSshServer(name, keyType, publicKey, privateKey string, overwrite credhub.Mode) {
+func SetupPutSshServer(name, keyType, publicKey, privateKey string) {
 	var jsonRequest string
-	jsonRequest = fmt.Sprintf(RSA_SSH_CREDENTIAL_REQUEST_JSON, keyType, name, publicKey, privateKey, overwrite == credhub.Overwrite)
+	jsonRequest = fmt.Sprintf(RSA_SSH_CREDENTIAL_REQUEST_JSON, keyType, name, publicKey, privateKey)
 	server.AppendHandlers(
 		CombineHandlers(
 			VerifyRequest("PUT", "/api/v1/data"),
@@ -598,12 +555,8 @@ func SetupPutSshServer(name, keyType, publicKey, privateKey string, overwrite cr
 }
 
 func SetupPutValueServer(name, credentialType, value string) {
-	SetupOverwritePutValueServer(name, credentialType, value, credhub.Overwrite)
-}
-
-func SetupOverwritePutValueServer(name, credentialType, value string, overwrite credhub.Mode) {
 	var jsonRequest string
-	jsonRequest = fmt.Sprintf(STRING_CREDENTIAL_OVERWRITE_REQUEST_JSON, credentialType, name, value, overwrite == credhub.Overwrite)
+	jsonRequest = fmt.Sprintf(STRING_CREDENTIAL_REQUEST_JSON, credentialType, name, value)
 	server.AppendHandlers(
 		CombineHandlers(
 			VerifyRequest("PUT", "/api/v1/data"),
@@ -614,12 +567,8 @@ func SetupOverwritePutValueServer(name, credentialType, value string, overwrite 
 }
 
 func setupPutJsonServer(name, value string) {
-	setupOverwritePutJsonServer(name, value, credhub.Overwrite)
-}
-
-func setupOverwritePutJsonServer(name, value string, overwrite credhub.Mode) {
 	var jsonRequest string
-	jsonRequest = fmt.Sprintf(JSON_CREDENTIAL_OVERWRITE_REQUEST_JSON, name, overwrite == credhub.Overwrite, value)
+	jsonRequest = fmt.Sprintf(JSON_CREDENTIAL_REQUEST_JSON, name, value)
 	server.AppendHandlers(
 		CombineHandlers(
 			VerifyRequest("PUT", "/api/v1/data"),
@@ -630,16 +579,8 @@ func setupOverwritePutJsonServer(name, value string, overwrite credhub.Mode) {
 }
 
 func SetupPutCertificateServer(name, ca, cert, priv string) {
-	SetupOverwritePutCertificateServer(name, ca, cert, priv, credhub.Overwrite)
-}
-
-func SetupPutCertificateWithCaNameServer(name, caName, cert, priv string) {
-	SetupOverwritePutCertificateWithCaNameServer(name, caName, cert, priv, credhub.Overwrite)
-}
-
-func SetupOverwritePutCertificateServer(name, ca, cert, priv string, overwrite credhub.Mode) {
 	var jsonRequest string
-	jsonRequest = fmt.Sprintf(CERTIFICATE_CREDENTIAL_REQUEST_JSON, name, ca, cert, priv, overwrite == credhub.Overwrite)
+	jsonRequest = fmt.Sprintf(CERTIFICATE_CREDENTIAL_REQUEST_JSON, name, ca, cert, priv)
 	server.AppendHandlers(
 		CombineHandlers(
 			VerifyRequest("PUT", "/api/v1/data"),
@@ -649,9 +590,9 @@ func SetupOverwritePutCertificateServer(name, ca, cert, priv string, overwrite c
 	)
 }
 
-func SetupOverwritePutCertificateWithCaNameServer(name, caName, cert, priv string, overwrite credhub.Mode) {
+func SetupPutCertificateWithCaNameServer(name, caName, cert, priv string) {
 	var jsonRequest string
-	jsonRequest = fmt.Sprintf(CERTIFICATE_CREDENTIAL_WITH_NAMED_CA_REQUEST_JSON, name, caName, cert, priv, overwrite == credhub.Overwrite)
+	jsonRequest = fmt.Sprintf(CERTIFICATE_CREDENTIAL_WITH_NAMED_CA_REQUEST_JSON, name, caName, cert, priv)
 	server.AppendHandlers(
 		CombineHandlers(
 			VerifyRequest("PUT", "/api/v1/data"),
@@ -661,9 +602,9 @@ func SetupOverwritePutCertificateWithCaNameServer(name, caName, cert, priv strin
 	)
 }
 
-func SetupPutUserServer(name, value, username, password, passwordHash string, overwrite credhub.Mode) {
+func SetupPutUserServer(name, value, username, password, passwordHash string) {
 	var jsonRequest string
-	jsonRequest = fmt.Sprintf(USER_SET_CREDENTIAL_REQUEST_JSON, name, value, overwrite == credhub.Overwrite)
+	jsonRequest = fmt.Sprintf(USER_SET_CREDENTIAL_REQUEST_JSON, name, value)
 	server.AppendHandlers(
 		CombineHandlers(
 			VerifyRequest("PUT", "/api/v1/data"),
@@ -673,9 +614,9 @@ func SetupPutUserServer(name, value, username, password, passwordHash string, ov
 	)
 }
 
-func SetupPutUserWithoutUsernameServer(name, value, password, passwordHash string, overwrite credhub.Mode) {
+func SetupPutUserWithoutUsernameServer(name, value, password, passwordHash string) {
 	var jsonRequest string
-	jsonRequest = fmt.Sprintf(USER_SET_CREDENTIAL_REQUEST_JSON, name, value, overwrite == credhub.Overwrite)
+	jsonRequest = fmt.Sprintf(USER_SET_CREDENTIAL_REQUEST_JSON, name, value)
 	server.AppendHandlers(
 		CombineHandlers(
 			VerifyRequest("PUT", "/api/v1/data"),

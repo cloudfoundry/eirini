@@ -120,7 +120,7 @@ var _ = Describe("Version", func() {
 
 	Context("when the config contains invalid tokens", func() {
 		BeforeEach(func() {
-			responseJson := `{"app":{"name":"CredHub","version":"0.2.0"}}`
+			responseJson := "Server Version: Not Found. Have you targeted and authenticated against a CredHub server?"
 
 			server.RouteToHandler("GET", "/info",
 				RespondWith(http.StatusOK, responseJson),
@@ -136,7 +136,7 @@ var _ = Describe("Version", func() {
 			config.WriteConfig(cfg)
 		})
 
-		It("returns the CLI version but not the server version", func() {
+		It("returns the server error message", func() {
 			session := runCommand("--version")
 
 			Eventually(session).Should(Exit(0))

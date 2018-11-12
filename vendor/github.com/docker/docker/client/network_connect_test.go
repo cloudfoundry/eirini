@@ -1,14 +1,15 @@
-package client // import "github.com/docker/docker/client"
+package client
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
+
+	"golang.org/x/net/context"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
@@ -84,10 +85,6 @@ func TestNetworkConnect(t *testing.T) {
 
 			if connect.Container != "container_id" {
 				return nil, fmt.Errorf("expected 'container_id', got %s", connect.Container)
-			}
-
-			if connect.EndpointConfig == nil {
-				return nil, fmt.Errorf("expected connect.EndpointConfig to be not nil, got %v", connect.EndpointConfig)
 			}
 
 			if connect.EndpointConfig.NetworkID != "NetworkID" {

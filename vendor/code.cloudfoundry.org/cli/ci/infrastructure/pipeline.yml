@@ -13,7 +13,7 @@ resources:
   type: git
   source:
     uri: https://github.com/cloudfoundry/cf-deployment-concourse-tasks
-    tag_filter: v6.*
+    tag_filter: v7.*
 - name: cli-ci
   type: git
   source:
@@ -24,12 +24,7 @@ resources:
   type: git
   source:
     uri: https://github.com/cloudfoundry/cf-deployment
-    tag_filter: v2.*
-- name: ops-files
-  type: git
-  source:
-    uri: https://github.com/cloudfoundry/cf-deployment
-    tag_filter: v2.*
+    tag_filter: v5.*
 - name: state
   type: git
   source:
@@ -38,14 +33,6 @@ resources:
     branch: master
     paths:
     - ci/infrastructure/((stack-name))/bbl-state.json
-- name: cf-state
-  type: git
-  source:
-    uri: git@github.com:cloudfoundry/cli-private
-    private_key: ((cli-private-github-private-key))
-    branch: master
-    paths:
-    - ci/infrastructure/((stack-name))/deployment-vars.yml
 - name: gcp-bosh-pool
   type: pool
   source:
@@ -67,9 +54,7 @@ jobs:
     - put: gcp-bosh-pool
       params:
         claim: ((stack-name)).cli.fun
-    - get: ops-files
     - get: cli-ci
-    - get: cf-state
   - task: setup-infrastructure
     file: cf-deployment-concourse-tasks/bbl-up/task.yml
     input_mapping:
@@ -100,20 +85,19 @@ jobs:
   - task: copy-ops-files
     file: cli-ci/ci/infrastructure/tasks/combine-inputs.yml
     input_mapping:
-      input1: ops-files
+      input1: cf-deployment
       input2: cli-ci
     params:
-      COPY_PATHS: "input1/operations/scale-to-one-az.yml input1/operations/test/add-persistent-isolation-segment-diego-cell.yml input1/operations/use-compiled-releases.yml input2/ci/infrastructure/operations/cli-isolation-cell-overrides.yml input2/ci/infrastructure/operations/default-app-memory.yml input2/ci/infrastructure/operations/diego-cell-instances.yml input2/ci/infrastructure/operations/skip-ssl-override.yml input2/ci/infrastructure/operations/uaa-vm_type-override.yml input2/ci/infrastructure/operations/add-uaa-client-credentials.yml input2/ci/infrastructure/operations/add-dummy-windows-stack.yml input2/ci/infrastructure/operations/reduce-async-service-polling.yml"
+      COPY_PATHS: "input1/operations/scale-to-one-az.yml input1/operations/test/add-persistent-isolation-segment-diego-cell.yml input1/operations/use-compiled-releases.yml input2/ci/infrastructure/operations/cli-isolation-cell-overrides.yml input2/ci/infrastructure/operations/default-app-memory.yml input2/ci/infrastructure/operations/diego-cell-instances.yml input2/ci/infrastructure/operations/skip-ssl-override.yml input2/ci/infrastructure/operations/uaa-vm_type-override.yml input2/ci/infrastructure/operations/add-uaa-client-credentials.yml input2/ci/infrastructure/operations/add-dummy-windows-stack.yml input2/ci/infrastructure/operations/reduce-async-service-polling.yml input2/ci/infrastructure/operations/add-oidc-provider.yml input2/ci/infrastructure/operations/adjust-user-retry-attempts.yml input2/ci/infrastructure/operations/enable-v3-deployments-endpoint.yml"
   - task: deploy-cf
     file: cf-deployment-concourse-tasks/bosh-deploy/task.yml
     input_mapping:
       bbl-state: state
-      vars-store: cf-state
       vars-files: vars_path
       ops-files: combine_inputs_output
     params:
       SYSTEM_DOMAIN: ((stack-name)).cli.fun
-      OPS_FILES: "add-persistent-isolation-segment-diego-cell.yml use-compiled-releases.yml cli-isolation-cell-overrides.yml default-app-memory.yml skip-ssl-override.yml scale-to-one-az.yml diego-cell-instances.yml uaa-vm_type-override.yml add-uaa-client-credentials.yml add-dummy-windows-stack.yml reduce-async-service-polling.yml"
+      OPS_FILES: "add-persistent-isolation-segment-diego-cell.yml use-compiled-releases.yml cli-isolation-cell-overrides.yml default-app-memory.yml skip-ssl-override.yml scale-to-one-az.yml diego-cell-instances.yml uaa-vm_type-override.yml add-uaa-client-credentials.yml add-dummy-windows-stack.yml reduce-async-service-polling.yml add-oidc-provider.yml adjust-user-retry-attempts.yml enable-v3-deployments-endpoint.yml"
       VARS_STORE_FILE: ci/infrastructure/((stack-name))/deployment-vars.yml
       VARS_FILES: vars.yml
       BBL_STATE_DIR: ci/infrastructure/((stack-name))
@@ -130,10 +114,6 @@ jobs:
         params:
           repository: updated-bbl-state
           rebase: true
-      - put: cf-state
-        params:
-          repository: updated-vars-store
-          rebase: true
       - put: gcp-bosh-pool
         params:
           release: gcp-bosh-pool
@@ -145,12 +125,20 @@ jobs:
   - aggregate:
     - get: cf-deployment-concourse-tasks
     - get: state
+    - put: gcp-bosh-pool
+      params:
+        claim: ((stack-name)).cli.fun
   - task: delete-cf-deployment
     file: cf-deployment-concourse-tasks/bosh-delete-deployment/task.yml
     input_mapping:
       bbl-state: state
     params:
       BBL_STATE_DIR: ci/infrastructure/((stack-name))
+      IGNORE_ERRORS: true
+  ensure:
+    put: gcp-bosh-pool
+    params:
+      release: gcp-bosh-pool
 
 - name: delete-infrastructure
   serial_groups: [((stack-name))]
@@ -159,6 +147,9 @@ jobs:
   - aggregate:
     - get: cf-deployment-concourse-tasks
     - get: state
+    - put: gcp-bosh-pool
+      params:
+        claim: ((stack-name)).cli.fun
   - task: bosh-cleanup
     file: cf-deployment-concourse-tasks/bosh-cleanup/task.yml
     input_mapping:
@@ -173,8 +164,12 @@ jobs:
     params:
       BBL_STATE_DIR: ci/infrastructure/((stack-name))
       BBL_GCP_SERVICE_ACCOUNT_KEY: ((google-account-creds))
-    ensure:
-      put: state
+  ensure:
+    aggregate:
+    - put: state
       params:
         repository: updated-bbl-state
         rebase: true
+    - put: gcp-bosh-pool
+      params:
+        release: gcp-bosh-pool

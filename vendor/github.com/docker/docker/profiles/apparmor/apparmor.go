@@ -1,6 +1,6 @@
 // +build linux
 
-package apparmor // import "github.com/docker/docker/profiles/apparmor"
+package apparmor
 
 import (
 	"bufio"
@@ -9,9 +9,9 @@ import (
 	"os"
 	"path"
 	"strings"
-	"text/template"
 
 	"github.com/docker/docker/pkg/aaparser"
+	"github.com/docker/docker/utils/templates"
 )
 
 var (
@@ -33,7 +33,7 @@ type profileData struct {
 
 // generateDefault creates an apparmor profile from ProfileData.
 func (p *profileData) generateDefault(out io.Writer) error {
-	compiled, err := template.New("apparmor_profile").Parse(baseTemplate)
+	compiled, err := templates.NewParse("apparmor_profile", baseTemplate)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,10 @@ func (p *profileData) generateDefault(out io.Writer) error {
 	}
 	p.Version = ver
 
-	return compiled.Execute(out, p)
+	if err := compiled.Execute(out, p); err != nil {
+		return err
+	}
+	return nil
 }
 
 // macrosExists checks if the passed macro exists.
@@ -81,10 +84,15 @@ func InstallDefault(name string) error {
 	defer os.Remove(profilePath)
 
 	if err := p.generateDefault(f); err != nil {
+		f.Close()
 		return err
 	}
 
-	return aaparser.LoadProfile(profilePath)
+	if err := aaparser.LoadProfile(profilePath); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // IsLoaded checks if a profile with the given name has been loaded into the

@@ -1,8 +1,7 @@
-package client // import "github.com/docker/docker/client"
+package client
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types"
-	"github.com/gotestyourself/gotestyourself/assert"
+	"golang.org/x/net/context"
 )
 
 // TestSetHostHeader should set fake host for local communications, set real host
@@ -45,8 +44,10 @@ func TestSetHostHeader(t *testing.T) {
 	}
 
 	for c, test := range testCases {
-		hostURL, err := ParseHostURL(test.host)
-		assert.NilError(t, err)
+		proto, addr, basePath, err := ParseHost(test.host)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		client := &Client{
 			client: newMockClient(func(req *http.Request) (*http.Response, error) {
@@ -61,17 +62,19 @@ func TestSetHostHeader(t *testing.T) {
 				}
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       ioutil.NopCloser(bytes.NewReader(([]byte("")))),
 				}, nil
 			}),
 
-			proto:    hostURL.Scheme,
-			addr:     hostURL.Host,
-			basePath: hostURL.Path,
+			proto:    proto,
+			addr:     addr,
+			basePath: basePath,
 		}
 
 		_, err = client.sendRequest(context.Background(), "GET", testURL, nil, nil, nil)
-		assert.NilError(t, err)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 

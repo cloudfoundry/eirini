@@ -1,17 +1,33 @@
 CF_DIAL_TIMEOUT ?= 15
 NODES ?= 4
+PACKAGES ?= api actor command types util version integration/helpers
 LC_ALL = "en_US.UTF-8"
 
 CF_BUILD_VERSION ?= $$(cat BUILD_VERSION)
+CF_BUILD_VERSION_V7 ?= $$(cat BUILD_VERSION_V7)
 CF_BUILD_SHA ?= $$(git rev-parse --short HEAD)
 CF_BUILD_DATE ?= $$(date -u +"%Y-%m-%d")
-LD_FLAGS =-w -s \
-	-X code.cloudfoundry.org/cli/version.binaryVersion=$(CF_BUILD_VERSION) \
+LD_FLAGS_COMMON=-w -s \
 	-X code.cloudfoundry.org/cli/version.binarySHA=$(CF_BUILD_SHA) \
 	-X code.cloudfoundry.org/cli/version.binaryBuildDate=$(CF_BUILD_DATE)
+LD_FLAGS =$(LD_FLAGS_COMMON) \
+	-X code.cloudfoundry.org/cli/version.binaryVersion=$(CF_BUILD_VERSION)
+LD_FLAGS_V7 =$(LD_FLAGS_COMMON) \
+	-X code.cloudfoundry.org/cli/version.binaryVersion=$(CF_BUILD_VERSION_V7)
 LD_FLAGS_LINUX = -extldflags \"-static\" $(LD_FLAGS)
+LD_FLAGS_LINUX_V7 = -extldflags \"-static\" $(LD_FLAGS_V7)
 REQUIRED_FOR_STATIC_BINARY =-a -tags netgo -installsuffix netgo
+REQUIRED_FOR_STATIC_BINARY_V7 =-a -tags "V7 netgo" -installsuffix netgo
 GOSRC = $(shell find . -name "*.go" ! -name "*test.go" ! -name "*fake*" ! -path "./integration/*")
+UNAME_S := $(shell uname -s)
+
+ginkgo_int = ginkgo -r -randomizeAllSpecs -slowSpecThreshold 60
+
+ifndef TARGET_V7
+TARGET = v6
+else
+TARGET = v7
+endif
 
 all : test build
 
@@ -32,19 +48,19 @@ format :
 	go fmt ./...
 
 fly-windows-experimental : check-target-env
-	CF_TEST_SUITE=./integration/experimental fly -t ci execute -c ci/cli/tasks/integration-windows-oneoff.yml -i cli=./
+	CF_TEST_SUITE=./integration/shared/experimental fly -t ci execute -c ci/cli/tasks/integration-windows-oneoff.yml -i cli=./
 
 fly-windows-isolated : check-target-env
-	CF_TEST_SUITE=./integration/isolated fly -t ci execute -c ci/cli/tasks/integration-windows-oneoff.yml -i cli=./
+	CF_TEST_SUITE=./integration/shared/isolated fly -t ci execute -c ci/cli/tasks/integration-windows-oneoff.yml -i cli=./
 
 fly-windows-plugin : check-target-env
-	CF_TEST_SUITE=./integration/plugin fly -t ci execute -c ci/cli/tasks/integration-windows-oneoff.yml -i cli=./
+	CF_TEST_SUITE=./integration/shared/plugin fly -t ci execute -c ci/cli/tasks/integration-windows-oneoff.yml -i cli=./
 
 fly-windows-push : check-target-env
-	CF_TEST_SUITE=./integration/push fly -t ci execute -c ci/cli/tasks/integration-windows-oneoff.yml -i cli=./
+	CF_TEST_SUITE=./integration/v6/push fly -t ci execute -c ci/cli/tasks/integration-windows-oneoff.yml -i cli=./
 
 fly-windows-global : check-target-env
-	CF_TEST_SUITE=./integration/global fly -t ci execute -c ci/cli/tasks/integration-windows-serial.yml -i cli=./
+	CF_TEST_SUITE=./integration/shared/global fly -t ci execute -c ci/cli/tasks/integration-windows-serial.yml -i cli=./
 
 fly-windows-units :
 	fly -t ci execute -c ci/cli/tasks/units-windows.yml -i cli=./ -i cli-ci=./
@@ -52,31 +68,39 @@ fly-windows-units :
 integration-cleanup :
 	$(PWD)/bin/cleanup-integration
 
-integration-experimental : build integration-cleanup
-	ginkgo -r -randomizeAllSpecs -slowSpecThreshold 60 -nodes $(NODES) integration/experimental
+integration-experimental : build integration-cleanup integration-experimental-shared integration-experimental-versioned
 
-integration-global : build integration-cleanup
-	ginkgo -r -randomizeAllSpecs -slowSpecThreshold 60 integration/global
+integration-experimental-shared : build integration-cleanup
+	$(ginkgo_int) -nodes $(NODES) integration/shared/experimental
 
-integration-isolated : build integration-cleanup
-	ginkgo -r -randomizeAllSpecs -slowSpecThreshold 60 -nodes $(NODES) integration/isolated
+integration-experimental-versioned : build integration-cleanup
+	$(ginkgo_int) -nodes $(NODES) integration/$(TARGET)/experimental
+
+integration-global : build integration-cleanup integration-global-shared integration-global-versioned
+
+integration-global-shared : build integration-cleanup
+	$(ginkgo_int) integration/shared/global
+
+integration-global-versioned : build integration-cleanup
+	$(ginkgo_int) integration/$(TARGET)/global
+
+integration-isolated : build integration-cleanup integration-isolated-shared integration-isolated-versioned
+
+integration-isolated-shared : build integration-cleanup
+	$(ginkgo_int) -nodes $(NODES) integration/shared/isolated
+
+integration-isolated-versioned : build integration-cleanup
+	$(ginkgo_int) -nodes $(NODES) integration/$(TARGET)/isolated
 
 integration-plugin : build integration-cleanup
-	ginkgo -r -randomizeAllSpecs -slowSpecThreshold 60 -nodes $(NODES) integration/plugin
+	$(ginkgo_int) -nodes $(NODES) integration/shared/plugin
 
 integration-push : build integration-cleanup
-	ginkgo -r -randomizeAllSpecs -slowSpecThreshold 60 -nodes $(NODES) integration/push
+	$(ginkgo_int) -nodes $(NODES) integration/$(TARGET)/push
 
-integration-tests : build integration-cleanup
-	ginkgo -r -randomizeAllSpecs -slowSpecThreshold 60 -nodes $(NODES) integration/isolated integration/push
-	ginkgo -r -randomizeAllSpecs -slowSpecThreshold 60 integration/global
-	make integration-cleanup
+integration-tests : build integration-cleanup integration-isolated integration-push integration-global
 
-integration-tests-full : build integration-cleanup
-	ginkgo -r -randomizeAllSpecs -slowSpecThreshold 60 -nodes $(NODES) \
-		integration/isolated integration/push integration/plugin integration/experimental
-	ginkgo -r -randomizeAllSpecs -slowSpecThreshold 60 integration/global
-	make integration-cleanup
+integration-tests-full : build integration-cleanup integration-isolated integration-push integration-experimental integration-plugin integration-global
 
 lint :
 	@echo "style linting files:" # this list will grow as we cleanup all the code
@@ -84,10 +108,35 @@ lint :
 	@echo "No lint errors!"
 	@echo
 
-out/cf: $(GOSRC)
+ifeq ($(TARGET),v6)
+out/cf : out/cf6
+	cp out/cf6 out/cf
+else
+out/cf : out/cf7
+	cp out/cf7 out/cf
+endif
+
+# Build dynamic binary for Darwin
+ifeq ($(UNAME_S),Darwin)
+out/cf6: $(GOSRC)
+	go build -ldflags "$(LD_FLAGS)" -o out/cf6 .
+else
+out/cf6: $(GOSRC)
 	CGO_ENABLED=0 go build \
 		$(REQUIRED_FOR_STATIC_BINARY) \
-		-ldflags "$(LD_FLAGS_LINUX)" -o out/cf .
+		-ldflags "$(LD_FLAGS_LINUX)" -o out/cf6 .
+endif
+
+# Build dynamic binary for Darwin
+ifeq ($(UNAME_S),Darwin)
+out/cf7: $(GOSRC)
+	go build -tags="V7" -ldflags "$(LD_FLAGS_V7)" -o out/cf7 .
+else
+out/cf7: $(GOSRC)
+	CGO_ENABLED=0 go build \
+		$(REQUIRED_FOR_STATIC_BINARY_V7) \
+		-ldflags "$(LD_FLAGS_LINUX_V7)" -o out/cf7 .
+endif
 
 out/cf-cli_linux_i686 : $(GOSRC)
 	CGO_ENABLED=0 GOARCH=386 GOOS=linux go build \
@@ -101,8 +150,7 @@ out/cf-cli_linux_x86-64 : $(GOSRC)
 
 out/cf-cli_osx : $(GOSRC)
 	GOARCH=amd64 GOOS=darwin go build \
-				 $(REQUIRED_FOR_STATIC_BINARY) \
-				 -ldflags "$(LD_FLAGS)" -o out/cf-cli_osx .
+				 -a -ldflags "$(LD_FLAGS)" -o out/cf-cli_osx .
 
 out/cf-cli_win32.exe : $(GOSRC) rsrc.syso
 	GOARCH=386 GOOS=windows go build -tags="forceposix" -o out/cf-cli_win32.exe -ldflags "$(LD_FLAGS)" .
@@ -110,6 +158,28 @@ out/cf-cli_win32.exe : $(GOSRC) rsrc.syso
 
 out/cf-cli_winx64.exe : $(GOSRC) rsrc.syso
 	GOARCH=amd64 GOOS=windows go build -tags="forceposix" -o out/cf-cli_winx64.exe -ldflags "$(LD_FLAGS)" .
+	rm rsrc.syso
+
+out/cf7-cli_linux_i686 : $(GOSRC)
+	CGO_ENABLED=0 GOARCH=386 GOOS=linux go build \
+							$(REQUIRED_FOR_STATIC_BINARY_V7) \
+							-ldflags "$(LD_FLAGS_LINUX_V7)" -o out/cf7-cli_linux_i686 .
+
+out/cf7-cli_linux_x86-64 : $(GOSRC)
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build \
+							$(REQUIRED_FOR_STATIC_BINARY_V7) \
+							-ldflags "$(LD_FLAGS_LINUX_V7)" -o out/cf7-cli_linux_x86-64 .
+
+out/cf7-cli_osx : $(GOSRC)
+	GOARCH=amd64 GOOS=darwin go build -tags="V7" \
+				 -a -ldflags "$(LD_FLAGS_V7)" -o out/cf7-cli_osx .
+
+out/cf7-cli_win32.exe : $(GOSRC) rsrc.syso
+	GOARCH=386 GOOS=windows go build -tags="forceposix V7" -o out/cf7-cli_win32.exe -ldflags "$(LD_FLAGS_V7)" .
+	rm rsrc.syso
+
+out/cf7-cli_winx64.exe : $(GOSRC) rsrc.syso
+	GOARCH=amd64 GOOS=windows go build -tags="forceposix V7" -o out/cf7-cli_winx64.exe -ldflags "$(LD_FLAGS_V7)" .
 	rm rsrc.syso
 
 rsrc.syso :
@@ -122,14 +192,20 @@ test : units
 
 units : format vet lint build
 	ginkgo -r -nodes $(NODES) -randomizeAllSpecs -randomizeSuites \
-		api actor command types util version integration/helpers
+		$(PACKAGES)
 	@echo "\nSWEET SUITE SUCCESS"
 
-units-full : format vet lint build
+units-plugin :
+	CF_HOME=$(PWD)/fixtures ginkgo -r -nodes 1 -randomizeAllSpecs -randomizeSuites -flakeAttempts 2 -skipPackage integration ./**/plugin* ./plugin
+
+units-non-plugin :
 	@rm -f $(wildcard fixtures/plugins/*.exe)
 	@ginkgo version
-	CF_HOME=$(PWD)/fixtures ginkgo -r -nodes $(NODES) -randomizeAllSpecs -randomizeSuites -skipPackage integration,cf/ssh
+	CF_HOME=$(PWD)/fixtures ginkgo -r -nodes $(NODES) -randomizeAllSpecs -randomizeSuites \
+		-skipPackage integration,cf/ssh,plugin,cf/actors/plugin,cf/commands/plugin,cf/actors/plugin
 	CF_HOME=$(PWD)/fixtures ginkgo -r -nodes $(NODES) -randomizeAllSpecs -randomizeSuites -flakeAttempts 3 cf/ssh
+
+units-full: format vet lint build units-plugin units-non-plugin
 	@echo "\nSWEET SUITE SUCCESS"
 
 version :

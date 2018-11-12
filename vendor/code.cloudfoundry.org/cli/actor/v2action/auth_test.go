@@ -31,10 +31,10 @@ var _ = Describe("Auth Actions", func() {
 		)
 
 		JustBeforeEach(func() {
-			actualErr = actor.Authenticate("some-username", "some-password", grantType)
+			actualErr = actor.Authenticate("some-username", "some-password", "uaa", grantType)
 		})
 
-		Context("when no API errors occur", func() {
+		When("no API errors occur", func() {
 			BeforeEach(func() {
 				fakeUAAClient.AuthenticateReturns(
 					"some-access-token",
@@ -43,7 +43,7 @@ var _ = Describe("Auth Actions", func() {
 				)
 			})
 
-			Context("when the grant type is a password grant", func() {
+			When("the grant type is a password grant", func() {
 				BeforeEach(func() {
 					grantType = constant.GrantTypePassword
 				})
@@ -52,9 +52,10 @@ var _ = Describe("Auth Actions", func() {
 					Expect(actualErr).NotTo(HaveOccurred())
 
 					Expect(fakeUAAClient.AuthenticateCallCount()).To(Equal(1))
-					ID, secret, passedGrantType := fakeUAAClient.AuthenticateArgsForCall(0)
+					ID, secret, origin, passedGrantType := fakeUAAClient.AuthenticateArgsForCall(0)
 					Expect(ID).To(Equal("some-username"))
 					Expect(secret).To(Equal("some-password"))
+					Expect(origin).To(Equal("uaa"))
 					Expect(passedGrantType).To(Equal(constant.GrantTypePassword))
 
 					Expect(fakeConfig.SetTokenInformationCallCount()).To(Equal(1))
@@ -67,7 +68,7 @@ var _ = Describe("Auth Actions", func() {
 					Expect(fakeConfig.SetUAAGrantTypeCallCount()).To(Equal(0))
 				})
 
-				Context("when a previous user authenticated with a client grant type", func() {
+				When("a previous user authenticated with a client grant type", func() {
 					BeforeEach(func() {
 						fakeConfig.UAAGrantTypeReturns("client_credentials")
 					})
@@ -78,7 +79,7 @@ var _ = Describe("Auth Actions", func() {
 				})
 			})
 
-			Context("when the grant type is not password", func() {
+			When("the grant type is not password", func() {
 				BeforeEach(func() {
 					grantType = constant.GrantTypeClientCredentials
 				})
@@ -94,7 +95,7 @@ var _ = Describe("Auth Actions", func() {
 			})
 		})
 
-		Context("when an API error occurs", func() {
+		When("an API error occurs", func() {
 			var expectedErr error
 
 			BeforeEach(func() {

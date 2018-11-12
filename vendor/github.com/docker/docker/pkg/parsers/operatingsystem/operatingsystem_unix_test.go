@@ -1,6 +1,6 @@
 // +build linux freebsd
 
-package operatingsystem // import "github.com/docker/docker/pkg/parsers/operatingsystem"
+package operatingsystem
 
 import (
 	"io/ioutil"
