@@ -16,8 +16,10 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/handler"
 	k8sroute "code.cloudfoundry.org/eirini/k8s/route"
+	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/stager"
+	loggregator "code.cloudfoundry.org/go-loggregator"
 	"code.cloudfoundry.org/lager"
 
 	yaml "gopkg.in/yaml.v2"
@@ -46,7 +48,6 @@ func connect(cmd *cobra.Command, args []string) {
 	cfg := setConfigFromFile(path)
 
 	stager := initStager(cfg)
-
 	bifrost := initBifrost(cfg)
 
 	launchRouteEmitter(
@@ -54,6 +55,15 @@ func connect(cmd *cobra.Command, args []string) {
 		cfg.Properties.KubeNamespace,
 		cfg.Properties.NatsPassword,
 		cfg.Properties.NatsIP,
+	)
+
+	launchMetricsEmitter(
+		cfg.Properties.KubeNamespace,
+		"http://heapster.kube-system.svc.cluster.local/apis/metrics/v1alpha1",
+		cfg.Properties.LoggregatorAddress,
+		cfg.Properties.LoggregatorCAPath,
+		cfg.Properties.LoggregatorCertPath,
+		cfg.Properties.LoggregatorKeyPath,
 	)
 
 	handlerLogger := lager.NewLogger("handler")
@@ -167,6 +177,42 @@ func launchRouteEmitter(kubeConf, namespace, natsPassword, natsIP string) {
 	go re.Start()
 	go instanceInformer.Start(workChan)
 	go uriInformer.Start(workChan)
+}
+
+func launchMetricsEmitter(
+	namespace,
+	metricsSourceAddress,
+	loggregatorAddrs,
+	caPath, crtPath, keyPath string,
+) {
+	work := make(chan []metrics.Message, 20)
+
+	source := fmt.Sprintf("%s/namespaces/%s/pods", metricsSourceAddress, namespace)
+	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, source)
+
+	tlsConfig, err := loggregator.NewIngressTLSConfig(
+		caPath,
+		crtPath,
+		keyPath,
+	)
+	exitWithError(err)
+
+	loggregatorClient, err := loggregator.NewIngressClient(
+		tlsConfig,
+		loggregator.WithAddr(loggregatorAddrs),
+	)
+	exitWithError(err)
+	defer func() {
+		if err = loggregatorClient.CloseSend(); err != nil {
+			exitWithError(err)
+		}
+	}()
+
+	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
+	emitter := metrics.NewEmitter(work, &route.SimpleLoopScheduler{}, forwarder)
+
+	go collector.Start()
+	go emitter.Start()
 }
 
 func getStagerImage(cfg *eirini.Config) string {

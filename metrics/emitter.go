@@ -7,7 +7,7 @@ import (
 type Emitter struct {
 	scheduler route.TaskScheduler
 	forwarder Forwarder
-	work      <-chan Message
+	work      <-chan []Message
 }
 
 type Message struct {
@@ -27,7 +27,7 @@ type Forwarder interface {
 	Forward(Message)
 }
 
-func NewEmitter(work <-chan Message, scheduler route.TaskScheduler, forwarder Forwarder) *Emitter {
+func NewEmitter(work <-chan []Message, scheduler route.TaskScheduler, forwarder Forwarder) *Emitter {
 	return &Emitter{
 		scheduler: scheduler,
 		forwarder: forwarder,
@@ -37,8 +37,10 @@ func NewEmitter(work <-chan Message, scheduler route.TaskScheduler, forwarder Fo
 
 func (e *Emitter) Start() {
 	e.scheduler.Schedule(func() error {
-		message := <-e.work
-		e.forwarder.Forward(message)
+		messages := <-e.work
+		for _, m := range messages {
+			e.forwarder.Forward(m)
+		}
 		return nil
 	})
 }
