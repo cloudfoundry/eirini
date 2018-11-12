@@ -99,11 +99,16 @@ func (c *URIChangeInformer) sendRoutesForAllPods(work chan<- *route.Message, sta
 		return
 	}
 	for _, pod := range pods {
+		port, err := getContainerPort(&pod)
+		if err != nil {
+			c.logPodError("failed-to-get-pod-port", err, statefulset, &pod)
+			return
+		}
 		podRoute, err := route.NewMessage(
 			pod.Name,
 			pod.Name,
 			pod.Status.PodIP,
-			getContainerPort(&pod),
+			port,
 		)
 		if err != nil {
 			c.logPodError("failed-to-construct-a-route-message", err, statefulset, &pod)

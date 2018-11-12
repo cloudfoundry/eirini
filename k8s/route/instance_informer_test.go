@@ -137,6 +137,39 @@ var _ = Describe("InstanceChangeInformer", func() {
 		})
 	})
 
+	Context("When a updated pod is missing its port", func() {
+
+		BeforeEach(func() {
+			pod0 = createPod("mr-stateful-0")
+			pod1 = createPod("mr-stateful-1")
+		})
+
+		JustBeforeEach(func() {
+			pod0.Status = v1.PodStatus{Message: "where my port at?"}
+			pod0.Spec.Containers[0].Ports = []v1.ContainerPort{}
+			podWatcher.Modify(pod0)
+			pod1.Status = v1.PodStatus{PodIP: "50.60.70.80"}
+			podWatcher.Modify(pod1)
+		})
+
+		It("should not send a route for the pod", func() {
+			Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+				"Name": Equal("mr-stateful-0"),
+			}))))
+		})
+
+		It("should not prevent other routes to be sent", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+				Name:       "mr-stateful-1",
+				Routes:     []string{"mr-stateful.50.60.70.80.nip.io", "mr-bombastic.50.60.70.80.nip.io"},
+				InstanceID: "mr-stateful-1",
+				Address:    "50.60.70.80",
+				Port:       8080,
+				TLSPort:    0,
+			})))
+		})
+	})
+
 	Context("When an ip is assigned to pods", func() {
 
 		BeforeEach(func() {

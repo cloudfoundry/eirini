@@ -2,6 +2,7 @@ package route
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -60,11 +61,16 @@ func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<-
 		return
 	}
 
+	port, err := getContainerPort(deletedPod)
+	if err != nil {
+		c.logError("failed-to-get-pod-port", err, deletedPod)
+		return
+	}
 	routes, err := route.NewMessage(
 		deletedPod.Name,
 		deletedPod.Name,
 		deletedPod.Status.PodIP,
-		getContainerPort(deletedPod),
+		port,
 	)
 	if err != nil {
 		c.logError("failed-to-construct-a-route-message", err, deletedPod)
@@ -83,12 +89,17 @@ func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<-
 		c.logError("failed-to-get-user-defined-routes", err, updatedPod)
 		return
 	}
+	port, err := getContainerPort(updatedPod)
+	if err != nil {
+		c.logError("failed-to-get-pod-port", err, updatedPod)
+		return
+	}
 
 	routes, err := route.NewMessage(
 		updatedPod.Name,
 		updatedPod.Name,
 		updatedPod.Status.PodIP,
-		getContainerPort(updatedPod),
+		port,
 	)
 	if err != nil {
 		c.logError("failed-to-construct-a-route-message", err, updatedPod)
@@ -126,9 +137,14 @@ func (c *InstanceChangeInformer) getOwner(pod *v1.Pod) (*apps.StatefulSet, error
 	return c.Client.AppsV1().StatefulSets(c.Namespace).Get(ownerName, meta.GetOptions{})
 }
 
-func getContainerPort(pod *v1.Pod) uint32 {
-	port := pod.Spec.Containers[0].Ports[0].ContainerPort
-	return uint32(port)
+func getContainerPort(pod *v1.Pod) (uint32, error) {
+	ports := pod.Spec.Containers[0].Ports
+	if len(ports) == 0 {
+		return 0, errors.New("no ports available")
+	}
+
+	port := ports[0].ContainerPort
+	return uint32(port), nil
 }
 
 func decodeRoutes(s string) ([]string, error) {
