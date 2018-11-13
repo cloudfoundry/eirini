@@ -21,6 +21,11 @@ linters-settings:
 linters:
   enable-all: true
   disable:
+    - gocritic
+    - gochecknoglobals
+    - scopelint
+    - gochecknoinits
+    - typecheck
     - goconst
 
 issues:
