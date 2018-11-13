@@ -57,13 +57,27 @@ func connect(cmd *cobra.Command, args []string) {
 		cfg.Properties.NatsIP,
 	)
 
-	launchMetricsEmitter(
-		cfg.Properties.KubeNamespace,
-		"http://heapster.kube-system.svc.cluster.local/apis/metrics/v1alpha1",
-		cfg.Properties.LoggregatorAddress,
+	tlsConfig, err := loggregator.NewIngressTLSConfig(
 		cfg.Properties.LoggregatorCAPath,
 		cfg.Properties.LoggregatorCertPath,
 		cfg.Properties.LoggregatorKeyPath,
+	)
+	exitWithError(err)
+
+	loggregatorClient, err := loggregator.NewIngressClient(
+		tlsConfig,
+		loggregator.WithAddr(cfg.Properties.LoggregatorAddress),
+	)
+	exitWithError(err)
+	defer func() {
+		if err = loggregatorClient.CloseSend(); err != nil {
+			exitWithError(err)
+		}
+	}()
+	launchMetricsEmitter(
+		cfg.Properties.KubeNamespace,
+		"http://heapster.kube-system.svc.cluster.local/apis/metrics/v1alpha1",
+		loggregatorClient,
 	)
 
 	handlerLogger := lager.NewLogger("handler")
@@ -181,32 +195,13 @@ func launchRouteEmitter(kubeConf, namespace, natsPassword, natsIP string) {
 
 func launchMetricsEmitter(
 	namespace,
-	metricsSourceAddress,
-	loggregatorAddrs,
-	caPath, crtPath, keyPath string,
+	metricsSourceAddress string,
+	loggregatorClient *loggregator.IngressClient,
 ) {
 	work := make(chan []metrics.Message, 20)
 
 	source := fmt.Sprintf("%s/namespaces/%s/pods", metricsSourceAddress, namespace)
 	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, source)
-
-	tlsConfig, err := loggregator.NewIngressTLSConfig(
-		caPath,
-		crtPath,
-		keyPath,
-	)
-	exitWithError(err)
-
-	loggregatorClient, err := loggregator.NewIngressClient(
-		tlsConfig,
-		loggregator.WithAddr(loggregatorAddrs),
-	)
-	exitWithError(err)
-	defer func() {
-		if err = loggregatorClient.CloseSend(); err != nil {
-			exitWithError(err)
-		}
-	}()
 
 	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
 	emitter := metrics.NewEmitter(work, &route.SimpleLoopScheduler{}, forwarder)

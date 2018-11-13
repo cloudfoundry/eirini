@@ -151,12 +151,24 @@ var _ = Describe("Metrics", func() {
 }`)
 			})
 
-			It("should return an error", func() {
-				Expect(err).To(MatchError(ContainSubstring("couldn't parse memory usage unit")))
+			It("should return not an error", func() {
+				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should not send anything", func() {
-				Consistently(work).ShouldNot(Receive())
+			It("should send the metrics without a memory unit", func() {
+				Eventually(work).Should(Receive(Equal([]metrics.Message{
+					{
+						AppID:       "thor",
+						IndexID:     "9000",
+						CPU:         42,
+						Memory:      420,
+						MemoryUnit:  "",
+						MemoryQuota: 0,
+						Disk:        0,
+						DiskUnit:    "G",
+						DiskQuota:   0,
+					},
+				})))
 			})
 		})
 

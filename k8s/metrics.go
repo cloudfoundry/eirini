@@ -106,11 +106,11 @@ func convertMetricsList(metricList *PodMetricsList) ([]metrics.Message, error) {
 		if err != nil {
 			return nil, err
 		}
-		cpuValue, err := strconv.ParseFloat(container.Usage.CPU, 64)
+		cpuValue, _, err := splitUnit(container.Usage.CPU)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to convert cpu value")
 		}
-		memoryValue, unit, err := parseMemory(container)
+		memoryValue, unit, err := splitUnit(container.Usage.Memory)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to convert memory values")
 		}
@@ -121,10 +121,10 @@ func convertMetricsList(metricList *PodMetricsList) ([]metrics.Message, error) {
 			CPU:         cpuValue,
 			Memory:      memoryValue,
 			MemoryUnit:  unit,
-			MemoryQuota: 0,
-			Disk:        0,
+			MemoryQuota: 10,
+			Disk:        10,
 			DiskUnit:    "G",
-			DiskQuota:   0,
+			DiskQuota:   10,
 		})
 	}
 	return messages, nil
@@ -151,15 +151,16 @@ func parsePodName(podName string) (string, string, error) {
 	return podID, indexID, nil
 }
 
-func parseMemory(container *Container) (float64, string, error) {
+func splitUnit(metric string) (float64, string, error) {
 	re := regexp.MustCompile("[a-zA-Z]+")
-	match := re.FindStringSubmatch(container.Usage.Memory)
+	match := re.FindStringSubmatch(metric)
 	if len(match) == 0 {
-		return 0, "", fmt.Errorf("couldn't parse memory usage unit: %s", container.Usage.Memory)
+		f, err := strconv.ParseFloat(metric, 64)
+		return f, "", errors.Wrap(err, fmt.Sprintf("failed to parse metric %s", metric))
 	}
 
 	unit := match[0]
-	valueStr := strings.Trim(container.Usage.Memory, unit)
+	valueStr := strings.Trim(metric, unit)
 
 	value, err := strconv.ParseFloat(valueStr, 64)
 	return value, unit, err
