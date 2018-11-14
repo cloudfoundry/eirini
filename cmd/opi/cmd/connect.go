@@ -75,8 +75,7 @@ func connect(cmd *cobra.Command, args []string) {
 		}
 	}()
 	launchMetricsEmitter(
-		cfg.Properties.KubeNamespace,
-		"http://heapster.kube-system.svc.cluster.local/apis/metrics/v1alpha1",
+		fmt.Sprintf("%s/namespaces/%s/pods", cfg.Properties.MetricsSourceAddress, cfg.Properties.KubeNamespace),
 		loggregatorClient,
 	)
 
@@ -193,14 +192,9 @@ func launchRouteEmitter(kubeConf, namespace, natsPassword, natsIP string) {
 	go uriInformer.Start(workChan)
 }
 
-func launchMetricsEmitter(
-	namespace,
-	metricsSourceAddress string,
-	loggregatorClient *loggregator.IngressClient,
-) {
+func launchMetricsEmitter(source string, loggregatorClient *loggregator.IngressClient) {
 	work := make(chan []metrics.Message, 20)
 
-	source := fmt.Sprintf("%s/namespaces/%s/pods", metricsSourceAddress, namespace)
 	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, source)
 
 	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)

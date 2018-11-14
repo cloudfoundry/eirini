@@ -83,10 +83,10 @@ var _ = Describe("Metrics", func() {
 					CPU:         42,
 					Memory:      420,
 					MemoryUnit:  "G",
-					MemoryQuota: 0,
-					Disk:        0,
+					MemoryQuota: 10,
+					Disk:        10,
 					DiskUnit:    "G",
-					DiskQuota:   0,
+					DiskQuota:   10,
 				},
 			})))
 		})
@@ -163,10 +163,10 @@ var _ = Describe("Metrics", func() {
 						CPU:         42,
 						Memory:      420,
 						MemoryUnit:  "",
-						MemoryQuota: 0,
-						Disk:        0,
+						MemoryQuota: 10,
+						Disk:        10,
 						DiskUnit:    "G",
-						DiskQuota:   0,
+						DiskQuota:   10,
 					},
 				})))
 			})
@@ -201,10 +201,10 @@ var _ = Describe("Metrics", func() {
 						CPU:         42,
 						Memory:      420,
 						MemoryUnit:  "M",
-						MemoryQuota: 0,
-						Disk:        0,
+						MemoryQuota: 10,
+						Disk:        10,
 						DiskUnit:    "G",
-						DiskQuota:   0,
+						DiskQuota:   10,
 					},
 				})))
 			})
