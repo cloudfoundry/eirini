@@ -26,9 +26,7 @@ var _ = Describe("Emitter", func() {
 	)
 
 	assertPublishedRoutes := func(expectedSubject, route string, callIndex int) {
-		Eventually(func() int {
-			return publisher.PublishCallCount()
-		}, timeout).Should(Equal(publishCount))
+		Eventually(publisher.PublishCallCount, timeout).Should(Equal(publishCount))
 
 		actualSubject, routeJSON := publisher.PublishArgsForCall(callIndex)
 		Expect(expectedSubject).To(Equal(actualSubject))

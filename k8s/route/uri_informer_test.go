@@ -213,9 +213,7 @@ var _ = Describe("URIChangeInformer", func() {
 		})
 
 		It("should print an error", func() {
-			Eventually(func() []string {
-				return logger.LogMessages()
-			}, routeMessageTimeout).Should(ContainElement("test.failed-to-get-child-pods"))
+			Eventually(logger.LogMessages, routeMessageTimeout).Should(ContainElement("test.failed-to-get-child-pods"))
 		})
 	})
 

@@ -98,7 +98,7 @@ func collectMetrics(source string) (*PodMetricsList, error) {
 func convertMetricsList(metricList *PodMetricsList) ([]metrics.Message, error) {
 	messages := []metrics.Message{}
 	for _, metric := range metricList.Items {
-		if len(metric.Containers) <= 0 {
+		if len(metric.Containers) == 0 {
 			continue
 		}
 		container := metric.Containers[0]

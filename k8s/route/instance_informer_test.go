@@ -235,9 +235,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 			})
 
 			It("should log the error", func() {
-				Eventually(func() []string {
-					return logger.LogMessages()
-				}, routeMessageTimeout).Should(ContainElement("test.unexpected-pod-owner"))
+				Eventually(logger.LogMessages, routeMessageTimeout).Should(ContainElement("test.unexpected-pod-owner"))
 			})
 		})
 	})
@@ -310,9 +308,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 			})
 
 			It("should log the error", func() {
-				Eventually(func() []string {
-					return logger.LogMessages()
-				}, routeMessageTimeout).Should(ContainElement("test.unexpected-pod-owner"))
+				Eventually(logger.LogMessages, routeMessageTimeout).Should(ContainElement("test.unexpected-pod-owner"))
 			})
 		})
 	})
