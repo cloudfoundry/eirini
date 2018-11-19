@@ -322,14 +322,34 @@ func getStatefulSetNames(statefulSets []v1beta2.StatefulSet) []string {
 
 func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	envs := MapToEnvVar(lrp.Env)
-	envs = append(envs, v1.EnvVar{
-		Name: "POD_NAME",
-		ValueFrom: &v1.EnvVarSource{
-			FieldRef: &v1.ObjectFieldSelector{
-				FieldPath: "metadata.name",
+	fieldEnvs := []v1.EnvVar{
+		{
+			Name: "POD_NAME",
+			ValueFrom: &v1.EnvVarSource{
+				FieldRef: &v1.ObjectFieldSelector{
+					FieldPath: "metadata.name",
+				},
 			},
 		},
-	})
+		{
+			Name: "CF_INSTANCE_IP",
+			ValueFrom: &v1.EnvVarSource{
+				FieldRef: &v1.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
+		},
+		{
+			Name: "CF_INSTANCE_INTERNAL_IP",
+			ValueFrom: &v1.EnvVarSource{
+				FieldRef: &v1.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
+		},
+	}
+
+	envs = append(envs, fieldEnvs...)
 
 	targetInstances := int32(lrp.TargetInstances)
 	statefulSet := &v1beta2.StatefulSet{
