@@ -96,19 +96,7 @@ func (b *Bifrost) Stop(ctx context.Context, guid string) error {
 }
 
 func (b *Bifrost) GetInstances(ctx context.Context, guid string) ([]*cf.Instance, error) {
-	lrp, err := b.Desirer.Get(guid)
-	if err != nil {
-		b.Logger.Error("failed-to-get-lrp", err, lager.Data{"process-guid": guid})
-		return []*cf.Instance{}, err
-	}
-
-	result := []*cf.Instance{}
-	for i := 0; i < lrp.RunningInstances; i++ {
-		instance := &cf.Instance{Index: i, State: cf.RunningState}
-		result = append(result, instance)
-	}
-
-	return result, nil
+	return b.Desirer.GetInstances(guid)
 }
 
 func getURIs(update models.UpdateDesiredLRPRequest) ([]string, error) {

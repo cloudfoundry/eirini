@@ -42,5 +42,6 @@ type GetInstancesResponse struct {
 
 type Instance struct {
 	Index int    `json:"index"`
+	Since int64  `json:"since"`
 	State string `json:"state"`
 }

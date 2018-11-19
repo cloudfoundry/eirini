@@ -37,10 +37,8 @@ var _ = Describe("emitter", func() {
 					IndexID:     "0",
 					CPU:         123.4,
 					Memory:      123.4,
-					MemoryUnit:  "Mb",
 					MemoryQuota: 1000.4,
 					Disk:        10.1,
-					DiskUnit:    "Gb",
 					DiskQuota:   250.5,
 				},
 				{
@@ -48,10 +46,8 @@ var _ = Describe("emitter", func() {
 					IndexID:     "1",
 					CPU:         234.1,
 					Memory:      675.4,
-					MemoryUnit:  "Mb",
 					MemoryQuota: 1000.4,
 					Disk:        10.1,
-					DiskUnit:    "Gb",
 					DiskQuota:   250.5,
 				},
 			}
@@ -78,10 +74,8 @@ var _ = Describe("emitter", func() {
 				IndexID:     "0",
 				CPU:         123.4,
 				Memory:      123.4,
-				MemoryUnit:  "Mb",
 				MemoryQuota: 1000.4,
 				Disk:        10.1,
-				DiskUnit:    "Gb",
 				DiskQuota:   250.5,
 			}))
 		})
@@ -93,10 +87,8 @@ var _ = Describe("emitter", func() {
 				IndexID:     "1",
 				CPU:         234.1,
 				Memory:      675.4,
-				MemoryUnit:  "Mb",
 				MemoryQuota: 1000.4,
 				Disk:        10.1,
-				DiskUnit:    "Gb",
 				DiskQuota:   250.5,
 			}))
 		})

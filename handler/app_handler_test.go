@@ -360,8 +360,8 @@ var _ = Describe("AppHandler", func() {
 			path = "/apps/guid_1234/instances"
 
 			instances := []*cf.Instance{
-				{Index: 0, State: "RUNNING"},
-				{Index: 1, State: "RUNNING"},
+				{Index: 0, Since: 123, State: "RUNNING"},
+				{Index: 1, Since: 456, State: "RUNNING"},
 			}
 			bifrost.GetInstancesReturns(instances, nil)
 		})
@@ -389,10 +389,12 @@ var _ = Describe("AppHandler", func() {
 					"instances": [
 						{
 							"index": 0,
+							"since": 123,
 							"state": "RUNNING"
 						},
 						{
 							"index": 1,
+							"since": 456,
 							"state": "RUNNING"
 						}
 					]

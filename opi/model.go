@@ -1,5 +1,7 @@
 package opi
 
+import "code.cloudfoundry.org/eirini/models/cf"
+
 // An LRP, or long-running-process, is a stateless process
 // where the scheduler should attempt to keep N copies running,
 // killing and recreating as needed to maintain that guarantee
@@ -34,6 +36,7 @@ type Desirer interface {
 	Desire(lrp *LRP) error
 	List() ([]*LRP, error)
 	Get(name string) (*LRP, error)
+	GetInstances(name string) ([]*cf.Instance, error)
 	Update(lrp *LRP) error
 	Stop(name string) error
 }

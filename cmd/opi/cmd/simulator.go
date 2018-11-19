@@ -67,6 +67,10 @@ func (d *DesirerSimulator) Update(updated *opi.LRP) error {
 	return nil
 }
 
+func (d *DesirerSimulator) GetInstances(name string) ([]*cf.Instance, error) {
+	return []*cf.Instance{}, nil
+}
+
 func (d *DesirerSimulator) Stop(guid string) error {
 	panic("not implemented")
 }

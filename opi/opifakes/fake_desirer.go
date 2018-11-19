@@ -4,6 +4,7 @@ package opifakes
 import (
 	"sync"
 
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 )
 
@@ -41,6 +42,19 @@ type FakeDesirer struct {
 	}
 	getReturnsOnCall map[int]struct {
 		result1 *opi.LRP
+		result2 error
+	}
+	GetInstancesStub        func(name string) ([]*cf.Instance, error)
+	getInstancesMutex       sync.RWMutex
+	getInstancesArgsForCall []struct {
+		name string
+	}
+	getInstancesReturns struct {
+		result1 []*cf.Instance
+		result2 error
+	}
+	getInstancesReturnsOnCall map[int]struct {
+		result1 []*cf.Instance
 		result2 error
 	}
 	UpdateStub        func(lrp *opi.LRP) error
@@ -211,6 +225,57 @@ func (fake *FakeDesirer) GetReturnsOnCall(i int, result1 *opi.LRP, result2 error
 	}{result1, result2}
 }
 
+func (fake *FakeDesirer) GetInstances(name string) ([]*cf.Instance, error) {
+	fake.getInstancesMutex.Lock()
+	ret, specificReturn := fake.getInstancesReturnsOnCall[len(fake.getInstancesArgsForCall)]
+	fake.getInstancesArgsForCall = append(fake.getInstancesArgsForCall, struct {
+		name string
+	}{name})
+	fake.recordInvocation("GetInstances", []interface{}{name})
+	fake.getInstancesMutex.Unlock()
+	if fake.GetInstancesStub != nil {
+		return fake.GetInstancesStub(name)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getInstancesReturns.result1, fake.getInstancesReturns.result2
+}
+
+func (fake *FakeDesirer) GetInstancesCallCount() int {
+	fake.getInstancesMutex.RLock()
+	defer fake.getInstancesMutex.RUnlock()
+	return len(fake.getInstancesArgsForCall)
+}
+
+func (fake *FakeDesirer) GetInstancesArgsForCall(i int) string {
+	fake.getInstancesMutex.RLock()
+	defer fake.getInstancesMutex.RUnlock()
+	return fake.getInstancesArgsForCall[i].name
+}
+
+func (fake *FakeDesirer) GetInstancesReturns(result1 []*cf.Instance, result2 error) {
+	fake.GetInstancesStub = nil
+	fake.getInstancesReturns = struct {
+		result1 []*cf.Instance
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeDesirer) GetInstancesReturnsOnCall(i int, result1 []*cf.Instance, result2 error) {
+	fake.GetInstancesStub = nil
+	if fake.getInstancesReturnsOnCall == nil {
+		fake.getInstancesReturnsOnCall = make(map[int]struct {
+			result1 []*cf.Instance
+			result2 error
+		})
+	}
+	fake.getInstancesReturnsOnCall[i] = struct {
+		result1 []*cf.Instance
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeDesirer) Update(lrp *opi.LRP) error {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
@@ -316,6 +381,8 @@ func (fake *FakeDesirer) Invocations() map[string][][]interface{} {
 	defer fake.listMutex.RUnlock()
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
+	fake.getInstancesMutex.RLock()
+	defer fake.getInstancesMutex.RUnlock()
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	fake.stopMutex.RLock()

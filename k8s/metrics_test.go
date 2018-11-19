@@ -54,7 +54,7 @@ var _ = Describe("Metrics", func() {
 			"metadata": {"name": "thor-9000", "namespace": "asgard"},
 			"containers": [{
 				"name": "bran-the-builder-9000",
-				"usage": {"cpu": "42", "memory": "420G"}
+				"usage": {"cpu": "420000m", "memory": "420Ki"}
 			}]
 		}
 	]
@@ -80,12 +80,10 @@ var _ = Describe("Metrics", func() {
 				{
 					AppID:       "thor",
 					IndexID:     "9000",
-					CPU:         42,
-					Memory:      420,
-					MemoryUnit:  "G",
+					CPU:         420,
+					Memory:      430080,
 					MemoryQuota: 10,
 					Disk:        10,
-					DiskUnit:    "G",
 					DiskQuota:   10,
 				},
 			})))
@@ -144,7 +142,7 @@ var _ = Describe("Metrics", func() {
 			"metadata": {"name": "thor-9000", "namespace": "asgard"},
 			"containers": [{
 				"name": "bran-the-builder-9000",
-				"usage": {"cpu": "42", "memory": "420"}
+				"usage": {"cpu": "420000m", "memory": "420"}
 			}]
 		}
 	]
@@ -155,17 +153,15 @@ var _ = Describe("Metrics", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should send the metrics without a memory unit", func() {
+			It("should send the received metrics", func() {
 				Eventually(work).Should(Receive(Equal([]metrics.Message{
 					{
 						AppID:       "thor",
 						IndexID:     "9000",
-						CPU:         42,
-						Memory:      420,
-						MemoryUnit:  "",
+						CPU:         420,
+						Memory:      430080,
 						MemoryQuota: 10,
 						Disk:        10,
-						DiskUnit:    "G",
 						DiskQuota:   10,
 					},
 				})))
@@ -182,7 +178,7 @@ var _ = Describe("Metrics", func() {
 			"metadata": {"name": "thor-thunder0", "namespace": "asgard"},
 			"containers": [{
 				"name": "bran-the-builder",
-				"usage": {"cpu": "42", "memory": "420M"}
+				"usage": {"cpu": "420000m", "memory": "420M"}
 			}]
 		}
 	]
@@ -198,12 +194,10 @@ var _ = Describe("Metrics", func() {
 					{
 						AppID:       "thor",
 						IndexID:     "0",
-						CPU:         42,
-						Memory:      420,
-						MemoryUnit:  "M",
+						CPU:         420,
+						Memory:      430080,
 						MemoryQuota: 10,
 						Disk:        10,
-						DiskUnit:    "G",
 						DiskQuota:   10,
 					},
 				})))

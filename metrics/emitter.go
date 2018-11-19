@@ -16,10 +16,8 @@ type Message struct {
 	CPU         float64
 	Memory      float64
 	MemoryQuota float64
-	MemoryUnit  string
 	Disk        float64
 	DiskQuota   float64
-	DiskUnit    string
 }
 
 //go:generate counterfeiter . Forwarder

@@ -1,6 +1,10 @@
 package k8s
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
+
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
@@ -75,6 +79,35 @@ func (m *StatefulSetDesirer) Get(appName string) (*opi.LRP, error) {
 	lrp := statefulSetToLRP(statefulSet)
 
 	return lrp, nil
+}
+
+func (m *StatefulSetDesirer) GetInstances(appName string) ([]*cf.Instance, error) {
+	pods, err := m.Client.CoreV1().Pods(m.Namespace).List(meta.ListOptions{LabelSelector: "name=" + appName})
+	if err != nil {
+		return []*cf.Instance{}, err
+	}
+
+	instances := []*cf.Instance{}
+	for _, pod := range pods.Items {
+		index, err := parsePodIndex(pod.Name)
+		if err != nil {
+			return []*cf.Instance{}, err
+		}
+
+		since := int64(0)
+		if pod.Status.StartTime != nil {
+			since = pod.Status.StartTime.Unix()
+		}
+
+		instance := opi.Instance{
+			Since: since,
+			Index: index,
+			State: cf.RunningState,
+		}
+		instances = append(instances, &instance)
+	}
+
+	return instances, nil
 }
 
 func (m *StatefulSetDesirer) statefulSets() types.StatefulSetInterface {
@@ -185,4 +218,14 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
 
 	return statefulSet
+}
+
+func parsePodIndex(podName string) (int, error) {
+	sl := strings.Split(podName, "-")
+
+	if len(sl) <= 1 {
+		return 0, fmt.Errorf("Could not parse pod name from %s", podName)
+	}
+
+	return strconv.Atoi(sl[len(sl)-1])
 }

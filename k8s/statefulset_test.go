@@ -2,6 +2,7 @@ package k8s_test
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"code.cloudfoundry.org/eirini"
@@ -145,7 +146,6 @@ var _ = Describe("Statefulset", func() {
 		Context("when the app exists", func() {
 
 			var (
-				err     error
 				appName string
 			)
 
@@ -204,7 +204,6 @@ var _ = Describe("Statefulset", func() {
 		Context("when the app does not exist", func() {
 
 			var (
-				err     error
 				appName string
 			)
 
@@ -217,7 +216,7 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			It("should not create the app", func() {
-				_, err := client.AppsV1beta2().StatefulSets(namespace).Get(appName, meta.GetOptions{})
+				_, err = client.AppsV1beta2().StatefulSets(namespace).Get(appName, meta.GetOptions{})
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -227,7 +226,6 @@ var _ = Describe("Statefulset", func() {
 
 		var (
 			actualLRPs []*opi.LRP
-			err        error
 		)
 
 		BeforeEach(func() {
@@ -284,13 +282,13 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			for _, l := range lrps {
-				_, err := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l))
+				_, err = client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l))
 				Expect(err).ToNot(HaveOccurred())
 			}
 		})
 
 		It("deletes the statefulSet", func() {
-			err := statefulSetDesirer.Stop("odin")
+			err = statefulSetDesirer.Stop("odin")
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(listStatefulSets, timeout).Should(HaveLen(2))
@@ -299,14 +297,69 @@ var _ = Describe("Statefulset", func() {
 
 		Context("when the statefulSet does not exist", func() {
 
-			var err error
-
 			JustBeforeEach(func() {
 				err = statefulSetDesirer.Stop("test-app-where-are-you")
 			})
 
 			It("returns an error", func() {
 				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
+
+	Context("Get LRP instances", func() {
+
+		const lrpName = "odin"
+
+		var (
+			instances []*opi.Instance
+			pod1      *v1.Pod
+			pod2      *v1.Pod
+		)
+
+		BeforeEach(func() {
+			since1 := meta.Unix(123, 0)
+			pod1 = toPod(lrpName, 0, &since1)
+			since2 := meta.Unix(456, 0)
+			pod2 = toPod(lrpName, 1, &since2)
+		})
+
+		JustBeforeEach(func() {
+			_, err = client.CoreV1().Pods(namespace).Create(pod1)
+			Expect(err).ToNot(HaveOccurred())
+
+			_, err = client.CoreV1().Pods(namespace).Create(pod2)
+			Expect(err).ToNot(HaveOccurred())
+
+			instances, err = statefulSetDesirer.GetInstances(lrpName)
+		})
+
+		It("should not return an error", func() {
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return the correct number of instances", func() {
+			Expect(instances).To(HaveLen(2))
+			Expect(instances[0]).To(Equal(toInstance(0, 123)))
+			Expect(instances[1]).To(Equal(toInstance(1, 456)))
+		})
+
+		Context("time since creation is not available yet", func() {
+
+			BeforeEach(func() {
+				pod1 = toPod(lrpName, 0, nil)
+				since2 := meta.Unix(456, 0)
+				pod2 = toPod(lrpName, 1, &since2)
+			})
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return a default value", func() {
+				Expect(instances).To(HaveLen(2))
+				Expect(instances[0]).To(Equal(toInstance(0, 0)))
+				Expect(instances[1]).To(Equal(toInstance(1, 456)))
 			})
 		})
 	})
@@ -318,6 +371,25 @@ func getStatefulSetNames(statefulSets []v1beta2.StatefulSet) []string {
 		statefulSetNames = append(statefulSetNames, d.Name)
 	}
 	return statefulSetNames
+}
+
+func toPod(lrpName string, index int, time *meta.Time) *v1.Pod {
+	pod := v1.Pod{}
+	pod.Name = lrpName + "-" + strconv.Itoa(index)
+	pod.Labels = map[string]string{
+		"name": lrpName,
+	}
+
+	pod.Status.StartTime = time
+	return &pod
+}
+
+func toInstance(index int, since int64) *cf.Instance {
+	return &cf.Instance{
+		Index: index,
+		Since: since,
+		State: cf.RunningState,
+	}
 }
 
 func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {

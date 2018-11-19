@@ -436,21 +436,19 @@ var _ = Describe("Bifrost", func() {
 
 	Context("Get all instances of an app", func() {
 		var (
-			lrp       *opi.LRP
-			instances []*cf.Instance
+			instances         []*cf.Instance
+			expectedInstances []*cf.Instance
 		)
 
 		BeforeEach(func() {
 			opiClient = new(opifakes.FakeDesirer)
 			lager = lagertest.NewTestLogger("bifrost-get-instances-test")
-
-			lrp = &opi.LRP{
-				Name:             "my-guid-420",
-				TargetInstances:  3,
-				RunningInstances: 2,
+			expectedInstances = []*cf.Instance{
+				{Index: 0, State: cf.RunningState},
+				{Index: 1, State: cf.RunningState},
 			}
 
-			opiClient.GetReturns(lrp, nil)
+			opiClient.GetInstancesReturns(expectedInstances, nil)
 		})
 
 		JustBeforeEach(func() {
@@ -462,9 +460,9 @@ var _ = Describe("Bifrost", func() {
 			instances, err = bfrst.GetInstances(context.Background(), "my-guid-420")
 		})
 
-		It("should get the app from Desirer", func() {
-			Expect(opiClient.GetCallCount()).To(Equal(1))
-			guid := opiClient.GetArgsForCall(0)
+		It("should get the app instances from Desirer", func() {
+			Expect(opiClient.GetInstancesCallCount()).To(Equal(1))
+			guid := opiClient.GetInstancesArgsForCall(0)
 			Expect(guid).To(Equal("my-guid-420"))
 		})
 
@@ -473,15 +471,12 @@ var _ = Describe("Bifrost", func() {
 		})
 
 		It("should return all running instances", func() {
-			Expect(instances).To(ConsistOf(
-				&cf.Instance{Index: 0, State: cf.RunningState},
-				&cf.Instance{Index: 1, State: cf.RunningState},
-			))
+			Expect(instances).To(Equal(expectedInstances))
 		})
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				opiClient.GetReturns(nil, errors.New("not found"))
+				opiClient.GetInstancesReturns([]*cf.Instance{}, errors.New("not found"))
 			})
 
 			It("returns an error", func() {
