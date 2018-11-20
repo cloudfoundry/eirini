@@ -3,6 +3,7 @@ package bifrost
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -96,7 +97,21 @@ func (b *Bifrost) Stop(ctx context.Context, guid string) error {
 }
 
 func (b *Bifrost) GetInstances(ctx context.Context, guid string) ([]*cf.Instance, error) {
-	return b.Desirer.GetInstances(guid)
+	opiInstances, err := b.Desirer.GetInstances(guid)
+	if err != nil {
+		return []*cf.Instance{}, errors.Wrap(err, fmt.Sprintf("failed to get instances for app with guid: %s", guid))
+	}
+
+	cfInstances := make([]*cf.Instance, 0, len(opiInstances))
+	for _, i := range opiInstances {
+		cfInstances = append(cfInstances, &cf.Instance{
+			Since: i.Since,
+			Index: i.Index,
+			State: i.State,
+		})
+	}
+
+	return cfInstances, nil
 }
 
 func getURIs(update models.UpdateDesiredLRPRequest) ([]string, error) {

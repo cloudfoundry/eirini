@@ -4,7 +4,6 @@ package opifakes
 import (
 	"sync"
 
-	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 )
 
@@ -44,17 +43,17 @@ type FakeDesirer struct {
 		result1 *opi.LRP
 		result2 error
 	}
-	GetInstancesStub        func(name string) ([]*cf.Instance, error)
+	GetInstancesStub        func(name string) ([]*opi.Instance, error)
 	getInstancesMutex       sync.RWMutex
 	getInstancesArgsForCall []struct {
 		name string
 	}
 	getInstancesReturns struct {
-		result1 []*cf.Instance
+		result1 []*opi.Instance
 		result2 error
 	}
 	getInstancesReturnsOnCall map[int]struct {
-		result1 []*cf.Instance
+		result1 []*opi.Instance
 		result2 error
 	}
 	UpdateStub        func(lrp *opi.LRP) error
@@ -225,7 +224,7 @@ func (fake *FakeDesirer) GetReturnsOnCall(i int, result1 *opi.LRP, result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeDesirer) GetInstances(name string) ([]*cf.Instance, error) {
+func (fake *FakeDesirer) GetInstances(name string) ([]*opi.Instance, error) {
 	fake.getInstancesMutex.Lock()
 	ret, specificReturn := fake.getInstancesReturnsOnCall[len(fake.getInstancesArgsForCall)]
 	fake.getInstancesArgsForCall = append(fake.getInstancesArgsForCall, struct {
@@ -254,24 +253,24 @@ func (fake *FakeDesirer) GetInstancesArgsForCall(i int) string {
 	return fake.getInstancesArgsForCall[i].name
 }
 
-func (fake *FakeDesirer) GetInstancesReturns(result1 []*cf.Instance, result2 error) {
+func (fake *FakeDesirer) GetInstancesReturns(result1 []*opi.Instance, result2 error) {
 	fake.GetInstancesStub = nil
 	fake.getInstancesReturns = struct {
-		result1 []*cf.Instance
+		result1 []*opi.Instance
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeDesirer) GetInstancesReturnsOnCall(i int, result1 []*cf.Instance, result2 error) {
+func (fake *FakeDesirer) GetInstancesReturnsOnCall(i int, result1 []*opi.Instance, result2 error) {
 	fake.GetInstancesStub = nil
 	if fake.getInstancesReturnsOnCall == nil {
 		fake.getInstancesReturnsOnCall = make(map[int]struct {
-			result1 []*cf.Instance
+			result1 []*opi.Instance
 			result2 error
 		})
 	}
 	fake.getInstancesReturnsOnCall[i] = struct {
-		result1 []*cf.Instance
+		result1 []*opi.Instance
 		result2 error
 	}{result1, result2}
 }

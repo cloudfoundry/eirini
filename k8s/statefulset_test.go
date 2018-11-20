@@ -384,8 +384,8 @@ func toPod(lrpName string, index int, time *meta.Time) *v1.Pod {
 	return &pod
 }
 
-func toInstance(index int, since int64) *cf.Instance {
-	return &cf.Instance{
+func toInstance(index int, since int64) *opi.Instance {
+	return &opi.Instance{
 		Index: index,
 		Since: since,
 		State: cf.RunningState,

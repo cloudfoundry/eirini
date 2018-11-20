@@ -81,17 +81,18 @@ func (m *StatefulSetDesirer) Get(appName string) (*opi.LRP, error) {
 	return lrp, nil
 }
 
-func (m *StatefulSetDesirer) GetInstances(appName string) ([]*cf.Instance, error) {
-	pods, err := m.Client.CoreV1().Pods(m.Namespace).List(meta.ListOptions{LabelSelector: "name=" + appName})
+func (m *StatefulSetDesirer) GetInstances(appName string) ([]*opi.Instance, error) {
+	options := meta.ListOptions{LabelSelector: fmt.Sprintf("name=%s", appName)}
+	pods, err := m.Client.CoreV1().Pods(m.Namespace).List(options)
 	if err != nil {
-		return []*cf.Instance{}, err
+		return []*opi.Instance{}, err
 	}
 
-	instances := []*cf.Instance{}
+	instances := []*opi.Instance{}
 	for _, pod := range pods.Items {
 		index, err := parsePodIndex(pod.Name)
 		if err != nil {
-			return []*cf.Instance{}, err
+			return []*opi.Instance{}, err
 		}
 
 		since := int64(0)
