@@ -44,3 +44,13 @@ type Instance struct {
 	Since int64  `json:"since"`
 	State string `json:"state"`
 }
+
+type AppCrashedRequest struct {
+	Instance        string `json:"instance"`
+	Index           int    `json:"index"`
+	Reason          string `json:"reason"`
+	ExitStatus      int    `json:"exit_status,omitempty"`
+	ExitDescription string `json:"exit_description,omitempty"`
+	CrashCount      int    `json:"crash_count"`
+	CrashTimestamp  int64  `json:"crash_timestamp"`
+}
