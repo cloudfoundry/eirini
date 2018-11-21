@@ -309,8 +309,6 @@ var _ = Describe("Statefulset", func() {
 
 	Context("Get LRP instances", func() {
 
-		const lrpName = "odin"
-
 		var (
 			instances []*opi.Instance
 			pod1      *v1.Pod
@@ -319,9 +317,9 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			since1 := meta.Unix(123, 0)
-			pod1 = toPod(lrpName, 0, &since1)
+			pod1 = toPod("odin", 0, &since1)
 			since2 := meta.Unix(456, 0)
-			pod2 = toPod(lrpName, 1, &since2)
+			pod2 = toPod("odin", 1, &since2)
 		})
 
 		JustBeforeEach(func() {
@@ -331,7 +329,7 @@ var _ = Describe("Statefulset", func() {
 			_, err = client.CoreV1().Pods(namespace).Create(pod2)
 			Expect(err).ToNot(HaveOccurred())
 
-			instances, err = statefulSetDesirer.GetInstances(lrpName)
+			instances, err = statefulSetDesirer.GetInstances("odin")
 		})
 
 		It("should not return an error", func() {
@@ -340,16 +338,20 @@ var _ = Describe("Statefulset", func() {
 
 		It("should return the correct number of instances", func() {
 			Expect(instances).To(HaveLen(2))
-			Expect(instances[0]).To(Equal(toInstance(0, 123)))
-			Expect(instances[1]).To(Equal(toInstance(1, 456)))
+			Expect(instances[0]).To(Equal(toInstance(0, 123000000000)))
+			Expect(instances[1]).To(Equal(toInstance(1, 456000000000)))
 		})
 
 		Context("time since creation is not available yet", func() {
 
 			BeforeEach(func() {
-				pod1 = toPod(lrpName, 0, nil)
+				pod1 = toPod("mimir", 0, nil)
 				since2 := meta.Unix(456, 0)
-				pod2 = toPod(lrpName, 1, &since2)
+				pod2 = toPod("mimir", 1, &since2)
+			})
+
+			JustBeforeEach(func() {
+				instances, err = statefulSetDesirer.GetInstances("mimir")
 			})
 
 			It("should not return an error", func() {
@@ -359,7 +361,7 @@ var _ = Describe("Statefulset", func() {
 			It("should return a default value", func() {
 				Expect(instances).To(HaveLen(2))
 				Expect(instances[0]).To(Equal(toInstance(0, 0)))
-				Expect(instances[1]).To(Equal(toInstance(1, 456)))
+				Expect(instances[1]).To(Equal(toInstance(1, 456000000000)))
 			})
 		})
 	})

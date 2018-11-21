@@ -97,7 +97,7 @@ func (m *StatefulSetDesirer) GetInstances(appName string) ([]*opi.Instance, erro
 
 		since := int64(0)
 		if pod.Status.StartTime != nil {
-			since = pod.Status.StartTime.Unix()
+			since = pod.Status.StartTime.UnixNano()
 		}
 
 		instance := opi.Instance{
