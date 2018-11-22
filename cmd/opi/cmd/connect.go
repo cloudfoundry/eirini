@@ -14,7 +14,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/handler"
+	k8sevent "code.cloudfoundry.org/eirini/k8s/informers/event"
 	k8sroute "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route"
@@ -26,6 +28,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/tps/cc_client"
 	"github.com/JulzDiverse/cfclient"
 	nats "github.com/nats-io/go-nats"
 	"github.com/spf13/cobra"
@@ -77,6 +80,15 @@ func connect(cmd *cobra.Command, args []string) {
 	launchMetricsEmitter(
 		fmt.Sprintf("%s/namespaces/%s/pods", cfg.Properties.MetricsSourceAddress, cfg.Properties.KubeNamespace),
 		loggregatorClient,
+	)
+
+	launchEventReporter(
+		cfg.Properties.CcAPI,
+		cfg.Properties.CCCAPath,
+		cfg.Properties.CCCertPath,
+		cfg.Properties.CCKeyPath,
+		cfg.Properties.KubeConfig,
+		cfg.Properties.KubeNamespace,
 	)
 
 	handlerLogger := lager.NewLogger("handler")
@@ -202,6 +214,33 @@ func launchMetricsEmitter(source string, loggregatorClient *loggregator.IngressC
 
 	go collector.Start()
 	go emitter.Start()
+}
+
+func launchEventReporter(uri, ca, cert, key, kubeConf, namespace string) {
+	work := make(chan events.CrashReport, 20)
+	tlsConf, err := cc_client.NewTLSConfig(cert, key, ca)
+	exitWithError(err)
+
+	client := cc_client.NewCcClient(uri, tlsConf)
+	reporter := events.NewCrashReporter(work, &route.SimpleLoopScheduler{}, client, lager.NewLogger("instance-crash-reporter"))
+
+	config, err := clientcmd.BuildConfigFromFlags("", kubeConf)
+	exitWithError(err)
+
+	clientset, err := kubernetes.NewForConfig(config)
+	exitWithError(err)
+
+	crashInformer := k8sevent.NewCrashInformer(
+		clientset,
+		0,
+		namespace,
+		work,
+		make(chan struct{}, 20),
+	)
+
+	go crashInformer.Start()
+	go crashInformer.Work()
+	go reporter.Run()
 }
 
 func getStagerImage(cfg *eirini.Config) string {
