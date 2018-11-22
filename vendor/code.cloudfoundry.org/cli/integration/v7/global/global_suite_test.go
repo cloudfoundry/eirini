@@ -1,1 +1,0 @@
-../../shared/global/global_suite_test.go

@@ -40,3 +40,15 @@
 [[constraint]]
   name = "code.cloudfoundry.org/go-loggregator"
   version = "7.1.0"
+
+[[constraint]]
+  branch = "master"
+  name = "code.cloudfoundry.org/tps"
+
+[[constraint]]
+  branch = "master"
+  name = "code.cloudfoundry.org/goshims"
+
+[[constraint]]
+  name = "github.com/cloudfoundry-incubator/credhub-cli"
+  version = "2.1.0"

@@ -17,10 +17,6 @@ func NewCatchAllError() error {
 	return errors.New("The targeted API was unable to perform the request. Please validate and retry your request.")
 }
 
-func NewEmptyTemplateError(filepath string) error {
-	return errors.New(fmt.Sprintf("Error: %s was an empty file", filepath))
-}
-
 func NewRevokedTokenError() error {
 	return errors.New("You are not currently authenticated. Please log in to continue.")
 }
@@ -31,10 +27,6 @@ func NewFileLoadError() error {
 
 func NewMissingGetParametersError() error {
 	return errors.New("A name or ID must be provided. Please update and retry your request.")
-}
-
-func NewMissingInterpolateParametersError() error {
-	return errors.New("A file to interpolate must be provided. Please add a file flag and try again.")
 }
 
 func NewMixedAuthorizationParametersError() error {
