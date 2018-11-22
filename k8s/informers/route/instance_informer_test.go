@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	. "code.cloudfoundry.org/eirini/k8s/route"
+	. "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/route"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
