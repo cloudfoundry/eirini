@@ -16,6 +16,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/handler"
+	k8sevent "code.cloudfoundry.org/eirini/k8s/informers/event"
 	k8sroute "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route"
@@ -27,7 +28,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/k8s"
-	"github.com/JulzDiverse/capi-release/src/code.cloudfoundry.org/tps/cc_client"
+	"code.cloudfoundry.org/tps/cc_client"
 	"github.com/JulzDiverse/cfclient"
 	nats "github.com/nats-io/go-nats"
 	"github.com/spf13/cobra"
@@ -79,6 +80,15 @@ func connect(cmd *cobra.Command, args []string) {
 	launchMetricsEmitter(
 		fmt.Sprintf("%s/namespaces/%s/pods", cfg.Properties.MetricsSourceAddress, cfg.Properties.KubeNamespace),
 		loggregatorClient,
+	)
+
+	launchEventReporter(
+		cfg.Properties.CcInternalAPI,
+		cfg.Properties.CCCAPath,
+		cfg.Properties.CCCertPath,
+		cfg.Properties.CCKeyPath,
+		cfg.Properties.KubeConfig,
+		cfg.Properties.KubeNamespace,
 	)
 
 	handlerLogger := lager.NewLogger("handler")

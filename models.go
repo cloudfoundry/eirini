@@ -47,31 +47,38 @@ type Config struct {
 }
 
 type Properties struct {
-	KubeConfig           string `yaml:"kube_config"`
-	KubeNamespace        string `yaml:"kube_namespace"`
-	KubeEndpoint         string `yaml:"kube_endpoint"`
-	NatsPassword         string `yaml:"nats_password"`
-	NatsIP               string `yaml:"nats_ip"`
-	RegistryEndpoint     string `yaml:"registry_endpoint"`
-	CcUploaderIP         string `yaml:"cc_uploader_ip"`
-	CcAPI                string `yaml:"api_endpoint"`
-	Backend              string `yaml:"backend"`
-	CfUsername           string `yaml:"cf_username"`
-	CfPassword           string `yaml:"cf_password"`
-	CcUser               string `yaml:"cc_internal_user"`
-	CcPassword           string `yaml:"cc_internal_password"`
-	CCCertsSecretName    string `yaml:"cc_certs_secret_name"`
-	RegistryAddress      string `yaml:"external_eirini_address"`
-	EiriniAddress        string `yaml:"eirini_address"`
-	StagerImageTag       string `yaml:"stager_image_tag"`
-	SkipSslValidation    bool   `yaml:"skip_ssl_validation"`
-	InsecureSkipVerify   bool   `yaml:"insecure_skip_verify"`
-	UseIngress           bool   `yaml:"use_ingress"`
+	KubeConfig         string `yaml:"kube_config"`
+	KubeNamespace      string `yaml:"kube_namespace"`
+	KubeEndpoint       string `yaml:"kube_endpoint"`
+	NatsPassword       string `yaml:"nats_password"`
+	NatsIP             string `yaml:"nats_ip"`
+	RegistryEndpoint   string `yaml:"registry_endpoint"`
+	CcUploaderIP       string `yaml:"cc_uploader_ip"`
+	CcAPI              string `yaml:"api_endpoint"`
+	CcInternalAPI      string `yaml:"cc_internal_api"`
+	Backend            string `yaml:"backend"`
+	CfUsername         string `yaml:"cf_username"`
+	CfPassword         string `yaml:"cf_password"`
+	CcUser             string `yaml:"cc_internal_user"`
+	CcPassword         string `yaml:"cc_internal_password"`
+	CCCertsSecretName  string `yaml:"cc_certs_secret_name"`
+	RegistryAddress    string `yaml:"external_eirini_address"`
+	EiriniAddress      string `yaml:"eirini_address"`
+	StagerImageTag     string `yaml:"stager_image_tag"`
+	SkipSslValidation  bool   `yaml:"skip_ssl_validation"`
+	InsecureSkipVerify bool   `yaml:"insecure_skip_verify"`
+	UseIngress         bool   `yaml:"use_ingress"`
+
 	MetricsSourceAddress string `yaml:"metrics_source_address"`
-	LoggregatorAddress   string `yaml:"loggregator_address"`
-	LoggregatorCertPath  string `yaml:"loggergator_cert_path"`
-	LoggregatorKeyPath   string `yaml:"loggregator_key_path"`
-	LoggregatorCAPath    string `yaml:"loggregator_ca_path"`
+
+	LoggregatorAddress  string `yaml:"loggregator_address"`
+	LoggregatorCertPath string `yaml:"loggergator_cert_path"`
+	LoggregatorKeyPath  string `yaml:"loggregator_key_path"`
+	LoggregatorCAPath   string `yaml:"loggregator_ca_path"`
+
+	CCCertPath string `yaml:"cc_cert_path"`
+	CCKeyPath  string `yaml:"cc_key_path"`
+	CCCAPath   string `yaml:"cc_ca_path"`
 }
 
 //go:generate counterfeiter . RemoveCallbackFunc
