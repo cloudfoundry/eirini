@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	testcore "k8s.io/client-go/testing"
 
-	. "code.cloudfoundry.org/eirini/k8s/route"
+	. "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager/lagerctx"
 	"code.cloudfoundry.org/lager/lagertest"

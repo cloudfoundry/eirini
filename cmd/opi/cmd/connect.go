@@ -15,7 +15,7 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/handler"
-	k8sroute "code.cloudfoundry.org/eirini/k8s/route"
+	k8sroute "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/stager"
