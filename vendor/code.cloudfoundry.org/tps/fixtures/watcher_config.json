@@ -1,0 +1,33 @@
+{
+  "bbs_api_url": "https://foobar.com",
+  "bbs_ca_cert": "/path/to/cert",
+  "bbs_client_cert": "/path/to/another/cert",
+  "bbs_client_key": "/path/to/key",
+  "bbs_client_cache_size": 1234,
+  "bbs_max_idle_conns_per_host": 10,
+  "cc_base_url": "https://cloudcontroller.com",
+  "consul_cluster": "https://consul.com",
+  "debug_server_config": {
+    "debug_address": "https://debugger.com"
+  },
+  "dropsonde_port": 666,
+  "lager_config": {
+    "log_level": "debug"
+  },
+  "lock_retry_interval": "100s",
+  "lock_ttl": "200s",
+  "max_event_handling_workers": 33,
+  "cc_client_cert": "/path/to/server.cert",
+  "cc_client_key": "/path/to/server.key",
+  "cc_ca_cert": "/path/to/server-ca.cert",
+  "skip_cert_verify": true,
+
+  "skip_consul_lock": true,
+
+  "locket_address": "https://locket.com",
+  "locket_ca_cert_file": "/path/to/locket/ca-cert",
+  "locket_client_cert_file": "/path/to/locket/cert",
+  "locket_client_key_file": "/path/to/locket/key",
+
+  "instance_id": "long-bosh-guid"
+}

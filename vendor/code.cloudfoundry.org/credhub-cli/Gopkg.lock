@@ -8,34 +8,6 @@
   revision = "e75332964ef517daa070d7c38a9466a0d687e0a5"
 
 [[projects]]
-  name = "github.com/bmatcuk/doublestar"
-  packages = ["."]
-  revision = "85a78806aa1b4707d1dbace9be592cf1ece91ab3"
-  version = "v1.1.1"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/charlievieth/fs"
-  packages = ["."]
-  revision = "7dc373669fa10ddf827c37c595dee30a2f001be9"
-
-[[projects]]
-  name = "github.com/cloudfoundry/bosh-cli"
-  packages = ["director/template"]
-  revision = "8366c6fd5cd98b7c9051dc9481f67c88fb8606f9"
-  version = "v5.3.1"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/cloudfoundry/bosh-utils"
-  packages = [
-    "errors",
-    "logger",
-    "system"
-  ]
-  revision = "15c556314b68953d0449541ded010b033767c805"
-
-[[projects]]
   branch = "master"
   name = "github.com/cloudfoundry/go-socks5"
   packages = ["."]
@@ -45,12 +17,6 @@
   name = "github.com/cloudfoundry/socks5-proxy"
   packages = ["."]
   revision = "3c6b4eec9c2d16c1dac4c42bdb5f755ba09daff8"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/cppforlife/go-patch"
-  packages = ["patch"]
-  revision = "250da0e0e68ce3367b4302f34218f6c064eb9559"
 
 [[projects]]
   name = "github.com/fatih/color"
@@ -217,6 +183,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1fbfb0883c269ab618232644a20c445d519dee44706921d982f362cf1fb1ade0"
+  inputs-digest = "11bc94b8a30403fa62b8a8117c7eec38b46586489a4359a658d1175c59ef8892"
   solver-name = "gps-cdcl"
   solver-version = 1
