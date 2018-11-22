@@ -121,7 +121,7 @@ func convertMetricsList(metricList *PodMetricsList) ([]metrics.Message, error) {
 			CPU:         convertCPU(cpuValue),
 			Memory:      convertMemory(memoryValue),
 			MemoryQuota: 10,
-			Disk:        10,
+			Disk:        42000000,
 			DiskQuota:   10,
 		})
 	}

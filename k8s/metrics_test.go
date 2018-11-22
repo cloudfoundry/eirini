@@ -83,7 +83,7 @@ var _ = Describe("Metrics", func() {
 					CPU:         420,
 					Memory:      430080,
 					MemoryQuota: 10,
-					Disk:        10,
+					Disk:        42000000,
 					DiskQuota:   10,
 				},
 			})))
@@ -161,7 +161,7 @@ var _ = Describe("Metrics", func() {
 						CPU:         420,
 						Memory:      430080,
 						MemoryQuota: 10,
-						Disk:        10,
+						Disk:        42000000,
 						DiskQuota:   10,
 					},
 				})))
@@ -197,7 +197,7 @@ var _ = Describe("Metrics", func() {
 						CPU:         420,
 						Memory:      430080,
 						MemoryQuota: 10,
-						Disk:        10,
+						Disk:        42000000,
 						DiskQuota:   10,
 					},
 				})))
