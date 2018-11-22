@@ -1,6 +1,8 @@
 package events_test
 
 import (
+	"errors"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -70,6 +72,17 @@ var _ = Describe("Crashreporter", func() {
 			_, report, _ := ccClient.AppCrashedArgsForCall(0)
 			Expect(report.Reason).To(Equal("who-knows"))
 			Expect(report.CrashTimestamp).To(Equal(int64(112233)))
+		})
+
+		Context("event could not be submitted", func() {
+
+			BeforeEach(func() {
+				ccClient.AppCrashedReturns(errors.New("boom"))
+			})
+
+			It("should return the error", func() {
+				Expect(err).To(MatchError(ContainSubstring("boom")))
+			})
 		})
 	})
 })

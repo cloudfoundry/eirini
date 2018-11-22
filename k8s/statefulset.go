@@ -210,6 +210,11 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: int32ptr(lrp.TargetInstances),
 			Template: v1.PodTemplateSpec{
+				ObjectMeta: meta.ObjectMeta{
+					Annotations: map[string]string{
+						cf.ProcessGUID: lrp.Metadata[cf.ProcessGUID],
+					},
+				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{

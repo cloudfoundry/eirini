@@ -94,6 +94,11 @@ var _ = Describe("Statefulset", func() {
 			Expect(readinessProbeCreator.CallCount()).To(Equal(1))
 		})
 
+		It("should provide the process-guid to the pod annotations", func() {
+			statefulSet, _ := client.AppsV1beta2().StatefulSets(namespace).Get("Baldur", meta.GetOptions{})
+			Expect(statefulSet.Spec.Template.Annotations[cf.ProcessGUID]).To(Equal("Baldur"))
+		})
+
 		Context("When redeploying an existing LRP", func() {
 			BeforeEach(func() {
 				lrp = createLRP("Baldur", "1234.5", "my.example.route")
@@ -493,6 +498,11 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: &targetInstances,
 			Template: v1.PodTemplateSpec{
+				ObjectMeta: meta.ObjectMeta{
+					Annotations: map[string]string{
+						cf.ProcessGUID: lrp.Metadata[cf.ProcessGUID],
+					},
+				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
