@@ -7,9 +7,8 @@ const (
 	VcapAppID     = "application_id"
 	VcapSpaceName = "space_name"
 
-	LastUpdated  = "last_updated"
-	ProcessGUID  = "process_guid"
-	RunningState = "RUNNING"
+	LastUpdated = "last_updated"
+	ProcessGUID = "process_guid"
 )
 
 type VcapApp struct {

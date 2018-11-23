@@ -338,11 +338,11 @@ var _ = Describe("Statefulset", func() {
 
 		It("should return the correct number of instances", func() {
 			Expect(instances).To(HaveLen(2))
-			Expect(instances[0]).To(Equal(toInstance(0, 123000000000)))
-			Expect(instances[1]).To(Equal(toInstance(1, 456000000000)))
+			Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "RUNNING")))
+			Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "RUNNING")))
 		})
 
-		Context("time since creation is not available yet", func() {
+		Context("and time since creation is not available yet", func() {
 
 			BeforeEach(func() {
 				pod1 = toPod("mimir", 0, nil)
@@ -360,8 +360,64 @@ var _ = Describe("Statefulset", func() {
 
 			It("should return a default value", func() {
 				Expect(instances).To(HaveLen(2))
-				Expect(instances[0]).To(Equal(toInstance(0, 0)))
-				Expect(instances[1]).To(Equal(toInstance(1, 456000000000)))
+				Expect(instances[0]).To(Equal(toInstance(0, 0, "RUNNING")))
+				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "RUNNING")))
+			})
+		})
+
+		Context("and the pod has crashed", func() {
+			BeforeEach(func() {
+				pod1.Status.ContainerStatuses[0].State = v1.ContainerState{
+					Terminated: &v1.ContainerStateTerminated{},
+				}
+
+				pod2.Status.ContainerStatuses[0].State = v1.ContainerState{
+					Waiting: &v1.ContainerStateWaiting{},
+				}
+			})
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return a default value", func() {
+				Expect(instances).To(HaveLen(2))
+				Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "CRASHED")))
+				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "CRASHED")))
+			})
+		})
+
+		Context("and the pod is pending", func() {
+			BeforeEach(func() {
+				pod1.Status.Phase = v1.PodPending
+				pod2.Status.Phase = v1.PodPending
+			})
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return a default value", func() {
+				Expect(instances).To(HaveLen(2))
+				Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "CLAIMED")))
+				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "CLAIMED")))
+			})
+		})
+
+		Context("and the pod phase is unknown", func() {
+			BeforeEach(func() {
+				pod1.Status.Phase = v1.PodUnknown
+				pod2.Status.Phase = v1.PodUnknown
+			})
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return a default value", func() {
+				Expect(instances).To(HaveLen(2))
+				Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "UNKNOWN")))
+				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "UNKNOWN")))
 			})
 		})
 	})
@@ -383,14 +439,18 @@ func toPod(lrpName string, index int, time *meta.Time) *v1.Pod {
 	}
 
 	pod.Status.StartTime = time
+	pod.Status.Phase = v1.PodRunning
+	pod.Status.ContainerStatuses = []v1.ContainerStatus{
+		{State: v1.ContainerState{Running: &v1.ContainerStateRunning{}}},
+	}
 	return &pod
 }
 
-func toInstance(index int, since int64) *opi.Instance {
+func toInstance(index int, since int64, state string) *opi.Instance {
 	return &opi.Instance{
 		Index: index,
 		Since: since,
-		State: cf.RunningState,
+		State: state,
 	}
 }
 

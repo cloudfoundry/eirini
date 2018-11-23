@@ -103,12 +103,40 @@ func (m *StatefulSetDesirer) GetInstances(appName string) ([]*opi.Instance, erro
 		instance := opi.Instance{
 			Since: since,
 			Index: index,
-			State: cf.RunningState,
+			State: getPodState(&pod),
 		}
 		instances = append(instances, &instance)
 	}
 
 	return instances, nil
+}
+
+func getPodState(pod *v1.Pod) string {
+	if pod.Status.Phase == v1.PodPending {
+		return opi.PendingState
+	}
+
+	if pod.Status.Phase == v1.PodUnknown {
+		return opi.UnknownState
+	}
+
+	if podCrashed(pod.Status.ContainerStatuses[0]) {
+		return opi.CrashedState
+	}
+
+	if podRunning(pod.Status.ContainerStatuses[0]) {
+		return opi.RunningState
+	}
+
+	return opi.UnknownState
+}
+
+func podCrashed(status v1.ContainerStatus) bool {
+	return status.State.Waiting != nil || status.State.Terminated != nil
+}
+
+func podRunning(status v1.ContainerStatus) bool {
+	return status.State.Running != nil
 }
 
 func (m *StatefulSetDesirer) statefulSets() types.StatefulSetInterface {

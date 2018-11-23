@@ -1,5 +1,12 @@
 package opi
 
+const (
+	RunningState = "RUNNING"
+	PendingState = "CLAIMED"
+	CrashedState = "CRASHED"
+	UnknownState = "UNKNOWN"
+)
+
 // An LRP, or long-running-process, is a stateless process
 // where the scheduler should attempt to keep N copies running,
 // killing and recreating as needed to maintain that guarantee
