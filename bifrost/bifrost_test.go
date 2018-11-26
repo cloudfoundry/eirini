@@ -444,8 +444,8 @@ var _ = Describe("Bifrost", func() {
 			opiClient = new(opifakes.FakeDesirer)
 			lager = lagertest.NewTestLogger("bifrost-get-instances-test")
 			opiInstances = []*opi.Instance{
-				{Index: 0, Since: 123, State: cf.RunningState},
-				{Index: 1, Since: 345, State: cf.RunningState},
+				{Index: 0, Since: 123, State: opi.RunningState},
+				{Index: 1, Since: 345, State: opi.CrashedState},
 			}
 
 			opiClient.GetInstancesReturns(opiInstances, nil)
@@ -472,8 +472,8 @@ var _ = Describe("Bifrost", func() {
 
 		It("should return all running instances", func() {
 			Expect(instances).To(Equal([]*cf.Instance{
-				{Index: 0, Since: 123, State: cf.RunningState},
-				{Index: 1, Since: 345, State: cf.RunningState},
+				{Index: 0, Since: 123, State: opi.RunningState},
+				{Index: 1, Since: 345, State: opi.CrashedState},
 			}))
 		})
 
