@@ -112,7 +112,7 @@ func (m *StatefulSetDesirer) GetInstances(appName string) ([]*opi.Instance, erro
 }
 
 func getPodState(pod *v1.Pod) string {
-	if pod.Status.Phase == v1.PodPending {
+	if podPending(pod) {
 		return opi.PendingState
 	}
 
@@ -131,12 +131,17 @@ func getPodState(pod *v1.Pod) string {
 	return opi.UnknownState
 }
 
+func podPending(pod *v1.Pod) bool {
+	status := pod.Status.ContainerStatuses[0]
+	return pod.Status.Phase == v1.PodPending || (status.State.Running != nil && !status.Ready)
+}
+
 func podCrashed(status v1.ContainerStatus) bool {
 	return status.State.Waiting != nil || status.State.Terminated != nil
 }
 
 func podRunning(status v1.ContainerStatus) bool {
-	return status.State.Running != nil
+	return status.State.Running != nil && status.Ready
 }
 
 func (m *StatefulSetDesirer) statefulSets() types.StatefulSetInterface {

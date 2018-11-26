@@ -390,7 +390,7 @@ var _ = Describe("Statefulset", func() {
 		Context("and the pod is pending", func() {
 			BeforeEach(func() {
 				pod1.Status.Phase = v1.PodPending
-				pod2.Status.Phase = v1.PodPending
+				pod2.Status.ContainerStatuses[0].Ready = false
 			})
 
 			It("should not return an error", func() {
@@ -441,7 +441,10 @@ func toPod(lrpName string, index int, time *meta.Time) *v1.Pod {
 	pod.Status.StartTime = time
 	pod.Status.Phase = v1.PodRunning
 	pod.Status.ContainerStatuses = []v1.ContainerStatus{
-		{State: v1.ContainerState{Running: &v1.ContainerStateRunning{}}},
+		{
+			State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
+			Ready: true,
+		},
 	}
 	return &pod
 }
