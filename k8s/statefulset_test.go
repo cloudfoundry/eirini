@@ -425,6 +425,25 @@ var _ = Describe("Statefulset", func() {
 				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "UNKNOWN")))
 			})
 		})
+
+		Context("the container status is not available yet", func() {
+
+			BeforeEach(func() {
+				pod1.Status.ContainerStatuses = []v1.ContainerStatus{}
+				pod2.Status.ContainerStatuses = []v1.ContainerStatus{}
+			})
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return an unknown status", func() {
+				Expect(instances).To(HaveLen(2))
+				Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "UNKNOWN")))
+				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "UNKNOWN")))
+			})
+
+		})
 	})
 })
 
