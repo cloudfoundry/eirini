@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 	set "github.com/deckarep/golang-set"
@@ -15,6 +16,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 )
+
+type routes struct {
+	RegisterRoutes   []string
+	UnregisterRoutes []string
+}
+
+type portGroup map[int32]routes
 
 type URIChangeInformer struct {
 	Cancel     <-chan struct{}
@@ -67,57 +75,71 @@ func (c *URIChangeInformer) onUpdate(oldObj, updatedObj interface{}, work chan<-
 	}
 
 	removedRoutes := oldSet.Difference(updatedSet)
+	grouped := groupRoutesByPort(removedRoutes, updatedSet)
 
 	c.sendRoutesForAllPods(
 		work,
 		updatedStatefulSet,
-		toStringSlice(updatedSet),
-		toStringSlice(removedRoutes),
+		grouped,
 	)
+}
+
+func groupRoutesByPort(remove, add set.Set) portGroup {
+	group := make(portGroup)
+	for _, toAdd := range add.ToSlice() {
+		current := toAdd.(cf.Route)
+		routes := group[current.Port]
+		routes.RegisterRoutes = append(routes.RegisterRoutes, current.Hostname)
+		group[current.Port] = routes
+	}
+	for _, toRemove := range remove.ToSlice() {
+		current := toRemove.(cf.Route)
+		routes := group[current.Port]
+		routes.UnregisterRoutes = append(routes.UnregisterRoutes, current.Hostname)
+		group[current.Port] = routes
+	}
+
+	return group
 }
 
 func (c *URIChangeInformer) onDelete(obj interface{}, work chan<- *route.Message) {
 	deletedStatefulSet := obj.(*apps_v1.StatefulSet)
-	routes, err := decodeRoutes(deletedStatefulSet.Annotations[eirini.RegisteredRoutes])
+	routeSet, err := decodeRoutesAsSet(deletedStatefulSet)
 	if err != nil {
-		c.logError("failed-to-get-routes", err, deletedStatefulSet)
-		return
+		c.logError("failed-to-decode-deleted-user-defined-routes", err, deletedStatefulSet)
 	}
 
+	routeGroups := groupRoutesByPort(routeSet, set.NewSet())
 	c.sendRoutesForAllPods(
 		work,
 		deletedStatefulSet,
-		[]string{},
-		routes,
+		routeGroups,
 	)
 }
 
-func (c *URIChangeInformer) sendRoutesForAllPods(work chan<- *route.Message, statefulset *apps_v1.StatefulSet, registerRoutes, unregisterRoutes []string) {
+func (c *URIChangeInformer) sendRoutesForAllPods(work chan<- *route.Message, statefulset *apps_v1.StatefulSet, grouped portGroup) {
 	pods, err := c.getChildrenPods(statefulset)
 	if err != nil {
 		c.logError("failed-to-get-child-pods", err, statefulset)
 		return
 	}
 	for _, pod := range pods {
-		port, err := getContainerPort(&pod)
-		if err != nil {
-			c.logPodError("failed-to-get-pod-port", err, statefulset, &pod)
-			return
-		}
-		podRoute, err := route.NewMessage(
-			pod.Name,
-			pod.Name,
-			pod.Status.PodIP,
-			port,
-		)
-		if err != nil {
-			c.logPodError("failed-to-construct-a-route-message", err, statefulset, &pod)
-			return
-		}
+		for port, routes := range grouped {
+			podRoute, err := route.NewMessage(
+				pod.Name,
+				pod.Name,
+				pod.Status.PodIP,
+				uint32(port),
+			)
+			if err != nil {
+				c.logPodError("failed-to-construct-a-route-message", err, statefulset, &pod)
+				return
+			}
 
-		podRoute.Routes = registerRoutes
-		podRoute.UnregisteredRoutes = unregisterRoutes
-		work <- podRoute
+			podRoute.Routes = routes.RegisterRoutes
+			podRoute.UnregisteredRoutes = routes.UnregisterRoutes
+			work <- podRoute
+		}
 	}
 }
 

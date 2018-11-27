@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 	apps "k8s.io/api/apps/v1"
@@ -61,24 +62,20 @@ func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<-
 		return
 	}
 
-	port, err := getContainerPort(deletedPod)
-	if err != nil {
-		c.logError("failed-to-get-pod-port", err, deletedPod)
-		return
+	for _, r := range userDefinedRoutes {
+		routes, err := route.NewMessage(
+			deletedPod.Name,
+			deletedPod.Name,
+			deletedPod.Status.PodIP,
+			uint32(r.Port),
+		)
+		if err != nil {
+			c.logError("failed-to-construct-a-route-message", err, deletedPod)
+			continue
+		}
+		routes.UnregisteredRoutes = []string{r.Hostname}
+		work <- routes
 	}
-	routes, err := route.NewMessage(
-		deletedPod.Name,
-		deletedPod.Name,
-		deletedPod.Status.PodIP,
-		port,
-	)
-	if err != nil {
-		c.logError("failed-to-construct-a-route-message", err, deletedPod)
-		return
-	}
-
-	routes.UnregisteredRoutes = userDefinedRoutes
-	work <- routes
 }
 
 func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<- *route.Message) {
@@ -89,32 +86,28 @@ func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<-
 		c.logError("failed-to-get-user-defined-routes", err, updatedPod)
 		return
 	}
-	port, err := getContainerPort(updatedPod)
-	if err != nil {
-		c.logError("failed-to-get-pod-port", err, updatedPod)
-		return
-	}
 
-	routes, err := route.NewMessage(
-		updatedPod.Name,
-		updatedPod.Name,
-		updatedPod.Status.PodIP,
-		port,
-	)
-	if err != nil {
-		c.logError("failed-to-construct-a-route-message", err, updatedPod)
-		return
+	for _, r := range userDefinedRoutes {
+		routes, err := route.NewMessage(
+			updatedPod.Name,
+			updatedPod.Name,
+			updatedPod.Status.PodIP,
+			uint32(r.Port),
+		)
+		if err != nil {
+			c.logError("failed-to-construct-a-route-message", err, updatedPod)
+			continue
+		}
+		routes.Routes = []string{r.Hostname}
+		work <- routes
 	}
-
-	routes.Routes = userDefinedRoutes
-	work <- routes
 }
 
-func (c *InstanceChangeInformer) getUserDefinedRoutes(pod *v1.Pod) ([]string, error) {
+func (c *InstanceChangeInformer) getUserDefinedRoutes(pod *v1.Pod) ([]cf.Route, error) {
 	owner, err := c.getOwner(pod)
 	if err != nil {
 		c.logError("unexpected-pod-owner", err, pod)
-		return []string{}, err
+		return []cf.Route{}, err
 	}
 
 	return decodeRoutes(owner.Annotations[eirini.RegisteredRoutes])
@@ -147,9 +140,9 @@ func getContainerPort(pod *v1.Pod) (uint32, error) {
 	return uint32(port), nil
 }
 
-func decodeRoutes(s string) ([]string, error) {
-	uris := []string{}
-	err := json.Unmarshal([]byte(s), &uris)
+func decodeRoutes(s string) ([]cf.Route, error) {
+	routes := []cf.Route{}
+	err := json.Unmarshal([]byte(s), &routes)
 
-	return uris, err
+	return routes, err
 }

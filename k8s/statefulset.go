@@ -168,11 +168,16 @@ func statefulSetsToLRPs(statefulSets *v1beta2.StatefulSetList) []*opi.LRP {
 }
 
 func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
+	ports := []int32{}
+	for _, port := range s.Spec.Template.Spec.Containers[0].Ports {
+		ports = append(ports, port.ContainerPort)
+	}
 	return &opi.LRP{
 		Name:             s.Name,
 		Image:            s.Spec.Template.Spec.Containers[0].Image,
 		Command:          s.Spec.Template.Spec.Containers[0].Command,
 		RunningInstances: int(s.Status.ReadyReplicas),
+		Ports:            ports,
 		Metadata: map[string]string{
 			cf.ProcessGUID:          s.Annotations[cf.ProcessGUID],
 			cf.LastUpdated:          s.Annotations[cf.LastUpdated],
@@ -212,6 +217,10 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	}
 
 	envs = append(envs, fieldEnvs...)
+	ports := []v1.ContainerPort{}
+	for _, port := range lrp.Ports {
+		ports = append(ports, v1.ContainerPort{ContainerPort: port})
+	}
 
 	livenessProbe := m.LivenessProbeCreator(lrp)
 	readinessProbe := m.ReadinessProbeCreator(lrp)
@@ -228,16 +237,11 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
-							Name:    "opi",
-							Image:   lrp.Image,
-							Command: lrp.Command,
-							Env:     envs,
-							Ports: []v1.ContainerPort{
-								{
-									Name:          "expose",
-									ContainerPort: 8080,
-								},
-							},
+							Name:           "opi",
+							Image:          lrp.Image,
+							Command:        lrp.Command,
+							Env:            envs,
+							Ports:          ports,
 							LivenessProbe:  livenessProbe,
 							ReadinessProbe: readinessProbe,
 						},

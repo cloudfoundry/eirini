@@ -2,7 +2,6 @@ package bifrost
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -61,18 +60,12 @@ func (b *Bifrost) Update(ctx context.Context, update models.UpdateDesiredLRPRequ
 	lrp.TargetInstances = int(*update.Update.Instances)
 	lrp.Metadata[cf.LastUpdated] = *update.Update.Annotation
 
-	hostnames, err := getURIs(update)
+	routes, err := getRoutes(update)
 	if err != nil {
 		return err
 	}
 
-	hostnamesBytes, err := json.Marshal(hostnames)
-	if err != nil {
-		b.Logger.Error("failed-to-marshal hostnames", err, lager.Data{"process-guid": update.ProcessGuid})
-		panic(err)
-	}
-
-	lrp.Metadata[cf.VcapAppUris] = string(hostnamesBytes)
+	lrp.Metadata[cf.VcapAppUris] = routes
 
 	return b.Desirer.Update(lrp)
 }
@@ -114,32 +107,18 @@ func (b *Bifrost) GetInstances(ctx context.Context, guid string) ([]*cf.Instance
 	return cfInstances, nil
 }
 
-func getURIs(update models.UpdateDesiredLRPRequest) ([]string, error) {
+func getRoutes(update models.UpdateDesiredLRPRequest) (string, error) {
 	if !routesAvailable(update.Update.Routes) {
-		return []string{}, nil
+		return "", nil
 	}
 
 	cfRouterRoutes := (*update.Update.Routes)["cf-router"]
 	data, err := cfRouterRoutes.MarshalJSON()
 	if err != nil {
-		return []string{}, err
+		return "", err
 	}
 
-	routes := []struct {
-		Hostnames []string `json:"hostnames"`
-		Port      int      `json:"port"`
-	}{}
-	err = json.Unmarshal(data, &routes)
-	if err != nil {
-		return []string{}, err
-	}
-
-	hostnames := []string{}
-	for _, r := range routes {
-		hostnames = append(hostnames, r.Hostnames...)
-	}
-
-	return hostnames, nil
+	return string(data), nil
 }
 
 func routesAvailable(routes *models.Routes) bool {

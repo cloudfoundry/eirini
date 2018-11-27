@@ -42,7 +42,7 @@ var _ = Describe("AppHandler", func() {
 
 		BeforeEach(func() {
 			path = "/apps/myguid"
-			body = `{"process_guid" : "myguid", "start_command": "./start", "environment": { "env_var": "env_var_value" }, "instances": 5, "last_updated":"1529073295.9","health_check_type":"http","health_check_http_endpoint":"/healthz","health_check_timeout_ms":400}`
+			body = `{"process_guid" : "myguid", "start_command": "./start", "environment": { "env_var": "env_var_value" }, "instances": 5, "last_updated":"1529073295.9","health_check_type":"http","health_check_http_endpoint":"/healthz","health_check_timeout_ms":400,"ports":[8080,7777]}`
 		})
 
 		JustBeforeEach(func() {
@@ -65,6 +65,7 @@ var _ = Describe("AppHandler", func() {
 				HealthCheckType:         "http",
 				HealthCheckHTTPEndpoint: "/healthz",
 				HealthCheckTimeoutMs:    400,
+				Ports:                   []int32{8080, 7777},
 			}
 
 			Expect(bifrost.TransferCallCount()).To(Equal(1))

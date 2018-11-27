@@ -222,7 +222,7 @@ var _ = Describe("Bifrost", func() {
 					TargetInstances: 2,
 					Metadata: map[string]string{
 						cf.LastUpdated: "whenever",
-						cf.VcapAppUris: `["my.route","your.route"]`,
+						cf.VcapAppUris: `[{"hostname":"my.route","port":8080},{"hostname":"your.route","port":5555}]`,
 					},
 				}
 				opiClient.GetReturns(&lrp, nil)
@@ -270,8 +270,12 @@ var _ = Describe("Bifrost", func() {
 				BeforeEach(func() {
 					updatedRoutes := []map[string]interface{}{
 						{
-							"hostnames": []string{"my.route", "my.other.route"},
-							"port":      8080,
+							"hostname": "my.route",
+							"port":     8080,
+						},
+						{
+							"hostname": "my.other.route",
+							"port":     7777,
 						},
 					}
 
@@ -302,12 +306,20 @@ var _ = Describe("Bifrost", func() {
 				It("should have the updated routes", func() {
 					Expect(opiClient.UpdateCallCount()).To(Equal(1))
 					lrp := opiClient.UpdateArgsForCall(0)
-					Expect(lrp.Metadata[cf.VcapAppUris]).To(Equal(`["my.route","my.other.route"]`))
+					Expect(lrp.Metadata[cf.VcapAppUris]).To(Equal(`[{"hostname":"my.route","port":8080},{"hostname":"my.other.route","port":7777}]`))
 				})
 
 				Context("When there are no routes provided", func() {
 					BeforeEach(func() {
-						updateRequest.Update.Routes = &models.Routes{}
+						updatedRoutes := []map[string]interface{}{}
+
+						routesJSON, marshalErr := json.Marshal(updatedRoutes)
+						Expect(marshalErr).ToNot(HaveOccurred())
+
+						rawJSON := json.RawMessage(routesJSON)
+						updateRequest.Update.Routes = &models.Routes{
+							"cf-router": &rawJSON,
+						}
 					})
 
 					It("should update it to an empty array", func() {

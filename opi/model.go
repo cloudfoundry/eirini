@@ -16,6 +16,7 @@ type LRP struct {
 	Command          []string
 	Env              map[string]string
 	Health           Healtcheck
+	Ports            []int32
 	TargetInstances  int
 	RunningInstances int
 	Metadata         map[string]string

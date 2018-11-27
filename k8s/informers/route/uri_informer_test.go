@@ -113,7 +113,16 @@ var _ = Describe("URIChangeInformer", func() {
 			ObjectMeta: meta.ObjectMeta{
 				Name: "mr-stateful",
 				Annotations: map[string]string{
-					"routes": `["mr-stateful.50.60.70.80.nip.io", "mr-boombastic.50.60.70.80.nip.io"]`,
+					"routes": `[
+						{
+							"hostname": "mr-stateful.50.60.70.80.nip.io",
+							"port": 8080
+						},
+						{
+							"hostname": "mr-boombastic.50.60.70.80.nip.io",
+							"port": 6565
+						}
+					]`,
 				},
 			},
 			Spec: apps_v1.StatefulSetSpec{
@@ -133,18 +142,54 @@ var _ = Describe("URIChangeInformer", func() {
 	Context("When a new route is added by the user", func() {
 
 		JustBeforeEach(func() {
-			newRoutes := `["mr-stateful.50.60.70.80.nip.io", "mr-fantastic.50.60.70.80.nip.io", "mr-boombastic.50.60.70.80.nip.io"]`
+			newRoutes := `[
+						{
+							"hostname": "mr-stateful.50.60.70.80.nip.io",
+							"port": 8080
+						},
+						{
+							"hostname": "mr-fantastic.50.60.70.80.nip.io",
+							"port": 7563
+						},
+						{
+							"hostname": "mr-boombastic.50.60.70.80.nip.io",
+							"port": 6565
+						}
+					]`
 			watcher.Modify(copyWithModifiedRoute(statefulset, newRoutes))
 		})
 
 		It("should register the new route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name":               Equal("mr-stateful-0"),
-				"Routes":             ConsistOf("mr-stateful.50.60.70.80.nip.io", "mr-fantastic.50.60.70.80.nip.io", "mr-boombastic.50.60.70.80.nip.io"),
+				"Routes":             ConsistOf("mr-stateful.50.60.70.80.nip.io"),
 				"UnregisteredRoutes": BeEmpty(),
 				"InstanceID":         Equal("mr-stateful-0"),
 				"Address":            Equal("10.20.30.40"),
 				"Port":               BeNumerically("==", 8080),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
+
+		It("should register the new route for the first pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-0"),
+				"Routes":             ConsistOf("mr-fantastic.50.60.70.80.nip.io"),
+				"UnregisteredRoutes": BeEmpty(),
+				"InstanceID":         Equal("mr-stateful-0"),
+				"Address":            Equal("10.20.30.40"),
+				"Port":               BeNumerically("==", 7563),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
+		It("should register the new route for the first pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-0"),
+				"Routes":             ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
+				"UnregisteredRoutes": BeEmpty(),
+				"InstanceID":         Equal("mr-stateful-0"),
+				"Address":            Equal("10.20.30.40"),
+				"Port":               BeNumerically("==", 6565),
 				"TLSPort":            BeNumerically("==", 0),
 			}))))
 		})
@@ -152,7 +197,7 @@ var _ = Describe("URIChangeInformer", func() {
 		It("should register the new route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name":               Equal("mr-stateful-1"),
-				"Routes":             ConsistOf("mr-stateful.50.60.70.80.nip.io", "mr-fantastic.50.60.70.80.nip.io", "mr-boombastic.50.60.70.80.nip.io"),
+				"Routes":             ConsistOf("mr-stateful.50.60.70.80.nip.io"),
 				"UnregisteredRoutes": BeEmpty(),
 				"InstanceID":         Equal("mr-stateful-1"),
 				"Address":            Equal("50.60.70.80"),
@@ -160,23 +205,48 @@ var _ = Describe("URIChangeInformer", func() {
 				"TLSPort":            BeNumerically("==", 0),
 			}))))
 		})
-
+		It("should register the new route for the second pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-1"),
+				"Routes":             ConsistOf("mr-fantastic.50.60.70.80.nip.io"),
+				"UnregisteredRoutes": BeEmpty(),
+				"InstanceID":         Equal("mr-stateful-1"),
+				"Address":            Equal("50.60.70.80"),
+				"Port":               BeNumerically("==", 7563),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
+		It("should register the new route for the second pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-1"),
+				"Routes":             ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
+				"UnregisteredRoutes": BeEmpty(),
+				"InstanceID":         Equal("mr-stateful-1"),
+				"Address":            Equal("50.60.70.80"),
+				"Port":               BeNumerically("==", 6565),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
 	})
 
 	Context("When a route is removed by the user", func() {
 
 		JustBeforeEach(func() {
-			watcher.Modify(copyWithModifiedRoute(statefulset, `["mr-stateful.50.60.70.80.nip.io"]`))
+			watcher.Modify(copyWithModifiedRoute(statefulset, `[
+			{
+				"hostname": "mr-stateful.50.60.70.80.nip.io",
+				"port": 8080
+			}]`))
 		})
 
 		It("should unregister the deleted route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name":               Equal("mr-stateful-0"),
-				"Routes":             ConsistOf("mr-stateful.50.60.70.80.nip.io"),
+				"Routes":             BeEmpty(),
 				"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
 				"InstanceID":         Equal("mr-stateful-0"),
 				"Address":            Equal("10.20.30.40"),
-				"Port":               BeNumerically("==", 8080),
+				"Port":               BeNumerically("==", 6565),
 				"TLSPort":            BeNumerically("==", 0),
 			}))))
 		})
@@ -184,8 +254,111 @@ var _ = Describe("URIChangeInformer", func() {
 		It("should unregister the deleted route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name":               Equal("mr-stateful-1"),
-				"Routes":             ConsistOf("mr-stateful.50.60.70.80.nip.io"),
+				"Routes":             BeEmpty(),
 				"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
+				"InstanceID":         Equal("mr-stateful-1"),
+				"Address":            Equal("50.60.70.80"),
+				"Port":               BeNumerically("==", 6565),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
+	})
+
+	Context("when the port of a route is changed", func() {
+		JustBeforeEach(func() {
+			watcher.Modify(copyWithModifiedRoute(statefulset, `[
+						{
+							"hostname": "mr-stateful.50.60.70.80.nip.io",
+							"port": 1111
+						},
+						{
+							"hostname": "mr-boombastic.50.60.70.80.nip.io",
+							"port": 6565
+						}
+					]`))
+		})
+
+		It("should unregister the deleted route for the first pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-0"),
+				"Routes":             ConsistOf("mr-stateful.50.60.70.80.nip.io"),
+				"UnregisteredRoutes": BeEmpty(),
+				"InstanceID":         Equal("mr-stateful-0"),
+				"Address":            Equal("10.20.30.40"),
+				"Port":               BeNumerically("==", 1111),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
+
+		It("should unregister the deleted route for the second pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-0"),
+				"Routes":             BeEmpty(),
+				"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
+				"InstanceID":         Equal("mr-stateful-0"),
+				"Address":            Equal("10.20.30.40"),
+				"Port":               BeNumerically("==", 8080),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
+
+		It("should unregister the deleted route for the first pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-1"),
+				"Routes":             ConsistOf("mr-stateful.50.60.70.80.nip.io"),
+				"UnregisteredRoutes": BeEmpty(),
+				"InstanceID":         Equal("mr-stateful-1"),
+				"Address":            Equal("50.60.70.80"),
+				"Port":               BeNumerically("==", 1111),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
+
+		It("should unregister the deleted route for the second pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-1"),
+				"Routes":             BeEmpty(),
+				"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
+				"InstanceID":         Equal("mr-stateful-1"),
+				"Address":            Equal("50.60.70.80"),
+				"Port":               BeNumerically("==", 8080),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
+	})
+
+	Context("When a route shares a port with another route", func() {
+
+		JustBeforeEach(func() {
+			watcher.Modify(copyWithModifiedRoute(statefulset, `[
+						{
+							"hostname": "mr-stateful.50.60.70.80.nip.io",
+							"port": 8080
+						},
+						{
+							"hostname": "mr-boombastic.50.60.70.80.nip.io",
+							"port": 8080
+						}
+					]`))
+		})
+
+		It("should register both routes in a single message", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-0"),
+				"Routes":             ConsistOf("mr-stateful.50.60.70.80.nip.io", "mr-boombastic.50.60.70.80.nip.io"),
+				"UnregisteredRoutes": BeEmpty(),
+				"InstanceID":         Equal("mr-stateful-0"),
+				"Address":            Equal("10.20.30.40"),
+				"Port":               BeNumerically("==", 8080),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
+
+		It("should register both routes in a single message", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-1"),
+				"Routes":             ConsistOf("mr-stateful.50.60.70.80.nip.io", "mr-boombastic.50.60.70.80.nip.io"),
+				"UnregisteredRoutes": BeEmpty(),
 				"InstanceID":         Equal("mr-stateful-1"),
 				"Address":            Equal("50.60.70.80"),
 				"Port":               BeNumerically("==", 8080),
@@ -204,7 +377,11 @@ var _ = Describe("URIChangeInformer", func() {
 		})
 
 		JustBeforeEach(func() {
-			newRoutes := `["shaggy.50.60.70.80.nip.io"]`
+			newRoutes := `[
+			{
+				"hostname": "shaggy.50.60.70.80.nip.io",
+				"port": 4545
+			}]`
 			watcher.Modify(copyWithModifiedRoute(statefulset, newRoutes))
 		})
 
@@ -227,27 +404,48 @@ var _ = Describe("URIChangeInformer", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name":               Equal("mr-stateful-0"),
 				"Routes":             BeEmpty(),
-				"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io", "mr-stateful.50.60.70.80.nip.io"),
+				"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
 				"InstanceID":         Equal("mr-stateful-0"),
 				"Address":            Equal("10.20.30.40"),
 				"Port":               BeNumerically("==", 8080),
 				"TLSPort":            BeNumerically("==", 0),
 			}))))
+		})
 
+		It("should unregister all routes for the first pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-0"),
+				"Routes":             BeEmpty(),
+				"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
+				"InstanceID":         Equal("mr-stateful-0"),
+				"Address":            Equal("10.20.30.40"),
+				"Port":               BeNumerically("==", 6565),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
 		})
 
 		It("should unregister all routes for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name":               Equal("mr-stateful-1"),
 				"Routes":             BeEmpty(),
-				"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io", "mr-stateful.50.60.70.80.nip.io"),
+				"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
 				"InstanceID":         Equal("mr-stateful-1"),
 				"Address":            Equal("50.60.70.80"),
 				"Port":               BeNumerically("==", 8080),
 				"TLSPort":            BeNumerically("==", 0),
 			}))))
-
 		})
 
+		It("should unregister all routes for the second pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-1"),
+				"Routes":             BeEmpty(),
+				"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
+				"InstanceID":         Equal("mr-stateful-1"),
+				"Address":            Equal("50.60.70.80"),
+				"Port":               BeNumerically("==", 6565),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
 	})
 })
