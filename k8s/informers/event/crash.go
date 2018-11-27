@@ -119,7 +119,7 @@ func toReport(
 	}
 
 	return events.CrashReport{
-		ProcessGuid: pod.Annotations[cf.ProcessGUID],
+		ProcessGUID: pod.Annotations[cf.ProcessGUID],
 		AppCrashedRequest: cc_messages.AppCrashedRequest{
 			Reason:          reason,
 			Instance:        pod.Name,

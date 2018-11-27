@@ -34,8 +34,8 @@ var _ = Describe("Event", func() {
 	)
 
 	BeforeEach(func() {
-		pinky = createPod("pinky-pod", 0)
-		brain = createPod("brain-pod", 0)
+		pinky = createPod("pinky-pod")
+		brain = createPod("brain-pod")
 		bandito = createStatelessPod("bandito")
 	})
 
@@ -78,7 +78,7 @@ var _ = Describe("Event", func() {
 
 		Context("has waiting status", func() {
 			BeforeEach(func() {
-				pinkyCopy = createPod("pinky-pod", 0)
+				pinkyCopy = createPod("pinky-pod")
 				crashTime = meta.Time{Time: time.Now()}
 				pinkyCopy.Status.ContainerStatuses = []v1.ContainerStatus{
 					{
@@ -98,7 +98,7 @@ var _ = Describe("Event", func() {
 					},
 				}
 
-				brainCopy = createPod("brain-pod", 0)
+				brainCopy = createPod("brain-pod")
 				brainCopy.Status.ContainerStatuses = []v1.ContainerStatus{
 					{
 						State: v1.ContainerState{
@@ -119,7 +119,7 @@ var _ = Describe("Event", func() {
 
 			It("should receive a crashed report", func() {
 				Eventually(reportChan).Should(Receive(Equal(events.CrashReport{
-					ProcessGuid: "pinky-pod-anno",
+					ProcessGUID: "pinky-pod-anno",
 					AppCrashedRequest: cc_messages.AppCrashedRequest{
 						Reason:          CrashLoopBackOff,
 						Instance:        "pinky-pod-0",
@@ -141,7 +141,7 @@ var _ = Describe("Event", func() {
 		Context("has terminated status", func() {
 
 			BeforeEach(func() {
-				pinkyCopy = createPod("pinky-pod", 0)
+				pinkyCopy = createPod("pinky-pod")
 				pinkyCopy.Status.ContainerStatuses = []v1.ContainerStatus{
 					{
 						State: v1.ContainerState{
@@ -152,7 +152,7 @@ var _ = Describe("Event", func() {
 					},
 				}
 
-				brainCopy = createPod("brain-pod", 0)
+				brainCopy = createPod("brain-pod")
 				crashTime = meta.Time{Time: time.Now()}
 				brainCopy.Status.ContainerStatuses = []v1.ContainerStatus{
 					{
@@ -177,7 +177,7 @@ var _ = Describe("Event", func() {
 
 			It("should receive a crashed report", func() {
 				Eventually(reportChan).Should(Receive(Equal(events.CrashReport{
-					ProcessGuid: "brain-pod-anno",
+					ProcessGUID: "brain-pod-anno",
 					AppCrashedRequest: cc_messages.AppCrashedRequest{
 						Reason:          "this describes how much you screwed up",
 						Instance:        "brain-pod-0",
@@ -237,10 +237,10 @@ var _ = Describe("Event", func() {
 	})
 })
 
-func createPod(name string, index int) *v1.Pod {
+func createPod(name string) *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: meta.ObjectMeta{
-			Name: fmt.Sprintf("%s-%d", name, index),
+			Name: fmt.Sprintf("%s-%d", name, 0),
 			Annotations: map[string]string{
 				cf.ProcessGUID: fmt.Sprintf("%s-anno", name),
 			},

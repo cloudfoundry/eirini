@@ -8,11 +8,11 @@ import (
 
 //go:generate counterfeiter . CcClient
 type CcClient interface {
-	AppCrashed(proccessGuid string, crashedRequest cc_messages.AppCrashedRequest, logger lager.Logger) error
+	AppCrashed(proccessGUID string, crashedRequest cc_messages.AppCrashedRequest, logger lager.Logger) error
 }
 
 type CrashReport struct {
-	ProcessGuid string
+	ProcessGUID string
 	cc_messages.AppCrashedRequest
 }
 
@@ -35,6 +35,6 @@ func NewCrashReporter(reportChan <-chan CrashReport, scheduler route.TaskSchedul
 func (c *CrashReporter) Run() {
 	c.scheduler.Schedule(func() error {
 		report := <-c.reports
-		return c.client.AppCrashed(report.ProcessGuid, report.AppCrashedRequest, c.logger)
+		return c.client.AppCrashed(report.ProcessGUID, report.AppCrashedRequest, c.logger)
 	})
 }

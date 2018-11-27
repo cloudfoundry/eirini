@@ -31,7 +31,7 @@ var _ = Describe("Crashreporter", func() {
 		crashReporter = NewCrashReporter(work, scheduler, ccClient, lagertest.NewTestLogger("tester"))
 
 		crashReports = CrashReport{
-			ProcessGuid: "some-guid",
+			ProcessGUID: "some-guid",
 			AppCrashedRequest: cc_messages.AppCrashedRequest{
 				Instance:        "0",
 				Index:           0,
