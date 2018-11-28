@@ -5,6 +5,8 @@ const (
 	Launcher = "/lifecycle/launcher"
 )
 
+var InitProcess = []string{"dumb-init", "--"}
+
 func SetupEnv(startCmd string) map[string]string {
 	return map[string]string{
 		"HOME": "/home/vcap/app",

@@ -91,8 +91,8 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(lrp.Metadata[cf.LastUpdated]).To(Equal("23534635232.3"))
 			})
 
-			It("should set the launcher command", func() {
-				Expect(lrp.Command).To(Equal([]string{launcher.Launch}))
+			It("should set the start command", func() {
+				Expect(lrp.Command).To(Equal(append(launcher.InitProcess, launcher.Launch)))
 			})
 
 			It("should set the VCAP_APPLICATION environment variable", func() {

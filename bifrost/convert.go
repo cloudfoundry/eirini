@@ -58,10 +58,8 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		Name:            vcap.AppID,
 		Image:           request.DockerImageURL,
 		TargetInstances: request.NumInstances,
-		Command: []string{
-			launcher.Launch,
-		},
-		Env: mergeMaps(request.Environment, lev),
+		Command:         append(launcher.InitProcess, launcher.Launch),
+		Env:             mergeMaps(request.Environment, lev),
 		Health: opi.Healtcheck{
 			Type:      request.HealthCheckType,
 			Endpoint:  request.HealthCheckHTTPEndpoint,
