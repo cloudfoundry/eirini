@@ -52,3 +52,7 @@
 [[constraint]]
   name = "github.com/cloudfoundry-incubator/credhub-cli"
   version = "2.1.0"
+
+[[constraint]]
+  name = "github.com/satori/go.uuid"
+  version = "1.2.0"

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"github.com/satori/go.uuid"
 )
 
 //This is a small wrapper around the launcher which is required to
@@ -30,6 +32,10 @@ func main() {
 
 	err = os.Setenv("CF_INSTANCE_INDEX", index)
 	check(err, "setting instance index env var")
+
+	uuid := uuid.NewV4()
+	err = os.Setenv("CF_INSTANCE_GUID", uuid.String())
+	check(err, "setting instance guid env var")
 
 	var launcherPath string
 	if len(os.Args) > 1 {
