@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -74,6 +75,10 @@ func (c *CrashInformer) Work() {
 
 			terminated := pod.Status.ContainerStatuses[0].State.Terminated
 			if terminated != nil && terminated.ExitCode != 0 {
+				if c.isStopped(pod.Name, string(pod.UID)) {
+					continue
+				}
+
 				c.reportState(pod, terminated.Reason, int(terminated.ExitCode), terminated.Reason, int64(terminated.StartedAt.Second()))
 				continue
 			}
@@ -91,6 +96,22 @@ func (c *CrashInformer) Work() {
 			return
 		}
 	}
+}
+
+func (c *CrashInformer) isStopped(podName string, podUID string) bool {
+	eventList, err := c.clientset.CoreV1().Events(c.namespace).List(meta.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s", c.namespace, string(podUID), podName)})
+	if err != nil {
+		return false
+	}
+
+	events := eventList.Items
+
+	if events == nil || len(events) == 0 {
+		return false
+	}
+
+	ok := events[len(events)-1]
+	return ok.Reason == "Killing"
 }
 
 func (c *CrashInformer) reportState(

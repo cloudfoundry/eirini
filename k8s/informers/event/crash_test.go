@@ -20,6 +20,8 @@ import (
 
 var _ = Describe("Event", func() {
 
+	const namespace = "milkyway"
+
 	var (
 		client        kubernetes.Interface
 		crashInformer *CrashInformer
@@ -37,6 +39,16 @@ var _ = Describe("Event", func() {
 		pinky = createPod("pinky-pod")
 		brain = createPod("brain-pod")
 		bandito = createStatelessPod("bandito")
+
+		reportChan = make(chan events.CrashReport)
+		informerStopper = make(chan struct{})
+
+		client = fake.NewSimpleClientset()
+		crashInformer = NewCrashInformer(client, 0, namespace, reportChan, informerStopper)
+
+		watcher = watch.NewFake()
+		fakecs := client.(*fake.Clientset)
+		fakecs.PrependWatchReactor("pods", testing.DefaultWatchReactor(watcher, nil))
 	})
 
 	AfterEach(func() {
@@ -44,16 +56,6 @@ var _ = Describe("Event", func() {
 	})
 
 	JustBeforeEach(func() {
-		reportChan = make(chan events.CrashReport)
-		informerStopper = make(chan struct{})
-
-		client = fake.NewSimpleClientset()
-		crashInformer = NewCrashInformer(client, 0, "milkyway", reportChan, informerStopper)
-
-		watcher = watch.NewFake()
-		fakecs := client.(*fake.Clientset)
-		fakecs.PrependWatchReactor("pods", testing.DefaultWatchReactor(watcher, nil))
-
 		go crashInformer.Start()
 		go crashInformer.Work()
 
@@ -234,6 +236,39 @@ var _ = Describe("Event", func() {
 				Consistently(reportChan).ShouldNot(Receive())
 			})
 		})
+	})
+
+	Context("When a pod was just stopped or deleted", func() {
+		BeforeEach(func() {
+			event := v1.Event{
+				InvolvedObject: v1.ObjectReference{
+					Namespace: namespace,
+					Name:      "pinky-pod",
+				},
+				Reason: "Killing",
+			}
+			_, clientErr := client.CoreV1().Events(namespace).Create(&event)
+			Expect(clientErr).ToNot(HaveOccurred())
+		})
+
+		JustBeforeEach(func() {
+			pinky.Status.ContainerStatuses = []v1.ContainerStatus{
+				{
+					State: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{
+							ExitCode: 1,
+						},
+					},
+				},
+			}
+
+			watcher.Modify(pinky)
+		})
+
+		It("should not emit a crashed event", func() {
+			Consistently(reportChan).ShouldNot(Receive())
+		})
+
 	})
 })
 
