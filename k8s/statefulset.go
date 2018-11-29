@@ -15,6 +15,8 @@ import (
 	types "k8s.io/client-go/kubernetes/typed/apps/v1beta2"
 )
 
+const eventKilling = "Killing"
+
 type StatefulSetDesirer struct {
 	Client                kubernetes.Interface
 	Namespace             string
@@ -90,6 +92,10 @@ func (m *StatefulSetDesirer) GetInstances(appName string) ([]*opi.Instance, erro
 
 	instances := []*opi.Instance{}
 	for _, pod := range pods.Items {
+		if m.isStopped(pod.Name, string(pod.UID)) {
+			continue
+		}
+
 		index, err := parsePodIndex(pod.Name)
 		if err != nil {
 			return []*opi.Instance{}, err
@@ -109,6 +115,22 @@ func (m *StatefulSetDesirer) GetInstances(appName string) ([]*opi.Instance, erro
 	}
 
 	return instances, nil
+}
+
+func (m *StatefulSetDesirer) isStopped(podName string, podUID string) bool {
+	eventList, err := m.Client.CoreV1().Events(m.Namespace).List(meta.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s", m.Namespace, string(podUID), podName)})
+	if err != nil {
+		return false
+	}
+
+	events := eventList.Items
+
+	if events == nil || len(events) == 0 {
+		return false
+	}
+
+	event := events[len(events)-1]
+	return event.Reason == eventKilling
 }
 
 func getPodState(pod *v1.Pod) string {

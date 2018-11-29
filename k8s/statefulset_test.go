@@ -14,8 +14,10 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/api/apps/v1beta2"
 	"k8s.io/api/core/v1"
+
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
@@ -392,6 +394,36 @@ var _ = Describe("Statefulset", func() {
 			})
 		})
 
+		Context("and the StatefulSet was deleted/stopped", func() {
+
+			BeforeEach(func() {
+				client.CoreV1().Events(namespace).Create(&v1.Event{
+					Reason: "Killing",
+					InvolvedObject: v1.ObjectReference{
+						Name:      "odin-0",
+						Namespace: namespace,
+						UID:       "odin-0-uid",
+					},
+				})
+				client.CoreV1().Events(namespace).Create(&v1.Event{
+					Reason: "Killing",
+					InvolvedObject: v1.ObjectReference{
+						Name:      "odin-1",
+						Namespace: namespace,
+						UID:       "odin-1-uid",
+					},
+				})
+			})
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return a default value", func() {
+				Expect(instances).To(HaveLen(0))
+			})
+		})
+
 		Context("and the pod is pending", func() {
 			BeforeEach(func() {
 				pod1.Status.Phase = v1.PodPending
@@ -458,6 +490,7 @@ func getStatefulSetNames(statefulSets []v1beta2.StatefulSet) []string {
 func toPod(lrpName string, index int, time *meta.Time) *v1.Pod {
 	pod := v1.Pod{}
 	pod.Name = lrpName + "-" + strconv.Itoa(index)
+	pod.UID = types.UID(pod.Name + "-uid")
 	pod.Labels = map[string]string{
 		"name": lrpName,
 	}
