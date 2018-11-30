@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini/events"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"k8s.io/api/core/v1"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -24,7 +24,6 @@ type CrashInformer struct {
 	namespace   string
 	reportChan  chan events.CrashReport
 	stopperChan chan struct{}
-	workChan    chan v1.Pod
 }
 
 func NewCrashInformer(
@@ -40,7 +39,6 @@ func NewCrashInformer(
 		namespace:   namespace,
 		reportChan:  reportChan,
 		stopperChan: stopperChan,
-		workChan:    make(chan v1.Pod, 20),
 	}
 }
 
@@ -60,62 +58,39 @@ func (c *CrashInformer) Start() {
 }
 
 func (c *CrashInformer) updateFunc(_ interface{}, newObj interface{}) {
-	mObj := newObj.(*v1.Pod)
-	c.workChan <- *mObj
-}
+	pod := newObj.(*v1.Pod)
+	statuses := pod.Status.ContainerStatuses
+	if statuses == nil || len(statuses) == 0 {
+		return
+	}
 
-func (c *CrashInformer) Work() {
-	for {
-		select {
-		case pod := <-c.workChan:
-			statuses := pod.Status.ContainerStatuses
-			if statuses == nil || len(statuses) == 0 {
-				continue
-			}
+	terminated := pod.Status.ContainerStatuses[0].State.Terminated
+	if terminated != nil && terminated.ExitCode != 0 {
+		c.reportState(pod)
+		return
+	}
 
-			terminated := pod.Status.ContainerStatuses[0].State.Terminated
-			if terminated != nil && terminated.ExitCode != 0 {
-				if c.isStopped(pod.Name, string(pod.UID)) {
-					continue
-				}
-
-				c.reportState(pod, terminated.Reason, int(terminated.ExitCode), terminated.Reason, int64(terminated.StartedAt.Second()))
-				continue
-			}
-
-			waiting := pod.Status.ContainerStatuses[0].State.Waiting
-			if waiting != nil && waiting.Reason == CrashLoopBackOff {
-				container := pod.Status.ContainerStatuses[0]
-				exitStatus := int(container.LastTerminationState.Terminated.ExitCode)
-				exitDescription := container.LastTerminationState.Terminated.Reason
-				crashTimestamp := int64(container.LastTerminationState.Terminated.StartedAt.Second())
-				c.reportState(pod, waiting.Reason, exitStatus, exitDescription, crashTimestamp)
-			}
-
-		case <-c.stopperChan:
-			return
-		}
+	waiting := pod.Status.ContainerStatuses[0].State.Waiting
+	if waiting != nil && waiting.Reason == CrashLoopBackOff {
+		container := pod.Status.ContainerStatuses[0]
+		exitStatus := int(container.LastTerminationState.Terminated.ExitCode)
+		exitDescription := container.LastTerminationState.Terminated.Reason
+		crashTimestamp := int64(container.LastTerminationState.Terminated.StartedAt.Second())
+		c.sendStateReport(pod, waiting.Reason, exitStatus, exitDescription, crashTimestamp)
 	}
 }
 
-func (c *CrashInformer) isStopped(podName string, podUID string) bool {
-	eventList, err := c.clientset.CoreV1().Events(c.namespace).List(meta.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s", c.namespace, string(podUID), podName)})
-	if err != nil {
-		return false
+func (c *CrashInformer) reportState(pod *v1.Pod) {
+	if k8s.IsStopped(c.clientset, pod) {
+		return
 	}
 
-	events := eventList.Items
-
-	if events == nil || len(events) == 0 {
-		return false
-	}
-
-	ok := events[len(events)-1]
-	return ok.Reason == "Killing"
+	terminated := pod.Status.ContainerStatuses[0].State.Terminated
+	c.sendStateReport(pod, terminated.Reason, int(terminated.ExitCode), terminated.Reason, int64(terminated.StartedAt.Second()))
 }
 
-func (c *CrashInformer) reportState(
-	pod v1.Pod,
+func (c *CrashInformer) sendStateReport(
+	pod *v1.Pod,
 	reason string,
 	exitStatus int,
 	exitDescription string,
@@ -127,7 +102,7 @@ func (c *CrashInformer) reportState(
 }
 
 func toReport(
-	pod v1.Pod,
+	pod *v1.Pod,
 	reason string,
 	exitStatus int,
 	exitDescription string,

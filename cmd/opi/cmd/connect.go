@@ -239,7 +239,6 @@ func launchEventReporter(uri, ca, cert, key, kubeConf, namespace string) {
 	)
 
 	go crashInformer.Start()
-	go crashInformer.Work()
 	go reporter.Run()
 }
 

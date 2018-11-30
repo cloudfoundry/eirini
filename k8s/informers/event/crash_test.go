@@ -57,7 +57,6 @@ var _ = Describe("Event", func() {
 
 	JustBeforeEach(func() {
 		go crashInformer.Start()
-		go crashInformer.Work()
 
 		watcher.Add(pinky)
 		watcher.Add(brain)

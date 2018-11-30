@@ -397,22 +397,30 @@ var _ = Describe("Statefulset", func() {
 		Context("and the StatefulSet was deleted/stopped", func() {
 
 			BeforeEach(func() {
-				client.CoreV1().Events(namespace).Create(&v1.Event{
+				event1 := &v1.Event{
 					Reason: "Killing",
 					InvolvedObject: v1.ObjectReference{
 						Name:      "odin-0",
 						Namespace: namespace,
 						UID:       "odin-0-uid",
 					},
-				})
-				client.CoreV1().Events(namespace).Create(&v1.Event{
+				}
+				event2 := &v1.Event{
 					Reason: "Killing",
 					InvolvedObject: v1.ObjectReference{
 						Name:      "odin-1",
 						Namespace: namespace,
 						UID:       "odin-1-uid",
 					},
-				})
+				}
+
+				event1.Name = "event1"
+				event2.Name = "event2"
+
+				_, clientErr := client.CoreV1().Events(namespace).Create(event1)
+				Expect(clientErr).ToNot(HaveOccurred())
+				_, clientErr = client.CoreV1().Events(namespace).Create(event2)
+				Expect(clientErr).ToNot(HaveOccurred())
 			})
 
 			It("should not return an error", func() {
