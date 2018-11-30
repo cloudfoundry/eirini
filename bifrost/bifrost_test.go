@@ -193,12 +193,13 @@ var _ = Describe("Bifrost", func() {
 
 		var (
 			bfrst         bifrost.Bifrost
-			updateRequest models.UpdateDesiredLRPRequest
+			updateRequest cf.UpdateDesiredLRPRequest
 		)
 
 		BeforeEach(func() {
-			updateRequest = models.UpdateDesiredLRPRequest{
-				ProcessGuid: "app_name",
+			updateRequest = cf.UpdateDesiredLRPRequest{
+				GUID:    "guid_1234",
+				Version: "version_1234",
 			}
 			opiClient = new(opifakes.FakeDesirer)
 
@@ -239,8 +240,9 @@ var _ = Describe("Bifrost", func() {
 
 				It("should get the existing LRP", func() {
 					Expect(opiClient.GetCallCount()).To(Equal(1))
-					appName := opiClient.GetArgsForCall(0)
-					Expect(appName).To(Equal("app_name"))
+					identifier := opiClient.GetArgsForCall(0)
+					Expect(identifier.GUID).To(Equal("guid_1234"))
+					Expect(identifier.Version).To(Equal("version_1234"))
 				})
 
 				It("should submit the updated LRP", func() {
@@ -299,8 +301,9 @@ var _ = Describe("Bifrost", func() {
 
 				It("should get the existing LRP", func() {
 					Expect(opiClient.GetCallCount()).To(Equal(1))
-					appName := opiClient.GetArgsForCall(0)
-					Expect(appName).To(Equal("app_name"))
+					identifier := opiClient.GetArgsForCall(0)
+					Expect(identifier.GUID).To(Equal("guid_1234"))
+					Expect(identifier.Version).To(Equal("version_1234"))
 				})
 
 				It("should have the updated routes", func() {
@@ -339,8 +342,9 @@ var _ = Describe("Bifrost", func() {
 
 			It("should try to get the LRP", func() {
 				Expect(opiClient.GetCallCount()).To(Equal(1))
-				appName := opiClient.GetArgsForCall(0)
-				Expect(appName).To(Equal("app_name"))
+				identifier := opiClient.GetArgsForCall(0)
+				Expect(identifier.GUID).To(Equal("guid_1234"))
+				Expect(identifier.Version).To(Equal("version_1234"))
 
 			})
 
@@ -371,8 +375,12 @@ var _ = Describe("Bifrost", func() {
 				Desirer: opiClient,
 				Logger:  lager,
 			}
+			identifier := opi.LRPIdentifier{
+				GUID:    "guid_1234",
+				Version: "version_1234",
+			}
 
-			desiredLRP = bfrst.GetApp(context.Background(), "app_name")
+			desiredLRP = bfrst.GetApp(context.Background(), identifier)
 		})
 
 		Context("when the app exists", func() {
@@ -387,8 +395,9 @@ var _ = Describe("Bifrost", func() {
 
 			It("should use the desirer to get the lrp", func() {
 				Expect(opiClient.GetCallCount()).To(Equal(1))
-				guid := opiClient.GetArgsForCall(0)
-				Expect(guid).To(Equal("app_name"))
+				identifier := opiClient.GetArgsForCall(0)
+				Expect(identifier.GUID).To(Equal("guid_1234"))
+				Expect(identifier.Version).To(Equal("version_1234"))
 			})
 
 			It("should return a DesiredLRP", func() {
@@ -422,7 +431,7 @@ var _ = Describe("Bifrost", func() {
 		})
 
 		JustBeforeEach(func() {
-			err = bfrst.Stop(context.Background(), "guid")
+			err = bfrst.Stop(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 		})
 
 		It("should not return an error", func() {
@@ -430,8 +439,9 @@ var _ = Describe("Bifrost", func() {
 		})
 
 		It("should call the desirer with the expected guid", func() {
-			guid := opiClient.StopArgsForCall(0)
-			Expect(guid).To(Equal("guid"))
+			identifier := opiClient.StopArgsForCall(0)
+			Expect(identifier.GUID).To(Equal("guid_1234"))
+			Expect(identifier.Version).To(Equal("version_1234"))
 		})
 
 		Context("when desirer's stop fails", func() {
@@ -469,13 +479,14 @@ var _ = Describe("Bifrost", func() {
 				Logger:  lager,
 			}
 
-			instances, err = bfrst.GetInstances(context.Background(), "my-guid-420")
+			instances, err = bfrst.GetInstances(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 		})
 
 		It("should get the app instances from Desirer", func() {
 			Expect(opiClient.GetInstancesCallCount()).To(Equal(1))
-			guid := opiClient.GetInstancesArgsForCall(0)
-			Expect(guid).To(Equal("my-guid-420"))
+			identifier := opiClient.GetInstancesArgsForCall(0)
+			Expect(identifier.GUID).To(Equal("guid_1234"))
+			Expect(identifier.Version).To(Equal("version_1234"))
 		})
 
 		It("should not return an error", func() {

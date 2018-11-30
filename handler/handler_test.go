@@ -98,7 +98,7 @@ var _ = Describe("Handler", func() {
 
 			BeforeEach(func() {
 				method = "GET"
-				path = "/apps/myguid"
+				path = "/apps/myguid/myversion"
 				expectedStatus = http.StatusOK
 
 				bifrost.GetAppReturns(&models.DesiredLRP{})
@@ -112,7 +112,7 @@ var _ = Describe("Handler", func() {
 		Context("GET /apps/:process_guid/instances", func() {
 			BeforeEach(func() {
 				method = "GET"
-				path = "/apps/my-guid/instances"
+				path = "/apps/my-guid/myversion/instances"
 				expectedStatus = http.StatusOK
 			})
 
@@ -126,7 +126,7 @@ var _ = Describe("Handler", func() {
 
 			BeforeEach(func() {
 				method = "PUT"
-				path = "/apps/myguid/stop"
+				path = "/apps/myguid/myversion/stop"
 				expectedStatus = http.StatusOK
 			})
 

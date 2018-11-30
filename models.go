@@ -7,6 +7,7 @@ import (
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/models/cf"
+	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
@@ -108,10 +109,10 @@ type Extractor interface {
 type Bifrost interface {
 	Transfer(ctx context.Context, request cf.DesireLRPRequest) error
 	List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error)
-	Update(ctx context.Context, update models.UpdateDesiredLRPRequest) error
-	Stop(ctx context.Context, guid string) error
-	GetApp(ctx context.Context, guid string) *models.DesiredLRP
-	GetInstances(ctx context.Context, guid string) ([]*cf.Instance, error)
+	Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error
+	Stop(ctx context.Context, identifier opi.LRPIdentifier) error
+	GetApp(ctx context.Context, identifier opi.LRPIdentifier) *models.DesiredLRP
+	GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error)
 }
 
 func GetInternalServiceName(appName string) string {

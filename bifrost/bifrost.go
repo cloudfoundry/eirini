@@ -50,8 +50,13 @@ func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []*models.DesiredLRPSchedulingI
 	return infos
 }
 
-func (b *Bifrost) Update(ctx context.Context, update models.UpdateDesiredLRPRequest) error {
-	lrp, err := b.Desirer.Get(update.ProcessGuid)
+func (b *Bifrost) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error {
+	identifier := opi.LRPIdentifier{
+		GUID:    update.GUID,
+		Version: update.Version,
+	}
+
+	lrp, err := b.Desirer.Get(identifier)
 	if err != nil {
 		b.Logger.Error("application-not-found", err, lager.Data{"process-guid": update.ProcessGuid})
 		return err
@@ -60,7 +65,7 @@ func (b *Bifrost) Update(ctx context.Context, update models.UpdateDesiredLRPRequ
 	lrp.TargetInstances = int(*update.Update.Instances)
 	lrp.Metadata[cf.LastUpdated] = *update.Update.Annotation
 
-	routes, err := getRoutes(update)
+	routes, err := getURIs(update)
 	if err != nil {
 		return err
 	}
@@ -70,10 +75,10 @@ func (b *Bifrost) Update(ctx context.Context, update models.UpdateDesiredLRPRequ
 	return b.Desirer.Update(lrp)
 }
 
-func (b *Bifrost) GetApp(ctx context.Context, guid string) *models.DesiredLRP {
-	lrp, err := b.Desirer.Get(guid)
+func (b *Bifrost) GetApp(ctx context.Context, identifier opi.LRPIdentifier) *models.DesiredLRP {
+	lrp, err := b.Desirer.Get(identifier)
 	if err != nil {
-		b.Logger.Error("failed-to-get-deployment", err, lager.Data{"process-guid": guid})
+		b.Logger.Error("failed-to-get-deployment", err, lager.Data{"process-guid": identifier.GUID})
 		return nil
 	}
 
@@ -85,14 +90,14 @@ func (b *Bifrost) GetApp(ctx context.Context, guid string) *models.DesiredLRP {
 	return desiredLRP
 }
 
-func (b *Bifrost) Stop(ctx context.Context, guid string) error {
-	return b.Desirer.Stop(guid)
+func (b *Bifrost) Stop(ctx context.Context, identifier opi.LRPIdentifier) error {
+	return b.Desirer.Stop(identifier)
 }
 
-func (b *Bifrost) GetInstances(ctx context.Context, guid string) ([]*cf.Instance, error) {
-	opiInstances, err := b.Desirer.GetInstances(guid)
+func (b *Bifrost) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error) {
+	opiInstances, err := b.Desirer.GetInstances(identifier)
 	if err != nil {
-		return []*cf.Instance{}, errors.Wrap(err, fmt.Sprintf("failed to get instances for app with guid: %s", guid))
+		return []*cf.Instance{}, errors.Wrap(err, fmt.Sprintf("failed to get instances for app with guid: %s", identifier.GUID))
 	}
 
 	cfInstances := make([]*cf.Instance, 0, len(opiInstances))
@@ -107,7 +112,7 @@ func (b *Bifrost) GetInstances(ctx context.Context, guid string) ([]*cf.Instance
 	return cfInstances, nil
 }
 
-func getRoutes(update models.UpdateDesiredLRPRequest) (string, error) {
+func getURIs(update cf.UpdateDesiredLRPRequest) (string, error) {
 	if !routesAvailable(update.Update.Routes) {
 		return "", nil
 	}

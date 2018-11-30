@@ -156,7 +156,7 @@ var _ = Describe("AppHandler", func() {
 
 		BeforeEach(func() {
 			path = "/apps/myguid"
-			body = `{"process_guid": "myguid", "update": {"instances": 5}}`
+			body = `{"guid": "app-id", "version": "version-id", "update": {"instances": 5}}`
 		})
 
 		JustBeforeEach(func() {
@@ -181,25 +181,10 @@ var _ = Describe("AppHandler", func() {
 			It("should translate the request", func() {
 				Expect(bifrost.UpdateCallCount()).To(Equal(1))
 				_, request := bifrost.UpdateArgsForCall(0)
-				Expect(request.ProcessGuid).To(Equal("myguid"))
+				Expect(request.GUID).To(Equal("app-id"))
+				Expect(request.Version).To(Equal("version-id"))
 				Expect(*request.Update.Instances).To(Equal(int32(5)))
 			})
-		})
-
-		Context("when the endpoint guid does not match the one in the body", func() {
-
-			BeforeEach(func() {
-				body = `{"process_guid": "anotherGUID", "update": {"instances": 5}}`
-			})
-
-			It("should return a 400 HTTP status code", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
-			})
-
-			It("should return a response object containing the error", func() {
-				verifyResponseObject()
-			})
-
 		})
 
 		Context("when the json is invalid", func() {
@@ -244,7 +229,7 @@ var _ = Describe("AppHandler", func() {
 		)
 
 		BeforeEach(func() {
-			path = "/apps/guid_1234"
+			path = "/apps/guid_1234/version_1234"
 		})
 
 		JustBeforeEach(func() {
@@ -260,14 +245,15 @@ var _ = Describe("AppHandler", func() {
 
 		It("should use the bifrost to get the app", func() {
 			Expect(bifrost.GetAppCallCount()).To(Equal(1))
-			_, guid := bifrost.GetAppArgsForCall(0)
-			Expect(guid).To(Equal("guid_1234"))
+			_, identifier := bifrost.GetAppArgsForCall(0)
+			Expect(identifier.GUID).To(Equal("guid_1234"))
+			Expect(identifier.Version).To(Equal("version_1234"))
 		})
 
 		Context("when the app exists", func() {
 			BeforeEach(func() {
 				desiredLRP = &models.DesiredLRP{
-					ProcessGuid: "guid_1234",
+					ProcessGuid: "guid_1234-version_1234",
 					Instances:   5,
 				}
 				bifrost.GetAppReturns(desiredLRP)
@@ -283,7 +269,7 @@ var _ = Describe("AppHandler", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				actualLRP := getLRPResponse.DesiredLrp
-				Expect(actualLRP.ProcessGuid).To(Equal("guid_1234"))
+				Expect(actualLRP.ProcessGuid).To(Equal("guid_1234-version_1234"))
 				Expect(actualLRP.Instances).To(Equal(int32(5)))
 			})
 
@@ -308,7 +294,7 @@ var _ = Describe("AppHandler", func() {
 		)
 
 		BeforeEach(func() {
-			path = "/apps/a-really-really-really-long-process-guid/stop"
+			path = "/apps/app_1234/version_1234/stop"
 		})
 
 		JustBeforeEach(func() {
@@ -329,9 +315,10 @@ var _ = Describe("AppHandler", func() {
 			Expect(bifrost.StopCallCount()).To(Equal(1))
 		})
 
-		It("should trim the process guid", func() {
-			_, appGUID := bifrost.StopArgsForCall(0)
-			Expect(appGUID).To(Equal("a-really-really-really-long-process-"))
+		It("should target the right app", func() {
+			_, identifier := bifrost.StopArgsForCall(0)
+			Expect(identifier.GUID).To(Equal("app_1234"))
+			Expect(identifier.Version).To(Equal("version_1234"))
 		})
 
 		Context("when app stop is not successful", func() {
@@ -358,7 +345,7 @@ var _ = Describe("AppHandler", func() {
 		)
 
 		BeforeEach(func() {
-			path = "/apps/guid_1234/instances"
+			path = "/apps/guid_1234/version_1234/instances"
 
 			instances := []*cf.Instance{
 				{Index: 0, Since: 123, State: "RUNNING"},
@@ -379,14 +366,15 @@ var _ = Describe("AppHandler", func() {
 
 		It("should use bifrost to get all instances", func() {
 			Expect(bifrost.GetInstancesCallCount()).To(Equal(1))
-			_, guid := bifrost.GetInstancesArgsForCall(0)
-			Expect(guid).To(Equal("guid_1234"))
+			_, identifier := bifrost.GetInstancesArgsForCall(0)
+			Expect(identifier.GUID).To(Equal("guid_1234"))
+			Expect(identifier.Version).To(Equal("version_1234"))
 		})
 
 		It("should return the instances in the response", func() {
 			expectedResponse := `
 				{
-					"process_guid": "guid_1234",
+					"process_guid": "guid_1234-version_1234",
 					"instances": [
 						{
 							"index": 0,
@@ -414,7 +402,7 @@ var _ = Describe("AppHandler", func() {
 				expectedResponse := `
 					{
 						"error": "not found",
-						"process_guid": "guid_1234",
+						"process_guid": "guid_1234-version_1234",
 						"instances": []
 					}`
 				body, err := ioutil.ReadAll(response.Body)

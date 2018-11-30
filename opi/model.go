@@ -1,5 +1,11 @@
 package opi
 
+import (
+	"fmt"
+
+	"code.cloudfoundry.org/eirini/util"
+)
+
 const (
 	RunningState = "RUNNING"
 	PendingState = "CLAIMED"
@@ -7,10 +13,25 @@ const (
 	UnknownState = "UNKNOWN"
 )
 
+type LRPIdentifier struct {
+	GUID, Version string
+	Hasher        util.Hasher
+}
+
+func (i *LRPIdentifier) Name() string {
+	hashed, _ := i.Hasher.Hash(fmt.Sprintf("%s-%s", i.GUID, i.Version))
+	return hashed
+}
+
+func (i *LRPIdentifier) ProcessGUID() string {
+	return fmt.Sprintf("%s-%s", i.GUID, i.Version)
+}
+
 // An LRP, or long-running-process, is a stateless process
 // where the scheduler should attempt to keep N copies running,
 // killing and recreating as needed to maintain that guarantee
 type LRP struct {
+	LRPIdentifier
 	Name             string
 	Image            string
 	Command          []string
@@ -47,10 +68,10 @@ type Task struct {
 type Desirer interface {
 	Desire(lrp *LRP) error
 	List() ([]*LRP, error)
-	Get(name string) (*LRP, error)
-	GetInstances(name string) ([]*Instance, error)
+	Get(identifier LRPIdentifier) (*LRP, error)
+	GetInstances(identifier LRPIdentifier) ([]*Instance, error)
 	Update(lrp *LRP) error
-	Stop(name string) error
+	Stop(identifier LRPIdentifier) error
 }
 
 //go:generate counterfeiter . TaskDesirer

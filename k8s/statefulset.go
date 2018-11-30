@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
+	"github.com/pkg/errors"
 	"k8s.io/api/apps/v1beta2"
 	"k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,9 +48,14 @@ func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 	return lrps, nil
 }
 
-func (m *StatefulSetDesirer) Stop(appName string) error {
+func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
+	statefulSet, err := m.getStatefulSet(identifier)
+	if err != nil {
+		return err
+	}
+
 	backgroundPropagation := meta.DeletePropagationBackground
-	return m.statefulSets().Delete(appName, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
+	return m.statefulSets().Delete(statefulSet.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
 }
 
 func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
@@ -58,7 +64,7 @@ func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
 }
 
 func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
-	statefulSet, err := m.statefulSets().Get(lrp.Name, meta.GetOptions{})
+	statefulSet, err := m.getStatefulSet(opi.LRPIdentifier{GUID: lrp.GUID, Version: lrp.Version})
 	if err != nil {
 		return err
 	}
@@ -72,19 +78,33 @@ func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
 	return err
 }
 
-func (m *StatefulSetDesirer) Get(appName string) (*opi.LRP, error) {
-	statefulSet, err := m.statefulSets().Get(appName, meta.GetOptions{})
+func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error) {
+	statefulset, err := m.getStatefulSet(identifier)
 	if err != nil {
 		return nil, err
 	}
-
-	lrp := statefulSetToLRP(statefulSet)
-
-	return lrp, nil
+	return statefulSetToLRP(statefulset), nil
 }
 
-func (m *StatefulSetDesirer) GetInstances(appName string) ([]*opi.Instance, error) {
-	options := meta.ListOptions{LabelSelector: fmt.Sprintf("name=%s", appName)}
+func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*v1beta2.StatefulSet, error) {
+	options := meta.ListOptions{LabelSelector: fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)}
+	statefulSet, err := m.statefulSets().List(options)
+	if err != nil {
+		return nil, err
+	}
+	statefulsets := statefulSet.Items
+	switch len(statefulsets) {
+	case 0:
+		return nil, errors.New("app not found")
+	case 1:
+		return &statefulsets[0], nil
+	default:
+		panic(fmt.Sprintf("more than one was identified as %+v", identifier))
+	}
+}
+
+func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
+	options := meta.ListOptions{LabelSelector: fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)}
 	pods, err := m.Client.CoreV1().Pods(m.Namespace).List(options)
 	if err != nil {
 		return []*opi.Instance{}, err
@@ -173,6 +193,10 @@ func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 		ports = append(ports, port.ContainerPort)
 	}
 	return &opi.LRP{
+		LRPIdentifier: opi.LRPIdentifier{
+			GUID:    s.Annotations[cf.VcapAppID],
+			Version: s.Annotations[cf.VcapVersion],
+		},
 		Name:             s.Name,
 		Image:            s.Spec.Template.Spec.Containers[0].Image,
 		Command:          s.Spec.Template.Spec.Containers[0].Command,
@@ -183,6 +207,8 @@ func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 			cf.LastUpdated:          s.Annotations[cf.LastUpdated],
 			cf.VcapAppUris:          s.Annotations[cf.VcapAppUris],
 			eirini.RegisteredRoutes: s.Annotations[cf.VcapAppUris],
+			cf.VcapAppID:            s.Annotations[cf.VcapAppID],
+			cf.VcapVersion:          s.Annotations[cf.VcapVersion],
 		},
 	}
 }
@@ -253,18 +279,20 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 
 	statefulSet.Name = lrp.Name
 	statefulSet.Spec.Template.Labels = map[string]string{
-		"name": lrp.Name,
+		"guid":    lrp.GUID,
+		"version": lrp.Version,
 	}
 
 	statefulSet.Spec.Selector = &meta.LabelSelector{
 		MatchLabels: map[string]string{
-			"name": lrp.Name,
+			"guid":    lrp.GUID,
+			"version": lrp.Version,
 		},
 	}
 
 	statefulSet.Labels = map[string]string{
-		"eirini": "eirini",
-		"name":   lrp.Name,
+		"guid":    lrp.GUID,
+		"version": lrp.Version,
 	}
 
 	statefulSet.Annotations = lrp.Metadata

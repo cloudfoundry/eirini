@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -51,10 +50,7 @@ func (d *DesirerSimulator) List() ([]*opi.LRP, error) {
 	panic("not implemented")
 }
 
-func (d *DesirerSimulator) Get(name string) (*opi.LRP, error) {
-	if name != "jeff" {
-		return &opi.LRP{}, errors.New("this is not jeff")
-	}
+func (d *DesirerSimulator) Get(identifier opi.LRPIdentifier) (*opi.LRP, error) {
 	return &opi.LRP{
 		Name:             "jeff",
 		TargetInstances:  4,
@@ -67,11 +63,11 @@ func (d *DesirerSimulator) Update(updated *opi.LRP) error {
 	return nil
 }
 
-func (d *DesirerSimulator) GetInstances(name string) ([]*opi.Instance, error) {
+func (d *DesirerSimulator) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
 	return []*opi.Instance{}, nil
 }
 
-func (d *DesirerSimulator) Stop(guid string) error {
+func (d *DesirerSimulator) Stop(identifier opi.LRPIdentifier) error {
 	panic("not implemented")
 }
 

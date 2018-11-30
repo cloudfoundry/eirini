@@ -2,12 +2,12 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
+	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/julienschmidt/httprouter"
@@ -22,17 +22,10 @@ type App struct {
 	logger  lager.Logger
 }
 
-func (a *App) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (a *App) Desire(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var request cf.DesireLRPRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		a.logger.Error("request-body-decoding-failed", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	processGUID := ps.ByName("process_guid")
-	if processGUID != request.ProcessGUID {
-		a.logger.Error("process-guid-mismatch", nil, lager.Data{"desired-app-process-guid": request.ProcessGUID})
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -46,7 +39,7 @@ func (a *App) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (a *App) List(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (a *App) List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	desiredLRPSchedulingInfos, err := a.bifrost.List(r.Context())
 	if err != nil {
 		a.logger.Error("list-apps-failed", err)
@@ -73,8 +66,11 @@ func (a *App) List(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 }
 
 func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	processGUID := ps.ByName("process_guid")
-	desiredLRP := a.bifrost.GetApp(r.Context(), processGUID)
+	identifier := opi.LRPIdentifier{
+		GUID:    ps.ByName("process_guid"),
+		Version: ps.ByName("version_guid"),
+	}
+	desiredLRP := a.bifrost.GetApp(r.Context(), identifier)
 	if desiredLRP == nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -97,20 +93,11 @@ func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 }
 
 func (a *App) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	var request models.UpdateDesiredLRPRequest
+	var request cf.UpdateDesiredLRPRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		a.logger.Error("json-decoding-failure", err)
 		err = writeUpdateErrorResponse(w, err, http.StatusBadRequest)
 
-		a.logError("Could not write response", err)
-
-		return
-	}
-
-	guid := ps.ByName("process_guid")
-	if guid != request.ProcessGuid {
-		a.logger.Error("process-guid-mismatch", nil, lager.Data{"update-app-process-guid": request.ProcessGuid})
-		err := writeUpdateErrorResponse(w, errors.New("Process guid missmatch"), http.StatusBadRequest)
 		a.logError("Could not write response", err)
 
 		return
@@ -124,12 +111,11 @@ func (a *App) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 }
 
 func (a *App) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	processGUID := ps.ByName("process_guid")
-	if len(processGUID) > 36 {
-		processGUID = processGUID[:36]
+	identifier := opi.LRPIdentifier{
+		GUID:    ps.ByName("process_guid"),
+		Version: ps.ByName("version_guid"),
 	}
-
-	err := a.bifrost.Stop(r.Context(), processGUID)
+	err := a.bifrost.Stop(r.Context(), identifier)
 	if err != nil {
 		a.logError("stop-app-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -137,9 +123,12 @@ func (a *App) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 }
 
 func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	guid := ps.ByName("process_guid")
-	instances, err := a.bifrost.GetInstances(r.Context(), guid)
-	response := a.createGetInstancesResponse(guid, instances, err)
+	identifier := opi.LRPIdentifier{
+		GUID:    ps.ByName("process_guid"),
+		Version: ps.ByName("version_guid"),
+	}
+	instances, err := a.bifrost.GetInstances(r.Context(), identifier)
+	response := a.createGetInstancesResponse(identifier.ProcessGUID(), instances, err)
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {

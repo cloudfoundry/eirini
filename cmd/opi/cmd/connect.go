@@ -21,6 +21,7 @@ import (
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/stager"
+	"code.cloudfoundry.org/eirini/util"
 	loggregator "code.cloudfoundry.org/go-loggregator"
 	"code.cloudfoundry.org/lager"
 
@@ -148,7 +149,7 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 	registryIP := cfg.Properties.RegistryAddress
-	converter := bifrost.NewConverter(cfClient, client, convertLogger, registryIP, "http://127.0.0.1:8080")
+	converter := bifrost.NewConverter(cfClient, client, &util.TruncatedSHA256Hasher{}, convertLogger, registryIP, "http://127.0.0.1:8080")
 
 	return &bifrost.Bifrost{
 		Converter: converter,

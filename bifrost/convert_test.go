@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/eirini/launcher"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/util/utilfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,6 +20,7 @@ import (
 var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	var (
 		cfClient         *eirinifakes.FakeCfClient
+		hasher           *utilfakes.FakeHasher
 		fakeServer       *ghttp.Server
 		logger           *lagertest.TestLogger
 		client           *http.Client
@@ -31,6 +33,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 	BeforeEach(func() {
 		cfClient = new(eirinifakes.FakeCfClient)
+		hasher = new(utilfakes.FakeHasher)
 		fakeServer = ghttp.NewServer()
 		registryURL = fakeServer.URL()
 		logger = lagertest.NewTestLogger("test")
@@ -54,6 +57,8 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 		rawJSON := json.RawMessage(routesJSON)
 		desireLRPRequest = cf.DesireLRPRequest{
+			GUID:           "b194809b-88c0-49af-b8aa-69da097fc360",
+			Version:        "2fdc448f-6bac-4085-9426-87d0124c433a",
 			ProcessGUID:    "b194809b-88c0-49af-b8aa-69da097fc360-2fdc448f-6bac-4085-9426-87d0124c433a",
 			DropletHash:    "the-droplet-hash",
 			DropletGUID:    "the-droplet-guid",
@@ -74,11 +79,12 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				"cf-router": &rawJSON,
 			},
 		}
+		hasher.HashReturns("LRPHashedName", nil)
 	})
 
 	JustBeforeEach(func() {
 		regIP := "eirini-registry.service.cf.internal"
-		converter = bifrost.NewConverter(cfClient, client, logger, regIP, registryURL)
+		converter = bifrost.NewConverter(cfClient, client, hasher, logger, regIP, registryURL)
 		lrp, err = converter.Convert(desireLRPRequest)
 	})
 
@@ -92,9 +98,19 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should set the lrp.Name and TargetInstances", func() {
-				Expect(lrp.Name).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360"))
+			It("should hash the LRP name", func() {
+				Expect(hasher.HashCallCount()).To(Equal(1))
+				Expect(hasher.HashArgsForCall(0)).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360-2fdc448f-6bac-4085-9426-87d0124c433a"))
+				Expect(lrp.Name).To(Equal("LRPHashedName"))
+			})
+
+			It("should set the correct TargetInstances", func() {
 				Expect(lrp.TargetInstances).To(Equal(3))
+			})
+
+			It("should set the correct identifier", func() {
+				Expect(lrp.GUID).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360"))
+				Expect(lrp.Version).To(Equal("2fdc448f-6bac-4085-9426-87d0124c433a"))
 			})
 
 			It("should store the VCAP env variable as metadata", func() {
