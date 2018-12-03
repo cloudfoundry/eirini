@@ -41,6 +41,7 @@ type DesireLRPRequest struct {
 	HealthCheckType         string                      `json:"health_check_type"`
 	HealthCheckHTTPEndpoint string                      `json:"health_check_http_endpoint"`
 	HealthCheckTimeoutMs    uint                        `json:"health_check_timeout_ms"`
+	MemoryMB                int64                       `json:"memory_mb"`
 }
 
 type UpdateDesiredLRPRequest struct {

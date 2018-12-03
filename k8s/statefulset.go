@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/api/apps/v1beta2"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	types "k8s.io/client-go/kubernetes/typed/apps/v1beta2"
@@ -218,6 +219,7 @@ func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 	for _, port := range s.Spec.Template.Spec.Containers[0].Ports {
 		ports = append(ports, port.ContainerPort)
 	}
+	memory := s.Spec.Template.Spec.Containers[0].Resources.Requests.Memory().ScaledValue(resource.Mega)
 	return &opi.LRP{
 		LRPIdentifier: opi.LRPIdentifier{
 			GUID:    s.Annotations[cf.VcapAppID],
@@ -236,6 +238,7 @@ func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
 			cf.VcapAppID:            s.Annotations[cf.VcapAppID],
 			cf.VcapVersion:          s.Annotations[cf.VcapVersion],
 		},
+		MemoryMB: memory,
 	}
 }
 
@@ -276,7 +279,10 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 
 	livenessProbe := m.LivenessProbeCreator(lrp)
 	readinessProbe := m.ReadinessProbeCreator(lrp)
-
+	memory, err := resource.ParseQuantity(fmt.Sprintf("%dM", lrp.MemoryMB))
+	if err != nil {
+		panic(err)
+	}
 	statefulSet := &v1beta2.StatefulSet{
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: int32ptr(lrp.TargetInstances),
@@ -290,11 +296,19 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
-							Name:           "opi",
-							Image:          lrp.Image,
-							Command:        lrp.Command,
-							Env:            envs,
-							Ports:          ports,
+							Name:    "opi",
+							Image:   lrp.Image,
+							Command: lrp.Command,
+							Env:     envs,
+							Ports:   ports,
+							Resources: v1.ResourceRequirements{
+								Limits: v1.ResourceList{
+									v1.ResourceMemory: memory,
+								},
+								Requests: v1.ResourceList{
+									v1.ResourceMemory: memory,
+								},
+							},
 							LivenessProbe:  livenessProbe,
 							ReadinessProbe: readinessProbe,
 						},

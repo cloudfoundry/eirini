@@ -84,6 +84,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 			cf.VcapAppUris: routesJSON,
 			cf.LastUpdated: request.LastUpdated,
 		},
+		MemoryMB: request.MemoryMB,
 	}, nil
 }
 

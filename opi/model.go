@@ -43,6 +43,7 @@ type LRP struct {
 	TargetInstances  int
 	RunningInstances int
 	Metadata         map[string]string
+	MemoryMB         int64
 }
 
 type Instance struct {

@@ -2,6 +2,7 @@ package k8s_test
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"k8s.io/api/apps/v1beta2"
 	"k8s.io/api/core/v1"
 
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -579,6 +581,10 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	}
 
 	targetInstances := int32(lrp.TargetInstances)
+	memory, err := resource.ParseQuantity(fmt.Sprintf("%dM", lrp.MemoryMB))
+	if err != nil {
+		panic(err)
+	}
 	statefulSet := &v1beta2.StatefulSet{
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: &targetInstances,
@@ -599,6 +605,14 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 							Ports:          ports,
 							LivenessProbe:  &v1.Probe{},
 							ReadinessProbe: &v1.Probe{},
+							Resources: v1.ResourceRequirements{
+								Limits: v1.ResourceList{
+									v1.ResourceMemory: memory,
+								},
+								Requests: v1.ResourceList{
+									v1.ResourceMemory: memory,
+								},
+							},
 						},
 					},
 				},
@@ -645,6 +659,7 @@ func createLRP(processGUID, lastUpdated, routes string) *opi.LRP {
 			"while true; do echo hello; sleep 10;done",
 		},
 		RunningInstances: 0,
+		MemoryMB:         1024,
 		Image:            "busybox",
 		Ports:            []int32{8888, 9999},
 		Metadata: map[string]string{
