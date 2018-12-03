@@ -7,10 +7,12 @@ import (
 )
 
 const (
-	RunningState = "RUNNING"
-	PendingState = "CLAIMED"
-	CrashedState = "CRASHED"
-	UnknownState = "UNKNOWN"
+	RunningState            = "RUNNING"
+	PendingState            = "CLAIMED"
+	ErrorState              = "UNCLAIMED"
+	CrashedState            = "CRASHED"
+	UnknownState            = "UNKNOWN"
+	InsufficientMemoryError = "Insufficient resources: memory"
 )
 
 type LRPIdentifier struct {
@@ -44,9 +46,10 @@ type LRP struct {
 }
 
 type Instance struct {
-	Index int
-	Since int64
-	State string
+	Index          int
+	Since          int64
+	State          string
+	PlacementError string
 }
 
 type Healtcheck struct {

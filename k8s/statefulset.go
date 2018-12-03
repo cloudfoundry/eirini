@@ -16,7 +16,10 @@ import (
 	types "k8s.io/client-go/kubernetes/typed/apps/v1beta2"
 )
 
-const eventKilling = "Killing"
+const (
+	eventKilling          = "Killing"
+	eventFailedScheduling = "FailedScheduling"
+)
 
 type StatefulSetDesirer struct {
 	Client                kubernetes.Interface
@@ -112,7 +115,12 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 
 	instances := []*opi.Instance{}
 	for _, pod := range pods.Items {
-		if IsStopped(m.Client, &pod) {
+		events, err := GetEvents(m.Client, &pod)
+		if err != nil {
+			return []*opi.Instance{}, err
+		}
+
+		if IsStopped(events) {
 			continue
 		}
 
@@ -126,10 +134,13 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 			since = pod.Status.StartTime.UnixNano()
 		}
 
+		state, placementError := getPodState(&pod, events)
+
 		instance := opi.Instance{
-			Since: since,
-			Index: index,
-			State: getPodState(&pod),
+			Since:          since,
+			Index:          index,
+			State:          state,
+			PlacementError: placementError,
 		}
 		instances = append(instances, &instance)
 	}
@@ -137,24 +148,39 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	return instances, nil
 }
 
-func getPodState(pod *v1.Pod) string {
+func getPodState(pod *v1.Pod, events *v1.EventList) (string, string) {
+	if hasInsufficientMemory(events) {
+		return opi.ErrorState, opi.InsufficientMemoryError
+	}
+
 	if statusNotAvailable(pod) || pod.Status.Phase == v1.PodUnknown {
-		return opi.UnknownState
+		return opi.UnknownState, ""
 	}
 
 	if podPending(pod) {
-		return opi.PendingState
+		return opi.PendingState, ""
 	}
 
 	if podCrashed(pod.Status.ContainerStatuses[0]) {
-		return opi.CrashedState
+		return opi.CrashedState, ""
 	}
 
 	if podRunning(pod.Status.ContainerStatuses[0]) {
-		return opi.RunningState
+		return opi.RunningState, ""
 	}
 
-	return opi.UnknownState
+	return opi.UnknownState, ""
+}
+
+func hasInsufficientMemory(eventList *v1.EventList) bool {
+	events := eventList.Items
+
+	if events == nil || len(events) == 0 {
+		return false
+	}
+
+	event := events[len(events)-1]
+	return event.Reason == eventFailedScheduling && strings.Contains(event.Message, "Insufficient memory")
 }
 
 func statusNotAvailable(pod *v1.Pod) bool {

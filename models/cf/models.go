@@ -56,9 +56,10 @@ type GetInstancesResponse struct {
 }
 
 type Instance struct {
-	Index int    `json:"index"`
-	Since int64  `json:"since"`
-	State string `json:"state"`
+	Index          int    `json:"index"`
+	Since          int64  `json:"since"`
+	State          string `json:"state"`
+	PlacementError string `json:"placement_error,omitempty"`
 }
 
 type Route struct {

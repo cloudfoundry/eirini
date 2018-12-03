@@ -468,6 +468,7 @@ var _ = Describe("Bifrost", func() {
 			opiInstances = []*opi.Instance{
 				{Index: 0, Since: 123, State: opi.RunningState},
 				{Index: 1, Since: 345, State: opi.CrashedState},
+				{Index: 2, Since: 678, State: opi.ErrorState, PlacementError: "this is not the place"},
 			}
 
 			opiClient.GetInstancesReturns(opiInstances, nil)
@@ -497,6 +498,7 @@ var _ = Describe("Bifrost", func() {
 			Expect(instances).To(Equal([]*cf.Instance{
 				{Index: 0, Since: 123, State: opi.RunningState},
 				{Index: 1, Since: 345, State: opi.CrashedState},
+				{Index: 2, Since: 678, State: opi.ErrorState, PlacementError: "this is not the place"},
 			}))
 		})
 

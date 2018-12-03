@@ -350,6 +350,7 @@ var _ = Describe("AppHandler", func() {
 			instances := []*cf.Instance{
 				{Index: 0, Since: 123, State: "RUNNING"},
 				{Index: 1, Since: 456, State: "RUNNING"},
+				{Index: 2, Since: 789, State: "UNCLAIMED", PlacementError: "this is not the place"},
 			}
 			bifrost.GetInstancesReturns(instances, nil)
 		})
@@ -385,6 +386,12 @@ var _ = Describe("AppHandler", func() {
 							"index": 1,
 							"since": 456,
 							"state": "RUNNING"
+						},
+						{
+							"index": 2,
+							"since": 789,
+							"state": "UNCLAIMED",
+							"placement_error": "this is not the place"
 						}
 					]
 				}`

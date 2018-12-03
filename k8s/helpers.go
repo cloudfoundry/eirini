@@ -27,12 +27,11 @@ func int64ptr(i int) *int64 {
 	return &u
 }
 
-func IsStopped(client kubernetes.Interface, pod *v1.Pod) bool {
-	eventList, err := client.CoreV1().Events(pod.Namespace).List(meta.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s", pod.Namespace, string(pod.UID), pod.Name)})
-	if err != nil {
-		return false
-	}
+func GetEvents(client kubernetes.Interface, pod *v1.Pod) (*v1.EventList, error) {
+	return client.CoreV1().Events(pod.Namespace).List(meta.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s", pod.Namespace, string(pod.UID), pod.Name)})
+}
 
+func IsStopped(eventList *v1.EventList) bool {
 	events := eventList.Items
 
 	if events == nil || len(events) == 0 {

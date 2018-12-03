@@ -483,6 +483,35 @@ var _ = Describe("Statefulset", func() {
 			})
 
 		})
+
+		Context("and the node has insufficient memory", func() {
+
+			BeforeEach(func() {
+				insufficientMemoryEvent := &v1.Event{
+					Reason:  "FailedScheduling",
+					Message: "Some string including Insufficient memory",
+					InvolvedObject: v1.ObjectReference{
+						Name:      "odin-0",
+						Namespace: namespace,
+						UID:       "odin-0-uid",
+					},
+				}
+
+				_, clientErr := client.CoreV1().Events(namespace).Create(insufficientMemoryEvent)
+				Expect(clientErr).ToNot(HaveOccurred())
+			})
+
+			It("shouldn't return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return an unknown status", func() {
+				Expect(instances).To(HaveLen(2))
+				instance := toInstance(0, 123000000000, "UNCLAIMED")
+				instance.PlacementError = "Insufficient resources: memory"
+				Expect(instances).To(ContainElement(instance))
+			})
+		})
 	})
 })
 
