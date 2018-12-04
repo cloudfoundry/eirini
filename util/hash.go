@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 )
 
-const MAX_K8S_LABEL_LENGTH = 50
+const MaxHashLength = 50
 
 //go:generate counterfeiter . Hasher
 type Hasher interface {
@@ -25,5 +25,5 @@ func (h *TruncatedSHA256Hasher) Hash(s string) (string, error) {
 	}
 
 	hash := hex.EncodeToString(sha.Sum(nil))
-	return hash[:MAX_K8S_LABEL_LENGTH], nil
+	return hash[:MaxHashLength], nil
 }

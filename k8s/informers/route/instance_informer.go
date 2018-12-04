@@ -2,7 +2,6 @@ package route
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -128,16 +127,6 @@ func (c *InstanceChangeInformer) getOwner(pod *v1.Pod) (*apps.StatefulSet, error
 
 	ownerName := ownerReferences[0].Name
 	return c.Client.AppsV1().StatefulSets(c.Namespace).Get(ownerName, meta.GetOptions{})
-}
-
-func getContainerPort(pod *v1.Pod) (uint32, error) {
-	ports := pod.Spec.Containers[0].Ports
-	if len(ports) == 0 {
-		return 0, errors.New("no ports available")
-	}
-
-	port := ports[0].ContainerPort
-	return uint32(port), nil
 }
 
 func decodeRoutes(s string) ([]cf.Route, error) {

@@ -165,14 +165,6 @@ func (c *URIChangeInformer) getChildrenPods(st *apps_v1.StatefulSet) ([]v1.Pod, 
 	return podlist.Items, nil
 }
 
-func toStringSlice(routes set.Set) []string {
-	slice := []string{}
-	for _, r := range routes.ToSlice() {
-		slice = append(slice, r.(string))
-	}
-	return slice
-}
-
 func decodeRoutesAsSet(statefulset *apps_v1.StatefulSet) (set.Set, error) {
 	routes := set.NewSet()
 	updatedUserDefinedRoutes, err := decodeRoutes(statefulset.Annotations[eirini.RegisteredRoutes])
