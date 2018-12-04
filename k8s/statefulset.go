@@ -258,6 +258,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 				ObjectMeta: meta.ObjectMeta{
 					Annotations: map[string]string{
 						cf.ProcessGUID: lrp.Metadata[cf.ProcessGUID],
+						cf.VcapAppID:   lrp.Metadata[cf.VcapAppID],
 					},
 				},
 				Spec: v1.PodSpec{
