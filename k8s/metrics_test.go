@@ -71,7 +71,7 @@ var _ = Describe("Metrics", func() {
 		})
 
 		JustBeforeEach(func() {
-			podClient.Create(&v1.Pod{
+			_, createErr := podClient.Create(&v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podName,
 					Labels: map[string]string{
@@ -79,6 +79,8 @@ var _ = Describe("Metrics", func() {
 					},
 				},
 			})
+			Expect(createErr).ToNot(HaveOccurred())
+
 			collector.Start()
 			task := scheduler.ScheduleArgsForCall(0)
 			err = task()
