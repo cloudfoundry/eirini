@@ -12,6 +12,8 @@ import (
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route"
 	"github.com/pkg/errors"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	core "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 type PodMetricsList struct {
@@ -43,13 +45,15 @@ type MetricsCollector struct {
 	work      chan<- []metrics.Message
 	source    string
 	scheduler route.TaskScheduler
+	podClient core.PodInterface
 }
 
-func NewMetricsCollector(work chan []metrics.Message, scheduler route.TaskScheduler, source string) *MetricsCollector {
+func NewMetricsCollector(work chan []metrics.Message, scheduler route.TaskScheduler, source string, podClient core.PodInterface) *MetricsCollector {
 	return &MetricsCollector{
 		work:      work,
 		source:    source,
 		scheduler: scheduler,
+		podClient: podClient,
 	}
 }
 
@@ -61,7 +65,7 @@ func (c *MetricsCollector) Start() {
 			return err
 		}
 
-		messages, err := convertMetricsList(metricList)
+		messages, err := c.convertMetricsList(metricList)
 		if err != nil {
 			return err
 		}
@@ -95,14 +99,14 @@ func collectMetrics(source string) (*PodMetricsList, error) {
 	return metricList, err
 }
 
-func convertMetricsList(metricList *PodMetricsList) ([]metrics.Message, error) {
+func (c *MetricsCollector) convertMetricsList(metricList *PodMetricsList) ([]metrics.Message, error) {
 	messages := []metrics.Message{}
 	for _, metric := range metricList.Items {
 		if len(metric.Containers) == 0 {
 			continue
 		}
 		container := metric.Containers[0]
-		appID, indexID, err := parsePodName(metric.Metadata.Name)
+		_, indexID, err := parsePodName(metric.Metadata.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -115,8 +119,13 @@ func convertMetricsList(metricList *PodMetricsList) ([]metrics.Message, error) {
 			return nil, errors.Wrap(err, "Failed to convert memory values")
 		}
 
+		pod, err := c.podClient.Get(metric.Metadata.Name, meta.GetOptions{})
+		if err != nil {
+			return []metrics.Message{}, err
+		}
+
 		messages = append(messages, metrics.Message{
-			AppID:       appID,
+			AppID:       pod.Labels["guid"],
 			IndexID:     indexID,
 			CPU:         convertCPU(cpuValue),
 			Memory:      convertMemory(memoryValue),

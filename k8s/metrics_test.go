@@ -11,6 +11,10 @@ import (
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route/routefakes"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
+	core "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 var _ = Describe("Metrics", func() {
@@ -21,10 +25,14 @@ var _ = Describe("Metrics", func() {
 		fakeServer     *ghttp.Server
 		scheduler      *routefakes.FakeTaskScheduler
 		respondHandler http.HandlerFunc
+		podClient      core.PodInterface
+		podName        string
 	)
 
 	BeforeEach(func() {
 		respondHandler = ghttp.RespondWith(http.StatusOK, "")
+		client := fake.NewSimpleClientset()
+		podClient = client.Core().Pods("opi")
 	})
 
 	JustBeforeEach(func() {
@@ -38,7 +46,7 @@ var _ = Describe("Metrics", func() {
 
 		scheduler = new(routefakes.FakeTaskScheduler)
 		work = make(chan []metrics.Message, 1)
-		collector = NewMetricsCollector(work, scheduler, fmt.Sprintf("%s%s", fakeServer.URL(), "/you/name/it"))
+		collector = NewMetricsCollector(work, scheduler, fmt.Sprintf("%s%s", fakeServer.URL(), "/you/name/it"), podClient)
 	})
 
 	Context("When collecting metrics", func() {
@@ -59,9 +67,18 @@ var _ = Describe("Metrics", func() {
 		}
 	]
 }`)
+			podName = "thor-9000"
 		})
 
 		JustBeforeEach(func() {
+			podClient.Create(&v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: podName,
+					Labels: map[string]string{
+						"guid": "app-guid",
+					},
+				},
+			})
 			collector.Start()
 			task := scheduler.ScheduleArgsForCall(0)
 			err = task()
@@ -78,7 +95,7 @@ var _ = Describe("Metrics", func() {
 		It("should send the received metrics", func() {
 			Eventually(work).Should(Receive(Equal([]metrics.Message{
 				{
-					AppID:       "thor",
+					AppID:       "app-guid",
 					IndexID:     "9000",
 					CPU:         420,
 					Memory:      430080,
@@ -156,7 +173,7 @@ var _ = Describe("Metrics", func() {
 			It("should send the received metrics", func() {
 				Eventually(work).Should(Receive(Equal([]metrics.Message{
 					{
-						AppID:       "thor",
+						AppID:       "app-guid",
 						IndexID:     "9000",
 						CPU:         420,
 						Memory:      430080,
@@ -175,7 +192,7 @@ var _ = Describe("Metrics", func() {
 	"metadata": {"name": "thor-thunder0", "namespace": "asgard"},
 	"items": [
 		{
-			"metadata": {"name": "thor-thunder0", "namespace": "asgard"},
+			"metadata": {"name": "thor-thunder0", "namespace": "asgard" },
 			"containers": [{
 				"name": "bran-the-builder",
 				"usage": {"cpu": "420000m", "memory": "420M"}
@@ -183,6 +200,8 @@ var _ = Describe("Metrics", func() {
 		}
 	]
 }`)
+
+				podName = "thor-thunder0"
 			})
 
 			It("should not return an error", func() {
@@ -192,7 +211,7 @@ var _ = Describe("Metrics", func() {
 			It("should send the received metrics", func() {
 				Eventually(work).Should(Receive(Equal([]metrics.Message{
 					{
-						AppID:       "thor",
+						AppID:       "app-guid",
 						IndexID:     "0",
 						CPU:         420,
 						Memory:      430080,

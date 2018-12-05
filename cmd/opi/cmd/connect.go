@@ -81,6 +81,8 @@ func connect(cmd *cobra.Command, args []string) {
 	launchMetricsEmitter(
 		fmt.Sprintf("%s/namespaces/%s/pods", cfg.Properties.MetricsSourceAddress, cfg.Properties.KubeNamespace),
 		loggregatorClient,
+		cfg.Properties.KubeConfig,
+		cfg.Properties.KubeNamespace,
 	)
 
 	launchEventReporter(
@@ -205,10 +207,17 @@ func launchRouteEmitter(kubeConf, namespace, natsPassword, natsIP string) {
 	go uriInformer.Start(workChan)
 }
 
-func launchMetricsEmitter(source string, loggregatorClient *loggregator.IngressClient) {
+func launchMetricsEmitter(source string, loggregatorClient *loggregator.IngressClient, kubeConf, namespace string) {
 	work := make(chan []metrics.Message, 20)
 
-	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, source)
+	config, err := clientcmd.BuildConfigFromFlags("", kubeConf)
+	exitWithError(err)
+
+	clientset, err := kubernetes.NewForConfig(config)
+	exitWithError(err)
+	podClient := clientset.Core().Pods(namespace)
+
+	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, source, podClient)
 
 	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
 	emitter := metrics.NewEmitter(work, &route.SimpleLoopScheduler{}, forwarder)
