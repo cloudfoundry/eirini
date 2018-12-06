@@ -33,11 +33,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 	}
 
 	if request.DockerImageURL == "" {
-		request.DockerImageURL, err = c.imageURI(request.DropletGUID, request.DropletHash)
-		if err != nil {
-			c.logger.Error("failed-to-get-droplet-from-cloud-controller", err, lager.Data{"app-guid": vcap.AppID})
-			return opi.LRP{}, err
-		}
+		request.DockerImageURL = c.imageURI(request.DropletGUID, request.DropletHash)
 	}
 
 	routesJSON, err := getRequestedRoutes(request)
@@ -98,9 +94,8 @@ func getRequestedRoutes(request cf.DesireLRPRequest) (string, error) {
 	return string(data), nil
 }
 
-func (c *DropletToImageConverter) imageURI(dropletGUID, dropletHash string) (string, error) {
-
-	return fmt.Sprintf("%s/cloudfoundry/%s:%s", c.registryIP, dropletGUID, dropletHash), nil
+func (c *DropletToImageConverter) imageURI(dropletGUID, dropletHash string) string {
+	return fmt.Sprintf("%s/cloudfoundry/%s:%s", c.registryIP, dropletGUID, dropletHash)
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {
