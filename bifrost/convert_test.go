@@ -2,7 +2,6 @@ package bifrost_test
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"code.cloudfoundry.org/eirini/bifrost"
@@ -85,7 +84,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 	JustBeforeEach(func() {
 		regIP := "eirini-registry.service.cf.internal"
-		converter = bifrost.NewConverter(cfClient, client, hasher, logger, regIP, registryURL)
+		converter = bifrost.NewConverter(hasher, logger, regIP)
 		lrp, err = converter.Convert(desireLRPRequest)
 	})
 
@@ -175,7 +174,6 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			It("should set the ports", func() {
 				Expect(lrp.Ports).To(Equal([]int32{8080, 8888}))
 			})
-
 		}
 
 		Context("When the Docker image is provided", func() {
@@ -207,42 +205,6 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	})
 
 	Context("When the request fails to be converted", func() {
-		Context("when registry staging fails", func() {
-			BeforeEach(func() {
-				desireLRPRequest.DockerImageURL = ""
-			})
-
-			Context("because of invalid url", func() {
-				BeforeEach(func() {
-					registryURL = "this_does_not_exist"
-				})
-
-				It("should return an error", func() {
-					Expect(err).To(HaveOccurred())
-				})
-			})
-
-			Context("because of bad response code", func() {
-				BeforeEach(func() {
-					fakeServer.SetHandler(0, ghttp.RespondWith(500, nil))
-				})
-
-				It("should return an error", func() {
-					Expect(err).To(HaveOccurred())
-				})
-			})
-
-			Context("when the app droplet is not available", func() {
-				BeforeEach(func() {
-					cfClient.GetDropletByAppGuidReturns([]byte{}, errors.New("droplet-not-found"))
-				})
-
-				It("should return an error", func() {
-					Expect(err).To(HaveOccurred())
-				})
-			})
-		})
-
 		Context("When VCAP_APPLICATION env variable is invalid", func() {
 			BeforeEach(func() {
 				desireLRPRequest.Environment = map[string]string{
@@ -255,5 +217,4 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			})
 		})
 	})
-
 })

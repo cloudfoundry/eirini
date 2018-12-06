@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -30,7 +29,6 @@ import (
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/tps/cc_client"
-	"github.com/JulzDiverse/cfclient"
 	nats "github.com/nats-io/go-nats"
 	"github.com/spf13/cobra"
 
@@ -124,22 +122,6 @@ func initStager(cfg *eirini.Config) eirini.Stager {
 }
 
 func initBifrost(cfg *eirini.Config) eirini.Bifrost {
-	cfClientConfig := &cfclient.Config{
-		SkipSslValidation: cfg.Properties.SkipSslValidation,
-		Username:          cfg.Properties.CfUsername,
-		Password:          cfg.Properties.CfPassword,
-		ApiAddress:        cfg.Properties.CcAPI,
-	}
-
-	cfClient, err := cfclient.NewClient(cfClientConfig)
-	exitWithError(err)
-
-	client := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: cfg.Properties.InsecureSkipVerify,
-		},
-	}}
-
 	syncLogger := lager.NewLogger("bifrost")
 	syncLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 
@@ -151,7 +133,7 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 	registryIP := cfg.Properties.RegistryAddress
-	converter := bifrost.NewConverter(cfClient, client, &util.TruncatedSHA256Hasher{}, convertLogger, registryIP, "http://127.0.0.1:8080")
+	converter := bifrost.NewConverter(&util.TruncatedSHA256Hasher{}, convertLogger, registryIP)
 
 	return &bifrost.Bifrost{
 		Converter: converter,

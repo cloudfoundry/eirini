@@ -24,16 +24,13 @@ https://github.com/cloudfoundry-incubator/eirini-release
 
 # y tho, y?
 
-Partly a fun experiment, partly a proof of concept. Scheduling is increasingly
-commodotised, it makes sense to ask how easy/hard it'd be to abstract our way
-out of it now.
+Scheduling is increasingly commodotised, it makes sense to ask how easy/hard it'd be to abstract our way out of it now.
 
 # What components?
 
 Eirini has the following components, the first two are available as subcommands of the `eirini` binary:
  
  - `Bifrost` converts and transfers cloud controller app specific requests to OPI specific objects and runs them in Kubernetes. It relies on the `Registry` to serve OCI images for droplets, and `OPI` to abstract the communication with Kube. 
- - `Registry` is an OCI registry vending images based on droplets. Eventually this would be nice to move in to Cloud Controller.
  - `OPI` or the "orchestrator provider interface" provides a declarative abstraction over multiple schedulers inspired by Diego's LRP/Task model and Bosh's CPI concept.
  - `St8ger` implements Staging by running Kubernetes/OPI one-off tasks
  
@@ -56,7 +53,6 @@ opi:
   kube_config: "path/to/kube/config/file"
   kube_namespace: "the kubernetes namespace used by the cf deployment"
   kube_endpoint: "the kubernetes endpoint where to schedule workload to"
-  registry_endpoint: "the eirini registry endpoint (usually the eirini Host maschine on port 8080)"
   api_endpoint: "the CF API endpoint (eg. api.bosh-lite.com)"
   cf_username: "cf admin user"
   cf_password: "cf admin password"
