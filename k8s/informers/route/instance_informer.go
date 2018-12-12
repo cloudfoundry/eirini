@@ -79,6 +79,10 @@ func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<-
 
 func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<- *route.Message) {
 	updatedPod := updatedObj.(*v1.Pod)
+	if !isReady(updatedPod.Status.Conditions) {
+		c.logDebug("pod-not-ready", updatedPod)
+		return
+	}
 
 	userDefinedRoutes, err := c.getUserDefinedRoutes(updatedPod)
 	if err != nil {
@@ -118,6 +122,12 @@ func (c *InstanceChangeInformer) logError(message string, err error, pod *v1.Pod
 	}
 }
 
+func (c *InstanceChangeInformer) logDebug(message string, pod *v1.Pod) {
+	if c.Logger != nil {
+		c.Logger.Debug(message, lager.Data{"pod-name": pod.Name})
+	}
+}
+
 func (c *InstanceChangeInformer) getOwner(pod *v1.Pod) (*apps.StatefulSet, error) {
 	ownerReferences := pod.OwnerReferences
 
@@ -127,6 +137,15 @@ func (c *InstanceChangeInformer) getOwner(pod *v1.Pod) (*apps.StatefulSet, error
 
 	ownerName := ownerReferences[0].Name
 	return c.Client.AppsV1().StatefulSets(c.Namespace).Get(ownerName, meta.GetOptions{})
+}
+
+func isReady(conditions []v1.PodCondition) bool {
+	for _, c := range conditions {
+		if c.Type == v1.PodReady {
+			return c.Status == v1.ConditionTrue
+		}
+	}
+	return false
 }
 
 func decodeRoutes(s string) ([]cf.Route, error) {

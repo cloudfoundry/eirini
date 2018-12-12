@@ -124,6 +124,9 @@ func (c *URIChangeInformer) sendRoutesForAllPods(work chan<- *route.Message, sta
 		return
 	}
 	for _, pod := range pods {
+		if !isReady(pod.Status.Conditions) {
+			continue
+		}
 		for port, routes := range grouped {
 			podRoute, err := route.NewMessage(
 				pod.Name,

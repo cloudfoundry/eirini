@@ -61,6 +61,14 @@ var _ = Describe("InstanceChangeInformer", func() {
 					{Ports: []v1.ContainerPort{{ContainerPort: 8080}}},
 				},
 			},
+			Status: v1.PodStatus{
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
 		}
 	}
 
@@ -122,9 +130,9 @@ var _ = Describe("InstanceChangeInformer", func() {
 		})
 
 		JustBeforeEach(func() {
-			pod0.Status = v1.PodStatus{Message: "where my IP at?"}
+			pod0.Status.Message = "where my IP at?"
 			podWatcher.Modify(pod0)
-			pod1.Status = v1.PodStatus{PodIP: "50.60.70.80"}
+			pod1.Status.PodIP = "50.60.70.80"
 			podWatcher.Modify(pod1)
 		})
 
@@ -165,9 +173,9 @@ var _ = Describe("InstanceChangeInformer", func() {
 		})
 
 		JustBeforeEach(func() {
-			pod0.Status = v1.PodStatus{PodIP: "10.20.30.40"}
+			pod0.Status.PodIP = "10.20.30.40"
 			podWatcher.Modify(pod0)
-			pod1.Status = v1.PodStatus{PodIP: "50.60.70.80"}
+			pod1.Status.PodIP = "50.60.70.80"
 			podWatcher.Modify(pod1)
 		})
 
@@ -253,15 +261,86 @@ var _ = Describe("InstanceChangeInformer", func() {
 				Eventually(logger.LogMessages, routeMessageTimeout).Should(ContainElement("test.unexpected-pod-owner"))
 			})
 		})
+
+		Context("pod ready condition is missing", func() {
+
+			BeforeEach(func() {
+				pod0.Status.Conditions[0].Type = v1.PodInitialized
+			})
+
+			It("should not send routes for the pod", func() {
+				Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+					"Name": Equal("mr-stateful-0"),
+				}))))
+			})
+
+			It("should not prevent other routes to be sent", func() {
+				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+					Name:       "mr-stateful-1",
+					Routes:     []string{"mr-stateful.50.60.70.80.nip.io"},
+					InstanceID: "mr-stateful-1",
+					Address:    "50.60.70.80",
+					Port:       8080,
+					TLSPort:    0,
+				})))
+			})
+
+			It("should not prevent other routes to be sent", func() {
+				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+					Name:       "mr-stateful-1",
+					Routes:     []string{"mr-bombastic.50.60.70.80.nip.io"},
+					InstanceID: "mr-stateful-1",
+					Address:    "50.60.70.80",
+					Port:       6565,
+					TLSPort:    0,
+				})))
+			})
+
+		})
+
+		Context("pod not ready", func() {
+			BeforeEach(func() {
+				pod0.Status.Conditions[0].Status = v1.ConditionFalse
+			})
+
+			It("should not send routes for the pod", func() {
+				Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+					"Name": Equal("mr-stateful-0"),
+				}))))
+			})
+
+			It("should not prevent other routes to be sent", func() {
+				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+					Name:       "mr-stateful-1",
+					Routes:     []string{"mr-stateful.50.60.70.80.nip.io"},
+					InstanceID: "mr-stateful-1",
+					Address:    "50.60.70.80",
+					Port:       8080,
+					TLSPort:    0,
+				})))
+			})
+
+			It("should not prevent other routes to be sent", func() {
+				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+					Name:       "mr-stateful-1",
+					Routes:     []string{"mr-bombastic.50.60.70.80.nip.io"},
+					InstanceID: "mr-stateful-1",
+					Address:    "50.60.70.80",
+					Port:       6565,
+					TLSPort:    0,
+				})))
+			})
+
+		})
 	})
 
 	Context("When a pod is deleted", func() {
 
 		BeforeEach(func() {
 			pod0 = createPod("mr-stateful-0")
-			pod0.Status = v1.PodStatus{PodIP: "10.20.30.40"}
+			pod0.Status.PodIP = "10.20.30.40"
 			pod1 = createPod("mr-stateful-1")
-			pod1.Status = v1.PodStatus{PodIP: "50.60.70.80"}
+			pod1.Status.PodIP = "50.60.70.80"
 		})
 
 		JustBeforeEach(func() {

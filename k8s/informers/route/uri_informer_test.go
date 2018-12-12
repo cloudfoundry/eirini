@@ -38,10 +38,11 @@ var _ = Describe("URIChangeInformer", func() {
 		stopChan    chan struct{}
 		logger      *lagertest.TestLogger
 		statefulset *apps_v1.StatefulSet
+		pod0, pod1  *v1.Pod
 	)
 
-	createPod := func(name, ip string) {
-		p := &v1.Pod{
+	createPod := func(name, ip string) *v1.Pod {
+		return &v1.Pod{
 			ObjectMeta: meta.ObjectMeta{
 				Name: name,
 				OwnerReferences: []meta.OwnerReference{
@@ -61,11 +62,14 @@ var _ = Describe("URIChangeInformer", func() {
 			},
 			Status: v1.PodStatus{
 				PodIP: ip,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
 			},
 		}
-
-		_, err := client.CoreV1().Pods(namespace).Create(p)
-		Expect(err).ToNot(HaveOccurred())
 	}
 
 	setWatcher := func(cs kubernetes.Interface) {
@@ -84,6 +88,9 @@ var _ = Describe("URIChangeInformer", func() {
 	}
 
 	BeforeEach(func() {
+		pod0 = createPod("mr-stateful-0", "10.20.30.40")
+		pod1 = createPod("mr-stateful-1", "50.60.70.80")
+
 		client = fake.NewSimpleClientset()
 		setWatcher(client)
 
@@ -135,8 +142,10 @@ var _ = Describe("URIChangeInformer", func() {
 		}
 		watcher.Add(statefulset)
 
-		createPod("mr-stateful-0", "10.20.30.40")
-		createPod("mr-stateful-1", "50.60.70.80")
+		_, err := client.CoreV1().Pods(namespace).Create(pod0)
+		Expect(err).ToNot(HaveOccurred())
+		_, err = client.CoreV1().Pods(namespace).Create(pod1)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Context("When a new route is added by the user", func() {
@@ -392,6 +401,57 @@ var _ = Describe("URIChangeInformer", func() {
 		It("should print an error", func() {
 			Eventually(logger.LogMessages, routeMessageTimeout).Should(ContainElement("test.failed-to-get-child-pods"))
 		})
+	})
+
+	Context("When a pod is not ready", func() {
+
+		BeforeEach(func() {
+			pod0.Status.Conditions[0].Status = v1.ConditionFalse
+		})
+
+		JustBeforeEach(func() {
+			watcher.Modify(copyWithModifiedRoute(statefulset, `[
+						{
+							"hostname": "mr-stateful.50.60.70.80.nip.io",
+							"port": 1111
+						},
+						{
+							"hostname": "mr-boombastic.50.60.70.80.nip.io",
+							"port": 6565
+						}
+					]`))
+		})
+
+		It("should not send routes for the pod", func() {
+			Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+				"Name": Equal("mr-stateful-0"),
+			}))))
+		})
+
+		It("should register the new route for the other pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-1"),
+				"Routes":             ConsistOf("mr-stateful.50.60.70.80.nip.io"),
+				"UnregisteredRoutes": BeEmpty(),
+				"InstanceID":         Equal("mr-stateful-1"),
+				"Address":            Equal("50.60.70.80"),
+				"Port":               BeNumerically("==", 1111),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
+
+		It("should unregister the deleted route for the other pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name":               Equal("mr-stateful-1"),
+				"Routes":             BeEmpty(),
+				"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
+				"InstanceID":         Equal("mr-stateful-1"),
+				"Address":            Equal("50.60.70.80"),
+				"Port":               BeNumerically("==", 8080),
+				"TLSPort":            BeNumerically("==", 0),
+			}))))
+		})
+
 	})
 
 	Context("When the app is deleted", func() {
