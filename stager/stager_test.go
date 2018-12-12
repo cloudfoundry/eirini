@@ -31,12 +31,11 @@ var _ = Describe("Stager", func() {
 
 		logger := lagertest.NewTestLogger("test")
 		config := &eirini.StagerConfig{
-			CfUsername:        "admin",
-			CfPassword:        "not1234567",
-			APIAddress:        "api.bosh-lite.com",
-			EiriniAddress:     "http://opi.cf.internal",
-			Image:             "eirini/recipe:tagged",
-			SkipSslValidation: true,
+			CfUsername:    "admin",
+			CfPassword:    "not1234567",
+			APIAddress:    "api.bosh-lite.com",
+			EiriniAddress: "http://opi.cf.internal",
+			Image:         "eirini/recipe:tagged",
 		}
 
 		stager = Stager{

@@ -60,8 +60,6 @@ opi:
   cc_internal_password: "cloud controller internal password"
   external_eirini_address: "the external eirini address"
   stager_image_tag: "The tag of the recipe image, which is used to stage an app. If empty, latest is used."
-  skip_ssl_validation: "cf CLI skip-ssl-validation flag (bool)"
-  insecure_skip_verify: "http client config for insecure traffic (bool)"
 ```
 
 # Development

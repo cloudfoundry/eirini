@@ -24,7 +24,6 @@ const (
 	EnvAPIAddress         = "API_ADDRESS"
 	EnvEiriniAddress      = "EIRINI_ADDRESS"
 
-	//routes
 	RegisteredRoutes = "routes"
 
 	CCUploaderInternalURL = "cc-uploader.service.cf.internal"
@@ -70,7 +69,6 @@ type Properties struct {
 	RegistryAddress   string `yaml:"external_eirini_address"`
 	EiriniAddress     string `yaml:"eirini_address"`
 	StagerImageTag    string `yaml:"stager_image_tag"`
-	SkipSslValidation bool   `yaml:"skip_ssl_validation"`
 	UseIngress        bool   `yaml:"use_ingress"`
 
 	MetricsSourceAddress string `yaml:"metrics_source_address"`
@@ -95,12 +93,11 @@ type Stager interface {
 }
 
 type StagerConfig struct {
-	CfUsername        string
-	CfPassword        string
-	APIAddress        string
-	EiriniAddress     string
-	Image             string
-	SkipSslValidation bool
+	CfUsername    string
+	CfPassword    string
+	APIAddress    string
+	EiriniAddress string
+	Image         string
 }
 
 //go:generate counterfeiter . Extractor

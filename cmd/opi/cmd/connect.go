@@ -111,12 +111,11 @@ func initStager(cfg *eirini.Config) eirini.Stager {
 	}
 
 	stagerCfg := eirini.StagerConfig{
-		CfUsername:        cfg.Properties.CfUsername,
-		CfPassword:        cfg.Properties.CfPassword,
-		APIAddress:        cfg.Properties.CcAPI,
-		EiriniAddress:     cfg.Properties.EiriniAddress,
-		Image:             getStagerImage(cfg),
-		SkipSslValidation: cfg.Properties.SkipSslValidation,
+		CfUsername:    cfg.Properties.CfUsername,
+		CfPassword:    cfg.Properties.CfPassword,
+		APIAddress:    cfg.Properties.CcAPI,
+		EiriniAddress: cfg.Properties.EiriniAddress,
+		Image:         getStagerImage(cfg),
 	}
 
 	httpClient, err := util.CreateTLSHTTPClient(
