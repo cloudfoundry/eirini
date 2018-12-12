@@ -262,75 +262,54 @@ var _ = Describe("InstanceChangeInformer", func() {
 			})
 		})
 
-		Context("pod ready condition is missing", func() {
-
-			BeforeEach(func() {
-				pod0.Status.Conditions[0].Type = v1.PodInitialized
-			})
-
-			It("should not send routes for the pod", func() {
-				Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Name": Equal("mr-stateful-0"),
-				}))))
-			})
-
-			It("should not prevent other routes to be sent", func() {
-				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
-					Name:       "mr-stateful-1",
-					Routes:     []string{"mr-stateful.50.60.70.80.nip.io"},
-					InstanceID: "mr-stateful-1",
-					Address:    "50.60.70.80",
-					Port:       8080,
-					TLSPort:    0,
-				})))
-			})
-
-			It("should not prevent other routes to be sent", func() {
-				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
-					Name:       "mr-stateful-1",
-					Routes:     []string{"mr-bombastic.50.60.70.80.nip.io"},
-					InstanceID: "mr-stateful-1",
-					Address:    "50.60.70.80",
-					Port:       6565,
-					TLSPort:    0,
-				})))
-			})
-
-		})
-
 		Context("pod not ready", func() {
-			BeforeEach(func() {
-				pod0.Status.Conditions[0].Status = v1.ConditionFalse
+
+			assertRoutes := func() {
+				It("should not send routes for the pod", func() {
+					Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+						"Name": Equal("mr-stateful-0"),
+					}))))
+				})
+
+				It("should not prevent other routes to be sent", func() {
+					Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+						Name:       "mr-stateful-1",
+						Routes:     []string{"mr-stateful.50.60.70.80.nip.io"},
+						InstanceID: "mr-stateful-1",
+						Address:    "50.60.70.80",
+						Port:       8080,
+						TLSPort:    0,
+					})))
+				})
+
+				It("should not prevent other routes to be sent", func() {
+					Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+						Name:       "mr-stateful-1",
+						Routes:     []string{"mr-bombastic.50.60.70.80.nip.io"},
+						InstanceID: "mr-stateful-1",
+						Address:    "50.60.70.80",
+						Port:       6565,
+						TLSPort:    0,
+					})))
+				})
+			}
+
+			Context("pod ready condition is missing", func() {
+				BeforeEach(func() {
+					pod0.Status.Conditions[0].Type = v1.PodInitialized
+				})
+
+				assertRoutes()
+
 			})
 
-			It("should not send routes for the pod", func() {
-				Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Name": Equal("mr-stateful-0"),
-				}))))
-			})
+			Context("pod readiness status is false", func() {
+				BeforeEach(func() {
+					pod0.Status.Conditions[0].Status = v1.ConditionFalse
+				})
 
-			It("should not prevent other routes to be sent", func() {
-				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
-					Name:       "mr-stateful-1",
-					Routes:     []string{"mr-stateful.50.60.70.80.nip.io"},
-					InstanceID: "mr-stateful-1",
-					Address:    "50.60.70.80",
-					Port:       8080,
-					TLSPort:    0,
-				})))
+				assertRoutes()
 			})
-
-			It("should not prevent other routes to be sent", func() {
-				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
-					Name:       "mr-stateful-1",
-					Routes:     []string{"mr-bombastic.50.60.70.80.nip.io"},
-					InstanceID: "mr-stateful-1",
-					Address:    "50.60.70.80",
-					Port:       6565,
-					TLSPort:    0,
-				})))
-			})
-
 		})
 	})
 
