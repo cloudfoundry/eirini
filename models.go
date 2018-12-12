@@ -27,13 +27,18 @@ const (
 	//routes
 	RegisteredRoutes = "routes"
 
-	//cc-uploader certs
 	CCUploaderInternalURL = "cc-uploader.service.cf.internal"
 	CCCertsMountPath      = "/etc/config/certs"
 	CCCertsVolumeName     = "cc-certs-volume"
+	CCAPICertName         = "cc-server-crt"
+	CCAPIKeyName          = "cc-server-crt-key"
 	CCUploaderCertName    = "cc-uploader-crt"
 	CCUploaderKeyName     = "cc-uploader-crt-key"
 	CCInternalCACertName  = "internal-ca-cert"
+
+	UAACertName           = "uaa-server-cert"
+	UAAKeyName            = "uaa-server-cert-key"
+	UAAInternalCACertName = "uaa-internal-ca-cert"
 )
 
 //go:generate counterfeiter . CfClient

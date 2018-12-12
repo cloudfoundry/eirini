@@ -2,7 +2,6 @@ package stager
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -26,18 +25,12 @@ type Stager struct {
 	HTTPClient *http.Client
 }
 
-func New(desirer opi.TaskDesirer, config eirini.StagerConfig) *Stager {
+func New(desirer opi.TaskDesirer, httpClient *http.Client, config eirini.StagerConfig) *Stager {
 	return &Stager{
-		Desirer: desirer,
-		Config:  &config,
-		Logger:  lager.NewLogger("stager"),
-		HTTPClient: &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: config.SkipSslValidation,
-				},
-			},
-		},
+		Desirer:    desirer,
+		Config:     &config,
+		Logger:     lager.NewLogger("stager"),
+		HTTPClient: httpClient,
 	}
 }
 

@@ -137,9 +137,14 @@ var _ = Describe("Desiretask", func() {
 			Expect(volume.Name).To(Equal("cc-certs-volume"))
 			Expect(volume.VolumeSource.Secret.SecretName).To(Equal("secret-certs"))
 			Expect(volume.VolumeSource.Secret.Items).To(ConsistOf(
+				toKeyPath(eirini.CCAPICertName),
+				toKeyPath(eirini.CCAPIKeyName),
 				toKeyPath(eirini.CCUploaderCertName),
 				toKeyPath(eirini.CCUploaderKeyName),
-				toKeyPath(eirini.CCInternalCACertName)))
+				toKeyPath(eirini.CCInternalCACertName),
+				toKeyPath(eirini.UAACertName),
+				toKeyPath(eirini.UAAKeyName),
+				toKeyPath(eirini.UAAInternalCACertName)))
 		}
 
 		assertContainerVolumeMount := func(job *batch.Job) {

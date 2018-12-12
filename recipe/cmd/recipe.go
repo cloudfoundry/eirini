@@ -1,16 +1,14 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/recipe"
+	"code.cloudfoundry.org/eirini/util"
 	"github.com/JulzDiverse/cfclient"
 )
 
@@ -27,11 +25,10 @@ func main() {
 	apiAddress := os.Getenv(eirini.EnvAPIAddress)
 
 	cfg := &cfclient.Config{
-		SkipSslValidation: true,
-		Username:          username,
-		Password:          password,
-		ApiAddress:        apiAddress,
-		HttpClient:        createHTTPClient(),
+		Username:   username,
+		Password:   password,
+		ApiAddress: apiAddress,
+		HttpClient: createAPIHTTPClient(),
 	}
 
 	cfclient, err := cfclient.NewClient(cfg)
@@ -41,7 +38,9 @@ func main() {
 	}
 
 	installer := &recipe.PackageInstaller{Cfclient: cfclient, Extractor: &recipe.Unzipper{}}
-	uploader := &recipe.DropletUploader{HTTPClient: createHTTPClient()}
+	uploader := &recipe.DropletUploader{
+		HTTPClient: createUploaderHTTPClient(),
+	}
 	commander := &recipe.IOCommander{
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
@@ -81,35 +80,37 @@ func main() {
 	fmt.Println("Staging completed")
 }
 
-func createHTTPClient() *http.Client {
-	certLocation := filepath.Join(eirini.CCCertsMountPath, eirini.CCUploaderCertName)
-	cacertLocation := filepath.Join(eirini.CCCertsMountPath, eirini.CCInternalCACertName)
-	privKeyLocation := filepath.Join(eirini.CCCertsMountPath, eirini.CCUploaderKeyName)
+func createUploaderHTTPClient() *http.Client {
+	cert := filepath.Join(eirini.CCCertsMountPath, eirini.CCUploaderCertName)
+	cacert := filepath.Join(eirini.CCCertsMountPath, eirini.CCInternalCACertName)
+	key := filepath.Join(eirini.CCCertsMountPath, eirini.CCUploaderKeyName)
 
-	cert, err := tls.LoadX509KeyPair(certLocation, privKeyLocation)
+	client, err := util.CreateTLSHTTPClient([]util.CertPaths{
+		{Crt: cert, Key: key, Ca: cacert},
+	})
 	if err != nil {
 		panic(err)
 	}
 
-	cacert, err := ioutil.ReadFile(filepath.Clean(cacertLocation))
+	return client
+}
+
+func createAPIHTTPClient() *http.Client {
+	apiCert := filepath.Join(eirini.CCCertsMountPath, eirini.CCAPICertName)
+	apiCA := filepath.Join(eirini.CCCertsMountPath, eirini.CCInternalCACertName)
+	apiKey := filepath.Join(eirini.CCCertsMountPath, eirini.CCAPIKeyName)
+
+	uaaCert := filepath.Join(eirini.CCCertsMountPath, eirini.UAACertName)
+	uaaCA := filepath.Join(eirini.CCCertsMountPath, eirini.UAAInternalCACertName)
+	uaaKey := filepath.Join(eirini.CCCertsMountPath, eirini.UAAKeyName)
+
+	client, err := util.CreateTLSHTTPClient([]util.CertPaths{
+		{Crt: apiCert, Key: apiKey, Ca: apiCA},
+		{Crt: uaaCert, Key: uaaKey, Ca: uaaCA},
+	})
 	if err != nil {
 		panic(err)
 	}
 
-	caCertPool := x509.NewCertPool()
-	ok := caCertPool.AppendCertsFromPEM(cacert)
-	if !ok {
-		panic("append certs from pem failed")
-	}
-
-	tlsConf := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      caCertPool,
-	}
-
-	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: tlsConf,
-		},
-	}
+	return client
 }

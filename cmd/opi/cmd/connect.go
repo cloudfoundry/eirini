@@ -30,6 +30,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/tps/cc_client"
 	nats "github.com/nats-io/go-nats"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	// For gcp and oidc authentication
@@ -118,7 +119,20 @@ func initStager(cfg *eirini.Config) eirini.Stager {
 		SkipSslValidation: cfg.Properties.SkipSslValidation,
 	}
 
-	return stager.New(taskDesirer, stagerCfg)
+	httpClient, err := util.CreateTLSHTTPClient(
+		[]util.CertPaths{
+			{
+				Crt: cfg.Properties.CCCertPath,
+				Key: cfg.Properties.CCKeyPath,
+				Ca:  cfg.Properties.CCCAPath,
+			},
+		},
+	)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to create stager http client"))
+	}
+
+	return stager.New(taskDesirer, httpClient, stagerCfg)
 }
 
 func initBifrost(cfg *eirini.Config) eirini.Bifrost {
