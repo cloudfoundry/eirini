@@ -29,8 +29,6 @@ linters:
 
 issues:
   exclude-use-default: true
-  exclude:
-      - G402  # Temporarily do not look for bad TLS connection settings.
 
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
