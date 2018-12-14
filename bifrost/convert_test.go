@@ -2,10 +2,8 @@ package bifrost_test
 
 import (
 	"encoding/json"
-	"net/http"
 
 	"code.cloudfoundry.org/eirini/bifrost"
-	"code.cloudfoundry.org/eirini/eirinifakes"
 	"code.cloudfoundry.org/eirini/launcher"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
@@ -18,25 +16,19 @@ import (
 
 var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	var (
-		cfClient         *eirinifakes.FakeCfClient
 		hasher           *utilfakes.FakeHasher
 		fakeServer       *ghttp.Server
 		logger           *lagertest.TestLogger
-		client           *http.Client
 		lrp              opi.LRP
 		err              error
-		registryURL      string
 		desireLRPRequest cf.DesireLRPRequest
 		converter        bifrost.Converter
 	)
 
 	BeforeEach(func() {
-		cfClient = new(eirinifakes.FakeCfClient)
 		hasher = new(utilfakes.FakeHasher)
 		fakeServer = ghttp.NewServer()
-		registryURL = fakeServer.URL()
 		logger = lagertest.NewTestLogger("test")
-		client = &http.Client{}
 		fakeServer.AppendHandlers(
 			ghttp.VerifyRequest("POST", "/v2/transformers/bumblebee/blobs/"),
 		)
