@@ -1,26 +1,20 @@
-# What this?
+[![Build Status](https://travis-ci.org/cloudfoundry-incubator/eirini.svg?branch=master)](https://travis-ci.org/cloudfoundry-incubator/eirini)
 
-Eirini is a Kubernetes backend for Cloud Foundry. It deploys CF apps to a kube
-backend, using OCI images and Kube deployments.
+# Eirini - what this?
 
-_But there's more!_
-
-Eirini exports staged CF images as docker images. So you can schedule them
-however you'd like. *And separately* it gives you the nice integrated `cf push` flow,
-with CF Apps mapped directly to kube Deployment objects. In other words it decouples buildpack
-staging and stateless-multitenant-app running.
+Eirini is a Kubernetes backend for Cloud Foundry. It deploys CF apps to a kube backend, using OCI images and Kube deployments.
 
 _But there's more!_
 
-Eirini uses a little abstraction library, "OPI", which means it's not actually a
-Kube backend at all: it's a generic backend for any scheduler! This means it
-can schedule to diego/kube/swarm and whatever else is cool next year.
+Eirini exports staged CF images as docker images. So you can schedule them however you'd like. *And separately* it gives you the nice integrated `cf push` flow, with CF Apps mapped directly to kube Deployment objects. In other words it decouples buildpack staging and stateless-multitenant-app running.
 
-It uses the diego abstractions -- LRPs and Tasks -- in order to support generic
-orchestrators.
+_But there's more!_
 
-An experimental BOSH release for this is available at
-https://github.com/cloudfoundry-incubator/eirini-release
+Eirini uses a little abstraction library, "OPI", which means it's not actually a Kube backend at all: it's a generic backend for any scheduler! This means it can schedule to diego/kube/swarm and whatever else is cool next year.
+
+It uses the diego abstractions -- LRPs and Tasks -- in order to support generic orchestrators.
+
+An experimental BOSH release for this is available at https://github.com/cloudfoundry-incubator/eirini-release
 
 # y tho, y?
 
