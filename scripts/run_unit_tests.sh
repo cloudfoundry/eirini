@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -euo pipefail
+IFS=$'\n\t'
+
 readonly BASEDIR="$(cd "$(dirname "$0")"/.. && pwd)"
 
 main(){
