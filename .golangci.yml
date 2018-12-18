@@ -21,7 +21,6 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - megacheck
     - gochecknoglobals
     - scopelint
     - gochecknoinits

@@ -34,7 +34,7 @@ func GetEvents(client kubernetes.Interface, pod *v1.Pod) (*v1.EventList, error) 
 func IsStopped(eventList *v1.EventList) bool {
 	events := eventList.Items
 
-	if events == nil || len(events) == 0 {
+	if len(events) == 0 {
 		return false
 	}
 

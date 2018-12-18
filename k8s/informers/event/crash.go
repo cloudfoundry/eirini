@@ -60,7 +60,7 @@ func (c *CrashInformer) Start() {
 func (c *CrashInformer) updateFunc(_ interface{}, newObj interface{}) {
 	pod := newObj.(*v1.Pod)
 	statuses := pod.Status.ContainerStatuses
-	if statuses == nil || len(statuses) == 0 {
+	if len(statuses) == 0 {
 		return
 	}
 

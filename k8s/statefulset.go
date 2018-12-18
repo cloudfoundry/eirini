@@ -176,7 +176,7 @@ func getPodState(pod *v1.Pod, events *v1.EventList) (string, string) {
 func hasInsufficientMemory(eventList *v1.EventList) bool {
 	events := eventList.Items
 
-	if events == nil || len(events) == 0 {
+	if len(events) == 0 {
 		return false
 	}
 

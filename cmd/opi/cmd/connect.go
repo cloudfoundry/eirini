@@ -210,7 +210,7 @@ func launchMetricsEmitter(source string, loggregatorClient *loggregator.IngressC
 
 	clientset, err := kubernetes.NewForConfig(config)
 	exitWithError(err)
-	podClient := clientset.Core().Pods(namespace)
+	podClient := clientset.CoreV1().Pods(namespace)
 
 	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, source, podClient)
 
