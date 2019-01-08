@@ -14,11 +14,7 @@ Eirini uses a little abstraction library, "OPI", which means it's not actually a
 
 It uses the diego abstractions -- LRPs and Tasks -- in order to support generic orchestrators.
 
-An experimental BOSH release for this is available at https://github.com/cloudfoundry-incubator/eirini-release
-
-# y tho, y?
-
-Scheduling is increasingly commodotised, it makes sense to ask how easy/hard it'd be to abstract our way out of it now.
+Deployment instructions are available at https://github.com/cloudfoundry-incubator/eirini-release
 
 # What components?
 
