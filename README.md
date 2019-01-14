@@ -20,7 +20,7 @@ Deployment instructions are available at https://github.com/cloudfoundry-incubat
 
 Eirini has the following components, the first two are available as subcommands of the `eirini` binary:
  
- - `Bifrost` converts and transfers cloud controller app specific requests to OPI specific objects and runs them in Kubernetes. It relies on the `Registry` to serve OCI images for droplets, and `OPI` to abstract the communication with Kube. 
+ - `Bifrost` converts and transfers cloud controller app specific requests to OPI specific objects and runs them in Kubernetes. It relies on the [`bits-service`](https://github.com/cloudfoundry-incubator/bits-service) to serve OCI images for droplets, and `OPI` to abstract the communication with Kube.
  - `OPI` or the "orchestrator provider interface" provides a declarative abstraction over multiple schedulers inspired by Diego's LRP/Task model and Bosh's CPI concept.
  - `St8ger` implements Staging by running Kubernetes/OPI one-off tasks
  
