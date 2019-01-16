@@ -1,40 +1,54 @@
 [![Build Status](https://travis-ci.org/cloudfoundry-incubator/eirini.svg?branch=master)](https://travis-ci.org/cloudfoundry-incubator/eirini)
 
-# Eirini - what this?
+# What is Eirini?
 
-Eirini is a Kubernetes backend for Cloud Foundry. It deploys CF apps to a kube backend, using OCI images and Kube deployments.
+*Eirini* is a Kubernetes backend for Cloud Foundry.
+It deploys CF apps to a kube backend, using OCI images and Kube deployments.
 
-_But there's more!_
+Eirini gives you the nice integrated `cf push` flow,
+with CF Apps mapped directly to kube `StatefulSet`.
+In other words it decouples buildpack staging and stateless-multitenant-app running.
 
-Eirini exports staged CF images as docker images. So you can schedule them however you'd like. *And separately* it gives you the nice integrated `cf push` flow, with CF Apps mapped directly to kube Deployment objects. In other words it decouples buildpack staging and stateless-multitenant-app running.
+Since scheduling is increasingly commoditized,
+Eirini provides an "Orchestrator Platform Interface (OPI)" layer,
+that abstracts away orchestration from Cloud Foundry's control plane.
+This means Eirini is not solely a Kube backend at all,
+but that it is a generic backend for any scheduler!
+This means it could schedule to diego, kube, swarm and other orchestration platforms,
+as long as there is an implementation of the OPI layer for the target platform.
 
-_But there's more!_
+To offer a generic orchestrator interface,
+Eirini uses the diego abstractions of LRPs and Tasks to capture Cloud Foundry's notion of long running processes and one-off tasks.
 
-Eirini uses a little abstraction library, "OPI", which means it's not actually a Kube backend at all: it's a generic backend for any scheduler! This means it can schedule to diego/kube/swarm and whatever else is cool next year.
+Deployment instructions are available at: [cloudfoundry-incubator/eirini-release](https://github.com/cloudfoundry-incubator/eirini-release)
 
-It uses the diego abstractions -- LRPs and Tasks -- in order to support generic orchestrators.
-
-Deployment instructions are available at https://github.com/cloudfoundry-incubator/eirini-release
-
-# What components?
+# Eirini Components
 
 Eirini has the following components, the first two are available as subcommands of the `eirini` binary:
  
  - `Bifrost` converts and transfers cloud controller app specific requests to OPI specific objects and runs them in Kubernetes. It relies on the [`bits-service`](https://github.com/cloudfoundry-incubator/bits-service) to serve OCI images for droplets, and `OPI` to abstract the communication with Kube.
- - `OPI` or the "orchestrator provider interface" provides a declarative abstraction over multiple schedulers inspired by Diego's LRP/Task model and Bosh's CPI concept.
+ - `OPI` or the "Orchestrator Provider Interface" provides a declarative abstraction over multiple schedulers inspired by Diego's LRP/Task model and Bosh's CPI concept.
  - `Stager` implements staging by running Kubernetes/OPI one-off tasks
  
-# Tell me more 'bout OPI
+# Orchestrator Platform Interface (OPI)
 
-The really great thing about Diego is the high level abstractions above the level of containers and pods. Specifically, these are LRPs and Tasks. Actually, LRPs and Tasks are most of what you need to build both a PaaS and quite a lot of other things. And they're cross-cutting concepts that map nicely to all current orchestrators (for example to LRPs/Tasks directly in Diego, to Deployments/One-Off Tasks in Kube, and to Services and Containers in Swarm).
+The really great thing about Diego is the high level abstractions above the level of containers and pods.
+Specifically, these are Long Running Processes (LRPs) and Tasks.
+Actually, LRPs and Tasks are most of what you need to build a PaaS,
+and they're cross-cutting concepts that map nicely to all current orchestrators
+(for example to LRPs/Tasks directly in Diego,
+to Deployments/Jobs in Kube,
+and to Services/Containers in Swarm).
 
-One of the great things about Bosh is the CPI abstraction that lets it work on any IaaS. But so far Cloud Foundry has been tightly coupled to one specific Orchestrator (Diego). This was fine for fast iteration, but now orchestration is increasingly commodotised it makes a lot of sense to abstract ourselves away from the details of scheduling so an operator can use whatever orchestrator he or she wants and higher level systems can support all of them for free.
+One of the great things about BOSH is the CPI abstraction that lets it work on any IaaS.
+Cloud Foundry however, has been tightly coupled to one specific Orchestrator (Diego).
 
-OPI uses the LRP/Task abstractions to do that.
+Currently Eirini strictly provides a Kubernetes implementation of the OPI.
+However, this can be easily extended to support other orchestration platforms.
 
-# The OPI config file
+# Configuring OPI with Cloud Foundry and Kubernetes
 
-In order to start OPI you need to call the `connect` command and provide a OPI config YAML file:
+In order to start OPI with the Kubernetes orchestration backend, you need to call the `connect` command and provide an OPI config YAML file:
 
 `$ opi connect --config path/to/config.yml`
 
@@ -54,8 +68,13 @@ opi:
 
 # Development
 
+Eirini is a Golang project.
+You can simply get the code in your `GOPATH` and start development by running unit tests and integration tests like below
+(Some integration tests require a running [`minikube`](https://github.com/kubernetes/minikube#installation)).
+
 * `go get code.cloudfoundry.org/eirini`
 * `cd` into the package you want to test
 * `ginkgo`
 
-Some integration tests require a running [`minikube`](https://github.com/kubernetes/minikube#installation).
+For details on how you can contribute to the Eirini project,
+please read the [CONTRIBUTING](CONTRIBUTING.md) document.
