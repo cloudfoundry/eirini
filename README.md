@@ -59,3 +59,5 @@ opi:
 * `ginkgo`
 
 Some integration tests require a running [`minikube`](https://github.com/kubernetes/minikube#installation).
+
+Travis PR builds are currently broken
