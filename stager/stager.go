@@ -8,6 +8,7 @@ import (
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
@@ -34,7 +35,7 @@ func New(desirer opi.TaskDesirer, httpClient *http.Client, config eirini.StagerC
 	}
 }
 
-func (s *Stager) Stage(stagingGUID string, request cc_messages.StagingRequestFromCC) error {
+func (s *Stager) Stage(stagingGUID string, request cf.StagingRequest) error {
 	task, err := s.createStagingTask(stagingGUID, request)
 	if err != nil {
 		s.Logger.Error("failed-tocreate-staging-task", err)
@@ -44,25 +45,20 @@ func (s *Stager) Stage(stagingGUID string, request cc_messages.StagingRequestFro
 	return s.Desirer.DesireStaging(task)
 }
 
-func (s *Stager) createStagingTask(stagingGUID string, request cc_messages.StagingRequestFromCC) (*opi.Task, error) {
-	s.Logger.Debug("create-staging-task", lager.Data{"app-id": request.AppId, "staging-guid": stagingGUID})
+func (s *Stager) createStagingTask(stagingGUID string, request cf.StagingRequest) (*opi.Task, error) {
+	s.Logger.Debug("create-staging-task", lager.Data{"app-id": request.AppGUID, "staging-guid": stagingGUID})
 
-	var lifecycleData cc_messages.BuildpackStagingData
-	if err := json.Unmarshal(*request.LifecycleData, &lifecycleData); err != nil {
-		s.Logger.Error("failed-parsing-lifecycle-data", err)
-		return &opi.Task{}, err
-	}
-
+	lifecycleData := request.LifecycleData
 	buildpacksJSON, err := json.Marshal(lifecycleData.Buildpacks)
 	if err != nil {
 		return nil, err
 	}
 
 	eiriniEnv := map[string]string{
-		eirini.EnvDownloadURL:        lifecycleData.AppBitsDownloadUri,
-		eirini.EnvDropletUploadURL:   lifecycleData.DropletUploadUri,
+		eirini.EnvDownloadURL:        lifecycleData.AppBitsDownloadURI,
+		eirini.EnvDropletUploadURL:   lifecycleData.DropletUploadURI,
 		eirini.EnvBuildpacks:         string(buildpacksJSON),
-		eirini.EnvAppID:              request.LogGuid,
+		eirini.EnvAppID:              request.AppGUID,
 		eirini.EnvStagingGUID:        stagingGUID,
 		eirini.EnvCompletionCallback: request.CompletionCallback,
 		eirini.EnvCfUsername:         s.Config.CfUsername,
@@ -155,7 +151,7 @@ func (s *Stager) getCallbackURI(task *models.TaskCallbackResponse) (string, erro
 	return annotation.CompletionCallback, nil
 }
 
-func mergeEnvVriables(eiriniEnv map[string]string, cfEnvs []*models.EnvironmentVariable) map[string]string {
+func mergeEnvVriables(eiriniEnv map[string]string, cfEnvs []cf.EnvironmentVariable) map[string]string {
 	for _, env := range cfEnvs {
 		if _, present := eiriniEnv[env.Name]; !present {
 			eiriniEnv[env.Name] = env.Value

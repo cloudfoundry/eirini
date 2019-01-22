@@ -44,6 +44,31 @@ type DesireLRPRequest struct {
 	MemoryMB                int64                       `json:"memory_mb"`
 }
 
+type StagingRequest struct {
+	AppGUID            string                `json:"app_guid"`
+	CompletionCallback string                `json:"completion_callback"`
+	Environment        []EnvironmentVariable `json:"environment"`
+	LifecycleData      LifecycleData         `json:"lifecycle_data"`
+}
+
+type LifecycleData struct {
+	AppBitsDownloadURI string      `json:"app_bits_download_uri"`
+	DropletUploadURI   string      `json:"droplet_upload_uri"`
+	Buildpacks         []Buildpack `json:"buildpacks"`
+}
+
+type Buildpack struct {
+	Name       string `json:"name"`
+	Key        string `json:"key"`
+	URL        string `json:"url"`
+	SkipDetect bool   `json:"skip_detect"`
+}
+
+type EnvironmentVariable struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 type UpdateDesiredLRPRequest struct {
 	models.UpdateDesiredLRPRequest
 	GUID    string `json:"guid"`

@@ -8,7 +8,6 @@ import (
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
 const (
@@ -88,7 +87,7 @@ type RemoveCallbackFunc func(string) error
 
 //go:generate counterfeiter . Stager
 type Stager interface {
-	Stage(string, cc_messages.StagingRequestFromCC) error //stage
+	Stage(string, cf.StagingRequest) error
 	CompleteStaging(*models.TaskCallbackResponse) error
 }
 

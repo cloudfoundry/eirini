@@ -6,8 +6,8 @@ import (
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -29,7 +29,7 @@ func (s *Stage) Stage(resp http.ResponseWriter, req *http.Request, ps httprouter
 	stagingGUID := ps.ByName("staging_guid")
 	logger := s.logger.Session("staging-request", lager.Data{"staging-guid": stagingGUID})
 
-	var stagingRequest cc_messages.StagingRequestFromCC
+	var stagingRequest cf.StagingRequest
 	if err := json.NewDecoder(req.Body).Decode(&stagingRequest); err != nil {
 		s.logger.Error("staging-request-body-decoding-failed", err)
 		resp.WriteHeader(http.StatusBadRequest)

@@ -2,7 +2,6 @@ package handler_test
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -13,9 +12,9 @@ import (
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/eirinifakes"
 	. "code.cloudfoundry.org/eirini/handler"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
 var _ = Describe("StageHandler", func() {
@@ -55,18 +54,14 @@ var _ = Describe("StageHandler", func() {
 			method = "POST"
 			path = "/stage/guid_1234"
 			body = `{
-				"app_id": "our-app-id",
-				"file_descriptors": 2,
-				"memory_mb": 256,
-				"disk_mb": 512,
+				"app_guid": "our-app-id",
 				"environment": [{"name": "HOWARD", "value": "the alien"}],
-				"egress_rules": [{"protocol": "http"}],
-				"timeout": 4,
-				"log_guid": "our-log-guid",
-				"lifecycle": "the-cycle-of-life",
-				"lifecycle_data": { "earth_state": "flat" },
-				"completion_callback": "example.com/call/me/maybe",
-				"isolation_segment": "my-life"
+				"lifecycle_data": {
+					"app_bits_download_uri": "example.com/download",
+					"droplet_upload_uri": "example.com/upload",
+					"buildpacks": []
+				},
+				"completion_callback": "example.com/call/me/maybe"
 			}`
 		})
 
@@ -77,26 +72,19 @@ var _ = Describe("StageHandler", func() {
 		It("should stage using the staging client", func() {
 			Expect(stagingClient.StageCallCount()).To(Equal(1))
 			stagingGUID, stagingRequest := stagingClient.StageArgsForCall(0)
-			lData := json.RawMessage(`{ "earth_state": "flat" }`)
 
 			Expect(stagingGUID).To(Equal("guid_1234"))
-			Expect(stagingRequest).To(Equal(cc_messages.StagingRequestFromCC{
-				AppId:           "our-app-id",
-				FileDescriptors: 2,
-				MemoryMB:        256,
-				DiskMB:          512,
-				Environment: []*models.EnvironmentVariable{
+			Expect(stagingRequest).To(Equal(cf.StagingRequest{
+				AppGUID: "our-app-id",
+				Environment: []cf.EnvironmentVariable{
 					{Name: "HOWARD", Value: "the alien"},
 				},
-				EgressRules: []*models.SecurityGroupRule{
-					{Protocol: "http"},
+				LifecycleData: cf.LifecycleData{
+					AppBitsDownloadURI: "example.com/download",
+					DropletUploadURI:   "example.com/upload",
+					Buildpacks:         []cf.Buildpack{},
 				},
-				Timeout:            4,
-				LogGuid:            "our-log-guid",
-				Lifecycle:          "the-cycle-of-life",
-				LifecycleData:      &lData,
 				CompletionCallback: "example.com/call/me/maybe",
-				IsolationSegment:   "my-life",
 			}))
 		})
 

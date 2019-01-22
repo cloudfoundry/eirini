@@ -1,18 +1,17 @@
 package stager_test
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/opi/opifakes"
 	. "code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -21,7 +20,7 @@ import (
 var _ = Describe("Stager", func() {
 
 	var (
-		stager      Stager
+		stager      eirini.Stager
 		taskDesirer *opifakes.FakeTaskDesirer
 		err         error
 	)
@@ -38,7 +37,7 @@ var _ = Describe("Stager", func() {
 			Image:         "eirini/recipe:tagged",
 		}
 
-		stager = Stager{
+		stager = &Stager{
 			Desirer:    taskDesirer,
 			Config:     config,
 			Logger:     logger,
@@ -49,30 +48,15 @@ var _ = Describe("Stager", func() {
 	Context("When staging", func() {
 		var (
 			stagingGUID string
-			request     cc_messages.StagingRequestFromCC
+			request     cf.StagingRequest
 		)
 
 		BeforeEach(func() {
 			stagingGUID = "staging-id-123"
 
-			lData := json.RawMessage(`{
-				"app_bits_download_uri": "example.com/download",
-				"droplet_upload_uri": "example.com/upload",
-				"buildpacks": [
-					{
-						"name": "go_buildpack",
-						"key": "1234eeff",
-						"url": "example.com/build/pack",
-						"skip_detect":true
-					}
-				]
-			}`)
-			request = cc_messages.StagingRequestFromCC{
-				AppId:           "our-app-id",
-				FileDescriptors: 2,
-				MemoryMB:        256,
-				DiskMB:          512,
-				Environment: []*models.EnvironmentVariable{
+			request = cf.StagingRequest{
+				AppGUID: "our-app-id",
+				Environment: []cf.EnvironmentVariable{
 					{Name: "HOWARD", Value: "the alien"},
 					{Name: eirini.EnvAppID, Value: "should be ignored"},
 					{Name: eirini.EnvAPIAddress, Value: "should be ignored"},
@@ -85,15 +69,19 @@ var _ = Describe("Stager", func() {
 					{Name: eirini.EnvCompletionCallback, Value: "should be ignored"},
 					{Name: eirini.EnvDropletUploadURL, Value: "should be ignored"},
 				},
-				EgressRules: []*models.SecurityGroupRule{
-					{Protocol: "http"},
+				LifecycleData: cf.LifecycleData{
+					AppBitsDownloadURI: "example.com/download",
+					DropletUploadURI:   "example.com/upload",
+					Buildpacks: []cf.Buildpack{
+						{
+							Name:       "go_buildpack",
+							Key:        "1234eeff",
+							URL:        "example.com/build/pack",
+							SkipDetect: true,
+						},
+					},
 				},
-				Timeout:            4,
-				LogGuid:            "our-log-guid",
-				Lifecycle:          "the-cycle-of-life",
-				LifecycleData:      &lData,
 				CompletionCallback: "example.com/call/me/maybe",
-				IsolationSegment:   "my-life",
 			}
 		})
 
@@ -114,7 +102,7 @@ var _ = Describe("Stager", func() {
 					"HOWARD":                     "the alien",
 					eirini.EnvDownloadURL:        "example.com/download",
 					eirini.EnvDropletUploadURL:   "example.com/upload",
-					eirini.EnvAppID:              request.LogGuid,
+					eirini.EnvAppID:              request.AppGUID,
 					eirini.EnvStagingGUID:        stagingGUID,
 					eirini.EnvCompletionCallback: request.CompletionCallback,
 					eirini.EnvBuildpacks:         `[{"name":"go_buildpack","key":"1234eeff","url":"example.com/build/pack","skip_detect":true}]`,
@@ -124,30 +112,6 @@ var _ = Describe("Stager", func() {
 					eirini.EnvEiriniAddress:      "http://opi.cf.internal",
 				},
 			}))
-		})
-
-		Context("and lifecycleData information is corrupted", func() {
-
-			BeforeEach(func() {
-
-				lData := json.RawMessage(`{
-					"huh?what?":
-				}`)
-
-				request = cc_messages.StagingRequestFromCC{
-					LifecycleData: &lData,
-				}
-			})
-
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-
-			})
-
-			It("should not desire the task", func() {
-				Expect(taskDesirer.DesireStagingCallCount()).To(Equal(0))
-			})
-
 		})
 
 		Context("and desiring the task fails", func() {

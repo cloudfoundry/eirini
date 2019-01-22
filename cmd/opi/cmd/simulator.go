@@ -11,7 +11,6 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"github.com/spf13/cobra"
 )
 
@@ -79,7 +78,7 @@ func (c *ConverterSimulator) Convert(request cf.DesireLRPRequest) (opi.LRP, erro
 
 type StagerSimulator struct{}
 
-func (s *StagerSimulator) Stage(stagingGUID string, request cc_messages.StagingRequestFromCC) error {
+func (s *StagerSimulator) Stage(stagingGUID string, request cf.StagingRequest) error {
 	return nil
 }
 

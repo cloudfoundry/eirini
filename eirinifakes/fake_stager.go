@@ -6,15 +6,15 @@ import (
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
+	"code.cloudfoundry.org/eirini/models/cf"
 )
 
 type FakeStager struct {
-	StageStub        func(string, cc_messages.StagingRequestFromCC) error
+	StageStub        func(string, cf.StagingRequest) error
 	stageMutex       sync.RWMutex
 	stageArgsForCall []struct {
 		arg1 string
-		arg2 cc_messages.StagingRequestFromCC
+		arg2 cf.StagingRequest
 	}
 	stageReturns struct {
 		result1 error
@@ -37,12 +37,12 @@ type FakeStager struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStager) Stage(arg1 string, arg2 cc_messages.StagingRequestFromCC) error {
+func (fake *FakeStager) Stage(arg1 string, arg2 cf.StagingRequest) error {
 	fake.stageMutex.Lock()
 	ret, specificReturn := fake.stageReturnsOnCall[len(fake.stageArgsForCall)]
 	fake.stageArgsForCall = append(fake.stageArgsForCall, struct {
 		arg1 string
-		arg2 cc_messages.StagingRequestFromCC
+		arg2 cf.StagingRequest
 	}{arg1, arg2})
 	fake.recordInvocation("Stage", []interface{}{arg1, arg2})
 	fake.stageMutex.Unlock()
@@ -61,7 +61,7 @@ func (fake *FakeStager) StageCallCount() int {
 	return len(fake.stageArgsForCall)
 }
 
-func (fake *FakeStager) StageArgsForCall(i int) (string, cc_messages.StagingRequestFromCC) {
+func (fake *FakeStager) StageArgsForCall(i int) (string, cf.StagingRequest) {
 	fake.stageMutex.RLock()
 	defer fake.stageMutex.RUnlock()
 	return fake.stageArgsForCall[i].arg1, fake.stageArgsForCall[i].arg2
