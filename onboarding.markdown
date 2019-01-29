@@ -6,7 +6,7 @@
 * Get access to [cloudfoundry.slack.com](https://slack.cloudfoundry.org/)
 * Get access to the [tracker](https://www.pivotaltracker.com/n/projects/2172361) (ask the PM)
 * [Add public SSH key to github.com](https://help.github.com/articles/connecting-to-github-with-ssh/) and verify
-* Update [the onboarding document](https://github.com/cloudfoundry-incubator/bits-service/blob/master/docs/onboarding.markdown) if necessary
+* Update [the onboarding document](https://github.com/cloudfoundry-incubator/eirini/blob/master/onboarding.markdown) if necessary
 
 Additionally, for new members of the core team:
 
