@@ -4,14 +4,18 @@
 
 * Copy this section as tasks into a new chore
 * Get access to [cloudfoundry.slack.com](https://slack.cloudfoundry.org/)
-* Get access to the tracker (ask the PM)
-* Get onto to the github team / group (ask the PM)
+* Get access to the [tracker](https://www.pivotaltracker.com/n/projects/2172361) (ask the PM)
 * [Add public SSH key to github.com](https://help.github.com/articles/connecting-to-github-with-ssh/) and verify
+* Update [the onboarding document](https://github.com/cloudfoundry-incubator/bits-service/blob/master/docs/onboarding.markdown) if necessary
+
+Additionally, for new members of the core team:
+
+* Get onto to the github team / group (ask the PM)
 * Create a [SL](https://control.softlayer.com) account (ask the PM)
 * Create a [new VPN password](https://control.softlayer.com/account/user/profile) (DIY)
 * Set up the [VPN client](http://knowledgelayer.softlayer.com/procedure/ssl-vpn-mac-os-x-1010) (DIY)
-* Get access to shared Lastpass folder (ask the PM or anchor)
-* Update [the onboarding document](https://github.com/cloudfoundry-incubator/bits-service/blob/master/docs/onboarding.markdown) if necessary
+* Setup [`pass` access](https://github.com/cloudfoundry/eirini-private-config/tree/master#sensitive-passwords)
+* Ask the PM to get added to the pairing board: https://pairup-ng.mybluemix.net/#eirini
 
 ## Project Overview
 
