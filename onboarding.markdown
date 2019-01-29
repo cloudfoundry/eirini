@@ -21,17 +21,15 @@ Additionally, for new members of the core team:
 
 * [Inception doc](https://files.slack.com/files-pri/T02FL4A1X-FAED4MMSN/download/projecteirinipdf.pdf)
 * [Demo]( https://files.slack.com/files-pri/T02FL4A1X-FADSGHCUR/download/eirini-demo.mp4)
-* Code: https://code.cloudfoundry.org/eirini
-* BOSH Release: https://github.com/andrew-edgar/eirini-release
-* Pipeline: https://github.com/julzdiverse/eirini-release-ci
-* Backlog: https://code.cloudfoundry.org/eirini/projects/1
-* Pairing Board: https://eunomia.eu-de.mybluemix.net/
-* Slack Channel: [#eirini-dev](https://cloudfoundry.slack.com/messages/C8RU3BZ26)
+* [Code](https://code.cloudfoundry.org/eirini)
+* [Release](https://code.cloudfoundry.org/eirini-release)
+* [Core CI Pipeline](https://ci.flintstone.cf.cloud.ibm.com/teams/eirini/pipelines/ci)
+* [Slack Channel #eirini-dev](https://cloudfoundry.slack.com/messages/C8RU3BZ26)
 
 ## Coding Guidelines
 
 * Discuss whenever desired
-* Some good [general advice](https://medium.com/@benbjohnson/standard-package-layout-7cdbc8391fc1)
+* We use linters and formatters whenever we can (golangci-lint, shfmt, etc)
 * Comments
   - Generally avoid them
   - Codify things that need explanation (function names, interfaces, etc)
