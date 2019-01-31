@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"unicode/utf16"
 	"unsafe"
@@ -42,6 +43,15 @@ func runProcess(dir, command string) {
 	handleErr("getting getenv path failed", err)
 	envs, err := profile.ProfileEnv(dir, tmpDir, getenvPath, os.Stdout, os.Stderr)
 	handleErr("getting environment failed", err)
+
+	for _, v := range envs {
+		subs := strings.SplitN(v, "=", 2)
+		if strings.ToUpper(subs[0]) == "PATH" {
+			if err := os.Setenv("PATH", subs[1]); err != nil {
+				handleErr("setting environment failed", err)
+			}
+		}
+	}
 
 	p, _ := syscall.GetCurrentProcess()
 	fd := make([]syscall.Handle, 3)

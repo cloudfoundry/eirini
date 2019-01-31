@@ -110,7 +110,14 @@ func (b ServiceBroker) Push() {
 		"--no-start",
 		"-m", DefaultMemoryLimit,
 		"-p", b.Path,
-		"-d", b.AppsDomain,
+		"--no-route",
+	)).Should(Exit(0))
+
+	Eventually(CF(
+		"map-route",
+		b.Name,
+		b.AppsDomain,
+		"--hostname", b.Name,
 	)).Should(Exit(0))
 
 	Eventually(CF("start", b.Name)).Should(Exit(0))
@@ -180,6 +187,17 @@ func (b ServiceBroker) ToJSON(shareable bool) string {
 	)
 
 	return replacer.Replace(string(bytes))
+}
+
+func CreateBroker(domain, serviceName, planName string) ServiceBroker {
+	service := serviceName
+	servicePlan := planName
+	broker := NewServiceBroker(NewServiceBrokerName(), NewAssets().ServiceBroker, domain, service, servicePlan)
+	broker.Push()
+	broker.Configure(true)
+	broker.Create()
+
+	return broker
 }
 
 type Assets struct {

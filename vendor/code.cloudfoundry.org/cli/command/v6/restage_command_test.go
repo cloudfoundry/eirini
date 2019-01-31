@@ -44,10 +44,10 @@ var _ = Describe("Restage Command", func() {
 		fakeApplicationSummaryActor = new(sharedfakes.FakeApplicationSummaryActor)
 
 		cmd = RestageCommand{
-			UI:          testUI,
-			Config:      fakeConfig,
-			SharedActor: fakeSharedActor,
-			Actor:       fakeActor,
+			UI:                      testUI,
+			Config:                  fakeConfig,
+			SharedActor:             fakeSharedActor,
+			Actor:                   fakeActor,
 			ApplicationSummaryActor: fakeApplicationSummaryActor,
 		}
 
@@ -129,6 +129,7 @@ var _ = Describe("Restage Command", func() {
 		})
 
 		It("displays flavor text", func() {
+			Expect(testUI.Err).To(Say("This action will cause app downtime\\."))
 			Expect(testUI.Out).To(Say("Restaging app some-app in org some-org / space some-space as some-user..."))
 		})
 
@@ -509,7 +510,7 @@ var _ = Describe("Restage Command", func() {
 									{
 										Process: v3action.Process{
 											Type:       "aba",
-											Command:    "some-command-1",
+											Command:    *types.NewFilteredString("some-command-1"),
 											MemoryInMB: types.NullUint64{Value: 32, IsSet: true},
 											DiskInMB:   types.NullUint64{Value: 1024, IsSet: true},
 										},
@@ -517,7 +518,7 @@ var _ = Describe("Restage Command", func() {
 									{
 										Process: v3action.Process{
 											Type:       "console",
-											Command:    "some-command-2",
+											Command:    *types.NewFilteredString("some-command-2"),
 											MemoryInMB: types.NullUint64{Value: 16, IsSet: true},
 											DiskInMB:   types.NullUint64{Value: 512, IsSet: true},
 										},

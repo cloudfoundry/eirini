@@ -26,10 +26,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	"github.com/google/go-containerregistry/pkg/v1/v1util"
 )
 
 const appPath = "/ko-app"
@@ -107,6 +106,7 @@ func build(ip string) (string, error) {
 	cmd.Stderr = &output
 	cmd.Stdout = &output
 
+	log.Printf("Building %s", ip)
 	if err := cmd.Run(); err != nil {
 		os.RemoveAll(tmpDir)
 		log.Printf("Unexpected error running \"go build\": %v\n%v", err, output.String())
@@ -240,7 +240,7 @@ func (gb *gobuild) Build(s string) (v1.Image, error) {
 	}
 	dataLayerBytes := dataLayerBuf.Bytes()
 	dataLayer, err := tarball.LayerFromOpener(func() (io.ReadCloser, error) {
-		return v1util.NopReadCloser(bytes.NewBuffer(dataLayerBytes)), nil
+		return ioutil.NopCloser(bytes.NewBuffer(dataLayerBytes)), nil
 	})
 	if err != nil {
 		return nil, err
@@ -254,7 +254,7 @@ func (gb *gobuild) Build(s string) (v1.Image, error) {
 	}
 	binaryLayerBytes := binaryLayerBuf.Bytes()
 	binaryLayer, err := tarball.LayerFromOpener(func() (io.ReadCloser, error) {
-		return v1util.NopReadCloser(bytes.NewBuffer(binaryLayerBytes)), nil
+		return ioutil.NopCloser(bytes.NewBuffer(binaryLayerBytes)), nil
 	})
 	if err != nil {
 		return nil, err

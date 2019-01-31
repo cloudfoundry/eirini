@@ -9,10 +9,10 @@ option (gogoproto.goproto_enum_prefix_all) = true;
 
 message Error {
   enum Type {
-    UnknownError = 0;
-    InvalidDomain = 1;
+    reserved 1, 2, 10, 20, 22, 23, 25; // previously used and removed values
 
-    UnkownVersion          = 2;
+    UnknownError = 0;
+
     InvalidRecord          = 3;
     InvalidRequest         = 4;
     InvalidResponse        = 5;
@@ -20,8 +20,6 @@ message Error {
     InvalidJSON            = 7;
     FailedToOpenEnvelope   = 8;
     InvalidStateTransition = 9;
-
-    Unauthorized = 10;
 
     ResourceConflict = 11;
     ResourceExists   = 12;
@@ -33,15 +31,9 @@ message Error {
     ActualLRPCannotBeCrashed   = 17;
     ActualLRPCannotBeFailed    = 18;
     ActualLRPCannotBeRemoved   = 19;
-    ActualLRPCannotBeStopped   = 20;
     ActualLRPCannotBeUnclaimed = 21;
-    ActualLRPCannotBeEvacuated = 22;
-
-    DesiredLRPCannotBeUpdated = 23;
 
     RunningOnDifferentCell = 24;
-
-    DesiredLRPSchedulingInfoCannotBeUpdated = 25;
 
     GUIDGeneration = 26;
 
@@ -51,6 +43,8 @@ message Error {
     Unrecoverable = 29;
 
     LockCollision = 30;
+
+    Timeout = 31;
   }
 
   optional Type type = 1 [(gogoproto.nullable) = false];

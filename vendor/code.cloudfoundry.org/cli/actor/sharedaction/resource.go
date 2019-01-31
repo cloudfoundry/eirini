@@ -97,6 +97,9 @@ func (actor Actor) GatherArchiveResources(archivePath string) ([]Resource, error
 
 		resources = append(resources, resource)
 	}
+	if len(resources) <= 1 {
+		return nil, actionerror.EmptyArchiveError{Path: archivePath}
+	}
 	return resources, nil
 }
 
@@ -417,6 +420,10 @@ func (Actor) generateArchiveCFIgnoreMatcher(files []*zip.File) (*ignore.GitIgnor
 
 func (actor Actor) generateDirectoryCFIgnoreMatcher(sourceDir string) (*ignore.GitIgnore, error) {
 	pathToCFIgnore := filepath.Join(sourceDir, ".cfignore")
+	log.WithFields(log.Fields{
+		"pathToCFIgnore": pathToCFIgnore,
+		"sourceDir":      sourceDir,
+	}).Debug("using ignore file")
 
 	additionalIgnoreLines := DefaultIgnoreLines
 
@@ -428,11 +435,12 @@ func (actor Actor) generateDirectoryCFIgnoreMatcher(sourceDir string) (*ignore.G
 		}
 	}
 
+	log.Debugf("ignore rules: %v", additionalIgnoreLines)
+
 	if _, err := os.Stat(pathToCFIgnore); !os.IsNotExist(err) {
 		return ignore.CompileIgnoreFileAndLines(pathToCFIgnore, additionalIgnoreLines...)
-	} else {
-		return ignore.CompileIgnoreLines(additionalIgnoreLines...)
 	}
+	return ignore.CompileIgnoreLines(additionalIgnoreLines...)
 }
 
 func (Actor) findInResources(path string, filesToInclude []Resource) (Resource, bool) {
@@ -472,6 +480,7 @@ func (Actor) ReadArchive(archivePath string) (io.ReadCloser, int64, error) {
 
 	archiveInfo, err := archive.Stat()
 	if err != nil {
+		archive.Close()
 		log.WithField("archivePath", archivePath).Errorln("stat temp archive:", err)
 		return nil, -1, err
 	}

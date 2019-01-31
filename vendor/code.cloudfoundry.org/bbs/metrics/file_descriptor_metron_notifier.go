@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	OpenFileDescriptors = "OpenFileDescriptors"
-	FileDescriptorUnits = "descriptors"
+	OpenFileDescriptorsMetric = "OpenFileDescriptors"
+	FileDescriptorUnits       = "descriptors"
 )
 
 type FileDescriptorMetronNotifier struct {
@@ -51,7 +51,7 @@ func (notifier FileDescriptorMetronNotifier) Run(signals <-chan os.Signal, ready
 				continue
 			}
 
-			err = notifier.metronClient.SendMetric(OpenFileDescriptors, nDescriptors)
+			err = notifier.metronClient.SendMetric(OpenFileDescriptorsMetric, nDescriptors)
 			if err != nil {
 				logger.Error("error-sending-metric", err)
 			}

@@ -12,19 +12,15 @@ import (
 
 var _ = Describe("env command", func() {
 	var (
-		orgName     string
-		spaceName   string
-		appName     string
-		envVarName  string
-		envVarValue string
+		orgName   string
+		spaceName string
+		appName   string
 	)
 
 	BeforeEach(func() {
 		orgName = helpers.NewOrgName()
 		spaceName = helpers.NewSpaceName()
 		appName = helpers.PrefixedRandomName("app")
-		envVarName = "SOME_ENV_VAR"
-		envVarValue = "SOME_ENV_VAR_VALUE"
 	})
 
 	Describe("help", func() {
@@ -55,7 +51,7 @@ var _ = Describe("env command", func() {
 
 	When("the environment is not setup correctly", func() {
 		It("fails with the appropriate errors", func() {
-			helpers.CheckEnvironmentTargetedCorrectly(true, true, ReadOnlyOrg, "env", appName, envVarName, envVarValue)
+			helpers.CheckEnvironmentTargetedCorrectly(true, true, ReadOnlyOrg, "env", appName)
 		})
 	})
 
@@ -92,7 +88,7 @@ var _ = Describe("env command", func() {
 			BeforeEach(func() {
 				userProvidedServiceName = helpers.PrefixedRandomName("service")
 				helpers.WithHelloWorldApp(func(appDir string) {
-					Eventually(helpers.CF("v3-push", appName, "-p", appDir)).Should(Exit(0))
+					Eventually(helpers.CF("push", appName, "-p", appDir)).Should(Exit(0))
 				})
 
 				Eventually(helpers.CF("set-env", appName, "user-provided-env-name", "user-provided-env-value")).Should(Exit(0))

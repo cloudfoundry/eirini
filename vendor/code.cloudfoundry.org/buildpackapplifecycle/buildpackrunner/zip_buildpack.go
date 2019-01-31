@@ -12,7 +12,6 @@ import (
 	"code.cloudfoundry.org/archiver/extractor"
 	"code.cloudfoundry.org/cacheddownloader"
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/systemcerts"
 )
 
 type ZipDownloader struct {
@@ -25,7 +24,6 @@ func IsZipFile(filename string) bool {
 
 func NewZipDownloader(skipSSLVerification bool) *ZipDownloader {
 	tlsConfig := &tls.Config{
-		RootCAs:            systemcerts.SystemRootsPool().AsX509CertPool(),
 		InsecureSkipVerify: skipSSLVerification,
 	}
 

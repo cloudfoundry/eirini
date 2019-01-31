@@ -78,14 +78,14 @@ var _ = Describe("FileDescriptorMetronNotifier", func() {
 			fakeClock.WaitForWatcherAndIncrement(reportInterval)
 
 			Eventually(fakeMetronClient.SendMetricCallCount).Should(Equal(1))
-			name, value := fakeMetronClient.SendMetricArgsForCall(0)
+			name, value, _ := fakeMetronClient.SendMetricArgsForCall(0)
 			Expect(name).To(Equal("OpenFileDescriptors"))
 			Expect(value).To(BeEquivalentTo(10))
 
 			fakeClock.WaitForWatcherAndIncrement(reportInterval)
 
 			Eventually(fakeMetronClient.SendMetricCallCount).Should(Equal(2))
-			name, value = fakeMetronClient.SendMetricArgsForCall(1)
+			name, value, _ = fakeMetronClient.SendMetricArgsForCall(1)
 			Expect(name).To(Equal("OpenFileDescriptors"))
 			Expect(value).To(BeEquivalentTo(10))
 
@@ -94,7 +94,7 @@ var _ = Describe("FileDescriptorMetronNotifier", func() {
 			fakeClock.WaitForWatcherAndIncrement(reportInterval)
 
 			Eventually(fakeMetronClient.SendMetricCallCount).Should(Equal(3))
-			name, value = fakeMetronClient.SendMetricArgsForCall(2)
+			name, value, _ = fakeMetronClient.SendMetricArgsForCall(2)
 			Expect(name).To(Equal("OpenFileDescriptors"))
 			Expect(value).To(BeEquivalentTo(11))
 		})

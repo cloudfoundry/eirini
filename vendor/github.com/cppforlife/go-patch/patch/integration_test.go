@@ -47,12 +47,28 @@ instance_groups:
       username: user
       password: pass
 
+- type: test
+  path: /instance_groups/name=uaa/instances-not
+  absent: true
+
+# check current value
+- type: test
+  path: /instance_groups/name=uaa/instances
+  value: 0
+
 - type: replace
   path: /instance_groups/name=uaa/instances
   value: 1
 
 - type: replace
   path: /instance_groups/-
+  value:
+    name: uaadb
+    instances: 2
+
+# check what was appended above
+- type: test
+  path: /instance_groups/3
   value:
     name: uaadb
     instances: 2
@@ -225,5 +241,36 @@ releases:
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal(
 			"Error 'Custom error message': Expected to find a map key 'not-there' for path '/releases/0/not-there' (found map keys: 'name', 'version')"))
+	})
+
+	It("shows test error messages", func() {
+		inStr := `
+releases:
+- name: capi
+  version: 0.1
+`
+
+		var in interface{}
+
+		err := yaml.Unmarshal([]byte(inStr), &in)
+		Expect(err).ToNot(HaveOccurred())
+
+		opsStr := `
+- type: test
+  path: /releases/0
+  absent: true
+`
+
+		var opDefs []OpDefinition
+
+		err = yaml.Unmarshal([]byte(opsStr), &opDefs)
+		Expect(err).ToNot(HaveOccurred())
+
+		ops, err := NewOpsFromDefinitions(opDefs)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = ops.Apply(in)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("Expected to not find '/releases/0'"))
 	})
 })

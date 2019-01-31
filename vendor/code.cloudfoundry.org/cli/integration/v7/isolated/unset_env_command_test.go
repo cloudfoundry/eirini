@@ -34,6 +34,8 @@ var _ = Describe("unset-env command", func() {
 				Eventually(session).Should(Say("unset-env - Remove an env variable from an app"))
 				Eventually(session).Should(Say("USAGE:"))
 				Eventually(session).Should(Say("cf unset-env APP_NAME ENV_VAR_NAME"))
+				Eventually(session).Should(Say("ALIAS:"))
+				Eventually(session).Should(Say("ue"))
 				Eventually(session).Should(Say("SEE ALSO:"))
 				Eventually(session).Should(Say("env, set-env, v3-apps, v3-restart, v3-stage"))
 				Eventually(session).Should(Exit(0))
@@ -90,7 +92,7 @@ var _ = Describe("unset-env command", func() {
 		When("the app exists", func() {
 			BeforeEach(func() {
 				helpers.WithHelloWorldApp(func(appDir string) {
-					Eventually(helpers.CF("v3-push", appName, "-p", appDir)).Should(Exit(0))
+					Eventually(helpers.CF("push", appName, "-p", appDir)).Should(Exit(0))
 				})
 			})
 

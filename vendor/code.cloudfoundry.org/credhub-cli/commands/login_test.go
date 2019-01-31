@@ -540,7 +540,7 @@ var _ = Describe("Login", func() {
 
 		It("returns an error if no cert is valid for CredHub", func() {
 			previousCfg := config.ReadConfig()
-			session := runCommand("login", "-s", server.URL(), "u", "user", "-p", "pass", "--ca-cert", "../test/auth-tls-ca.pem")
+			session := runCommand("login", "-s", server.URL(), "-u", "user", "-p", "pass", "--ca-cert", "../test/auth-tls-ca.pem")
 
 			Eventually(session).Should(Exit(1))
 			Eventually(session.Err).Should(Say("certificate signed by unknown authority"))

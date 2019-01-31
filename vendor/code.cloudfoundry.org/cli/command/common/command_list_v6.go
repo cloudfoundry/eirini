@@ -143,7 +143,7 @@ type commandList struct {
 	RepoPlugins                        plugin.RepoPluginsCommand                    `command:"repo-plugins" description:"List all available plugins in specified repository or in all added repositories"`
 	ResetOrgDefaultIsolationSegment    v6.ResetOrgDefaultIsolationSegmentCommand    `command:"reset-org-default-isolation-segment" description:"Reset the default isolation segment used for apps in spaces of an org"`
 	ResetSpaceIsolationSegment         v6.ResetSpaceIsolationSegmentCommand         `command:"reset-space-isolation-segment" description:"Reset the space's isolation segment to the org default"`
-	Restage                            v6.RestageCommand                            `command:"restage" alias:"rg" description:"Recreate the app's executable artifact using the latest pushed app files and the latest environment (variables, service bindings, buildpack, stack, etc.)"`
+	Restage                            v6.RestageCommand                            `command:"restage" alias:"rg" description:"Recreate the app's executable artifact using the latest pushed app files and the latest environment (variables, service bindings, buildpack, stack, etc.). This action will cause app downtime."`
 	RestartAppInstance                 v6.RestartAppInstanceCommand                 `command:"restart-app-instance" description:"Terminate, then restart an app instance"`
 	Restart                            v6.RestartCommand                            `command:"restart" alias:"rs" description:"Stop all instances of the app, then start them again. This causes downtime."`
 	RouterGroups                       v6.RouterGroupsCommand                       `command:"router-groups" description:"List router groups"`
@@ -198,7 +198,7 @@ type commandList struct {
 	UnbindStagingSecurityGroup         v6.UnbindStagingSecurityGroupCommand         `command:"unbind-staging-security-group" description:"Unbind a security group from the set of security groups for staging applications"`
 	UninstallPlugin                    plugin.UninstallPluginCommand                `command:"uninstall-plugin" description:"Uninstall CLI plugin"`
 	UnmapRoute                         v6.UnmapRouteCommand                         `command:"unmap-route" description:"Remove a url route from an app"`
-	UnsetEnv                           v6.UnsetEnvCommand                           `command:"unset-env" description:"Remove an env variable"`
+	UnsetEnv                           v6.UnsetEnvCommand                           `command:"unset-env" alias:"ue" description:"Remove an env variable from an app"`
 	UnsetOrgRole                       v6.UnsetOrgRoleCommand                       `command:"unset-org-role" description:"Remove an org role from a user"`
 	UnsetSpaceQuota                    v6.UnsetSpaceQuotaCommand                    `command:"unset-space-quota" description:"Unassign a quota from a space"`
 	UnsetSpaceRole                     v6.UnsetSpaceRoleCommand                     `command:"unset-space-role" description:"Remove a space role from a user"`

@@ -157,6 +157,20 @@ type FakeClient struct {
 	upsertDomainReturnsOnCall map[int]struct {
 		result1 error
 	}
+	ActualLRPsStub        func(lager.Logger, models.ActualLRPFilter) ([]*models.ActualLRP, error)
+	actualLRPsMutex       sync.RWMutex
+	actualLRPsArgsForCall []struct {
+		arg1 lager.Logger
+		arg2 models.ActualLRPFilter
+	}
+	actualLRPsReturns struct {
+		result1 []*models.ActualLRP
+		result2 error
+	}
+	actualLRPsReturnsOnCall map[int]struct {
+		result1 []*models.ActualLRP
+		result2 error
+	}
 	ActualLRPGroupsStub        func(lager.Logger, models.ActualLRPFilter) ([]*models.ActualLRPGroup, error)
 	actualLRPGroupsMutex       sync.RWMutex
 	actualLRPGroupsArgsForCall []struct {
@@ -304,6 +318,19 @@ type FakeClient struct {
 		result1 events.EventSource
 		result2 error
 	}
+	SubscribeToInstanceEventsStub        func(logger lager.Logger) (events.EventSource, error)
+	subscribeToInstanceEventsMutex       sync.RWMutex
+	subscribeToInstanceEventsArgsForCall []struct {
+		logger lager.Logger
+	}
+	subscribeToInstanceEventsReturns struct {
+		result1 events.EventSource
+		result2 error
+	}
+	subscribeToInstanceEventsReturnsOnCall map[int]struct {
+		result1 events.EventSource
+		result2 error
+	}
 	SubscribeToTaskEventsStub        func(logger lager.Logger) (events.EventSource, error)
 	subscribeToTaskEventsMutex       sync.RWMutex
 	subscribeToTaskEventsArgsForCall []struct {
@@ -328,6 +355,20 @@ type FakeClient struct {
 		result2 error
 	}
 	subscribeToEventsByCellIDReturnsOnCall map[int]struct {
+		result1 events.EventSource
+		result2 error
+	}
+	SubscribeToInstanceEventsByCellIDStub        func(logger lager.Logger, cellId string) (events.EventSource, error)
+	subscribeToInstanceEventsByCellIDMutex       sync.RWMutex
+	subscribeToInstanceEventsByCellIDArgsForCall []struct {
+		logger lager.Logger
+		cellId string
+	}
+	subscribeToInstanceEventsByCellIDReturns struct {
+		result1 events.EventSource
+		result2 error
+	}
+	subscribeToInstanceEventsByCellIDReturnsOnCall map[int]struct {
 		result1 events.EventSource
 		result2 error
 	}
@@ -917,6 +958,58 @@ func (fake *FakeClient) UpsertDomainReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeClient) ActualLRPs(arg1 lager.Logger, arg2 models.ActualLRPFilter) ([]*models.ActualLRP, error) {
+	fake.actualLRPsMutex.Lock()
+	ret, specificReturn := fake.actualLRPsReturnsOnCall[len(fake.actualLRPsArgsForCall)]
+	fake.actualLRPsArgsForCall = append(fake.actualLRPsArgsForCall, struct {
+		arg1 lager.Logger
+		arg2 models.ActualLRPFilter
+	}{arg1, arg2})
+	fake.recordInvocation("ActualLRPs", []interface{}{arg1, arg2})
+	fake.actualLRPsMutex.Unlock()
+	if fake.ActualLRPsStub != nil {
+		return fake.ActualLRPsStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.actualLRPsReturns.result1, fake.actualLRPsReturns.result2
+}
+
+func (fake *FakeClient) ActualLRPsCallCount() int {
+	fake.actualLRPsMutex.RLock()
+	defer fake.actualLRPsMutex.RUnlock()
+	return len(fake.actualLRPsArgsForCall)
+}
+
+func (fake *FakeClient) ActualLRPsArgsForCall(i int) (lager.Logger, models.ActualLRPFilter) {
+	fake.actualLRPsMutex.RLock()
+	defer fake.actualLRPsMutex.RUnlock()
+	return fake.actualLRPsArgsForCall[i].arg1, fake.actualLRPsArgsForCall[i].arg2
+}
+
+func (fake *FakeClient) ActualLRPsReturns(result1 []*models.ActualLRP, result2 error) {
+	fake.ActualLRPsStub = nil
+	fake.actualLRPsReturns = struct {
+		result1 []*models.ActualLRP
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) ActualLRPsReturnsOnCall(i int, result1 []*models.ActualLRP, result2 error) {
+	fake.ActualLRPsStub = nil
+	if fake.actualLRPsReturnsOnCall == nil {
+		fake.actualLRPsReturnsOnCall = make(map[int]struct {
+			result1 []*models.ActualLRP
+			result2 error
+		})
+	}
+	fake.actualLRPsReturnsOnCall[i] = struct {
+		result1 []*models.ActualLRP
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) ActualLRPGroups(arg1 lager.Logger, arg2 models.ActualLRPFilter) ([]*models.ActualLRPGroup, error) {
 	fake.actualLRPGroupsMutex.Lock()
 	ret, specificReturn := fake.actualLRPGroupsReturnsOnCall[len(fake.actualLRPGroupsArgsForCall)]
@@ -1478,6 +1571,57 @@ func (fake *FakeClient) SubscribeToEventsReturnsOnCall(i int, result1 events.Eve
 	}{result1, result2}
 }
 
+func (fake *FakeClient) SubscribeToInstanceEvents(logger lager.Logger) (events.EventSource, error) {
+	fake.subscribeToInstanceEventsMutex.Lock()
+	ret, specificReturn := fake.subscribeToInstanceEventsReturnsOnCall[len(fake.subscribeToInstanceEventsArgsForCall)]
+	fake.subscribeToInstanceEventsArgsForCall = append(fake.subscribeToInstanceEventsArgsForCall, struct {
+		logger lager.Logger
+	}{logger})
+	fake.recordInvocation("SubscribeToInstanceEvents", []interface{}{logger})
+	fake.subscribeToInstanceEventsMutex.Unlock()
+	if fake.SubscribeToInstanceEventsStub != nil {
+		return fake.SubscribeToInstanceEventsStub(logger)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.subscribeToInstanceEventsReturns.result1, fake.subscribeToInstanceEventsReturns.result2
+}
+
+func (fake *FakeClient) SubscribeToInstanceEventsCallCount() int {
+	fake.subscribeToInstanceEventsMutex.RLock()
+	defer fake.subscribeToInstanceEventsMutex.RUnlock()
+	return len(fake.subscribeToInstanceEventsArgsForCall)
+}
+
+func (fake *FakeClient) SubscribeToInstanceEventsArgsForCall(i int) lager.Logger {
+	fake.subscribeToInstanceEventsMutex.RLock()
+	defer fake.subscribeToInstanceEventsMutex.RUnlock()
+	return fake.subscribeToInstanceEventsArgsForCall[i].logger
+}
+
+func (fake *FakeClient) SubscribeToInstanceEventsReturns(result1 events.EventSource, result2 error) {
+	fake.SubscribeToInstanceEventsStub = nil
+	fake.subscribeToInstanceEventsReturns = struct {
+		result1 events.EventSource
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) SubscribeToInstanceEventsReturnsOnCall(i int, result1 events.EventSource, result2 error) {
+	fake.SubscribeToInstanceEventsStub = nil
+	if fake.subscribeToInstanceEventsReturnsOnCall == nil {
+		fake.subscribeToInstanceEventsReturnsOnCall = make(map[int]struct {
+			result1 events.EventSource
+			result2 error
+		})
+	}
+	fake.subscribeToInstanceEventsReturnsOnCall[i] = struct {
+		result1 events.EventSource
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) SubscribeToTaskEvents(logger lager.Logger) (events.EventSource, error) {
 	fake.subscribeToTaskEventsMutex.Lock()
 	ret, specificReturn := fake.subscribeToTaskEventsReturnsOnCall[len(fake.subscribeToTaskEventsArgsForCall)]
@@ -1576,6 +1720,58 @@ func (fake *FakeClient) SubscribeToEventsByCellIDReturnsOnCall(i int, result1 ev
 		})
 	}
 	fake.subscribeToEventsByCellIDReturnsOnCall[i] = struct {
+		result1 events.EventSource
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) SubscribeToInstanceEventsByCellID(logger lager.Logger, cellId string) (events.EventSource, error) {
+	fake.subscribeToInstanceEventsByCellIDMutex.Lock()
+	ret, specificReturn := fake.subscribeToInstanceEventsByCellIDReturnsOnCall[len(fake.subscribeToInstanceEventsByCellIDArgsForCall)]
+	fake.subscribeToInstanceEventsByCellIDArgsForCall = append(fake.subscribeToInstanceEventsByCellIDArgsForCall, struct {
+		logger lager.Logger
+		cellId string
+	}{logger, cellId})
+	fake.recordInvocation("SubscribeToInstanceEventsByCellID", []interface{}{logger, cellId})
+	fake.subscribeToInstanceEventsByCellIDMutex.Unlock()
+	if fake.SubscribeToInstanceEventsByCellIDStub != nil {
+		return fake.SubscribeToInstanceEventsByCellIDStub(logger, cellId)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.subscribeToInstanceEventsByCellIDReturns.result1, fake.subscribeToInstanceEventsByCellIDReturns.result2
+}
+
+func (fake *FakeClient) SubscribeToInstanceEventsByCellIDCallCount() int {
+	fake.subscribeToInstanceEventsByCellIDMutex.RLock()
+	defer fake.subscribeToInstanceEventsByCellIDMutex.RUnlock()
+	return len(fake.subscribeToInstanceEventsByCellIDArgsForCall)
+}
+
+func (fake *FakeClient) SubscribeToInstanceEventsByCellIDArgsForCall(i int) (lager.Logger, string) {
+	fake.subscribeToInstanceEventsByCellIDMutex.RLock()
+	defer fake.subscribeToInstanceEventsByCellIDMutex.RUnlock()
+	return fake.subscribeToInstanceEventsByCellIDArgsForCall[i].logger, fake.subscribeToInstanceEventsByCellIDArgsForCall[i].cellId
+}
+
+func (fake *FakeClient) SubscribeToInstanceEventsByCellIDReturns(result1 events.EventSource, result2 error) {
+	fake.SubscribeToInstanceEventsByCellIDStub = nil
+	fake.subscribeToInstanceEventsByCellIDReturns = struct {
+		result1 events.EventSource
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) SubscribeToInstanceEventsByCellIDReturnsOnCall(i int, result1 events.EventSource, result2 error) {
+	fake.SubscribeToInstanceEventsByCellIDStub = nil
+	if fake.subscribeToInstanceEventsByCellIDReturnsOnCall == nil {
+		fake.subscribeToInstanceEventsByCellIDReturnsOnCall = make(map[int]struct {
+			result1 events.EventSource
+			result2 error
+		})
+	}
+	fake.subscribeToInstanceEventsByCellIDReturnsOnCall[i] = struct {
 		result1 events.EventSource
 		result2 error
 	}{result1, result2}
@@ -1705,6 +1901,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.domainsMutex.RUnlock()
 	fake.upsertDomainMutex.RLock()
 	defer fake.upsertDomainMutex.RUnlock()
+	fake.actualLRPsMutex.RLock()
+	defer fake.actualLRPsMutex.RUnlock()
 	fake.actualLRPGroupsMutex.RLock()
 	defer fake.actualLRPGroupsMutex.RUnlock()
 	fake.actualLRPGroupsByProcessGuidMutex.RLock()
@@ -1727,10 +1925,14 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.removeDesiredLRPMutex.RUnlock()
 	fake.subscribeToEventsMutex.RLock()
 	defer fake.subscribeToEventsMutex.RUnlock()
+	fake.subscribeToInstanceEventsMutex.RLock()
+	defer fake.subscribeToInstanceEventsMutex.RUnlock()
 	fake.subscribeToTaskEventsMutex.RLock()
 	defer fake.subscribeToTaskEventsMutex.RUnlock()
 	fake.subscribeToEventsByCellIDMutex.RLock()
 	defer fake.subscribeToEventsByCellIDMutex.RUnlock()
+	fake.subscribeToInstanceEventsByCellIDMutex.RLock()
+	defer fake.subscribeToInstanceEventsByCellIDMutex.RUnlock()
 	fake.pingMutex.RLock()
 	defer fake.pingMutex.RUnlock()
 	fake.cellsMutex.RLock()

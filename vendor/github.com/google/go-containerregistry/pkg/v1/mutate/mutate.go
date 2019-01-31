@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/stream"
@@ -88,21 +88,11 @@ func configFile(base v1.Image, cfg *v1.ConfigFile) (v1.Image, error) {
 	}
 
 	image := &image{
-		base:     base,
-		manifest: m.DeepCopy(),
+		base:       base,
+		manifest:   m.DeepCopy(),
+		configFile: cfg,
 	}
 
-	rcfg, err := image.RawConfigFile()
-	if err != nil {
-		return nil, err
-	}
-	d, sz, err := v1.SHA256(bytes.NewBuffer(rcfg))
-	if err != nil {
-		return nil, err
-	}
-	image.manifest.Config.Digest = d
-	image.manifest.Config.Size = sz
-	image.configFile = cfg
 	return image, nil
 }
 
@@ -139,11 +129,16 @@ func (i *image) compute() error {
 	if i.computed {
 		return nil
 	}
-	cf, err := i.base.ConfigFile()
-	if err != nil {
-		return err
+	var configFile *v1.ConfigFile
+	if i.configFile != nil {
+		configFile = i.configFile
+	} else {
+		cf, err := i.base.ConfigFile()
+		if err != nil {
+			return err
+		}
+		configFile = cf.DeepCopy()
 	}
-	configFile := cf.DeepCopy()
 	diffIDs := configFile.RootFS.DiffIDs
 	history := configFile.History
 

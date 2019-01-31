@@ -11,8 +11,10 @@ import (
 var _ = Describe("Config validation", func() {
 	It("returns nil if the config is valid", func() {
 		cfg := config.Config{
-			ApiURL:      "http://api.example.com",
-			AccessToken: "non-revoked",
+			ConfigWithoutSecrets: config.ConfigWithoutSecrets{
+				ApiURL:      "http://api.example.com",
+				AccessToken: "non-revoked",
+			},
 		}
 
 		Expect(config.ValidateConfig(cfg)).To(BeNil())

@@ -2,10 +2,17 @@ package v3action
 
 import (
 	"code.cloudfoundry.org/cli/actor/actionerror"
+	"code.cloudfoundry.org/cli/actor/versioncheck"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
+	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
+	"code.cloudfoundry.org/cli/api/cloudcontroller/ccversion"
 )
 
-type Space ccv3.Space
+type Space struct {
+	GUID             string
+	Name             string
+	OrganizationGUID string
+}
 
 // ResetSpaceIsolationSegment disassociates a space from an isolation segment.
 //
@@ -53,5 +60,50 @@ func (actor Actor) GetSpaceByNameAndOrganization(spaceName string, orgGUID strin
 		return Space{}, Warnings(warnings), actionerror.SpaceNotFoundError{Name: spaceName}
 	}
 
-	return Space(spaces[0]), Warnings(warnings), nil
+	return actor.convertCCToActorSpace(spaces[0]), Warnings(warnings), nil
+}
+
+func (actor Actor) GetSpacesByGUIDs(guids ...string) ([]Space, Warnings, error) {
+	currentV3Ver := actor.CloudControllerClient.CloudControllerAPIVersion()
+
+	guidsSupport, err := versioncheck.IsMinimumAPIVersionMet(currentV3Ver, ccversion.MinVersionSpacesGUIDsParamV3)
+	if err != nil {
+		guidsSupport = false
+	}
+
+	queries := []ccv3.Query{}
+	if guidsSupport {
+		queries = []ccv3.Query{ccv3.Query{Key: ccv3.GUIDFilter, Values: guids}}
+	}
+
+	spaces, warnings, err := actor.CloudControllerClient.GetSpaces(queries...)
+	if err != nil {
+		return []Space{}, Warnings(warnings), err
+	}
+
+	var filteredSpaces []ccv3.Space
+	guidToSpaces := map[string]ccv3.Space{}
+	for _, space := range spaces {
+		guidToSpaces[space.GUID] = space
+	}
+
+	for _, guid := range guids {
+		filteredSpaces = append(filteredSpaces, guidToSpaces[guid])
+	}
+	spaces = filteredSpaces
+
+	var v3Spaces []Space
+	for _, ccSpace := range spaces {
+		v3Spaces = append(v3Spaces, actor.convertCCToActorSpace(ccSpace))
+	}
+
+	return v3Spaces, Warnings(warnings), nil
+}
+
+func (actor Actor) convertCCToActorSpace(space ccv3.Space) Space {
+	return Space{
+		GUID:             space.GUID,
+		Name:             space.Name,
+		OrganizationGUID: space.Relationships[constant.RelationshipTypeOrganization].GUID,
+	}
 }

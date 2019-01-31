@@ -9,6 +9,8 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
+const bbsMasterElectedMetric = "BBSMasterElected"
+
 type BBSElectionMetronNotifier struct {
 	Logger       lager.Logger
 	metronClient loggingclient.IngressClient
@@ -30,7 +32,7 @@ func (notifier BBSElectionMetronNotifier) Run(signals <-chan os.Signal, ready ch
 	logger.Info("started")
 	defer logger.Info("finished")
 
-	notifier.metronClient.SendMetric("BBSMasterElected", 1)
+	notifier.metronClient.SendMetric(bbsMasterElectedMetric, 1)
 
 	<-signals
 	return nil

@@ -6,27 +6,27 @@ import (
 	"code.cloudfoundry.org/bbs/format"
 )
 
-func (a *CachedDependency) Validate() error {
+func (c *CachedDependency) Validate() error {
 	var validationError ValidationError
 
-	if a.GetFrom() == "" {
+	if c.GetFrom() == "" {
 		validationError = validationError.Append(ErrInvalidField{"from"})
 	}
 
-	if a.GetTo() == "" {
+	if c.GetTo() == "" {
 		validationError = validationError.Append(ErrInvalidField{"to"})
 	}
 
-	if a.GetChecksumValue() != "" && a.GetChecksumAlgorithm() == "" {
+	if c.GetChecksumValue() != "" && c.GetChecksumAlgorithm() == "" {
 		validationError = validationError.Append(ErrInvalidField{"checksum algorithm"})
 	}
 
-	if a.GetChecksumValue() == "" && a.GetChecksumAlgorithm() != "" {
+	if c.GetChecksumValue() == "" && c.GetChecksumAlgorithm() != "" {
 		validationError = validationError.Append(ErrInvalidField{"checksum value"})
 	}
 
-	if a.GetChecksumValue() != "" && a.GetChecksumAlgorithm() != "" {
-		if !contains([]string{"md5", "sha1", "sha256"}, strings.ToLower(a.GetChecksumAlgorithm())) {
+	if c.GetChecksumValue() != "" && c.GetChecksumAlgorithm() != "" {
+		if !contains([]string{"md5", "sha1", "sha256"}, strings.ToLower(c.GetChecksumAlgorithm())) {
 			validationError = validationError.Append(ErrInvalidField{"invalid algorithm"})
 		}
 	}
@@ -38,17 +38,10 @@ func (a *CachedDependency) Validate() error {
 	return nil
 }
 
-func validateCachedDependencies(
-	cachedDependencies []*CachedDependency,
-	legacyDownloadUser string,
-) ValidationError {
+func validateCachedDependencies(cachedDependencies []*CachedDependency) ValidationError {
 	var validationError ValidationError
 
 	if len(cachedDependencies) > 0 {
-		if legacyDownloadUser == "" {
-			validationError = validationError.Append(ErrInvalidField{"legacy_download_user"})
-		}
-
 		for _, cacheDep := range cachedDependencies {
 			err := cacheDep.Validate()
 			if err != nil {

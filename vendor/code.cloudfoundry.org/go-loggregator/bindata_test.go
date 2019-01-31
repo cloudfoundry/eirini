@@ -19,7 +19,6 @@ import (
 	"strings"
 	"time"
 )
-
 type asset struct {
 	bytes []byte
 	info  os.FileInfo
@@ -91,7 +90,7 @@ func caCrt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "CA.crt", size: 1740, mode: os.FileMode(436), modTime: time.Unix(1502835442, 0)}
+	info := bindataFileInfo{name: "CA.crt", size: 1740, mode: os.FileMode(436), modTime: time.Unix(1537224276, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -159,7 +158,7 @@ func caKey() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "CA.key", size: 3243, mode: os.FileMode(436), modTime: time.Unix(1502835442, 0)}
+	info := bindataFileInfo{name: "CA.key", size: 3243, mode: os.FileMode(436), modTime: time.Unix(1537224276, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -200,7 +199,7 @@ func clientCrt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "client.crt", size: 1484, mode: os.FileMode(436), modTime: time.Unix(1502835442, 0)}
+	info := bindataFileInfo{name: "client.crt", size: 1484, mode: os.FileMode(436), modTime: time.Unix(1537224276, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -244,7 +243,7 @@ func clientKey() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "client.key", size: 1679, mode: os.FileMode(436), modTime: time.Unix(1502835442, 0)}
+	info := bindataFileInfo{name: "client.key", size: 1679, mode: os.FileMode(436), modTime: time.Unix(1537224276, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -262,7 +261,7 @@ func invalidCaCrt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "invalid-ca.crt", size: 7, mode: os.FileMode(436), modTime: time.Unix(1502835442, 0)}
+	info := bindataFileInfo{name: "invalid-ca.crt", size: 7, mode: os.FileMode(436), modTime: time.Unix(1537224276, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -303,7 +302,7 @@ func serverCrt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "server.crt", size: 1480, mode: os.FileMode(436), modTime: time.Unix(1502835442, 0)}
+	info := bindataFileInfo{name: "server.crt", size: 1480, mode: os.FileMode(436), modTime: time.Unix(1537224276, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -347,7 +346,7 @@ func serverKey() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "server.key", size: 1675, mode: os.FileMode(436), modTime: time.Unix(1502835442, 0)}
+	info := bindataFileInfo{name: "server.key", size: 1675, mode: os.FileMode(436), modTime: time.Unix(1537224276, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -404,13 +403,13 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"CA.crt":         caCrt,
-	"CA.key":         caKey,
-	"client.crt":     clientCrt,
-	"client.key":     clientKey,
+	"CA.crt": caCrt,
+	"CA.key": caKey,
+	"client.crt": clientCrt,
+	"client.key": clientKey,
 	"invalid-ca.crt": invalidCaCrt,
-	"server.crt":     serverCrt,
-	"server.key":     serverKey,
+	"server.crt": serverCrt,
+	"server.key": serverKey,
 }
 
 // AssetDir returns the file names below a certain
@@ -452,15 +451,14 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
-
 var _bintree = &bintree{nil, map[string]*bintree{
-	"CA.crt":         &bintree{caCrt, map[string]*bintree{}},
-	"CA.key":         &bintree{caKey, map[string]*bintree{}},
-	"client.crt":     &bintree{clientCrt, map[string]*bintree{}},
-	"client.key":     &bintree{clientKey, map[string]*bintree{}},
+	"CA.crt": &bintree{caCrt, map[string]*bintree{}},
+	"CA.key": &bintree{caKey, map[string]*bintree{}},
+	"client.crt": &bintree{clientCrt, map[string]*bintree{}},
+	"client.key": &bintree{clientKey, map[string]*bintree{}},
 	"invalid-ca.crt": &bintree{invalidCaCrt, map[string]*bintree{}},
-	"server.crt":     &bintree{serverCrt, map[string]*bintree{}},
-	"server.key":     &bintree{serverKey, map[string]*bintree{}},
+	"server.crt": &bintree{serverCrt, map[string]*bintree{}},
+	"server.key": &bintree{serverKey, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
@@ -509,3 +507,4 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
+

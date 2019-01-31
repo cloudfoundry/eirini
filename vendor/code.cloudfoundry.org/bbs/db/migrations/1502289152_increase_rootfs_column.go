@@ -2,9 +2,7 @@ package migrations
 
 import (
 	"database/sql"
-	"errors"
 
-	"code.cloudfoundry.org/bbs/db/etcd"
 	"code.cloudfoundry.org/bbs/encryption"
 	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/migration"
@@ -13,15 +11,14 @@ import (
 )
 
 func init() {
-	AppendMigration(NewIncreaseRootFSColumnSize())
+	appendMigration(NewIncreaseRootFSColumnSize())
 }
 
 type IncreaseRootFSColumnsSize struct {
-	serializer  format.Serializer
-	storeClient etcd.StoreClient
-	clock       clock.Clock
-	rawSQLDB    *sql.DB
-	dbFlavor    string
+	serializer format.Serializer
+	clock      clock.Clock
+	rawSQLDB   *sql.DB
+	dbFlavor   string
 }
 
 func NewIncreaseRootFSColumnSize() migration.Migration {
@@ -29,15 +26,11 @@ func NewIncreaseRootFSColumnSize() migration.Migration {
 }
 
 func (e *IncreaseRootFSColumnsSize) String() string {
-	return "1502289152"
+	return migrationString(e)
 }
 
 func (e *IncreaseRootFSColumnsSize) Version() int64 {
 	return 1502289152
-}
-
-func (e *IncreaseRootFSColumnsSize) SetStoreClient(storeClient etcd.StoreClient) {
-	e.storeClient = storeClient
 }
 
 func (e *IncreaseRootFSColumnsSize) SetCryptor(cryptor encryption.Cryptor) {
@@ -48,7 +41,6 @@ func (e *IncreaseRootFSColumnsSize) SetRawSQLDB(db *sql.DB) {
 	e.rawSQLDB = db
 }
 
-func (e *IncreaseRootFSColumnsSize) RequiresSQL() bool         { return true }
 func (e *IncreaseRootFSColumnsSize) SetClock(c clock.Clock)    { e.clock = c }
 func (e *IncreaseRootFSColumnsSize) SetDBFlavor(flavor string) { e.dbFlavor = flavor }
 
@@ -58,10 +50,6 @@ func (e *IncreaseRootFSColumnsSize) Up(logger lager.Logger) error {
 	defer logger.Info("completed")
 
 	return e.alterTables(logger, e.rawSQLDB, e.dbFlavor)
-}
-
-func (e *IncreaseRootFSColumnsSize) Down(logger lager.Logger) error {
-	return errors.New("not implemented")
 }
 
 func (e *IncreaseRootFSColumnsSize) alterTables(logger lager.Logger, db *sql.DB, flavor string) error {

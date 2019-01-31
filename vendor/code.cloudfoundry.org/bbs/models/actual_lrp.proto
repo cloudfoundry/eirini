@@ -5,6 +5,8 @@ package models;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "modification_tag.proto";
 
+option (gogoproto.goproto_enum_prefix_all) = true;
+
 message ActualLRPGroup {
   optional ActualLRP instance = 1;
   optional ActualLRP evacuating = 2;
@@ -35,6 +37,12 @@ message ActualLRPNetInfo {
 }
 
 message ActualLRP {
+  enum Presence {
+    ORDINARY   = 0 [(gogoproto.enumvalue_customname) = "Ordinary"];
+    EVACUATING = 1 [(gogoproto.enumvalue_customname) = "Evacuating"];
+    SUSPECT    = 2 [(gogoproto.enumvalue_customname) = "Suspect"];
+  }
+
   optional ActualLRPKey actual_lrp_key = 1 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
   optional ActualLRPInstanceKey actual_lrp_instance_key = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
   optional ActualLRPNetInfo actual_lrp_net_info = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
@@ -44,4 +52,5 @@ message ActualLRP {
   optional string placement_error = 7 [(gogoproto.jsontag) = "placement_error,omitempty"];
   optional int64 since = 8;
   optional ModificationTag modification_tag = 9 [(gogoproto.nullable) = false];
+  optional Presence presence = 10;
 }

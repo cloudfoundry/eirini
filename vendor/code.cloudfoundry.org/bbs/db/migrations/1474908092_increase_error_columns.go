@@ -2,9 +2,7 @@ package migrations
 
 import (
 	"database/sql"
-	"errors"
 
-	"code.cloudfoundry.org/bbs/db/etcd"
 	"code.cloudfoundry.org/bbs/encryption"
 	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/migration"
@@ -13,15 +11,14 @@ import (
 )
 
 func init() {
-	AppendMigration(NewIncreaseErrorColumnsSize())
+	appendMigration(NewIncreaseErrorColumnsSize())
 }
 
 type IncreaseErrorColumnsSize struct {
-	serializer  format.Serializer
-	storeClient etcd.StoreClient
-	clock       clock.Clock
-	rawSQLDB    *sql.DB
-	dbFlavor    string
+	serializer format.Serializer
+	clock      clock.Clock
+	rawSQLDB   *sql.DB
+	dbFlavor   string
 }
 
 func NewIncreaseErrorColumnsSize() migration.Migration {
@@ -29,15 +26,11 @@ func NewIncreaseErrorColumnsSize() migration.Migration {
 }
 
 func (e *IncreaseErrorColumnsSize) String() string {
-	return "1474908092"
+	return migrationString(e)
 }
 
 func (e *IncreaseErrorColumnsSize) Version() int64 {
 	return 1474908092
-}
-
-func (e *IncreaseErrorColumnsSize) SetStoreClient(storeClient etcd.StoreClient) {
-	e.storeClient = storeClient
 }
 
 func (e *IncreaseErrorColumnsSize) SetCryptor(cryptor encryption.Cryptor) {
@@ -48,7 +41,6 @@ func (e *IncreaseErrorColumnsSize) SetRawSQLDB(db *sql.DB) {
 	e.rawSQLDB = db
 }
 
-func (e *IncreaseErrorColumnsSize) RequiresSQL() bool         { return true }
 func (e *IncreaseErrorColumnsSize) SetClock(c clock.Clock)    { e.clock = c }
 func (e *IncreaseErrorColumnsSize) SetDBFlavor(flavor string) { e.dbFlavor = flavor }
 
@@ -58,10 +50,6 @@ func (e *IncreaseErrorColumnsSize) Up(logger lager.Logger) error {
 	defer logger.Info("completed")
 
 	return e.alterTables(logger, e.rawSQLDB, e.dbFlavor)
-}
-
-func (e *IncreaseErrorColumnsSize) Down(logger lager.Logger) error {
-	return errors.New("not implemented")
 }
 
 func (e *IncreaseErrorColumnsSize) alterTables(logger lager.Logger, db *sql.DB, flavor string) error {

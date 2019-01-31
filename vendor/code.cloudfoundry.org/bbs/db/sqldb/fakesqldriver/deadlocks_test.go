@@ -24,7 +24,7 @@ var _ = Describe("Deadlocks", func() {
 
 	Context("Domains", func() {
 		It("retries on deadlocks", func() {
-			_, err := sqlDB.Domains(logger)
+			_, err := sqlDB.FreshDomains(logger)
 			Expect(err).To(HaveOccurred())
 			Expect(fakeConn.BeginCallCount()).To(Equal(3))
 		})
@@ -70,25 +70,9 @@ var _ = Describe("Deadlocks", func() {
 		})
 	})
 
-	Context("ActualLRPGroupByProcessGuidAndIndex", func() {
+	Context("ActualLRPs", func() {
 		It("retries on deadlocks", func() {
-			_, err := sqlDB.ActualLRPGroupByProcessGuidAndIndex(logger, "", 0)
-			Expect(err).To(HaveOccurred())
-			Expect(fakeConn.BeginCallCount()).To(Equal(3))
-		})
-	})
-
-	Context("ActualLRPGroups", func() {
-		It("retries on deadlocks", func() {
-			_, err := sqlDB.ActualLRPGroups(logger, models.ActualLRPFilter{})
-			Expect(err).To(HaveOccurred())
-			Expect(fakeConn.BeginCallCount()).To(Equal(3))
-		})
-	})
-
-	Context("ActualLRPGroupsByProcessGuid", func() {
-		It("retries on deadlocks", func() {
-			_, err := sqlDB.ActualLRPGroupsByProcessGuid(logger, "")
+			_, err := sqlDB.ActualLRPs(logger, models.ActualLRPFilter{})
 			Expect(err).To(HaveOccurred())
 			Expect(fakeConn.BeginCallCount()).To(Equal(3))
 		})
@@ -176,7 +160,7 @@ var _ = Describe("Deadlocks", func() {
 
 	Context("EvacuateActualLRP", func() {
 		It("retries on deadlocks", func() {
-			_, err := sqlDB.EvacuateActualLRP(logger, &models.ActualLRPKey{}, &models.ActualLRPInstanceKey{}, &models.ActualLRPNetInfo{}, 0)
+			_, err := sqlDB.EvacuateActualLRP(logger, &models.ActualLRPKey{}, &models.ActualLRPInstanceKey{}, &models.ActualLRPNetInfo{})
 			Expect(err).To(HaveOccurred())
 			Expect(fakeConn.BeginCallCount()).To(Equal(3))
 		})

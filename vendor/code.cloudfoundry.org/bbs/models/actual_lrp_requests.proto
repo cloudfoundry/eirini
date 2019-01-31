@@ -66,3 +66,16 @@ message RemoveActualLRPRequest {
   optional int32 index = 2;
   optional ActualLRPInstanceKey actual_lrp_instance_key = 3;
 }
+
+message ActualLRPsResponse {
+  optional Error error = 1;
+  repeated ActualLRP actual_lrps = 2;
+}
+
+message ActualLRPsRequest {
+  optional string domain = 1;
+  optional string cell_id = 2;
+  optional string process_guid = 3;
+  optional int32 index = 4 [(gogoproto.nullable) = true];
+}
+

@@ -2,9 +2,7 @@ package migrations
 
 import (
 	"database/sql"
-	"errors"
 
-	"code.cloudfoundry.org/bbs/db/etcd"
 	"code.cloudfoundry.org/bbs/encryption"
 	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/migration"
@@ -13,15 +11,14 @@ import (
 )
 
 func init() {
-	AppendMigration(NewIncreaseRunInfoColumnSize())
+	appendMigration(NewIncreaseRunInfoColumnSize())
 }
 
 type IncreaseRunInfoColumnSize struct {
-	serializer  format.Serializer
-	storeClient etcd.StoreClient
-	clock       clock.Clock
-	rawSQLDB    *sql.DB
-	dbFlavor    string
+	serializer format.Serializer
+	clock      clock.Clock
+	rawSQLDB   *sql.DB
+	dbFlavor   string
 }
 
 func NewIncreaseRunInfoColumnSize() migration.Migration {
@@ -29,15 +26,11 @@ func NewIncreaseRunInfoColumnSize() migration.Migration {
 }
 
 func (e *IncreaseRunInfoColumnSize) String() string {
-	return "1471030898"
+	return migrationString(e)
 }
 
 func (e *IncreaseRunInfoColumnSize) Version() int64 {
 	return 1471030898
-}
-
-func (e *IncreaseRunInfoColumnSize) SetStoreClient(storeClient etcd.StoreClient) {
-	e.storeClient = storeClient
 }
 
 func (e *IncreaseRunInfoColumnSize) SetCryptor(cryptor encryption.Cryptor) {
@@ -48,7 +41,6 @@ func (e *IncreaseRunInfoColumnSize) SetRawSQLDB(db *sql.DB) {
 	e.rawSQLDB = db
 }
 
-func (e *IncreaseRunInfoColumnSize) RequiresSQL() bool         { return true }
 func (e *IncreaseRunInfoColumnSize) SetClock(c clock.Clock)    { e.clock = c }
 func (e *IncreaseRunInfoColumnSize) SetDBFlavor(flavor string) { e.dbFlavor = flavor }
 
@@ -58,10 +50,6 @@ func (e *IncreaseRunInfoColumnSize) Up(logger lager.Logger) error {
 	defer logger.Info("completed")
 
 	return alterTables(logger, e.rawSQLDB, e.dbFlavor)
-}
-
-func (e *IncreaseRunInfoColumnSize) Down(logger lager.Logger) error {
-	return errors.New("not implemented")
 }
 
 func alterTables(logger lager.Logger, db *sql.DB, flavor string) error {

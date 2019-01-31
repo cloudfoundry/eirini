@@ -19,10 +19,11 @@ message EvacuateClaimedActualLRPRequest {
 }
 
 message EvacuateRunningActualLRPRequest {
+  reserved 4; // previously removed ttl value
+
   optional ActualLRPKey actual_lrp_key = 1;
   optional ActualLRPInstanceKey actual_lrp_instance_key = 2;
   optional ActualLRPNetInfo actual_lrp_net_info = 3;
-  optional uint64 ttl = 4;
 }
 
 message EvacuateStoppedActualLRPRequest {

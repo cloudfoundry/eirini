@@ -37,6 +37,29 @@ CachedDependencies: []*models.CachedDependency{
 
 The `ChecksumAlgorithm` and `ChecksumValue` are optional and used to validate the downloaded binary.  They must be used together.
 
+##### `ImageLayers` [optional]
+
+List of image layers that constitute the container filesystem. For example:
+
+```go
+ImageLayers: []*models.ImageLayer{
+    {
+      Url:             "https://blobstore.com/bits/app-bits",
+      DestinationPath: "/usr/local/app",
+      DigestValue:     "some digest",
+      DigestAlgorithm: models.DigestAlgorithmSha256,
+      MediaType:       models.MediaTypeTgz,
+      LayerType:       models.LayerTypeExclusive,
+    }
+},
+```
+
+`DigestAlgorithm` and `DigestValue` are optional for image layers of type `LayerTypeShared`. All other fields are required.
+
+Image layers of type `LayerTypeShared` could be converted to `CachedDependency` for diego cells that do not support ImageLayers or api clients that are using old api endpoints.
+
+`LayerTypeExclusive` layers are converted to DownloadActions and are ran before LRP `Setup` action or the task's`Action`. For more information see the [Actions Documentation](actions.md).
+
 ##### `VolumeMounts` [optional]
 
 Volume Mounts are used to specify persistent storage to be attached to a container in either a Task or LRP.
@@ -50,9 +73,11 @@ See the model documentation for VolumeMount [here](https://godoc.org/code.cloudf
 VolumeMounts: []*models.VolumeMount{
   {
     Driver:        "my-driver",
-    VolumeId:      "my-volume",
     ContainerPath: "/mnt/mypath",
     Mode:          models.BindMountMode_RO,
+    Shared: {
+      VolumeId:      "my-volume",
+    },
   },
 }
 ```

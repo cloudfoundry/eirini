@@ -81,12 +81,12 @@ var _ = Describe("FindOp.Apply", func() {
 			_, err := FindOp{Path: MustNewPointerFromString("/1")}.Apply([]interface{}{})
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(
-				"Expected to find array index '1' but found array of length '0'"))
+				"Expected to find array index '1' but found array of length '0' for path '/1'"))
 
 			_, err = FindOp{Path: MustNewPointerFromString("/1/1")}.Apply([]interface{}{})
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(
-				"Expected to find array index '1' but found array of length '0'"))
+				"Expected to find array index '1' but found array of length '0' for path '/1'"))
 		})
 	})
 

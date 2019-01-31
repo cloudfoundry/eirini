@@ -35,7 +35,7 @@ func (c *ImportCommand) setCredentials(bulkImport models.CredentialBulkImport) e
 		successful int
 		failed     int
 	)
-	errors := make([]string, 0)
+	importErrors := make([]string, 0)
 
 	for i, credential := range bulkImport.Credentials {
 		switch credentialName := credential["name"].(type) {
@@ -53,7 +53,7 @@ func (c *ImportCommand) setCredentials(bulkImport models.CredentialBulkImport) e
 			}
 			failure := fmt.Sprintf("Credential '%s' at index %d could not be set: %v", name, i, err)
 			fmt.Println(failure + "\n")
-			errors = append(errors, " - "+failure)
+			importErrors = append(importErrors, " - "+failure)
 			failed++
 			continue
 		} else {
@@ -65,8 +65,12 @@ func (c *ImportCommand) setCredentials(bulkImport models.CredentialBulkImport) e
 	fmt.Println("Import complete.")
 	fmt.Fprintf(os.Stdout, "Successfully set: %d\n", successful)
 	fmt.Fprintf(os.Stdout, "Failed to set: %d\n", failed)
-	for _, v := range errors {
+	for _, v := range importErrors {
 		fmt.Println(v)
+	}
+
+	if failed > 0 {
+		return errors.NewFailedToImportError()
 	}
 
 	return nil

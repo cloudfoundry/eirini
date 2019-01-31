@@ -1,8 +1,6 @@
 package sqldb
 
 import (
-	"database/sql"
-
 	"code.cloudfoundry.org/bbs/db/sqldb/helpers"
 	"code.cloudfoundry.org/lager"
 )
@@ -10,7 +8,7 @@ import (
 const configurationsTable = "configurations"
 
 func (db *SQLDB) setConfigurationValue(logger lager.Logger, key, value string) error {
-	return db.transact(logger, func(logger lager.Logger, tx *sql.Tx) error {
+	return db.transact(logger, func(logger lager.Logger, tx helpers.Tx) error {
 		_, err := db.upsert(
 			logger,
 			tx,
@@ -29,7 +27,7 @@ func (db *SQLDB) setConfigurationValue(logger lager.Logger, key, value string) e
 
 func (db *SQLDB) getConfigurationValue(logger lager.Logger, key string) (string, error) {
 	var value string
-	err := db.transact(logger, func(logger lager.Logger, tx *sql.Tx) error {
+	err := db.transact(logger, func(logger lager.Logger, tx helpers.Tx) error {
 		return db.one(logger, tx, "configurations",
 			helpers.ColumnList{"value"}, helpers.NoLockRow,
 			"id = ?", key,
@@ -37,7 +35,6 @@ func (db *SQLDB) getConfigurationValue(logger lager.Logger, key string) (string,
 	})
 
 	if err != nil {
-		logger.Error("failed-fetching-configuration-value", err, lager.Data{"key": key})
 		return "", err
 	}
 

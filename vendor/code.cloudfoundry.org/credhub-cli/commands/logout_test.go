@@ -22,7 +22,12 @@ var _ = Describe("Logout", func() {
 	})
 
 	It("leaves the access token and refresh token as revoked if config exists and they were already revoked", func() {
-		cfg := config.Config{RefreshToken: "revoked", AccessToken: "revoked"}
+		cfg := config.Config{
+			ConfigWithoutSecrets: config.ConfigWithoutSecrets{
+				RefreshToken: "revoked",
+				AccessToken:  "revoked",
+			},
+		}
 		config.WriteConfig(cfg)
 		runLogoutCommand()
 	})

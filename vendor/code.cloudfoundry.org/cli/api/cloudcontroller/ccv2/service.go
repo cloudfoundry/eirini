@@ -19,6 +19,8 @@ type Service struct {
 	// DocumentationURL is a url that points to a documentation page for the
 	// service.
 	DocumentationURL string
+	// ServiceBrokerName is the name of the broker providing this service.
+	ServiceBrokerName string
 	// Extra is a field with extra data pertaining to the service.
 	Extra ServiceExtra
 }
@@ -28,10 +30,11 @@ func (service *Service) UnmarshalJSON(data []byte) error {
 	var ccService struct {
 		Metadata internal.Metadata
 		Entity   struct {
-			Label            string `json:"label"`
-			Description      string `json:"description"`
-			DocumentationURL string `json:"documentation_url"`
-			Extra            string `json:"extra"`
+			Label             string `json:"label"`
+			Description       string `json:"description"`
+			DocumentationURL  string `json:"documentation_url"`
+			ServiceBrokerName string `json:"service_broker_name"`
+			Extra             string `json:"extra"`
 		}
 	}
 
@@ -44,6 +47,7 @@ func (service *Service) UnmarshalJSON(data []byte) error {
 	service.Label = ccService.Entity.Label
 	service.Description = ccService.Entity.Description
 	service.DocumentationURL = ccService.Entity.DocumentationURL
+	service.ServiceBrokerName = ccService.Entity.ServiceBrokerName
 
 	// We explicitly unmarshal the Extra field to type string because CC returns
 	// a stringified JSON object ONLY for the 'extra' key (see test stub JSON
@@ -77,7 +81,7 @@ func (client *Client) GetService(serviceGUID string) (Service, Warnings, error) 
 
 	var service Service
 	response := cloudcontroller.Response{
-		Result: &service,
+		DecodeJSONResponseInto: &service,
 	}
 
 	err = client.connection.Make(request, &response)
@@ -86,10 +90,26 @@ func (client *Client) GetService(serviceGUID string) (Service, Warnings, error) 
 
 // GetServices returns a list of Services given the provided filters.
 func (client *Client) GetServices(filters ...Filter) ([]Service, Warnings, error) {
-	request, err := client.newHTTPRequest(requestOptions{
+	opts := requestOptions{
 		RequestName: internal.GetServicesRequest,
 		Query:       ConvertFilterParameters(filters),
-	})
+	}
+
+	return client.makeServicesRequest(opts)
+}
+
+func (client *Client) GetSpaceServices(spaceGUID string, filters ...Filter) ([]Service, Warnings, error) {
+	opts := requestOptions{
+		RequestName: internal.GetSpaceServicesRequest,
+		Query:       ConvertFilterParameters(filters),
+		URIParams:   Params{"space_guid": spaceGUID},
+	}
+
+	return client.makeServicesRequest(opts)
+}
+
+func (client *Client) makeServicesRequest(opts requestOptions) ([]Service, Warnings, error) {
+	request, err := client.newHTTPRequest(opts)
 
 	if err != nil {
 		return nil, nil, err

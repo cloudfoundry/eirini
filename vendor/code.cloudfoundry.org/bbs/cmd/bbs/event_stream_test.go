@@ -8,7 +8,9 @@ import (
 	"code.cloudfoundry.org/bbs/events"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/bbs/models/test/model_helpers"
-	sonde_events "github.com/cloudfoundry/sonde-go/events"
+	. "code.cloudfoundry.org/bbs/test_helpers"
+	"code.cloudfoundry.org/diego-logging-client/testhelpers"
+	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
 	. "github.com/onsi/ginkgo"
@@ -127,9 +129,8 @@ var _ = Describe("Events API", func() {
 
 		Describe("Actual LRPs", func() {
 			const (
-				processGuid     = "some-process-guid"
-				domain          = "some-domain"
-				noExpirationTTL = 0
+				processGuid = "some-process-guid"
+				domain      = "some-domain"
 			)
 
 			BeforeEach(func() {
@@ -168,8 +169,18 @@ var _ = Describe("Events API", func() {
 					actualLRPCreatedEvent := event.(*models.ActualLRPCreatedEvent)
 					Expect(actualLRPCreatedEvent.ActualLrpGroup).To(Equal(actualLRPGroup))
 
+					By("failing to place the lrp")
+					err = client.FailActualLRP(logger, &key, "some failure")
+					Expect(err).NotTo(HaveOccurred())
+
+					// the lrp group has changed and has a placement error
+					actualLRPGroup, err = client.ActualLRPGroupByProcessGuidAndIndex(logger, processGuid, 0)
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(eventChannel).Should(Receive(BeAssignableToTypeOf(&models.ActualLRPChangedEvent{})))
+
 					By("updating the existing ActualLRP")
-					err = client.ClaimActualLRP(logger, processGuid, int(key.Index), &instanceKey)
+					err = client.ClaimActualLRP(logger, &key, &instanceKey)
 					Expect(err).NotTo(HaveOccurred())
 
 					before := actualLRPGroup
@@ -187,7 +198,7 @@ var _ = Describe("Events API", func() {
 
 					By("evacuating the ActualLRP")
 					initialAuctioneerRequests := auctioneerServer.ReceivedRequests()
-					_, err = client.EvacuateRunningActualLRP(logger, &key, &instanceKey, &netInfo, 0)
+					_, err = client.EvacuateRunningActualLRP(logger, &key, &instanceKey, &netInfo)
 					Expect(err).NotTo(HaveOccurred())
 					auctioneerRequests := auctioneerServer.ReceivedRequests()
 					Expect(auctioneerRequests).To(HaveLen(len(initialAuctioneerRequests) + 1))
@@ -226,7 +237,7 @@ var _ = Describe("Events API", func() {
 					}).Should(BeAssignableToTypeOf(&models.ActualLRPChangedEvent{}))
 
 					initialAuctioneerRequests = auctioneerServer.ReceivedRequests()
-					_, err = client.EvacuateRunningActualLRP(logger, &key, &newInstanceKey, &netInfo, 0)
+					_, err = client.EvacuateRunningActualLRP(logger, &key, &newInstanceKey, &netInfo)
 					Expect(err).NotTo(HaveOccurred())
 					auctioneerRequests = auctioneerServer.ReceivedRequests()
 					Expect(auctioneerRequests).To(HaveLen(len(initialAuctioneerRequests) + 1))
@@ -258,7 +269,7 @@ var _ = Describe("Events API", func() {
 					Expect(err).NotTo(HaveOccurred())
 					actualLRP := *actualLRPGroup.GetInstance()
 
-					err = client.RemoveActualLRP(logger, key.ProcessGuid, int(key.Index), nil)
+					err = client.RemoveActualLRP(logger, &key, nil)
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(func() models.Event {
@@ -322,7 +333,7 @@ var _ = Describe("Events API", func() {
 							Expect(err).NotTo(HaveOccurred())
 
 							By("claiming the ActualLRP")
-							err = client.ClaimActualLRP(logger, processGuid, int(key.Index), &instanceKey)
+							err = client.ClaimActualLRP(logger, &key, &instanceKey)
 							Expect(err).NotTo(HaveOccurred())
 
 							actualLRPGroup, err = client.ActualLRPGroupByProcessGuidAndIndex(logger, processGuid, 0)
@@ -353,7 +364,7 @@ var _ = Describe("Events API", func() {
 						claimLRP()
 
 						By("removing the instance ActualLRP")
-						err = client.RemoveActualLRP(logger, key.ProcessGuid, int(key.Index), &instanceKey)
+						err = client.RemoveActualLRP(logger, &key, &instanceKey)
 						Expect(err).NotTo(HaveOccurred())
 						Eventually(eventChannel).Should(Receive(&event))
 
@@ -365,12 +376,12 @@ var _ = Describe("Events API", func() {
 
 					It("does not receive events from the other cells", func() {
 						By("updating the existing ActualLRP")
-						err = client.ClaimActualLRP(logger, processGuid, int(key.Index), &newInstanceKey)
+						err = client.ClaimActualLRP(logger, &key, &newInstanceKey)
 						Expect(err).NotTo(HaveOccurred())
 
 						Consistently(eventChannel).ShouldNot(Receive())
 
-						err = client.RemoveActualLRP(logger, key.ProcessGuid, int(key.Index), &newInstanceKey)
+						err = client.RemoveActualLRP(logger, &key, &newInstanceKey)
 						Expect(err).NotTo(HaveOccurred())
 						Consistently(eventChannel).ShouldNot(Receive())
 					})
@@ -379,52 +390,32 @@ var _ = Describe("Events API", func() {
 		})
 
 		It("does not emit latency metrics", func() {
-			timeout := time.After(50 * time.Millisecond)
-		METRICS:
-			for {
-				select {
-				case <-testMetricsChan:
-				case <-timeout:
-					break METRICS
-				}
-			}
+			time.Sleep(time.Millisecond * 50)
 			eventSource.Close()
 
-			timeout = time.After(50 * time.Millisecond)
-			for {
-				select {
-				case envelope := <-testMetricsChan:
-					if envelope.GetEventType() == sonde_events.Envelope_ValueMetric {
-						Expect(*envelope.ValueMetric.Name).NotTo(Equal("RequestLatency"))
-					}
-				case <-timeout:
-					return
-				}
-			}
+			Eventually(testMetricsChan).ShouldNot(Receive(testhelpers.MatchV2Metric(testhelpers.MetricAndValue{
+				Name: "RequestLatency",
+			})))
 		})
 
 		It("emits request counting metrics", func() {
 			eventSource.Close()
 
-			timeout := time.After(50 * time.Millisecond)
 			var total uint64
-		OUTER_LOOP:
-			for {
-				select {
-				case envelope := <-testMetricsChan:
-					By("received event")
-					if envelope.GetEventType() == sonde_events.Envelope_CounterEvent {
-						counter := envelope.CounterEvent
-						if *counter.Name == "RequestCount" {
-							total += *counter.Delta
-						}
-					}
-				case <-timeout:
-					break OUTER_LOOP
-				}
-			}
-
-			Expect(total).To(BeEquivalentTo(3))
+			Eventually(testMetricsChan).Should(Receive(
+				SatisfyAll(
+					WithTransform(func(source *loggregator_v2.Envelope) *loggregator_v2.Counter {
+						return source.GetCounter()
+					}, Not(BeNil())),
+					WithTransform(func(source *loggregator_v2.Envelope) string {
+						return source.GetCounter().Name
+					}, Equal("RequestCount")),
+					WithTransform(func(source *loggregator_v2.Envelope) uint64 {
+						total += source.GetCounter().Delta
+						return total
+					}, BeEquivalentTo(3)),
+				),
+			))
 		})
 	})
 
@@ -444,11 +435,20 @@ var _ = Describe("Events API", func() {
 			err := client.DesireTask(logger, "completed-task", "some-domain", taskDef)
 			Expect(err).NotTo(HaveOccurred())
 
+			task := &models.Task{
+				TaskGuid:       "completed-task",
+				Domain:         "some-domain",
+				TaskDefinition: taskDef,
+				State:          models.Task_Pending,
+			}
+
 			var event models.Event
 			Eventually(eventChannel).Should(Receive(&event))
 			taskCreatedEvent, ok := event.(*models.TaskCreatedEvent)
 			Expect(ok).To(BeTrue())
-			Expect(taskCreatedEvent.Task.TaskDefinition).To(Equal(taskDef))
+			taskCreatedEvent.Task.CreatedAt = 0
+			taskCreatedEvent.Task.UpdatedAt = 0
+			Expect(taskCreatedEvent.Task).To(DeepEqual(task))
 
 			err = client.CancelTask(logger, "completed-task")
 			Expect(err).NotTo(HaveOccurred())
@@ -474,7 +474,15 @@ var _ = Describe("Events API", func() {
 			Eventually(eventChannel).Should(Receive(&event))
 			taskRemovedEvent, ok := event.(*models.TaskRemovedEvent)
 			Expect(ok).To(BeTrue())
-			Expect(taskRemovedEvent.Task.TaskDefinition).To(Equal(taskDef))
+
+			taskRemovedEvent.Task.CreatedAt = 0
+			taskRemovedEvent.Task.UpdatedAt = 0
+			taskRemovedEvent.Task.FirstCompletedAt = 0
+			task.State = models.Task_Resolving
+			task.Failed = true
+			task.FailureReason = "task was cancelled"
+
+			Expect(taskRemovedEvent.Task).To(DeepEqual(task))
 		})
 	})
 

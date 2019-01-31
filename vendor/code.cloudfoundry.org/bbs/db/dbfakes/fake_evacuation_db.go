@@ -23,21 +23,20 @@ type FakeEvacuationDB struct {
 	removeEvacuatingActualLRPReturnsOnCall map[int]struct {
 		result1 error
 	}
-	EvacuateActualLRPStub        func(lager.Logger, *models.ActualLRPKey, *models.ActualLRPInstanceKey, *models.ActualLRPNetInfo, uint64) (actualLRPGroup *models.ActualLRPGroup, err error)
+	EvacuateActualLRPStub        func(lager.Logger, *models.ActualLRPKey, *models.ActualLRPInstanceKey, *models.ActualLRPNetInfo) (actualLRP *models.ActualLRP, err error)
 	evacuateActualLRPMutex       sync.RWMutex
 	evacuateActualLRPArgsForCall []struct {
 		arg1 lager.Logger
 		arg2 *models.ActualLRPKey
 		arg3 *models.ActualLRPInstanceKey
 		arg4 *models.ActualLRPNetInfo
-		arg5 uint64
 	}
 	evacuateActualLRPReturns struct {
-		result1 *models.ActualLRPGroup
+		result1 *models.ActualLRP
 		result2 error
 	}
 	evacuateActualLRPReturnsOnCall map[int]struct {
-		result1 *models.ActualLRPGroup
+		result1 *models.ActualLRP
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -94,7 +93,7 @@ func (fake *FakeEvacuationDB) RemoveEvacuatingActualLRPReturnsOnCall(i int, resu
 	}{result1}
 }
 
-func (fake *FakeEvacuationDB) EvacuateActualLRP(arg1 lager.Logger, arg2 *models.ActualLRPKey, arg3 *models.ActualLRPInstanceKey, arg4 *models.ActualLRPNetInfo, arg5 uint64) (actualLRPGroup *models.ActualLRPGroup, err error) {
+func (fake *FakeEvacuationDB) EvacuateActualLRP(arg1 lager.Logger, arg2 *models.ActualLRPKey, arg3 *models.ActualLRPInstanceKey, arg4 *models.ActualLRPNetInfo) (actualLRP *models.ActualLRP, err error) {
 	fake.evacuateActualLRPMutex.Lock()
 	ret, specificReturn := fake.evacuateActualLRPReturnsOnCall[len(fake.evacuateActualLRPArgsForCall)]
 	fake.evacuateActualLRPArgsForCall = append(fake.evacuateActualLRPArgsForCall, struct {
@@ -102,12 +101,11 @@ func (fake *FakeEvacuationDB) EvacuateActualLRP(arg1 lager.Logger, arg2 *models.
 		arg2 *models.ActualLRPKey
 		arg3 *models.ActualLRPInstanceKey
 		arg4 *models.ActualLRPNetInfo
-		arg5 uint64
-	}{arg1, arg2, arg3, arg4, arg5})
-	fake.recordInvocation("EvacuateActualLRP", []interface{}{arg1, arg2, arg3, arg4, arg5})
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("EvacuateActualLRP", []interface{}{arg1, arg2, arg3, arg4})
 	fake.evacuateActualLRPMutex.Unlock()
 	if fake.EvacuateActualLRPStub != nil {
-		return fake.EvacuateActualLRPStub(arg1, arg2, arg3, arg4, arg5)
+		return fake.EvacuateActualLRPStub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -121,30 +119,30 @@ func (fake *FakeEvacuationDB) EvacuateActualLRPCallCount() int {
 	return len(fake.evacuateActualLRPArgsForCall)
 }
 
-func (fake *FakeEvacuationDB) EvacuateActualLRPArgsForCall(i int) (lager.Logger, *models.ActualLRPKey, *models.ActualLRPInstanceKey, *models.ActualLRPNetInfo, uint64) {
+func (fake *FakeEvacuationDB) EvacuateActualLRPArgsForCall(i int) (lager.Logger, *models.ActualLRPKey, *models.ActualLRPInstanceKey, *models.ActualLRPNetInfo) {
 	fake.evacuateActualLRPMutex.RLock()
 	defer fake.evacuateActualLRPMutex.RUnlock()
-	return fake.evacuateActualLRPArgsForCall[i].arg1, fake.evacuateActualLRPArgsForCall[i].arg2, fake.evacuateActualLRPArgsForCall[i].arg3, fake.evacuateActualLRPArgsForCall[i].arg4, fake.evacuateActualLRPArgsForCall[i].arg5
+	return fake.evacuateActualLRPArgsForCall[i].arg1, fake.evacuateActualLRPArgsForCall[i].arg2, fake.evacuateActualLRPArgsForCall[i].arg3, fake.evacuateActualLRPArgsForCall[i].arg4
 }
 
-func (fake *FakeEvacuationDB) EvacuateActualLRPReturns(result1 *models.ActualLRPGroup, result2 error) {
+func (fake *FakeEvacuationDB) EvacuateActualLRPReturns(result1 *models.ActualLRP, result2 error) {
 	fake.EvacuateActualLRPStub = nil
 	fake.evacuateActualLRPReturns = struct {
-		result1 *models.ActualLRPGroup
+		result1 *models.ActualLRP
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeEvacuationDB) EvacuateActualLRPReturnsOnCall(i int, result1 *models.ActualLRPGroup, result2 error) {
+func (fake *FakeEvacuationDB) EvacuateActualLRPReturnsOnCall(i int, result1 *models.ActualLRP, result2 error) {
 	fake.EvacuateActualLRPStub = nil
 	if fake.evacuateActualLRPReturnsOnCall == nil {
 		fake.evacuateActualLRPReturnsOnCall = make(map[int]struct {
-			result1 *models.ActualLRPGroup
+			result1 *models.ActualLRP
 			result2 error
 		})
 	}
 	fake.evacuateActualLRPReturnsOnCall[i] = struct {
-		result1 *models.ActualLRPGroup
+		result1 *models.ActualLRP
 		result2 error
 	}{result1, result2}
 }

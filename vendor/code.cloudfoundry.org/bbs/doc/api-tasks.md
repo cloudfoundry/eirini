@@ -7,10 +7,13 @@ For detailed information on the structs and types listed see [models documentati
 # Tasks APIs
 
 ## DesireTask
-	{Path: "/v1/tasks/desire", Method: "POST", Name: DesireTaskRoute_r0}, // Deprecated
 
 ### BBS API Endpoint
-Post a DesireTaskRequest to "/v1/tasks/desire"
+
+Post a [DesireTaskRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesireTaskRequest) containing a V3 [TaskDefinition](https://godoc.org/code.cloudfoundry.org/bbs/models#TaskDefinition) to "/v1/tasks/desire.r2"
+
+DEPRECATED:
+* Post a [DesireTaskRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesireTaskRequest) containing a V0 [TaskDefinition](https://godoc.org/code.cloudfoundry.org/bbs/models#TaskDefinition) to "/v1/tasks/desire"
 
 ### Golang Client API
 ```go
@@ -146,9 +149,12 @@ if err != nil {
 Returns the Task with the given guid
 
 ### BBS API Endpoint
-Post a TaskByGuidRequest to "/v1/tasks/get_by_task_guid.r2"
+
+Post a [TaskByGuidRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#TaskByGuidRequest) to "/v1/tasks/get_by_task_guid.r3"
 
 DEPRECATED:
+
+* Post a TaskByGuidRequest to "/v1/tasks/get_by_task_guid.r2"
 * Post a TaskByGuidRequest to "/v1/tasks/get_by_task_guid.r1"
 * Post a TaskByGuidRequest to "/v1/tasks/get_by_task_guid"
 

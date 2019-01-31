@@ -141,16 +141,16 @@ var _ = Describe("Encryption", func() {
 			cryptor = makeCryptor("old")
 			encoder = format.NewEncoder(cryptor)
 
-			encodedTaskDef, err := encoder.Encode(format.BASE64_ENCRYPTED, unencodedTaskDef)
+			encodedTaskDef, err := encoder.Encode(unencodedTaskDef)
 			Expect(err).NotTo(HaveOccurred())
 
-			encodedRunInfo, err := encoder.Encode(format.BASE64_ENCRYPTED, unencodedRunInfo)
+			encodedRunInfo, err := encoder.Encode(unencodedRunInfo)
 			Expect(err).NotTo(HaveOccurred())
 
-			encodedRoutes, err := encoder.Encode(format.BASE64_ENCRYPTED, unencodedRoutes)
+			encodedRoutes, err := encoder.Encode(unencodedRoutes)
 			Expect(err).NotTo(HaveOccurred())
 
-			encodedVolumePlacement, err := encoder.Encode(format.BASE64_ENCRYPTED, unencodedVolumePlacement)
+			encodedVolumePlacement, err := encoder.Encode(unencodedVolumePlacement)
 			Expect(err).NotTo(HaveOccurred())
 
 			queryStr := "INSERT INTO tasks (guid, domain, task_definition) VALUES (?, ?, ?)"
@@ -173,7 +173,7 @@ var _ = Describe("Encryption", func() {
 			Expect(err).NotTo(HaveOccurred())
 			cryptor = makeCryptor("new", "old")
 
-			sqlDB := sqldb.NewSQLDB(db, 5, 5, format.ENCRYPTED_PROTO, cryptor, fakeGUIDProvider, fakeClock, dbFlavor, fakeMetronClient)
+			sqlDB := sqldb.NewSQLDB(db, 5, 5, cryptor, fakeGUIDProvider, fakeClock, dbFlavor, fakeMetronClient)
 			err = sqlDB.PerformEncryption(logger)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -240,7 +240,7 @@ var _ = Describe("Encryption", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				cryptor = makeCryptor("new", "old")
-				sqlDB := sqldb.NewSQLDB(db, 5, 5, format.ENCRYPTED_PROTO, cryptor, fakeGUIDProvider, fakeClock, dbFlavor, fakeMetronClient)
+				sqlDB := sqldb.NewSQLDB(db, 5, 5, cryptor, fakeGUIDProvider, fakeClock, dbFlavor, fakeMetronClient)
 				err = sqlDB.PerformEncryption(logger)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -248,7 +248,7 @@ var _ = Describe("Encryption", func() {
 			Context("when net_info isn't empty", func() {
 				BeforeEach(func() {
 					var err error
-					info, err := encoder.Encode(format.BASE64_ENCRYPTED, []byte("actual value"))
+					info, err := encoder.Encode([]byte("actual value"))
 					Expect(err).NotTo(HaveOccurred())
 					netInfo = string(info)
 				})
@@ -300,7 +300,7 @@ var _ = Describe("Encryption", func() {
 			cryptor = makeCryptor("unknown")
 			encoder = format.NewEncoder(cryptor)
 
-			encoded1, err := encoder.Encode(format.BASE64_ENCRYPTED, value1)
+			encoded1, err := encoder.Encode(value1)
 			Expect(err).NotTo(HaveOccurred())
 
 			queryStr := "INSERT INTO tasks (guid, domain, task_definition) VALUES (?, ?, ?)"
@@ -312,7 +312,7 @@ var _ = Describe("Encryption", func() {
 
 			cryptor = makeCryptor("new", "old")
 
-			sqlDB := sqldb.NewSQLDB(db, 5, 5, format.ENCRYPTED_PROTO, cryptor, fakeGUIDProvider, fakeClock, dbFlavor, fakeMetronClient)
+			sqlDB := sqldb.NewSQLDB(db, 5, 5, cryptor, fakeGUIDProvider, fakeClock, dbFlavor, fakeMetronClient)
 			err = sqlDB.PerformEncryption(logger)
 			Expect(err).NotTo(HaveOccurred())
 		})

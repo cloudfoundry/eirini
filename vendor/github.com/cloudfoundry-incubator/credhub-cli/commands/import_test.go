@@ -226,6 +226,7 @@ Failed to set: 2
 `
 			Eventually(session.Out).Should(Say(`Credential '/test/invalid_type' at index 0 could not be set: The request does not include a valid type. Valid values include 'value', 'json', 'password', 'user', 'certificate', 'ssh' and 'rsa'.`))
 			Eventually(session.Out).Should(Say(`Credential '/test/invalid_type1' at index 1 could not be set: The request does not include a valid type. Valid values include 'value', 'json', 'password', 'user', 'certificate', 'ssh' and 'rsa'.`))
+			Expect(session.ExitCode()).ToNot(Equal(0))
 			Expect(session.Out.Contents()).To(ContainSubstring(`id: 5a2edd4f-1686-4c8d-80eb-5daa866f9f86`))
 			Expect(session.Out.Contents()).To(ContainSubstring(`name: /test/user`))
 			Expect(session.Out.Contents()).To(ContainSubstring(`version_created_at: "2016-01-01T12:00:00Z"`))
@@ -233,6 +234,7 @@ Failed to set: 2
 			Expect(session.Out.Contents()).To(ContainSubstring(`password: test-user-password`))
 			Expect(session.Out.Contents()).To(ContainSubstring(`password_hash: P455W0rd-H45H`))
 			Expect(session.Out.Contents()).To(ContainSubstring(`username: covfefe`))
+			Expect(session.Err.Contents()).To(ContainSubstring(`One or more credentials failed to import`))
 			Eventually(session.Out).Should(Say(summaryMessage))
 		})
 	})

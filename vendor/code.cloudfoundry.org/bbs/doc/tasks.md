@@ -14,6 +14,7 @@ Tasks in Diego undergo a lifecycle encoded in the Task state:
 
 - When first created, a Task's state is `PENDING`. 
 - When the `PENDING` Task is allocated to a Diego Cell, the Cell sets the Task's state to `RUNNING` state, and populates the Task's `CellId` field with its own Cell ID.
+- On failed attempts to place the task on a cell, the `RejectionCount` field is incremented, and the `RejectionReason` field is populated. The maximum number of attempts to place a task is configured in the BBS.
 - When the Task completes, the Cell sets the `Failed`, `FailureReason`, and `Result` fields on the Task as appropriate, and sets the Task's state to `COMPLETED`.
 
 At this point it is up to the Diego client to detect and resolve the completed Task. It can do this either by having set a completion callback URL on the Task when defined, or by polling for the Task and resolving and deleting it itself.
@@ -40,6 +41,12 @@ The `State` field determines where in its [lifecycle](#the_task_lifecycle) the T
 ### `CellId`
 
 `CellId` identifies which of Diego's Cells has accepted the Task workload.
+
+
+### `RejectionCount` and `RejectionReason`
+
+- `RejectionCount` shows the number of times that placement has failed for this task.
+- `RejectionReason` shows the reason for the most recent placement failure.
 
 
 ### `CreatedAt`, `UpdatedAt`, and `FirstCompletedAt`

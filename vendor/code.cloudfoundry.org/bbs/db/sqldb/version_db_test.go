@@ -7,7 +7,7 @@ import (
 
 	"code.cloudfoundry.org/bbs/db/sqldb"
 	"code.cloudfoundry.org/bbs/db/sqldb/helpers"
-	"code.cloudfoundry.org/bbs/format"
+	"code.cloudfoundry.org/bbs/db/sqldb/helpers/monitor"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/bbs/test_helpers"
 	. "github.com/onsi/ginkgo"
@@ -18,7 +18,7 @@ var _ = Describe("Version", func() {
 	Describe("SetVersion", func() {
 		Context("when the version is not set", func() {
 			It("sets the version into the database", func() {
-				expectedVersion := &models.Version{CurrentVersion: 99, TargetVersion: 100}
+				expectedVersion := &models.Version{CurrentVersion: 99}
 				err := sqlDB.SetVersion(logger, expectedVersion)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -47,7 +47,7 @@ var _ = Describe("Version", func() {
 		Context("when a version is already set", func() {
 			var existingVersion *models.Version
 			BeforeEach(func() {
-				existingVersion = &models.Version{CurrentVersion: 99, TargetVersion: 100}
+				existingVersion = &models.Version{CurrentVersion: 99}
 				versionJSON, err := json.Marshal(existingVersion)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -57,7 +57,7 @@ var _ = Describe("Version", func() {
 			})
 
 			It("updates the version in the db", func() {
-				version := &models.Version{CurrentVersion: 20, TargetVersion: 1001}
+				version := &models.Version{CurrentVersion: 20}
 
 				err := sqlDB.SetVersion(logger, version)
 				Expect(err).NotTo(HaveOccurred())
@@ -88,7 +88,7 @@ var _ = Describe("Version", func() {
 	Describe("Version", func() {
 		Context("when the version exists", func() {
 			It("retrieves the version from the database", func() {
-				expectedVersion := &models.Version{CurrentVersion: 199, TargetVersion: 200}
+				expectedVersion := &models.Version{CurrentVersion: 199}
 				err := sqlDB.SetVersion(logger, expectedVersion)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -107,7 +107,8 @@ var _ = Describe("Version", func() {
 			BeforeEach(func() {
 				db, err := sql.Open(dbDriverName, fmt.Sprintf("%sinvalid-db", dbBaseConnectionString))
 				Expect(err).NotTo(HaveOccurred())
-				sqlDB = sqldb.NewSQLDB(db, 5, 5, format.ENCRYPTED_PROTO, cryptor, fakeGUIDProvider, fakeClock, dbFlavor, fakeMetronClient)
+				helperDB := helpers.NewMonitoredDB(db, monitor.New())
+				sqlDB = sqldb.NewSQLDB(helperDB, 5, 5, cryptor, fakeGUIDProvider, fakeClock, dbFlavor, fakeMetronClient)
 			})
 
 			It("does not return an ErrResourceNotFound", func() {
@@ -120,6 +121,10 @@ var _ = Describe("Version", func() {
 			BeforeEach(func() {
 				_, err := db.Exec("DELETE FROM configurations")
 				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("does not log an error", func() {
+				Expect(logger.Errors).To(BeEmpty())
 			})
 
 			It("returns a ErrResourceNotFound", func() {

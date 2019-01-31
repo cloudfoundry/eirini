@@ -23,16 +23,30 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net"
 	"os"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/nats-io/gnatsd/server"
 	gnatsd "github.com/nats-io/gnatsd/test"
+	"github.com/nats-io/nkeys"
 )
+
+func TestVersion(t *testing.T) {
+	// Semantic versioning
+	verRe := regexp.MustCompile(`\d+.\d+.\d+(-\S+)?`)
+	if !verRe.MatchString(Version) {
+		t.Fatalf("Version not compatible with semantic versioning: %q", Version)
+	}
+}
 
 // Dumb wait program to sync on callbacks, etc... Will timeout
 func Wait(ch chan bool) error {
@@ -221,6 +235,50 @@ var testServers = []string{
 	"nats://localhost:1228",
 }
 
+func TestSimplifiedURLs(t *testing.T) {
+	opts := GetDefaultOptions()
+	opts.NoRandomize = true
+	opts.Servers = []string{
+		"nats://host1:1234",
+		"nats://host2:",
+		"nats://host3",
+		"host4:1234",
+		"host5:",
+		"host6",
+		"nats://[1:2:3:4]:1234",
+		"nats://[5:6:7:8]:",
+		"nats://[9:10:11:12]",
+		"[13:14:15:16]:",
+		"[17:18:19:20]:1234",
+	}
+
+	// We expect the result in the server pool to be:
+	expected := []string{
+		"nats://host1:1234",
+		"nats://host2:4222",
+		"nats://host3:4222",
+		"nats://host4:1234",
+		"nats://host5:4222",
+		"nats://host6:4222",
+		"nats://[1:2:3:4]:1234",
+		"nats://[5:6:7:8]:4222",
+		"nats://[9:10:11:12]:4222",
+		"nats://[13:14:15:16]:4222",
+		"nats://[17:18:19:20]:1234",
+	}
+
+	nc := &Conn{Opts: opts}
+	if err := nc.setupServerPool(); err != nil {
+		t.Fatalf("Problem setting up Server Pool: %v\n", err)
+	}
+	// Check server pool directly
+	for i, u := range nc.srvPool {
+		if u.url.String() != expected[i] {
+			t.Fatalf("Expected url %q, got %q", expected[i], u.url.String())
+		}
+	}
+}
+
 func TestServersRandomize(t *testing.T) {
 	opts := GetDefaultOptions()
 	opts.Servers = testServers
@@ -288,8 +346,8 @@ func TestSelectNextServer(t *testing.T) {
 	if err := nc.setupServerPool(); err != nil {
 		t.Fatalf("Problem setting up Server Pool: %v\n", err)
 	}
-	if nc.url != nc.srvPool[0].url {
-		t.Fatalf("Wrong default selection: %v\n", nc.url)
+	if nc.current != nc.srvPool[0] {
+		t.Fatalf("Wrong default selection: %v\n", nc.current.url)
 	}
 
 	sel, err := nc.selectNextServer()
@@ -300,8 +358,8 @@ func TestSelectNextServer(t *testing.T) {
 	if len(nc.srvPool) != len(testServers) {
 		t.Fatalf("List is incorrect size: %d vs %d\n", len(nc.srvPool), len(testServers))
 	}
-	if nc.url.String() != testServers[1] {
-		t.Fatalf("Selection incorrect: %v vs %v\n", nc.url, testServers[1])
+	if nc.current.url.String() != testServers[1] {
+		t.Fatalf("Selection incorrect: %v vs %v\n", nc.current.url, testServers[1])
 	}
 	if nc.srvPool[len(nc.srvPool)-1].url.String() != testServers[0] {
 		t.Fatalf("Did not push old to last position\n")
@@ -319,8 +377,8 @@ func TestSelectNextServer(t *testing.T) {
 	if len(nc.srvPool) != len(testServers)-1 {
 		t.Fatalf("List is incorrect size: %d vs %d\n", len(nc.srvPool), len(testServers)-1)
 	}
-	if nc.url.String() != testServers[2] {
-		t.Fatalf("Selection incorrect: %v vs %v\n", nc.url, testServers[2])
+	if nc.current.url.String() != testServers[2] {
+		t.Fatalf("Selection incorrect: %v vs %v\n", nc.current.url, testServers[2])
 	}
 	if nc.srvPool[len(nc.srvPool)-1].url.String() == testServers[1] {
 		t.Fatalf("Did not throw away the last server correctly\n")
@@ -611,7 +669,6 @@ func TestParserShouldFail(t *testing.T) {
 }
 
 func TestParserSplitMsg(t *testing.T) {
-
 	nc := &Conn{}
 	nc.ps = &parseState{}
 
@@ -1102,31 +1159,405 @@ func TestConnServers(t *testing.T) {
 	validateURLs(c.Servers(), "nats://localhost:4333", "nats://localhost:4444")
 }
 
-func TestProcessErrAuthorizationError(t *testing.T) {
-	ach := make(chan asyncCB, 1)
-	called := make(chan error, 1)
-	c := &Conn{
-		ach: ach,
-		Opts: Options{
-			AsyncErrorCB: func(nc *Conn, sub *Subscription, err error) {
-				called <- err
-			},
-		},
+func TestConnAsyncCBDeadlock(t *testing.T) {
+	s := RunServerOnPort(TEST_PORT)
+	defer s.Shutdown()
+
+	ch := make(chan bool)
+	o := GetDefaultOptions()
+	o.Url = fmt.Sprintf("nats://127.0.0.1:%d", TEST_PORT)
+	o.ClosedCB = func(_ *Conn) {
+		ch <- true
 	}
-	c.processErr("Authorization Violation")
-	select {
-	case cb := <-ach:
-		cb()
-	default:
-		t.Fatal("Expected callback on channel")
+	o.AsyncErrorCB = func(nc *Conn, sub *Subscription, err error) {
+		// do something with nc that requires locking behind the scenes
+		_ = nc.LastError()
+	}
+	nc, err := o.Connect()
+	if err != nil {
+		t.Fatalf("Should have connected ok: %v", err)
 	}
 
-	select {
-	case err := <-called:
-		if err != ErrAuthorization {
-			t.Fatalf("Expected ErrAuthorization, got: %v", err)
-		}
-	default:
-		t.Fatal("Expected error on channel")
+	total := 300
+	wg := &sync.WaitGroup{}
+	wg.Add(total)
+	for i := 0; i < total; i++ {
+		go func() {
+			// overwhelm asyncCB with errors
+			nc.processErr(AUTHORIZATION_ERR)
+			wg.Done()
+		}()
 	}
+	wg.Wait()
+
+	nc.Close()
+	if e := Wait(ch); e != nil {
+		t.Fatal("Deadlock")
+	}
+}
+
+func TestPingTimerLeakedOnClose(t *testing.T) {
+	s := RunServerOnPort(TEST_PORT)
+	defer s.Shutdown()
+
+	nc, err := Connect(fmt.Sprintf("nats://127.0.0.1:%d", TEST_PORT))
+	if err != nil {
+		t.Fatalf("Error on connect: %v", err)
+	}
+	nc.Close()
+	// There was a bug (issue #338) that if connection
+	// was created and closed quickly, the pinger would
+	// be created from a go-routine and would cause the
+	// connection object to be retained until the ping
+	// timer fired.
+	// Wait a little bit and check if the timer is set.
+	// With the defect it would be.
+	time.Sleep(100 * time.Millisecond)
+	nc.mu.Lock()
+	pingTimerSet := nc.ptmr != nil
+	nc.mu.Unlock()
+	if pingTimerSet {
+		t.Fatal("Pinger timer should not be set")
+	}
+}
+
+func TestNoEcho(t *testing.T) {
+	s := RunServerOnPort(TEST_PORT)
+	defer s.Shutdown()
+
+	url := fmt.Sprintf("nats://127.0.0.1:%d", TEST_PORT)
+
+	nc, err := Connect(url, NoEcho())
+	if err != nil {
+		t.Fatalf("Error on connect: %v", err)
+	}
+	defer nc.Close()
+
+	r := int32(0)
+	_, err = nc.Subscribe("foo", func(m *Msg) {
+		atomic.AddInt32(&r, 1)
+	})
+	if err != nil {
+		t.Fatalf("Error on subscribe: %v", err)
+	}
+
+	err = nc.Publish("foo", []byte("Hello World"))
+	if err != nil {
+		t.Fatalf("Error on publish: %v", err)
+	}
+	nc.Flush()
+	nc.Flush()
+
+	if nr := atomic.LoadInt32(&r); nr != 0 {
+		t.Fatalf("Expected no messages echoed back, received %d\n", nr)
+	}
+}
+
+func TestNoEchoOldServer(t *testing.T) {
+	opts := GetDefaultOptions()
+	opts.Url = DefaultURL
+	opts.NoEcho = true
+
+	nc := &Conn{Opts: opts}
+	if err := nc.setupServerPool(); err != nil {
+		t.Fatalf("Problem setting up Server Pool: %v\n", err)
+	}
+
+	// Old style with no proto, meaning 0. We need Proto:1 for NoEcho support.
+	oldInfo := "{\"server_id\":\"22\",\"version\":\"1.1.0\",\"go\":\"go1.10.2\",\"port\":4222,\"max_payload\":1048576}"
+
+	err := nc.processInfo(oldInfo)
+	if err != nil {
+		t.Fatalf("Error processing old style INFO: %v\n", err)
+	}
+
+	// Make sure connectProto generates an error.
+	_, err = nc.connectProto()
+	if err == nil {
+		t.Fatalf("Expected an error but got none\n")
+	}
+}
+
+// Trust Server Tests
+
+var (
+	oSeed = []byte("SOAL7GTNI66CTVVNXBNQMG6V2HTDRWC3HGEP7D2OUTWNWSNYZDXWFOX4SU")
+	aSeed = []byte("SAAASUPRY3ONU4GJR7J5RUVYRUFZXG56F4WEXELLLORQ65AEPSMIFTOJGE")
+	uSeed = []byte("SUAMK2FG4MI6UE3ACF3FK3OIQBCEIEZV7NSWFFEW63UXMRLFM2XLAXK4GY")
+
+	aJWT = "eyJ0eXAiOiJqd3QiLCJhbGciOiJlZDI1NTE5In0.eyJqdGkiOiJLWjZIUVRXRlY3WkRZSFo3NklRNUhPM0pINDVRNUdJS0JNMzJTSENQVUJNNk5PNkU3TUhRIiwiaWF0IjoxNTQ0MDcxODg5LCJpc3MiOiJPRDJXMkk0TVZSQTVUR1pMWjJBRzZaSEdWTDNPVEtGV1FKRklYNFROQkVSMjNFNlA0NlMzNDVZWSIsInN1YiI6IkFBUFFKUVVQS1ZYR1c1Q1pINUcySEZKVUxZU0tERUxBWlJWV0pBMjZWRFpPN1dTQlVOSVlSRk5RIiwidHlwZSI6ImFjY291bnQiLCJuYXRzIjp7ImxpbWl0cyI6eyJzdWJzIjotMSwiY29ubiI6LTEsImltcG9ydHMiOi0xLCJleHBvcnRzIjotMSwiZGF0YSI6LTEsInBheWxvYWQiOi0xLCJ3aWxkY2FyZHMiOnRydWV9fX0.8o35JPQgvhgFT84Bi2Z-zAeSiLrzzEZn34sgr1DIBEDTwa-EEiMhvTeos9cvXxoZVCCadqZxAWVwS6paAMj8Bg"
+
+	uJWT = "eyJ0eXAiOiJqd3QiLCJhbGciOiJlZDI1NTE5In0.eyJqdGkiOiJBSFQzRzNXRElDS1FWQ1FUWFJUTldPRlVVUFRWNE00RFZQV0JGSFpJQUROWEZIWEpQR0FBIiwiaWF0IjoxNTQ0MDcxODg5LCJpc3MiOiJBQVBRSlFVUEtWWEdXNUNaSDVHMkhGSlVMWVNLREVMQVpSVldKQTI2VkRaTzdXU0JVTklZUkZOUSIsInN1YiI6IlVBVDZCV0NTQ1dMVUtKVDZLNk1CSkpPRU9UWFo1QUpET1lLTkVWUkZDN1ZOTzZPQTQzTjRUUk5PIiwidHlwZSI6InVzZXIiLCJuYXRzIjp7InB1YiI6e30sInN1YiI6e319fQ._8A1XM88Q2kp7XVJZ42bQuO9E3QPsNAGKtVjAkDycj8A5PtRPby9UpqBUZzBwiJQQO3TUcD5GGqSvsMm6X8hCQ"
+
+	chained = `
+-----BEGIN NATS USER JWT-----
+eyJ0eXAiOiJqd3QiLCJhbGciOiJlZDI1NTE5In0.eyJqdGkiOiJBSFQzRzNXRElDS1FWQ1FUWFJUTldPRlVVUFRWNE00RFZQV0JGSFpJQUROWEZIWEpQR0FBIiwiaWF0IjoxNTQ0MDcxODg5LCJpc3MiOiJBQVBRSlFVUEtWWEdXNUNaSDVHMkhGSlVMWVNLREVMQVpSVldKQTI2VkRaTzdXU0JVTklZUkZOUSIsInN1YiI6IlVBVDZCV0NTQ1dMVUtKVDZLNk1CSkpPRU9UWFo1QUpET1lLTkVWUkZDN1ZOTzZPQTQzTjRUUk5PIiwidHlwZSI6InVzZXIiLCJuYXRzIjp7InB1YiI6e30sInN1YiI6e319fQ._8A1XM88Q2kp7XVJZ42bQuO9E3QPsNAGKtVjAkDycj8A5PtRPby9UpqBUZzBwiJQQO3TUcD5GGqSvsMm6X8hCQ
+------END NATS USER JWT------
+
+************************* IMPORTANT *************************
+NKEY Seed printed below can be used sign and prove identity.
+NKEYs are sensitive and should be treated as secrets.
+
+-----BEGIN USER NKEY SEED-----
+SUAMK2FG4MI6UE3ACF3FK3OIQBCEIEZV7NSWFFEW63UXMRLFM2XLAXK4GY
+------END USER NKEY SEED------
+`
+)
+
+func runTrustServer() *server.Server {
+	kp, _ := nkeys.FromSeed(oSeed)
+	pub, _ := kp.PublicKey()
+	opts := gnatsd.DefaultTestOptions
+	opts.Port = TEST_PORT
+	opts.TrustedKeys = []string{string(pub)}
+	s := RunServerWithOptions(opts)
+	mr := &server.MemAccResolver{}
+	akp, _ := nkeys.FromSeed(aSeed)
+	apub, _ := akp.PublicKey()
+	mr.Store(string(apub), aJWT)
+	s.SetAccountResolver(mr)
+	return s
+}
+
+func TestBasicUserJWTAuth(t *testing.T) {
+	if server.VERSION[0] == '1' {
+		t.Skip()
+	}
+	ts := runTrustServer()
+	defer ts.Shutdown()
+
+	url := fmt.Sprintf("nats://127.0.0.1:%d", TEST_PORT)
+	_, err := Connect(url)
+	if err == nil {
+		t.Fatalf("Expecting an error on connect")
+	}
+
+	jwtCB := func() (string, error) {
+		return uJWT, nil
+	}
+	sigCB := func(nonce []byte) ([]byte, error) {
+		kp, _ := nkeys.FromSeed(uSeed)
+		sig, _ := kp.Sign(nonce)
+		return sig, nil
+	}
+
+	// Try with user jwt but no sig
+	_, err = Connect(url, UserJWT(jwtCB, nil))
+	if err == nil {
+		t.Fatalf("Expecting an error on connect")
+	}
+
+	// Try with user callback
+	_, err = Connect(url, UserJWT(nil, sigCB))
+	if err == nil {
+		t.Fatalf("Expecting an error on connect")
+	}
+
+	nc, err := Connect(url, UserJWT(jwtCB, sigCB))
+	if err != nil {
+		t.Fatalf("Expected to connect, got %v", err)
+	}
+	nc.Close()
+}
+
+func TestUserCredentialsTwoFiles(t *testing.T) {
+	if server.VERSION[0] == '1' {
+		t.Skip()
+	}
+	ts := runTrustServer()
+	defer ts.Shutdown()
+
+	userJWTFile := createTmpFile(t, []byte(uJWT))
+	defer os.Remove(userJWTFile)
+	userSeedFile := createTmpFile(t, uSeed)
+	defer os.Remove(userSeedFile)
+
+	url := fmt.Sprintf("nats://127.0.0.1:%d", TEST_PORT)
+	nc, err := Connect(url, UserCredentials(userJWTFile, userSeedFile))
+	if err != nil {
+		t.Fatalf("Expected to connect, got %v", err)
+	}
+	nc.Close()
+}
+
+func TestUserCredentialsChainedFile(t *testing.T) {
+	if server.VERSION[0] == '1' {
+		t.Skip()
+	}
+	ts := runTrustServer()
+	defer ts.Shutdown()
+
+	chainedFile := createTmpFile(t, []byte(chained))
+	defer os.Remove(chainedFile)
+
+	url := fmt.Sprintf("nats://127.0.0.1:%d", TEST_PORT)
+	nc, err := Connect(url, UserCredentials(chainedFile))
+	if err != nil {
+		t.Fatalf("Expected to connect, got %v", err)
+	}
+	nc.Close()
+}
+
+func TestNkeyAuth(t *testing.T) {
+	if server.VERSION[0] == '1' {
+		t.Skip()
+	}
+
+	seed := []byte("SUAKYRHVIOREXV7EUZTBHUHL7NUMHPMAS7QMDU3GTIUWEI5LDNOXD43IZY")
+	kp, _ := nkeys.FromSeed(seed)
+	pub, _ := kp.PublicKey()
+
+	sopts := gnatsd.DefaultTestOptions
+	sopts.Port = TEST_PORT
+	sopts.Nkeys = []*server.NkeyUser{&server.NkeyUser{Nkey: string(pub)}}
+	ts := RunServerWithOptions(sopts)
+	defer ts.Shutdown()
+
+	opts := reconnectOpts
+	if _, err := opts.Connect(); err == nil {
+		t.Fatalf("Expected to fail with no nkey auth defined")
+	}
+	opts.Nkey = string(pub)
+	if _, err := opts.Connect(); err != ErrNkeyButNoSigCB {
+		t.Fatalf("Expected to fail with nkey defined but no signature callback, got %v", err)
+	}
+	badSign := func(nonce []byte) ([]byte, error) {
+		return []byte("VALID?"), nil
+	}
+	opts.SignatureCB = badSign
+	if _, err := opts.Connect(); err == nil {
+		t.Fatalf("Expected to fail with nkey and bad signature callback")
+	}
+	goodSign := func(nonce []byte) ([]byte, error) {
+		sig, err := kp.Sign(nonce)
+		if err != nil {
+			t.Fatalf("Failed signing nonce: %v", err)
+		}
+		return sig, nil
+	}
+	opts.SignatureCB = goodSign
+	nc, err := opts.Connect()
+	if err != nil {
+		t.Fatalf("Expected to succeed but got %v", err)
+	}
+
+	// Now disconnect by killing the server and restarting.
+	ts.Shutdown()
+	ts = RunServerWithOptions(sopts)
+	defer ts.Shutdown()
+
+	if err := nc.FlushTimeout(5 * time.Second); err != nil {
+		t.Fatalf("Error on Flush: %v", err)
+	}
+}
+
+func createTmpFile(t *testing.T, content []byte) string {
+	t.Helper()
+	conf, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatalf("Error creating conf file: %v", err)
+	}
+	fName := conf.Name()
+	conf.Close()
+	if err := ioutil.WriteFile(fName, content, 0666); err != nil {
+		os.Remove(fName)
+		t.Fatalf("Error writing conf file: %v", err)
+	}
+	return fName
+}
+
+func TestNKeyOptionFromSeed(t *testing.T) {
+	if _, err := NkeyOptionFromSeed("file_that_does_not_exist"); err == nil {
+		t.Fatal("Expected error got none")
+	}
+
+	seedFile := createTmpFile(t, []byte(`
+		# No seed
+		THIS_NOT_A_NKEY_SEED
+	`))
+	defer os.Remove(seedFile)
+	if _, err := NkeyOptionFromSeed(seedFile); err == nil || !strings.Contains(err.Error(), "seed found") {
+		t.Fatalf("Expected error about seed not found, got %v", err)
+	}
+	os.Remove(seedFile)
+
+	seedFile = createTmpFile(t, []byte(`
+		# Invalid seed
+		SUBADSEED
+	`))
+	// Make sure that we detect SU (trim space) but it still fails because
+	// this is not a valid NKey.
+	if _, err := NkeyOptionFromSeed(seedFile); err == nil || strings.Contains(err.Error(), "seed found") {
+		t.Fatalf("Expected error about invalid key, got %v", err)
+	}
+	os.Remove(seedFile)
+
+	kp, _ := nkeys.CreateUser()
+	seed, _ := kp.Seed()
+	seedFile = createTmpFile(t, seed)
+	opt, err := NkeyOptionFromSeed(seedFile)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
+
+	l, e := net.Listen("tcp", "127.0.0.1:0")
+	if e != nil {
+		t.Fatal("Could not listen on an ephemeral port")
+	}
+	tl := l.(*net.TCPListener)
+	defer tl.Close()
+
+	addr := tl.Addr().(*net.TCPAddr)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	ch := make(chan bool, 1)
+	rs := func(ch chan bool) {
+		defer wg.Done()
+		conn, err := l.Accept()
+		if err != nil {
+			t.Fatalf("Error accepting client connection: %v\n", err)
+		}
+		defer conn.Close()
+		info := "INFO {\"server_id\":\"foobar\",\"nonce\":\"anonce\"}\r\n"
+		conn.Write([]byte(info))
+
+		// Read connect and ping commands sent from the client
+		br := bufio.NewReaderSize(conn, 10*1024)
+		line, _, _ := br.ReadLine()
+		if err != nil {
+			t.Fatalf("Expected CONNECT and PING from client, got: %s", err)
+		}
+		// If client got an error reading the seed, it will not send it
+		if bytes.Contains(line, []byte(`"sig":`)) {
+			conn.Write([]byte("PONG\r\n"))
+		} else {
+			conn.Write([]byte(`-ERR go away\r\n`))
+			conn.Close()
+		}
+		// Now wait to be notified that we can finish
+		<-ch
+	}
+	go rs(ch)
+
+	nc, err := Connect(fmt.Sprintf("nats://127.0.0.1:%d", addr.Port), opt)
+	if err != nil {
+		t.Fatalf("Error on connect: %v", err)
+	}
+	nc.Close()
+	close(ch)
+	wg.Wait()
+
+	// Now that option is already created, change content of file
+	ioutil.WriteFile(seedFile, []byte(`xxxxx`), 0666)
+	ch = make(chan bool, 1)
+	wg.Add(1)
+	go rs(ch)
+
+	if _, err := Connect(fmt.Sprintf("nats://127.0.0.1:%d", addr.Port), opt); err == nil {
+		t.Fatal("Expected error, got none")
+	}
+	close(ch)
+	wg.Wait()
 }

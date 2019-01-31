@@ -31,8 +31,10 @@ type ActualLRPChange struct {
 }
 
 type ActualLRPFilter struct {
-	Domain string
-	CellID string
+	Domain      string
+	CellID      string
+	ProcessGuid string
+	Index       *int32
 }
 
 func NewActualLRPKey(processGuid string, index int32, domain string) ActualLRPKey {
@@ -77,6 +79,10 @@ func NewPortMappingWithTLSProxy(hostPort, containerPort, tlsHost, tlsContainer u
 
 func (key ActualLRPInstanceKey) Empty() bool {
 	return key.InstanceGuid == "" && key.CellId == ""
+}
+func (a *ActualLRP) Copy() *ActualLRP {
+	newActualLRP := *a
+	return &newActualLRP
 }
 
 const StaleUnclaimedActualLRPDuration = 30 * time.Second
@@ -160,22 +166,22 @@ func NewEvacuatingActualLRPGroup(actualLRP *ActualLRP) *ActualLRPGroup {
 	}
 }
 
-func (group ActualLRPGroup) Resolve() (*ActualLRP, bool) {
+func (group ActualLRPGroup) Resolve() (*ActualLRP, bool, error) {
 	switch {
 	case group.Instance == nil && group.Evacuating == nil:
-		panic(ErrActualLRPGroupInvalid)
+		return nil, false, ErrActualLRPGroupInvalid
 
 	case group.Instance == nil:
-		return group.Evacuating, true
+		return group.Evacuating, true, nil
 
 	case group.Evacuating == nil:
-		return group.Instance, false
+		return group.Instance, false, nil
 
 	case group.Instance.State == ActualLRPStateRunning || group.Instance.State == ActualLRPStateCrashed:
-		return group.Instance, false
+		return group.Instance, false, nil
 
 	default:
-		return group.Evacuating, true
+		return group.Evacuating, true, nil
 	}
 }
 
@@ -210,6 +216,47 @@ func (*ActualLRP) Version() format.Version {
 	return format.V0
 }
 
+func (actualLRPInfo *ActualLRPInfo) ToActualLRP(lrpKey ActualLRPKey, lrpInstanceKey ActualLRPInstanceKey) *ActualLRP {
+	return &ActualLRP{
+		ActualLRPKey:         lrpKey,
+		ActualLRPInstanceKey: lrpInstanceKey,
+		ActualLRPNetInfo:     actualLRPInfo.ActualLRPNetInfo,
+		CrashCount:           actualLRPInfo.CrashCount,
+		CrashReason:          actualLRPInfo.CrashReason,
+		State:                actualLRPInfo.State,
+		PlacementError:       actualLRPInfo.PlacementError,
+		Since:                actualLRPInfo.Since,
+		ModificationTag:      actualLRPInfo.ModificationTag,
+		Presence:             actualLRPInfo.Presence,
+	}
+}
+
+func (actual *ActualLRP) ToActualLRPInfo() *ActualLRPInfo {
+	return &ActualLRPInfo{
+		ActualLRPNetInfo: actual.ActualLRPNetInfo,
+		CrashCount:       actual.CrashCount,
+		CrashReason:      actual.CrashReason,
+		State:            actual.State,
+		PlacementError:   actual.PlacementError,
+		Since:            actual.Since,
+		ModificationTag:  actual.ModificationTag,
+		Presence:         actual.Presence,
+	}
+}
+
+func (actual *ActualLRP) ToActualLRPGroup() *ActualLRPGroup {
+	if actual == nil {
+		return nil
+	}
+
+	switch actual.Presence {
+	case ActualLRP_Evacuating:
+		return &ActualLRPGroup{Evacuating: actual}
+	default:
+		return &ActualLRPGroup{Instance: actual}
+	}
+}
+
 func (actual ActualLRP) Validate() error {
 	var validationError ValidationError
 
@@ -229,6 +276,9 @@ func (actual ActualLRP) Validate() error {
 		}
 		if !actual.ActualLRPNetInfo.Empty() {
 			validationError = validationError.Append(errors.New("net info cannot be set when state is unclaimed"))
+		}
+		if actual.Presence != ActualLRP_Ordinary {
+			validationError = validationError.Append(errors.New("presence cannot be set when state is unclaimed"))
 		}
 
 	case ActualLRPStateClaimed:
@@ -323,4 +373,76 @@ func (key *ActualLRPInstanceKey) Validate() error {
 	}
 
 	return nil
+}
+
+// hasHigherPriority returns true if lrp1 takes precendence over lrp2
+func hasHigherPriority(lrp1, lrp2 *ActualLRP) bool {
+	if lrp1 == nil {
+		return false
+	}
+
+	if lrp2 == nil {
+		return true
+	}
+
+	if lrp1.Presence == ActualLRP_Ordinary {
+		switch lrp1.State {
+		case ActualLRPStateRunning:
+			return true
+		case ActualLRPStateClaimed:
+			return lrp2.State != ActualLRPStateRunning && lrp2.State != ActualLRPStateClaimed
+		}
+	} else if lrp1.Presence == ActualLRP_Suspect {
+		switch lrp1.State {
+		case ActualLRPStateRunning:
+			return lrp2.State != ActualLRPStateRunning
+		case ActualLRPStateClaimed:
+			return lrp2.State != ActualLRPStateRunning
+		}
+	}
+	// Cases where we are comparing two LRPs with the same presence have undefined behavior since it shouldn't happen
+	// with the way they're stored in the database
+	return false
+}
+
+// ResolveActualLRPGroups convert the given set of lrp instances into
+// ActualLRPGroup.  This conversion is lossy.  A suspect LRP is given
+// precendence over an Ordinary instance if it is Running.  Otherwise, the
+// Ordinary instance is returned in the Instance field of the ActualLRPGroup.
+func ResolveActualLRPGroups(lrps []*ActualLRP) []*ActualLRPGroup {
+	mapOfGroups := map[ActualLRPKey]*ActualLRPGroup{}
+	result := []*ActualLRPGroup{}
+	for _, actualLRP := range lrps {
+		// Every actual LRP has potentially 2 rows in the database: one for the instance
+		// one for the evacuating.  When building the list of actual LRP groups (where
+		// a group is the instance and corresponding evacuating), make sure we don't add the same
+		// actual lrp twice.
+		if mapOfGroups[actualLRP.ActualLRPKey] == nil {
+			mapOfGroups[actualLRP.ActualLRPKey] = &ActualLRPGroup{}
+			result = append(result, mapOfGroups[actualLRP.ActualLRPKey])
+		}
+		if actualLRP.Presence == ActualLRP_Evacuating {
+			mapOfGroups[actualLRP.ActualLRPKey].Evacuating = actualLRP
+		} else if hasHigherPriority(actualLRP, mapOfGroups[actualLRP.ActualLRPKey].Instance) {
+			mapOfGroups[actualLRP.ActualLRPKey].Instance = actualLRP
+		}
+	}
+
+	return result
+}
+
+// ResolveToActualLRPGroup calls ResolveActualLRPGroups and return the first
+// LRP group.  It panics if there are more than one group.  If there no LRP
+// groups were returned by ResolveActualLRPGroups, then an empty ActualLRPGroup
+// is returned.
+func ResolveActualLRPGroup(lrps []*ActualLRP) *ActualLRPGroup {
+	actualLRPGroups := ResolveActualLRPGroups(lrps)
+	switch len(actualLRPGroups) {
+	case 0:
+		return &ActualLRPGroup{}
+	case 1:
+		return actualLRPGroups[0]
+	default:
+		panic("shouldn't get here")
+	}
 }

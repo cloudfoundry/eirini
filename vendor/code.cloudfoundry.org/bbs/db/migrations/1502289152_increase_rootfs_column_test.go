@@ -12,8 +12,7 @@ import (
 
 var _ = Describe("Increase rootfs Column Migration", func() {
 	var (
-		migration    migration.Migration
-		migrationErr error
+		migration migration.Migration
 	)
 
 	BeforeEach(func() {
@@ -26,7 +25,7 @@ var _ = Describe("Increase rootfs Column Migration", func() {
 	})
 
 	It("appends itself to the migration list", func() {
-		Expect(migrations.Migrations).To(ContainElement(migration))
+		Expect(migrations.AllMigrations()).To(ContainElement(migration))
 	})
 
 	Describe("Version", func() {
@@ -41,10 +40,6 @@ var _ = Describe("Increase rootfs Column Migration", func() {
 			migration.SetDBFlavor(flavor)
 		})
 
-		JustBeforeEach(func() {
-			migrationErr = migration.Up(logger)
-		})
-
 		BeforeEach(func() {
 			createStatements := []string{
 				`CREATE TABLE desired_lrps(
@@ -57,11 +52,8 @@ var _ = Describe("Increase rootfs Column Migration", func() {
 			}
 		})
 
-		It("does not error out", func() {
-			Expect(migrationErr).NotTo(HaveOccurred())
-		})
-
 		It("changes the size of the rootfs column", func() {
+			Expect(migration.Up(logger)).To(Succeed())
 			value := strings.Repeat("x", 1024)
 			query := helpers.RebindForFlavor("insert into desired_lrps(rootfs) values(?)", flavor)
 			_, err := rawSQLDB.Exec(query, value)
@@ -69,14 +61,7 @@ var _ = Describe("Increase rootfs Column Migration", func() {
 		})
 
 		It("is idempotent", func() {
-			err := migration.Up(logger)
-			Expect(err).NotTo(HaveOccurred())
-		})
-	})
-
-	Describe("Down", func() {
-		It("returns a not implemented error", func() {
-			Expect(migration.Down(logger)).To(HaveOccurred())
+			testIdempotency(rawSQLDB, migration, logger)
 		})
 	})
 })

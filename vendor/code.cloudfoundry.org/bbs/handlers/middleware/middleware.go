@@ -7,16 +7,11 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-const (
-	RequestLatency = "RequestLatency"
-	RequestCount   = "RequestCount"
-)
-
 type LoggableHandlerFunc func(logger lager.Logger, w http.ResponseWriter, r *http.Request)
 
 //go:generate counterfeiter -o fakes/fake_emitter.go . Emitter
 type Emitter interface {
-	IncrementCounter(delta int)
+	IncrementRequestCounter(delta int)
 	UpdateLatency(latency time.Duration)
 }
 
@@ -70,7 +65,23 @@ func RecordLatency(f http.HandlerFunc, emitter Emitter) http.HandlerFunc {
 
 func RecordRequestCount(handler http.Handler, emitter Emitter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		emitter.IncrementCounter(1)
+		emitter.IncrementRequestCounter(1)
 		handler.ServeHTTP(w, r)
+	}
+}
+
+func ContextCancellableRequest(f http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		reqChan := make(chan struct{})
+		go func(doneChan chan struct{}) {
+			f(w, r)
+			close(doneChan)
+		}(reqChan)
+
+		select {
+		case <-ctx.Done():
+		case <-reqChan:
+		}
 	}
 }

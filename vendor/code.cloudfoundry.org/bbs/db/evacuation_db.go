@@ -9,5 +9,5 @@ import (
 
 type EvacuationDB interface {
 	RemoveEvacuatingActualLRP(lager.Logger, *models.ActualLRPKey, *models.ActualLRPInstanceKey) error
-	EvacuateActualLRP(lager.Logger, *models.ActualLRPKey, *models.ActualLRPInstanceKey, *models.ActualLRPNetInfo, uint64) (actualLRPGroup *models.ActualLRPGroup, err error)
+	EvacuateActualLRP(lager.Logger, *models.ActualLRPKey, *models.ActualLRPInstanceKey, *models.ActualLRPNetInfo) (actualLRP *models.ActualLRP, err error)
 }

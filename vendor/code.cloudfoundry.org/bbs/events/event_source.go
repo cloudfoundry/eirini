@@ -228,6 +228,33 @@ func parseRawEvent(rawEvent sse.Event) (models.Event, error) {
 		}
 
 		return event, nil
+
+	case models.EventTypeActualLRPInstanceCreated:
+		event := new(models.ActualLRPInstanceCreatedEvent)
+		err := proto.Unmarshal(data, event)
+		if err != nil {
+			return nil, NewInvalidPayloadError(rawEvent.Name, err)
+		}
+
+		return event, nil
+
+	case models.EventTypeActualLRPInstanceChanged:
+		event := new(models.ActualLRPInstanceChangedEvent)
+		err := proto.Unmarshal(data, event)
+		if err != nil {
+			return nil, NewInvalidPayloadError(rawEvent.Name, err)
+		}
+
+		return event, nil
+
+	case models.EventTypeActualLRPInstanceRemoved:
+		event := new(models.ActualLRPInstanceRemovedEvent)
+		err := proto.Unmarshal(data, event)
+		if err != nil {
+			return nil, NewInvalidPayloadError(rawEvent.Name, err)
+		}
+
+		return event, nil
 	}
 
 	return nil, ErrUnrecognizedEventType

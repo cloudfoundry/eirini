@@ -1,6 +1,10 @@
 package ccv2
 
 import (
+	"bytes"
+	"encoding/json"
+	"net/url"
+
 	"code.cloudfoundry.org/cli/api/cloudcontroller"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv2/constant"
@@ -37,6 +41,10 @@ type ServiceInstance struct {
 	// features of the service instance.
 	DashboardURL string
 
+	// RouteServiceURL is the URL of the user-provided service to which requests
+	// for bound routes will be forwarded.
+	RouteServiceURL string
+
 	// LastOperation is the status of the last operation requested on the service
 	// instance.
 	LastOperation LastOperation
@@ -59,6 +67,7 @@ func (serviceInstance *ServiceInstance) UnmarshalJSON(data []byte) error {
 			Type            string        `json:"type"`
 			Tags            []string      `json:"tags"`
 			DashboardURL    string        `json:"dashboard_url"`
+			RouteServiceURL string        `json:"route_service_url"`
 			LastOperation   LastOperation `json:"last_operation"`
 		}
 	}
@@ -75,6 +84,7 @@ func (serviceInstance *ServiceInstance) UnmarshalJSON(data []byte) error {
 	serviceInstance.Type = constant.ServiceInstanceType(ccServiceInstance.Entity.Type)
 	serviceInstance.Tags = ccServiceInstance.Entity.Tags
 	serviceInstance.DashboardURL = ccServiceInstance.Entity.DashboardURL
+	serviceInstance.RouteServiceURL = ccServiceInstance.Entity.RouteServiceURL
 	serviceInstance.LastOperation = ccServiceInstance.Entity.LastOperation
 	return nil
 }
@@ -83,6 +93,48 @@ func (serviceInstance *ServiceInstance) UnmarshalJSON(data []byte) error {
 // service.
 func (serviceInstance ServiceInstance) UserProvided() bool {
 	return serviceInstance.Type == constant.ServiceInstanceTypeUserProvidedService
+}
+
+type createServiceInstanceRequestBody struct {
+	Name            string                 `json:"name"`
+	ServicePlanGUID string                 `json:"service_plan_guid"`
+	SpaceGUID       string                 `json:"space_guid"`
+	Parameters      map[string]interface{} `json:"parameters,omitempty"`
+	Tags            []string               `json:"tags,omitempty"`
+}
+
+// CreateServiceInstance posts a service instance resource with the provided
+// attributes to the api and returns the result.
+func (client *Client) CreateServiceInstance(spaceGUID, servicePlanGUID, serviceInstance string, parameters map[string]interface{}, tags []string) (ServiceInstance, Warnings, error) {
+	requestBody := createServiceInstanceRequestBody{
+		Name:            serviceInstance,
+		ServicePlanGUID: servicePlanGUID,
+		SpaceGUID:       spaceGUID,
+		Parameters:      parameters,
+		Tags:            tags,
+	}
+
+	bodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return ServiceInstance{}, nil, err
+	}
+
+	request, err := client.newHTTPRequest(requestOptions{
+		RequestName: internal.PostServiceInstancesRequest,
+		Body:        bytes.NewReader(bodyBytes),
+		Query:       url.Values{"accepts_incomplete": {"true"}},
+	})
+	if err != nil {
+		return ServiceInstance{}, nil, err
+	}
+
+	var instance ServiceInstance
+	response := cloudcontroller.Response{
+		DecodeJSONResponseInto: &instance,
+	}
+
+	err = client.connection.Make(request, &response)
+	return instance, response.Warnings, err
 }
 
 // GetServiceInstance returns the service instance with the given GUID. This
@@ -98,7 +150,7 @@ func (client *Client) GetServiceInstance(serviceInstanceGUID string) (ServiceIns
 
 	var serviceInstance ServiceInstance
 	response := cloudcontroller.Response{
-		Result: &serviceInstance,
+		DecodeJSONResponseInto: &serviceInstance,
 	}
 
 	err = client.connection.Make(request, &response)

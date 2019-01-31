@@ -11,6 +11,52 @@ For detailed information on the types referred to below, see the [godoc document
 
 ## ActualLRPs
 
+Returns all [ActualLRPs](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRP) matching the given [ActualLRPFilter](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPFilter).
+
+### BBS API Endpoint
+
+POST an [ActualLRPsRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPsRequest)
+to `/v1/actual_lrps/list`
+and receive an [ActualLRPsResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPsResponse).
+
+### Golang Client API
+
+```go
+ActualLRPs(lager.Logger, models.ActualLRPFilter) ([]*models.ActualLRP, error)
+```
+
+#### Inputs
+
+* `models.ActualLRPFilter`:
+  * `Domain string`: If non-empty, filter to only ActualLRPs in this domain.
+  * `CellId string`: If non-empty, filter to only ActualLRPs with this cell ID.
+  * `ProcessGuid string`: If non-empty, filter to only ActualLRPs with this process GUID.
+  * `Index *int32`: If non-nil, filter to only ActualLRPs with this instance index.
+
+#### Output
+
+* `[]*models.ActualLRP`: Slice of [`*models.ActualLRP`](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRP).
+* `error`:  Non-nil if an error occurred.
+
+
+#### Example
+
+```go
+client := bbs.NewClient(url)
+actualLRPs, err := client.ActualLRPs(logger, &models.ActualLRPFilter{
+    Domain:      "some-domain",
+    CellId:      "some-cell",
+    ProcessGuid: "some-process-guid",
+    Index:       &someIndex,
+    })
+if err != nil {
+    log.Printf("failed to retrieve actual lrps: " + err.Error())
+}
+```
+
+
+## ActualLRPGroups
+
 Returns all [ActualLRPGroups](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPGroup) matching the given [ActualLRPFilter](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPFilter).
 
 ### BBS API Endpoint
@@ -171,10 +217,11 @@ Lists all [DesiredLRPs](https://godoc.org/code.cloudfoundry.org/bbs/models#Desir
 
 ### BBS API Endpoint
 
-POST a [DesiredLRPsRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPsRequest) to `/v1/desired_lrps/list.r2` and receive a [DesiredLRPsResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPsResponse) with V2 [DesiredLRPs](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP).
+POST a [DesiredLRPsRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPsRequest) to `/v1/desired_lrps/list.r3` and receive a [DesiredLRPsResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPsResponse) with V3 [DesiredLRPs](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP).
 
 #### Deprecated Endpoints
 
+* POST a [DesiredLRPsRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPsRequest) to `/v1/desired_lrps/list.r2` and receive a [DesiredLRPsResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPsResponse) with V2 [DesiredLRPs](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP).
 * POST a [DesiredLRPsRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPsRequest) to `/v1/desired_lrps/list.r1` and receive a [DesiredLRPsResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPsResponse) with V1 [DesiredLRPs](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP).
 * POST a [DesiredLRPsRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPsRequest) to `/v1/desired_lrps/list` and receive a [DesiredLRPsResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPsResponse) with V0 [DesiredLRPs](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP).
 
@@ -214,10 +261,11 @@ Returns the DesiredLRP with the given process guid.
 
 ### BBS API Endpoint
 
-POST a [DesiredLRPByProcessGuidRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPByProcessGuidRequest) to `/v1/desired_lrps/get_by_process_guid.r2` and receive a [DesiredLRPResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPResponse) with a V2 [DesiredLRP](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP).
+POST a [DesiredLRPByProcessGuidRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPByProcessGuidRequest) to `/v1/desired_lrps/get_by_process_guid.r3` and receive a [DesiredLRPResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPResponse) with a V3 [DesiredLRP](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP).
 
 #### Deprecated Endpoints
 
+* POST a [DesiredLRPByProcessGuidRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPByProcessGuidRequest) to `/v1/desired_lrps/get_by_process_guid.r2` and receive a [DesiredLRPResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPResponse) with a V2 [DesiredLRP](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP).
 * POST a [DesiredLRPByProcessGuidRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPByProcessGuidRequest) to `/v1/desired_lrps/get_by_process_guid.r1` and receive a [DesiredLRPResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPResponse) with a V1 [DesiredLRP](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP).
 * POST a [DesiredLRPByProcessGuidRequest](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPByProcessGuidRequest) to `/v1/desired_lrps/get_by_process_guid` and receive an [DesiredLRPResponse](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRPResponse) with a V0 [DesiredLRP](https://godoc.org/code.cloudfoundry.org/bbs/models#DesiredLRP).
 

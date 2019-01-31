@@ -1,7 +1,6 @@
 package sqldb
 
 import (
-	"database/sql"
 	"fmt"
 
 	"code.cloudfoundry.org/bbs/db/sqldb/helpers"
@@ -78,7 +77,7 @@ func (db *SQLDB) reEncrypt(logger lager.Logger, tableName, primaryKey string, en
 
 	where := fmt.Sprintf("%s = ?", primaryKey)
 	for _, guid := range guids {
-		err = db.transact(logger, func(logger lager.Logger, tx *sql.Tx) error {
+		err = db.transact(logger, func(logger lager.Logger, tx helpers.Tx) error {
 			blobs := make([]interface{}, len(blobColumns))
 
 			row := db.one(logger, tx, tableName, blobColumns, helpers.LockRow, where, guid)
@@ -111,7 +110,7 @@ func (db *SQLDB) reEncrypt(logger lager.Logger, tableName, primaryKey string, en
 					logger.Error("failed-to-decode-blob", err)
 					return nil
 				}
-				encryptedPayload, err := encoder.Encode(format.BASE64_ENCRYPTED, payload)
+				encryptedPayload, err := encoder.Encode(payload)
 				if err != nil {
 					logger.Error("failed-to-encode-blob", err)
 					return err

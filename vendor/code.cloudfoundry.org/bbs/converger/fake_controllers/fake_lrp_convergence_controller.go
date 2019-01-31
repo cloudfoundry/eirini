@@ -9,36 +9,25 @@ import (
 )
 
 type FakeLrpConvergenceController struct {
-	ConvergeLRPsStub        func(logger lager.Logger) error
+	ConvergeLRPsStub        func(logger lager.Logger)
 	convergeLRPsMutex       sync.RWMutex
 	convergeLRPsArgsForCall []struct {
 		logger lager.Logger
-	}
-	convergeLRPsReturns struct {
-		result1 error
-	}
-	convergeLRPsReturnsOnCall map[int]struct {
-		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeLrpConvergenceController) ConvergeLRPs(logger lager.Logger) error {
+func (fake *FakeLrpConvergenceController) ConvergeLRPs(logger lager.Logger) {
 	fake.convergeLRPsMutex.Lock()
-	ret, specificReturn := fake.convergeLRPsReturnsOnCall[len(fake.convergeLRPsArgsForCall)]
 	fake.convergeLRPsArgsForCall = append(fake.convergeLRPsArgsForCall, struct {
 		logger lager.Logger
 	}{logger})
 	fake.recordInvocation("ConvergeLRPs", []interface{}{logger})
 	fake.convergeLRPsMutex.Unlock()
 	if fake.ConvergeLRPsStub != nil {
-		return fake.ConvergeLRPsStub(logger)
+		fake.ConvergeLRPsStub(logger)
 	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.convergeLRPsReturns.result1
 }
 
 func (fake *FakeLrpConvergenceController) ConvergeLRPsCallCount() int {
@@ -51,25 +40,6 @@ func (fake *FakeLrpConvergenceController) ConvergeLRPsArgsForCall(i int) lager.L
 	fake.convergeLRPsMutex.RLock()
 	defer fake.convergeLRPsMutex.RUnlock()
 	return fake.convergeLRPsArgsForCall[i].logger
-}
-
-func (fake *FakeLrpConvergenceController) ConvergeLRPsReturns(result1 error) {
-	fake.ConvergeLRPsStub = nil
-	fake.convergeLRPsReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeLrpConvergenceController) ConvergeLRPsReturnsOnCall(i int, result1 error) {
-	fake.ConvergeLRPsStub = nil
-	if fake.convergeLRPsReturnsOnCall == nil {
-		fake.convergeLRPsReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.convergeLRPsReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
 }
 
 func (fake *FakeLrpConvergenceController) Invocations() map[string][][]interface{} {

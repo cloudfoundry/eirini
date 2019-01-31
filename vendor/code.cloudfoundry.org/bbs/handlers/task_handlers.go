@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/lager"
 )
@@ -17,6 +18,7 @@ type TaskController interface {
 	StartTask(logger lager.Logger, taskGuid, cellId string) (shouldStart bool, err error)
 	CancelTask(logger lager.Logger, taskGuid string) error
 	FailTask(logger lager.Logger, taskGuid, failureReason string) error
+	RejectTask(logger lager.Logger, taskGuid, failureReason string) error
 	CompleteTask(logger lager.Logger, taskGuid, cellId string, failed bool, failureReason, result string) error
 	ResolvingTask(logger lager.Logger, taskGuid string) error
 	DeleteTask(logger lager.Logger, taskGuid string) error
@@ -38,7 +40,7 @@ func NewTaskHandler(
 	}
 }
 
-func (h *TaskHandler) Tasks(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+func (h *TaskHandler) commonTasks(logger lager.Logger, targetVersion format.Version, w http.ResponseWriter, req *http.Request) {
 	var err error
 	logger = logger.Session("tasks")
 
@@ -55,11 +57,25 @@ func (h *TaskHandler) Tasks(logger lager.Logger, w http.ResponseWriter, req *htt
 		return
 	}
 
-	response.Tasks, err = h.controller.Tasks(logger, request.Domain, request.CellId)
+	tasks, err := h.controller.Tasks(logger, request.Domain, request.CellId)
+
+	downgradedTasks := []*models.Task{}
+	for _, t := range tasks {
+		downgradedTasks = append(downgradedTasks, t.VersionDownTo(targetVersion))
+	}
+	response.Tasks = downgradedTasks
 	response.Error = models.ConvertError(err)
 }
 
-func (h *TaskHandler) TaskByGuid(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+func (h *TaskHandler) Tasks_r2(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonTasks(logger, format.V2, w, req)
+}
+
+func (h *TaskHandler) Tasks(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonTasks(logger, format.V3, w, req)
+}
+
+func (h *TaskHandler) commonTaskByGuid(logger lager.Logger, targetVersion format.Version, w http.ResponseWriter, req *http.Request) {
 	var err error
 	logger = logger.Session("task-by-guid")
 
@@ -76,8 +92,22 @@ func (h *TaskHandler) TaskByGuid(logger lager.Logger, w http.ResponseWriter, req
 		return
 	}
 
-	response.Task, err = h.controller.TaskByGuid(logger, request.TaskGuid)
+	var task *models.Task
+	task, err = h.controller.TaskByGuid(logger, request.TaskGuid)
+	if task != nil {
+		task = task.VersionDownTo(targetVersion)
+	}
+
+	response.Task = task
 	response.Error = models.ConvertError(err)
+}
+
+func (h *TaskHandler) TaskByGuid_r2(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonTaskByGuid(logger, format.V2, w, req)
+}
+
+func (h *TaskHandler) TaskByGuid(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonTaskByGuid(logger, format.V3, w, req)
 }
 
 func (h *TaskHandler) DesireTask(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
@@ -160,6 +190,27 @@ func (h *TaskHandler) FailTask(logger lager.Logger, w http.ResponseWriter, req *
 	}
 
 	err = h.controller.FailTask(logger, request.TaskGuid, request.FailureReason)
+	response.Error = models.ConvertError(err)
+}
+
+func (h *TaskHandler) RejectTask(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	var err error
+	logger = logger.Session("reject-task")
+
+	request := &models.RejectTaskRequest{}
+	response := &models.TaskLifecycleResponse{}
+
+	defer func() { exitIfUnrecoverable(logger, h.exitChan, response.Error) }()
+	defer func() { writeResponse(w, response) }()
+
+	err = parseRequest(logger, req, request)
+	if err != nil {
+		logger.Error("failed-parsing-request", err)
+		response.Error = models.ConvertError(err)
+		return
+	}
+
+	err = h.controller.RejectTask(logger, request.TaskGuid, request.RejectionReason)
 	response.Error = models.ConvertError(err)
 }
 

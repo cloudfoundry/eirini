@@ -111,24 +111,9 @@ var (
 		Message: "cannot remove actual LRP",
 	}
 
-	ErrActualLRPCannotBeStopped = &Error{
-		Type:    Error_ActualLRPCannotBeStopped,
-		Message: "cannot stop actual LRP",
-	}
-
 	ErrActualLRPCannotBeUnclaimed = &Error{
 		Type:    Error_ActualLRPCannotBeUnclaimed,
 		Message: "cannot unclaim actual LRP",
-	}
-
-	ErrActualLRPCannotBeEvacuated = &Error{
-		Type:    Error_ActualLRPCannotBeEvacuated,
-		Message: "cannot evacuate actual LRP",
-	}
-
-	ErrDesiredLRPCannotBeUpdated = &Error{
-		Type:    Error_DesiredLRPCannotBeUpdated,
-		Message: "cannot update desired LRP",
 	}
 
 	ErrGUIDGeneration = &Error{

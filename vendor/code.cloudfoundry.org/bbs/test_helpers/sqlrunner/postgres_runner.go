@@ -56,13 +56,20 @@ func (p *PostgresRunner) Run(signals <-chan os.Signal, ready chan<- struct{}) er
 
 	<-signals
 
+	logger.Info("signaled")
+
 	// We need to close the connection to the database we want to drop before dropping it.
 	Expect(p.db.Close()).To(Succeed())
+
+	logger.Info("openning-connection-to-database")
 	p.db, err = sql.Open("postgres", "postgres://diego:diego_pw@localhost")
 	Expect(err).NotTo(HaveOccurred())
 
+	logger.Info("dropping-database")
 	_, err = p.db.Exec(fmt.Sprintf("DROP DATABASE %s", p.sqlDBName))
 	Expect(err).NotTo(HaveOccurred())
+
+	logger.Info("closing-connection")
 	Expect(p.db.Close()).To(Succeed())
 
 	return nil

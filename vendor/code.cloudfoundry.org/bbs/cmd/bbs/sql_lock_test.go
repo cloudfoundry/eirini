@@ -8,14 +8,12 @@ import (
 
 	"code.cloudfoundry.org/bbs/cmd/bbs/testrunner"
 	"code.cloudfoundry.org/clock"
-	mfakes "code.cloudfoundry.org/diego-logging-client/testhelpers"
-	"code.cloudfoundry.org/localip"
+	"code.cloudfoundry.org/diego-logging-client/testhelpers"
 	"code.cloudfoundry.org/locket"
 	locketconfig "code.cloudfoundry.org/locket/cmd/locket/config"
 	locketrunner "code.cloudfoundry.org/locket/cmd/locket/testrunner"
 	"code.cloudfoundry.org/locket/lock"
 	locketmodels "code.cloudfoundry.org/locket/models"
-	"github.com/cloudfoundry/sonde-go/events"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/tedsuo/ifrit"
@@ -30,7 +28,7 @@ var _ = Describe("SqlLock", func() {
 	)
 
 	BeforeEach(func() {
-		locketPort, err := localip.LocalPort()
+		locketPort, err := portAllocator.ClaimPorts(1)
 		Expect(err).NotTo(HaveOccurred())
 
 		locketAddress = fmt.Sprintf("localhost:%d", locketPort)
@@ -44,6 +42,7 @@ var _ = Describe("SqlLock", func() {
 
 		bbsConfig.ClientLocketConfig = locketrunner.ClientLocketConfig()
 		bbsConfig.LocketAddress = locketAddress
+		bbsConfig.LocksLocketEnabled = true
 	})
 
 	JustBeforeEach(func() {
@@ -59,14 +58,32 @@ var _ = Describe("SqlLock", func() {
 	})
 
 	Context("with invalid configuration", func() {
-		Context("and the locket address is not configured", func() {
+		Context("when SkipConsulLock is true", func() {
 			BeforeEach(func() {
 				bbsConfig.LocketAddress = ""
 				bbsConfig.SkipConsulLock = true
 			})
+			Context("when LocketEnabled is false", func() {
+				BeforeEach(func() {
+					bbsConfig.LocksLocketEnabled = false
+				})
+				It("exits with an error", func() {
+					Eventually(bbsProcess.Wait()).Should(Receive(Not(BeNil())))
+				})
+			})
+		})
+		Context("when LocketEnabled is true", func() {
+			BeforeEach(func() {
+				bbsConfig.LocksLocketEnabled = true
+			})
+			Context("when the locket address is not configured", func() {
+				BeforeEach(func() {
+					bbsConfig.LocketAddress = ""
+				})
 
-			It("exits with an error", func() {
-				Eventually(bbsProcess.Wait()).Should(Receive())
+				It("exits with an error", func() {
+					Eventually(bbsProcess.Wait()).Should(Receive(Not(BeNil())))
+				})
 			})
 		})
 
@@ -120,25 +137,11 @@ var _ = Describe("SqlLock", func() {
 				return client.Ping(logger)
 			}).Should(BeTrue())
 
-			var sawHeldMetric bool
-			timeout := time.After(50 * time.Millisecond)
-		OUTER_LOOP:
-			for {
-				select {
-				case envelope := <-testMetricsChan:
-					if envelope.GetEventType() == events.Envelope_ValueMetric {
-						if *envelope.ValueMetric.Name == "LockHeld" {
-							if *envelope.ValueMetric.Value == float64(1) {
-								sawHeldMetric = true
-								break
-							}
-						}
-					}
-				case <-timeout:
-					break OUTER_LOOP
-				}
-			}
-			Expect(sawHeldMetric).To(BeTrue())
+			Eventually(testMetricsChan).Should(Receive(
+				testhelpers.MatchV2MetricAndValue(
+					testhelpers.MetricAndValue{Name: "LockHeld", Value: 1},
+				),
+			))
 		})
 
 		Context("and the locking server becomes unreachable after grabbing the lock", func() {
@@ -157,12 +160,12 @@ var _ = Describe("SqlLock", func() {
 			})
 		})
 
-		Context("when consul lock isn't required", func() {
+		Context("when skip consul locks is true", func() {
 			var competingBBSLockProcess ifrit.Process
 
 			BeforeEach(func() {
 				bbsConfig.SkipConsulLock = true
-				competingBBSLock := locket.NewLock(logger, consulClient, locket.LockSchemaPath("bbs_lock"), []byte{}, clock.NewClock(), locket.RetryInterval, locket.DefaultSessionTTL, locket.WithMetronClient(&mfakes.FakeIngressClient{}))
+				competingBBSLock := locket.NewLock(logger, consulClient, locket.LockSchemaPath("bbs_lock"), []byte{}, clock.NewClock(), locket.RetryInterval, locket.DefaultSessionTTL, locket.WithMetronClient(&testhelpers.FakeIngressClient{}))
 				competingBBSLockProcess = ifrit.Invoke(competingBBSLock)
 			})
 
@@ -174,6 +177,73 @@ var _ = Describe("SqlLock", func() {
 				Eventually(func() bool {
 					return client.Ping(logger)
 				}).Should(BeTrue())
+			})
+		})
+
+		Context("when skip consul locks is false", func() {
+			var competingBBSLockProcess ifrit.Process
+
+			AfterEach(func() {
+				ginkgomon.Kill(competingBBSLockProcess)
+			})
+
+			Context("when locket enabled is false", func() {
+				BeforeEach(func() {
+					bbsConfig.LocksLocketEnabled = false
+					competingBBSLock := locket.NewLock(logger, consulClient, locket.LockSchemaPath("bbs_lock"), []byte{}, clock.NewClock(), locket.RetryInterval, locket.DefaultSessionTTL, locket.WithMetronClient(&testhelpers.FakeIngressClient{}))
+					competingBBSLockProcess = ifrit.Invoke(competingBBSLock)
+				})
+
+				It("blocks on waiting for the lock", func() {
+					Consistently(func() bool {
+						return client.Ping(logger)
+					}).Should(BeFalse())
+				})
+
+				Context("and the lock becomes available", func() {
+					JustBeforeEach(func() {
+						Consistently(func() bool {
+							return client.Ping(logger)
+						}).Should(BeFalse())
+
+						ginkgomon.Interrupt(competingBBSLockProcess)
+					})
+
+					It("grabs the lock", func() {
+						Eventually(func() bool {
+							return client.Ping(logger)
+						}, 5*locket.RetryInterval).Should(BeTrue())
+					})
+				})
+			})
+
+			Context("when locket enabled is true", func() {
+				BeforeEach(func() {
+					competingBBSLock := locket.NewLock(logger, consulClient, locket.LockSchemaPath("bbs_lock"), []byte{}, clock.NewClock(), locket.RetryInterval, locket.DefaultSessionTTL, locket.WithMetronClient(&testhelpers.FakeIngressClient{}))
+					competingBBSLockProcess = ifrit.Invoke(competingBBSLock)
+				})
+
+				It("blocks on waiting for the lock", func() {
+					Consistently(func() bool {
+						return client.Ping(logger)
+					}).Should(BeFalse())
+				})
+
+				Context("and the lock becomes available", func() {
+					JustBeforeEach(func() {
+						Consistently(func() bool {
+							return client.Ping(logger)
+						}).Should(BeFalse())
+
+						ginkgomon.Interrupt(competingBBSLockProcess)
+					})
+
+					It("grabs the lock", func() {
+						Eventually(func() bool {
+							return client.Ping(logger)
+						}, 5*locket.RetryInterval).Should(BeTrue())
+					})
+				})
 			})
 		})
 
@@ -214,25 +284,11 @@ var _ = Describe("SqlLock", func() {
 			})
 
 			It("emits metric about not holding lock", func() {
-				var sawHeldMetric bool
-				timeout := time.After(50 * time.Millisecond)
-			OUTER_LOOP:
-				for {
-					select {
-					case envelope := <-testMetricsChan:
-						if envelope.GetEventType() == events.Envelope_ValueMetric {
-							if *envelope.ValueMetric.Name == "LockHeld" {
-								if *envelope.ValueMetric.Value == float64(0) {
-									sawHeldMetric = true
-									break
-								}
-							}
-						}
-					case <-timeout:
-						break OUTER_LOOP
-					}
-				}
-				Expect(sawHeldMetric).To(BeTrue())
+				Eventually(testMetricsChan).Should(Receive(
+					testhelpers.MatchV2MetricAndValue(
+						testhelpers.MetricAndValue{Name: "LockHeld", Value: 0},
+					),
+				))
 			})
 
 			Context("and continues to be unavailable", func() {

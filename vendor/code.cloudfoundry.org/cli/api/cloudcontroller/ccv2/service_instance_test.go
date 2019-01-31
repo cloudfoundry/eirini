@@ -87,6 +87,109 @@ var _ = Describe("Service Instance", func() {
 		})
 	})
 
+	Describe("CreateServiceInstance", func() {
+		When("creating service instance succeeds", func() {
+			var (
+				spaceGUID       string
+				servicePlanGUID string
+				serviceInstance string
+				parameters      map[string]interface{}
+				tags            []string
+			)
+
+			BeforeEach(func() {
+				response := `{
+					"metadata": {
+						"guid": "service-instance-guid"
+					},
+					"entity": {
+						"name": "my-service-instance",
+						"service_plan_guid": "service-plan-guid",
+						"space_guid": "space-guid",
+						"dashboard_url": "http://dashboard.url",
+						"type": "managed_service_instance",
+						"last_operation": {
+							"type": "create",
+							"state": "in progress",
+							"description": "",
+							"updated_at": "2016-06-08T16:41:26Z",
+							"created_at": "2016-06-08T16:41:29Z"
+						},
+						"tags": ["a-tag", "another-tag"]
+					}
+				}`
+				spaceGUID = "some-space-guid"
+				servicePlanGUID = "some-plan-guid"
+				serviceInstance = "service-instance-name"
+				parameters = map[string]interface{}{
+					"param1": "some-value",
+					"param2": "another-value",
+				}
+				tags = []string{"a-tag, another-tag"}
+				requestBody := map[string]interface{}{
+					"name":              serviceInstance,
+					"service_plan_guid": servicePlanGUID,
+					"space_guid":        spaceGUID,
+					"parameters":        parameters,
+					"tags":              tags,
+				}
+				server.AppendHandlers(
+					CombineHandlers(
+						VerifyRequest(http.MethodPost, "/v2/service_instances", "accepts_incomplete=true"),
+						VerifyJSONRepresenting(requestBody),
+						RespondWith(http.StatusOK, response, http.Header{"X-Cf-Warnings": {"warning-1,warning-2"}}),
+					),
+				)
+			})
+
+			It("returns the service instance and all warnings", func() {
+				serviceInstance, warnings, err := client.CreateServiceInstance(spaceGUID, servicePlanGUID, serviceInstance, parameters, tags)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(warnings).To(ConsistOf(Warnings{"warning-1", "warning-2"}))
+				Expect(serviceInstance).To(Equal(ServiceInstance{
+					GUID:            "service-instance-guid",
+					Name:            "my-service-instance",
+					SpaceGUID:       "space-guid",
+					ServicePlanGUID: "service-plan-guid",
+					ServiceGUID:     "",
+					Type:            "managed_service_instance",
+					Tags:            []string{"a-tag", "another-tag"},
+					DashboardURL:    "http://dashboard.url",
+					LastOperation: LastOperation{
+						Type:        "create",
+						State:       "in progress",
+						Description: "",
+						UpdatedAt:   "2016-06-08T16:41:26Z",
+						CreatedAt:   "2016-06-08T16:41:29Z",
+					},
+				}))
+			})
+		})
+
+		When("the endpoint returns an error", func() {
+			BeforeEach(func() {
+				response := `{
+								"code": 10003,
+								"description": "You are not authorized to perform the requested action"
+							}`
+
+				server.AppendHandlers(
+					CombineHandlers(
+						VerifyRequest(http.MethodPost, "/v2/service_instances"),
+						RespondWith(http.StatusForbidden, response, http.Header{"X-Cf-Warnings": {"warning-1, warning-2"}}),
+					))
+			})
+
+			It("returns all warnings and propagates the error", func() {
+				_, warnings, err := client.CreateServiceInstance("space-GUID", "service-plan-GUID", "service-instance", map[string]interface{}{}, []string{})
+				Expect(err).To(MatchError(ccerror.ForbiddenError{
+					Message: "You are not authorized to perform the requested action",
+				}))
+				Expect(warnings).To(ConsistOf("warning-1", "warning-2"))
+			})
+		})
+	})
+
 	Describe("ServiceInstance", func() {
 		Describe("Managed", func() {
 			When("type is MANAGED_SERVICE", func() {
@@ -138,6 +241,7 @@ var _ = Describe("Service Instance", func() {
 						"tag-2"
 					],
 					"dashboard_url": "some-dashboard-url",
+					"route_service_url": "some-route-service-url",
 					"last_operation": {
 						"type": "create",
 						"state": "succeeded",
@@ -170,6 +274,7 @@ var _ = Describe("Service Instance", func() {
 					Type:            constant.ServiceInstanceTypeManagedService,
 					Tags:            []string{"tag-1", "tag-2"},
 					DashboardURL:    "some-dashboard-url",
+					RouteServiceURL: "some-route-service-url",
 					LastOperation: LastOperation{
 						Type:        "create",
 						State:       "succeeded",
@@ -195,7 +300,7 @@ var _ = Describe("Service Instance", func() {
 						"entity": {
 							"name": "some-service-name-1",
 							"space_guid": "some-space-guid",
-					"service_guid": "some-service-guid",
+							"service_guid": "some-service-guid",
 							"type": "managed_service_instance"
 						}
 					},
@@ -495,6 +600,7 @@ var _ = Describe("Service Instance", func() {
 						},
 						"entity": {
 							"name": "some-service-name-1",
+							"route_service_url": "some-route-service-url",
 							"space_guid": "some-space-guid",
 							"type": "user_provided_service_instance"
 						}
@@ -505,6 +611,7 @@ var _ = Describe("Service Instance", func() {
 						},
 						"entity": {
 							"name": "some-service-name-2",
+							"route_service_url": "some-route-service-url",
 							"space_guid": "some-space-guid",
 							"type": "user_provided_service_instance"
 						}
@@ -521,6 +628,7 @@ var _ = Describe("Service Instance", func() {
 						},
 						"entity": {
 							"name": "some-service-name-3",
+							"route_service_url": "some-route-service-url",
 							"space_guid": "some-space-guid",
 							"type": "user_provided_service_instance"
 						}
@@ -531,6 +639,7 @@ var _ = Describe("Service Instance", func() {
 						},
 						"entity": {
 							"name": "some-service-name-4",
+							"route_service_url": "some-route-service-url",
 							"space_guid": "some-space-guid",
 							"type": "user_provided_service_instance"
 						}
@@ -558,28 +667,32 @@ var _ = Describe("Service Instance", func() {
 
 				Expect(serviceInstances).To(ConsistOf([]ServiceInstance{
 					{
-						Name:      "some-service-name-1",
-						GUID:      "some-service-guid-1",
-						SpaceGUID: "some-space-guid",
-						Type:      constant.ServiceInstanceTypeUserProvidedService,
+						Name:            "some-service-name-1",
+						GUID:            "some-service-guid-1",
+						SpaceGUID:       "some-space-guid",
+						RouteServiceURL: "some-route-service-url",
+						Type:            constant.ServiceInstanceTypeUserProvidedService,
 					},
 					{
-						Name:      "some-service-name-2",
-						GUID:      "some-service-guid-2",
-						SpaceGUID: "some-space-guid",
-						Type:      constant.ServiceInstanceTypeUserProvidedService,
+						Name:            "some-service-name-2",
+						GUID:            "some-service-guid-2",
+						SpaceGUID:       "some-space-guid",
+						RouteServiceURL: "some-route-service-url",
+						Type:            constant.ServiceInstanceTypeUserProvidedService,
 					},
 					{
-						Name:      "some-service-name-3",
-						GUID:      "some-service-guid-3",
-						SpaceGUID: "some-space-guid",
-						Type:      constant.ServiceInstanceTypeUserProvidedService,
+						Name:            "some-service-name-3",
+						GUID:            "some-service-guid-3",
+						SpaceGUID:       "some-space-guid",
+						RouteServiceURL: "some-route-service-url",
+						Type:            constant.ServiceInstanceTypeUserProvidedService,
 					},
 					{
-						Name:      "some-service-name-4",
-						GUID:      "some-service-guid-4",
-						SpaceGUID: "some-space-guid",
-						Type:      constant.ServiceInstanceTypeUserProvidedService,
+						Name:            "some-service-name-4",
+						GUID:            "some-service-guid-4",
+						SpaceGUID:       "some-space-guid",
+						RouteServiceURL: "some-route-service-url",
+						Type:            constant.ServiceInstanceTypeUserProvidedService,
 					},
 				}))
 

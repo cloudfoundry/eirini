@@ -9,4 +9,5 @@ type DB interface {
 	LRPDB
 	TaskDB
 	VersionDB
+	SuspectDB
 }

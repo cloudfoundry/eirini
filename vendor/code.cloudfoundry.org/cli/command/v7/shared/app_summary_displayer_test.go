@@ -228,13 +228,13 @@ var _ = Describe("app summary displayer", func() {
 							{
 								Process: v7action.Process{
 									Type:    constant.ProcessTypeWeb,
-									Command: "some-command-1",
+									Command: *types.NewFilteredString("some-command-1"),
 								},
 							},
 							{
 								Process: v7action.Process{
 									Type:    "console",
-									Command: "some-command-2",
+									Command: *types.NewFilteredString("some-command-2"),
 								},
 							},
 							{
@@ -469,7 +469,7 @@ var _ = Describe("app summary displayer", func() {
 				summary = v7action.ApplicationSummary{
 					CurrentDroplet: v7action.Droplet{
 						Stack: "cflinuxfs2",
-						Buildpacks: []v7action.Buildpack{
+						Buildpacks: []v7action.DropletBuildpack{
 							{
 								Name:         "ruby_buildpack",
 								DetectOutput: "some-detect-output",

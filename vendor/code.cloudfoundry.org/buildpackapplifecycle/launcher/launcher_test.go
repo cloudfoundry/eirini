@@ -179,6 +179,41 @@ var _ = Describe("Launcher", func() {
 				Eventually(session).Should(gbytes.Say("C=11"))
 				Eventually(session).Should(gbytes.Say("running app"))
 			})
+
+			Context("hello is on path", func() {
+				var err error
+
+				BeforeEach(func() {
+					profileDir := filepath.Join(appDir, ".profile.d")
+
+					err = os.MkdirAll(profileDir, 0755)
+					Expect(err).NotTo(HaveOccurred())
+
+					destDir := filepath.Join(appDir, "tmp")
+					Expect(os.MkdirAll(destDir, 0777)).To(Succeed())
+					Expect(copyExe(destDir, hello)).To(Succeed())
+
+					if runtime.GOOS == "windows" {
+						err = ioutil.WriteFile(filepath.Join(profileDir, "a.bat"), []byte(fmt.Sprintf("@echo off\necho sourcing a.bat\nset PATH=%%PATH%%;%s\n", destDir)), 0644)
+						Expect(err).NotTo(HaveOccurred())
+					} else {
+						err = ioutil.WriteFile(filepath.Join(profileDir, "a.sh"), []byte(fmt.Sprintf("echo sourcing a.sh\nexport PATH=$PATH:%s\n", destDir)), 0644)
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+					launcherCmd.Args = []string{
+						"launcher",
+						appDir,
+						"hello",
+						`{ "start_command": "echo should not run this" }`,
+					}
+				})
+
+				It("finds the app executable", func() {
+					Eventually(session).Should(gexec.Exit(0))
+					Expect(string(session.Out.Contents())).To(ContainSubstring("app is running"))
+				})
+			})
 		})
 
 		Context("when the given dir does not have .profile.d", func() {

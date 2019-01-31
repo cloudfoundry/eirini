@@ -10,9 +10,10 @@ import (
 
 type EventController interface {
 	Subscribe_r0(logger lager.Logger, w http.ResponseWriter, req *http.Request)
+	Subscribe_r1(logger lager.Logger, w http.ResponseWriter, req *http.Request)
 }
 
-type EventHandler struct {
+type LRPGroupEventsHandler struct {
 	desiredHub events.Hub
 	actualHub  events.Hub
 }
@@ -21,8 +22,13 @@ type TaskEventHandler struct {
 	taskHub events.Hub
 }
 
-func NewEventHandler(desiredHub, actualHub events.Hub) *EventHandler {
-	return &EventHandler{
+type LRPInstanceEventHandler struct {
+	desiredHub     events.Hub
+	lrpInstanceHub events.Hub
+}
+
+func NewLRPGroupEventsHandler(desiredHub, actualHub events.Hub) *LRPGroupEventsHandler {
+	return &LRPGroupEventsHandler{
 		desiredHub: desiredHub,
 		actualHub:  actualHub,
 	}
@@ -31,6 +37,13 @@ func NewEventHandler(desiredHub, actualHub events.Hub) *EventHandler {
 func NewTaskEventHandler(taskHub events.Hub) *TaskEventHandler {
 	return &TaskEventHandler{
 		taskHub: taskHub,
+	}
+}
+
+func NewLRPInstanceEventHandler(desiredHub, lrpInstanceHub events.Hub) *LRPInstanceEventHandler {
+	return &LRPInstanceEventHandler{
+		desiredHub:     desiredHub,
+		lrpInstanceHub: lrpInstanceHub,
 	}
 }
 

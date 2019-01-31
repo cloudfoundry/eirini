@@ -12,10 +12,14 @@ import (
 )
 
 var _ = Describe("Encryption", func() {
-	var task *models.Task
+	var (
+		task         *models.Task
+		expectedTask *models.Task
+	)
 
 	BeforeEach(func() {
 		task = model_helpers.NewValidTask("task-1")
+		expectedTask = task.Copy()
 	})
 
 	JustBeforeEach(func() {
@@ -38,15 +42,17 @@ var _ = Describe("Encryption", func() {
 			It("can write/read to the database", func() {
 				tasks, err := client.Tasks(logger)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(tasks).To(ContainElement(MatchTask(task)))
+				Expect(tasks).To(ContainElement(MatchTask(expectedTask)))
 			})
 		})
 
 		Context("when provided a multiple encryption keys", func() {
-			var oldTask *models.Task
+			var expectedOldTask *models.Task
 
 			BeforeEach(func() {
-				oldTask = model_helpers.NewValidTask("old-task")
+				oldTask := model_helpers.NewValidTask("old-task")
+				expectedOldTask = oldTask.Copy()
+				expectedOldTask = oldTask
 
 				bbsConfig.ActiveKeyLabel = "oldkey"
 				bbsConfig.EncryptionKeys = map[string]string{"oldkey": "old phrase"}
@@ -68,8 +74,8 @@ var _ = Describe("Encryption", func() {
 			It("can read data that was written with old/new keys", func() {
 				tasks, err := client.Tasks(logger)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(tasks).To(ContainElement(MatchTask(oldTask)))
-				Expect(tasks).To(ContainElement(MatchTask(task)))
+				Expect(tasks).To(ContainElement(MatchTask(expectedOldTask)))
+				Expect(tasks).To(ContainElement(MatchTask(expectedTask)))
 			})
 
 			It("doesn't need the oldkey after migrating", func() {
@@ -83,8 +89,8 @@ var _ = Describe("Encryption", func() {
 
 				tasks, err := client.Tasks(logger)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(tasks).To(ContainElement(MatchTask(oldTask)))
-				Expect(tasks).To(ContainElement(MatchTask(task)))
+				Expect(tasks).To(ContainElement(MatchTask(expectedOldTask)))
+				Expect(tasks).To(ContainElement(MatchTask(expectedTask)))
 			})
 		})
 	})

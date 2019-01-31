@@ -34,40 +34,10 @@ var _ = Describe("Encoding", func() {
 	})
 
 	Describe("Encode", func() {
-		Describe("LEGACY_UNENCODED", func() {
-			It("returns the payload back", func() {
-				payload := []byte("some-payload")
-				encoded, err := encoder.Encode(format.LEGACY_UNENCODED, payload)
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(encoded).To(Equal(payload))
-			})
-		})
-
-		Describe("UNENCODED", func() {
-			It("returns the payload back with an encoding type prefix", func() {
-				payload := []byte("some-payload")
-				encoded, err := encoder.Encode(format.UNENCODED, payload)
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(encoded).To(Equal(append([]byte("00"), payload...)))
-			})
-		})
-
-		Describe("BASE64", func() {
-			It("returns the base64 encoded payload with an encoding type prefix", func() {
-				payload := []byte("some-payload")
-				encoded, err := encoder.Encode(format.BASE64, payload)
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(encoded).To(Equal([]byte("01c29tZS1wYXlsb2Fk")))
-			})
-		})
-
 		Describe("BASE64_ENCRYPTED", func() {
 			It("returns the base64 encoded ciphertext with an encoding type prefix", func() {
 				payload := []byte("some-payload")
-				encoded, err := encoder.Encode(format.BASE64_ENCRYPTED, payload)
+				encoded, err := encoder.Encode(payload)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(encoded[0:2]).To(Equal(format.BASE64_ENCRYPTED[:]))
@@ -109,60 +79,14 @@ var _ = Describe("Encoding", func() {
 
 				It("it returns the error", func() {
 					payload := []byte("some-payload")
-					_, err := encoder.Encode(format.BASE64_ENCRYPTED, payload)
+					_, err := encoder.Encode(payload)
 					Expect(err).To(MatchError("boom"))
 				})
-			})
-		})
-
-		Describe("unkown encoding", func() {
-			It("fails with an unknown encoding error", func() {
-				payload := []byte("some-payload")
-				_, err := encoder.Encode(format.Encoding([2]byte{'9', '9'}), payload)
-
-				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
 
 	Describe("Decode", func() {
-		Describe("LEGACY_UNENCODED", func() {
-			It("returns the payload back", func() {
-				payload := []byte("some-payload")
-				decoded, err := encoder.Decode(payload)
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(decoded).To(Equal(payload))
-			})
-		})
-
-		Describe("UNENCODED", func() {
-			It("returns the payload back without an encoding type prefix", func() {
-				payload := []byte("some-payload")
-				decoded, err := encoder.Decode(append([]byte("00"), payload...))
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(decoded).To(Equal(payload))
-			})
-		})
-
-		Describe("BASE64", func() {
-			It("returns the base64 decoded payload without an encoding type prefix", func() {
-				payload := []byte("01c29tZS1wYXlsb2Fk")
-				decoded, err := encoder.Decode(payload)
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(decoded).To(Equal([]byte("some-payload")))
-			})
-
-			It("returns an error if the payload is not valid bas64 encoded", func() {
-				payload := []byte("01c29tZS1wYXl--invalid")
-				_, err := encoder.Decode(payload)
-
-				Expect(err).To(HaveOccurred())
-			})
-		})
-
 		Describe("BASE64_ENCRYPTED", func() {
 			It("returns the decrypted payload without an encoding type prefix", func() {
 				payload := []byte("payload")

@@ -52,7 +52,6 @@ err = client.DesireLRP(logger, &models.DesiredLRP{
     Routes:      &models.Routes{"my-router": json.RawMessage(`{"foo":"bar"}`)},
     LogSource:   "some-log-source",
     LogGuid:     "some-log-guid",
-    MetricsGuid: "some-metrics-guid",
     Annotation:  "some-annotation",
     Network: &models.Network{
       Properties: map[string]string{
@@ -71,9 +70,19 @@ err = client.DesireLRP(logger, &models.DesiredLRP{
     VolumeMounts: []*models.VolumeMount{
       {
         Driver:        "my-driver",
-        VolumeId:      "my-volume",
         ContainerPath: "/mnt/mypath",
         Mode:          models.BindMountMode_RO,
+        Shared: {
+          VolumeId:      "my-volume",
+        },
+      },
+    },
+    MetricTags: map[string]*models.MetricTagValue{
+      "source_id": &models.MetricTagValue{
+	Static: "some-source-id",
+      },
+      "instance_index": &models.MetricTagValue{
+	Dynamic: models.MetricTagDynamicValueIndex,
       },
     },
 })

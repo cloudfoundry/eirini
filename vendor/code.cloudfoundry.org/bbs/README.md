@@ -9,14 +9,14 @@ A general overview of the BBS is documented [here](doc).
 ## API
 
 To interact with the BBS from outside of Diego, use the methods provided on the
-ExternalClient interface, documented [here](https://godoc.org/github.com/cloudfoundry/bbs#ExternalClient).
+[`Client` interface](https://godoc.org/github.com/cloudfoundry/bbs#Client).
 
-Components within Diego may use the full [Client interface](https://godoc.org/github.com/cloudfoundry/bbs#Client) to modify internal state.
+Components within Diego may use the full [`InternalClient`
+interface](https://godoc.org/github.com/cloudfoundry/bbs#InternalClient) to modify internal state.
 
 ## Code Generation
 
-The protobuf models in this repository require version 3 of the `protoc` compiler.
-
+The protobuf models in this repository require version 3.5 or later of the `protoc` compiler.
 
 ### OSX
 
@@ -43,12 +43,11 @@ go install github.com/gogo/protobuf/protoc-gen-gogoslick
 
 Run `go generate ./...` from the root directory of this repository to generate code from the `.proto` files as well as to generate fake implementations of certain interfaces for use in test code.
 
-
 ### Generating ruby models for BBS models
 
 The following documentation assume the following versions:
 
-1. [protoc](https://developers.google.com/protocol-buffers/docs/downloads) `> v3.0.0`
+1. [protoc](https://github.com/google/protobuf/releases) `> v3.5.0`
 2. [ruby protobuf gem](https://github.com/ruby-protobuf/protobuf) `> 3.6.12`
 
 Run the following commands from the `models` directory to generate `.pb.rb`
@@ -75,3 +74,5 @@ it to use the binary. For more information please
 
 See the instructions in [Running the Experimental SQL Unit Tests](https://github.com/cloudfoundry/diego-release/blob/develop/CONTRIBUTING.md#running-the-experimental-sql-unit-tests)
 for testing against a SQL backend
+
+See [Migrations](https://github.com/cloudfoundry/bbs/blob/master/doc/bbs-migration.md) for information about writing database migrations.

@@ -778,7 +778,7 @@ var _ = Describe("push Command", func() {
 													{
 														Process: v3action.Process{
 															Type:       "aba",
-															Command:    "some-command-1",
+															Command:    *types.NewFilteredString("some-command-1"),
 															MemoryInMB: types.NullUint64{Value: 32, IsSet: true},
 															DiskInMB:   types.NullUint64{Value: 1024, IsSet: true},
 														},
@@ -786,7 +786,7 @@ var _ = Describe("push Command", func() {
 													{
 														Process: v3action.Process{
 															Type:       "console",
-															Command:    "some-command-2",
+															Command:    *types.NewFilteredString("some-command-2"),
 															MemoryInMB: types.NullUint64{Value: 16, IsSet: true},
 															DiskInMB:   types.NullUint64{Value: 512, IsSet: true},
 														},
@@ -1007,7 +1007,7 @@ var _ = Describe("push Command", func() {
 					cmd.Command = flag.Command{FilteredString: types.FilteredString{IsSet: true, Value: "echo foo bar baz"}}
 					cmd.DiskQuota = flag.Megabytes{NullUint64: types.NullUint64{Value: 1024, IsSet: true}}
 					cmd.HealthCheckTimeout = 14
-					cmd.HealthCheckType = flag.HealthCheckType{Type: "http"}
+					cmd.HealthCheckType = flag.HealthCheckTypeWithDeprecatedValue{Type: "http"}
 					cmd.Instances = flag.Instances{NullInt: types.NullInt{Value: 12, IsSet: true}}
 					cmd.Memory = flag.Megabytes{NullUint64: types.NullUint64{Value: 100, IsSet: true}}
 					cmd.StackName = "some-stack"

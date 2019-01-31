@@ -21,7 +21,7 @@ var _ = Describe("enhanced BBS client debug logging", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(logger).Should(gbytes.Say("request_name"))
-			Eventually(logger).Should(gbytes.Say(bbs.TasksRoute))
+			Eventually(logger).Should(gbytes.Say(bbs.TasksRoute_r3))
 		})
 	})
 
@@ -34,7 +34,7 @@ var _ = Describe("enhanced BBS client debug logging", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(logger).Should(gbytes.Say("request_path"))
-			Eventually(logger).Should(gbytes.Say(routePath(bbs.TasksRoute)))
+			Eventually(logger).Should(gbytes.Say(routePath(bbs.TasksRoute_r3)))
 		})
 	})
 
@@ -47,7 +47,7 @@ var _ = Describe("enhanced BBS client debug logging", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(logger).Should(gbytes.Say("request_path"))
-			Eventually(logger).Should(gbytes.Say(routePath(bbs.TasksRoute)))
+			Eventually(logger).Should(gbytes.Say(routePath(bbs.TasksRoute_r3)))
 			Eventually(logger).Should(gbytes.Say("duration_in_ns"))
 		})
 	})

@@ -9,6 +9,7 @@ import (
 	"code.cloudfoundry.org/bbs/db/sqldb"
 	"code.cloudfoundry.org/bbs/db/sqldb/fakesqldriver/fakesqldriverfakes"
 	"code.cloudfoundry.org/bbs/db/sqldb/helpers"
+	"code.cloudfoundry.org/bbs/db/sqldb/helpers/monitor"
 	"code.cloudfoundry.org/bbs/encryption"
 	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/guidprovider/guidproviderfakes"
@@ -76,5 +77,6 @@ var _ = BeforeEach(func() {
 	cryptor = encryption.NewCryptor(keyManager, rand.Reader)
 	serializer = format.NewSerializer(cryptor)
 
-	sqlDB = sqldb.NewSQLDB(db, 5, 5, format.ENCRYPTED_PROTO, cryptor, fakeGUIDProvider, fakeClock, helpers.MySQL, fakeMetronClient)
+	helperDB := helpers.NewMonitoredDB(db, monitor.New())
+	sqlDB = sqldb.NewSQLDB(helperDB, 5, 5, cryptor, fakeGUIDProvider, fakeClock, helpers.MySQL, fakeMetronClient)
 })

@@ -339,17 +339,13 @@ var _ = Describe("scale Command", func() {
 							Expect(err).ToNot(HaveOccurred())
 						})
 
-						When("polling succeeds", func() {
+						When("polling succeeds and the app has running instances", func() {
 							BeforeEach(func() {
-								fakeActor.PollStartStub = func(appGUID string, warnings chan<- v7action.Warnings) error {
-									warnings <- v7action.Warnings{"some-poll-warning-1", "some-poll-warning-2"}
-									return nil
-								}
+								fakeActor.PollStartReturns(v7action.Warnings{"some-poll-warning-1", "some-poll-warning-2"}, nil)
 							})
 
 							It("delegates the right appGUID", func() {
-								actualGUID, _ := fakeActor.PollStartArgsForCall(0)
-								Expect(actualGUID).To(Equal("some-app-guid"))
+								Expect(fakeActor.PollStartArgsForCall(0)).To(Equal("some-app-guid"))
 							})
 
 							When("Restarting the app fails to stop the app", func() {
@@ -450,17 +446,37 @@ var _ = Describe("scale Command", func() {
 							})
 						})
 
-						When("polling the start fails", func() {
+						When("polling succeeds but all the app's instances have crashed", func() {
 							BeforeEach(func() {
-								fakeActor.PollStartStub = func(appGUID string, warnings chan<- v7action.Warnings) error {
-									warnings <- v7action.Warnings{"some-poll-warning-1", "some-poll-warning-2"}
-									return errors.New("some-error")
-								}
+								fakeActor.PollStartReturns(v7action.Warnings{"some-poll-warning-1", "some-poll-warning-2"}, actionerror.AllInstancesCrashedError{})
 							})
 
 							It("delegates the right appGUID", func() {
-								actualGUID, _ := fakeActor.PollStartArgsForCall(0)
-								Expect(actualGUID).To(Equal("some-app-guid"))
+								Expect(fakeActor.PollStartArgsForCall(0)).To(Equal("some-app-guid"))
+							})
+
+							It("displays the process table", func() {
+								Expect(testUI.Out).To(Say("Showing current scale of app " + appName))
+							})
+
+							It("displays all warnings and fails", func() {
+								Expect(testUI.Err).To(Say("some-poll-warning-1"))
+								Expect(testUI.Err).To(Say("some-poll-warning-2"))
+
+								Expect(executeErr).To(MatchError(translatableerror.ApplicationUnableToStartError{
+									AppName:    appName,
+									BinaryName: binaryName,
+								}))
+							})
+						})
+
+						When("polling the start fails", func() {
+							BeforeEach(func() {
+								fakeActor.PollStartReturns(v7action.Warnings{"some-poll-warning-1", "some-poll-warning-2"}, errors.New("some-error"))
+							})
+
+							It("delegates the right appGUID", func() {
+								Expect(fakeActor.PollStartArgsForCall(0)).To(Equal("some-app-guid"))
 							})
 
 							It("displays all warnings and fails", func() {
@@ -473,12 +489,11 @@ var _ = Describe("scale Command", func() {
 
 						When("polling times out", func() {
 							BeforeEach(func() {
-								fakeActor.PollStartReturns(actionerror.StartupTimeoutError{})
+								fakeActor.PollStartReturns(nil, actionerror.StartupTimeoutError{})
 							})
 
 							It("delegates the right appGUID", func() {
-								actualGUID, _ := fakeActor.PollStartArgsForCall(0)
-								Expect(actualGUID).To(Equal("some-app-guid"))
+								Expect(fakeActor.PollStartArgsForCall(0)).To(Equal("some-app-guid"))
 							})
 
 							It("returns the StartupTimeoutError", func() {

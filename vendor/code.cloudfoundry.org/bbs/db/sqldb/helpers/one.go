@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -17,7 +16,7 @@ func (h *sqlHelper) One(
 	lockRow RowLock,
 	wheres string,
 	whereBindings ...interface{},
-) *sql.Row {
+) RowScanner {
 	query := fmt.Sprintf("SELECT %s FROM %s\n", strings.Join(columns, ", "), table)
 
 	if len(wheres) > 0 {

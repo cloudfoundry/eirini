@@ -2,9 +2,7 @@ package migrations
 
 import (
 	"database/sql"
-	"errors"
 
-	"code.cloudfoundry.org/bbs/db/etcd"
 	"code.cloudfoundry.org/bbs/encryption"
 	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/migration"
@@ -13,15 +11,14 @@ import (
 )
 
 func init() {
-	AppendMigration(NewAddPlacementTagsToDesiredLRPs())
+	appendMigration(NewAddPlacementTagsToDesiredLRPs())
 }
 
 type AddPlacementTagsToDesiredLRPs struct {
-	serializer  format.Serializer
-	storeClient etcd.StoreClient
-	clock       clock.Clock
-	rawSQLDB    *sql.DB
-	dbFlavor    string
+	serializer format.Serializer
+	clock      clock.Clock
+	rawSQLDB   *sql.DB
+	dbFlavor   string
 }
 
 func NewAddPlacementTagsToDesiredLRPs() migration.Migration {
@@ -29,15 +26,11 @@ func NewAddPlacementTagsToDesiredLRPs() migration.Migration {
 }
 
 func (e *AddPlacementTagsToDesiredLRPs) String() string {
-	return "1472757022"
+	return migrationString(e)
 }
 
 func (e *AddPlacementTagsToDesiredLRPs) Version() int64 {
 	return 1472757022
-}
-
-func (e *AddPlacementTagsToDesiredLRPs) SetStoreClient(storeClient etcd.StoreClient) {
-	e.storeClient = storeClient
 }
 
 func (e *AddPlacementTagsToDesiredLRPs) SetCryptor(cryptor encryption.Cryptor) {
@@ -48,7 +41,6 @@ func (e *AddPlacementTagsToDesiredLRPs) SetRawSQLDB(db *sql.DB) {
 	e.rawSQLDB = db
 }
 
-func (e *AddPlacementTagsToDesiredLRPs) RequiresSQL() bool         { return true }
 func (e *AddPlacementTagsToDesiredLRPs) SetClock(c clock.Clock)    { e.clock = c }
 func (e *AddPlacementTagsToDesiredLRPs) SetDBFlavor(flavor string) { e.dbFlavor = flavor }
 
@@ -66,7 +58,3 @@ func (e *AddPlacementTagsToDesiredLRPs) Up(logger lager.Logger) error {
 
 const alterDesiredLRPAddPlacementTagSQL = `ALTER TABLE desired_lrps
 	ADD COLUMN placement_tags TEXT;`
-
-func (e *AddPlacementTagsToDesiredLRPs) Down(logger lager.Logger) error {
-	return errors.New("not implemented")
-}

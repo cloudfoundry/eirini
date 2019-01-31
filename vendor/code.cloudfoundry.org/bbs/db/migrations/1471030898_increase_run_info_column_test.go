@@ -12,8 +12,7 @@ import (
 
 var _ = Describe("Increase Run Info Column Migration", func() {
 	var (
-		migration    migration.Migration
-		migrationErr error
+		migration migration.Migration
 	)
 
 	BeforeEach(func() {
@@ -26,7 +25,7 @@ var _ = Describe("Increase Run Info Column Migration", func() {
 	})
 
 	It("appends itself to the migration list", func() {
-		Expect(migrations.Migrations).To(ContainElement(migration))
+		Expect(migrations.AllMigrations()).To(ContainElement(migration))
 	})
 
 	Describe("Version", func() {
@@ -41,10 +40,6 @@ var _ = Describe("Increase Run Info Column Migration", func() {
 			// as the test on line 37 will cause ginkgo to panic
 			migration.SetRawSQLDB(rawSQLDB)
 			migration.SetDBFlavor(flavor)
-		})
-
-		JustBeforeEach(func() {
-			migrationErr = migration.Up(logger)
 		})
 
 		BeforeEach(func() {
@@ -70,21 +65,16 @@ var _ = Describe("Increase Run Info Column Migration", func() {
 			}
 		})
 
-		It("does not error out", func() {
-			Expect(migrationErr).NotTo(HaveOccurred())
-		})
-
 		It("should change the size of all text columns ", func() {
+			Expect(migration.Up(logger)).To(Succeed())
 			value := strings.Repeat("x", 65536*2)
 			query := helpers.RebindForFlavor("insert into desired_lrps(annotation, routes, volume_placement, run_info) values('', '', '', ?)", flavor)
 			_, err := rawSQLDB.Exec(query, value)
 			Expect(err).NotTo(HaveOccurred())
 		})
-	})
 
-	Describe("Down", func() {
-		It("returns a not implemented error", func() {
-			Expect(migration.Down(logger)).To(HaveOccurred())
+		It("is idempotent", func() {
+			testIdempotency(rawSQLDB, migration, logger)
 		})
 	})
 })

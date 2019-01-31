@@ -19,17 +19,16 @@
 package test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
-	"google.golang.org/grpc/internal/leakcheck"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/resolver"
 	testpb "google.golang.org/grpc/test/grpc_testing"
@@ -68,7 +67,7 @@ func (b *testBalancer) HandleResolvedAddrs(addrs []resolver.Address, err error) 
 			grpclog.Errorf("testBalancer: failed to NewSubConn: %v", err)
 			return
 		}
-		b.cc.UpdateBalancerState(connectivity.Idle, &picker{sc: b.sc, bal: b})
+		b.cc.UpdateBalancerState(connectivity.Connecting, &picker{sc: b.sc, bal: b})
 		b.sc.Connect()
 	}
 }
@@ -111,13 +110,12 @@ func (p *picker) Pick(ctx context.Context, opts balancer.PickOptions) (balancer.
 	return p.sc, func(d balancer.DoneInfo) { p.bal.doneInfo = append(p.bal.doneInfo, d) }, nil
 }
 
-func TestCredsBundleFromBalancer(t *testing.T) {
+func (s) TestCredsBundleFromBalancer(t *testing.T) {
 	balancer.Register(&testBalancer{
 		newSubConnOptions: balancer.NewSubConnOptions{
 			CredsBundle: &testCredsBundle{},
 		},
 	})
-	defer leakcheck.Check(t)
 	te := newTest(t, env{name: "creds-bundle", network: "tcp", balancer: ""})
 	te.tapHandle = authHandle
 	te.customDialOptions = []grpc.DialOption{
@@ -140,8 +138,7 @@ func TestCredsBundleFromBalancer(t *testing.T) {
 	}
 }
 
-func TestPickAndDone(t *testing.T) {
-	defer leakcheck.Check(t)
+func (s) TestPickAndDone(t *testing.T) {
 	for _, e := range listTestEnv() {
 		testPickAndDone(t, e)
 	}

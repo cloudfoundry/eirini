@@ -27,7 +27,7 @@ var _ = Describe("ServiceRegistration", func() {
 					&api.AgentService{
 						Service: "bbs",
 						ID:      "bbs",
-						Port:    bbsPort,
+						Port:    int(bbsPort),
 					}))
 			})
 

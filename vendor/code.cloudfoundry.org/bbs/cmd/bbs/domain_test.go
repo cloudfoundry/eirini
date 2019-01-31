@@ -4,7 +4,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/bbs/cmd/bbs/testrunner"
-	events "github.com/cloudfoundry/sonde-go/events"
+	"code.cloudfoundry.org/diego-logging-client/testhelpers"
+	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"github.com/tedsuo/ifrit/ginkgomon"
 
 	. "github.com/onsi/ginkgo"
@@ -30,47 +31,30 @@ var _ = Describe("Domain API", func() {
 			err := client.UpsertDomain(logger, existingDomain, 200*time.Second)
 			Expect(err).ToNot(HaveOccurred())
 
-			var sawRequestLatency bool
-			timeout := time.After(50 * time.Millisecond)
-		OUTER_LOOP:
-			for {
-				select {
-				case envelope := <-testMetricsChan:
-					if envelope.GetEventType() == events.Envelope_ValueMetric {
-						if *envelope.ValueMetric.Name == "RequestLatency" {
-							sawRequestLatency = true
-						}
-					}
-				case <-timeout:
-					break OUTER_LOOP
-				}
-			}
-			Expect(sawRequestLatency).To(BeTrue())
+			Eventually(testMetricsChan).Should(Receive(testhelpers.MatchV2Metric(testhelpers.MetricAndValue{
+				Name: "RequestLatency",
+			})))
 		})
 
 		It("emits request counting metrics", func() {
 			err := client.UpsertDomain(logger, existingDomain, 200*time.Second)
 			Expect(err).ToNot(HaveOccurred())
 
-			timeout := time.After(50 * time.Millisecond)
 			var total uint64
-		OUTER_LOOP:
-			for {
-				select {
-				case envelope := <-testMetricsChan:
-					By("receive event")
-					if envelope.GetEventType() == events.Envelope_CounterEvent {
-						counter := envelope.CounterEvent
-						if *counter.Name == "RequestCount" {
-							total += *counter.Delta
-						}
-					}
-				case <-timeout:
-					break OUTER_LOOP
-				}
-			}
-
-			Expect(total).To(BeEquivalentTo(2))
+			Eventually(testMetricsChan).Should(Receive(
+				SatisfyAll(
+					WithTransform(func(source *loggregator_v2.Envelope) *loggregator_v2.Counter {
+						return source.GetCounter()
+					}, Not(BeNil())),
+					WithTransform(func(source *loggregator_v2.Envelope) string {
+						return source.GetCounter().Name
+					}, Equal("RequestCount")),
+					WithTransform(func(source *loggregator_v2.Envelope) uint64 {
+						total += source.GetCounter().Delta
+						return total
+					}, BeEquivalentTo(2)),
+				),
+			))
 		})
 
 		It("updates the TTL when updating an existing domain", func() {

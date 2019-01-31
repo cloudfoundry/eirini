@@ -173,7 +173,7 @@ resources:
     uri: git@github.com:cloudfoundry/cli-pools
     private_key: ((cli-pools-github-private-key))
     branch: master
-    pool: moldy-gnocchi
+    pool: kloesse
 
 - name: cf-cli-tracker
   type: tracker
@@ -186,7 +186,7 @@ resources:
   type: docker-image
   source:
     repository: golang
-    tag: 1.9
+    tag: 1.11
 
 - name: baseimage
   type: docker-image
@@ -280,6 +280,7 @@ jobs:
              OS X unit tests failed :(
              $ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
     - task: units-windows
+      tags: ["cli-windows"]
       file: cli-ci/ci/cli/tasks/units-windows.yml
       on_failure:
          put: slack-alert
@@ -368,7 +369,6 @@ jobs:
         CF_INT_DOCKER_USERNAME: ((dockerhub-username))
         CF_INT_DOCKER_PASSWORD: ((dockerhub-password))
         CF_INT_IGNORE_API_VERSION_CHECK: false
-        HONEYCOMB_WRITE_KEY: ((honeycomb-writer-key))
   ensure:
     put: gcp-bosh-pool
     params:
@@ -393,6 +393,7 @@ jobs:
     - task: cleanup-integration
       file: cli-ci/ci/cli/tasks/cleanup-integration.yml
     - task: integration
+      tags: ["cli-windows"]
       file: cli-ci/ci/cli/tasks/integration-windows.yml
       params:
         <<: *integration_params
@@ -432,6 +433,7 @@ jobs:
     - task: cleanup-integration
       file: cli-ci/ci/cli/tasks/cleanup-integration.yml
     - task: integration-windows
+      tags: ["cli-windows"]
       file: cli-ci/ci/cli/tasks/integration-experimental-windows.yml
       params:
         <<: *integration_params
@@ -484,15 +486,11 @@ jobs:
   - do:
     - task: cleanup-integration
       file: cli-ci/ci/cli/tasks/cleanup-integration.yml
-      params:
-        ARGS: unbind-first
     - task: integration
       file: cli-ci/ci/cli/tasks/integration-linux.yml
       params:
         <<: *integration_params
-        CF_INT_IGNORE_API_VERSION_CHECK: false
         NODES: 12
-        HONEYCOMB_DATASET: "Integration Legacy"
       on_failure:
         put: slack-alert
         params:
@@ -503,8 +501,6 @@ jobs:
       ensure:
         task: cleanup-integration
         file: cli-ci/ci/cli/tasks/cleanup-integration.yml
-        params:
-          ARGS: unbind-first
   ensure:
     put: legacy-gcp-bosh-pool
     params:
@@ -536,6 +532,7 @@ jobs:
            channel: '#cli-eng'
            text: "create unix installers failed :("
     - task: windows
+      tags: ["cli-windows"]
       file: cli-ci/ci/cli/tasks/create-installers-windows.yml
       on_failure:
          put: slack-alert

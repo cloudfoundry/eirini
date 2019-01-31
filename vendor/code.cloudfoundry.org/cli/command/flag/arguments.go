@@ -167,7 +167,7 @@ type CopySourceArgs struct {
 }
 
 type CreateServiceArgs struct {
-	ServiceOffering string `positional-arg-name:"SERVICE" required:"true" description:"The service offering"`
+	Service         string `positional-arg-name:"SERVICE" required:"true" description:"The service offering"`
 	ServicePlan     string `positional-arg-name:"SERVICE_PLAN" required:"true" description:"The service plan that the service instance will use"`
 	ServiceInstance string `positional-arg-name:"SERVICE_INSTANCE" required:"true" description:"The service instance"`
 }
@@ -212,9 +212,14 @@ type SetSpaceQuotaArgs struct {
 	SpaceQuota string `positional-arg-name:"SPACE_QUOTA" required:"true" description:"The space quota"`
 }
 
+type V6SetHealthCheckArgs struct {
+	AppName     string                             `positional-arg-name:"APP_NAME" required:"true" description:"The application name"`
+	HealthCheck HealthCheckTypeWithDeprecatedValue `positional-arg-name:"HEALTH_CHECK_TYPE" required:"true" description:"Set to 'port' or 'none'"`
+}
+
 type SetHealthCheckArgs struct {
 	AppName     string          `positional-arg-name:"APP_NAME" required:"true" description:"The application name"`
-	HealthCheck HealthCheckType `positional-arg-name:"HEALTH_CHECK_TYPE" required:"true" description:"Set to 'port' or 'none'"`
+	HealthCheck HealthCheckType `positional-arg-name:"HEALTH_CHECK_TYPE" required:"true" description:"Set to 'port'"`
 }
 
 type CreateBuildpackArgs struct {

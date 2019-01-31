@@ -66,6 +66,12 @@ func main() {
 			}
 			cmd.SetClient(client)
 		}
+
+		if len(args) != 0 {
+			parser.WriteHelp(os.Stderr)
+			os.Exit(1)
+		}
+
 		return command.Execute(args)
 	}
 

@@ -4,6 +4,9 @@ package config_test
 
 import (
 	"io/ioutil"
+	"os"
+	"path"
+	"runtime"
 
 	"code.cloudfoundry.org/credhub-cli/config"
 	. "github.com/onsi/ginkgo"
@@ -15,13 +18,63 @@ var _ = Describe("Config", func() {
 
 	BeforeEach(func() {
 		cfg = config.Config{
-			ApiURL:  "http://api.example.com",
-			AuthURL: "http://auth.example.com",
+			ConfigWithoutSecrets: config.ConfigWithoutSecrets{
+				ApiURL:  "http://api.example.com",
+				AuthURL: "http://auth.example.com",
+			},
 		}
 	})
 
 	It("places the config file in .cm in the home directory", func() {
 		Expect(config.ConfigPath()).To(HaveSuffix(`/.credhub/config.json`))
+	})
+
+	Describe("#WriteConfig", func() {
+		var homeDir string
+
+		var _ = BeforeEach(func() {
+			var err error
+			homeDir, err = ioutil.TempDir("", "credhub-cli-test")
+			Expect(err).NotTo(HaveOccurred())
+
+			if runtime.GOOS == "windows" {
+				os.Setenv("USERPROFILE", homeDir)
+			} else {
+				os.Setenv("HOME", homeDir)
+			}
+		})
+
+		var _ = AfterEach(func() {
+			os.RemoveAll(homeDir)
+		})
+
+		It("should not write clientId or clientSecret to disk", func() {
+
+			someClientID := "someClientID"
+			someClientSecret := "someClientSecret"
+
+			cliConfig := config.Config{
+				ConfigWithoutSecrets: config.ConfigWithoutSecrets{
+					ApiURL:             "apiURL",
+					AuthURL:            "authURL",
+					AccessToken:        "accessToken",
+					RefreshToken:       "refreshToken",
+					InsecureSkipVerify: true,
+					CaCerts:            []string{"cert1", "cert2"},
+					ServerVersion:      "version",
+				},
+				ClientID:           someClientID,
+				ClientSecret:       someClientSecret,
+			}
+
+			err := config.WriteConfig(cliConfig)
+			Expect(err).NotTo(HaveOccurred())
+
+			configFile, err := ioutil.ReadFile(path.Join(os.Getenv("HOME"), ".credhub", "config.json"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(configFile)).NotTo(ContainSubstring(someClientID))
+			Expect(string(configFile)).NotTo(ContainSubstring(someClientSecret))
+		})
 	})
 
 	Describe("#UpdateTrustedCAs", func() {

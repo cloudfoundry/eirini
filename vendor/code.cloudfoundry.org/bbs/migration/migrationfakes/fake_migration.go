@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"sync"
 
-	"code.cloudfoundry.org/bbs/db/etcd"
 	"code.cloudfoundry.org/bbs/encryption"
 	"code.cloudfoundry.org/bbs/migration"
 	"code.cloudfoundry.org/clock"
@@ -13,6 +12,15 @@ import (
 )
 
 type FakeMigration struct {
+	StringStub        func() string
+	stringMutex       sync.RWMutex
+	stringArgsForCall []struct{}
+	stringReturns     struct {
+		result1 string
+	}
+	stringReturnsOnCall map[int]struct {
+		result1 string
+	}
 	VersionStub        func() int64
 	versionMutex       sync.RWMutex
 	versionArgsForCall []struct{}
@@ -32,22 +40,6 @@ type FakeMigration struct {
 	}
 	upReturnsOnCall map[int]struct {
 		result1 error
-	}
-	DownStub        func(logger lager.Logger) error
-	downMutex       sync.RWMutex
-	downArgsForCall []struct {
-		logger lager.Logger
-	}
-	downReturns struct {
-		result1 error
-	}
-	downReturnsOnCall map[int]struct {
-		result1 error
-	}
-	SetStoreClientStub        func(storeClient etcd.StoreClient)
-	setStoreClientMutex       sync.RWMutex
-	setStoreClientArgsForCall []struct {
-		storeClient etcd.StoreClient
 	}
 	SetCryptorStub        func(cryptor encryption.Cryptor)
 	setCryptorMutex       sync.RWMutex
@@ -69,17 +61,48 @@ type FakeMigration struct {
 	setDBFlavorArgsForCall []struct {
 		flavor string
 	}
-	RequiresSQLStub        func() bool
-	requiresSQLMutex       sync.RWMutex
-	requiresSQLArgsForCall []struct{}
-	requiresSQLReturns     struct {
-		result1 bool
-	}
-	requiresSQLReturnsOnCall map[int]struct {
-		result1 bool
-	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeMigration) String() string {
+	fake.stringMutex.Lock()
+	ret, specificReturn := fake.stringReturnsOnCall[len(fake.stringArgsForCall)]
+	fake.stringArgsForCall = append(fake.stringArgsForCall, struct{}{})
+	fake.recordInvocation("String", []interface{}{})
+	fake.stringMutex.Unlock()
+	if fake.StringStub != nil {
+		return fake.StringStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.stringReturns.result1
+}
+
+func (fake *FakeMigration) StringCallCount() int {
+	fake.stringMutex.RLock()
+	defer fake.stringMutex.RUnlock()
+	return len(fake.stringArgsForCall)
+}
+
+func (fake *FakeMigration) StringReturns(result1 string) {
+	fake.StringStub = nil
+	fake.stringReturns = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeMigration) StringReturnsOnCall(i int, result1 string) {
+	fake.StringStub = nil
+	if fake.stringReturnsOnCall == nil {
+		fake.stringReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.stringReturnsOnCall[i] = struct {
+		result1 string
+	}{result1}
 }
 
 func (fake *FakeMigration) Version() int64 {
@@ -168,78 +191,6 @@ func (fake *FakeMigration) UpReturnsOnCall(i int, result1 error) {
 	fake.upReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
-}
-
-func (fake *FakeMigration) Down(logger lager.Logger) error {
-	fake.downMutex.Lock()
-	ret, specificReturn := fake.downReturnsOnCall[len(fake.downArgsForCall)]
-	fake.downArgsForCall = append(fake.downArgsForCall, struct {
-		logger lager.Logger
-	}{logger})
-	fake.recordInvocation("Down", []interface{}{logger})
-	fake.downMutex.Unlock()
-	if fake.DownStub != nil {
-		return fake.DownStub(logger)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.downReturns.result1
-}
-
-func (fake *FakeMigration) DownCallCount() int {
-	fake.downMutex.RLock()
-	defer fake.downMutex.RUnlock()
-	return len(fake.downArgsForCall)
-}
-
-func (fake *FakeMigration) DownArgsForCall(i int) lager.Logger {
-	fake.downMutex.RLock()
-	defer fake.downMutex.RUnlock()
-	return fake.downArgsForCall[i].logger
-}
-
-func (fake *FakeMigration) DownReturns(result1 error) {
-	fake.DownStub = nil
-	fake.downReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeMigration) DownReturnsOnCall(i int, result1 error) {
-	fake.DownStub = nil
-	if fake.downReturnsOnCall == nil {
-		fake.downReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.downReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeMigration) SetStoreClient(storeClient etcd.StoreClient) {
-	fake.setStoreClientMutex.Lock()
-	fake.setStoreClientArgsForCall = append(fake.setStoreClientArgsForCall, struct {
-		storeClient etcd.StoreClient
-	}{storeClient})
-	fake.recordInvocation("SetStoreClient", []interface{}{storeClient})
-	fake.setStoreClientMutex.Unlock()
-	if fake.SetStoreClientStub != nil {
-		fake.SetStoreClientStub(storeClient)
-	}
-}
-
-func (fake *FakeMigration) SetStoreClientCallCount() int {
-	fake.setStoreClientMutex.RLock()
-	defer fake.setStoreClientMutex.RUnlock()
-	return len(fake.setStoreClientArgsForCall)
-}
-
-func (fake *FakeMigration) SetStoreClientArgsForCall(i int) etcd.StoreClient {
-	fake.setStoreClientMutex.RLock()
-	defer fake.setStoreClientMutex.RUnlock()
-	return fake.setStoreClientArgsForCall[i].storeClient
 }
 
 func (fake *FakeMigration) SetCryptor(cryptor encryption.Cryptor) {
@@ -338,57 +289,15 @@ func (fake *FakeMigration) SetDBFlavorArgsForCall(i int) string {
 	return fake.setDBFlavorArgsForCall[i].flavor
 }
 
-func (fake *FakeMigration) RequiresSQL() bool {
-	fake.requiresSQLMutex.Lock()
-	ret, specificReturn := fake.requiresSQLReturnsOnCall[len(fake.requiresSQLArgsForCall)]
-	fake.requiresSQLArgsForCall = append(fake.requiresSQLArgsForCall, struct{}{})
-	fake.recordInvocation("RequiresSQL", []interface{}{})
-	fake.requiresSQLMutex.Unlock()
-	if fake.RequiresSQLStub != nil {
-		return fake.RequiresSQLStub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.requiresSQLReturns.result1
-}
-
-func (fake *FakeMigration) RequiresSQLCallCount() int {
-	fake.requiresSQLMutex.RLock()
-	defer fake.requiresSQLMutex.RUnlock()
-	return len(fake.requiresSQLArgsForCall)
-}
-
-func (fake *FakeMigration) RequiresSQLReturns(result1 bool) {
-	fake.RequiresSQLStub = nil
-	fake.requiresSQLReturns = struct {
-		result1 bool
-	}{result1}
-}
-
-func (fake *FakeMigration) RequiresSQLReturnsOnCall(i int, result1 bool) {
-	fake.RequiresSQLStub = nil
-	if fake.requiresSQLReturnsOnCall == nil {
-		fake.requiresSQLReturnsOnCall = make(map[int]struct {
-			result1 bool
-		})
-	}
-	fake.requiresSQLReturnsOnCall[i] = struct {
-		result1 bool
-	}{result1}
-}
-
 func (fake *FakeMigration) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.stringMutex.RLock()
+	defer fake.stringMutex.RUnlock()
 	fake.versionMutex.RLock()
 	defer fake.versionMutex.RUnlock()
 	fake.upMutex.RLock()
 	defer fake.upMutex.RUnlock()
-	fake.downMutex.RLock()
-	defer fake.downMutex.RUnlock()
-	fake.setStoreClientMutex.RLock()
-	defer fake.setStoreClientMutex.RUnlock()
 	fake.setCryptorMutex.RLock()
 	defer fake.setCryptorMutex.RUnlock()
 	fake.setClockMutex.RLock()
@@ -397,8 +306,6 @@ func (fake *FakeMigration) Invocations() map[string][][]interface{} {
 	defer fake.setRawSQLDBMutex.RUnlock()
 	fake.setDBFlavorMutex.RLock()
 	defer fake.setDBFlavorMutex.RUnlock()
-	fake.requiresSQLMutex.RLock()
-	defer fake.requiresSQLMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

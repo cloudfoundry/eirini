@@ -2,6 +2,7 @@ package internal
 
 const (
 	AppsResource              = "apps"
+	BuildpacksResource        = "buildpacks"
 	BuildsResource            = "builds"
 	DeploymentsResource       = "deployments"
 	DropletsResource          = "droplets"
@@ -11,5 +12,6 @@ const (
 	ProcessesResource         = "processes"
 	ServiceInstancesResource  = "service_instances"
 	SpacesResource            = "spaces"
+	StacksResource            = "stacks"
 	TasksResource             = "tasks"
 )

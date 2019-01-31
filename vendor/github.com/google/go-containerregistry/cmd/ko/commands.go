@@ -15,12 +15,13 @@
 package main
 
 import (
-	"bytes"
 	"log"
 	"os"
 	"os/exec"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
 )
 
 // runCmd is suitable for use with cobra.Command's Run field.
@@ -63,9 +64,12 @@ func addKubeCommands(topLevel *cobra.Command) {
 		},
 	})
 
+	koApplyFlags := []string{}
 	lo := &LocalOptions{}
+	bo := &BinaryOptions{}
 	no := &NameOptions{}
 	fo := &FilenameOptions{}
+	ta := &TagsOptions{}
 	apply := &cobra.Command{
 		Use:   "apply -f FILENAME",
 		Short: "Apply the input files with image references resolved to built/pushed image digests.",
@@ -95,30 +99,62 @@ func addKubeCommands(topLevel *cobra.Command) {
   cat config.yaml | ko apply -f -`,
 		Args: cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			// TODO(mattmoor): Use io.Pipe to avoid buffering the whole thing.
-			buf := bytes.NewBuffer(nil)
-			resolveFilesToWriter(fo, no, lo, buf)
+			// Create a set of ko-specific flags to ignore when passing through
+			// kubectl global flags.
+			ignoreSet := make(map[string]struct{})
+			for _, s := range koApplyFlags {
+				ignoreSet[s] = struct{}{}
+			}
+
+			// Filter out ko flags from what we will pass through to kubectl.
+			kubectlFlags := []string{}
+			cmd.Flags().Visit(func(flag *pflag.Flag) {
+				if _, ok := ignoreSet[flag.Name]; !ok {
+					kubectlFlags = append(kubectlFlags, "--"+flag.Name, flag.Value.String())
+				}
+			})
 
 			// Issue a "kubectl apply" command reading from stdin,
 			// to which we will pipe the resolved files.
-			kubectlCmd := exec.Command("kubectl", "apply", "-f", "-")
+			argv := []string{"apply", "-f", "-"}
+			argv = append(argv, kubectlFlags...)
+			kubectlCmd := exec.Command("kubectl", argv...)
 
 			// Pass through our environment
 			kubectlCmd.Env = os.Environ()
 			// Pass through our std{out,err} and make our resolved buffer stdin.
 			kubectlCmd.Stderr = os.Stderr
 			kubectlCmd.Stdout = os.Stdout
-			kubectlCmd.Stdin = buf
+
+			// Wire up kubectl stdin to resolveFilesToWriter.
+			stdin, err := kubectlCmd.StdinPipe()
+			if err != nil {
+				log.Fatalf("error piping to 'kubectl apply': %v", err)
+			}
+			go resolveFilesToWriter(fo, no, lo, ta, stdin)
 
 			// Run it.
 			if err := kubectlCmd.Run(); err != nil {
-				log.Fatalf("error executing \"kubectl apply\": %v", err)
+				log.Fatalf("error executing 'kubectl apply': %v", err)
 			}
 		},
 	}
 	addLocalArg(apply, lo)
 	addNamingArgs(apply, no)
 	addFileArg(apply, fo)
+	addTagsArg(apply, ta)
+
+	// Collect the ko-specific apply flags before registering the kubectl global
+	// flags so that we can ignore them when passing kubectl global flags through
+	// to kubectl.
+	apply.Flags().VisitAll(func(flag *pflag.Flag) {
+		koApplyFlags = append(koApplyFlags, flag.Name)
+	})
+
+	// Register the kubectl global flags.
+	kubeConfigFlags := genericclioptions.NewConfigFlags()
+	kubeConfigFlags.AddFlags(apply.Flags())
+
 	topLevel.AddCommand(apply)
 
 	resolve := &cobra.Command{
@@ -147,12 +183,13 @@ func addKubeCommands(topLevel *cobra.Command) {
   ko resolve --local -f config/`,
 		Args: cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			resolveFilesToWriter(fo, no, lo, os.Stdout)
+			resolveFilesToWriter(fo, no, lo, ta, os.Stdout)
 		},
 	}
 	addLocalArg(resolve, lo)
 	addNamingArgs(resolve, no)
 	addFileArg(resolve, fo)
+	addTagsArg(resolve, ta)
 	topLevel.AddCommand(resolve)
 
 	publish := &cobra.Command{
@@ -186,10 +223,62 @@ func addKubeCommands(topLevel *cobra.Command) {
   ko publish --local github.com/foo/bar/cmd/baz github.com/foo/bar/cmd/blah`,
 		Args: cobra.MinimumNArgs(1),
 		Run: func(_ *cobra.Command, args []string) {
-			publishImages(args, no, lo)
+			publishImages(args, no, lo, ta)
 		},
 	}
 	addLocalArg(publish, lo)
 	addNamingArgs(publish, no)
+	addTagsArg(publish, ta)
 	topLevel.AddCommand(publish)
+
+	run := &cobra.Command{
+		Use:   "run NAME --image=IMPORTPATH",
+		Short: "A variant of `kubectl run` that containerizes IMPORTPATH first.",
+		Long:  `This sub-command combines "ko publish" and "kubectl run" to support containerizing and running Go binaries on Kubernetes in a single command.`,
+		Example: `
+  # Publish the --image and run it on Kubernetes as:
+  #   ${KO_DOCKER_REPO}/<package name>-<hash of import path>
+  # When KO_DOCKER_REPO is ko.local, it is the same as if
+  # --local and --preserve-import-paths were passed.
+  ko run foo --image=github.com/foo/bar/cmd/baz
+
+  # This supports relative import paths as well.
+  ko run foo --image=./cmd/baz`,
+		Run: func(cmd *cobra.Command, args []string) {
+			imgs := publishImages([]string{bo.Path}, no, lo, ta)
+
+			// There's only one, but this is the simple way to access the
+			// reference since the import path may have been qualified.
+			for k, v := range imgs {
+				log.Printf("Running %q", k)
+				// Issue a "kubectl run" command with our same arguments,
+				// but supply a second --image to override the one we intercepted.
+				argv := append(os.Args[1:], "--image", v.String())
+				kubectlCmd := exec.Command("kubectl", argv...)
+
+				// Pass through our environment
+				kubectlCmd.Env = os.Environ()
+				// Pass through our std*
+				kubectlCmd.Stderr = os.Stderr
+				kubectlCmd.Stdout = os.Stdout
+				kubectlCmd.Stdin = os.Stdin
+
+				// Run it.
+				if err := kubectlCmd.Run(); err != nil {
+					log.Fatalf("error executing \"kubectl run\": %v", err)
+				}
+			}
+		},
+		// We ignore unknown flags to avoid importing everything Go exposes
+		// from our commands.
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: true,
+		},
+	}
+	addLocalArg(run, lo)
+	addNamingArgs(run, no)
+	addImageArg(run, bo)
+	addTagsArg(run, ta)
+
+	topLevel.AddCommand(run)
 }

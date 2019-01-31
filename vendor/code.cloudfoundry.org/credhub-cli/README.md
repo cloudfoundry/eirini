@@ -38,4 +38,8 @@ This repository contains a Go client library that can be used independently of t
 
 CredHub CLI can be used to manage credentials stored in a CredHub server. You must first target the CredHub server using the `api` command. Once targeted, you must login with either user or client credentials. Future commands will be sent to the targeted server. For additional information on how to perform CLI operations, you may review the examples shown [here][1] or review the help menus with the commands `credhub --help` and `credhub <command> --help`.
 
+#### Debug Mode:
+
+To see the API calls made by each CLI command, `export CREDHUB_DEBUG=true`.
+
 [1]:https://credhub-api.cfapps.io

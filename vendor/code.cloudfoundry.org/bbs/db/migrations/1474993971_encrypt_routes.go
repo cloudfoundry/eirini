@@ -2,10 +2,8 @@ package migrations
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 
-	"code.cloudfoundry.org/bbs/db/etcd"
 	"code.cloudfoundry.org/bbs/db/sqldb/helpers"
 	"code.cloudfoundry.org/bbs/encryption"
 	"code.cloudfoundry.org/bbs/format"
@@ -16,15 +14,14 @@ import (
 )
 
 func init() {
-	AppendMigration(NewEncryptRoutes())
+	appendMigration(NewEncryptRoutes())
 }
 
 type EncryptRoutes struct {
-	encoder     format.Encoder
-	storeClient etcd.StoreClient
-	clock       clock.Clock
-	rawSQLDB    *sql.DB
-	dbFlavor    string
+	encoder  format.Encoder
+	clock    clock.Clock
+	rawSQLDB *sql.DB
+	dbFlavor string
 }
 
 func NewEncryptRoutes() migration.Migration {
@@ -32,15 +29,11 @@ func NewEncryptRoutes() migration.Migration {
 }
 
 func (e *EncryptRoutes) String() string {
-	return "1474993971"
+	return migrationString(e)
 }
 
 func (e *EncryptRoutes) Version() int64 {
 	return 1474993971
-}
-
-func (e *EncryptRoutes) SetStoreClient(storeClient etcd.StoreClient) {
-	e.storeClient = storeClient
 }
 
 func (e *EncryptRoutes) SetCryptor(cryptor encryption.Cryptor) {
@@ -51,7 +44,6 @@ func (e *EncryptRoutes) SetRawSQLDB(db *sql.DB) {
 	e.rawSQLDB = db
 }
 
-func (e *EncryptRoutes) RequiresSQL() bool         { return true }
 func (e *EncryptRoutes) SetClock(c clock.Clock)    { e.clock = c }
 func (e *EncryptRoutes) SetDBFlavor(flavor string) { e.dbFlavor = flavor }
 
@@ -78,7 +70,7 @@ func (e *EncryptRoutes) Up(logger lager.Logger) error {
 			logger.Error("failed-reading-row", err)
 			continue
 		}
-		encodedData, err := e.encoder.Encode(format.BASE64_ENCRYPTED, routeData)
+		encodedData, err := e.encoder.Encode(routeData)
 		if err != nil {
 			logger.Error("failed-encrypting-routes", err)
 			return models.ErrBadRequest
@@ -100,8 +92,4 @@ func (e *EncryptRoutes) Up(logger lager.Logger) error {
 		return rows.Err()
 	}
 	return nil
-}
-
-func (e *EncryptRoutes) Down(logger lager.Logger) error {
-	return errors.New("not implemented")
 }

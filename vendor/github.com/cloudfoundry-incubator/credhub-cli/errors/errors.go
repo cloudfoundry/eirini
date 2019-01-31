@@ -21,6 +21,10 @@ func NewEmptyTemplateError(filepath string) error {
 	return errors.New(fmt.Sprintf("Error: %s was an empty file", filepath))
 }
 
+func NewFailedToImportError() error {
+	return errors.New("One or more credentials failed to import.")
+}
+
 func NewRevokedTokenError() error {
 	return errors.New("You are not currently authenticated. Please log in to continue.")
 }
@@ -79,6 +83,10 @@ func NewNoCredentialsTag() error {
 
 func NewGetVersionAndKeyError() error {
 	return errors.New("The --version flag and --key flag are incompatible")
+}
+
+func NewOutputJsonAndQuietError() error {
+	return errors.New("The --output-json flag and --quiet flag are incompatible")
 }
 
 func NewUserNameOnlyValidForUserType() error {

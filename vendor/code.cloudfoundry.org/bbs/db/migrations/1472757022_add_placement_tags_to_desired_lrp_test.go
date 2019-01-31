@@ -14,9 +14,7 @@ import (
 
 var _ = Describe("Add Placement Tags to Desired LRPs", func() {
 	var (
-		mig       migration.Migration
-		migErr    error
-		fakeClock *fakeclock.FakeClock
+		mig migration.Migration
 	)
 
 	BeforeEach(func() {
@@ -30,7 +28,7 @@ var _ = Describe("Add Placement Tags to Desired LRPs", func() {
 	})
 
 	It("appends itself to the migration list", func() {
-		Expect(migrations.Migrations).To(ContainElement(mig))
+		Expect(migrations.AllMigrations()).To(ContainElement(mig))
 	})
 
 	Describe("Version", func() {
@@ -40,11 +38,9 @@ var _ = Describe("Add Placement Tags to Desired LRPs", func() {
 	})
 
 	Describe("Up", func() {
-		var initialMigrations migration.Migrations
-
 		BeforeEach(func() {
-			initialMigrations = []migration.Migration{
-				migrations.NewETCDToSQL(),
+			initialMigrations := []migration.Migration{
+				migrations.NewInitSQL(),
 				migrations.NewIncreaseRunInfoColumnSize(),
 			}
 
@@ -62,15 +58,8 @@ var _ = Describe("Add Placement Tags to Desired LRPs", func() {
 			mig.SetDBFlavor(flavor)
 		})
 
-		JustBeforeEach(func() {
-			migErr = mig.Up(logger)
-		})
-
-		It("does not error out", func() {
-			Expect(migErr).NotTo(HaveOccurred())
-		})
-
 		It("should add a placement_tags column to desired lrps", func() {
+			Expect(mig.Up(logger)).To(Succeed())
 			placementTags := []string{"tag-1"}
 
 			jsonData, err := json.Marshal(placementTags)
@@ -96,11 +85,9 @@ var _ = Describe("Add Placement Tags to Desired LRPs", func() {
 			Expect(row.Scan(&fetchedJSONData)).NotTo(HaveOccurred())
 			Expect(fetchedJSONData).To(BeEquivalentTo(jsonData))
 		})
-	})
 
-	Describe("Down", func() {
-		It("returns a not implemented error", func() {
-			Expect(mig.Down(logger)).To(HaveOccurred())
+		It("is idempotent", func() {
+			testIdempotency(rawSQLDB, mig, logger)
 		})
 	})
 })

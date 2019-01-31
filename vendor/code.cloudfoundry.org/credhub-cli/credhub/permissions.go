@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 
 	"code.cloudfoundry.org/credhub-cli/credhub/permissions"
-	"github.com/hashicorp/go-version"
 )
 
 type permissionsResponse struct {
@@ -85,7 +84,7 @@ func (ch *CredHub) addV2Permission(path string, actor string, ops []string) (*ht
 }
 
 func (ch *CredHub) AddPermission(path string, actor string, ops []string) (*permissions.Permission, error) {
-	serverVersion, err := ch.getServerVersion()
+	serverVersion, err := ch.ServerVersion()
 	if err != nil {
 		return nil, err
 	}
@@ -116,21 +115,4 @@ func (ch *CredHub) AddPermission(path string, actor string, ops []string) (*perm
 	}
 
 	return &response, nil
-}
-
-func (ch *CredHub) getServerVersion() (*version.Version, error) {
-	if ch.cachedServerVersion == "" {
-		serverVersion, err := ch.ServerVersion()
-		if err != nil {
-			return nil, err
-		}
-		ch.cachedServerVersion = serverVersion.String()
-	}
-
-	serverVersion, err := version.NewVersion(ch.cachedServerVersion)
-	if err != nil {
-		return nil, err
-	}
-
-	return serverVersion, nil
 }

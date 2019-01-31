@@ -8,18 +8,9 @@ const (
 	V0 Version = 0
 	V1         = 1
 	V2         = 2
+	V3         = 3
 )
 
-var ValidVersions = []Version{V0, V1, V2}
-
-//go:generate counterfeiter . Versioner
-type Versioner interface {
-	Version() Version
-	Validate() error
-}
-
-//go:generate counterfeiter . ProtoVersioner
-type ProtoVersioner interface {
+type Model interface {
 	proto.Message
-	Versioner
 }

@@ -6,6 +6,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "actual_lrp.proto";
 import "desired_lrp.proto";
 import "task.proto";
+import "modification_tag.proto";
 
 message ActualLRPCreatedEvent  {
   optional ActualLRPGroup actual_lrp_group = 1;
@@ -18,6 +19,32 @@ message ActualLRPChangedEvent {
 
 message ActualLRPRemovedEvent {
   optional ActualLRPGroup actual_lrp_group = 1;
+}
+
+message ActualLRPInstanceCreatedEvent  {
+  optional ActualLRP actual_lrp = 1;
+}
+
+message ActualLRPInfo {
+  optional ActualLRPNetInfo actual_lrp_net_info = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
+  optional int32 crash_count = 4;
+  optional string crash_reason = 5 [(gogoproto.jsontag) = "crash_reason,omitempty"];
+  optional string state = 6;
+  optional string placement_error = 7 [(gogoproto.jsontag) = "placement_error,omitempty"];
+  optional int64 since = 8;
+  optional ModificationTag modification_tag = 9 [(gogoproto.nullable) = false];
+  optional ActualLRP.Presence presence = 10;
+}
+
+message ActualLRPInstanceChangedEvent {
+  optional ActualLRPKey actual_lrp_key                  = 1 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
+  optional ActualLRPInstanceKey actual_lrp_instance_key = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
+  optional ActualLRPInfo before                         = 3;
+  optional ActualLRPInfo after                          = 4;
+}
+
+message ActualLRPInstanceRemovedEvent {
+  optional ActualLRP actual_lrp = 1;
 }
 
 message DesiredLRPCreatedEvent {

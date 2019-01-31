@@ -74,23 +74,12 @@ var _ = Describe("get-health-check command", func() {
 					Eventually(session).Should(Exit(1))
 				})
 			})
-
-			When("there too many arguments", func() {
-				It("ignores the extra arguments", func() {
-					session := helpers.CF("get-health-check", appName, "extra")
-
-					Eventually(session).Should(Say(`Getting health check type for app %s in org %s / space %s as %s\.\.\.`, appName, orgName, spaceName, username))
-					Eventually(session.Err).Should(Say("App %s not found", appName))
-					Eventually(session).Should(Say("FAILED"))
-					Eventually(session).Should(Exit(1))
-				})
-			})
 		})
 
 		When("the app exists", func() {
 			BeforeEach(func() {
 				helpers.WithProcfileApp(func(appDir string) {
-					Eventually(helpers.CustomCF(helpers.CFEnv{WorkingDirectory: appDir}, "v3-push", appName)).Should(Exit(0))
+					Eventually(helpers.CustomCF(helpers.CFEnv{WorkingDirectory: appDir}, "push", appName)).Should(Exit(0))
 				})
 			})
 
@@ -183,7 +172,6 @@ var _ = Describe("get-health-check command", func() {
 					Eventually(session).Should(Say("\n\n"))
 					Eventually(session).Should(Say(`web\s+process\s+\d+`))
 					Eventually(session).Should(Say(`console\s+process\s+\d+`))
-					Eventually(session).Should(Say(`rake\s+process\s+\d+`))
 
 					Eventually(session).Should(Exit(0))
 				})

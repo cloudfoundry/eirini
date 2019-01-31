@@ -38,6 +38,40 @@ Events relevant to the cell are defined as:
 
 **Note** `SubscribeToEventsByCellID` and `SubscribeToEvents` do not have events related to Tasks.
 
+## Subscribing to LRP Instance Events
+
+You can use the `SubscribeToInstanceEvents(logger lager.Logger) (events.EventSource,
+error)` client method to subscribe to lrp instance events. For example:
+
+``` go
+client := bbs.NewClient(url)
+eventSource, err := client.SubscribeToInstanceEvents(logger)
+if err != nil {
+    log.Printf("failed to subscribe to lrp instance events: " + err.Error())
+}
+```
+
+Alternatively you can use the `SubscribeToInstanceEventsByCellID` client method to subscribe to events that are relevant to the given cell. For example:
+
+``` go
+client := bbs.NewClient(url)
+eventSource, err := client.SubscribeToInstanceEventsByCellID(logger, "some-cell-id")
+if err != nil {
+    log.Printf("failed to subscribe to instance lrp events: " + err.Error())
+}
+```
+
+Events relevant to the cell are defined as:
+
+1. `ActualLRPInstanceCreatedEvent` that is running on that cell
+2. `ActualLRPInstanceRemovedEvent` that used to run on that cell
+3. `ActualLRPInstanceChangedEvent` that used to/started running on that cell
+4. `ActualLRPCrashedEvent` that used to run on that cell
+
+**Note** Passing an empty string `cellID` argument to `SubscribeToInstanceEventsByCellID` is equivalent to calling `SubscribeToInstanceEvents`
+
+**Note** `SubscribeToInstanceEventsByCellID` and `SubscribeToInstanceEvents` do not have events related to Tasks.
+
 ## Subscribing to Task Events
 
 You can use the `SubscribeToTaskEvents(logger lager.Logger) (events.EventSource,
@@ -140,6 +174,42 @@ ActualLRP state before and after the change.
 
 When a ActualLRP is removed, a
 [ActualLRPRemovedEvent](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPRemovedEvent)
+is emitted. The value of the `ActualLrpGroup` field contains information about the
+ActualLRP that was just removed.
+
+### `ActualLRPCrashedEvent`
+
+When a ActualLRP crashes a
+[ActualLRPCrashedEvent](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPCrashedEvent)
+is emitted. The event will have the following field values:
+
+1. `ActualLRPKey`: The LRP key of the ActualLRP.
+1. `ActualLRPInstanceKey`: The instance key of the ActualLRP.
+1. `CrashCount`: The number of times the ActualLRP has crashed, including this latest crash.
+1. `CrashReason`: The last error that caused the ActualLRP to crash.
+1. `Since`: The timestamp when the ActualLRP last crashed, in nanoseconds in the Unix epoch.
+
+## ActualLRP instance events
+
+### `ActualLRPInstanceCreatedEvent`
+
+When a new ActualLRP instance is created, a
+[ActualLRPInstanceCreatedEvent](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPInstanceCreatedEvent)
+is emitted. The value of the `ActualLrp` field contains more information
+about the ActualLRP.
+
+
+### `ActualLRPInstanceChangedEvent`
+
+When a ActualLRP changes, a
+[ActualLRPInstanceChangedEvent](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPInstanceChangedEvent)
+is emitted. The value of the `Before` and `After` fields contains information about the
+ActualLRP state before and after the change.
+
+### `ActualLRPInstanceRemovedEvent`
+
+When a ActualLRP is removed, a
+[ActualLRPInstanceRemovedEvent](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPInstanceRemovedEvent)
 is emitted. The value of the `ActualLrp` field contains information about the
 ActualLRP that was just removed.
 

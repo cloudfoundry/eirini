@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
 	"strconv"
 	"strings"
 
@@ -14,21 +16,21 @@ import (
 
 	"code.cloudfoundry.org/bbs"
 	bbsconfig "code.cloudfoundry.org/bbs/cmd/bbs/config"
-	"code.cloudfoundry.org/bbs/db/etcd"
 	"code.cloudfoundry.org/bbs/encryption"
 	"code.cloudfoundry.org/bbs/test_helpers"
 	"code.cloudfoundry.org/bbs/test_helpers/sqlrunner"
 	"code.cloudfoundry.org/consuladapter"
 	"code.cloudfoundry.org/consuladapter/consulrunner"
+	"code.cloudfoundry.org/diego-logging-client"
+	"code.cloudfoundry.org/diego-logging-client/testhelpers"
 	"code.cloudfoundry.org/durationjson"
+	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
+	"code.cloudfoundry.org/inigo/helpers/portauthority"
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/lagerflags"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/cloudfoundry/sonde-go/events"
-	"github.com/cloudfoundry/storeadapter/storerunner/etcdstorerunner"
-	etcdclient "github.com/coreos/go-etcd/etcd"
-	"github.com/gogo/protobuf/proto"
+	"code.cloudfoundry.org/locket"
 	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
@@ -40,33 +42,29 @@ import (
 )
 
 var (
-	etcdPort    int
-	etcdUrl     string
-	etcdRunner  *etcdstorerunner.ETCDClusterRunner
-	etcdClient  *etcdclient.Client
-	storeClient etcd.StoreClient
+	logger        lager.Logger
+	portAllocator portauthority.PortAllocator
 
-	logger lager.Logger
+	client            bbs.InternalClient
+	bbsBinPath        string
+	bbsAddress        string
+	bbsHealthAddress  string
+	bbsPort           uint16
+	bbsURL            *url.URL
+	bbsConfig         bbsconfig.BBSConfig
+	bbsRunner         *ginkgomon.Runner
+	bbsProcess        ifrit.Process
+	consulRunner      *consulrunner.ClusterRunner
+	consulClient      consuladapter.Client
+	consulHelper      *test_helpers.ConsulHelper
+	auctioneerServer  *ghttp.Server
+	testMetricsChan   chan *loggregator_v2.Envelope
+	locketBinPath     string
+	testIngressServer *testhelpers.TestIngressServer
 
-	client              bbs.InternalClient
-	bbsBinPath          string
-	bbsAddress          string
-	bbsHealthAddress    string
-	bbsPort             int
-	bbsURL              *url.URL
-	bbsConfig           bbsconfig.BBSConfig
-	bbsRunner           *ginkgomon.Runner
-	bbsProcess          ifrit.Process
-	consulRunner        *consulrunner.ClusterRunner
-	consulClient        consuladapter.Client
-	consulHelper        *test_helpers.ConsulHelper
-	auctioneerServer    *ghttp.Server
-	testMetricsListener net.PacketConn
-	testMetricsChan     chan *events.Envelope
-	locketBinPath       string
-
-	sqlProcess ifrit.Process
-	sqlRunner  sqlrunner.SQLRunner
+	signalMetricsChan chan struct{}
+	sqlProcess        ifrit.Process
+	sqlRunner         sqlrunner.SQLRunner
 )
 
 func TestBBS(t *testing.T) {
@@ -86,6 +84,11 @@ var _ = SynchronizedBeforeSuite(
 	},
 	func(binPaths []byte) {
 		grpclog.SetLogger(log.New(ioutil.Discard, "", 0))
+		startPort := 1050 * GinkgoParallelNode()
+		portRange := 1000
+		var err error
+		portAllocator, err = portauthority.New(startPort, startPort+portRange)
+		Expect(err).NotTo(HaveOccurred())
 
 		path := string(binPaths)
 		bbsBinPath = strings.Split(path, ",")[0]
@@ -93,17 +96,16 @@ var _ = SynchronizedBeforeSuite(
 
 		SetDefaultEventuallyTimeout(15 * time.Second)
 
-		etcdPort = 4001 + GinkgoParallelNode()
-		etcdUrl = fmt.Sprintf("http://127.0.0.1:%d", etcdPort)
-		etcdRunner = etcdstorerunner.NewETCDClusterRunner(etcdPort, 1, nil)
-
 		dbName := fmt.Sprintf("diego_%d", GinkgoParallelNode())
 		sqlRunner = test_helpers.NewSQLRunner(dbName)
 		sqlProcess = ginkgomon.Invoke(sqlRunner)
 
+		consulStartingPort, err := portAllocator.ClaimPorts(consulrunner.PortOffsetLength)
+		Expect(err).NotTo(HaveOccurred())
+
 		consulRunner = consulrunner.NewClusterRunner(
 			consulrunner.ClusterRunnerConfig{
-				StartingPort: 9001 + config.GinkgoConfig.ParallelNode*consulrunner.PortOffsetLength,
+				StartingPort: int(consulStartingPort),
 				NumNodes:     1,
 				Scheme:       "http",
 			},
@@ -111,92 +113,126 @@ var _ = SynchronizedBeforeSuite(
 
 		consulRunner.Start()
 		consulRunner.WaitUntilReady()
-
-		etcdRunner.Start()
 	},
 )
 
 var _ = SynchronizedAfterSuite(func() {
 	ginkgomon.Kill(sqlProcess)
 
-	etcdRunner.Stop()
-	consulRunner.Stop()
+	if consulRunner != nil {
+		consulRunner.Stop()
+	}
 }, func() {
 	gexec.CleanupBuildArtifacts()
 })
 
 var _ = BeforeEach(func() {
+	var err error
 	logger = lagertest.NewTestLogger("test")
-
-	etcdRunner.Reset()
+	fixturesPath := path.Join(os.Getenv("GOPATH"), "src/code.cloudfoundry.org/bbs/cmd/bbs/fixtures")
 
 	consulRunner.Reset()
 	consulClient = consulRunner.NewClient()
 
-	etcdClient = etcdRunner.Client()
-	etcdClient.SetConsistency(etcdclient.STRONG_CONSISTENCY)
+	metronCAFile := path.Join(fixturesPath, "metron", "CA.crt")
+	metronClientCertFile := path.Join(fixturesPath, "metron", "client.crt")
+	metronClientKeyFile := path.Join(fixturesPath, "metron", "client.key")
+	metronServerCertFile := path.Join(fixturesPath, "metron", "metron.crt")
+	metronServerKeyFile := path.Join(fixturesPath, "metron", "metron.key")
 
 	auctioneerServer = ghttp.NewServer()
 	auctioneerServer.UnhandledRequestStatusCode = http.StatusAccepted
 	auctioneerServer.AllowUnhandledRequests = true
 
-	bbsPort = 6700 + GinkgoParallelNode()*2
+	bbsPort, err = portAllocator.ClaimPorts(1)
+	Expect(err).NotTo(HaveOccurred())
 	bbsAddress = fmt.Sprintf("127.0.0.1:%d", bbsPort)
-	bbsHealthAddress = fmt.Sprintf("127.0.0.1:%d", bbsPort+1)
+
+	bbsHealthPort, err := portAllocator.ClaimPorts(1)
+	Expect(err).NotTo(HaveOccurred())
+	bbsHealthAddress = fmt.Sprintf("127.0.0.1:%d", bbsHealthPort)
 
 	bbsURL = &url.URL{
-		Scheme: "http",
+		Scheme: "https",
 		Host:   bbsAddress,
 	}
 
-	testMetricsListener, _ = net.ListenPacket("udp", "127.0.0.1:0")
-	testMetricsChan = make(chan *events.Envelope, 1024)
-	go func() {
-		defer GinkgoRecover()
-		defer close(testMetricsChan)
-
-		for {
-			buffer := make([]byte, 1024)
-			n, _, err := testMetricsListener.ReadFrom(buffer)
-			if err != nil {
-				return
-			}
-
-			var envelope events.Envelope
-			err = proto.Unmarshal(buffer[:n], &envelope)
-			Expect(err).NotTo(HaveOccurred())
-			testMetricsChan <- &envelope
-		}
-	}()
-
-	port, err := strconv.Atoi(strings.TrimPrefix(testMetricsListener.LocalAddr().String(), "127.0.0.1:"))
+	testIngressServer, err = testhelpers.NewTestIngressServer(metronServerCertFile, metronServerKeyFile, metronCAFile)
 	Expect(err).NotTo(HaveOccurred())
 
-	client = bbs.NewClient(bbsURL.String())
+	testIngressServer.Start()
+
+	metricsPort, err := strconv.Atoi(strings.TrimPrefix(testIngressServer.Addr(), "127.0.0.1:"))
+	Expect(err).NotTo(HaveOccurred())
+
+	receiversChan := testIngressServer.Receivers()
+
+	testMetricsChan, signalMetricsChan = testhelpers.TestMetricChan(receiversChan)
+
+	serverCaFile := path.Join(fixturesPath, "green-certs", "server-ca.crt")
+	clientCertFile := path.Join(fixturesPath, "green-certs", "client.crt")
+	clientKeyFile := path.Join(fixturesPath, "green-certs", "client.key")
+	client, err = bbs.NewClient(bbsURL.String(), serverCaFile, clientCertFile, clientKeyFile, 0, 0)
+	Expect(err).ToNot(HaveOccurred())
 
 	bbsConfig = bbsconfig.BBSConfig{
+		SessionName:                     "bbs",
+		CommunicationTimeout:            durationjson.Duration(10 * time.Second),
+		RequireSSL:                      true,
+		DesiredLRPCreationTimeout:       durationjson.Duration(1 * time.Minute),
+		ExpireCompletedTaskDuration:     durationjson.Duration(2 * time.Minute),
+		ExpirePendingTaskDuration:       durationjson.Duration(30 * time.Minute),
+		EnableConsulServiceRegistration: false,
+		KickTaskDuration:                durationjson.Duration(30 * time.Second),
+		LockTTL:                         durationjson.Duration(locket.DefaultSessionTTL),
+		LockRetryInterval:               durationjson.Duration(locket.RetryInterval),
+		ConvergenceWorkers:              20,
+		UpdateWorkers:                   1000,
+		TaskCallbackWorkers:             1000,
+		MaxOpenDatabaseConnections:      200,
+		MaxIdleDatabaseConnections:      200,
+		AuctioneerRequireTLS:            false,
+		RepClientSessionCacheSize:       0,
+		RepRequireTLS:                   false,
+
 		ListenAddress:     bbsAddress,
 		AdvertiseURL:      bbsURL.String(),
 		AuctioneerAddress: auctioneerServer.URL(),
 		ConsulCluster:     consulRunner.ConsulCluster(),
-		DropsondePort:     port,
-		ETCDConfig: bbsconfig.ETCDConfig{
-			ClusterUrls: []string{etcdUrl}, // etcd is still being used to test version migration in migration_version_test.go
-		},
-		DatabaseDriver:                sqlRunner.DriverName(),
-		DatabaseConnectionString:      sqlRunner.ConnectionString(),
-		DetectConsulCellRegistrations: true,
-		ReportInterval:                durationjson.Duration(10 * time.Millisecond),
-		HealthAddress:                 bbsHealthAddress,
+
+		DatabaseDriver:                 sqlRunner.DriverName(),
+		DatabaseConnectionString:       sqlRunner.ConnectionString(),
+		DetectConsulCellRegistrations:  true,
+		ReportInterval:                 durationjson.Duration(time.Second / 2),
+		HealthAddress:                  bbsHealthAddress,
+		CellRegistrationsLocketEnabled: false,
+		LocksLocketEnabled:             false,
 
 		EncryptionConfig: encryption.EncryptionConfig{
 			EncryptionKeys: map[string]string{"label": "key"},
 			ActiveKeyLabel: "label",
 		},
 		ConvergeRepeatInterval: durationjson.Duration(time.Hour),
-		UUID: "bbs-bosh-boshy-bosh-bosh",
+		UUID:                   "bbs-bosh-boshy-bosh-bosh",
+
+		CaFile:   serverCaFile,
+		CertFile: path.Join(fixturesPath, "green-certs", "server.crt"),
+		KeyFile:  path.Join(fixturesPath, "green-certs", "server.key"),
+
+		LagerConfig: lagerflags.LagerConfig{
+			LogLevel: lagerflags.DEBUG,
+		},
+
+		LoggregatorConfig: diego_logging_client.Config{
+			BatchFlushInterval: 10 * time.Millisecond,
+			BatchMaxSize:       1,
+			UseV2API:           true,
+			APIPort:            metricsPort,
+			CACertPath:         metronCAFile,
+			KeyPath:            metronClientKeyFile,
+			CertPath:           metronClientCertFile,
+		},
 	}
-	storeClient = etcd.NewStoreClient(etcdClient)
 	consulHelper = test_helpers.NewConsulHelper(logger, consulClient)
 })
 
@@ -216,8 +252,8 @@ var _ = AfterEach(func() {
 	}).Should(HaveOccurred())
 
 	auctioneerServer.Close()
-	testMetricsListener.Close()
-	Eventually(testMetricsChan).Should(BeClosed())
+	testIngressServer.Stop()
+	close(signalMetricsChan)
 
 	sqlRunner.Reset()
 })

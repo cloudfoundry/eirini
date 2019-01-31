@@ -22,7 +22,7 @@ var _ = Describe("Invalid Connections", func() {
 
 	Context("Domains", func() {
 		It("retries on deadlocks", func() {
-			_, err := sqlDB.Domains(logger)
+			_, err := sqlDB.FreshDomains(logger)
 			Expect(err).To(HaveOccurred())
 			Expect(fakeConn.BeginCallCount()).To(Equal(3))
 		})

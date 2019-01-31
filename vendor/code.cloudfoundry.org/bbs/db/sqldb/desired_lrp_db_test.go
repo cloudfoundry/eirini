@@ -73,6 +73,11 @@ var _ = Describe("DesiredLRPDB", func() {
 		})
 
 		Context("when the desired lrp does not exist", func() {
+			It("does not log an error", func() {
+				sqlDB.DesiredLRPByProcessGuid(logger, "Sup dawg")
+				Expect(logger.Errors).To(BeEmpty())
+			})
+
 			It("returns a ResourceNotFound error", func() {
 				desiredLRP, err := sqlDB.DesiredLRPByProcessGuid(logger, "Sup dawg")
 				Expect(err).To(Equal(models.ErrResourceNotFound))

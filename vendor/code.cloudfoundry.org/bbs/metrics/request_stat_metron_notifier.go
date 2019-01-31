@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	requestCounter = "RequestCount"
-	requestLatency = "RequestLatency"
+	requestCounter         = "RequestCount"
+	requestLatencyDuration = "RequestLatency"
 )
 
 type RequestStatMetronNotifier struct {
@@ -33,7 +33,7 @@ func NewRequestStatMetronNotifier(logger lager.Logger, ticker clock.Ticker, metr
 	}
 }
 
-func (notifier *RequestStatMetronNotifier) IncrementCounter(delta int) {
+func (notifier *RequestStatMetronNotifier) IncrementRequestCounter(delta int) {
 	atomic.AddUint64(&notifier.requestCount, uint64(delta))
 }
 
@@ -72,7 +72,7 @@ func (notifier *RequestStatMetronNotifier) Run(signals <-chan os.Signal, ready c
 			latency := notifier.ReadAndResetLatency()
 			if latency != 0 {
 				logger.Info("sending-latency", lager.Data{"latency": latency})
-				notifier.metronClient.SendDuration(requestLatency, latency)
+				notifier.metronClient.SendDuration(requestLatencyDuration, latency)
 			}
 		case <-signals:
 			return nil

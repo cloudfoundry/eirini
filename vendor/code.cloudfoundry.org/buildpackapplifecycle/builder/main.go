@@ -46,17 +46,18 @@ func main() {
 			}
 		}
 	}
-
-	runner := buildpackrunner.New(&config)
-	defer runner.CleanUp()
-
-	_, err := runner.Run()
-	if err != nil {
+	if err := execRunner(&config); err != nil {
 		println(err.Error())
 		os.Exit(buildpackapplifecycle.ExitCodeFromError(err))
 	}
+}
 
-	os.Exit(0)
+func execRunner(config *buildpackapplifecycle.LifecycleBuilderConfig) error {
+	runner := buildpackrunner.New(config)
+	defer runner.CleanUp()
+
+	_, err := runner.Run()
+	return err
 }
 
 func usage() {

@@ -3,9 +3,6 @@ package handlers
 import (
 	"net/http"
 
-	"code.cloudfoundry.org/auctioneer"
-	"code.cloudfoundry.org/bbs/db"
-	"code.cloudfoundry.org/bbs/events"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/lager"
 )
@@ -21,12 +18,8 @@ type ActualLRPLifecycleController interface {
 }
 
 type ActualLRPLifecycleHandler struct {
-	db               db.ActualLRPDB
-	desiredLRPDB     db.DesiredLRPDB
-	actualHub        events.Hub
-	auctioneerClient auctioneer.Client
-	controller       ActualLRPLifecycleController
-	exitChan         chan<- struct{}
+	controller ActualLRPLifecycleController
+	exitChan   chan<- struct{}
 }
 
 func NewActualLRPLifecycleHandler(

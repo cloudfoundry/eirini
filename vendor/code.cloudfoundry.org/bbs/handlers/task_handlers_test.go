@@ -4,10 +4,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/handlers"
 	"code.cloudfoundry.org/bbs/handlers/fake_controllers"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/bbs/models/test/model_helpers"
+	. "code.cloudfoundry.org/bbs/test_helpers"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -37,6 +39,142 @@ var _ = Describe("Task Handlers", func() {
 		handler = handlers.NewTaskHandler(controller, exitCh)
 	})
 
+	Describe("Tasks_r2", func() {
+		var (
+			task1          models.Task
+			task2          models.Task
+			cellId, domain string
+		)
+
+		BeforeEach(func() {
+			task1 = models.Task{
+				Domain:         "domain-1",
+				TaskDefinition: &models.TaskDefinition{},
+			}
+			task2 = models.Task{
+				CellId:         "cell-id",
+				TaskDefinition: &models.TaskDefinition{},
+			}
+			requestBody = &models.TasksRequest{}
+		})
+
+		JustBeforeEach(func() {
+			requestBody = &models.TasksRequest{
+				Domain: domain,
+				CellId: cellId,
+			}
+			request = newTestRequest(requestBody)
+			handler.Tasks_r2(logger, responseRecorder, request)
+		})
+
+		Context("when reading tasks from controller succeeds", func() {
+			var tasks []*models.Task
+
+			BeforeEach(func() {
+				tasks = []*models.Task{&task1, &task2}
+
+				controller.TasksReturns(tasks, nil)
+			})
+
+			It("returns a list of tasks", func() {
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				response := models.TasksResponse{}
+				err := response.Unmarshal(responseRecorder.Body.Bytes())
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(response.Error).To(BeNil())
+
+				Expect(response.Tasks).To(DeepEqual([]*models.Task{&task1, &task2}))
+			})
+
+			It("calls the controller with no filter", func() {
+				Expect(controller.TasksCallCount()).To(Equal(1))
+				_, actualDomain, actualCellId := controller.TasksArgsForCall(0)
+				Expect(actualDomain).To(Equal(domain))
+				Expect(actualCellId).To(Equal(cellId))
+			})
+
+			Context("when the tasks include image layers", func() {
+				var downgradedTasks []*models.Task
+
+				BeforeEach(func() {
+					tasksWithImageLayers := []*models.Task{
+						&models.Task{TaskDefinition: &models.TaskDefinition{ImageLayers: []*models.ImageLayer{{LayerType: models.LayerTypeExclusive}, {LayerType: models.LayerTypeShared}}}},
+						&models.Task{TaskDefinition: &models.TaskDefinition{ImageLayers: []*models.ImageLayer{{LayerType: models.LayerTypeExclusive}, {LayerType: models.LayerTypeShared}}}},
+					}
+					controller.TasksReturns(tasksWithImageLayers, nil)
+
+					for _, t := range tasksWithImageLayers {
+						task := t.VersionDownTo(format.V2)
+						downgradedTasks = append(downgradedTasks, task)
+					}
+				})
+
+				It("returns a list of tasks downgraded to convert image layers to cached dependencies and download actions", func() {
+					Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+					response := models.TasksResponse{}
+					err := response.Unmarshal(responseRecorder.Body.Bytes())
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(response.Error).To(BeNil())
+					Expect(response.Tasks).To(Equal(downgradedTasks))
+				})
+			})
+
+			Context("and filtering by domain", func() {
+				BeforeEach(func() {
+					domain = "domain-1"
+				})
+
+				It("calls the controller with a domain filter", func() {
+					Expect(controller.TasksCallCount()).To(Equal(1))
+					_, actualDomain, actualCellId := controller.TasksArgsForCall(0)
+					Expect(actualDomain).To(Equal(domain))
+					Expect(actualCellId).To(Equal(cellId))
+				})
+			})
+
+			Context("and filtering by cell id", func() {
+				BeforeEach(func() {
+					cellId = "cell-id"
+				})
+
+				It("calls the controller with a cell filter", func() {
+					Expect(controller.TasksCallCount()).To(Equal(1))
+					_, actualDomain, actualCellId := controller.TasksArgsForCall(0)
+					Expect(actualDomain).To(Equal(domain))
+					Expect(actualCellId).To(Equal(cellId))
+				})
+			})
+		})
+
+		Context("when the controller returns an unrecoverable error", func() {
+			BeforeEach(func() {
+				controller.TasksReturns(nil, models.NewUnrecoverableError(nil))
+			})
+
+			It("logs and writes to the exit channel", func() {
+				Eventually(logger).Should(gbytes.Say("unrecoverable-error"))
+				Eventually(exitCh).Should(Receive())
+			})
+		})
+
+		Context("when the controller errors out", func() {
+			BeforeEach(func() {
+				controller.TasksReturns(nil, models.ErrUnknownError)
+			})
+
+			It("provides relevant error information", func() {
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				response := models.TasksResponse{}
+				err := response.Unmarshal(responseRecorder.Body.Bytes())
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(response.Error).To(Equal(models.ErrUnknownError))
+			})
+		})
+	})
+
 	Describe("Tasks", func() {
 		var (
 			task1          models.Task
@@ -45,8 +183,9 @@ var _ = Describe("Task Handlers", func() {
 		)
 
 		BeforeEach(func() {
-			task1 = models.Task{Domain: "domain-1"}
-			task2 = models.Task{CellId: "cell-id"}
+			task1 = models.Task{TaskDefinition: &models.TaskDefinition{ImageLayers: []*models.ImageLayer{{LayerType: models.LayerTypeExclusive}, {LayerType: models.LayerTypeShared}}}}
+			task2 = models.Task{TaskDefinition: &models.TaskDefinition{ImageLayers: []*models.ImageLayer{{LayerType: models.LayerTypeExclusive}, {LayerType: models.LayerTypeShared}}}}
+
 			requestBody = &models.TasksRequest{}
 		})
 
@@ -63,18 +202,20 @@ var _ = Describe("Task Handlers", func() {
 			var tasks []*models.Task
 
 			BeforeEach(func() {
-				tasks = []*models.Task{&task1, &task2}
+				tasks = []*models.Task{task1.Copy(), task2.Copy()}
+
 				controller.TasksReturns(tasks, nil)
 			})
 
-			It("returns a list of task", func() {
+			It("returns a list of tasks", func() {
 				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
 				response := models.TasksResponse{}
 				err := response.Unmarshal(responseRecorder.Body.Bytes())
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(response.Error).To(BeNil())
-				Expect(response.Tasks).To(Equal(tasks))
+
+				Expect(response.Tasks).To(DeepEqual([]*models.Task{&task1, &task2}))
 			})
 
 			It("calls the controller with no filter", func() {
@@ -138,6 +279,120 @@ var _ = Describe("Task Handlers", func() {
 		})
 	})
 
+	Describe("TaskByGuid_r2", func() {
+		var taskGuid = "task-guid"
+
+		BeforeEach(func() {
+			requestBody = &models.TaskByGuidRequest{
+				TaskGuid: taskGuid,
+			}
+		})
+
+		JustBeforeEach(func() {
+			request := newTestRequest(requestBody)
+			handler.TaskByGuid_r2(logger, responseRecorder, request)
+		})
+
+		Context("when reading a task from the controller succeeds", func() {
+			var task *models.Task
+
+			BeforeEach(func() {
+				task = &models.Task{
+					TaskGuid:       taskGuid,
+					TaskDefinition: &models.TaskDefinition{},
+				}
+				controller.TaskByGuidReturns(task, nil)
+			})
+
+			It("fetches task by guid", func() {
+				Expect(controller.TaskByGuidCallCount()).To(Equal(1))
+				_, actualGuid := controller.TaskByGuidArgsForCall(0)
+				Expect(actualGuid).To(Equal(taskGuid))
+			})
+
+			It("returns the task", func() {
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				response := models.TaskResponse{}
+				err := response.Unmarshal(responseRecorder.Body.Bytes())
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(response.Error).To(BeNil())
+				Expect(response.Task).To(DeepEqual(task))
+			})
+		})
+
+		Context("when the task includes image layers", func() {
+			var downgradedTask *models.Task
+
+			BeforeEach(func() {
+				taskWithImageLayers := &models.Task{
+					TaskGuid: taskGuid,
+					TaskDefinition: &models.TaskDefinition{
+						ImageLayers: []*models.ImageLayer{
+							{LayerType: models.LayerTypeExclusive},
+							{LayerType: models.LayerTypeShared},
+						},
+					},
+				}
+				controller.TaskByGuidReturns(taskWithImageLayers, nil)
+
+				downgradedTask = taskWithImageLayers.VersionDownTo(format.V2)
+			})
+
+			It("returns a list of tasks downgraded to convert image layers to cached dependencies and download actions", func() {
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				response := models.TaskResponse{}
+				err := response.Unmarshal(responseRecorder.Body.Bytes())
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(response.Error).To(BeNil())
+				Expect(response.Task.ImageLayers).To(BeNil())
+				Expect(response.Task).To(Equal(downgradedTask))
+			})
+		})
+
+		Context("when the controller returns no task", func() {
+			BeforeEach(func() {
+				controller.TaskByGuidReturns(nil, models.ErrResourceNotFound)
+			})
+
+			It("returns a resource not found error", func() {
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				response := models.TaskResponse{}
+				err := response.Unmarshal(responseRecorder.Body.Bytes())
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(response.Error).To(Equal(models.ErrResourceNotFound))
+			})
+		})
+
+		Context("when the controller returns an unrecoverable error", func() {
+			BeforeEach(func() {
+				controller.TaskByGuidReturns(nil, models.NewUnrecoverableError(nil))
+			})
+
+			It("logs and writes to the exit channel", func() {
+				Eventually(logger).Should(gbytes.Say("unrecoverable-error"))
+				Eventually(exitCh).Should(Receive())
+			})
+		})
+
+		Context("when the controller errors out", func() {
+			BeforeEach(func() {
+				controller.TaskByGuidReturns(nil, models.ErrUnknownError)
+			})
+
+			It("provides relevant error information", func() {
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				response := models.TaskResponse{}
+				err := response.Unmarshal(responseRecorder.Body.Bytes())
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(response.Error).To(Equal(models.ErrUnknownError))
+			})
+		})
+	})
+
 	Describe("TaskByGuid", func() {
 		var taskGuid = "task-guid"
 
@@ -156,7 +411,15 @@ var _ = Describe("Task Handlers", func() {
 			var task *models.Task
 
 			BeforeEach(func() {
-				task = &models.Task{TaskGuid: taskGuid}
+				task = &models.Task{
+					TaskGuid: taskGuid,
+					TaskDefinition: &models.TaskDefinition{
+						ImageLayers: []*models.ImageLayer{
+							{LayerType: models.LayerTypeExclusive},
+							{LayerType: models.LayerTypeShared},
+						},
+					},
+				}
 				controller.TaskByGuidReturns(task, nil)
 			})
 
@@ -173,7 +436,7 @@ var _ = Describe("Task Handlers", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(response.Error).To(BeNil())
-				Expect(response.Task).To(Equal(task))
+				Expect(response.Task).To(DeepEqual(task))
 			})
 		})
 
@@ -507,6 +770,63 @@ var _ = Describe("Task Handlers", func() {
 				err := response.Unmarshal(responseRecorder.Body.Bytes())
 				Expect(err).NotTo(HaveOccurred())
 
+				Expect(response.Error).To(Equal(models.ErrUnknownError))
+			})
+		})
+	})
+
+	Describe("RejectTask", func() {
+		const taskGuid = "task-guid"
+		const rejectionReason = "rejected"
+
+		BeforeEach(func() {
+			controller.RejectTaskReturns(nil)
+			requestBody = &models.RejectTaskRequest{
+				TaskGuid:        taskGuid,
+				RejectionReason: rejectionReason,
+			}
+		})
+
+		JustBeforeEach(func() {
+			request = newTestRequest(requestBody)
+			handler.RejectTask(logger, responseRecorder, request)
+		})
+
+		Context("when reject task succeeds", func() {
+			It("returns no error", func() {
+				_, actualTaskGuid, actualFailureReason := controller.RejectTaskArgsForCall(0)
+				Expect(actualTaskGuid).To(Equal(taskGuid))
+				Expect(actualFailureReason).To(Equal(rejectionReason))
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+
+				var response models.TaskLifecycleResponse
+				Expect(response.Unmarshal(responseRecorder.Body.Bytes())).To(Succeed())
+				Expect(response.Error).To(BeNil())
+			})
+		})
+
+		Context("when the controller returns an unrecoverable error", func() {
+			BeforeEach(func() {
+				controller.RejectTaskReturns(models.NewUnrecoverableError(nil))
+			})
+
+			It("logs and writes to the exit channel", func() {
+				Eventually(logger).Should(gbytes.Say("unrecoverable-error"))
+				Eventually(exitCh).Should(Receive())
+			})
+		})
+
+		Context("when failing the task fails", func() {
+			BeforeEach(func() {
+				controller.RejectTaskReturns(models.ErrUnknownError)
+			})
+
+			It("responds with an error", func() {
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+
+				var response models.TaskLifecycleResponse
+				Expect(response.Unmarshal(responseRecorder.Body.Bytes())).To(Succeed())
 				Expect(response.Error).To(Equal(models.ErrUnknownError))
 			})
 		})

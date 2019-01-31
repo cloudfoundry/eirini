@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/bbs/db/sqldb/helpers"
-	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/lager"
 )
@@ -16,7 +15,7 @@ func (db *SQLDB) DesireLRP(logger lager.Logger, desiredLRP *models.DesiredLRP) e
 	logger.Info("starting")
 	defer logger.Info("complete")
 
-	return db.transact(logger, func(logger lager.Logger, tx *sql.Tx) error {
+	return db.transact(logger, func(logger lager.Logger, tx helpers.Tx) error {
 		routesData, err := db.encodeRouteData(logger, desiredLRP.Routes)
 		if err != nil {
 			logger.Error("failed-encoding-route-data", err)
@@ -91,7 +90,7 @@ func (db *SQLDB) DesiredLRPByProcessGuid(logger lager.Logger, processGuid string
 
 	var desiredLRP *models.DesiredLRP
 
-	err := db.transact(logger, func(logger lager.Logger, tx *sql.Tx) error {
+	err := db.transact(logger, func(logger lager.Logger, tx helpers.Tx) error {
 		var err error
 		row := db.one(logger, tx, desiredLRPsTable,
 			desiredLRPColumns, helpers.NoLockRow,
@@ -128,7 +127,7 @@ func (db *SQLDB) DesiredLRPs(logger lager.Logger, filter models.DesiredLRPFilter
 
 	results := []*models.DesiredLRP{}
 
-	err := db.transact(logger, func(logger lager.Logger, tx *sql.Tx) error {
+	err := db.transact(logger, func(logger lager.Logger, tx helpers.Tx) error {
 		rows, err := db.all(logger, tx, desiredLRPsTable,
 			desiredLRPColumns, helpers.NoLockRow,
 			strings.Join(wheres, " AND "), values...,
@@ -174,7 +173,7 @@ func (db *SQLDB) DesiredLRPSchedulingInfos(logger lager.Logger, filter models.De
 
 	results := []*models.DesiredLRPSchedulingInfo{}
 
-	err := db.transact(logger, func(logger lager.Logger, tx *sql.Tx) error {
+	err := db.transact(logger, func(logger lager.Logger, tx helpers.Tx) error {
 		rows, err := db.all(logger, tx, desiredLRPsTable,
 			schedulingInfoColumns, helpers.NoLockRow,
 			strings.Join(wheres, " AND "), values...,
@@ -211,7 +210,7 @@ func (db *SQLDB) UpdateDesiredLRP(logger lager.Logger, processGuid string, updat
 	defer logger.Info("complete")
 
 	var beforeDesiredLRP *models.DesiredLRP
-	err := db.transact(logger, func(logger lager.Logger, tx *sql.Tx) error {
+	err := db.transact(logger, func(logger lager.Logger, tx helpers.Tx) error {
 		var err error
 		row := db.one(logger, tx, desiredLRPsTable,
 			desiredLRPColumns, helpers.LockRow,
@@ -260,7 +259,7 @@ func (db *SQLDB) encodeRouteData(logger lager.Logger, routes *models.Routes) ([]
 		logger.Error("failed-marshalling-routes", err)
 		return nil, models.ErrBadRequest
 	}
-	encodedData, err := db.encoder.Encode(format.BASE64_ENCRYPTED, routeData)
+	encodedData, err := db.encoder.Encode(routeData)
 	if err != nil {
 		logger.Error("failed-encrypting-routes", err)
 		return nil, models.ErrBadRequest
@@ -273,7 +272,7 @@ func (db *SQLDB) RemoveDesiredLRP(logger lager.Logger, processGuid string) error
 	logger.Info("starting")
 	defer logger.Info("complete")
 
-	return db.transact(logger, func(logger lager.Logger, tx *sql.Tx) error {
+	return db.transact(logger, func(logger lager.Logger, tx helpers.Tx) error {
 		err := db.lockDesiredLRPByGuidForUpdate(logger, processGuid, tx)
 		if err != nil {
 			logger.Error("failed-lock-desired", err)
@@ -291,7 +290,7 @@ func (db *SQLDB) RemoveDesiredLRP(logger lager.Logger, processGuid string) error
 }
 
 // "rows" needs to have the columns defined in the schedulingInfoColumns constant
-func (db *SQLDB) fetchDesiredLRPSchedulingInfoAndMore(logger lager.Logger, scanner RowScanner, dest ...interface{}) (*models.DesiredLRPSchedulingInfo, error) {
+func (db *SQLDB) fetchDesiredLRPSchedulingInfoAndMore(logger lager.Logger, scanner helpers.RowScanner, dest ...interface{}) (*models.DesiredLRPSchedulingInfo, error) {
 	schedulingInfo := &models.DesiredLRPSchedulingInfo{}
 	var routeData, volumePlacementData, placementTagData []byte
 	values := []interface{}{
@@ -353,7 +352,7 @@ func (db *SQLDB) fetchDesiredLRPSchedulingInfoAndMore(logger lager.Logger, scann
 	return schedulingInfo, nil
 }
 
-func (db *SQLDB) lockDesiredLRPByGuidForUpdate(logger lager.Logger, processGuid string, tx *sql.Tx) error {
+func (db *SQLDB) lockDesiredLRPByGuidForUpdate(logger lager.Logger, processGuid string, tx helpers.Tx) error {
 	row := db.one(logger, tx, desiredLRPsTable,
 		helpers.ColumnList{"1"}, helpers.LockRow,
 		"process_guid = ?", processGuid,
@@ -366,7 +365,7 @@ func (db *SQLDB) lockDesiredLRPByGuidForUpdate(logger lager.Logger, processGuid 
 	return nil
 }
 
-func (db *SQLDB) fetchDesiredLRPs(logger lager.Logger, rows *sql.Rows, queryable Queryable) ([]*models.DesiredLRP, error) {
+func (db *SQLDB) fetchDesiredLRPs(logger lager.Logger, rows *sql.Rows, queryable helpers.Queryable) ([]*models.DesiredLRP, error) {
 	guids := []string{}
 	lrps := []*models.DesiredLRP{}
 	for rows.Next() {
@@ -392,7 +391,7 @@ func (db *SQLDB) fetchDesiredLRPs(logger lager.Logger, rows *sql.Rows, queryable
 	return lrps, nil
 }
 
-func (db *SQLDB) fetchDesiredLRP(logger lager.Logger, scanner RowScanner, queryable Queryable) (*models.DesiredLRP, error) {
+func (db *SQLDB) fetchDesiredLRP(logger lager.Logger, scanner helpers.RowScanner, queryable helpers.Queryable) (*models.DesiredLRP, error) {
 	lrp, guid, err := db.fetchDesiredLRPInternal(logger, scanner)
 	if err == models.ErrDeserialize {
 		db.deleteInvalidLRPs(logger, queryable, guid)
@@ -400,11 +399,10 @@ func (db *SQLDB) fetchDesiredLRP(logger lager.Logger, scanner RowScanner, querya
 	return lrp, err
 }
 
-func (db *SQLDB) fetchDesiredLRPInternal(logger lager.Logger, scanner RowScanner) (*models.DesiredLRP, string, error) {
+func (db *SQLDB) fetchDesiredLRPInternal(logger lager.Logger, scanner helpers.RowScanner) (*models.DesiredLRP, string, error) {
 	var runInfoData []byte
 	schedulingInfo, err := db.fetchDesiredLRPSchedulingInfoAndMore(logger, scanner, &runInfoData)
 	if err != nil {
-		logger.Error("failed-fetching-run-info", err)
 		return nil, "", err
 	}
 
@@ -419,7 +417,7 @@ func (db *SQLDB) fetchDesiredLRPInternal(logger lager.Logger, scanner RowScanner
 	return &desiredLRP, "", nil
 }
 
-func (db *SQLDB) deleteInvalidLRPs(logger lager.Logger, queryable Queryable, guids ...string) error {
+func (db *SQLDB) deleteInvalidLRPs(logger lager.Logger, queryable helpers.Queryable, guids ...string) error {
 	for _, guid := range guids {
 		logger.Info("deleting-invalid-desired-lrp-from-db", lager.Data{"guid": guid})
 		_, err := db.delete(logger, queryable, desiredLRPsTable, "process_guid = ?", guid)
@@ -431,7 +429,7 @@ func (db *SQLDB) deleteInvalidLRPs(logger lager.Logger, queryable Queryable, gui
 	return nil
 }
 
-func (db *SQLDB) fetchDesiredLRPSchedulingInfo(logger lager.Logger, scanner RowScanner) (*models.DesiredLRPSchedulingInfo, error) {
+func (db *SQLDB) fetchDesiredLRPSchedulingInfo(logger lager.Logger, scanner helpers.RowScanner) (*models.DesiredLRPSchedulingInfo, error) {
 	return db.fetchDesiredLRPSchedulingInfoAndMore(logger, scanner)
 }
 

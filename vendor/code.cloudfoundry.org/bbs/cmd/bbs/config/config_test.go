@@ -1,13 +1,13 @@
 package config_test
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"os"
 	"time"
 
 	"code.cloudfoundry.org/bbs/cmd/bbs/config"
 	"code.cloudfoundry.org/bbs/encryption"
+	"code.cloudfoundry.org/bbs/test_helpers"
 	"code.cloudfoundry.org/debugserver"
 	loggingclient "code.cloudfoundry.org/diego-logging-client"
 	"code.cloudfoundry.org/durationjson"
@@ -33,6 +33,7 @@ var _ = Describe("BBSConfig", func() {
 			"auctioneer_require_tls": true,
 			"uuid": "bosh-boshy-bosh-bosh",
 			"ca_file": "/var/vcap/jobs/bbs/config/ca.crt",
+			"cell_registrations_locket_enabled": true,
 			"cert_file": "/var/vcap/jobs/bbs/config/bbs.crt",
 			"communication_timeout": "20s",
 			"consul_cluster": "",
@@ -43,15 +44,8 @@ var _ = Describe("BBSConfig", func() {
 			"debug_address": "127.0.0.1:17017",
 			"desired_lrp_creation_timeout": "1m0s",
 			"detect_consul_cell_registrations": true,
-			"dropsonde_port": 3457,
 			"enable_consul_service_registration": false,
 			"encryption_keys": {"label": "key"},
-			"etcd_ca_file": "/var/vcap/jobs/bbs/config/etcd.ca",
-			"etcd_cert_file": "/var/vcap/jobs/bbs/config/etcd.crt",
-			"etcd_client_session_cache_size": 10,
-			"etcd_cluster_urls": ["http://127.0.0.1:8500"],
-			"etcd_key_file": "/var/vcap/jobs/bbs/config/etcd.key",
-			"etcd_max_idle_conns_per_host": 10,
 			"expire_completed_task_duration": "2m0s",
 			"expire_pending_task_duration": "30m0s",
 			"health_address": "127.0.0.1:8890",
@@ -60,6 +54,7 @@ var _ = Describe("BBSConfig", func() {
 			"listen_address": "0.0.0.0:8889",
 			"lock_retry_interval": "5s",
 			"lock_ttl": "15s",
+			"locks_locket_enabled": true,
 			"locket_address": "127.0.0.1:18018",
 			"locket_ca_cert_file": "locket-ca-cert",
 			"locket_client_cert_file": "locket-client-cert",
@@ -89,8 +84,10 @@ var _ = Describe("BBSConfig", func() {
 			"session_name": "bbs-session",
 			"skip_consul_lock": true,
 			"sql_ca_cert_file": "/var/vcap/jobs/bbs/config/sql.ca",
+			"sql_enable_identity_verification": true,
 			"task_callback_workers": 1000,
-			"update_workers": 1000
+			"update_workers": 1000,
+			"max_task_retries": 3
 		}`
 	})
 
@@ -115,16 +112,18 @@ var _ = Describe("BBSConfig", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		config := config.BBSConfig{
-			AccessLogPath:        "/var/vcap/sys/log/bbs/access.log",
-			AdvertiseURL:         "bbs.service.cf.internal",
-			AuctioneerAddress:    "https://auctioneer.service.cf.internal:9016",
-			AuctioneerCACert:     "/var/vcap/jobs/bbs/config/auctioneer.ca",
-			AuctioneerClientCert: "/var/vcap/jobs/bbs/config/auctioneer.crt",
-			AuctioneerClientKey:  "/var/vcap/jobs/bbs/config/auctioneer.key",
-			AuctioneerRequireTLS: true,
-			UUID:                 "bosh-boshy-bosh-bosh",
-			CaFile:               "/var/vcap/jobs/bbs/config/ca.crt",
-			CertFile:             "/var/vcap/jobs/bbs/config/bbs.crt",
+			AccessLogPath:                  "/var/vcap/sys/log/bbs/access.log",
+			AdvertiseURL:                   "bbs.service.cf.internal",
+			AuctioneerAddress:              "https://auctioneer.service.cf.internal:9016",
+			AuctioneerCACert:               "/var/vcap/jobs/bbs/config/auctioneer.ca",
+			AuctioneerClientCert:           "/var/vcap/jobs/bbs/config/auctioneer.crt",
+			AuctioneerClientKey:            "/var/vcap/jobs/bbs/config/auctioneer.key",
+			AuctioneerRequireTLS:           true,
+			UUID:                           "bosh-boshy-bosh-bosh",
+			CaFile:                         "/var/vcap/jobs/bbs/config/ca.crt",
+			CellRegistrationsLocketEnabled: true,
+			CertFile:                       "/var/vcap/jobs/bbs/config/bbs.crt",
+			LocksLocketEnabled:             true,
 			ClientLocketConfig: locket.ClientLocketConfig{
 				LocketAddress:        "127.0.0.1:18018",
 				LocketCACertFile:     "locket-ca-cert",
@@ -140,21 +139,12 @@ var _ = Describe("BBSConfig", func() {
 			},
 			DesiredLRPCreationTimeout:       durationjson.Duration(1 * time.Minute),
 			DetectConsulCellRegistrations:   true,
-			DropsondePort:                   3457,
 			EnableConsulServiceRegistration: false,
 			EncryptionConfig: encryption.EncryptionConfig{
 				ActiveKeyLabel: "label",
 				EncryptionKeys: map[string]string{
 					"label": "key",
 				},
-			},
-			ETCDConfig: config.ETCDConfig{
-				CaFile:                 "/var/vcap/jobs/bbs/config/etcd.ca",
-				CertFile:               "/var/vcap/jobs/bbs/config/etcd.crt",
-				ClientSessionCacheSize: 10,
-				ClusterUrls:            []string{"http://127.0.0.1:8500"},
-				KeyFile:                "/var/vcap/jobs/bbs/config/etcd.key",
-				MaxIdleConnsPerHost:    10,
 			},
 			ExpireCompletedTaskDuration: durationjson.Duration(2 * time.Minute),
 			ExpirePendingTaskDuration:   durationjson.Duration(30 * time.Minute),
@@ -176,26 +166,28 @@ var _ = Describe("BBSConfig", func() {
 				JobIP:         "job-ip",
 				JobOrigin:     "job-origin",
 			},
-			ListenAddress:              "0.0.0.0:8889",
-			LockRetryInterval:          durationjson.Duration(locket.RetryInterval),
-			LockTTL:                    durationjson.Duration(locket.DefaultSessionTTL),
-			MaxIdleDatabaseConnections: 50,
-			MaxOpenDatabaseConnections: 200,
-			RepCACert:                  "/var/vcap/jobs/bbs/config/rep.ca",
-			RepClientCert:              "/var/vcap/jobs/bbs/config/rep.crt",
-			RepClientKey:               "/var/vcap/jobs/bbs/config/rep.key",
-			RepClientSessionCacheSize:  10,
-			RepRequireTLS:              true,
-			ReportInterval:             durationjson.Duration(1 * time.Minute),
-			RequireSSL:                 true,
-			SQLCACertFile:              "/var/vcap/jobs/bbs/config/sql.ca",
-			SessionName:                "bbs-session",
-			TaskCallbackWorkers:        1000,
-			UpdateWorkers:              1000,
-			SkipConsulLock:             true,
+			ListenAddress:                 "0.0.0.0:8889",
+			LockRetryInterval:             durationjson.Duration(locket.RetryInterval),
+			LockTTL:                       durationjson.Duration(locket.DefaultSessionTTL),
+			MaxIdleDatabaseConnections:    50,
+			MaxOpenDatabaseConnections:    200,
+			RepCACert:                     "/var/vcap/jobs/bbs/config/rep.ca",
+			RepClientCert:                 "/var/vcap/jobs/bbs/config/rep.crt",
+			RepClientKey:                  "/var/vcap/jobs/bbs/config/rep.key",
+			RepClientSessionCacheSize:     10,
+			RepRequireTLS:                 true,
+			ReportInterval:                durationjson.Duration(1 * time.Minute),
+			RequireSSL:                    true,
+			SQLCACertFile:                 "/var/vcap/jobs/bbs/config/sql.ca",
+			SQLEnableIdentityVerification: true,
+			SessionName:                   "bbs-session",
+			TaskCallbackWorkers:           1000,
+			UpdateWorkers:                 1000,
+			SkipConsulLock:                true,
+			MaxTaskRetries:                3,
 		}
 
-		Expect(bbsConfig).To(Equal(config))
+		Expect(bbsConfig).To(test_helpers.DeepEqual(config))
 	})
 
 	Context("when the file does not exist", func() {
@@ -225,35 +217,6 @@ var _ = Describe("BBSConfig", func() {
 		It("returns an error", func() {
 			_, err := config.NewBBSConfig(configFilePath)
 			Expect(err).To(MatchError(ContainSubstring("missing unit")))
-		})
-	})
-
-	Context("default values", func() {
-		BeforeEach(func() {
-			configData = `{}`
-		})
-
-		It("uses default values when they are not specified", func() {
-			bbsConfig, err := config.NewBBSConfig(configFilePath)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(bbsConfig).To(Equal(config.DefaultConfig()))
-		})
-
-		Context("when serialized from BBSConfig", func() {
-			BeforeEach(func() {
-				bbsConfig := config.BBSConfig{}
-				bytes, err := json.Marshal(bbsConfig)
-				Expect(err).NotTo(HaveOccurred())
-				configData = string(bytes)
-			})
-
-			It("uses default values when they are not specified", func() {
-				bbsConfig, err := config.NewBBSConfig(configFilePath)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(bbsConfig).To(Equal(config.DefaultConfig()))
-			})
 		})
 	})
 })

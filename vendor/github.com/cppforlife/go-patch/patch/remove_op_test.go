@@ -31,6 +31,10 @@ var _ = Describe("RemoveOp.Apply", func() {
 			res, err = RemoveOp{Path: MustNewPointerFromString("/-1")}.Apply([]interface{}{1, 2, 3})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(Equal([]interface{}{1, 2}))
+
+			res, err = RemoveOp{Path: MustNewPointerFromString("/0")}.Apply([]interface{}{1})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal([]interface{}{}))
 		})
 
 		It("removes relative array item", func() {
@@ -80,12 +84,12 @@ var _ = Describe("RemoveOp.Apply", func() {
 			_, err := RemoveOp{Path: MustNewPointerFromString("/1")}.Apply([]interface{}{})
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(
-				"Expected to find array index '1' but found array of length '0'"))
+				"Expected to find array index '1' but found array of length '0' for path '/1'"))
 
 			_, err = RemoveOp{Path: MustNewPointerFromString("/1/1")}.Apply([]interface{}{})
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(
-				"Expected to find array index '1' but found array of length '0'"))
+				"Expected to find array index '1' but found array of length '0' for path '/1'"))
 		})
 	})
 
@@ -108,6 +112,16 @@ var _ = Describe("RemoveOp.Apply", func() {
 			Expect(res).To(Equal([]interface{}{
 				map[interface{}]interface{}{"key": "val2"},
 			}))
+		})
+
+		It("removes array item if found, leaving empty array", func() {
+			doc := []interface{}{
+				map[interface{}]interface{}{"key": "val"},
+			}
+
+			res, err := RemoveOp{Path: MustNewPointerFromString("/key=val")}.Apply(doc)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res).To(Equal([]interface{}{}))
 		})
 
 		It("removes relative array item", func() {

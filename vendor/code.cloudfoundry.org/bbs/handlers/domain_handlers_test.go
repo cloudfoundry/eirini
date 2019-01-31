@@ -153,11 +153,11 @@ var _ = Describe("Domain Handlers", func() {
 
 		Context("when reading domains from DB succeeds", func() {
 			BeforeEach(func() {
-				fakeDomainDB.DomainsReturns(domains, nil)
+				fakeDomainDB.FreshDomainsReturns(domains, nil)
 			})
 
 			It("call the DB to retrieve the domains", func() {
-				Expect(fakeDomainDB.DomainsCallCount()).To(Equal(1))
+				Expect(fakeDomainDB.FreshDomainsCallCount()).To(Equal(1))
 			})
 
 			It("returns a list of domains", func() {
@@ -174,7 +174,7 @@ var _ = Describe("Domain Handlers", func() {
 
 		Context("when the DB returns no domains", func() {
 			BeforeEach(func() {
-				fakeDomainDB.DomainsReturns([]string{}, nil)
+				fakeDomainDB.FreshDomainsReturns([]string{}, nil)
 			})
 
 			It("returns an empty list", func() {
@@ -191,7 +191,7 @@ var _ = Describe("Domain Handlers", func() {
 
 		Context("when the DB returns an unrecoverable error", func() {
 			BeforeEach(func() {
-				fakeDomainDB.DomainsReturns([]string{}, models.NewUnrecoverableError(nil))
+				fakeDomainDB.FreshDomainsReturns([]string{}, models.NewUnrecoverableError(nil))
 			})
 
 			It("logs and writes to the exit channel", func() {
@@ -202,7 +202,7 @@ var _ = Describe("Domain Handlers", func() {
 
 		Context("when the DB errors out", func() {
 			BeforeEach(func() {
-				fakeDomainDB.DomainsReturns([]string{}, models.ErrUnknownError)
+				fakeDomainDB.FreshDomainsReturns([]string{}, models.ErrUnknownError)
 			})
 
 			It("provides relevant error information", func() {

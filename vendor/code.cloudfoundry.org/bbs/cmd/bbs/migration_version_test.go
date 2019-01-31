@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/bbs/cmd/bbs/testrunner"
-	"code.cloudfoundry.org/bbs/db/etcd"
 	"code.cloudfoundry.org/bbs/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -39,11 +38,6 @@ var _ = Describe("Migration Version", func() {
 		bbsPath, err := gexec.Build("code.cloudfoundry.org/bbs/cmd/bbs", "-race")
 		Expect(err).NotTo(HaveOccurred())
 		bbsBinPath = string(bbsPath)
-
-		value, err := json.Marshal(models.Version{CurrentVersion: 100, TargetVersion: 100})
-		// write initial version
-		_, err = storeClient.Set(etcd.VersionKey, value, etcd.NO_TTL)
-		Expect(err).NotTo(HaveOccurred())
 
 		bbsRunner = testrunner.WaitForMigration(bbsBinPath, bbsConfig)
 		bbsProcess = ginkgomon.Invoke(bbsRunner)
@@ -87,7 +81,6 @@ var _ = Describe("Migration Version", func() {
 
 			// the sql test migration
 			Expect(version.CurrentVersion).To(BeEquivalentTo(9999999999))
-			Expect(version.TargetVersion).To(BeEquivalentTo(9999999999))
 
 			var count int
 			err = sqlConn.QueryRow(`SELECT count(*) FROM information_schema.tables WHERE table_name = 'sweet_table'`).Scan(&count)

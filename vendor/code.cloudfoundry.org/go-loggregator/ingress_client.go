@@ -451,6 +451,11 @@ func (c *IngressClient) EmitEvent(ctx context.Context, title, body string, opts 
 	return err
 }
 
+// Emit sends an envelope. It will sent within a batch.
+func (c *IngressClient) Emit(e *loggregator_v2.Envelope) {
+	c.envelopes <- e
+}
+
 // CloseSend will flush the envelope buffers and close the stream to the
 // ingress server. This method will block until the buffers are flushed.
 func (c *IngressClient) CloseSend() error {

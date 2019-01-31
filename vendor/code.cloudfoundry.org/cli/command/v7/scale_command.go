@@ -20,7 +20,7 @@ type ScaleActor interface {
 	ScaleProcessByApplication(appGUID string, process v7action.Process) (v7action.Warnings, error)
 	StopApplication(appGUID string) (v7action.Warnings, error)
 	StartApplication(appGUID string) (v7action.Application, v7action.Warnings, error)
-	PollStart(appGUID string, warnings chan<- v7action.Warnings) error
+	PollStart(appGUID string) (v7action.Warnings, error)
 }
 
 type ScaleCommand struct {
@@ -31,7 +31,7 @@ type ScaleCommand struct {
 	MemoryLimit         flag.Megabytes `short:"m" required:"false" description:"Memory limit (e.g. 256M, 1024M, 1G)"`
 	ProcessType         string         `long:"process" default:"web" description:"App process to scale"`
 	usage               interface{}    `usage:"CF_NAME scale APP_NAME [--process PROCESS] [-i INSTANCES] [-k DISK] [-m MEMORY] [-f]"`
-	relatedCommands     interface{}    `related_commands:"v3-push"`
+	relatedCommands     interface{}    `related_commands:"push"`
 	envCFStartupTimeout interface{}    `environmentName:"CF_STARTUP_TIMEOUT" environmentDescription:"Max wait time for app instance startup, in minutes" environmentDefault:"5"`
 
 	UI          command.UI
@@ -80,7 +80,7 @@ func (cmd ScaleCommand) Execute(args []string) error {
 	}
 
 	if !cmd.Instances.IsSet && !cmd.DiskLimit.IsSet && !cmd.MemoryLimit.IsSet {
-		return cmd.showCurrentScale(user.Name)
+		return cmd.showCurrentScale(user.Name, err)
 	}
 
 	scaled, err := cmd.scaleProcess(app.GUID, user.Name)
@@ -91,34 +91,31 @@ func (cmd ScaleCommand) Execute(args []string) error {
 		return nil
 	}
 
-	pollWarnings := make(chan v7action.Warnings)
-	done := make(chan bool)
-	go func() {
-		defer close(done)
-		for {
-			select {
-			case message := <-pollWarnings:
-				cmd.UI.DisplayWarnings(message)
-			case <-done:
-				return
-			}
-		}
-	}()
+	warnings, err = cmd.Actor.PollStart(app.GUID)
+	cmd.UI.DisplayWarnings(warnings)
 
-	err = cmd.Actor.PollStart(app.GUID, pollWarnings)
-	done <- true
-
-	if err != nil {
-		if _, ok := err.(actionerror.StartupTimeoutError); ok {
-			return translatableerror.StartupTimeoutError{
-				AppName:    cmd.RequiredArgs.AppName,
-				BinaryName: cmd.Config.BinaryName(),
-			}
-		}
-		return err
+	showErr := cmd.showCurrentScale(user.Name, err)
+	if showErr != nil {
+		return showErr
 	}
 
-	return cmd.showCurrentScale(user.Name)
+	return cmd.translateErrors(err)
+}
+
+func (cmd ScaleCommand) translateErrors(err error) error {
+	if _, ok := err.(actionerror.StartupTimeoutError); ok {
+		return translatableerror.StartupTimeoutError{
+			AppName:    cmd.RequiredArgs.AppName,
+			BinaryName: cmd.Config.BinaryName(),
+		}
+	} else if _, ok := err.(actionerror.AllInstancesCrashedError); ok {
+		return translatableerror.ApplicationUnableToStartError{
+			AppName:    cmd.RequiredArgs.AppName,
+			BinaryName: cmd.Config.BinaryName(),
+		}
+	}
+
+	return err
 }
 
 func (cmd ScaleCommand) scaleProcess(appGUID string, username string) (bool, error) {
@@ -200,7 +197,11 @@ func (cmd ScaleCommand) restartApplication(appGUID string, username string) erro
 	return nil
 }
 
-func (cmd ScaleCommand) showCurrentScale(userName string) error {
+func (cmd ScaleCommand) showCurrentScale(userName string, runningErr error) error {
+	if !shouldShowCurrentScale(runningErr) {
+		return nil
+	}
+
 	cmd.UI.DisplayTextWithFlavor("Showing current scale of app {{.AppName}} in org {{.OrgName}} / space {{.SpaceName}} as {{.Username}}...", map[string]interface{}{
 		"AppName":   cmd.RequiredArgs.AppName,
 		"OrgName":   cmd.Config.TargetedOrganization().Name,
@@ -217,4 +218,16 @@ func (cmd ScaleCommand) showCurrentScale(userName string) error {
 	appSummaryDisplayer := shared.NewAppSummaryDisplayer(cmd.UI)
 	appSummaryDisplayer.AppDisplay(summary, false)
 	return nil
+}
+
+func shouldShowCurrentScale(err error) bool {
+	if err == nil {
+		return true
+	}
+
+	if _, ok := err.(actionerror.AllInstancesCrashedError); ok {
+		return true
+	}
+
+	return false
 }

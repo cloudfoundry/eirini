@@ -12,6 +12,12 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 type Log_Type int32
 
 const (
@@ -31,58 +37,51 @@ var Log_Type_value = map[string]int32{
 func (x Log_Type) String() string {
 	return proto.EnumName(Log_Type_name, int32(x))
 }
-func (Log_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptor1, []int{3, 0} }
+func (Log_Type) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_envelope_1843aa18364a6e12, []int{3, 0}
+}
 
 type Envelope struct {
-	Timestamp      int64             `protobuf:"varint,1,opt,name=timestamp" json:"timestamp,omitempty"`
-	SourceId       string            `protobuf:"bytes,2,opt,name=source_id" json:"source_id,omitempty"`
-	InstanceId     string            `protobuf:"bytes,8,opt,name=instance_id" json:"instance_id,omitempty"`
-	DeprecatedTags map[string]*Value `protobuf:"bytes,3,rep,name=deprecated_tags" json:"deprecated_tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Tags           map[string]string `protobuf:"bytes,9,rep,name=tags" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Timestamp      int64             `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	SourceId       string            `protobuf:"bytes,2,opt,name=source_id,proto3" json:"source_id,omitempty"`
+	InstanceId     string            `protobuf:"bytes,8,opt,name=instance_id,proto3" json:"instance_id,omitempty"`
+	DeprecatedTags map[string]*Value `protobuf:"bytes,3,rep,name=deprecated_tags,proto3" json:"deprecated_tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Tags           map[string]string `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Types that are valid to be assigned to Message:
 	//	*Envelope_Log
 	//	*Envelope_Counter
 	//	*Envelope_Gauge
 	//	*Envelope_Timer
 	//	*Envelope_Event
-	Message isEnvelope_Message `protobuf_oneof:"message"`
+	Message              isEnvelope_Message `protobuf_oneof:"message"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
-func (m *Envelope) Reset()                    { *m = Envelope{} }
-func (m *Envelope) String() string            { return proto.CompactTextString(m) }
-func (*Envelope) ProtoMessage()               {}
-func (*Envelope) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (m *Envelope) Reset()         { *m = Envelope{} }
+func (m *Envelope) String() string { return proto.CompactTextString(m) }
+func (*Envelope) ProtoMessage()    {}
+func (*Envelope) Descriptor() ([]byte, []int) {
+	return fileDescriptor_envelope_1843aa18364a6e12, []int{0}
+}
+func (m *Envelope) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Envelope.Unmarshal(m, b)
+}
+func (m *Envelope) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Envelope.Marshal(b, m, deterministic)
+}
+func (dst *Envelope) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Envelope.Merge(dst, src)
+}
+func (m *Envelope) XXX_Size() int {
+	return xxx_messageInfo_Envelope.Size(m)
+}
+func (m *Envelope) XXX_DiscardUnknown() {
+	xxx_messageInfo_Envelope.DiscardUnknown(m)
+}
 
-type isEnvelope_Message interface{ isEnvelope_Message() }
-
-type Envelope_Log struct {
-	Log *Log `protobuf:"bytes,4,opt,name=log,oneof"`
-}
-type Envelope_Counter struct {
-	Counter *Counter `protobuf:"bytes,5,opt,name=counter,oneof"`
-}
-type Envelope_Gauge struct {
-	Gauge *Gauge `protobuf:"bytes,6,opt,name=gauge,oneof"`
-}
-type Envelope_Timer struct {
-	Timer *Timer `protobuf:"bytes,7,opt,name=timer,oneof"`
-}
-type Envelope_Event struct {
-	Event *Event `protobuf:"bytes,10,opt,name=event,oneof"`
-}
-
-func (*Envelope_Log) isEnvelope_Message()     {}
-func (*Envelope_Counter) isEnvelope_Message() {}
-func (*Envelope_Gauge) isEnvelope_Message()   {}
-func (*Envelope_Timer) isEnvelope_Message()   {}
-func (*Envelope_Event) isEnvelope_Message()   {}
-
-func (m *Envelope) GetMessage() isEnvelope_Message {
-	if m != nil {
-		return m.Message
-	}
-	return nil
-}
+var xxx_messageInfo_Envelope proto.InternalMessageInfo
 
 func (m *Envelope) GetTimestamp() int64 {
 	if m != nil {
@@ -115,6 +114,47 @@ func (m *Envelope) GetDeprecatedTags() map[string]*Value {
 func (m *Envelope) GetTags() map[string]string {
 	if m != nil {
 		return m.Tags
+	}
+	return nil
+}
+
+type isEnvelope_Message interface {
+	isEnvelope_Message()
+}
+
+type Envelope_Log struct {
+	Log *Log `protobuf:"bytes,4,opt,name=log,proto3,oneof"`
+}
+
+type Envelope_Counter struct {
+	Counter *Counter `protobuf:"bytes,5,opt,name=counter,proto3,oneof"`
+}
+
+type Envelope_Gauge struct {
+	Gauge *Gauge `protobuf:"bytes,6,opt,name=gauge,proto3,oneof"`
+}
+
+type Envelope_Timer struct {
+	Timer *Timer `protobuf:"bytes,7,opt,name=timer,proto3,oneof"`
+}
+
+type Envelope_Event struct {
+	Event *Event `protobuf:"bytes,10,opt,name=event,proto3,oneof"`
+}
+
+func (*Envelope_Log) isEnvelope_Message() {}
+
+func (*Envelope_Counter) isEnvelope_Message() {}
+
+func (*Envelope_Gauge) isEnvelope_Message() {}
+
+func (*Envelope_Timer) isEnvelope_Message() {}
+
+func (*Envelope_Event) isEnvelope_Message() {}
+
+func (m *Envelope) GetMessage() isEnvelope_Message {
+	if m != nil {
+		return m.Message
 	}
 	return nil
 }
@@ -255,27 +295,27 @@ func _Envelope_OneofSizer(msg proto.Message) (n int) {
 	switch x := m.Message.(type) {
 	case *Envelope_Log:
 		s := proto.Size(x.Log)
-		n += proto.SizeVarint(4<<3 | proto.WireBytes)
+		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
 	case *Envelope_Counter:
 		s := proto.Size(x.Counter)
-		n += proto.SizeVarint(5<<3 | proto.WireBytes)
+		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
 	case *Envelope_Gauge:
 		s := proto.Size(x.Gauge)
-		n += proto.SizeVarint(6<<3 | proto.WireBytes)
+		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
 	case *Envelope_Timer:
 		s := proto.Size(x.Timer)
-		n += proto.SizeVarint(7<<3 | proto.WireBytes)
+		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
 	case *Envelope_Event:
 		s := proto.Size(x.Event)
-		n += proto.SizeVarint(10<<3 | proto.WireBytes)
+		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
 	case nil:
@@ -286,13 +326,35 @@ func _Envelope_OneofSizer(msg proto.Message) (n int) {
 }
 
 type EnvelopeBatch struct {
-	Batch []*Envelope `protobuf:"bytes,1,rep,name=batch" json:"batch,omitempty"`
+	Batch                []*Envelope `protobuf:"bytes,1,rep,name=batch,proto3" json:"batch,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
+	XXX_unrecognized     []byte      `json:"-"`
+	XXX_sizecache        int32       `json:"-"`
 }
 
-func (m *EnvelopeBatch) Reset()                    { *m = EnvelopeBatch{} }
-func (m *EnvelopeBatch) String() string            { return proto.CompactTextString(m) }
-func (*EnvelopeBatch) ProtoMessage()               {}
-func (*EnvelopeBatch) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
+func (m *EnvelopeBatch) Reset()         { *m = EnvelopeBatch{} }
+func (m *EnvelopeBatch) String() string { return proto.CompactTextString(m) }
+func (*EnvelopeBatch) ProtoMessage()    {}
+func (*EnvelopeBatch) Descriptor() ([]byte, []int) {
+	return fileDescriptor_envelope_1843aa18364a6e12, []int{1}
+}
+func (m *EnvelopeBatch) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_EnvelopeBatch.Unmarshal(m, b)
+}
+func (m *EnvelopeBatch) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_EnvelopeBatch.Marshal(b, m, deterministic)
+}
+func (dst *EnvelopeBatch) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EnvelopeBatch.Merge(dst, src)
+}
+func (m *EnvelopeBatch) XXX_Size() int {
+	return xxx_messageInfo_EnvelopeBatch.Size(m)
+}
+func (m *EnvelopeBatch) XXX_DiscardUnknown() {
+	xxx_messageInfo_EnvelopeBatch.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EnvelopeBatch proto.InternalMessageInfo
 
 func (m *EnvelopeBatch) GetBatch() []*Envelope {
 	if m != nil {
@@ -306,28 +368,56 @@ type Value struct {
 	//	*Value_Text
 	//	*Value_Integer
 	//	*Value_Decimal
-	Data isValue_Data `protobuf_oneof:"data"`
+	Data                 isValue_Data `protobuf_oneof:"data"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
 }
 
-func (m *Value) Reset()                    { *m = Value{} }
-func (m *Value) String() string            { return proto.CompactTextString(m) }
-func (*Value) ProtoMessage()               {}
-func (*Value) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{2} }
+func (m *Value) Reset()         { *m = Value{} }
+func (m *Value) String() string { return proto.CompactTextString(m) }
+func (*Value) ProtoMessage()    {}
+func (*Value) Descriptor() ([]byte, []int) {
+	return fileDescriptor_envelope_1843aa18364a6e12, []int{2}
+}
+func (m *Value) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Value.Unmarshal(m, b)
+}
+func (m *Value) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Value.Marshal(b, m, deterministic)
+}
+func (dst *Value) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Value.Merge(dst, src)
+}
+func (m *Value) XXX_Size() int {
+	return xxx_messageInfo_Value.Size(m)
+}
+func (m *Value) XXX_DiscardUnknown() {
+	xxx_messageInfo_Value.DiscardUnknown(m)
+}
 
-type isValue_Data interface{ isValue_Data() }
+var xxx_messageInfo_Value proto.InternalMessageInfo
+
+type isValue_Data interface {
+	isValue_Data()
+}
 
 type Value_Text struct {
-	Text string `protobuf:"bytes,1,opt,name=text,oneof"`
-}
-type Value_Integer struct {
-	Integer int64 `protobuf:"varint,2,opt,name=integer,oneof"`
-}
-type Value_Decimal struct {
-	Decimal float64 `protobuf:"fixed64,3,opt,name=decimal,oneof"`
+	Text string `protobuf:"bytes,1,opt,name=text,proto3,oneof"`
 }
 
-func (*Value_Text) isValue_Data()    {}
+type Value_Integer struct {
+	Integer int64 `protobuf:"varint,2,opt,name=integer,proto3,oneof"`
+}
+
+type Value_Decimal struct {
+	Decimal float64 `protobuf:"fixed64,3,opt,name=decimal,proto3,oneof"`
+}
+
+func (*Value_Text) isValue_Data() {}
+
 func (*Value_Integer) isValue_Data() {}
+
 func (*Value_Decimal) isValue_Data() {}
 
 func (m *Value) GetData() isValue_Data {
@@ -421,14 +511,14 @@ func _Value_OneofSizer(msg proto.Message) (n int) {
 	// data
 	switch x := m.Data.(type) {
 	case *Value_Text:
-		n += proto.SizeVarint(1<<3 | proto.WireBytes)
+		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(len(x.Text)))
 		n += len(x.Text)
 	case *Value_Integer:
-		n += proto.SizeVarint(2<<3 | proto.WireVarint)
+		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(x.Integer))
 	case *Value_Decimal:
-		n += proto.SizeVarint(3<<3 | proto.WireFixed64)
+		n += 1 // tag and wire
 		n += 8
 	case nil:
 	default:
@@ -438,14 +528,36 @@ func _Value_OneofSizer(msg proto.Message) (n int) {
 }
 
 type Log struct {
-	Payload []byte   `protobuf:"bytes,1,opt,name=payload,proto3" json:"payload,omitempty"`
-	Type    Log_Type `protobuf:"varint,2,opt,name=type,enum=loggregator.v2.Log_Type" json:"type,omitempty"`
+	Payload              []byte   `protobuf:"bytes,1,opt,name=payload,proto3" json:"payload,omitempty"`
+	Type                 Log_Type `protobuf:"varint,2,opt,name=type,proto3,enum=loggregator.v2.Log_Type" json:"type,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Log) Reset()                    { *m = Log{} }
-func (m *Log) String() string            { return proto.CompactTextString(m) }
-func (*Log) ProtoMessage()               {}
-func (*Log) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{3} }
+func (m *Log) Reset()         { *m = Log{} }
+func (m *Log) String() string { return proto.CompactTextString(m) }
+func (*Log) ProtoMessage()    {}
+func (*Log) Descriptor() ([]byte, []int) {
+	return fileDescriptor_envelope_1843aa18364a6e12, []int{3}
+}
+func (m *Log) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Log.Unmarshal(m, b)
+}
+func (m *Log) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Log.Marshal(b, m, deterministic)
+}
+func (dst *Log) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Log.Merge(dst, src)
+}
+func (m *Log) XXX_Size() int {
+	return xxx_messageInfo_Log.Size(m)
+}
+func (m *Log) XXX_DiscardUnknown() {
+	xxx_messageInfo_Log.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Log proto.InternalMessageInfo
 
 func (m *Log) GetPayload() []byte {
 	if m != nil {
@@ -462,15 +574,37 @@ func (m *Log) GetType() Log_Type {
 }
 
 type Counter struct {
-	Name  string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Delta uint64 `protobuf:"varint,2,opt,name=delta" json:"delta,omitempty"`
-	Total uint64 `protobuf:"varint,3,opt,name=total" json:"total,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Delta                uint64   `protobuf:"varint,2,opt,name=delta,proto3" json:"delta,omitempty"`
+	Total                uint64   `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Counter) Reset()                    { *m = Counter{} }
-func (m *Counter) String() string            { return proto.CompactTextString(m) }
-func (*Counter) ProtoMessage()               {}
-func (*Counter) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{4} }
+func (m *Counter) Reset()         { *m = Counter{} }
+func (m *Counter) String() string { return proto.CompactTextString(m) }
+func (*Counter) ProtoMessage()    {}
+func (*Counter) Descriptor() ([]byte, []int) {
+	return fileDescriptor_envelope_1843aa18364a6e12, []int{4}
+}
+func (m *Counter) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Counter.Unmarshal(m, b)
+}
+func (m *Counter) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Counter.Marshal(b, m, deterministic)
+}
+func (dst *Counter) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Counter.Merge(dst, src)
+}
+func (m *Counter) XXX_Size() int {
+	return xxx_messageInfo_Counter.Size(m)
+}
+func (m *Counter) XXX_DiscardUnknown() {
+	xxx_messageInfo_Counter.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Counter proto.InternalMessageInfo
 
 func (m *Counter) GetName() string {
 	if m != nil {
@@ -494,13 +628,35 @@ func (m *Counter) GetTotal() uint64 {
 }
 
 type Gauge struct {
-	Metrics map[string]*GaugeValue `protobuf:"bytes,1,rep,name=metrics" json:"metrics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Metrics              map[string]*GaugeValue `protobuf:"bytes,1,rep,name=metrics,proto3" json:"metrics,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
 }
 
-func (m *Gauge) Reset()                    { *m = Gauge{} }
-func (m *Gauge) String() string            { return proto.CompactTextString(m) }
-func (*Gauge) ProtoMessage()               {}
-func (*Gauge) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{5} }
+func (m *Gauge) Reset()         { *m = Gauge{} }
+func (m *Gauge) String() string { return proto.CompactTextString(m) }
+func (*Gauge) ProtoMessage()    {}
+func (*Gauge) Descriptor() ([]byte, []int) {
+	return fileDescriptor_envelope_1843aa18364a6e12, []int{5}
+}
+func (m *Gauge) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Gauge.Unmarshal(m, b)
+}
+func (m *Gauge) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Gauge.Marshal(b, m, deterministic)
+}
+func (dst *Gauge) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Gauge.Merge(dst, src)
+}
+func (m *Gauge) XXX_Size() int {
+	return xxx_messageInfo_Gauge.Size(m)
+}
+func (m *Gauge) XXX_DiscardUnknown() {
+	xxx_messageInfo_Gauge.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Gauge proto.InternalMessageInfo
 
 func (m *Gauge) GetMetrics() map[string]*GaugeValue {
 	if m != nil {
@@ -510,14 +666,36 @@ func (m *Gauge) GetMetrics() map[string]*GaugeValue {
 }
 
 type GaugeValue struct {
-	Unit  string  `protobuf:"bytes,1,opt,name=unit" json:"unit,omitempty"`
-	Value float64 `protobuf:"fixed64,2,opt,name=value" json:"value,omitempty"`
+	Unit                 string   `protobuf:"bytes,1,opt,name=unit,proto3" json:"unit,omitempty"`
+	Value                float64  `protobuf:"fixed64,2,opt,name=value,proto3" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *GaugeValue) Reset()                    { *m = GaugeValue{} }
-func (m *GaugeValue) String() string            { return proto.CompactTextString(m) }
-func (*GaugeValue) ProtoMessage()               {}
-func (*GaugeValue) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{6} }
+func (m *GaugeValue) Reset()         { *m = GaugeValue{} }
+func (m *GaugeValue) String() string { return proto.CompactTextString(m) }
+func (*GaugeValue) ProtoMessage()    {}
+func (*GaugeValue) Descriptor() ([]byte, []int) {
+	return fileDescriptor_envelope_1843aa18364a6e12, []int{6}
+}
+func (m *GaugeValue) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GaugeValue.Unmarshal(m, b)
+}
+func (m *GaugeValue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GaugeValue.Marshal(b, m, deterministic)
+}
+func (dst *GaugeValue) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GaugeValue.Merge(dst, src)
+}
+func (m *GaugeValue) XXX_Size() int {
+	return xxx_messageInfo_GaugeValue.Size(m)
+}
+func (m *GaugeValue) XXX_DiscardUnknown() {
+	xxx_messageInfo_GaugeValue.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GaugeValue proto.InternalMessageInfo
 
 func (m *GaugeValue) GetUnit() string {
 	if m != nil {
@@ -534,15 +712,37 @@ func (m *GaugeValue) GetValue() float64 {
 }
 
 type Timer struct {
-	Name  string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Start int64  `protobuf:"varint,2,opt,name=start" json:"start,omitempty"`
-	Stop  int64  `protobuf:"varint,3,opt,name=stop" json:"stop,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Start                int64    `protobuf:"varint,2,opt,name=start,proto3" json:"start,omitempty"`
+	Stop                 int64    `protobuf:"varint,3,opt,name=stop,proto3" json:"stop,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Timer) Reset()                    { *m = Timer{} }
-func (m *Timer) String() string            { return proto.CompactTextString(m) }
-func (*Timer) ProtoMessage()               {}
-func (*Timer) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{7} }
+func (m *Timer) Reset()         { *m = Timer{} }
+func (m *Timer) String() string { return proto.CompactTextString(m) }
+func (*Timer) ProtoMessage()    {}
+func (*Timer) Descriptor() ([]byte, []int) {
+	return fileDescriptor_envelope_1843aa18364a6e12, []int{7}
+}
+func (m *Timer) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Timer.Unmarshal(m, b)
+}
+func (m *Timer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Timer.Marshal(b, m, deterministic)
+}
+func (dst *Timer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Timer.Merge(dst, src)
+}
+func (m *Timer) XXX_Size() int {
+	return xxx_messageInfo_Timer.Size(m)
+}
+func (m *Timer) XXX_DiscardUnknown() {
+	xxx_messageInfo_Timer.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Timer proto.InternalMessageInfo
 
 func (m *Timer) GetName() string {
 	if m != nil {
@@ -566,14 +766,36 @@ func (m *Timer) GetStop() int64 {
 }
 
 type Event struct {
-	Title string `protobuf:"bytes,1,opt,name=title" json:"title,omitempty"`
-	Body  string `protobuf:"bytes,2,opt,name=body" json:"body,omitempty"`
+	Title                string   `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Body                 string   `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Event) Reset()                    { *m = Event{} }
-func (m *Event) String() string            { return proto.CompactTextString(m) }
-func (*Event) ProtoMessage()               {}
-func (*Event) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{8} }
+func (m *Event) Reset()         { *m = Event{} }
+func (m *Event) String() string { return proto.CompactTextString(m) }
+func (*Event) ProtoMessage()    {}
+func (*Event) Descriptor() ([]byte, []int) {
+	return fileDescriptor_envelope_1843aa18364a6e12, []int{8}
+}
+func (m *Event) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Event.Unmarshal(m, b)
+}
+func (m *Event) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Event.Marshal(b, m, deterministic)
+}
+func (dst *Event) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Event.Merge(dst, src)
+}
+func (m *Event) XXX_Size() int {
+	return xxx_messageInfo_Event.Size(m)
+}
+func (m *Event) XXX_DiscardUnknown() {
+	xxx_messageInfo_Event.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Event proto.InternalMessageInfo
 
 func (m *Event) GetTitle() string {
 	if m != nil {
@@ -591,20 +813,23 @@ func (m *Event) GetBody() string {
 
 func init() {
 	proto.RegisterType((*Envelope)(nil), "loggregator.v2.Envelope")
+	proto.RegisterMapType((map[string]*Value)(nil), "loggregator.v2.Envelope.DeprecatedTagsEntry")
+	proto.RegisterMapType((map[string]string)(nil), "loggregator.v2.Envelope.TagsEntry")
 	proto.RegisterType((*EnvelopeBatch)(nil), "loggregator.v2.EnvelopeBatch")
 	proto.RegisterType((*Value)(nil), "loggregator.v2.Value")
 	proto.RegisterType((*Log)(nil), "loggregator.v2.Log")
 	proto.RegisterType((*Counter)(nil), "loggregator.v2.Counter")
 	proto.RegisterType((*Gauge)(nil), "loggregator.v2.Gauge")
+	proto.RegisterMapType((map[string]*GaugeValue)(nil), "loggregator.v2.Gauge.MetricsEntry")
 	proto.RegisterType((*GaugeValue)(nil), "loggregator.v2.GaugeValue")
 	proto.RegisterType((*Timer)(nil), "loggregator.v2.Timer")
 	proto.RegisterType((*Event)(nil), "loggregator.v2.Event")
 	proto.RegisterEnum("loggregator.v2.Log_Type", Log_Type_name, Log_Type_value)
 }
 
-func init() { proto.RegisterFile("envelope.proto", fileDescriptor1) }
+func init() { proto.RegisterFile("envelope.proto", fileDescriptor_envelope_1843aa18364a6e12) }
 
-var fileDescriptor1 = []byte{
+var fileDescriptor_envelope_1843aa18364a6e12 = []byte{
 	// 651 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x94, 0xd1, 0x6b, 0xd4, 0x4e,
 	0x10, 0xc7, 0x2f, 0x4d, 0xd2, 0x34, 0xd3, 0xfe, 0xfa, 0x2b, 0xdb, 0x8a, 0xe1, 0x10, 0x3c, 0xf2,

@@ -1,0 +1,34 @@
+syntax = "proto2";
+
+package models;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+message ImageLayer {
+  enum DigestAlgorithm {
+    DigestAlgorithmInvalid = 0; // not camel cased since it isn't supposed to be used by API users
+    SHA256                 = 1 [(gogoproto.enumvalue_customname) = "DigestAlgorithmSha256"];
+    SHA512                 = 2 [(gogoproto.enumvalue_customname) = "DigestAlgorithmSha512"];
+  }
+
+  enum MediaType {
+    MediaTypeInvalid = 0; // not camel cased since it isn't supposed to be used by API users
+    TGZ              = 1 [(gogoproto.enumvalue_customname) = "MediaTypeTgz"];
+    TAR              = 2 [(gogoproto.enumvalue_customname) = "MediaTypeTar"];
+    ZIP              = 3 [(gogoproto.enumvalue_customname) = "MediaTypeZip"];
+  }
+
+  enum Type {
+    LayerTypeInvalid = 0; // not camel cased since it isn't supposed to be used by API users
+    SHARED           = 1 [(gogoproto.enumvalue_customname) = "LayerTypeShared"];
+    EXCLUSIVE        = 2 [(gogoproto.enumvalue_customname) = "LayerTypeExclusive"];
+  }
+
+  optional string name                      = 1 [(gogoproto.jsontag) = "name,omitempty"];
+  optional string url                       = 2;
+  optional string destination_path          = 3;
+  optional Type layer_type                  = 4 [(gogoproto.jsontag) = "layer_type", (gogoproto.nullable) = false];
+  optional MediaType media_type             = 5 [(gogoproto.jsontag) = "media_type", (gogoproto.nullable) = false];
+  optional DigestAlgorithm digest_algorithm = 6 [(gogoproto.jsontag) = "digest_algorithm,omitempty", (gogoproto.nullable) = false];
+  optional string digest_value              = 7 [(gogoproto.jsontag) = "digest_value,omitempty"];
+}

@@ -15,8 +15,10 @@ var _ = Describe("Config (windows specific)", func() {
 
 	BeforeEach(func() {
 		cfg = config.Config{
-			ApiURL:  "http://api.example.com",
-			AuthURL: "http://auth.example.com",
+			ConfigWithoutSecrets: config.ConfigWithoutSecrets{
+				ApiURL:  "http://api.example.com",
+				AuthURL: "http://auth.example.com",
+			},
 		}
 	})
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/ginkgomon"
@@ -150,6 +151,30 @@ var _ = Describe("ConvergerProcess", func() {
 			fakeClock.WaitForWatcherAndIncrement(convergeRepeatInterval + aBit)
 			Eventually(fakeTaskController.ConvergeTasksCallCount).Should(Equal(2))
 			Eventually(fakeLrpConvergenceController.ConvergeLRPsCallCount).Should(Equal(2))
+		})
+	})
+
+	Describe("converging when database is unresponsive", func() {
+		var (
+			finishChan chan struct{}
+		)
+
+		BeforeEach(func() {
+			finishChan = make(chan struct{})
+			fakeLrpConvergenceController.ConvergeLRPsStub = func(lager.Logger) {
+				<-finishChan
+			}
+		})
+
+		It("is still able to shutdown when signaled", func() {
+			fakeClock.WaitForWatcherAndIncrement(convergeRepeatInterval + aBit)
+
+			Eventually(fakeTaskController.ConvergeTasksCallCount).Should(Equal(1))
+			Eventually(fakeLrpConvergenceController.ConvergeLRPsCallCount).Should(Equal(1))
+
+			ginkgomon.Interrupt(process)
+			Eventually(process.Wait()).Should(Receive())
+			close(finishChan)
 		})
 	})
 })

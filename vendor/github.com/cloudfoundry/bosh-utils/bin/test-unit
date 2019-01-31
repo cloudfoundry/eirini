@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+bin=$(dirname $0)
 
 echo -e "\n Testing packages..."
-ginkgo -r -race -trace -skipPackage="vendor" $@
+$bin/env ginkgo -r -race -trace -skipPackage="vendor" $@

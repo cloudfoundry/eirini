@@ -42,11 +42,9 @@ func (e *errorWrapper) Wrap(innerconnection cloudcontroller.Connection) cloudcon
 func convert400(rawHTTPStatusErr ccerror.RawHTTPStatusError) error {
 	// Try to unmarshal the raw error into a CC error. If unmarshaling fails,
 	// either we're not talking to a CC, or the CC returned invalid json.
-	var errorResponse ccerror.V2ErrorResponse
-	err := json.Unmarshal(rawHTTPStatusErr.RawResponse, &errorResponse)
+	errorResponse, err := unmarshalRawHTTPErr(rawHTTPStatusErr)
 	if err != nil {
-		// ccv2/info.go converts this error to an APINotFoundError.
-		return ccerror.UnknownHTTPSourceError{StatusCode: rawHTTPStatusErr.StatusCode, RawResponse: rawHTTPStatusErr.RawResponse}
+		return err
 	}
 
 	switch rawHTTPStatusErr.StatusCode {
@@ -70,12 +68,29 @@ func convert400(rawHTTPStatusErr ccerror.RawHTTPStatusError) error {
 }
 
 func convert500(rawHTTPStatusErr ccerror.RawHTTPStatusError) error {
-	return ccerror.V2UnexpectedResponseError{
-		ResponseCode: rawHTTPStatusErr.StatusCode,
-		RequestIDs:   rawHTTPStatusErr.RequestIDs,
-		V2ErrorResponse: ccerror.V2ErrorResponse{
-			Description: string(rawHTTPStatusErr.RawResponse),
-		},
+	errorResponse, err := unmarshalRawHTTPErr(rawHTTPStatusErr)
+	if err != nil {
+		return err
+	}
+
+	switch rawHTTPStatusErr.StatusCode {
+	case http.StatusBadGateway: // 502
+		return handleBadGateway(errorResponse, rawHTTPStatusErr)
+	default:
+		return v2UnexpectedResponseError(rawHTTPStatusErr)
+	}
+}
+
+func handleBadGateway(errorResponse ccerror.V2ErrorResponse, rawHTTPStatusErr ccerror.RawHTTPStatusError) error {
+	switch errorResponse.ErrorCode {
+	case "CF-ServiceBrokerCatalogInvalid":
+		return ccerror.ServiceBrokerCatalogInvalidError{Message: errorResponse.Description}
+	case "CF-ServiceBrokerRequestRejected":
+		return ccerror.ServiceBrokerRequestRejectedError{Message: errorResponse.Description}
+	case "CF-ServiceBrokerBadResponse":
+		return ccerror.ServiceBrokerBadResponseError{Message: errorResponse.Description}
+	default:
+		return v2UnexpectedResponseError(rawHTTPStatusErr)
 	}
 }
 
@@ -101,6 +116,8 @@ func handleBadRequest(errorResponse ccerror.V2ErrorResponse) error {
 		return ccerror.OrganizationNameTakenError{Message: errorResponse.Description}
 	case "CF-SpaceNameTaken":
 		return ccerror.SpaceNameTakenError{Message: errorResponse.Description}
+	case "CF-ServiceInstanceNameTaken":
+		return ccerror.ServiceInstanceNameTakenError{Message: errorResponse.Description}
 	default:
 		return ccerror.BadRequestError{Message: errorResponse.Description}
 	}
@@ -119,4 +136,24 @@ func handleUnprocessableEntity(errorResponse ccerror.V2ErrorResponse) error {
 		return ccerror.BuildpackAlreadyExistsForStackError{Message: errorResponse.Description}
 	}
 	return ccerror.UnprocessableEntityError{Message: errorResponse.Description}
+}
+
+func unmarshalRawHTTPErr(rawHTTPStatusErr ccerror.RawHTTPStatusError) (ccerror.V2ErrorResponse, error) {
+	var errorResponse ccerror.V2ErrorResponse
+	err := json.Unmarshal(rawHTTPStatusErr.RawResponse, &errorResponse)
+	if err != nil {
+		// ccv2/info.go converts this error to an APINotFoundError.
+		return ccerror.V2ErrorResponse{}, ccerror.UnknownHTTPSourceError{StatusCode: rawHTTPStatusErr.StatusCode, RawResponse: rawHTTPStatusErr.RawResponse}
+	}
+	return errorResponse, nil
+}
+
+func v2UnexpectedResponseError(rawHTTPStatusErr ccerror.RawHTTPStatusError) ccerror.V2UnexpectedResponseError {
+	return ccerror.V2UnexpectedResponseError{
+		ResponseCode: rawHTTPStatusErr.StatusCode,
+		RequestIDs:   rawHTTPStatusErr.RequestIDs,
+		V2ErrorResponse: ccerror.V2ErrorResponse{
+			Description: string(rawHTTPStatusErr.RawResponse),
+		},
+	}
 }

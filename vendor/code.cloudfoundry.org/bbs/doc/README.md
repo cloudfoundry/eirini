@@ -17,6 +17,7 @@ Diego clients communicate with the BBS via an [ExternalClient](https://godoc.org
 - [Overview of Cells](cells.md)
 - [Actions](actions.md)
 - [The Container Runtime Environment](environment.md)
+- [How BBS API endpoints get revisioned](revisioning-bbs-api-endpoints.md)
 - External API Reference
   - [Tasks](api-tasks.md)
   - [LRPs](api-lrps.md)
@@ -27,3 +28,4 @@ Diego clients communicate with the BBS via an [ExternalClient](https://godoc.org
   - [Tasks](api-tasks-internal.md)
   - [LRPs](api-lrps-internal.md)
 - [Fields common to Tasks and LRPs](common-models.md)
+- [Description of BBS SQL schema](schema-description.md)

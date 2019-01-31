@@ -2,13 +2,10 @@ package main
 
 import (
 	"crypto/rand"
-	"crypto/tls"
-	"crypto/x509"
 	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -18,14 +15,13 @@ import (
 	"code.cloudfoundry.org/bbs/cmd/bbs/config"
 	"code.cloudfoundry.org/bbs/controllers"
 	"code.cloudfoundry.org/bbs/converger"
-	"code.cloudfoundry.org/bbs/db"
-	etcddb "code.cloudfoundry.org/bbs/db/etcd"
 	"code.cloudfoundry.org/bbs/db/migrations"
 	"code.cloudfoundry.org/bbs/db/sqldb"
+	"code.cloudfoundry.org/bbs/db/sqldb/helpers"
+	"code.cloudfoundry.org/bbs/db/sqldb/helpers/monitor"
 	"code.cloudfoundry.org/bbs/encryption"
 	"code.cloudfoundry.org/bbs/encryptor"
 	"code.cloudfoundry.org/bbs/events"
-	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/guidprovider"
 	"code.cloudfoundry.org/bbs/handlers"
 	"code.cloudfoundry.org/bbs/metrics"
@@ -48,11 +44,7 @@ import (
 	locketmodels "code.cloudfoundry.org/locket/models"
 	"code.cloudfoundry.org/rep"
 	"code.cloudfoundry.org/rep/maintain"
-	"github.com/cloudfoundry/dropsonde"
-	etcdclient "github.com/coreos/go-etcd/etcd"
-	"github.com/go-sql-driver/mysql"
 	"github.com/hashicorp/consul/api"
-	"github.com/lib/pq"
 	uuid "github.com/nu7hatch/gouuid"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/grouper"
@@ -67,8 +59,7 @@ var configFilePath = flag.String(
 )
 
 const (
-	dropsondeOrigin = "bbs"
-	bbsLockKey      = "bbs"
+	bbsLockKey = "bbs"
 )
 
 func main() {
@@ -115,12 +106,6 @@ func main() {
 		logger.Fatal("failed-invalid-health-port", err)
 	}
 
-	var activeDB db.DB
-	var sqlDB *sqldb.SQLDB
-	var sqlConn *sql.DB
-	var storeClient etcddb.StoreClient
-	var etcdDB *etcddb.ETCDDB
-
 	key, keys, err := bbsConfig.EncryptionConfig.Parse()
 	if err != nil {
 		logger.Fatal("cannot-setup-encryption", err)
@@ -131,72 +116,57 @@ func main() {
 	}
 	cryptor := encryption.NewCryptor(keyManager, rand.Reader)
 
-	etcdOptions, err := bbsConfig.ETCDConfig.Validate()
-	if err != nil {
-		logger.Fatal("etcd-validation-failed", err)
-	}
-
-	if etcdOptions.IsConfigured {
-		storeClient = initializeEtcdStoreClient(logger, etcdOptions)
-		etcdDB = initializeEtcdDB(logger, cryptor, storeClient, &bbsConfig, metronClient)
-		activeDB = etcdDB
-	}
-
-	// If SQL database info is passed in, use SQL instead of ETCD
-	if bbsConfig.DatabaseDriver != "" && bbsConfig.DatabaseConnectionString != "" {
-		var err error
-		connectionString := appendExtraConnectionStringParam(logger,
-			bbsConfig.DatabaseDriver,
-			bbsConfig.DatabaseConnectionString,
-			bbsConfig.SQLCACertFile,
-		)
-
-		sqlConn, err = sql.Open(bbsConfig.DatabaseDriver, connectionString)
-		if err != nil {
-			logger.Fatal("failed-to-open-sql", err)
-		}
-		defer sqlConn.Close()
-		sqlConn.SetMaxOpenConns(bbsConfig.MaxOpenDatabaseConnections)
-		sqlConn.SetMaxIdleConns(bbsConfig.MaxIdleDatabaseConnections)
-
-		err = sqlConn.Ping()
-		if err != nil {
-			logger.Fatal("sql-failed-to-connect", err)
-		}
-
-		sqlDB = sqldb.NewSQLDB(sqlConn,
-			bbsConfig.ConvergenceWorkers,
-			bbsConfig.UpdateWorkers,
-			format.ENCRYPTED_PROTO,
-			cryptor,
-			guidprovider.DefaultGuidProvider,
-			clock,
-			bbsConfig.DatabaseDriver,
-			metronClient,
-		)
-		err = sqlDB.CreateConfigurationsTable(logger)
-		if err != nil {
-			logger.Fatal("sql-failed-create-configurations-table", err)
-		}
-		activeDB = sqlDB
-	}
-
-	if activeDB == nil {
+	if bbsConfig.DatabaseDriver == "" || bbsConfig.DatabaseConnectionString == "" {
 		logger.Fatal("no-database-configured", errors.New("no database configured"))
 	}
 
-	encryptor := encryptor.New(logger, activeDB, keyManager, cryptor, clock, metronClient)
+	connectionString := helpers.AddTLSParams(logger,
+		bbsConfig.DatabaseDriver,
+		bbsConfig.DatabaseConnectionString,
+		bbsConfig.SQLCACertFile,
+		bbsConfig.SQLEnableIdentityVerification,
+	)
+
+	sqlConn, err := sql.Open(bbsConfig.DatabaseDriver, connectionString)
+	if err != nil {
+		logger.Fatal("failed-to-open-sql", err)
+	}
+	defer sqlConn.Close()
+	sqlConn.SetMaxOpenConns(bbsConfig.MaxOpenDatabaseConnections)
+	sqlConn.SetMaxIdleConns(bbsConfig.MaxIdleDatabaseConnections)
+
+	err = sqlConn.Ping()
+	if err != nil {
+		logger.Fatal("sql-failed-to-connect", err)
+	}
+
+	queryMonitor := monitor.New()
+	monitoredDB := helpers.NewMonitoredDB(sqlConn, queryMonitor)
+	sqlDB := sqldb.NewSQLDB(
+		monitoredDB,
+		bbsConfig.ConvergenceWorkers,
+		bbsConfig.UpdateWorkers,
+		cryptor,
+		guidprovider.DefaultGuidProvider,
+		clock,
+		bbsConfig.DatabaseDriver,
+		metronClient,
+	)
+	err = sqlDB.CreateConfigurationsTable(logger)
+	if err != nil {
+		logger.Fatal("sql-failed-create-configurations-table", err)
+	}
+
+	encryptor := encryptor.New(logger, sqlDB, keyManager, cryptor, clock, metronClient)
 
 	migrationsDone := make(chan struct{})
 
 	migrationManager := migration.NewManager(
 		logger,
-		etcdDB,
-		storeClient,
 		sqlDB,
 		sqlConn,
 		cryptor,
-		migrations.Migrations,
+		migrations.AllMigrations(),
 		migrationsDone,
 		clock,
 		bbsConfig.DatabaseDriver,
@@ -205,6 +175,7 @@ func main() {
 
 	desiredHub := events.NewHub()
 	actualHub := events.NewHub()
+	actualLRPInstanceHub := events.NewHub()
 	taskHub := events.NewHub()
 
 	repTLSConfig := &rep.TLSConfig{
@@ -236,12 +207,9 @@ func main() {
 		accessLogger.RegisterSink(lager.NewWriterSink(file, lager.INFO))
 	}
 
-	var tlsConfig *tls.Config
-	if bbsConfig.RequireSSL {
-		tlsConfig, err = cfhttp.NewTLSConfig(bbsConfig.CertFile, bbsConfig.KeyFile, bbsConfig.CaFile)
-		if err != nil {
-			logger.Fatal("tls-configuration-failed", err)
-		}
+	tlsConfig, err := cfhttp.NewTLSConfig(bbsConfig.CertFile, bbsConfig.KeyFile, bbsConfig.CaFile)
+	if err != nil {
+		logger.Fatal("tls-configuration-failed", err)
 	}
 
 	cbWorkPool := taskworkpool.New(logger, bbsConfig.TaskCallbackWorkers, taskworkpool.HandleCompletedTask, tlsConfig)
@@ -254,13 +222,12 @@ func main() {
 	}
 
 	var locketClient locketmodels.LocketClient
-	locketClient = serviceclient.NewNoopLocketClient()
-	if bbsConfig.LocketAddress != "" {
+
+	if bbsConfig.LocksLocketEnabled {
 		locketClient, err = locket.NewClient(logger, bbsConfig.ClientLocketConfig)
 		if err != nil {
 			logger.Fatal("failed-to-create-locket-client", err)
 		}
-
 		if bbsConfig.UUID == "" {
 			logger.Fatal("invalid-uuid", errors.New("invalid-uuid-from-config"))
 		}
@@ -296,7 +263,18 @@ func main() {
 	if bbsConfig.DetectConsulCellRegistrations {
 		cellPresenceClient = maintain.NewCellPresenceClient(consulClient, clock)
 	}
-	serviceClient := serviceclient.NewServiceClient(cellPresenceClient, locketClient)
+	var locketCellPresenceClient locketmodels.LocketClient
+	locketCellPresenceClient = serviceclient.NewNoopLocketClient()
+	if bbsConfig.CellRegistrationsLocketEnabled {
+		if locketClient == nil {
+			locketClient, err = locket.NewClient(logger, bbsConfig.ClientLocketConfig)
+			if err != nil {
+				logger.Fatal("failed-to-create-locket-client", err)
+			}
+		}
+		locketCellPresenceClient = locketClient
+	}
+	serviceClient := serviceclient.NewServiceClient(cellPresenceClient, locketCellPresenceClient)
 
 	logger.Info("report-interval", lager.Data{"value": bbsConfig.ReportInterval})
 	fileDescriptorTicker := clock.NewTicker(time.Duration(bbsConfig.ReportInterval))
@@ -307,37 +285,61 @@ func main() {
 	fileDescriptorMetronNotifier := metrics.NewFileDescriptorMetronNotifier(logger, fileDescriptorTicker, metronClient, fileDescriptorPath)
 	requestStatMetronNotifier := metrics.NewRequestStatMetronNotifier(logger, requestStatsTicker, metronClient)
 	lockHeldMetronNotifier := lockheldmetrics.NewLockHeldMetronNotifier(logger, locksHeldTicker, metronClient)
+	taskStatMetronNotifier := metrics.NewTaskStatMetronNotifier(logger, clock, metronClient)
+	dbStatMetronNotifier := metrics.NewDBStatMetronNotifier(logger, clock, monitoredDB, metronClient, queryMonitor)
 
 	handler := handlers.New(
 		logger,
 		accessLogger,
 		bbsConfig.UpdateWorkers,
 		bbsConfig.ConvergenceWorkers,
+		bbsConfig.MaxTaskRetries,
 		requestStatMetronNotifier,
-		activeDB,
+		sqlDB,
 		desiredHub,
 		actualHub,
+		actualLRPInstanceHub,
 		taskHub,
 		cbWorkPool,
 		serviceClient,
 		auctioneerClient,
 		repClientFactory,
+		taskStatMetronNotifier,
 		migrationsDone,
 		exitChan,
 	)
 
 	bbsElectionMetronNotifier := metrics.NewBBSElectionMetronNotifier(logger, metronClient)
 
-	actualLRPController := controllers.NewActualLRPLifecycleController(activeDB, activeDB, activeDB, auctioneerClient, serviceClient, repClientFactory, actualHub)
-	lrpConvergenceController := controllers.NewLRPConvergenceController(logger,
-		activeDB,
+	actualLRPController := controllers.NewActualLRPLifecycleController(
+		sqlDB,
+		sqlDB,
+		sqlDB,
+		sqlDB,
+		auctioneerClient,
+		serviceClient,
+		repClientFactory,
 		actualHub,
+		actualLRPInstanceHub,
+	)
+
+	lrpStatMetronNotifier := metrics.NewLRPStatMetronNotifier(logger, clock, metronClient)
+
+	lrpConvergenceController := controllers.NewLRPConvergenceController(
+		logger,
+		clock,
+		sqlDB,
+		sqlDB,
+		sqlDB,
+		actualHub,
+		actualLRPInstanceHub,
 		auctioneerClient,
 		serviceClient,
 		actualLRPController,
 		bbsConfig.ConvergenceWorkers,
+		lrpStatMetronNotifier,
 	)
-	taskController := controllers.NewTaskController(activeDB, cbWorkPool, auctioneerClient, serviceClient, repClientFactory, taskHub)
+	taskController := controllers.NewTaskController(sqlDB, cbWorkPool, auctioneerClient, serviceClient, repClientFactory, taskHub, taskStatMetronNotifier, bbsConfig.MaxTaskRetries)
 
 	convergerProcess := converger.New(
 		logger,
@@ -374,6 +376,9 @@ func main() {
 		{"bbs-election-metrics", bbsElectionMetronNotifier},
 		{"periodic-metrics", requestStatMetronNotifier},
 		{"converger", convergerProcess},
+		{"lrp-stat-metron-notifier", lrpStatMetronNotifier},
+		{"task-stat-metron-notifier", taskStatMetronNotifier},
+		{"db-stat-metron-notifier", dbStatMetronNotifier},
 	}
 
 	if bbsConfig.EnableConsulServiceRegistration {
@@ -409,53 +414,6 @@ func main() {
 	}
 
 	logger.Info("exited")
-}
-
-func appendExtraConnectionStringParam(logger lager.Logger, driverName, databaseConnectionString, sqlCACertFile string) string {
-	switch driverName {
-	case "mysql":
-		cfg, err := mysql.ParseDSN(databaseConnectionString)
-		if err != nil {
-			logger.Fatal("invalid-db-connection-string", err, lager.Data{"connection-string": databaseConnectionString})
-		}
-
-		if sqlCACertFile != "" {
-			certBytes, err := ioutil.ReadFile(sqlCACertFile)
-			if err != nil {
-				logger.Fatal("failed-to-read-sql-ca-file", err)
-			}
-
-			caCertPool := x509.NewCertPool()
-			if ok := caCertPool.AppendCertsFromPEM(certBytes); !ok {
-				logger.Fatal("failed-to-parse-sql-ca", err)
-			}
-
-			tlsConfig := &tls.Config{
-				InsecureSkipVerify: false,
-				RootCAs:            caCertPool,
-			}
-
-			mysql.RegisterTLSConfig("bbs-tls", tlsConfig)
-			cfg.TLSConfig = "bbs-tls"
-		}
-		cfg.Timeout = 10 * time.Minute
-		cfg.ReadTimeout = 10 * time.Minute
-		cfg.WriteTimeout = 10 * time.Minute
-		databaseConnectionString = cfg.FormatDSN()
-	case "postgres":
-		var err error
-		databaseConnectionString, err = pq.ParseURL(databaseConnectionString)
-		if err != nil {
-			logger.Fatal("invalid-db-connection-string", err, lager.Data{"connection-string": databaseConnectionString})
-		}
-		if sqlCACertFile == "" {
-			databaseConnectionString = databaseConnectionString + " sslmode=disable"
-		} else {
-			databaseConnectionString = fmt.Sprintf("%s sslmode=verify-ca sslrootcert=%s", databaseConnectionString, sqlCACertFile)
-		}
-	}
-
-	return databaseConnectionString
 }
 
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -565,76 +523,7 @@ func initializeMetron(logger lager.Logger, bbsConfig config.BBSConfig) (loggingc
 	if bbsConfig.LoggregatorConfig.UseV2API {
 		emitter := runtimeemitter.NewV1(client)
 		go emitter.Run()
-	} else {
-		initializeDropsonde(logger, bbsConfig.DropsondePort)
 	}
 
 	return client, nil
-}
-
-func initializeDropsonde(logger lager.Logger, dropsondePort int) {
-	dropsondeDestination := fmt.Sprint("localhost:", dropsondePort)
-	err := dropsonde.Initialize(dropsondeDestination, dropsondeOrigin)
-	if err != nil {
-		logger.Error("failed-to-initialize-dropsonde", err)
-	}
-}
-
-func initializeEtcdDB(
-	logger lager.Logger,
-	cryptor encryption.Cryptor,
-	storeClient etcddb.StoreClient,
-	bbsConfig *config.BBSConfig,
-	metronClient loggingclient.IngressClient,
-) *etcddb.ETCDDB {
-	return etcddb.NewETCD(
-		format.ENCRYPTED_PROTO,
-		bbsConfig.ConvergenceWorkers,
-		bbsConfig.UpdateWorkers,
-		time.Duration(bbsConfig.DesiredLRPCreationTimeout),
-		cryptor,
-		storeClient,
-		clock.NewClock(),
-		metronClient,
-	)
-}
-
-func initializeEtcdStoreClient(logger lager.Logger, etcdOptions *etcddb.ETCDOptions) etcddb.StoreClient {
-	var etcdClient *etcdclient.Client
-	var tr *http.Transport
-
-	if etcdOptions.IsSSL {
-		if etcdOptions.CertFile == "" || etcdOptions.KeyFile == "" {
-			logger.Fatal("failed-to-construct-etcd-tls-client", errors.New("Require both cert and key path"))
-		}
-
-		var err error
-		etcdClient, err = etcdclient.NewTLSClient(etcdOptions.ClusterUrls, etcdOptions.CertFile, etcdOptions.KeyFile, etcdOptions.CAFile)
-		if err != nil {
-			logger.Fatal("failed-to-construct-etcd-tls-client", err)
-		}
-
-		tlsCert, err := tls.LoadX509KeyPair(etcdOptions.CertFile, etcdOptions.KeyFile)
-		if err != nil {
-			logger.Fatal("failed-to-construct-etcd-tls-client", err)
-		}
-
-		tlsConfig := &tls.Config{
-			Certificates:       []tls.Certificate{tlsCert},
-			InsecureSkipVerify: true,
-			ClientSessionCache: tls.NewLRUClientSessionCache(etcdOptions.ClientSessionCacheSize),
-		}
-		tr = &http.Transport{
-			TLSClientConfig:     tlsConfig,
-			Dial:                etcdClient.DefaultDial,
-			MaxIdleConnsPerHost: etcdOptions.MaxIdleConnsPerHost,
-		}
-		etcdClient.SetTransport(tr)
-		etcdClient.AddRootCA(etcdOptions.CAFile)
-	} else {
-		etcdClient = etcdclient.NewClient(etcdOptions.ClusterUrls)
-	}
-	etcdClient.SetConsistency(etcdclient.STRONG_CONSISTENCY)
-
-	return etcddb.NewStoreClient(etcdClient)
 }

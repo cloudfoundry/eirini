@@ -3,12 +3,13 @@ package commands_test
 import (
 	"net/http"
 
+	"strings"
+
 	"code.cloudfoundry.org/credhub-cli/config"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
 	. "github.com/onsi/gomega/ghttp"
-	"strings"
 )
 
 var _ = Describe("Find", func() {
@@ -58,7 +59,16 @@ var _ = Describe("Find", func() {
 			expiredAccessToken := "2YotnFZFEjr1zCsicMWpAA"
 			newAccessToken := "3YotnFZFEjr1zCsicMWpAA"
 
-			config.WriteConfig(config.Config{ApiURL: server.URL(), AuthURL: authServer.URL(), AccessToken: expiredAccessToken, RefreshToken: "erousflkajqwer"})
+			config.WriteConfig(
+				config.Config{
+					ConfigWithoutSecrets: config.ConfigWithoutSecrets{
+						ApiURL:       server.URL(),
+						AuthURL:      authServer.URL(),
+						AccessToken:  expiredAccessToken,
+						RefreshToken: "erousflkajqwer",
+					},
+				},
+			)
 
 			responseJson := `{
 			"credentials": []

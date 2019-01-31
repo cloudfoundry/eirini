@@ -19,8 +19,10 @@ var _ = Describe("Config", func() {
 	BeforeEach(func() {
 		cachedConfig = config.ReadConfig()
 		cfg = config.Config{
-			ApiURL:  "http://api.example.com",
-			AuthURL: "http://auth.example.com",
+			ConfigWithoutSecrets: config.ConfigWithoutSecrets{
+				ApiURL:  "http://api.example.com",
+				AuthURL: "http://auth.example.com",
+			},
 		}
 	})
 

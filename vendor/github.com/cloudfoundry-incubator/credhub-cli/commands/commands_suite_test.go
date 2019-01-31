@@ -58,6 +58,11 @@ const CERTIFICATE_CREDENTIAL_ARRAY_RESPONSE_JSON = `{"data":[` + CERTIFICATE_CRE
 const RSA_SSH_CREDENTIAL_ARRAY_RESPONSE_JSON = `{"data":[` + RSA_CREDENTIAL_RESPONSE_JSON + `]}`
 const USER_CREDENTIAL_ARRAY_RESPONSE_JSON = `{"data":[` + USER_CREDENTIAL_RESPONSE_JSON + `]}`
 
+const MULTIPLE_CERTIFICATE_CREDENTIAL_ARRAY_RESPONSE_JSON = `{"data":[` + CERTIFICATE_CREDENTIAL_RESPONSE_JSON + `,` + CERTIFICATE_CREDENTIAL_RESPONSE_JSON + `]}`
+const MULTIPLE_STRING_CREDENTIAL_ARRAY_RESPONSE_JSON = `{"data":[` + STRING_CREDENTIAL_RESPONSE_JSON + `,` + STRING_CREDENTIAL_RESPONSE_JSON + `]}`
+const MULTIPLE_RSA_SSH_CREDENTIAL_ARRAY_RESPONSE_JSON = `{"data":[` + RSA_CREDENTIAL_RESPONSE_JSON + `,` + RSA_CREDENTIAL_RESPONSE_JSON+ `]}`
+const MULTIPLE_USER_CREDENTIAL_ARRAY_RESPONSE_JSON = `{"data":[` + USER_CREDENTIAL_RESPONSE_JSON + `,` + USER_CREDENTIAL_RESPONSE_JSON + `]}`
+
 var responseMyValuePotatoesJson = fmt.Sprintf(STRING_CREDENTIAL_RESPONSE_JSON, "value", "my-value", "potatoes")
 var responseMyPasswordPotatoesJson = fmt.Sprintf(STRING_CREDENTIAL_RESPONSE_JSON, "password", "my-password", "potatoes")
 var responseMyCertificateWithNewlinesJson = fmt.Sprintf(CERTIFICATE_CREDENTIAL_RESPONSE_JSON, "my-secret", `my\nca`, `my\ncert`, `my\npriv`)
@@ -194,10 +199,12 @@ func runCommandWithStdin(stdin io.Reader, args ...string) *Session {
 
 func setupUAAConfig(uaaResponseStatus int) {
 	cfg := config.Config{
-		RefreshToken: "5b9c9fd51ba14838ac2e6b222d487106-r",
-		AccessToken:  "e30K.eyJqdGkiOiIxIn0K.e30K",
-		AuthURL:      authServer.URL(),
-		ApiURL:       server.URL(),
+		ConfigWithoutSecrets: config.ConfigWithoutSecrets{
+			RefreshToken: "5b9c9fd51ba14838ac2e6b222d487106-r",
+			AccessToken:  "e30K.eyJqdGkiOiIxIn0K.e30K",
+			AuthURL:      authServer.URL(),
+			ApiURL:       server.URL(),
+		},
 	}
 
 	Expect(cfg.UpdateTrustedCAs([]string{"../test/auth-tls-ca.pem", "../test/server-tls-ca.pem"})).To(Succeed())

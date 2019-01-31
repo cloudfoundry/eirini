@@ -6,6 +6,8 @@ import (
 	"code.cloudfoundry.org/auctioneer"
 	"code.cloudfoundry.org/bbs/db"
 	"code.cloudfoundry.org/bbs/events"
+	"code.cloudfoundry.org/bbs/events/calculator"
+	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/bbs/serviceclient"
 	"code.cloudfoundry.org/lager"
@@ -14,15 +16,16 @@ import (
 )
 
 type DesiredLRPHandler struct {
-	desiredLRPDB       db.DesiredLRPDB
-	actualLRPDB        db.ActualLRPDB
-	desiredHub         events.Hub
-	actualHub          events.Hub
-	auctioneerClient   auctioneer.Client
-	repClientFactory   rep.ClientFactory
-	serviceClient      serviceclient.ServiceClient
-	updateWorkersCount int
-	exitChan           chan<- struct{}
+	desiredLRPDB         db.DesiredLRPDB
+	actualLRPDB          db.ActualLRPDB
+	desiredHub           events.Hub
+	actualHub            events.Hub
+	actualLRPInstanceHub events.Hub
+	auctioneerClient     auctioneer.Client
+	repClientFactory     rep.ClientFactory
+	serviceClient        serviceclient.ServiceClient
+	updateWorkersCount   int
+	exitChan             chan<- struct{}
 }
 
 func NewDesiredLRPHandler(
@@ -31,25 +34,27 @@ func NewDesiredLRPHandler(
 	actualLRPDB db.ActualLRPDB,
 	desiredHub events.Hub,
 	actualHub events.Hub,
+	actualLRPInstanceHub events.Hub,
 	auctioneerClient auctioneer.Client,
 	repClientFactory rep.ClientFactory,
 	serviceClient serviceclient.ServiceClient,
 	exitChan chan<- struct{},
 ) *DesiredLRPHandler {
 	return &DesiredLRPHandler{
-		desiredLRPDB:       desiredLRPDB,
-		actualLRPDB:        actualLRPDB,
-		desiredHub:         desiredHub,
-		actualHub:          actualHub,
-		auctioneerClient:   auctioneerClient,
-		repClientFactory:   repClientFactory,
-		serviceClient:      serviceClient,
-		updateWorkersCount: updateWorkersCount,
-		exitChan:           exitChan,
+		desiredLRPDB:         desiredLRPDB,
+		actualLRPDB:          actualLRPDB,
+		desiredHub:           desiredHub,
+		actualHub:            actualHub,
+		actualLRPInstanceHub: actualLRPInstanceHub,
+		auctioneerClient:     auctioneerClient,
+		repClientFactory:     repClientFactory,
+		serviceClient:        serviceClient,
+		updateWorkersCount:   updateWorkersCount,
+		exitChan:             exitChan,
 	}
 }
 
-func (h *DesiredLRPHandler) DesiredLRPs(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+func (h *DesiredLRPHandler) commonDesiredLRPs(logger lager.Logger, targetVersion format.Version, w http.ResponseWriter, req *http.Request) {
 	var err error
 	logger = logger.Session("desired-lrps")
 
@@ -59,15 +64,34 @@ func (h *DesiredLRPHandler) DesiredLRPs(logger lager.Logger, w http.ResponseWrit
 	err = parseRequest(logger, req, request)
 	if err == nil {
 		filter := models.DesiredLRPFilter{Domain: request.Domain, ProcessGuids: request.ProcessGuids}
-		response.DesiredLrps, err = h.desiredLRPDB.DesiredLRPs(logger, filter)
+
+		var desiredLRPs []*models.DesiredLRP
+		desiredLRPs, err = h.desiredLRPDB.DesiredLRPs(logger, filter)
+		for i, d := range desiredLRPs {
+			desiredLRPs[i] = d.VersionDownTo(targetVersion).PopulateMetricsGuid()
+			if len(desiredLRPs[i].CachedDependencies) == 0 {
+				desiredLRPs[i].CachedDependencies = nil
+			}
+		}
+
+		response.DesiredLrps = desiredLRPs
 	}
 
 	response.Error = models.ConvertError(err)
 	writeResponse(w, response)
 	exitIfUnrecoverable(logger, h.exitChan, response.Error)
+
 }
 
-func (h *DesiredLRPHandler) DesiredLRPByProcessGuid(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+func (h *DesiredLRPHandler) DesiredLRPs(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonDesiredLRPs(logger, format.V3, w, req)
+}
+
+func (h *DesiredLRPHandler) DesiredLRPs_r2(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonDesiredLRPs(logger, format.V2, w, req)
+}
+
+func (h *DesiredLRPHandler) commonDesiredLRPByProcessGuid(logger lager.Logger, targetVersion format.Version, w http.ResponseWriter, req *http.Request) {
 	var err error
 	logger = logger.Session("desired-lrp-by-process-guid")
 
@@ -76,12 +100,26 @@ func (h *DesiredLRPHandler) DesiredLRPByProcessGuid(logger lager.Logger, w http.
 
 	err = parseRequest(logger, req, request)
 	if err == nil {
-		response.DesiredLrp, err = h.desiredLRPDB.DesiredLRPByProcessGuid(logger, request.ProcessGuid)
+		var desiredLRP *models.DesiredLRP
+		desiredLRP, err = h.desiredLRPDB.DesiredLRPByProcessGuid(logger, request.ProcessGuid)
+		if desiredLRP != nil {
+			desiredLRP = desiredLRP.VersionDownTo(targetVersion).PopulateMetricsGuid()
+		}
+		response.DesiredLrp = desiredLRP
 	}
 
 	response.Error = models.ConvertError(err)
 	writeResponse(w, response)
 	exitIfUnrecoverable(logger, h.exitChan, response.Error)
+
+}
+
+func (h *DesiredLRPHandler) DesiredLRPByProcessGuid(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonDesiredLRPByProcessGuid(logger, format.V3, w, req)
+}
+
+func (h *DesiredLRPHandler) DesiredLRPByProcessGuid_r2(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonDesiredLRPByProcessGuid(logger, format.V2, w, req)
 }
 
 func (h *DesiredLRPHandler) DesiredLRPSchedulingInfos(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
@@ -229,12 +267,10 @@ func (h *DesiredLRPHandler) startInstanceRange(logger lager.Logger, lower, upper
 	logger.Info("starting")
 	defer logger.Info("complete")
 
-	keys := make([]*models.ActualLRPKey, upper-lower)
-	i := 0
+	keys := []*models.ActualLRPKey{}
 	for actualIndex := lower; actualIndex < upper; actualIndex++ {
 		key := models.NewActualLRPKey(schedulingInfo.ProcessGuid, int32(actualIndex), schedulingInfo.Domain)
-		keys[i] = &key
-		i++
+		keys = append(keys, &key)
 	}
 
 	createdIndices := h.createUnclaimedActualLRPs(logger, keys)
@@ -252,19 +288,26 @@ func (h *DesiredLRPHandler) createUnclaimedActualLRPs(logger lager.Logger, keys 
 	count := len(keys)
 	createdIndicesChan := make(chan int, count)
 
+	eventCalculator := calculator.ActualLRPEventCalculator{
+		ActualLRPGroupHub:    h.actualHub,
+		ActualLRPInstanceHub: h.actualLRPInstanceHub,
+	}
+
 	works := make([]func(), count)
 	logger = logger.Session("create-unclaimed-actual-lrp")
 	for i, key := range keys {
 		key := key
 		works[i] = func() {
 			logger.Info("starting", lager.Data{"actual_lrp_key": key})
-			actualLRPGroup, err := h.actualLRPDB.CreateUnclaimedActualLRP(logger, key)
+			actualLRP, err := h.actualLRPDB.CreateUnclaimedActualLRP(logger, key)
 			if err != nil {
 				logger.Info("failed", lager.Data{"actual_lrp_key": key, "err_message": err.Error()})
-			} else {
-				go h.actualHub.Emit(models.NewActualLRPCreatedEvent(actualLRPGroup))
-				createdIndicesChan <- int(key.Index)
+				return
 			}
+
+			lrps := eventCalculator.RecordChange(nil, actualLRP, nil)
+			go eventCalculator.EmitEvents(nil, lrps)
+			createdIndicesChan <- int(key.Index)
 		}
 	}
 
@@ -290,23 +333,25 @@ func (h *DesiredLRPHandler) createUnclaimedActualLRPs(logger lager.Logger, keys 
 
 func (h *DesiredLRPHandler) stopInstancesFrom(logger lager.Logger, processGuid string, index int) {
 	logger = logger.Session("stop-instances-from", lager.Data{"process_guid": processGuid, "index": index})
-	actualLRPGroups, err := h.actualLRPDB.ActualLRPGroupsByProcessGuid(logger.Session("fetch-actuals"), processGuid)
+	actualLRPs, err := h.actualLRPDB.ActualLRPs(logger.Session("fetch-actuals"), models.ActualLRPFilter{ProcessGuid: processGuid})
 	if err != nil {
 		logger.Error("failed-fetching-actual-lrps", err)
 		return
 	}
 
-	for i := 0; i < len(actualLRPGroups); i++ {
-		group := actualLRPGroups[i]
+	for i := 0; i < len(actualLRPs); i++ {
+		lrp := actualLRPs[i]
 
-		if group.Instance != nil {
-			lrp := group.Instance
+		if lrp.Presence != models.ActualLRP_Evacuating {
 			if lrp.Index >= int32(index) {
 				switch lrp.State {
 				case models.ActualLRPStateUnclaimed, models.ActualLRPStateCrashed:
 					err = h.actualLRPDB.RemoveActualLRP(logger.Session("remove-actual"), lrp.ProcessGuid, lrp.Index, nil)
 					if err != nil {
 						logger.Error("failed-removing-lrp-instance", err)
+					} else {
+						go h.actualHub.Emit(models.NewActualLRPRemovedEvent(lrp.ToActualLRPGroup()))
+						go h.actualLRPInstanceHub.Emit(models.NewActualLRPInstanceRemovedEvent(lrp))
 					}
 				default:
 					cellPresence, err := h.serviceClient.CellById(logger, lrp.CellId)

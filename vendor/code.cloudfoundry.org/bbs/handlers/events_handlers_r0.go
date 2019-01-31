@@ -3,11 +3,12 @@ package handlers
 import (
 	"net/http"
 
+	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/lager"
 )
 
-func (h *EventHandler) Subscribe_r0(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+func (h *LRPGroupEventsHandler) commonSubscribe(logger lager.Logger, w http.ResponseWriter, req *http.Request, target format.Version) {
 	logger = logger.Session("subscribe-r0")
 
 	request := &models.EventsByCellId{}
@@ -50,7 +51,9 @@ func (h *EventHandler) Subscribe_r0(logger lager.Logger, w http.ResponseWriter, 
 					return event, err
 				}
 
-				if filterByCellID(request.CellId, event, err) {
+				if matches, err := filterByCellID(request.CellId, event, err); err != nil {
+					return nil, err
+				} else if matches {
 					return event, nil
 				}
 			}
@@ -62,7 +65,7 @@ func (h *EventHandler) Subscribe_r0(logger lager.Logger, w http.ResponseWriter, 
 		if err != nil {
 			return event, err
 		}
-		event = models.VersionDesiredLRPsToV0(event)
+		event = models.VersionDesiredLRPsTo(event, target)
 		return event, err
 	}
 
@@ -72,7 +75,88 @@ func (h *EventHandler) Subscribe_r0(logger lager.Logger, w http.ResponseWriter, 
 	streamEventsToResponse(logger, w, eventChan, errorChan)
 }
 
-func (h *TaskEventHandler) Subscribe_r0(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+func (h *LRPGroupEventsHandler) Subscribe_r0(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonSubscribe(logger, w, req, format.V0)
+}
+
+func (h *LRPGroupEventsHandler) Subscribe_r1(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonSubscribe(logger, w, req, format.V3)
+}
+
+func (h *LRPInstanceEventHandler) commonSubscribe(logger lager.Logger, w http.ResponseWriter, req *http.Request, target format.Version) {
+	logger = logger.Session("subscribe-r0")
+
+	request := &models.EventsByCellId{}
+	err := parseRequest(logger, req, request)
+	if err != nil {
+		logger.Error("failed-parsing-request", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("subscribed-to-instance-event-stream", lager.Data{"cell_id": request.CellId})
+
+	desiredSource, err := h.desiredHub.Subscribe()
+	if err != nil {
+		logger.Error("failed-to-subscribe-to-desired-event-hub", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer desiredSource.Close()
+
+	lrpInstanceSource, err := h.lrpInstanceHub.Subscribe()
+	if err != nil {
+		logger.Error("failed-to-subscribe-to-actual-instance-event-hub", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer lrpInstanceSource.Close()
+
+	eventChan := make(chan models.Event)
+	errorChan := make(chan error)
+	closeChan := make(chan struct{})
+	defer close(closeChan)
+
+	lrpInstanceEventFetcher := lrpInstanceSource.Next
+	if request.CellId != "" {
+		lrpInstanceEventFetcher = func() (models.Event, error) {
+			for {
+				event, err := lrpInstanceSource.Next()
+				if err != nil {
+					return event, err
+				}
+
+				if filterInstanceEventByCellID(request.CellId, event, err) {
+					return event, nil
+				}
+			}
+		}
+	}
+
+	desiredEventsFetcher := func() (models.Event, error) {
+		event, err := desiredSource.Next()
+		if err != nil {
+			return event, err
+		}
+		event = models.VersionDesiredLRPsTo(event, target)
+		return event, err
+	}
+
+	go streamSource(eventChan, errorChan, closeChan, desiredEventsFetcher)
+	go streamSource(eventChan, errorChan, closeChan, lrpInstanceEventFetcher)
+
+	streamEventsToResponse(logger, w, eventChan, errorChan)
+}
+
+func (h *LRPInstanceEventHandler) Subscribe_r0(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonSubscribe(logger, w, req, format.V0)
+}
+
+func (h *LRPInstanceEventHandler) Subscribe_r1(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonSubscribe(logger, w, req, format.V3)
+}
+
+func (h *TaskEventHandler) commonSubscribe(logger lager.Logger, w http.ResponseWriter, req *http.Request, target format.Version) {
 	logger = logger.Session("tasks-subscribe-r0")
 	logger.Info("subscribed-to-tasks-event-stream")
 
@@ -89,28 +173,86 @@ func (h *TaskEventHandler) Subscribe_r0(logger lager.Logger, w http.ResponseWrit
 	closeChan := make(chan struct{})
 	defer close(closeChan)
 
-	go streamSource(eventChan, errorChan, closeChan, taskSource.Next)
+	taskEventsFetcher := func() (models.Event, error) {
+		event, err := taskSource.Next()
+		if err != nil {
+			return event, err
+		}
+		event = models.VersionTaskDefinitionsTo(event, target)
+		return event, err
+	}
+
+	go streamSource(eventChan, errorChan, closeChan, taskEventsFetcher)
 
 	streamEventsToResponse(logger, w, eventChan, errorChan)
 }
 
-func filterByCellID(cellID string, bbsEvent models.Event, err error) bool {
+func (h *TaskEventHandler) Subscribe_r0(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonSubscribe(logger, w, req, format.V0)
+}
+
+func (h *TaskEventHandler) Subscribe_r1(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	h.commonSubscribe(logger, w, req, format.V3)
+}
+
+func filterByCellID(cellID string, bbsEvent models.Event, err error) (bool, error) {
 	switch x := bbsEvent.(type) {
 	case *models.ActualLRPCreatedEvent:
-		lrp, _ := x.ActualLrpGroup.Resolve()
+		lrp, _, resolveError := x.ActualLrpGroup.Resolve()
+		if resolveError != nil {
+			return false, resolveError
+		}
+
+		if lrp.CellId != cellID {
+			return false, nil
+		}
+
+	case *models.ActualLRPChangedEvent:
+		beforeLRP, _, beforeResolveError := x.Before.Resolve()
+		if beforeResolveError != nil {
+			return false, beforeResolveError
+		}
+		afterLRP, _, afterResolveError := x.After.Resolve()
+		if afterResolveError != nil {
+			return false, afterResolveError
+		}
+		if afterLRP.CellId != cellID && beforeLRP.CellId != cellID {
+			return false, nil
+		}
+
+	case *models.ActualLRPRemovedEvent:
+		lrp, _, resolveError := x.ActualLrpGroup.Resolve()
+		if resolveError != nil {
+			return false, resolveError
+		}
+		if lrp.CellId != cellID {
+			return false, nil
+		}
+
+	case *models.ActualLRPCrashedEvent:
+		if x.ActualLRPInstanceKey.CellId != cellID {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func filterInstanceEventByCellID(cellID string, bbsEvent models.Event, err error) bool {
+	switch x := bbsEvent.(type) {
+	case *models.ActualLRPInstanceCreatedEvent:
+		lrp := x.ActualLrp
 		if lrp.CellId != cellID {
 			return false
 		}
 
-	case *models.ActualLRPChangedEvent:
-		beforeLRP, _ := x.Before.Resolve()
-		afterLRP, _ := x.After.Resolve()
-		if afterLRP.CellId != cellID && beforeLRP.CellId != cellID {
+	case *models.ActualLRPInstanceChangedEvent:
+		if x.CellId != cellID {
 			return false
 		}
 
-	case *models.ActualLRPRemovedEvent:
-		lrp, _ := x.ActualLrpGroup.Resolve()
+	case *models.ActualLRPInstanceRemovedEvent:
+		lrp := x.ActualLrp
 		if lrp.CellId != cellID {
 			return false
 		}

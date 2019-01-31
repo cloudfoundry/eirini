@@ -38,7 +38,7 @@ func qualifyLocalImport(importpath, gopathsrc, pwd string) (string, error) {
 	return filepath.Join(strings.TrimPrefix(pwd, gopathsrc+string(filepath.Separator)), importpath), nil
 }
 
-func publishImages(importpaths []string, no *NameOptions, lo *LocalOptions) {
+func publishImages(importpaths []string, no *NameOptions, lo *LocalOptions, ta *TagsOptions) map[string]name.Reference {
 	opt, err := gobuildOptions()
 	if err != nil {
 		log.Fatalf("error setting up builder options: %v", err)
@@ -47,6 +47,7 @@ func publishImages(importpaths []string, no *NameOptions, lo *LocalOptions) {
 	if err != nil {
 		log.Fatalf("error creating go builder: %v", err)
 	}
+	imgs := make(map[string]name.Reference)
 	for _, importpath := range importpaths {
 		if gb.IsLocalImport(importpath) {
 			// Qualify relative imports to their fully-qualified
@@ -76,24 +77,29 @@ func publishImages(importpaths []string, no *NameOptions, lo *LocalOptions) {
 		var namer publish.Namer
 		if no.PreserveImportPaths {
 			namer = preserveImportPath
+		} else if no.BaseImportPaths {
+			namer = baseImportPaths
 		} else {
 			namer = packageWithMD5
 		}
 
 		if lo.Local || repoName == publish.LocalDomain {
-			pub = publish.NewDaemon(namer)
+			pub = publish.NewDaemon(namer, ta.Tags)
 		} else {
 			if _, err := name.NewRepository(repoName, name.WeakValidation); err != nil {
 				log.Fatalf("the environment variable KO_DOCKER_REPO must be set to a valid docker repository, got %v", err)
 			}
-			opts := []publish.Option{publish.WithAuthFromKeychain(authn.DefaultKeychain), publish.WithNamer(namer)}
+			opts := []publish.Option{publish.WithAuthFromKeychain(authn.DefaultKeychain), publish.WithNamer(namer), publish.WithTags(ta.Tags)}
 			pub, err = publish.NewDefault(repoName, opts...)
 			if err != nil {
 				log.Fatalf("error setting up default image publisher: %v", err)
 			}
 		}
-		if _, err := pub.Publish(img, importpath); err != nil {
+		ref, err := pub.Publish(img, importpath)
+		if err != nil {
 			log.Fatalf("error publishing %s: %v", importpath, err)
 		}
+		imgs[importpath] = ref
 	}
+	return imgs
 }

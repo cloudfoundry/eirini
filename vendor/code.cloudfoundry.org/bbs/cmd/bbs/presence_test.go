@@ -8,7 +8,6 @@ import (
 	"code.cloudfoundry.org/bbs/cmd/bbs/testrunner"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/clock"
-	"code.cloudfoundry.org/localip"
 	"code.cloudfoundry.org/locket"
 	locketconfig "code.cloudfoundry.org/locket/cmd/locket/config"
 	locketrunner "code.cloudfoundry.org/locket/cmd/locket/testrunner"
@@ -29,7 +28,7 @@ var _ = Describe("CellPresence", func() {
 	)
 
 	BeforeEach(func() {
-		locketPort, err := localip.LocalPort()
+		locketPort, err := portAllocator.ClaimPorts(1)
 		Expect(err).NotTo(HaveOccurred())
 
 		locketAddress = fmt.Sprintf("localhost:%d", locketPort)
@@ -45,13 +44,14 @@ var _ = Describe("CellPresence", func() {
 
 		bbsConfig.ClientLocketConfig = locketrunner.ClientLocketConfig()
 		bbsConfig.LocketAddress = locketAddress
+		bbsConfig.CellRegistrationsLocketEnabled = true
 	})
 
 	JustBeforeEach(func() {
 		bbsRunner = testrunner.WaitForMigration(bbsBinPath, bbsConfig)
 		// Give the BBS enough time to start
 		bbsRunner.StartCheckTimeout = 4 * locket.RetryInterval
-		bbsProcess = ginkgomon.Invoke(bbsRunner)
+		bbsProcess = ifrit.Background(bbsRunner)
 	})
 
 	AfterEach(func() {
@@ -121,10 +121,21 @@ var _ = Describe("CellPresence", func() {
 			ginkgomon.Interrupt(cellPresenceConsul)
 		})
 
-		It("returns cell presences from both locket and consul", func() {
-			presences, err := client.Cells(logger)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(presences).To(ConsistOf(presenceLocket, presenceConsul))
+		Context("when detect consul cell registrations and cell registrations locket enabled are both true", func() {
+			Context("when locket api location is not provided", func() {
+				BeforeEach(func() {
+					bbsConfig.LocketAddress = ""
+				})
+				It("exits with an error", func() {
+					Eventually(bbsProcess.Wait()).Should(Receive(Not(BeNil())))
+				})
+			})
+			It("returns cell presences from both locket and consul", func() {
+				Eventually(bbsProcess.Ready()).Should(BeClosed())
+				presences, err := client.Cells(logger)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(presences).To(ConsistOf(presenceLocket, presenceConsul))
+			})
 		})
 
 		Context("when detect consul cell registrations is false", func() {
@@ -132,10 +143,33 @@ var _ = Describe("CellPresence", func() {
 				bbsConfig.DetectConsulCellRegistrations = false
 			})
 
+			Context("when locket api location is not provided", func() {
+				BeforeEach(func() {
+					bbsConfig.LocketAddress = ""
+				})
+				It("exits with an error", func() {
+					Eventually(bbsProcess.Wait()).Should(Receive(Not(BeNil())))
+				})
+			})
+
 			It("only returns cell presences from locket", func() {
+				Eventually(bbsProcess.Ready()).Should(BeClosed())
 				presences, err := client.Cells(logger)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(presences).To(ConsistOf(presenceLocket))
+			})
+		})
+
+		Context("when cell registrations locket enabled is false", func() {
+			BeforeEach(func() {
+				bbsConfig.CellRegistrationsLocketEnabled = false
+			})
+
+			It("only returns cell presences from consul", func() {
+				Eventually(bbsProcess.Ready()).Should(BeClosed())
+				presences, err := client.Cells(logger)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(presences).To(ConsistOf(presenceConsul))
 			})
 		})
 	})

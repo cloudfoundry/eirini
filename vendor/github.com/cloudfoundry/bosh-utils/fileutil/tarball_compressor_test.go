@@ -263,6 +263,44 @@ var _ = Describe("tarballCompressor", func() {
 				},
 			))
 		})
+
+		It("uses PathInArchive to select files from archive", func() {
+			cmdRunner := fakesys.NewFakeCmdRunner()
+			compressor := NewTarballCompressor(cmdRunner, fs)
+
+			tarballPath := fixtureSrcTgz()
+			err := compressor.DecompressFileToDir(tarballPath, dstDir, CompressorOptions{PathInArchive: "some/path/in/archive"})
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(1).To(Equal(len(cmdRunner.RunCommands)))
+			Expect(cmdRunner.RunCommands[0]).To(Equal(
+				[]string{
+					"tar", "--no-same-owner",
+					"-xzf", tarballPath,
+					"-C", dstDir,
+					"some/path/in/archive",
+				},
+			))
+		})
+
+		It("uses StripComponents option", func() {
+			cmdRunner := fakesys.NewFakeCmdRunner()
+			compressor := NewTarballCompressor(cmdRunner, fs)
+
+			tarballPath := fixtureSrcTgz()
+			err := compressor.DecompressFileToDir(tarballPath, dstDir, CompressorOptions{StripComponents: 3})
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(1).To(Equal(len(cmdRunner.RunCommands)))
+			Expect(cmdRunner.RunCommands[0]).To(Equal(
+				[]string{
+					"tar", "--no-same-owner",
+					"-xzf", tarballPath,
+					"-C", dstDir,
+					"--strip-components=3",
+				},
+			))
+		})
 	})
 
 	Describe("CleanUp", func() {

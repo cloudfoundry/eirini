@@ -15,6 +15,7 @@
 package storage
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -32,8 +33,6 @@ import (
 
 	"cloud.google.com/go/iam"
 	"cloud.google.com/go/internal/testutil"
-
-	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	raw "google.golang.org/api/storage/v1"
@@ -365,68 +364,92 @@ func TestCondition(t *testing.T) {
 	obj := c.Bucket("buck").Object("obj")
 	dst := c.Bucket("dstbuck").Object("dst")
 	tests := []struct {
-		fn   func()
+		fn   func() error
 		want string
 	}{
 		{
-			func() { obj.Generation(1234).NewReader(ctx) },
+			func() error {
+				_, err := obj.Generation(1234).NewReader(ctx)
+				return err
+			},
 			"GET /buck/obj?generation=1234",
 		},
 		{
-			func() { obj.If(Conditions{GenerationMatch: 1234}).NewReader(ctx) },
+			func() error {
+				_, err := obj.If(Conditions{GenerationMatch: 1234}).NewReader(ctx)
+				return err
+			},
 			"GET /buck/obj?ifGenerationMatch=1234",
 		},
 		{
-			func() { obj.If(Conditions{GenerationNotMatch: 1234}).NewReader(ctx) },
+			func() error {
+				_, err := obj.If(Conditions{GenerationNotMatch: 1234}).NewReader(ctx)
+				return err
+			},
 			"GET /buck/obj?ifGenerationNotMatch=1234",
 		},
 		{
-			func() { obj.If(Conditions{MetagenerationMatch: 1234}).NewReader(ctx) },
+			func() error {
+				_, err := obj.If(Conditions{MetagenerationMatch: 1234}).NewReader(ctx)
+				return err
+			},
 			"GET /buck/obj?ifMetagenerationMatch=1234",
 		},
 		{
-			func() { obj.If(Conditions{MetagenerationNotMatch: 1234}).NewReader(ctx) },
+			func() error {
+				_, err := obj.If(Conditions{MetagenerationNotMatch: 1234}).NewReader(ctx)
+				return err
+			},
 			"GET /buck/obj?ifMetagenerationNotMatch=1234",
 		},
 		{
-			func() { obj.If(Conditions{MetagenerationNotMatch: 1234}).Attrs(ctx) },
-			"GET /storage/v1/b/buck/o/obj?alt=json&ifMetagenerationNotMatch=1234&projection=full",
-		},
-
-		{
-			func() { obj.If(Conditions{MetagenerationMatch: 1234}).Update(ctx, ObjectAttrsToUpdate{}) },
-			"PATCH /storage/v1/b/buck/o/obj?alt=json&ifMetagenerationMatch=1234&projection=full",
+			func() error {
+				_, err := obj.If(Conditions{MetagenerationNotMatch: 1234}).Attrs(ctx)
+				return err
+			},
+			"GET /storage/v1/b/buck/o/obj?alt=json&ifMetagenerationNotMatch=1234&prettyPrint=false&projection=full",
 		},
 		{
-			func() { obj.Generation(1234).Delete(ctx) },
-			"DELETE /storage/v1/b/buck/o/obj?alt=json&generation=1234",
+			func() error {
+				_, err := obj.If(Conditions{MetagenerationMatch: 1234}).Update(ctx, ObjectAttrsToUpdate{})
+				return err
+			},
+			"PATCH /storage/v1/b/buck/o/obj?alt=json&ifMetagenerationMatch=1234&prettyPrint=false&projection=full",
 		},
 		{
-			func() {
+			func() error { return obj.Generation(1234).Delete(ctx) },
+			"DELETE /storage/v1/b/buck/o/obj?alt=json&generation=1234&prettyPrint=false",
+		},
+		{
+			func() error {
 				w := obj.If(Conditions{GenerationMatch: 1234}).NewWriter(ctx)
 				w.ContentType = "text/plain"
-				w.Close()
+				return w.Close()
 			},
-			"POST /upload/storage/v1/b/buck/o?alt=json&ifGenerationMatch=1234&projection=full&uploadType=multipart",
+			"POST /upload/storage/v1/b/buck/o?alt=json&ifGenerationMatch=1234&prettyPrint=false&projection=full&uploadType=multipart",
 		},
 		{
-			func() {
+			func() error {
 				w := obj.If(Conditions{DoesNotExist: true}).NewWriter(ctx)
 				w.ContentType = "text/plain"
-				w.Close()
+				return w.Close()
 			},
-			"POST /upload/storage/v1/b/buck/o?alt=json&ifGenerationMatch=0&projection=full&uploadType=multipart",
+			"POST /upload/storage/v1/b/buck/o?alt=json&ifGenerationMatch=0&prettyPrint=false&projection=full&uploadType=multipart",
 		},
 		{
-			func() {
-				dst.If(Conditions{MetagenerationMatch: 5678}).CopierFrom(obj.If(Conditions{GenerationMatch: 1234})).Run(ctx)
+			func() error {
+				_, err := dst.If(Conditions{MetagenerationMatch: 5678}).CopierFrom(obj.If(Conditions{GenerationMatch: 1234})).Run(ctx)
+				return err
 			},
-			"POST /storage/v1/b/buck/o/obj/rewriteTo/b/dstbuck/o/dst?alt=json&ifMetagenerationMatch=5678&ifSourceGenerationMatch=1234&projection=full",
+			"POST /storage/v1/b/buck/o/obj/rewriteTo/b/dstbuck/o/dst?alt=json&ifMetagenerationMatch=5678&ifSourceGenerationMatch=1234&prettyPrint=false&projection=full",
 		},
 	}
 
 	for i, tt := range tests {
-		tt.fn()
+		if err := tt.fn(); err != nil && err != io.EOF {
+			t.Error(err)
+			continue
+		}
 		select {
 		case r := <-gotReq:
 			got := r.Method + " " + r.RequestURI
@@ -497,7 +520,7 @@ func TestObjectCompose(t *testing.T) {
 				c.Bucket("foo").Object("baz"),
 				c.Bucket("foo").Object("quux"),
 			},
-			wantURL: "/storage/v1/b/foo/o/bar/compose?alt=json",
+			wantURL: "/storage/v1/b/foo/o/bar/compose?alt=json&prettyPrint=false",
 			wantReq: raw.ComposeRequest{
 				Destination: &raw.Object{Bucket: "foo"},
 				SourceObjects: []*raw.ComposeRequestSourceObjects{
@@ -517,7 +540,7 @@ func TestObjectCompose(t *testing.T) {
 				Name:        "not-bar",
 				ContentType: "application/json",
 			},
-			wantURL: "/storage/v1/b/foo/o/bar/compose?alt=json",
+			wantURL: "/storage/v1/b/foo/o/bar/compose?alt=json&prettyPrint=false",
 			wantReq: raw.ComposeRequest{
 				Destination: &raw.Object{
 					Bucket:      "foo",
@@ -540,7 +563,7 @@ func TestObjectCompose(t *testing.T) {
 				c.Bucket("foo").Object("baz").Generation(56),
 				c.Bucket("foo").Object("quux").If(Conditions{GenerationMatch: 78}),
 			},
-			wantURL: "/storage/v1/b/foo/o/bar/compose?alt=json&ifGenerationMatch=12&ifMetagenerationMatch=34",
+			wantURL: "/storage/v1/b/foo/o/bar/compose?alt=json&ifGenerationMatch=12&ifMetagenerationMatch=34&prettyPrint=false",
 			wantReq: raw.ComposeRequest{
 				Destination: &raw.Object{Bucket: "foo"},
 				SourceObjects: []*raw.ComposeRequestSourceObjects{

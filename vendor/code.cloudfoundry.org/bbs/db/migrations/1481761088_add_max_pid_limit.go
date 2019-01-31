@@ -2,10 +2,8 @@ package migrations
 
 import (
 	"database/sql"
-	"errors"
 	"strings"
 
-	"code.cloudfoundry.org/bbs/db/etcd"
 	"code.cloudfoundry.org/bbs/encryption"
 	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/migration"
@@ -14,15 +12,14 @@ import (
 )
 
 func init() {
-	AppendMigration(NewAddMaxPidsToDesiredLRPs())
+	appendMigration(NewAddMaxPidsToDesiredLRPs())
 }
 
 type AddMaxPidsToDesiredLRPs struct {
-	serializer  format.Serializer
-	storeClient etcd.StoreClient
-	clock       clock.Clock
-	rawSQLDB    *sql.DB
-	dbFlavor    string
+	serializer format.Serializer
+	clock      clock.Clock
+	rawSQLDB   *sql.DB
+	dbFlavor   string
 }
 
 func NewAddMaxPidsToDesiredLRPs() migration.Migration {
@@ -30,15 +27,11 @@ func NewAddMaxPidsToDesiredLRPs() migration.Migration {
 }
 
 func (e *AddMaxPidsToDesiredLRPs) String() string {
-	return "1481761088"
+	return migrationString(e)
 }
 
 func (e *AddMaxPidsToDesiredLRPs) Version() int64 {
 	return 1481761088
-}
-
-func (e *AddMaxPidsToDesiredLRPs) SetStoreClient(storeClient etcd.StoreClient) {
-	e.storeClient = storeClient
 }
 
 func (e *AddMaxPidsToDesiredLRPs) SetCryptor(cryptor encryption.Cryptor) {
@@ -49,7 +42,6 @@ func (e *AddMaxPidsToDesiredLRPs) SetRawSQLDB(db *sql.DB) {
 	e.rawSQLDB = db
 }
 
-func (e *AddMaxPidsToDesiredLRPs) RequiresSQL() bool         { return true }
 func (e *AddMaxPidsToDesiredLRPs) SetClock(c clock.Clock)    { e.clock = c }
 func (e *AddMaxPidsToDesiredLRPs) SetDBFlavor(flavor string) { e.dbFlavor = flavor }
 
@@ -83,7 +75,3 @@ const mysqlColumnNotExistErr = `Unknown column 'max_pids'`
 const checkMaxPidsExistenceSQL = `SELECT count(max_pids) FROM desired_lrps`
 const alterDesiredLRPAddMaxPidsSQL = `ALTER TABLE desired_lrps
 	ADD COLUMN max_pids INTEGER DEFAULT 0;`
-
-func (e *AddMaxPidsToDesiredLRPs) Down(logger lager.Logger) error {
-	return errors.New("not implemented")
-}

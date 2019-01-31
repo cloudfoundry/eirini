@@ -11,8 +11,6 @@ const (
 	UDPProtocol  = "udp"
 	ICMPProtocol = "icmp"
 	AllProtocol  = "all"
-
-	maxPort int = 65535
 )
 
 var errInvalidIP = errors.New("Invalid IP")

@@ -96,17 +96,21 @@ func (c *RLPGatewayClient) Stream(ctx context.Context, req *loggregator_v2.Egres
 	}
 }
 
-func (c *RLPGatewayClient) connect(ctx context.Context, es chan<- *loggregator_v2.Envelope, logReq *loggregator_v2.EgressBatchRequest) {
+func (c *RLPGatewayClient) connect(
+	ctx context.Context,
+	es chan<- *loggregator_v2.Envelope,
+	logReq *loggregator_v2.EgressBatchRequest,
+) {
 	readAddr := fmt.Sprintf("%s/v2/read%s", c.addr, c.buildQuery(logReq))
 
 	req, err := http.NewRequest(http.MethodGet, readAddr, nil)
 	if err != nil {
-		c.log.Fatalf("failed to build request %s", err)
+		c.log.Panicf("failed to build request %s", err)
 	}
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Cache-Control", "no-cache")
 
-	resp, err := c.doer.Do(req)
+	resp, err := c.doer.Do(req.WithContext(ctx))
 	if err != nil {
 		c.log.Printf("error making request: %s", err)
 		return
@@ -137,9 +141,24 @@ func (c *RLPGatewayClient) connect(ctx context.Context, es chan<- *loggregator_v
 		}
 
 		switch {
+		case bytes.HasPrefix(line, []byte("heartbeat: ")):
+			// TODO: Remove this old case
+			continue
+		case bytes.HasPrefix(line, []byte("event: closing")):
+			return
+		case bytes.HasPrefix(line, []byte("event: heartbeat")):
+			// Throw away the data of the heartbeat event and the next
+			// newline.
+			_, _ = reader.ReadBytes('\n')
+			_, _ = reader.ReadBytes('\n')
+			continue
 		case bytes.HasPrefix(line, []byte("data: ")):
 			buf.Write(line[len("data: "):])
 		case bytes.Equal(line, []byte("\n")):
+			if buf.Len() == 0 {
+				continue
+			}
+
 			var eb loggregator_v2.EnvelopeBatch
 			if err := jsonpb.Unmarshal(buf, &eb); err != nil {
 				c.log.Printf("failed to unmarshal envelope: %s", err)

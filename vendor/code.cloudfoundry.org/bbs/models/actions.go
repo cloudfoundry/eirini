@@ -433,41 +433,59 @@ func WrapAction(action ActionInterface) *Action {
 	return a
 }
 
-func (action *Action) SetDeprecatedTimeoutNs() {
+// SetDeprecatedTimeoutNs returns a deep copy of the Action tree.  If there are
+// any TimeoutActions in the tree, their DeprecatedStartTimeoutS is set to
+// `TimeoutMs * time.Millisecond'.
+func (action *Action) SetDeprecatedTimeoutNs() *Action {
 	if action == nil {
-		return
+		return nil
 	}
 
 	a := action.GetValue()
 	switch actionModel := a.(type) {
 	case *RunAction, *DownloadAction, *UploadAction:
-		return
+		return action
 
 	case *TimeoutAction:
-		timeoutAction := actionModel
+		timeoutAction := *actionModel
 		timeoutAction.DeprecatedTimeoutNs = timeoutAction.TimeoutMs * int64(time.Millisecond)
+		return WrapAction(&timeoutAction)
 
 	case *EmitProgressAction:
-		actionModel.Action.SetDeprecatedTimeoutNs()
+		return actionModel.Action.SetDeprecatedTimeoutNs()
 
 	case *TryAction:
-		actionModel.Action.SetDeprecatedTimeoutNs()
+		return actionModel.Action.SetDeprecatedTimeoutNs()
 
 	case *ParallelAction:
+		newActions := []*Action{}
 		for _, subaction := range actionModel.Actions {
-			subaction.SetDeprecatedTimeoutNs()
+			newActions = append(newActions, subaction.SetDeprecatedTimeoutNs())
 		}
+		parallelAction := *actionModel
+		parallelAction.Actions = newActions
+		return WrapAction(&parallelAction)
 
 	case *SerialAction:
+		newActions := []*Action{}
 		for _, subaction := range actionModel.Actions {
-			subaction.SetDeprecatedTimeoutNs()
+			newActions = append(newActions, subaction.SetDeprecatedTimeoutNs())
 		}
+		serialAction := *actionModel
+		serialAction.Actions = newActions
+		return WrapAction(&serialAction)
 
 	case *CodependentAction:
+		newActions := []*Action{}
 		for _, subaction := range actionModel.Actions {
-			subaction.SetDeprecatedTimeoutNs()
+			newActions = append(newActions, subaction.SetDeprecatedTimeoutNs())
 		}
+		codependentAction := *actionModel
+		codependentAction.Actions = newActions
+		return WrapAction(&codependentAction)
 	}
+
+	return action
 }
 
 func (action *Action) SetTimeoutMsFromDeprecatedTimeoutNs() {

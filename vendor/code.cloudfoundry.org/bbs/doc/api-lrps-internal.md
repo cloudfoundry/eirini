@@ -207,13 +207,12 @@ and receive an [ActualLRPLifecycleResponse](https://godoc.org/code.cloudfoundry.
 ### Golang Client API
 
 ```go
-RemoveActualLRP(logger lager.Logger, processGuid string, index int, instanceKey *models.ActualLRPInstanceKey) error
+RemoveActualLRP(logger lager.Logger, key *models.ActualLRPKey, instanceKey *models.ActualLRPInstanceKey) error
 ```
 
 #### Inputs
 
-* `processGuid`: The GUID of the corresponding DesiredLRP.
-* `index int`: Index of the ActualLRP.
+* `key *models.ActualLRPKey`: [ActualLRPKey](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPKey) for the instance. Includes the LRP process guid, index (the domain is ignored).
 * `instanceKey *models.ActualLRPInstanceKey`: [ActualLRPInstanceKey](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPInstanceKey) for the ActualLRP to remove. If present, must match the key in the BBS record. If nil, the ActualLRP is removed without requiring a match.
 
 #### Output
@@ -224,7 +223,7 @@ RemoveActualLRP(logger lager.Logger, processGuid string, index int, instanceKey 
 
 ```go
 client := bbs.NewClient(url)
-err := client.RemoveActualLRP(logger, "some-guid", 0, &models.ActualLRPInstanceKey{
+err := client.RemoveActualLRP(logger, &models.ActualLRPKey{ProcessGuid: "some-guid", Index: 0}, &models.ActualLRPInstanceKey{
 	InstanceGuid: "some-instance-guid",
 	CellId: "some-cellID",
 )
@@ -382,13 +381,14 @@ and receive an [EvacuationResponse](https://godoc.org/code.cloudfoundry.org/bbs/
 ### Golang Client API
 
 ```go
-EvacuateRunningActualLRP(logger lager.Logger, key *models.ActualLRPKey, instanceKey *models.ActualLRPInstanceKey) (bool, error)
+EvacuateRunningActualLRP(logger lager.Logger, key *models.ActualLRPKey, instanceKey *models.ActualLRPInstanceKey, netInfo *models.ActualLRPNetInfo) (bool, error)
 ```
 
 #### Inputs
 
 * `key *models.ActualLRPKey`: [ActualLRPKey](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPKey) for the instance. Includes the LRP process guid, index, and LRP domain.
 * `instanceKey *models.ActualLRPInstanceKey`: [ActualLRPInstanceKey](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPInstanceKey) for the running ActualLRP to evacuate.
+* `netInfo *models.ActualLRPNetInfo`: [ActualLRPNetInfo](https://godoc.org/code.cloudfoundry.org/bbs/models#ActualLRPNetInfo) containing updated networking information for the ActualLRP.
 
 #### Output
 
@@ -407,7 +407,12 @@ keepContainer, err := client.EvacuateRunningActualLRP(logger, &models.ActualLRPK
 	&models.ActualLRPInstanceKey{
 	    InstanceGuid: "some-instance-guid",
 	    CellId: "some-cellID",
-	"some error message",
+	},
+	&models.ActualLRPNetInfo{
+	    Address: "1.2.3.4",
+	    models.NewPortMapping(10,20),
+	    InstanceAddress: "2.2.2.2",
+	},
 )
 if err != nil {
     log.Printf("failed to evacuate running actual lrp: " + err.Error())

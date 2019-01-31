@@ -20,6 +20,25 @@ func NewActualLRPHandler(db db.ActualLRPDB, exitChan chan<- struct{}) *ActualLRP
 	}
 }
 
+func (h *ActualLRPHandler) ActualLRPs(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
+	var err error
+	logger = logger.Session("actual-lrps")
+
+	request := &models.ActualLRPsRequest{}
+	response := &models.ActualLRPsResponse{}
+
+	err = parseRequest(logger, req, request)
+	if err == nil {
+		filter := models.ActualLRPFilter{Domain: request.Domain, CellID: request.CellId, Index: request.Index, ProcessGuid: request.ProcessGuid}
+		response.ActualLrps, err = h.db.ActualLRPs(logger, filter)
+	}
+
+	response.Error = models.ConvertError(err)
+
+	writeResponse(w, response)
+	exitIfUnrecoverable(logger, h.exitChan, response.Error)
+}
+
 func (h *ActualLRPHandler) ActualLRPGroups(logger lager.Logger, w http.ResponseWriter, req *http.Request) {
 	var err error
 	logger = logger.Session("actual-lrp-groups")
@@ -30,7 +49,13 @@ func (h *ActualLRPHandler) ActualLRPGroups(logger lager.Logger, w http.ResponseW
 	err = parseRequest(logger, req, request)
 	if err == nil {
 		filter := models.ActualLRPFilter{Domain: request.Domain, CellID: request.CellId}
-		response.ActualLrpGroups, err = h.db.ActualLRPGroups(logger, filter)
+		lrps, err := h.db.ActualLRPs(logger, filter)
+		if err != nil {
+			response.Error = models.ConvertError(err)
+			writeResponse(w, response)
+			exitIfUnrecoverable(logger, h.exitChan, response.Error)
+		}
+		response.ActualLrpGroups = models.ResolveActualLRPGroups(lrps)
 	}
 
 	response.Error = models.ConvertError(err)
@@ -48,7 +73,14 @@ func (h *ActualLRPHandler) ActualLRPGroupsByProcessGuid(logger lager.Logger, w h
 
 	err = parseRequest(logger, req, request)
 	if err == nil {
-		response.ActualLrpGroups, err = h.db.ActualLRPGroupsByProcessGuid(logger, request.ProcessGuid)
+		filter := models.ActualLRPFilter{ProcessGuid: request.ProcessGuid}
+		lrps, err := h.db.ActualLRPs(logger, filter)
+		if err != nil {
+			response.Error = models.ConvertError(err)
+			writeResponse(w, response)
+			exitIfUnrecoverable(logger, h.exitChan, response.Error)
+		}
+		response.ActualLrpGroups = models.ResolveActualLRPGroups(lrps)
 	}
 
 	response.Error = models.ConvertError(err)
@@ -66,9 +98,20 @@ func (h *ActualLRPHandler) ActualLRPGroupByProcessGuidAndIndex(logger lager.Logg
 
 	err = parseRequest(logger, req, request)
 	if err == nil {
-		response.ActualLrpGroup, err = h.db.ActualLRPGroupByProcessGuidAndIndex(logger, request.ProcessGuid, request.Index)
-	}
+		filter := models.ActualLRPFilter{ProcessGuid: request.ProcessGuid, Index: &request.Index}
+		lrps, err := h.db.ActualLRPs(logger, filter)
 
+		if err == nil && len(lrps) == 0 {
+			err = models.ErrResourceNotFound
+		}
+
+		if err != nil {
+			response.Error = models.ConvertError(err)
+			writeResponse(w, response)
+			exitIfUnrecoverable(logger, h.exitChan, response.Error)
+		}
+		response.ActualLrpGroup = models.ResolveActualLRPGroup(lrps)
+	}
 	response.Error = models.ConvertError(err)
 
 	writeResponse(w, response)

@@ -10,9 +10,6 @@ import (
 type Encoding [EncodingOffset]byte
 
 var (
-	LEGACY_UNENCODED Encoding = [2]byte{}
-	UNENCODED        Encoding = [2]byte{'0', '0'}
-	BASE64           Encoding = [2]byte{'0', '1'}
 	BASE64_ENCRYPTED Encoding = [2]byte{'0', '2'}
 )
 
@@ -23,7 +20,7 @@ type encoder struct {
 }
 
 type Encoder interface {
-	Encode(encoding Encoding, payload []byte) ([]byte, error)
+	Encode(payload []byte) ([]byte, error)
 	Decode(payload []byte) ([]byte, error)
 }
 
@@ -31,36 +28,18 @@ func NewEncoder(cryptor encryption.Cryptor) Encoder {
 	return &encoder{cryptor: cryptor}
 }
 
-func (e *encoder) Encode(encoding Encoding, payload []byte) ([]byte, error) {
-	switch encoding {
-	case LEGACY_UNENCODED:
-		return payload, nil
-	case UNENCODED:
-		return append(encoding[:], payload...), nil
-	case BASE64:
-		encoded := encodeBase64(payload)
-		return append(encoding[:], encoded...), nil
-	case BASE64_ENCRYPTED:
-		encrypted, err := e.encrypt(payload)
-		if err != nil {
-			return nil, err
-		}
-		encoded := encodeBase64(encrypted)
-		return append(encoding[:], encoded...), nil
-	default:
-		return nil, fmt.Errorf("Unknown encoding: %v", encoding)
+func (e *encoder) Encode(payload []byte) ([]byte, error) {
+	encrypted, err := e.encrypt(payload)
+	if err != nil {
+		return nil, err
 	}
+	encoded := encodeBase64(encrypted)
+	return append(BASE64_ENCRYPTED[:], encoded...), nil
 }
 
 func (e *encoder) Decode(payload []byte) ([]byte, error) {
 	encoding := encodingFromPayload(payload)
 	switch encoding {
-	case LEGACY_UNENCODED:
-		return payload, nil
-	case UNENCODED:
-		return payload[EncodingOffset:], nil
-	case BASE64:
-		return decodeBase64(payload[EncodingOffset:])
 	case BASE64_ENCRYPTED:
 		encrypted, err := decodeBase64(payload[EncodingOffset:])
 		if err != nil {
@@ -119,20 +98,5 @@ func decodeBase64(encodedPayload []byte) ([]byte, error) {
 }
 
 func encodingFromPayload(payload []byte) Encoding {
-	if !isEncoded(payload) {
-		return LEGACY_UNENCODED
-	}
 	return Encoding{payload[0], payload[1]}
-}
-
-func isEncoded(payload []byte) bool {
-	if len(payload) < EncodingOffset {
-		return false
-	}
-
-	if payload[0] < '0' || payload[0] > '9' {
-		return false
-	}
-
-	return true
 }

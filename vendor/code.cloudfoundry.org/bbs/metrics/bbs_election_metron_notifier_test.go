@@ -35,7 +35,7 @@ var _ = Describe("BBSElectionMetronNotifier", func() {
 	Context("when the metron notifier starts up", func() {
 		It("should emit an event that BBS has started", func() {
 			Eventually(fakeMetronClient.SendMetricCallCount).Should(Equal(1))
-			name, value := fakeMetronClient.SendMetricArgsForCall(0)
+			name, value, _ := fakeMetronClient.SendMetricArgsForCall(0)
 			Expect(name).To(Equal("BBSMasterElected"))
 			Expect(value).To(Equal(1))
 		})

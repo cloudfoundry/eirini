@@ -12,6 +12,8 @@ import "network.proto";
 import "security_group.proto";
 import "volume_mount.proto";
 import "check_definition.proto";
+import "image_layer.proto";
+import "metric_tags.proto";
 
 message DesiredLRPSchedulingInfo {
   optional DesiredLRPKey desired_lrp_key = 1 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
@@ -43,10 +45,10 @@ message DesiredLRPRunInfo {
   repeated uint32 ports = 9;
   repeated SecurityGroupRule egress_rules = 10 [(gogoproto.nullable) = false];
   optional string log_source = 11;
-  optional string metrics_guid = 12;
+  optional string metrics_guid = 12 [deprecated=true];
   optional int64 created_at = 13;
   repeated CachedDependency cached_dependencies = 14 [(gogoproto.jsontag) = "cached_dependencies,omitempty"];
-  optional string legacy_download_user = 15 [(gogoproto.jsontag) = "legacy_download_user,omitempty"];
+  optional string legacy_download_user = 15 [(gogoproto.jsontag) = "legacy_download_user,omitempty", deprecated=true];
   optional string trusted_system_certificates_path = 16 [(gogoproto.jsontag) = "trusted_system_certificates_path,omitempty"];
   repeated VolumeMount volume_mounts = 17 [(gogoproto.jsontag) = "volume_mounts,omitempty"];
   optional Network network = 18 [(gogoproto.jsontag) = "network,omitempty"];
@@ -59,6 +61,10 @@ message DesiredLRPRunInfo {
   optional string image_password = 22 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "image_password,omitempty"];
 
   optional CheckDefinition check_definition = 23 [(gogoproto.jsontag) = "check_definition,omitempty"];
+
+  repeated ImageLayer image_layers = 24;
+
+  map<string, MetricTagValue> metric_tags = 25;
 }
 
 // helper message for marshalling routes
@@ -106,12 +112,12 @@ message DesiredLRP {
   optional ProtoRoutes routes = 15 [(gogoproto.nullable) = true, (gogoproto.customtype) = "Routes"];
   optional string log_source = 16;
   optional string log_guid = 17;
-  optional string metrics_guid = 18;
+  optional string metrics_guid = 18 [deprecated=true];
   optional string annotation = 19;
   repeated SecurityGroupRule egress_rules = 20;
   optional ModificationTag modification_tag = 21;
   repeated CachedDependency cached_dependencies = 22 [(gogoproto.jsontag) = "cached_dependencies,omitempty"];
-  optional string legacy_download_user = 23 [(gogoproto.jsontag) = "legacy_download_user,omitempty"];
+  optional string legacy_download_user = 23 [(gogoproto.jsontag) = "legacy_download_user,omitempty", deprecated=true];
   optional string trusted_system_certificates_path = 24 [(gogoproto.jsontag) = "trusted_system_certificates_path,omitempty"];
   repeated VolumeMount volume_mounts = 25 [(gogoproto.jsontag) = "volume_mounts,omitempty"];
   optional Network network = 26 [(gogoproto.jsontag) = "network,omitempty"];
@@ -124,4 +130,8 @@ message DesiredLRP {
   optional string image_password = 32 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "image_password,omitempty"];
 
   optional CheckDefinition check_definition = 33 [(gogoproto.jsontag) = "check_definition,omitempty"];
+
+  repeated ImageLayer image_layers = 34;
+
+  map<string, MetricTagValue> metric_tags = 35;
 }

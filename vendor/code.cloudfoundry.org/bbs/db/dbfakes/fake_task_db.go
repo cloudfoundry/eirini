@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"code.cloudfoundry.org/auctioneer"
 	"code.cloudfoundry.org/bbs/db"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/lager"
@@ -110,6 +109,23 @@ type FakeTaskDB struct {
 		result2 *models.Task
 		result3 error
 	}
+	RejectTaskStub        func(logger lager.Logger, taskGuid, rejectionReason string) (before *models.Task, after *models.Task, err error)
+	rejectTaskMutex       sync.RWMutex
+	rejectTaskArgsForCall []struct {
+		logger          lager.Logger
+		taskGuid        string
+		rejectionReason string
+	}
+	rejectTaskReturns struct {
+		result1 *models.Task
+		result2 *models.Task
+		result3 error
+	}
+	rejectTaskReturnsOnCall map[int]struct {
+		result1 *models.Task
+		result2 *models.Task
+		result3 error
+	}
 	CompleteTaskStub        func(logger lager.Logger, taskGuid, cellId string, failed bool, failureReason, result string) (before *models.Task, after *models.Task, err error)
 	completeTaskMutex       sync.RWMutex
 	completeTaskArgsForCall []struct {
@@ -160,7 +176,7 @@ type FakeTaskDB struct {
 		result1 *models.Task
 		result2 error
 	}
-	ConvergeTasksStub        func(logger lager.Logger, cellSet models.CellSet, kickTaskDuration, expirePendingTaskDuration, expireCompletedTaskDuration time.Duration) (tasksToAuction []*auctioneer.TaskStartRequest, tasksToComplete []*models.Task, taskEvents []models.Event)
+	ConvergeTasksStub        func(logger lager.Logger, cellSet models.CellSet, kickTaskDuration, expirePendingTaskDuration, expireCompletedTaskDuration time.Duration) db.TaskConvergenceResult
 	convergeTasksMutex       sync.RWMutex
 	convergeTasksArgsForCall []struct {
 		logger                      lager.Logger
@@ -170,14 +186,10 @@ type FakeTaskDB struct {
 		expireCompletedTaskDuration time.Duration
 	}
 	convergeTasksReturns struct {
-		result1 []*auctioneer.TaskStartRequest
-		result2 []*models.Task
-		result3 []models.Event
+		result1 db.TaskConvergenceResult
 	}
 	convergeTasksReturnsOnCall map[int]struct {
-		result1 []*auctioneer.TaskStartRequest
-		result2 []*models.Task
-		result3 []models.Event
+		result1 db.TaskConvergenceResult
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -514,6 +526,62 @@ func (fake *FakeTaskDB) FailTaskReturnsOnCall(i int, result1 *models.Task, resul
 	}{result1, result2, result3}
 }
 
+func (fake *FakeTaskDB) RejectTask(logger lager.Logger, taskGuid string, rejectionReason string) (before *models.Task, after *models.Task, err error) {
+	fake.rejectTaskMutex.Lock()
+	ret, specificReturn := fake.rejectTaskReturnsOnCall[len(fake.rejectTaskArgsForCall)]
+	fake.rejectTaskArgsForCall = append(fake.rejectTaskArgsForCall, struct {
+		logger          lager.Logger
+		taskGuid        string
+		rejectionReason string
+	}{logger, taskGuid, rejectionReason})
+	fake.recordInvocation("RejectTask", []interface{}{logger, taskGuid, rejectionReason})
+	fake.rejectTaskMutex.Unlock()
+	if fake.RejectTaskStub != nil {
+		return fake.RejectTaskStub(logger, taskGuid, rejectionReason)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
+	}
+	return fake.rejectTaskReturns.result1, fake.rejectTaskReturns.result2, fake.rejectTaskReturns.result3
+}
+
+func (fake *FakeTaskDB) RejectTaskCallCount() int {
+	fake.rejectTaskMutex.RLock()
+	defer fake.rejectTaskMutex.RUnlock()
+	return len(fake.rejectTaskArgsForCall)
+}
+
+func (fake *FakeTaskDB) RejectTaskArgsForCall(i int) (lager.Logger, string, string) {
+	fake.rejectTaskMutex.RLock()
+	defer fake.rejectTaskMutex.RUnlock()
+	return fake.rejectTaskArgsForCall[i].logger, fake.rejectTaskArgsForCall[i].taskGuid, fake.rejectTaskArgsForCall[i].rejectionReason
+}
+
+func (fake *FakeTaskDB) RejectTaskReturns(result1 *models.Task, result2 *models.Task, result3 error) {
+	fake.RejectTaskStub = nil
+	fake.rejectTaskReturns = struct {
+		result1 *models.Task
+		result2 *models.Task
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *FakeTaskDB) RejectTaskReturnsOnCall(i int, result1 *models.Task, result2 *models.Task, result3 error) {
+	fake.RejectTaskStub = nil
+	if fake.rejectTaskReturnsOnCall == nil {
+		fake.rejectTaskReturnsOnCall = make(map[int]struct {
+			result1 *models.Task
+			result2 *models.Task
+			result3 error
+		})
+	}
+	fake.rejectTaskReturnsOnCall[i] = struct {
+		result1 *models.Task
+		result2 *models.Task
+		result3 error
+	}{result1, result2, result3}
+}
+
 func (fake *FakeTaskDB) CompleteTask(logger lager.Logger, taskGuid string, cellId string, failed bool, failureReason string, result string) (before *models.Task, after *models.Task, err error) {
 	fake.completeTaskMutex.Lock()
 	ret, specificReturn := fake.completeTaskReturnsOnCall[len(fake.completeTaskArgsForCall)]
@@ -680,7 +748,7 @@ func (fake *FakeTaskDB) DeleteTaskReturnsOnCall(i int, result1 *models.Task, res
 	}{result1, result2}
 }
 
-func (fake *FakeTaskDB) ConvergeTasks(logger lager.Logger, cellSet models.CellSet, kickTaskDuration time.Duration, expirePendingTaskDuration time.Duration, expireCompletedTaskDuration time.Duration) (tasksToAuction []*auctioneer.TaskStartRequest, tasksToComplete []*models.Task, taskEvents []models.Event) {
+func (fake *FakeTaskDB) ConvergeTasks(logger lager.Logger, cellSet models.CellSet, kickTaskDuration time.Duration, expirePendingTaskDuration time.Duration, expireCompletedTaskDuration time.Duration) db.TaskConvergenceResult {
 	fake.convergeTasksMutex.Lock()
 	ret, specificReturn := fake.convergeTasksReturnsOnCall[len(fake.convergeTasksArgsForCall)]
 	fake.convergeTasksArgsForCall = append(fake.convergeTasksArgsForCall, struct {
@@ -696,9 +764,9 @@ func (fake *FakeTaskDB) ConvergeTasks(logger lager.Logger, cellSet models.CellSe
 		return fake.ConvergeTasksStub(logger, cellSet, kickTaskDuration, expirePendingTaskDuration, expireCompletedTaskDuration)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2, ret.result3
+		return ret.result1
 	}
-	return fake.convergeTasksReturns.result1, fake.convergeTasksReturns.result2, fake.convergeTasksReturns.result3
+	return fake.convergeTasksReturns.result1
 }
 
 func (fake *FakeTaskDB) ConvergeTasksCallCount() int {
@@ -713,29 +781,23 @@ func (fake *FakeTaskDB) ConvergeTasksArgsForCall(i int) (lager.Logger, models.Ce
 	return fake.convergeTasksArgsForCall[i].logger, fake.convergeTasksArgsForCall[i].cellSet, fake.convergeTasksArgsForCall[i].kickTaskDuration, fake.convergeTasksArgsForCall[i].expirePendingTaskDuration, fake.convergeTasksArgsForCall[i].expireCompletedTaskDuration
 }
 
-func (fake *FakeTaskDB) ConvergeTasksReturns(result1 []*auctioneer.TaskStartRequest, result2 []*models.Task, result3 []models.Event) {
+func (fake *FakeTaskDB) ConvergeTasksReturns(result1 db.TaskConvergenceResult) {
 	fake.ConvergeTasksStub = nil
 	fake.convergeTasksReturns = struct {
-		result1 []*auctioneer.TaskStartRequest
-		result2 []*models.Task
-		result3 []models.Event
-	}{result1, result2, result3}
+		result1 db.TaskConvergenceResult
+	}{result1}
 }
 
-func (fake *FakeTaskDB) ConvergeTasksReturnsOnCall(i int, result1 []*auctioneer.TaskStartRequest, result2 []*models.Task, result3 []models.Event) {
+func (fake *FakeTaskDB) ConvergeTasksReturnsOnCall(i int, result1 db.TaskConvergenceResult) {
 	fake.ConvergeTasksStub = nil
 	if fake.convergeTasksReturnsOnCall == nil {
 		fake.convergeTasksReturnsOnCall = make(map[int]struct {
-			result1 []*auctioneer.TaskStartRequest
-			result2 []*models.Task
-			result3 []models.Event
+			result1 db.TaskConvergenceResult
 		})
 	}
 	fake.convergeTasksReturnsOnCall[i] = struct {
-		result1 []*auctioneer.TaskStartRequest
-		result2 []*models.Task
-		result3 []models.Event
-	}{result1, result2, result3}
+		result1 db.TaskConvergenceResult
+	}{result1}
 }
 
 func (fake *FakeTaskDB) Invocations() map[string][][]interface{} {
@@ -753,6 +815,8 @@ func (fake *FakeTaskDB) Invocations() map[string][][]interface{} {
 	defer fake.cancelTaskMutex.RUnlock()
 	fake.failTaskMutex.RLock()
 	defer fake.failTaskMutex.RUnlock()
+	fake.rejectTaskMutex.RLock()
+	defer fake.rejectTaskMutex.RUnlock()
 	fake.completeTaskMutex.RLock()
 	defer fake.completeTaskMutex.RUnlock()
 	fake.resolvingTaskMutex.RLock()

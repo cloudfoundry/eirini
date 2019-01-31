@@ -2,8 +2,10 @@ package sqldb_test
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 
+	"code.cloudfoundry.org/bbs/db/sqldb/helpers"
 	"code.cloudfoundry.org/bbs/format"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/bbs/models/test/model_helpers"
@@ -46,10 +48,10 @@ var _ = Describe("TaskDB", func() {
 				defer rows.Close()
 				Expect(rows.Next()).To(BeTrue())
 
-				var guid, domain, cellID, failureReason string
+				var guid, domain, cellID, failureReason, rejectionReason string
 				var result sql.NullString
 				var createdAt, updatedAt, firstCompletedAt int64
-				var state int32
+				var state, rejectionCount int32
 				var failed bool
 				var taskDefData []byte
 
@@ -65,6 +67,8 @@ var _ = Describe("TaskDB", func() {
 					&failed,
 					&failureReason,
 					&taskDefData,
+					&rejectionCount,
+					&rejectionReason,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -78,6 +82,8 @@ var _ = Describe("TaskDB", func() {
 				Expect(failureReason).To(Equal(""))
 				Expect(cellID).To(Equal(""))
 				Expect(failed).To(BeFalse())
+				Expect(rejectionCount).To(BeEquivalentTo(0))
+				Expect(rejectionReason).To(Equal(""))
 
 				var actualTaskDef models.TaskDefinition
 				err = serializer.Unmarshal(logger, taskDefData, &actualTaskDef)
@@ -94,6 +100,7 @@ var _ = Describe("TaskDB", func() {
 				Expect(desiredTask.FailureReason).To(Equal(""))
 				Expect(desiredTask.CellId).To(Equal(""))
 				Expect(desiredTask.Failed).To(BeFalse())
+				Expect(desiredTask.RejectionCount).To(BeEquivalentTo(0))
 			})
 		})
 
@@ -580,10 +587,29 @@ var _ = Describe("TaskDB", func() {
 						Expect(task.CellId).To(Equal(""))
 					})
 
-					Context("with an invalid failure reason", func() {
-						It("returns an error and does not update the record", func() {
-							_, _, err := sqlDB.CompleteTask(logger, taskGuid, cellID, true, randStr(256), "i am the result")
-							Expect(err).To(Equal(models.ErrBadRequest))
+					Context("when the rejection reason is longer than 1K", func() {
+						var (
+							failureReason string
+							after         *models.Task
+						)
+
+						JustBeforeEach(func() {
+							failureReason = strings.Repeat("x", 2*1024)
+							var err error
+							_, after, err = sqlDB.CompleteTask(logger, taskGuid, cellID, true, failureReason, "i am the result")
+							Expect(err).NotTo(HaveOccurred())
+						})
+
+						It("truncates the crash reason in the returned task", func() {
+							expectedFailureReason := strings.Repeat("x", 1013) + "(truncated)"
+							Expect(after.FailureReason).To(Equal(expectedFailureReason))
+						})
+
+						It("truncates the crash reason", func() {
+							expectedFailureReason := strings.Repeat("x", 1013) + "(truncated)"
+							task, err := sqlDB.TaskByGuid(logger, taskGuid)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(task.FailureReason).To(Equal(expectedFailureReason))
 						})
 					})
 
@@ -732,10 +758,16 @@ var _ = Describe("TaskDB", func() {
 					})
 				})
 
-				Context("with an invalid failure reason", func() {
-					It("returns an error and does not update the record", func() {
-						_, _, err := sqlDB.FailTask(logger, taskGuid, randStr(256))
-						Expect(err).To(Equal(models.ErrBadRequest))
+				Context("when the failure reason is longer than 1K", func() {
+					It("truncates the crash reason", func() {
+						failureReason := strings.Repeat("x", 2*1024)
+						expectedFailureReason := strings.Repeat("x", 1013) + "(truncated)"
+						_, _, err := sqlDB.FailTask(logger, taskGuid, failureReason)
+						Expect(err).NotTo(HaveOccurred())
+
+						task, err := sqlDB.TaskByGuid(logger, taskGuid)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(task.FailureReason).To(Equal(expectedFailureReason))
 					})
 				})
 			})
@@ -842,7 +874,7 @@ var _ = Describe("TaskDB", func() {
 
 		Context("when the task does not exist", func() {
 			It("returns an ResourceNotFound error", func() {
-				_, _, err := sqlDB.FailTask(logger, "", "")
+				_, _, err := sqlDB.FailTask(logger, "", "nota-guid")
 				Expect(err).To(Equal(models.ErrResourceNotFound))
 			})
 		})
@@ -1081,10 +1113,143 @@ var _ = Describe("TaskDB", func() {
 			})
 		})
 	})
+
+	Describe("RejectTask", func() {
+		Context("when the task exists", func() {
+			var (
+				taskGuid, taskDomain string
+				taskDefinition       *models.TaskDefinition
+				beforeTask           *models.Task
+			)
+
+			BeforeEach(func() {
+				var err error
+
+				taskGuid = "the-task-guid"
+				taskDomain = "the-task-domain"
+				taskDefinition = model_helpers.NewValidTaskDefinition()
+
+				beforeTask, err = sqlDB.DesireTask(logger, taskDefinition, taskGuid, taskDomain)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			Context("and the task is pending", func() {
+				It("increments the rejection count, stores the rejection reason, and does not mutate the task state", func() {
+					before, after, err := sqlDB.RejectTask(logger, taskGuid, "some failure")
+					Expect(err).NotTo(HaveOccurred())
+					Expect(before).To(Equal(beforeTask))
+
+					Expect(after.RejectionCount).To(Equal(beforeTask.RejectionCount + 1))
+					Expect(after.RejectionReason).To(Equal("some failure"))
+					Expect(after.State).To(Equal(models.Task_Pending))
+
+					task, err := sqlDB.TaskByGuid(logger, taskGuid)
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(task).To(Equal(after))
+				})
+			})
+
+			Context("and the task is running", func() {
+				BeforeEach(func() {
+					_, afterStartTask, _, err := sqlDB.StartTask(logger, taskGuid, "cell-id")
+					Expect(err).NotTo(HaveOccurred())
+					beforeTask = afterStartTask
+				})
+
+				It("increments the rejection count, stores the rejection reason, and resets state to pending", func() {
+					before, after, err := sqlDB.RejectTask(logger, taskGuid, "some failure")
+					Expect(err).NotTo(HaveOccurred())
+					Expect(before).To(Equal(beforeTask))
+
+					Expect(after.RejectionCount).To(Equal(beforeTask.RejectionCount + 1))
+					Expect(after.RejectionReason).To(Equal("some failure"))
+					Expect(after.State).To(Equal(models.Task_Pending))
+
+					task, err := sqlDB.TaskByGuid(logger, taskGuid)
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(task).To(Equal(after))
+				})
+			})
+
+			Context("and the task is completed", func() {
+				BeforeEach(func() {
+					_, _, _, err := sqlDB.CancelTask(logger, taskGuid)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("returns a BadRequest error and does not mutate the task", func() {
+					_, _, err := sqlDB.RejectTask(logger, taskGuid, "rejected")
+					Expect(err).To(Equal(models.ErrBadRequest))
+
+					task, err := sqlDB.TaskByGuid(logger, taskGuid)
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(task.RejectionCount).To(BeEquivalentTo(0))
+					Expect(task.RejectionReason).To(Equal(""))
+				})
+			})
+
+			Context("when the rejection reason is longer than 1K", func() {
+				var (
+					failureReason string
+					after         *models.Task
+				)
+
+				JustBeforeEach(func() {
+					failureReason = strings.Repeat("x", 2*1024)
+					var err error
+					_, after, err = sqlDB.RejectTask(logger, taskGuid, failureReason)
+					Expect(err).NotTo(HaveOccurred())
+
+				})
+
+				It("truncates the crash reason in the returned task", func() {
+					expectedFailureReason := strings.Repeat("x", 1013) + "(truncated)"
+					Expect(after.RejectionReason).To(Equal(expectedFailureReason))
+				})
+
+				It("truncates the crash reason", func() {
+					expectedFailureReason := strings.Repeat("x", 1013) + "(truncated)"
+					task, err := sqlDB.TaskByGuid(logger, taskGuid)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(task.RejectionReason).To(Equal(expectedFailureReason))
+				})
+			})
+
+			Context("and the task is resolving", func() {
+				BeforeEach(func() {
+					_, _, _, err := sqlDB.CancelTask(logger, taskGuid)
+					Expect(err).NotTo(HaveOccurred())
+					_, _, err = sqlDB.ResolvingTask(logger, taskGuid)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("returns a BadRequest error and does not mutate the task", func() {
+					_, _, err := sqlDB.RejectTask(logger, taskGuid, "rejected")
+					Expect(err).To(Equal(models.ErrBadRequest))
+
+					task, err := sqlDB.TaskByGuid(logger, taskGuid)
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(task.RejectionCount).To(BeEquivalentTo(0))
+					Expect(task.RejectionReason).To(Equal(""))
+				})
+			})
+		})
+
+		Context("when the task does not exist", func() {
+			It("returns an ResourceNotFound error", func() {
+				_, _, err := sqlDB.RejectTask(logger, "nota-guid", "")
+				Expect(err).To(Equal(models.ErrResourceNotFound))
+			})
+		})
+	})
 })
 
-func insertTask(db *sql.DB, serializer format.Serializer, task *models.Task, malformedTaskDefinition bool) {
-	taskDefData, err := serializer.Marshal(logger, format.ENCRYPTED_PROTO, task.TaskDefinition)
+func insertTask(db helpers.QueryableDB, serializer format.Serializer, task *models.Task, malformedTaskDefinition bool) {
+	taskDefData, err := serializer.Marshal(logger, task.TaskDefinition)
 	Expect(err).NotTo(HaveOccurred())
 
 	if malformedTaskDefinition {
@@ -1111,6 +1276,26 @@ func insertTask(db *sql.DB, serializer format.Serializer, task *models.Task, mal
 		task.Failed,
 		task.FailureReason,
 		taskDefData,
+	)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(result.RowsAffected()).NotTo(Equal(1))
+}
+
+func updateTaskToInvalid(db helpers.QueryableDB, serializer format.Serializer, task *models.Task) {
+	taskDefData, err := serializer.Marshal(logger, task.TaskDefinition)
+	Expect(err).NotTo(HaveOccurred())
+
+	taskDefData = []byte("{{{{{{{{{{")
+	queryStr := `UPDATE tasks
+						  SET task_definition=?
+							WHERE guid=?`
+	if test_helpers.UsePostgres() {
+		queryStr = test_helpers.ReplaceQuestionMarks(queryStr)
+	}
+	result, err := db.Exec(
+		queryStr,
+		taskDefData,
+		task.TaskGuid,
 	)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(result.RowsAffected()).NotTo(Equal(1))

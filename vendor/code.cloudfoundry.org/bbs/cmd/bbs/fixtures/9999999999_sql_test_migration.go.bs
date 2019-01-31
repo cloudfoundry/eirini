@@ -3,7 +3,6 @@ package migrations
 import (
 	"database/sql"
 
-	"code.cloudfoundry.org/bbs/db/etcd"
 	"code.cloudfoundry.org/bbs/encryption"
 	"code.cloudfoundry.org/bbs/migration"
 	"code.cloudfoundry.org/clock"
@@ -11,21 +10,16 @@ import (
 )
 
 func init() {
-	AppendMigration(NewSQLTestMigration(9999999999))
+	appendMigration(NewSQLTestMigration())
 }
 
 type SQLTestMigration struct {
-	version  int64
 	rawSQLDB *sql.DB
 }
 
-func NewSQLTestMigration(version int64) migration.Migration {
-	return &SQLTestMigration{
-		version: version,
-	}
+func NewSQLTestMigration() migration.Migration {
+	return &SQLTestMigration{}
 }
-
-func (t *SQLTestMigration) SetStoreClient(storeClient etcd.StoreClient) {}
 
 func (*SQLTestMigration) SetCryptor(cryptor encryption.Cryptor) {}
 
@@ -35,10 +29,6 @@ func (t *SQLTestMigration) SetRawSQLDB(rawSQLDB *sql.DB) {
 
 func (*SQLTestMigration) SetClock(clock.Clock) {}
 func (*SQLTestMigration) SetDBFlavor(string)   {}
-
-func (*SQLTestMigration) RequiresSQL() bool {
-	return true
-}
 
 func (t *SQLTestMigration) Up(logger lager.Logger) error {
 	_, err := t.rawSQLDB.Exec(`CREATE TABLE IF NOT EXISTS sweet_table (
@@ -54,6 +44,10 @@ func (t *SQLTestMigration) Down(logger lager.Logger) error {
 	return nil
 }
 
+func (t SQLTestMigration) String() string {
+	return "9999999999"
+}
+
 func (t SQLTestMigration) Version() int64 {
-	return t.version
+	return 9999999999
 }

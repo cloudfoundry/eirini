@@ -18,6 +18,7 @@ import (
 
 	"code.cloudfoundry.org/go-loggregator"
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
+	"github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -46,7 +47,7 @@ var _ = Describe("Connector", func() {
 		rx := c.Stream(context.Background(), req)
 
 		Expect(len(rx())).NotTo(BeZero())
-		Expect(producer.actualReq()).To(Equal(req))
+		Expect(proto.Equal(producer.actualReq(), req)).To(BeTrue())
 	})
 
 	It("reconnects if the stream fails", func() {

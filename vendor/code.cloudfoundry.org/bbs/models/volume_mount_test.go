@@ -33,26 +33,6 @@ var _ = Describe("VolumeMount", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		Context("given an invalid, deprecated config", func() {
-			BeforeEach(func() {
-				mount.DeprecatedConfig = []byte("wat")
-			})
-
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-		})
-
-		Context("given an invalid, deprecated volumeId", func() {
-			BeforeEach(func() {
-				mount.DeprecatedVolumeId = "badness"
-			})
-
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-		})
-
 		Context("given an invalid driver", func() {
 			BeforeEach(func() {
 				mount.Driver = ""

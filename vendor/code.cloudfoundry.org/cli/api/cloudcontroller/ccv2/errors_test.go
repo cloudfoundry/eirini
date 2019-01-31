@@ -16,6 +16,7 @@ var _ = Describe("Error Wrapper", func() {
 	var (
 		serverResponse     string
 		serverResponseCode int
+		executeErr         error
 
 		client *Client
 	)
@@ -44,17 +45,34 @@ var _ = Describe("Error Wrapper", func() {
 					),
 				),
 			)
+
+			// Make a request to a CC endpoint - we stub the response, so the actual endpoint isn't relevant
+			_, _, executeErr = client.GetApplications()
 		})
 
 		When("we can't unmarshal the response successfully", func() {
 			BeforeEach(func() {
 				serverResponse = "I am not unmarshallable"
-				serverResponseCode = http.StatusNotFound
 			})
 
-			It("returns an unknown http source error", func() {
-				_, _, err := client.GetApplications()
-				Expect(err).To(MatchError(ccerror.UnknownHTTPSourceError{StatusCode: serverResponseCode, RawResponse: []byte(serverResponse)}))
+			When("response code is 4XX", func() {
+				BeforeEach(func() {
+					serverResponseCode = http.StatusNotFound
+				})
+
+				It("returns an unknown http source error", func() {
+					Expect(executeErr).To(MatchError(ccerror.UnknownHTTPSourceError{StatusCode: serverResponseCode, RawResponse: []byte(serverResponse)}))
+				})
+			})
+
+			When("response code is 5XX", func() {
+				BeforeEach(func() {
+					serverResponseCode = http.StatusBadGateway
+				})
+
+				It("returns an unknown http source error", func() {
+					Expect(executeErr).To(MatchError(ccerror.UnknownHTTPSourceError{StatusCode: serverResponseCode, RawResponse: []byte(serverResponse)}))
+				})
 			})
 		})
 
@@ -74,8 +92,7 @@ var _ = Describe("Error Wrapper", func() {
 						})
 
 						It("returns a BadRequestError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.BadRequestError{
+							Expect(executeErr).To(MatchError(ccerror.BadRequestError{
 								Message: "bad request",
 							}))
 						})
@@ -90,8 +107,7 @@ var _ = Describe("Error Wrapper", func() {
 						})
 
 						It("returns a NotStagedError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.NotStagedError{
+							Expect(executeErr).To(MatchError(ccerror.NotStagedError{
 								Message: "App has not finished staging",
 							}))
 						})
@@ -106,8 +122,7 @@ var _ = Describe("Error Wrapper", func() {
 						})
 
 						It("returns an InstancesError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.InstancesError{
+							Expect(executeErr).To(MatchError(ccerror.InstancesError{
 								Message: "instances went bananas",
 							}))
 						})
@@ -123,8 +138,7 @@ var _ = Describe("Error Wrapper", func() {
 						})
 
 						It("returns an InvalidRelationError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.InvalidRelationError{
+							Expect(executeErr).To(MatchError(ccerror.InvalidRelationError{
 								Message: "The requested app relation is invalid: the app and route must belong to the same space",
 							}))
 						})
@@ -140,8 +154,7 @@ var _ = Describe("Error Wrapper", func() {
 						})
 
 						It("returns an AppStoppedStatsError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.ApplicationStoppedStatsError{
+							Expect(executeErr).To(MatchError(ccerror.ApplicationStoppedStatsError{
 								Message: "Could not fetch stats for stopped app: some-app",
 							}))
 						})
@@ -157,8 +170,7 @@ var _ = Describe("Error Wrapper", func() {
 						})
 
 						It("returns an BuildpackAlreadyExistsWithoutStackError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.BuildpackAlreadyExistsWithoutStackError{
+							Expect(executeErr).To(MatchError(ccerror.BuildpackAlreadyExistsWithoutStackError{
 								Message: "Buildpack is invalid: stack unique",
 							}))
 						})
@@ -174,8 +186,7 @@ var _ = Describe("Error Wrapper", func() {
 						})
 
 						It("returns an BuildpackNameTakenError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.BuildpackNameTakenError{
+							Expect(executeErr).To(MatchError(ccerror.BuildpackNameTakenError{
 								Message: "The buildpack name is already in use: foo",
 							}))
 						})
@@ -191,8 +202,7 @@ var _ = Describe("Error Wrapper", func() {
 						})
 
 						It("returns a OrganizationNameTakenError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.OrganizationNameTakenError{
+							Expect(executeErr).To(MatchError(ccerror.OrganizationNameTakenError{
 								Message: "The organization name is taken: potato",
 							}))
 						})
@@ -208,12 +218,27 @@ var _ = Describe("Error Wrapper", func() {
 						})
 
 						It("returns a SpaceNameTakenError", func() {
-							_, _, err := client.GetApplications()
-							if e, ok := err.(ccerror.UnknownHTTPSourceError); ok {
+							if e, ok := executeErr.(ccerror.UnknownHTTPSourceError); ok {
 								fmt.Printf("TV %s", string(e.RawResponse))
 							}
-							Expect(err).To(MatchError(ccerror.SpaceNameTakenError{
+							Expect(executeErr).To(MatchError(ccerror.SpaceNameTakenError{
 								Message: "The app space name is taken: potato",
+							}))
+						})
+					})
+
+					When("creating a service instance fails because the name is taken", func() {
+						BeforeEach(func() {
+							serverResponse = `{
+								"code": 40002,
+								"description": "Service instance name is taken: potato",
+								"error_code": "CF-ServiceInstanceNameTaken"
+							  }`
+						})
+
+						It("returns a ServiceInstanceNameTakenError", func() {
+							Expect(executeErr).To(MatchError(ccerror.ServiceInstanceNameTakenError{
+								Message: "Service instance name is taken: potato",
 							}))
 						})
 					})
@@ -226,8 +251,7 @@ var _ = Describe("Error Wrapper", func() {
 
 					Context("generic 401", func() {
 						It("returns a UnauthorizedError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.UnauthorizedError{Message: "SomeCC Error Message"}))
+							Expect(executeErr).To(MatchError(ccerror.UnauthorizedError{Message: "SomeCC Error Message"}))
 						})
 					})
 
@@ -241,8 +265,7 @@ var _ = Describe("Error Wrapper", func() {
 						})
 
 						It("returns an InvalidAuthTokenError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.InvalidAuthTokenError{Message: "Invalid Auth Token"}))
+							Expect(executeErr).To(MatchError(ccerror.InvalidAuthTokenError{Message: "Invalid Auth Token"}))
 						})
 					})
 				})
@@ -253,8 +276,7 @@ var _ = Describe("Error Wrapper", func() {
 					})
 
 					It("returns a ForbiddenError", func() {
-						_, _, err := client.GetApplications()
-						Expect(err).To(MatchError(ccerror.ForbiddenError{Message: "SomeCC Error Message"}))
+						Expect(executeErr).To(MatchError(ccerror.ForbiddenError{Message: "SomeCC Error Message"}))
 					})
 				})
 
@@ -265,8 +287,7 @@ var _ = Describe("Error Wrapper", func() {
 
 					When("the error is a json response from the cloud controller", func() {
 						It("returns a ResourceNotFoundError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.ResourceNotFoundError{Message: "SomeCC Error Message"}))
+							Expect(executeErr).To(MatchError(ccerror.ResourceNotFoundError{Message: "SomeCC Error Message"}))
 						})
 					})
 				})
@@ -278,8 +299,7 @@ var _ = Describe("Error Wrapper", func() {
 
 					Context("generic Unprocessable entity", func() {
 						It("returns a UnprocessableEntityError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.UnprocessableEntityError{Message: "SomeCC Error Message"}))
+							Expect(executeErr).To(MatchError(ccerror.UnprocessableEntityError{Message: "SomeCC Error Message"}))
 						})
 					})
 
@@ -293,8 +313,7 @@ var _ = Describe("Error Wrapper", func() {
 						})
 
 						It("returns an BuildpackAlreadyExistsForStackError", func() {
-							_, _, err := client.GetApplications()
-							Expect(err).To(MatchError(ccerror.BuildpackAlreadyExistsForStackError{
+							Expect(executeErr).To(MatchError(ccerror.BuildpackAlreadyExistsForStackError{
 								Message: "The buildpack name foo is already in use for the stack bar",
 							}))
 						})
@@ -308,8 +327,7 @@ var _ = Describe("Error Wrapper", func() {
 					})
 
 					It("returns an UnexpectedResponseError", func() {
-						_, _, err := client.GetApplications()
-						Expect(err).To(MatchError(ccerror.V2UnexpectedResponseError{
+						Expect(executeErr).To(MatchError(ccerror.V2UnexpectedResponseError{
 							ResponseCode: http.StatusTeapot,
 							V2ErrorResponse: ccerror.V2ErrorResponse{
 								Code:        777,
@@ -327,22 +345,97 @@ var _ = Describe("Error Wrapper", func() {
 
 			When("the error is a 5XX error", func() {
 				BeforeEach(func() {
-					serverResponseCode = http.StatusBadGateway
-					serverResponse = "I am some text"
+					serverResponseCode = http.StatusInternalServerError
+					serverResponse = "{}"
 				})
 
-				It("returns a V2UnexpectedResponseError with no json", func() {
-					_, _, err := client.GetApplications()
-					Expect(err).To(MatchError(ccerror.V2UnexpectedResponseError{
-						ResponseCode: http.StatusBadGateway,
-						V2ErrorResponse: ccerror.V2ErrorResponse{
-							Description: serverResponse,
-						},
-						RequestIDs: []string{
-							"6e0b4379-f5f7-4b2b-56b0-9ab7e96eed95",
-							"6e0b4379-f5f7-4b2b-56b0-9ab7e96eed95::7445d9db-c31e-410d-8dc5-9f79ec3fc26f",
-						},
-					}))
+				Context("(502) Bad Gateway", func() {
+					BeforeEach(func() {
+						serverResponseCode = http.StatusBadGateway
+					})
+
+					When("the service broker catalog is invalid", func() {
+						BeforeEach(func() {
+							serverResponse = `{
+								"description": "Service broker catalog is invalid: \nService overview-service\n  Service dashboard client id must be unique\n",
+								"error_code": "CF-ServiceBrokerCatalogInvalid",
+								"code": 270012
+							}`
+						})
+
+						It("returns a ServiceBrokerCatalogInvalidError", func() {
+							Expect(executeErr).To(MatchError(ccerror.ServiceBrokerCatalogInvalidError{
+								Message: "Service broker catalog is invalid: \nService overview-service\n  Service dashboard client id must be unique\n",
+							}))
+						})
+					})
+
+					When("the service broker rejected the request", func() {
+						BeforeEach(func() {
+							serverResponse = `{
+								"description": "The service broker rejected the request to https://broker.example.com/v2/service_instances/1a3794e9-7ddf-4cae-b66a-6a0453c85a3e?accepts_incomplete=true. Status Code: 400 Bad Request, Body: instance requires property \"name\"",
+								"error_code": "CF-ServiceBrokerRequestRejected",
+								"code": 10001
+							}`
+						})
+
+						It("returns a ServiceBrokerRequestRejectedError", func() {
+							Expect(executeErr).To(MatchError(ccerror.ServiceBrokerRequestRejectedError{
+								Message: `The service broker rejected the request to https://broker.example.com/v2/service_instances/1a3794e9-7ddf-4cae-b66a-6a0453c85a3e?accepts_incomplete=true. Status Code: 400 Bad Request, Body: instance requires property "name"`,
+							}))
+						})
+					})
+
+					When("the service broker responded with bad response", func() {
+						BeforeEach(func() {
+							serverResponse = `{
+								"description": "Service broker error",
+									"error_code": "CF-ServiceBrokerBadResponse",
+									"code": 10001,
+									"http": {
+										"uri": "https://broker.url/v2/service_instances/593fe03a-3eda-4a53-93ed-aa30f309b120?accepts_incomplete=true",
+										"method": "PUT",
+										"status": 500
+									}
+								}`
+						})
+
+						It("returns a ServiceBrokerBadResponseError", func() {
+							Expect(executeErr).To(MatchError(ccerror.ServiceBrokerBadResponseError{
+								Message: `Service broker error`,
+							}))
+						})
+					})
+
+					When("the error_code is unknown", func() {
+						It("returns a V2UnexpectedResponseError with no json", func() {
+							Expect(executeErr).To(MatchError(ccerror.V2UnexpectedResponseError{
+								ResponseCode: http.StatusBadGateway,
+								V2ErrorResponse: ccerror.V2ErrorResponse{
+									Description: serverResponse,
+								},
+								RequestIDs: []string{
+									"6e0b4379-f5f7-4b2b-56b0-9ab7e96eed95",
+									"6e0b4379-f5f7-4b2b-56b0-9ab7e96eed95::7445d9db-c31e-410d-8dc5-9f79ec3fc26f",
+								},
+							}))
+						})
+					})
+				})
+
+				Context("unhandled error codes", func() {
+					It("returns a V2UnexpectedResponseError with no json", func() {
+						Expect(executeErr).To(MatchError(ccerror.V2UnexpectedResponseError{
+							ResponseCode: http.StatusInternalServerError,
+							V2ErrorResponse: ccerror.V2ErrorResponse{
+								Description: serverResponse,
+							},
+							RequestIDs: []string{
+								"6e0b4379-f5f7-4b2b-56b0-9ab7e96eed95",
+								"6e0b4379-f5f7-4b2b-56b0-9ab7e96eed95::7445d9db-c31e-410d-8dc5-9f79ec3fc26f",
+							},
+						}))
+					})
 				})
 			})
 		})

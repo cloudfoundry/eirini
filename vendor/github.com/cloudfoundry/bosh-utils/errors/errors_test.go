@@ -22,6 +22,13 @@ var _ = Describe("Error", func() {
 	})
 })
 
+var _ = Describe("UserError", func() {
+	It("constructs an error", func() {
+		err := NewUserError("fake-message")
+		Expect(err.Err).To(MatchError("fake-message"))
+	})
+})
+
 var _ = Describe("Errorf", func() {
 	It("constructs a formatted error", func() {
 		err := Errorf("fake-message: %s", "fake-details")

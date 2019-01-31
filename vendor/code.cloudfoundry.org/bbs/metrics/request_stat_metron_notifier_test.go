@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/bbs/metrics"
 	"code.cloudfoundry.org/clock/fakeclock"
 	mfakes "code.cloudfoundry.org/diego-logging-client/testhelpers"
+	loggregator "code.cloudfoundry.org/go-loggregator"
 	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/tedsuo/ifrit"
 
@@ -40,7 +41,7 @@ var _ = Describe("PeriodicMetronCountNotifier", func() {
 			return nil
 		}
 
-		fakeMetronClient.SendDurationStub = func(name string, value time.Duration) error {
+		fakeMetronClient.SendDurationStub = func(name string, value time.Duration, opts ...loggregator.EmitGaugeOption) error {
 			metricsLock.Lock()
 			defer metricsLock.Unlock()
 			durationMap[name] = value
@@ -64,7 +65,7 @@ var _ = Describe("PeriodicMetronCountNotifier", func() {
 	})
 
 	It("should emit a request count event periodically", func() {
-		mn.IncrementCounter(1)
+		mn.IncrementRequestCounter(1)
 		mn.UpdateLatency(time.Second)
 		fakeClock.WaitForWatcherAndIncrement(reportInterval)
 
@@ -80,10 +81,10 @@ var _ = Describe("PeriodicMetronCountNotifier", func() {
 			return durationMap["RequestLatency"]
 		}).Should(Equal(1 * time.Second))
 
-		mn.IncrementCounter(1)
+		mn.IncrementRequestCounter(1)
 		mn.UpdateLatency(3 * time.Second)
 
-		mn.IncrementCounter(1)
+		mn.IncrementRequestCounter(1)
 		mn.UpdateLatency(2 * time.Second)
 		fakeClock.WaitForWatcherAndIncrement(reportInterval)
 

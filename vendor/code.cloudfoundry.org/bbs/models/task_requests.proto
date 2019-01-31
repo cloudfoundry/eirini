@@ -27,8 +27,14 @@ message StartTaskResponse {
 }
 
 message FailTaskRequest {
+  option deprecated = true;
   optional string task_guid = 1;
   optional string failure_reason = 2;
+}
+
+message RejectTaskRequest {
+  optional string task_guid = 1;
+  optional string rejection_reason = 2;
 }
 
 message TaskGuidRequest {
@@ -50,16 +56,6 @@ message TaskCallbackResponse {
   optional string result = 4;
   optional string annotation = 5 [(gogoproto.jsontag) = "annotation,omitempty"];
   optional int64 created_at = 6;
-}
-
-message ConvergeTasksRequest {
-  optional int64 kick_task_duration = 1;
-  optional int64 expire_pending_task_duration = 2;
-  optional int64 expire_completed_task_duration = 3;
-}
-
-message ConvergeTasksResponse {
-  optional Error error = 1;
 }
 
 message TasksRequest{

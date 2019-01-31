@@ -1,6 +1,8 @@
 package isolated
 
 import (
+	"time"
+
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccversion"
 	"code.cloudfoundry.org/cli/integration/helpers"
 	. "github.com/onsi/ginkgo"
@@ -135,6 +137,12 @@ var _ = Describe("unbind-service command", func() {
 					helpers.WithHelloWorldApp(func(appDir string) {
 						Eventually(helpers.CF("push", appName, "--no-start", "-p", appDir, "-b", "staticfile_buildpack", "--no-route")).Should(Exit(0))
 					})
+
+					Eventually(func() *Session {
+						session := helpers.CF("service", serviceInstance)
+						return session.Wait()
+					}, time.Minute*5, time.Second*5).Should(Say("create succeeded"))
+
 					Eventually(helpers.CF("bind-service", appName, serviceInstance)).Should(Exit(0))
 					client, err := helpers.CreateCCV2Client()
 					Expect(err).ToNot(HaveOccurred())
@@ -155,11 +163,7 @@ var _ = Describe("unbind-service command", func() {
 
 			When("the unbinding is blocking", func() {
 				BeforeEach(func() {
-					broker = helpers.NewServiceBroker(helpers.NewServiceBrokerName(), helpers.NewAssets().ServiceBroker, domain, service, servicePlan)
-					broker.Push()
-					broker.Configure(true)
-					broker.Create()
-
+					broker = helpers.CreateBroker(domain, service, servicePlan)
 					Eventually(helpers.CF("enable-service-access", service)).Should(Exit(0))
 				})
 

@@ -14,7 +14,8 @@ var _ = Describe("Debug Address", func() {
 	var debugAddress string
 
 	BeforeEach(func() {
-		port := 6800 + GinkgoParallelNode()*2
+		port, err := portAllocator.ClaimPorts(1)
+		Expect(err).NotTo(HaveOccurred())
 		debugAddress = fmt.Sprintf("127.0.0.1:%d", port)
 		bbsConfig.DebugAddress = debugAddress
 	})

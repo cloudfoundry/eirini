@@ -28,14 +28,12 @@ type commandList struct {
 	V3CreatePackage      v6.V3CreatePackageCommand       `command:"v3-create-package" description:"Uploads a V3 Package"`
 	V3Droplets           v6.V3DropletsCommand            `command:"v3-droplets" description:"List droplets of an app"`
 	V3Packages           v6.V3PackagesCommand            `command:"v3-packages" description:"List packages of an app"`
-	V3Push               v6.V3PushCommand                `command:"v3-push" description:"Push a new app or sync changes to an existing app"`
 	V3Restart            v6.V3RestartCommand             `command:"v3-restart" description:"Stop all instances of the app, then start them again. This causes downtime."`
 	V3RestartAppInstance v6.V3RestartAppInstanceCommand  `command:"v3-restart-app-instance" description:"Terminate, then instantiate an app instance"`
 	V3SetDroplet         v6.V3SetDropletCommand          `command:"v3-set-droplet" description:"Set the droplet used to run an app"`
 	V3Stage              v6.V3StageCommand               `command:"v3-stage" description:"Create a new droplet for an app"`
 	V3Start              v6.V3StartCommand               `command:"v3-start" description:"Start an app"`
 	V3Stop               v6.V3StopCommand                `command:"v3-stop" description:"Stop an app"`
-	V3ZdtPush            v6.V3ZeroDowntimePushCommand    `command:"v3-zdt-push" description:"Update an app with zero down time"`
 	V3ZdtRestart         v6.V3ZeroDowntimeRestartCommand `command:"v3-zdt-restart" description:"Sequentially restart each instance of an app."`
 
 	AddPluginRepo                      plugin.AddPluginRepoCommand                  `command:"add-plugin-repo" description:"Add a new plugin repository"`
@@ -49,11 +47,11 @@ type commandList struct {
 	BindSecurityGroup                  v6.BindSecurityGroupCommand                  `command:"bind-security-group" description:"Bind a security group to a particular space, or all existing spaces of an org"`
 	BindService                        v6.BindServiceCommand                        `command:"bind-service" alias:"bs" description:"Bind a service instance to an app"`
 	BindStagingSecurityGroup           v6.BindStagingSecurityGroupCommand           `command:"bind-staging-security-group" description:"Bind a security group to the list of security groups to be used for staging applications"`
-	Buildpacks                         v6.BuildpacksCommand                         `command:"buildpacks" description:"List all buildpacks"`
+	Buildpacks                         v7.BuildpacksCommand                         `command:"buildpacks" description:"List all buildpacks"`
 	CheckRoute                         v6.CheckRouteCommand                         `command:"check-route" description:"Perform a simple check to determine whether a route currently exists or not"`
 	Config                             v6.ConfigCommand                             `command:"config" description:"Write default values to the config"`
 	CopySource                         v6.CopySourceCommand                         `command:"copy-source" description:"Copies the source code of an application to another existing application (and restarts that application)"`
-	CreateAppManifest                  v6.CreateAppManifestCommand                  `command:"create-app-manifest" description:"Create an app manifest for an app that has been pushed successfully"`
+	CreateAppManifest                  v7.CreateAppManifestCommand                  `command:"create-app-manifest" description:"Create an app manifest for an app that has been pushed successfully"`
 	CreateBuildpack                    v6.CreateBuildpackCommand                    `command:"create-buildpack" description:"Create a buildpack"`
 	CreateDomain                       v6.CreateDomainCommand                       `command:"create-domain" description:"Create a domain in an org for later use"`
 	CreateIsolationSegment             v6.CreateIsolationSegmentCommand             `command:"create-isolation-segment" description:"Create an isolation segment"`
@@ -119,7 +117,8 @@ type commandList struct {
 	Plugins                            plugin.PluginsCommand                        `command:"plugins" description:"List commands of installed plugins"`
 	PurgeServiceInstance               v6.PurgeServiceInstanceCommand               `command:"purge-service-instance" description:"Recursively remove a service instance and child objects from Cloud Foundry database without making requests to a service broker"`
 	PurgeServiceOffering               v6.PurgeServiceOfferingCommand               `command:"purge-service-offering" description:"Recursively remove a service and child objects from Cloud Foundry database without making requests to a service broker"`
-	Push                               v6.PushCommand                               `command:"push" alias:"p" description:"Push a new app or sync changes to an existing app"`
+	Push                               v7.PushCommand                               `command:"push" alias:"p" description:"Push a new app or sync changes to an existing app"`
+	V3Push                             v7.PushCommand                               `command:"v3-push" description:"Push a new app or sync changes to an existing app" hidden:"true"`
 	Quotas                             v6.QuotasCommand                             `command:"quotas" description:"List available usage quotas"`
 	Quota                              v6.QuotaCommand                              `command:"quota" description:"Show quota info"`
 	RemoveNetworkPolicy                v6.RemoveNetworkPolicyCommand                `command:"remove-network-policy" description:"Remove network traffic policy of an app"`
@@ -133,7 +132,7 @@ type commandList struct {
 	RepoPlugins                        plugin.RepoPluginsCommand                    `command:"repo-plugins" description:"List all available plugins in specified repository or in all added repositories"`
 	ResetOrgDefaultIsolationSegment    v6.ResetOrgDefaultIsolationSegmentCommand    `command:"reset-org-default-isolation-segment" description:"Reset the default isolation segment used for apps in spaces of an org"`
 	ResetSpaceIsolationSegment         v6.ResetSpaceIsolationSegmentCommand         `command:"reset-space-isolation-segment" description:"Reset the space's isolation segment to the org default"`
-	Restage                            v6.RestageCommand                            `command:"restage" alias:"rg" description:"Recreate the app's executable artifact using the latest pushed app files and the latest environment (variables, service bindings, buildpack, stack, etc.)"`
+	Restage                            v6.RestageCommand                            `command:"restage" alias:"rg" description:"Recreate the app's executable artifact using the latest pushed app files and the latest environment (variables, service bindings, buildpack, stack, etc.). This action will cause app downtime."`
 	RestartAppInstance                 v6.RestartAppInstanceCommand                 `command:"restart-app-instance" description:"Terminate, then restart an app instance"`
 	Restart                            v6.RestartCommand                            `command:"restart" alias:"rs" description:"Stop all instances of the app, then start them again. This causes downtime."`
 	RouterGroups                       v6.RouterGroupsCommand                       `command:"router-groups" description:"List router groups"`
@@ -171,13 +170,13 @@ type commandList struct {
 	SSHCode                            v6.SSHCodeCommand                            `command:"ssh-code" description:"Get a one time password for ssh clients"`
 	SSHEnabled                         v6.SSHEnabledCommand                         `command:"ssh-enabled" description:"Reports whether SSH is enabled on an application container instance"`
 	SSH                                v7.SSHCommand                                `command:"ssh" description:"SSH to an application container instance"`
-	Stacks                             v6.StacksCommand                             `command:"stacks" description:"List all stacks (a stack is a pre-built file system, including an operating system, that can run apps)"`
-	Stack                              v6.StackCommand                              `command:"stack" description:"Show information for a stack (a stack is a pre-built file system, including an operating system, that can run apps)"`
+	Stack                              v7.StackCommand                              `command:"stack" description:"Show information for a stack (a stack is a pre-built file system, including an operating system, that can run apps)"`
+	Stacks                             v7.StacksCommand                             `command:"stacks" description:"List all stacks (a stack is a pre-built file system, including an operating system, that can run apps)"`
 	StagingEnvironmentVariableGroup    v6.StagingEnvironmentVariableGroupCommand    `command:"staging-environment-variable-group" alias:"sevg" description:"Retrieve the contents of the staging environment variable group"`
 	StagingSecurityGroups              v6.StagingSecurityGroupsCommand              `command:"staging-security-groups" description:"List security groups in the staging set for applications"`
 	Start                              v6.StartCommand                              `command:"start" alias:"st" description:"Start an app"`
 	Stop                               v6.StopCommand                               `command:"stop" alias:"sp" description:"Stop an app"`
-	Target                             v6.TargetCommand                             `command:"target" alias:"t" description:"Set or view the targeted org or space"`
+	Target                             v7.TargetCommand                             `command:"target" alias:"t" description:"Set or view the targeted org or space"`
 	Tasks                              v6.TasksCommand                              `command:"tasks" description:"List tasks of an app"`
 	TerminateTask                      v6.TerminateTaskCommand                      `command:"terminate-task" description:"Terminate a running task of an app"`
 	UnbindRouteService                 v6.UnbindRouteServiceCommand                 `command:"unbind-route-service" alias:"urs" description:"Unbind a service instance from an HTTP route"`
@@ -187,7 +186,7 @@ type commandList struct {
 	UnbindStagingSecurityGroup         v6.UnbindStagingSecurityGroupCommand         `command:"unbind-staging-security-group" description:"Unbind a security group from the set of security groups for staging applications"`
 	UninstallPlugin                    plugin.UninstallPluginCommand                `command:"uninstall-plugin" description:"Uninstall CLI plugin"`
 	UnmapRoute                         v6.UnmapRouteCommand                         `command:"unmap-route" description:"Remove a url route from an app"`
-	UnsetEnv                           v7.UnsetEnvCommand                           `command:"unset-env" description:"Remove an env variable from an app"`
+	UnsetEnv                           v7.UnsetEnvCommand                           `command:"unset-env" alias:"ue" description:"Remove an env variable from an app"`
 	UnsetOrgRole                       v6.UnsetOrgRoleCommand                       `command:"unset-org-role" description:"Remove an org role from a user"`
 	UnsetSpaceQuota                    v6.UnsetSpaceQuotaCommand                    `command:"unset-space-quota" description:"Unassign a quota from a space"`
 	UnsetSpaceRole                     v6.UnsetSpaceRoleCommand                     `command:"unset-space-role" description:"Remove a space role from a user"`

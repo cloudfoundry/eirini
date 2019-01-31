@@ -28,4 +28,16 @@ var _ = Describe("main", func() {
 			}
 		})
 	})
+	Context("when extra arguments are provided", func() {
+		It("prints help and exits", func() {
+			cmd := exec.Command(commandPath, "version", "this")
+			session, err := Start(cmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			<-session.Exited
+
+			Eventually(session).Should(Exit(1))
+
+			Expect(session.Err).To(Say("Usage:"))
+		})
+	})
 })

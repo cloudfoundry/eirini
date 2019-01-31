@@ -25,7 +25,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/google/go-containerregistry/pkg/v1/stream"
@@ -58,18 +58,35 @@ func Write(ref name.Reference, img v1.Image, auth authn.Authenticator, t http.Ro
 			return w.uploadOne(l)
 		})
 	}
-	if err := g.Wait(); err != nil {
-		return err
-	}
 
-	// Now that all the layers are uploaded, upload the config file blob.
-	// This must be done last because some layers may have been streamed.
-	l, err := partial.ConfigLayer(img)
-	if err != nil {
+	if l, err := partial.ConfigLayer(img); err == stream.ErrNotComputed {
+		// We can't read the ConfigLayer, because of streaming layers, since the
+		// config hasn't been calculated yet.
+		if err := g.Wait(); err != nil {
+			return err
+		}
+
+		// Now that all the layers are uploaded, upload the config file blob.
+		l, err := partial.ConfigLayer(img)
+		if err != nil {
+			return err
+		}
+		if err := w.uploadOne(l); err != nil {
+			return err
+		}
+	} else if err != nil {
+		// This is an actual error, not a streaming error, just return it.
 		return err
-	}
-	if err := w.uploadOne(l); err != nil {
-		return err
+	} else {
+		// We *can* read the ConfigLayer, so upload it concurrently with the layers.
+		g.Go(func() error {
+			return w.uploadOne(l)
+		})
+
+		// Wait for the layers + config.
+		if err := g.Wait(); err != nil {
+			return err
+		}
 	}
 
 	// With all of the constituent elements uploaded, upload the manifest
@@ -122,7 +139,7 @@ func (w *writer) checkExisting(h v1.Hash) (bool, error) {
 	}
 	defer resp.Body.Close()
 
-	if err := CheckError(resp, http.StatusOK, http.StatusNotFound); err != nil {
+	if err := transport.CheckError(resp, http.StatusOK, http.StatusNotFound); err != nil {
 		return false, err
 	}
 
@@ -153,7 +170,7 @@ func (w *writer) initiateUpload(from, mount string) (location string, mounted bo
 	}
 	defer resp.Body.Close()
 
-	if err := CheckError(resp, http.StatusCreated, http.StatusAccepted); err != nil {
+	if err := transport.CheckError(resp, http.StatusCreated, http.StatusAccepted); err != nil {
 		return "", false, err
 	}
 
@@ -188,7 +205,7 @@ func (w *writer) streamBlob(blob io.ReadCloser, streamLocation string) (commitLo
 	}
 	defer resp.Body.Close()
 
-	if err := CheckError(resp, http.StatusNoContent, http.StatusAccepted, http.StatusCreated); err != nil {
+	if err := transport.CheckError(resp, http.StatusNoContent, http.StatusAccepted, http.StatusCreated); err != nil {
 		return "", err
 	}
 
@@ -219,7 +236,7 @@ func (w *writer) commitBlob(location, digest string) error {
 	}
 	defer resp.Body.Close()
 
-	return CheckError(resp, http.StatusCreated)
+	return transport.CheckError(resp, http.StatusCreated)
 }
 
 // uploadOne performs a complete upload of a single layer.
@@ -314,7 +331,7 @@ func (w *writer) commitImage() error {
 	}
 	defer resp.Body.Close()
 
-	if err := CheckError(resp, http.StatusOK, http.StatusCreated, http.StatusAccepted); err != nil {
+	if err := transport.CheckError(resp, http.StatusOK, http.StatusCreated, http.StatusAccepted); err != nil {
 		return err
 	}
 

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
 	"code.cloudfoundry.org/bbs/events"
 	"code.cloudfoundry.org/bbs/events/eventfakes"
@@ -12,12 +13,12 @@ import (
 	"code.cloudfoundry.org/bbs/handlers"
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/bbs/models/test/model_helpers"
+	"code.cloudfoundry.org/bbs/test_helpers"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/vito/go-sse/sse"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/vito/go-sse/sse"
 )
 
 var _ = Describe("Event Handlers", func() {
@@ -157,7 +158,7 @@ var _ = Describe("Event Handlers", func() {
 		})
 	}
 
-	Describe("Subscribe_r0", func() {
+	Describe("LRPGroup events Subscribe_r0", func() {
 		var (
 			desiredHub events.Hub
 			actualHub  events.Hub
@@ -166,7 +167,7 @@ var _ = Describe("Event Handlers", func() {
 		BeforeEach(func() {
 			desiredHub = events.NewHub()
 			actualHub = events.NewHub()
-			handler = handlers.NewEventHandler(desiredHub, actualHub)
+			handler = handlers.NewLRPGroupEventsHandler(desiredHub, actualHub)
 		})
 
 		AfterEach(func() {
@@ -192,6 +193,8 @@ var _ = Describe("Event Handlers", func() {
 				event := models.NewDesiredLRPCreatedEvent(desiredLRP)
 
 				migratedLRP := desiredLRP.VersionDownTo(format.V0)
+				migratedLRP.ImageLayers = nil
+
 				Expect(migratedLRP).NotTo(Equal(desiredLRP))
 				migratedEvent := models.NewDesiredLRPCreatedEvent(migratedLRP)
 
@@ -518,6 +521,205 @@ var _ = Describe("Event Handlers", func() {
 		})
 	})
 
+	Describe("LRPGroup events Subscribe_r1", func() {
+		var (
+			desiredHub events.Hub
+			actualHub  events.Hub
+		)
+
+		BeforeEach(func() {
+			desiredHub = events.NewHub()
+			actualHub = events.NewHub()
+			handler = handlers.NewLRPGroupEventsHandler(desiredHub, actualHub)
+		})
+
+		AfterEach(func() {
+			desiredHub.Close()
+			actualHub.Close()
+		})
+
+		Describe("Subscribe to Desired Events", func() {
+			It("migrates desired lrps down to v3", func() {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					handler.Subscribe_r1(logger, w, r)
+				}))
+
+				response, err := http.Get(server.URL)
+				Expect(err).NotTo(HaveOccurred())
+				reader := sse.NewReadCloser(response.Body)
+
+				desiredLRP := model_helpers.NewValidDesiredLRP("guid")
+				event := models.NewDesiredLRPCreatedEvent(desiredLRP)
+
+				migratedLRP := desiredLRP.VersionDownTo(format.V3)
+				Expect(migratedLRP).To(Equal(desiredLRP))
+				Expect(migratedLRP.ImageLayers).NotTo(BeEmpty())
+
+				migratedEvent := models.NewDesiredLRPCreatedEvent(migratedLRP)
+
+				desiredHub.Emit(event)
+
+				events := events.NewEventSource(reader)
+				actualEvent, err := events.Next()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(actualEvent).To(Equal(migratedEvent))
+
+				server.Close()
+			})
+		})
+	})
+
+	Describe("when there are r0 and r1 subscribers", func() {
+		var (
+			desiredHub events.Hub
+			actualHub  events.Hub
+		)
+
+		BeforeEach(func() {
+			desiredHub = events.NewHub()
+			actualHub = events.NewHub()
+			handler = handlers.NewLRPGroupEventsHandler(desiredHub, actualHub)
+		})
+
+		// The race occurs when r0 event stream is doing the down conversion
+		// and r1 event stream is serializing the same event.
+		It("creates a deep copy of the desired lrp to avoid race", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.HasSuffix(r.URL.Path, "r1") {
+					handler.Subscribe_r1(logger, w, r)
+				} else {
+					handler.Subscribe_r0(logger, w, r)
+				}
+			}))
+
+			responseV0, err := http.Get(server.URL + "/v1/events")
+			Expect(err).NotTo(HaveOccurred())
+			readerV0 := sse.NewReadCloser(responseV0.Body)
+
+			responseV1, err := http.Get(server.URL + "/v1/events.r1")
+			Expect(err).NotTo(HaveOccurred())
+			readerV1 := sse.NewReadCloser(responseV1.Body)
+
+			desiredLRPV3 := model_helpers.NewValidDesiredLRP("guid")
+			eventV1 := models.NewDesiredLRPCreatedEvent(desiredLRPV3)
+
+			desiredLRPV0 := model_helpers.NewValidDesiredLRP("guid").VersionDownTo(format.V0)
+			eventV0 := models.NewDesiredLRPCreatedEvent(desiredLRPV0)
+
+			desiredHub.Emit(models.NewDesiredLRPCreatedEvent(model_helpers.NewValidDesiredLRP("guid")))
+
+			eventsV0 := events.NewEventSource(readerV0)
+			eventsV1 := events.NewEventSource(readerV1)
+
+			actualEventV0, err := eventsV0.Next()
+			Expect(err).NotTo(HaveOccurred())
+
+			actualEventV1, err := eventsV1.Next()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(actualEventV0).To(test_helpers.DeepEqual(eventV0))
+			Expect(actualEventV1).To(test_helpers.DeepEqual(eventV1))
+		})
+	})
+
+	Describe("Instance Events Subscribe_r0", func() {
+		var (
+			desiredHub     events.Hub
+			lrpInstanceHub events.Hub
+		)
+
+		BeforeEach(func() {
+			desiredHub = events.NewHub()
+			lrpInstanceHub = events.NewHub()
+			handler = handlers.NewLRPInstanceEventHandler(desiredHub, lrpInstanceHub)
+		})
+
+		AfterEach(func() {
+			desiredHub.Close()
+			lrpInstanceHub.Close()
+		})
+
+		Describe("Subscribe to Desired Events", func() {
+
+			ItStreamsEventsFromHub(&desiredHub)
+			ItRecoversFromLostConnections(&desiredHub)
+
+			It("migrates desired lrps down to v0", func() {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					handler.Subscribe_r0(logger, w, r)
+				}))
+
+				response, err := http.Get(server.URL)
+				Expect(err).NotTo(HaveOccurred())
+				reader := sse.NewReadCloser(response.Body)
+
+				desiredLRP := model_helpers.NewValidDesiredLRP("guid")
+				event := models.NewDesiredLRPCreatedEvent(desiredLRP)
+
+				migratedLRP := desiredLRP.VersionDownTo(format.V0)
+				Expect(migratedLRP).NotTo(Equal(desiredLRP))
+				migratedEvent := models.NewDesiredLRPCreatedEvent(migratedLRP)
+
+				desiredHub.Emit(event)
+
+				events := events.NewEventSource(reader)
+				actualEvent, err := events.Next()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(actualEvent).To(Equal(migratedEvent))
+
+				server.Close()
+			})
+		})
+	})
+
+	Describe("Instance Events Subscribe_r1", func() {
+		var (
+			desiredHub     events.Hub
+			lrpInstanceHub events.Hub
+		)
+
+		BeforeEach(func() {
+			desiredHub = events.NewHub()
+			lrpInstanceHub = events.NewHub()
+			handler = handlers.NewLRPInstanceEventHandler(desiredHub, lrpInstanceHub)
+		})
+
+		AfterEach(func() {
+			desiredHub.Close()
+			lrpInstanceHub.Close()
+		})
+
+		Describe("Subscribe to Desired Events", func() {
+			It("migrates desired lrps down to v3", func() {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					handler.Subscribe_r1(logger, w, r)
+				}))
+
+				response, err := http.Get(server.URL)
+				Expect(err).NotTo(HaveOccurred())
+				reader := sse.NewReadCloser(response.Body)
+
+				desiredLRP := model_helpers.NewValidDesiredLRP("guid")
+				event := models.NewDesiredLRPCreatedEvent(desiredLRP)
+
+				migratedLRP := desiredLRP.VersionDownTo(format.V3)
+				Expect(migratedLRP).To(Equal(desiredLRP))
+				Expect(migratedLRP.ImageLayers).NotTo(BeEmpty())
+
+				migratedEvent := models.NewDesiredLRPCreatedEvent(migratedLRP)
+
+				desiredHub.Emit(event)
+
+				events := events.NewEventSource(reader)
+				actualEvent, err := events.Next()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(actualEvent).To(Equal(migratedEvent))
+
+				server.Close()
+			})
+		})
+	})
+
 	Describe("Tasks Subscribe_r0", func() {
 		var (
 			taskHub events.Hub
@@ -536,10 +738,173 @@ var _ = Describe("Event Handlers", func() {
 
 			ItStreamsEventsFromHub(&taskHub)
 			ItRecoversFromLostConnections(&taskHub)
-		})
 
+			Context("downgrading task definitions down to v2", func() {
+				var (
+					server          *httptest.Server
+					task            *models.Task
+					downgradedTask  *models.Task
+					event           models.Event
+					downgradedEvent models.Event
+					eventSource     events.EventSource
+				)
+
+				BeforeEach(func() {
+					server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						handler.Subscribe_r0(logger, w, r)
+					}))
+
+					response, err := http.Get(server.URL)
+					Expect(err).NotTo(HaveOccurred())
+					reader := sse.NewReadCloser(response.Body)
+					eventSource = events.NewEventSource(reader)
+
+					task = model_helpers.NewValidTask("guid")
+
+					downgradedTask = task.VersionDownTo(format.V2)
+				})
+
+				JustBeforeEach(func() {
+					taskHub.Emit(event)
+				})
+
+				AfterEach(func() {
+					server.Close()
+				})
+
+				Context("TaskCreatedEvent", func() {
+					BeforeEach(func() {
+						event = models.NewTaskCreatedEvent(task)
+						downgradedEvent = models.NewTaskCreatedEvent(downgradedTask)
+					})
+
+					It("downgrades correctly", func() {
+						actualEvent, err := eventSource.Next()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(actualEvent).To(Equal(downgradedEvent))
+					})
+				})
+
+				Context("TaskRemovedEvent", func() {
+					BeforeEach(func() {
+						event = models.NewTaskRemovedEvent(task)
+						downgradedEvent = models.NewTaskRemovedEvent(downgradedTask)
+					})
+
+					It("downgrades correctly", func() {
+						actualEvent, err := eventSource.Next()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(actualEvent).To(Equal(downgradedEvent))
+					})
+				})
+
+				Context("TaskChangedEvent", func() {
+					BeforeEach(func() {
+						event = models.NewTaskChangedEvent(task, task)
+						downgradedEvent = models.NewTaskChangedEvent(downgradedTask, downgradedTask)
+					})
+
+					It("downgrades correctly", func() {
+						actualEvent, err := eventSource.Next()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(actualEvent).To(Equal(downgradedEvent))
+					})
+				})
+			})
+		})
 	})
 
+	Describe("Tasks Subscribe_r1", func() {
+		var (
+			taskHub events.Hub
+		)
+
+		BeforeEach(func() {
+			taskHub = events.NewHub()
+			handler = handlers.NewTaskEventHandler(taskHub)
+		})
+
+		AfterEach(func() {
+			taskHub.Close()
+		})
+
+		Describe("Subscribe to Task Events", func() {
+			Context("downgrading task definitions down to v3", func() {
+				var (
+					server          *httptest.Server
+					task            *models.Task
+					downgradedTask  *models.Task
+					event           models.Event
+					downgradedEvent models.Event
+					eventSource     events.EventSource
+				)
+
+				BeforeEach(func() {
+					server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						handler.Subscribe_r1(logger, w, r)
+					}))
+
+					response, err := http.Get(server.URL)
+					Expect(err).NotTo(HaveOccurred())
+					reader := sse.NewReadCloser(response.Body)
+					eventSource = events.NewEventSource(reader)
+
+					task = model_helpers.NewValidTask("guid")
+
+					downgradedTask = task.VersionDownTo(format.V3)
+					Expect(downgradedTask).To(Equal(task))
+					Expect(downgradedTask.ImageLayers).NotTo(BeNil())
+				})
+
+				JustBeforeEach(func() {
+					taskHub.Emit(event)
+				})
+
+				AfterEach(func() {
+					server.Close()
+				})
+
+				Context("TaskCreatedEvent", func() {
+					BeforeEach(func() {
+						event = models.NewTaskCreatedEvent(task)
+						downgradedEvent = models.NewTaskCreatedEvent(downgradedTask)
+					})
+
+					It("downgrades correctly", func() {
+						actualEvent, err := eventSource.Next()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(actualEvent).To(Equal(downgradedEvent))
+					})
+				})
+
+				Context("TaskRemovedEvent", func() {
+					BeforeEach(func() {
+						event = models.NewTaskRemovedEvent(task)
+						downgradedEvent = models.NewTaskRemovedEvent(downgradedTask)
+					})
+
+					It("downgrades correctly", func() {
+						actualEvent, err := eventSource.Next()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(actualEvent).To(Equal(downgradedEvent))
+					})
+				})
+
+				Context("TaskChangedEvent", func() {
+					BeforeEach(func() {
+						event = models.NewTaskChangedEvent(task, task)
+						downgradedEvent = models.NewTaskChangedEvent(downgradedTask, downgradedTask)
+					})
+
+					It("downgrades correctly", func() {
+						actualEvent, err := eventSource.Next()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(actualEvent).To(Equal(downgradedEvent))
+					})
+				})
+			})
+		})
+	})
 })
 
 func streamEvents(eventSource events.EventSource) chan models.Event {
