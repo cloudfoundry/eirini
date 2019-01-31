@@ -61,7 +61,7 @@ type Properties struct {
 	CfUsername        string `yaml:"cf_username"`
 	CfPassword        string `yaml:"cf_password"`
 	CCCertsSecretName string `yaml:"cc_certs_secret_name"`
-	RegistryAddress   string `yaml:"external_eirini_address"`
+	RegistryAddress   string `yaml:"registry_address"`
 	EiriniAddress     string `yaml:"eirini_address"`
 	StagerImageTag    string `yaml:"stager_image_tag"`
 
