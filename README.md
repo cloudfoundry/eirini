@@ -53,8 +53,6 @@ opi:
   api_endpoint: "the CF API endpoint (eg. api.bosh-lite.com)"
   cf_username: "cf admin user"
   cf_password: "cf admin password"
-  cc_internal_user: "cloud controller internal user"
-  cc_internal_password: "cloud controller internal password"
   external_eirini_address: "the external eirini address"
   stager_image_tag: "The tag of the recipe image, which is used to stage an app. If empty, latest is used."
 ```
