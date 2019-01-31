@@ -9,16 +9,9 @@ Eirini gives you the nice integrated `cf push` flow,
 with CF Apps mapped directly to kube `StatefulSet`.
 In other words it decouples buildpack staging and stateless-multitenant-app running.
 
-Since scheduling is increasingly commoditized,
-Eirini provides an "Orchestrator Platform Interface (OPI)" layer,
-that abstracts away orchestration from Cloud Foundry's control plane.
-This means Eirini is not solely a Kube backend at all,
-but that it is a generic backend for any scheduler!
-This means it could schedule to diego, kube, swarm and other orchestration platforms,
-as long as there is an implementation of the OPI layer for the target platform.
+Since scheduling is increasingly commoditized, Eirini provides an "Orchestrator Provider Interface (OPI)" layer, that abstracts away orchestration from Cloud Foundry's control plane. This means Eirini is not solely a Kube backend at all, but that it is a generic backend for any scheduler! This means it could schedule to Diego, Kube, Swarm and other orchestration providers, as long as there is an implementation of the OPI layer for the target platform.
 
-To offer a generic orchestrator interface,
-Eirini uses the diego abstractions of LRPs and Tasks to capture Cloud Foundry's notion of long running processes and one-off tasks.
+To offer a generic orchestrator interface, Eirini uses the Diego abstractions of LRPs and Tasks to capture Cloud Foundry's notion of long running processes and one-off tasks.
 
 Deployment instructions are available at: [cloudfoundry-incubator/eirini-release](https://github.com/cloudfoundry-incubator/eirini-release)
 
@@ -30,7 +23,7 @@ Eirini has the following components, the first two are available as subcommands 
  - `OPI` or the "Orchestrator Provider Interface" provides a declarative abstraction over multiple schedulers inspired by Diego's LRP/Task model and Bosh's CPI concept.
  - `Stager` implements staging by running Kubernetes/OPI one-off tasks
  
-# Orchestrator Platform Interface (OPI)
+# Orchestrator Provider Interface (OPI)
 
 The really great thing about Diego is the high level abstractions above the level of containers and pods.
 Specifically, these are Long Running Processes (LRPs) and Tasks.
