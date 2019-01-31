@@ -53,22 +53,17 @@ type Config struct {
 type Properties struct {
 	KubeConfig        string `yaml:"kube_config"`
 	KubeNamespace     string `yaml:"kube_namespace"`
-	KubeEndpoint      string `yaml:"kube_endpoint"`
 	NatsPassword      string `yaml:"nats_password"`
 	NatsIP            string `yaml:"nats_ip"`
 	CcUploaderIP      string `yaml:"cc_uploader_ip"`
 	CcAPI             string `yaml:"api_endpoint"`
 	CcInternalAPI     string `yaml:"cc_internal_api"`
-	Backend           string `yaml:"backend"`
 	CfUsername        string `yaml:"cf_username"`
 	CfPassword        string `yaml:"cf_password"`
-	CcUser            string `yaml:"cc_internal_user"`
-	CcPassword        string `yaml:"cc_internal_password"`
 	CCCertsSecretName string `yaml:"cc_certs_secret_name"`
 	RegistryAddress   string `yaml:"external_eirini_address"`
 	EiriniAddress     string `yaml:"eirini_address"`
 	StagerImageTag    string `yaml:"stager_image_tag"`
-	UseIngress        bool   `yaml:"use_ingress"`
 
 	MetricsSourceAddress string `yaml:"metrics_source_address"`
 
