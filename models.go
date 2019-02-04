@@ -51,7 +51,6 @@ type Config struct {
 }
 
 type Properties struct {
-	KubeConfig        string `yaml:"kube_config"`
 	KubeNamespace     string `yaml:"kube_namespace"`
 	NatsPassword      string `yaml:"nats_password"`
 	NatsIP            string `yaml:"nats_ip"`
