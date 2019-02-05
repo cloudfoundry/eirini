@@ -30,9 +30,6 @@ var _ = Describe("Stager", func() {
 
 		logger := lagertest.NewTestLogger("test")
 		config := &eirini.StagerConfig{
-			CfUsername:    "admin",
-			CfPassword:    "not1234567",
-			APIAddress:    "api.bosh-lite.com",
 			EiriniAddress: "http://opi.cf.internal",
 			Image:         "eirini/recipe:tagged",
 		}
@@ -59,10 +56,7 @@ var _ = Describe("Stager", func() {
 				Environment: []cf.EnvironmentVariable{
 					{Name: "HOWARD", Value: "the alien"},
 					{Name: eirini.EnvAppID, Value: "should be ignored"},
-					{Name: eirini.EnvAPIAddress, Value: "should be ignored"},
 					{Name: eirini.EnvBuildpacks, Value: "should be ignored"},
-					{Name: eirini.EnvCfPassword, Value: "should be ignored"},
-					{Name: eirini.EnvCfUsername, Value: "should be ignored"},
 					{Name: eirini.EnvDownloadURL, Value: "should be ignored"},
 					{Name: eirini.EnvStagingGUID, Value: "should be ignored"},
 					{Name: eirini.EnvEiriniAddress, Value: "should be ignored"},
@@ -106,9 +100,6 @@ var _ = Describe("Stager", func() {
 					eirini.EnvStagingGUID:        stagingGUID,
 					eirini.EnvCompletionCallback: request.CompletionCallback,
 					eirini.EnvBuildpacks:         `[{"name":"go_buildpack","key":"1234eeff","url":"example.com/build/pack","skip_detect":true}]`,
-					eirini.EnvCfUsername:         "admin",
-					eirini.EnvCfPassword:         "not1234567",
-					eirini.EnvAPIAddress:         "api.bosh-lite.com",
 					eirini.EnvEiriniAddress:      "http://opi.cf.internal",
 				},
 			}))

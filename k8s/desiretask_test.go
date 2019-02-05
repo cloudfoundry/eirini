@@ -48,9 +48,6 @@ var _ = Describe("Desiretask", func() {
 			v1.EnvVar{Name: eirini.EnvAppID, Value: "env-app-id"},
 			v1.EnvVar{Name: eirini.EnvStagingGUID, Value: "the-stage-is-yours"},
 			v1.EnvVar{Name: eirini.EnvCompletionCallback, Value: "example.com/call/me/maybe"},
-			v1.EnvVar{Name: eirini.EnvCfUsername, Value: "admin"},
-			v1.EnvVar{Name: eirini.EnvCfPassword, Value: "not1234567"},
-			v1.EnvVar{Name: eirini.EnvAPIAddress, Value: "api.bosh-lite.com"},
 			v1.EnvVar{Name: eirini.EnvEiriniAddress, Value: "http://opi.cf.internal"},
 		))
 	}
@@ -65,9 +62,6 @@ var _ = Describe("Desiretask", func() {
 				eirini.EnvAppID:              "env-app-id",
 				eirini.EnvStagingGUID:        "the-stage-is-yours",
 				eirini.EnvCompletionCallback: "example.com/call/me/maybe",
-				eirini.EnvCfUsername:         "admin",
-				eirini.EnvCfPassword:         "not1234567",
-				eirini.EnvAPIAddress:         "api.bosh-lite.com",
 				eirini.EnvEiriniAddress:      "http://opi.cf.internal",
 			},
 		}
@@ -142,9 +136,7 @@ var _ = Describe("Desiretask", func() {
 				toKeyPath(eirini.CCUploaderCertName),
 				toKeyPath(eirini.CCUploaderKeyName),
 				toKeyPath(eirini.CCInternalCACertName),
-				toKeyPath(eirini.UAACertName),
-				toKeyPath(eirini.UAAKeyName),
-				toKeyPath(eirini.UAAInternalCACertName)))
+			))
 		}
 
 		assertContainerVolumeMount := func(job *batch.Job) {

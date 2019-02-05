@@ -18,17 +18,18 @@ import (
 
 var _ = Describe("PackageInstaller", func() {
 	var (
-		err         error
-		downloadURL string
-		targetDir   string
-		installer   Installer
-		server      *ghttp.Server
-		extractor   *eirinifakes.FakeExtractor
-		zipPath     string
+		err           error
+		downloadURL   string
+		targetDir     string
+		installer     Installer
+		server        *ghttp.Server
+		extractor     *eirinifakes.FakeExtractor
+		zipPath       string
+		zippedPackage []byte
 	)
 
 	BeforeEach(func() {
-		zippedPackage, err := makeZippedPackage()
+		zippedPackage, err = makeZippedPackage()
 		Expect(err).ToNot(HaveOccurred())
 
 		extractor = new(eirinifakes.FakeExtractor)
@@ -46,15 +47,12 @@ var _ = Describe("PackageInstaller", func() {
 		targetDir, err = ioutil.TempDir("", "targetDir")
 		Expect(err).ToNot(HaveOccurred())
 
-		packageDir, err := ioutil.TempDir("", "package")
-		Expect(err).ToNot(HaveOccurred())
-		zipPath = filepath.Join(packageDir, "app.zip")
-
+		zipPath = filepath.Join("/tmp", "app.zip")
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	JustBeforeEach(func() {
-		err = installer.Install(downloadURL, zipPath, targetDir)
+		err = installer.Install(downloadURL, targetDir)
 	})
 
 	AfterEach(func() {
@@ -71,7 +69,6 @@ var _ = Describe("PackageInstaller", func() {
 		It("should use the extractor to extract the zip file", func() {
 			_, actualTargetDir := extractor.ExtractArgsForCall(0)
 			Expect(extractor.ExtractCallCount()).To(Equal(1))
-			// Expect(src).To(Equal(zipFilePath))
 			Expect(actualTargetDir).To(Equal(targetDir))
 		})
 	}

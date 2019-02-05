@@ -61,9 +61,6 @@ func (s *Stager) createStagingTask(stagingGUID string, request cf.StagingRequest
 		eirini.EnvAppID:              request.AppGUID,
 		eirini.EnvStagingGUID:        stagingGUID,
 		eirini.EnvCompletionCallback: request.CompletionCallback,
-		eirini.EnvCfUsername:         s.Config.CfUsername,
-		eirini.EnvCfPassword:         s.Config.CfPassword,
-		eirini.EnvAPIAddress:         s.Config.APIAddress,
 		eirini.EnvEiriniAddress:      s.Config.EiriniAddress,
 	}
 

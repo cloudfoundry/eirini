@@ -15,7 +15,7 @@ type PackageInstaller struct {
 	Extractor eirini.Extractor
 }
 
-func (d *PackageInstaller) Install(downloadURL, zipPath, targetDir string) error {
+func (d *PackageInstaller) Install(downloadURL, targetDir string) error {
 	if downloadURL == "" {
 		return errors.New("empty downloadURL provided")
 	}
@@ -23,6 +23,8 @@ func (d *PackageInstaller) Install(downloadURL, zipPath, targetDir string) error
 	if targetDir == "" {
 		return errors.New("empty targetDir provided")
 	}
+
+	zipPath := "/tmp/app.zip"
 
 	err := d.download(downloadURL, zipPath)
 	if err != nil {

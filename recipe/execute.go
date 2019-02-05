@@ -58,13 +58,7 @@ type PacksExecutor struct {
 }
 
 func (e *PacksExecutor) ExecuteRecipe(recipeConf Config) error {
-	zipPath, err := ioutil.TempFile("", "app.zip")
-	if err != nil {
-		respondWithFailure(err, recipeConf)
-		return err
-	}
-
-	err = e.Installer.Install(recipeConf.PackageDownloadURL, zipPath.Name(), workspaceDir)
+	err := e.Installer.Install(recipeConf.PackageDownloadURL, workspaceDir)
 	if err != nil {
 		respondWithFailure(err, recipeConf)
 		return err

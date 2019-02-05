@@ -120,7 +120,7 @@ var _ = Describe("PacksExecutor", func() {
 		It("should download and extract the app bits", func() {
 			Expect(installer.InstallCallCount()).To(Equal(1))
 
-			downloadURL, _, workspaceDir := installer.InstallArgsForCall(0)
+			downloadURL, workspaceDir := installer.InstallArgsForCall(0)
 			Expect(downloadURL).To(Equal(server.URL() + "app-id"))
 			Expect(workspaceDir).To(Equal("/workspace"))
 		})

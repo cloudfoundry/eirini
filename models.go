@@ -32,10 +32,6 @@ const (
 	CCUploaderCertName    = "cc-uploader-crt"
 	CCUploaderKeyName     = "cc-uploader-crt-key"
 	CCInternalCACertName  = "internal-ca-cert"
-
-	UAACertName           = "uaa-server-cert"
-	UAAKeyName            = "uaa-server-cert-key"
-	UAAInternalCACertName = "uaa-internal-ca-cert"
 )
 
 type Config struct {
@@ -47,18 +43,15 @@ type Properties struct {
 	NatsPassword      string `yaml:"nats_password"`
 	NatsIP            string `yaml:"nats_ip"`
 	CcUploaderIP      string `yaml:"cc_uploader_ip"`
-	CcAPI             string `yaml:"api_endpoint"`
 	CcInternalAPI     string `yaml:"cc_internal_api"`
-	CfUsername        string `yaml:"cf_username"`
-	CfPassword        string `yaml:"cf_password"`
 	CCCertsSecretName string `yaml:"cc_certs_secret_name"`
 	RegistryAddress   string `yaml:"registry_address"`
 	EiriniAddress     string `yaml:"eirini_address"`
 	StagerImageTag    string `yaml:"stager_image_tag"`
 
 	MetricsSourceAddress string `yaml:"metrics_source_address"`
+	LoggregatorAddress   string `yaml:"loggregator_address"`
 
-	LoggregatorAddress  string `yaml:"loggregator_address"`
 	LoggregatorCertPath string `yaml:"loggergator_cert_path"`
 	LoggregatorKeyPath  string `yaml:"loggregator_key_path"`
 	LoggregatorCAPath   string `yaml:"loggregator_ca_path"`
@@ -78,9 +71,6 @@ type Stager interface {
 }
 
 type StagerConfig struct {
-	CfUsername    string
-	CfPassword    string
-	APIAddress    string
 	EiriniAddress string
 	Image         string
 }
