@@ -3,7 +3,6 @@ package eirini
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -38,13 +37,6 @@ const (
 	UAAKeyName            = "uaa-server-cert-key"
 	UAAInternalCACertName = "uaa-internal-ca-cert"
 )
-
-//go:generate counterfeiter . CfClient
-type CfClient interface {
-	GetDropletByAppGuid(string) ([]byte, error)
-	PushDroplet(string, string) error
-	GetAppBitsByAppGuid(string) (*http.Response, error)
-}
 
 type Config struct {
 	Properties Properties `yaml:"opi"`

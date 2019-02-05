@@ -104,6 +104,7 @@ var _ = Describe("PacksExecutor", func() {
 				CompletionCallback: "completion-call-me-back",
 				EiriniAddr:         server.URL(),
 				DropletUploadURL:   "droplet.eu/upload",
+				PackageDownloadURL: server.URL() + "app-id",
 			}
 			err = executor.ExecuteRecipe(recipeConf)
 		})
@@ -119,8 +120,8 @@ var _ = Describe("PacksExecutor", func() {
 		It("should download and extract the app bits", func() {
 			Expect(installer.InstallCallCount()).To(Equal(1))
 
-			appID, workspaceDir := installer.InstallArgsForCall(0)
-			Expect(appID).To(Equal("app-id"))
+			downloadURL, _, workspaceDir := installer.InstallArgsForCall(0)
+			Expect(downloadURL).To(Equal(server.URL() + "app-id"))
 			Expect(workspaceDir).To(Equal("/workspace"))
 		})
 

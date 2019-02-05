@@ -179,14 +179,6 @@
   revision = "5cabba6c0a5085a9d07c2c54e01df65c6122e450"
 
 [[projects]]
-  branch = "master"
-  digest = "1:c4228c7d0dbc720759d078835b85cc157d52bd785d6a161ce9199c88ba0e673c"
-  name = "github.com/JulzDiverse/cfclient"
-  packages = ["."]
-  pruneopts = ""
-  revision = "a4b1e377fce5f05ba1bb1d4402c1f1391deb5407"
-
-[[projects]]
   digest = "1:c7937d6337f88193ad8aade88c92d7e72b3d5fc6e5002a9515dabca5802624cd"
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
@@ -825,7 +817,6 @@
   name = "golang.org/x/oauth2"
   packages = [
     ".",
-    "clientcredentials",
     "google",
     "internal",
     "jws",
@@ -1336,7 +1327,6 @@
     "code.cloudfoundry.org/lager/lagertest",
     "code.cloudfoundry.org/runtimeschema/cc_messages",
     "code.cloudfoundry.org/tps/cc_client",
-    "github.com/JulzDiverse/cfclient",
     "github.com/buildpack/packs",
     "github.com/buildpack/packs/cf",
     "github.com/buildpack/packs/heroku/app",
@@ -1383,6 +1373,7 @@
     "k8s.io/client-go/kubernetes/typed/core/v1",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/client-go/plugin/pkg/client/auth/oidc",
+    "k8s.io/client-go/rest",
     "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",

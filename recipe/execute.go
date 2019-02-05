@@ -46,6 +46,7 @@ type Config struct {
 	CompletionCallback string
 	EiriniAddr         string
 	DropletUploadURL   string
+	PackageDownloadURL string
 }
 
 type PacksExecutor struct {
@@ -57,7 +58,13 @@ type PacksExecutor struct {
 }
 
 func (e *PacksExecutor) ExecuteRecipe(recipeConf Config) error {
-	err := e.Installer.Install(recipeConf.AppID, workspaceDir)
+	zipPath, err := ioutil.TempFile("", "app.zip")
+	if err != nil {
+		respondWithFailure(err, recipeConf)
+		return err
+	}
+
+	err = e.Installer.Install(recipeConf.PackageDownloadURL, zipPath.Name(), workspaceDir)
 	if err != nil {
 		respondWithFailure(err, recipeConf)
 		return err
