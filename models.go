@@ -61,9 +61,6 @@ type Properties struct {
 	CCCAPath   string `yaml:"cc_ca_path"`
 }
 
-//go:generate counterfeiter . RemoveCallbackFunc
-type RemoveCallbackFunc func(string) error
-
 //go:generate counterfeiter . Stager
 type Stager interface {
 	Stage(string, cf.StagingRequest) error
