@@ -587,6 +587,11 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	if err != nil {
 		panic(err)
 	}
+	cpu, err := resource.ParseQuantity(fmt.Sprintf("%dm", lrp.CPUWeight))
+	if err != nil {
+		panic(err)
+	}
+
 	statefulSet := &v1beta2.StatefulSet{
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: &targetInstances,
@@ -613,6 +618,7 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 								},
 								Requests: v1.ResourceList{
 									v1.ResourceMemory: memory,
+									v1.ResourceCPU:    cpu,
 								},
 							},
 							VolumeMounts: volumeMounts,

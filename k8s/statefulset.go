@@ -297,6 +297,11 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 		panic(err)
 	}
 
+	cpu, err := resource.ParseQuantity(fmt.Sprintf("%dm", lrp.CPUWeight*10))
+	if err != nil {
+		panic(err)
+	}
+
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
 
 	statefulSet := &v1beta2.StatefulSet{
@@ -323,6 +328,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 								},
 								Requests: v1.ResourceList{
 									v1.ResourceMemory: memory,
+									v1.ResourceCPU:    cpu,
 								},
 							},
 							LivenessProbe:  livenessProbe,

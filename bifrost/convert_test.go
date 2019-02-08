@@ -57,6 +57,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			LastUpdated:    "23534635232.3",
 			NumInstances:   3,
 			MemoryMB:       456,
+			CPUWeight:      50,
 			Environment: map[string]string{
 				"VCAP_APPLICATION": `{"application_name":"bumblebee", "space_name":"transformers", "application_id":"b194809b-88c0-49af-b8aa-69da097fc360", "version": "something-something-uuid", "application_uris":["bumblebee.example.com", "transformers.example.com"]}`,
 				"VCAP_SERVICES":    `"user-provided": [{"binding_name": "bind-it-like-beckham","credentials": {"password": "notpassword1","username": "admin"},"instance_name": "dora","name": "serve"}]`,
@@ -113,6 +114,10 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			It("should set the correct identifier", func() {
 				Expect(lrp.GUID).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360"))
 				Expect(lrp.Version).To(Equal("2fdc448f-6bac-4085-9426-87d0124c433a"))
+			})
+
+			It("should set the lrp memory", func() {
+				Expect(lrp.CPUWeight).To(Equal(uint8(50)))
 			})
 
 			It("should set the lrp memory", func() {

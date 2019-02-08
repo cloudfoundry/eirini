@@ -44,6 +44,7 @@ type LRP struct {
 	RunningInstances int
 	Metadata         map[string]string
 	MemoryMB         int64
+	CPUWeight        uint8
 	VolumeMounts     []VolumeMount
 }
 
