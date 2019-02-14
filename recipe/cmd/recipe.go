@@ -87,9 +87,11 @@ func createUploaderHTTPClient() *http.Client {
 
 func createDownloadHTTPClient() *http.Client {
 	apiCA := filepath.Join(eirini.CCCertsMountPath, eirini.CCInternalCACertName)
+	cert := filepath.Join(eirini.CCCertsMountPath, eirini.CCAPICertName)
+	key := filepath.Join(eirini.CCCertsMountPath, eirini.CCAPIKeyName)
 
 	client, err := util.CreateTLSHTTPClient([]util.CertPaths{
-		{Ca: apiCA},
+		{Crt: cert, Key: key, Ca: apiCA},
 	})
 
 	if err != nil {
