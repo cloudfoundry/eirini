@@ -172,7 +172,7 @@ func initConnect() {
 }
 
 func launchRouteEmitter(namespace, natsPassword, natsIP string) {
-	nc, err := nats.Connect(fmt.Sprintf("nats://nats:%s@%s:4222", natsPassword, natsIP))
+	nc, err := nats.Connect(util.GenerateNatsURL(natsPassword, natsIP))
 	exitWithError(err)
 
 	clientset := createKubeClient()
