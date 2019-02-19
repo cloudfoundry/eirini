@@ -3,9 +3,9 @@ package k8s_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/api/core/v1"
 
 	. "code.cloudfoundry.org/eirini/k8s"
-	"k8s.io/api/core/v1"
 )
 
 var _ = Describe("Helpers", func() {
