@@ -8,7 +8,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
 //This is a small wrapper around the launcher which is required to
