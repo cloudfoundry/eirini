@@ -27,7 +27,7 @@ func int64ptr(i int) *int64 {
 	return &u
 }
 
-func GetEvents(client kubernetes.Interface, pod *v1.Pod) (*v1.EventList, error) {
+func GetEvents(client kubernetes.Interface, pod v1.Pod) (*v1.EventList, error) {
 	return client.CoreV1().Events(pod.Namespace).List(meta.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s", pod.Namespace, string(pod.UID), pod.Name)})
 }
 

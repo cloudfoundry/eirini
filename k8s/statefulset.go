@@ -116,7 +116,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 
 	instances := []*opi.Instance{}
 	for _, pod := range pods.Items {
-		events, err := GetEvents(m.Client, &pod)
+		events, err := GetEvents(m.Client, pod)
 		if err != nil {
 			return []*opi.Instance{}, err
 		}
@@ -135,7 +135,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 			since = pod.Status.StartTime.UnixNano()
 		}
 
-		state, placementError := getPodState(&pod, events)
+		state, placementError := getPodState(pod, events)
 
 		instance := opi.Instance{
 			Since:          since,
@@ -149,16 +149,16 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	return instances, nil
 }
 
-func getPodState(pod *v1.Pod, events *v1.EventList) (string, string) {
+func getPodState(pod v1.Pod, events *v1.EventList) (string, string) {
 	if hasInsufficientMemory(events) {
 		return opi.ErrorState, opi.InsufficientMemoryError
 	}
 
-	if statusNotAvailable(pod) || pod.Status.Phase == v1.PodUnknown {
+	if statusNotAvailable(&pod) || pod.Status.Phase == v1.PodUnknown {
 		return opi.UnknownState, ""
 	}
 
-	if podPending(pod) {
+	if podPending(&pod) {
 		return opi.PendingState, ""
 	}
 
@@ -208,13 +208,13 @@ func (m *StatefulSetDesirer) statefulSets() types.StatefulSetInterface {
 func statefulSetsToLRPs(statefulSets *v1beta2.StatefulSetList) []*opi.LRP {
 	lrps := []*opi.LRP{}
 	for _, s := range statefulSets.Items {
-		lrp := statefulSetToLRP(&s)
+		lrp := statefulSetToLRP(s)
 		lrps = append(lrps, lrp)
 	}
 	return lrps
 }
 
-func statefulSetToLRP(s *v1beta2.StatefulSet) *opi.LRP {
+func statefulSetToLRP(s v1beta2.StatefulSet) *opi.LRP {
 	ports := []int32{}
 	container := s.Spec.Template.Spec.Containers[0]
 

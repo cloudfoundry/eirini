@@ -135,7 +135,7 @@ func (c *URIChangeInformer) sendRoutesForAllPods(work chan<- *route.Message, sta
 				uint32(port),
 			)
 			if err != nil {
-				c.logPodError("failed-to-construct-a-route-message", err, statefulset, &pod)
+				c.logPodError("failed-to-construct-a-route-message", err, statefulset, pod)
 				return
 			}
 
@@ -152,7 +152,7 @@ func (c *URIChangeInformer) logError(message string, err error, statefulset *app
 	}
 }
 
-func (c *URIChangeInformer) logPodError(message string, err error, statefulset *apps_v1.StatefulSet, pod *v1.Pod) {
+func (c *URIChangeInformer) logPodError(message string, err error, statefulset *apps_v1.StatefulSet, pod v1.Pod) {
 	if c.Logger != nil {
 		c.Logger.Error(message, err, lager.Data{"statefulset-name": statefulset.Name, "pod-name": pod.Name})
 	}

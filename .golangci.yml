@@ -22,7 +22,6 @@ linters:
   enable-all: true
   disable:
     - gochecknoglobals
-    - scopelint
     - gochecknoinits
     - typecheck
     - goconst
