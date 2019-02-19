@@ -87,7 +87,7 @@ func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 	if err != nil {
 		return nil, err
 	}
-	return statefulSetToLRP(statefulset), nil
+	return statefulSetToLRP(*statefulset), nil
 }
 
 func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*v1beta2.StatefulSet, error) {

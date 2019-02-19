@@ -81,7 +81,7 @@ func (c *CrashInformer) updateFunc(_ interface{}, newObj interface{}) {
 }
 
 func (c *CrashInformer) reportState(pod *v1.Pod) {
-	events, err := k8s.GetEvents(c.clientset, pod)
+	events, err := k8s.GetEvents(c.clientset, *pod)
 	if err != nil || k8s.IsStopped(events) {
 		return
 	}
