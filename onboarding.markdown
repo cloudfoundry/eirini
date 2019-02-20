@@ -6,6 +6,8 @@
 * Get access to [cloudfoundry.slack.com](https://slack.cloudfoundry.org/)
 * Get access to the [tracker](https://www.pivotaltracker.com/n/projects/2172361) (ask the anchor)
 * [Add public SSH key to github.com](https://help.github.com/articles/connecting-to-github-with-ssh/) and verify
+* Ask the anchor to be invited to the retro
+* Ask the PM to be invited to the IPM
 * Update [the onboarding document](https://github.com/cloudfoundry-incubator/eirini/blob/master/onboarding.markdown) if necessary
 
 Additionally, for new members of the core team:
