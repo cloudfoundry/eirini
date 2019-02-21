@@ -57,7 +57,7 @@ func parsePodIndex() (string, error) {
 	sl := strings.Split(podName, "-")
 
 	if len(sl) <= 1 {
-		return "", fmt.Errorf("Could not parse pod name from %s", podName)
+		return "", fmt.Errorf("could not parse pod name from %s", podName)
 	}
 	return sl[len(sl)-1], nil
 }

@@ -133,7 +133,7 @@ func parsePodIndex(podName string) (int, error) {
 	sl := strings.Split(podName, "-")
 
 	if len(sl) <= 1 {
-		return 0, fmt.Errorf("Could not parse pod name from %s", podName)
+		return 0, fmt.Errorf("could not parse pod name from %s", podName)
 	}
 	return strconv.Atoi(sl[len(sl)-1])
 }

@@ -146,7 +146,7 @@ func parsePodName(podName string) (string, string, error) {
 	sl := strings.Split(podName, "-")
 
 	if len(sl) <= 1 {
-		return "", "", fmt.Errorf("Could not parse pod name from %s", podName)
+		return "", "", fmt.Errorf("could not parse pod name from %s", podName)
 	}
 
 	podID := strings.Join(sl[:len(sl)-1], "-")
