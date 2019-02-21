@@ -17,8 +17,8 @@ var _ = Describe("Scheduler", func() {
 			var (
 				callCount int
 				ticker    *time.Ticker
+				task      Task
 				duration  time.Duration
-				task      func() error
 				scheduler TaskScheduler
 			)
 
@@ -27,7 +27,6 @@ var _ = Describe("Scheduler", func() {
 				ticker = time.NewTicker(duration)
 				scheduler = &TickerTaskScheduler{Ticker: ticker}
 				callCount = 0
-
 				task = func() error {
 					callCount++
 					return nil
