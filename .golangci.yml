@@ -31,6 +31,10 @@ issues:
   exclude-rules:
     - path: k8s/metrics.go
       text: G107
+    - path: integration/statefulsets/statefulsets_suite_test.go
+      linters:
+      - deadcode
+      - varcheck
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 
