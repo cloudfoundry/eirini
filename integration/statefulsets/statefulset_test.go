@@ -1,9 +1,8 @@
 // +build integration
 
-package integration_test
+package statefulsets_test
 
 import (
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
@@ -18,12 +17,14 @@ import (
 var _ = Describe("StatefulSet Manager", func() {
 
 	var (
-		desirer opi.Desirer
-		lrp     *opi.LRP
-		err     error
+		desirer       opi.Desirer
+		lrp           *opi.LRP
+		err           error
+		lrpIdentifier opi.LRPIdentifier
 	)
 
 	BeforeEach(func() {
+		lrpIdentifier = opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}
 		lrp = &opi.LRP{
 			Name: "odin",
 			Command: []string{
@@ -36,12 +37,12 @@ var _ = Describe("StatefulSet Manager", func() {
 			Metadata: map[string]string{
 				cf.ProcessGUID: "odin",
 			},
+			LRPIdentifier: lrpIdentifier,
 		}
 	})
 
 	AfterEach(func() {
 		cleanupStatefulSet(lrp.Name)
-		cleanupHeadlessService(lrp.Name)
 		Eventually(listAllStatefulSets, timeout).Should(BeEmpty())
 	})
 
@@ -74,16 +75,9 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		It("should create all associated pods", func() {
 			Eventually(func() []string {
-				return getPodNames("odin")
+				return getPodNames(lrpIdentifier)
 			}, timeout).Should(ConsistOf("odin-0", "odin-1"))
 		})
-
-		It("should create a headless service", func() {
-			service, getErr := clientset.CoreV1().Services(namespace).Get(eirini.GetInternalHeadlessServiceName("odin"), meta.GetOptions{})
-			Expect(getErr).ToNot(HaveOccurred())
-			Expect(service.Spec.ClusterIP).To(Equal("None"))
-		})
-
 	})
 
 	Context("When deleting a LRP", func() {
@@ -91,7 +85,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		JustBeforeEach(func() {
 			err = desirer.Desire(lrp)
 			Expect(err).ToNot(HaveOccurred())
-			err = desirer.Stop("odin")
+			err = desirer.Stop(lrpIdentifier)
 		})
 
 		It("should not fail", func() {
@@ -106,7 +100,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		It("should delete the associated pods", func() {
 			Eventually(func() []v1.Pod {
-				return listPods("odin")
+				return listPods(lrpIdentifier)
 			}, timeout).Should(BeEmpty())
 		})
 	})
@@ -120,7 +114,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		It("correctly reports the running instances", func() {
 			Eventually(func() int {
-				l, e := desirer.Get("odin")
+				l, e := desirer.Get(lrpIdentifier)
 				Expect(e).ToNot(HaveOccurred())
 				return l.RunningInstances
 			}, timeout).Should(Equal(2))
@@ -140,12 +134,13 @@ var _ = Describe("StatefulSet Manager", func() {
 					Metadata: map[string]string{
 						cf.ProcessGUID: "odin",
 					},
+					LRPIdentifier: lrpIdentifier,
 				}
 			})
 
 			It("correctly reports the running instances", func() {
 				Eventually(func() int {
-					lrp, err := desirer.Get("odin")
+					lrp, err := desirer.Get(lrpIdentifier)
 					Expect(err).ToNot(HaveOccurred())
 					return lrp.RunningInstances
 				}, timeout).Should(Equal(1))
