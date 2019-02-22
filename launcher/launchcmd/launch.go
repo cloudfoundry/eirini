@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"syscall"
 
+	"code.cloudfoundry.org/eirini/util"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -23,7 +23,7 @@ func main() {
 		command = readCommand("/home/vcap/staging_info.yml")
 	}
 
-	index, err := parsePodIndex()
+	_, index, err := util.ParseAppNameAndIndex(os.Getenv("POD_NAME"))
 
 	check(err, "parse pod index")
 
@@ -50,16 +50,6 @@ func main() {
 
 	err = syscall.Exec(launcherPath, args, os.Environ()) //#nosec
 	check(err, "execute launcher")
-}
-
-func parsePodIndex() (string, error) {
-	podName := os.Getenv("POD_NAME")
-	sl := strings.Split(podName, "-")
-
-	if len(sl) <= 1 {
-		return "", fmt.Errorf("could not parse pod name from %s", podName)
-	}
-	return sl[len(sl)-1], nil
 }
 
 func readCommand(path string) string {

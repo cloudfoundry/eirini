@@ -11,6 +11,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route"
+	"code.cloudfoundry.org/eirini/util"
 	"github.com/pkg/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	core "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -106,7 +107,7 @@ func (c *MetricsCollector) convertMetricsList(metricList *PodMetricsList) ([]met
 			continue
 		}
 		container := metric.Containers[0]
-		_, indexID, err := parsePodName(metric.Metadata.Name)
+		_, indexID, err := util.ParseAppNameAndIndex(metric.Metadata.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +127,7 @@ func (c *MetricsCollector) convertMetricsList(metricList *PodMetricsList) ([]met
 
 		messages = append(messages, metrics.Message{
 			AppID:       pod.Labels["guid"],
-			IndexID:     indexID,
+			IndexID:     strconv.Itoa(indexID),
 			CPU:         convertCPU(cpuValue),
 			Memory:      convertMemory(memoryValue),
 			MemoryQuota: 10,
@@ -135,27 +136,6 @@ func (c *MetricsCollector) convertMetricsList(metricList *PodMetricsList) ([]met
 		})
 	}
 	return messages, nil
-}
-
-func isInt(str string) bool {
-	_, err := strconv.Atoi(str)
-	return err == nil
-}
-
-func parsePodName(podName string) (string, string, error) {
-	sl := strings.Split(podName, "-")
-
-	if len(sl) <= 1 {
-		return "", "", fmt.Errorf("could not parse pod name from %s", podName)
-	}
-
-	podID := strings.Join(sl[:len(sl)-1], "-")
-	indexID := sl[len(sl)-1]
-	if !isInt(indexID) {
-		indexID = "0"
-	}
-
-	return podID, indexID, nil
 }
 
 func extractValue(metric string) (float64, error) {

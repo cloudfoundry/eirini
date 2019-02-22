@@ -206,22 +206,12 @@ var _ = Describe("Metrics", func() {
 				podName = "thor-thunder0"
 			})
 
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
+			It("should return an error", func() {
+				Expect(err).To(HaveOccurred())
 			})
 
-			It("should send the received metrics", func() {
-				Eventually(work).Should(Receive(Equal([]metrics.Message{
-					{
-						AppID:       "app-guid",
-						IndexID:     "0",
-						CPU:         420,
-						Memory:      430080,
-						MemoryQuota: 10,
-						Disk:        42000000,
-						DiskQuota:   10,
-					},
-				})))
+			It("should not send a message", func() {
+				Expect(work).ShouldNot(Receive())
 			})
 		})
 

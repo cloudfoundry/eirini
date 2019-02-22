@@ -2,12 +2,12 @@ package k8s
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/util"
 	"github.com/pkg/errors"
 	"k8s.io/api/apps/v1beta2"
 	v1 "k8s.io/api/core/v1"
@@ -125,7 +125,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 			continue
 		}
 
-		index, err := parsePodIndex(pod.Name)
+		_, index, err := util.ParseAppNameAndIndex(pod.Name)
 		if err != nil {
 			return []*opi.Instance{}, err
 		}
@@ -358,16 +358,6 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
 
 	return statefulSet
-}
-
-func parsePodIndex(podName string) (int, error) {
-	sl := strings.Split(podName, "-")
-
-	if len(sl) <= 1 {
-		return 0, fmt.Errorf("could not parse pod name from %s", podName)
-	}
-
-	return strconv.Atoi(sl[len(sl)-1])
 }
 
 func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]v1.Volume, []v1.VolumeMount) {

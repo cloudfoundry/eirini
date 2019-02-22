@@ -1,14 +1,12 @@
 package event
 
 import (
-	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
+	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
@@ -110,7 +108,7 @@ func toReport(
 	crashTimestamp int64,
 ) (events.CrashReport, error) {
 	container := pod.Status.ContainerStatuses[0]
-	index, err := parsePodIndex(pod.Name)
+	_, index, err := util.ParseAppNameAndIndex(pod.Name)
 	if err != nil {
 		return events.CrashReport{}, err
 	}
@@ -127,13 +125,4 @@ func toReport(
 			CrashCount:      int(container.RestartCount),
 		},
 	}, nil
-}
-
-func parsePodIndex(podName string) (int, error) {
-	sl := strings.Split(podName, "-")
-
-	if len(sl) <= 1 {
-		return 0, fmt.Errorf("could not parse pod name from %s", podName)
-	}
-	return strconv.Atoi(sl[len(sl)-1])
 }
