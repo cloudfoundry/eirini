@@ -109,3 +109,7 @@ type AppCrashedRequest struct {
 	CrashCount      int    `json:"crash_count"`
 	CrashTimestamp  int64  `json:"crash_timestamp"`
 }
+
+type StagingError struct {
+	Message string `json:"message"`
+}

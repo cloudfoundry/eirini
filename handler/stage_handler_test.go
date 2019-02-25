@@ -2,7 +2,9 @@ package handler_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 
@@ -97,6 +99,14 @@ var _ = Describe("StageHandler", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
 			})
 
+			It("should return the error in the response body", func() {
+				bytes, _ := ioutil.ReadAll(response.Body)
+				stagingError := cf.StagingError{}
+				err := json.Unmarshal(bytes, &stagingError)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(stagingError.Message).ToNot(BeEmpty())
+			})
+
 			It("should not desire a task", func() {
 				Expect(stagingClient.StageCallCount()).To(Equal(0))
 			})
@@ -109,6 +119,14 @@ var _ = Describe("StageHandler", func() {
 
 			It("should return a 500 Internal Server Error", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+			})
+
+			It("should return the error in the response body", func() {
+				bytes, _ := ioutil.ReadAll(response.Body)
+				stagingError := cf.StagingError{}
+				err := json.Unmarshal(bytes, &stagingError)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(stagingError.Message).To(Equal("pow"))
 			})
 		})
 	})

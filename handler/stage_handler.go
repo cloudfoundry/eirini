@@ -31,14 +31,14 @@ func (s *Stage) Stage(resp http.ResponseWriter, req *http.Request, ps httprouter
 
 	var stagingRequest cf.StagingRequest
 	if err := json.NewDecoder(req.Body).Decode(&stagingRequest); err != nil {
-		s.logger.Error("staging-request-body-decoding-failed", err)
-		resp.WriteHeader(http.StatusBadRequest)
+		logger.Error("staging-request-body-decoding-failed", err)
+		writeErrorResponse(resp, http.StatusBadRequest, err)
 		return
 	}
 
 	if err := s.stager.Stage(stagingGUID, stagingRequest); err != nil {
 		logger.Error("stage-app-failed", err)
-		resp.WriteHeader(http.StatusInternalServerError)
+		writeErrorResponse(resp, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -64,4 +64,12 @@ func (s *Stage) StagingComplete(res http.ResponseWriter, req *http.Request, ps h
 	}
 
 	logger.Info("posted-staging-complete")
+}
+
+func writeErrorResponse(resp http.ResponseWriter, status int, err error) {
+	resp.WriteHeader(status)
+	encodingErr := json.NewEncoder(resp).Encode(&cf.StagingError{Message: err.Error()})
+	if encodingErr != nil {
+		panic(encodingErr)
+	}
 }
