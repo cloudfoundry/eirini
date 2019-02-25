@@ -12,7 +12,7 @@ go_import_path: code.cloudfoundry.org/eirini
 # Install dependencies responsible for testing/linting
 before_install:
     - go get -u github.com/onsi/ginkgo/ginkgo
-    - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $GOPATH/bin v1.12.3
+    - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $GOPATH/bin v1.15.0
 
 # Skip install step; use vendored dependencies
 install: true
