@@ -47,7 +47,6 @@ In order to start OPI with the Kubernetes orchestration backend, you need to cal
 
 ```yaml
 opi:
-  kube_config: "path/to/kube/config/file"
   kube_namespace: "the kubernetes namespace used by the cf deployment"
   kube_endpoint: "the kubernetes endpoint where to schedule workload to"
   api_endpoint: "the CF API endpoint (eg. api.bosh-lite.com)"

@@ -4,7 +4,6 @@ print_example_config(){
 	echo "Please provide a config.yml in <EIRINI_ROOT_DIR>/image. Example: "
 	cat << EOF
 opi:
-  kube_config: "path/to/kube/config/file"
   kube_namespace: "the kubernetes namespace used by the cf deployment"
   kube_endpoint: "the kubernetes endpoint where to schedule workload to"
   registry_endpoint: "the eirini registry endpoint (usually the eirini Host maschine on port 8080)"

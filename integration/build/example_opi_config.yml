@@ -1,5 +1,4 @@
 opi:
-  kube_config: "<PROVIDE>"
   kube_namespace: "doesn't matter"
   kube_endpoint: "doesn't matter"
   nats_password: "<PROVIDE>"
