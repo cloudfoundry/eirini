@@ -10,7 +10,6 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "opi",
 	Short: "put a K8s behind CF",
-	Long:  `some long description`,
 }
 
 func init() {

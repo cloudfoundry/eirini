@@ -48,8 +48,11 @@ func connect(cmd *cobra.Command, args []string) {
 	path, err := cmd.Flags().GetString("config")
 	exitWithError(err)
 
-	cfg := setConfigFromFile(path)
+	if path == "" {
+		exitWithError(errors.New("--config is missing"))
+	}
 
+	cfg := setConfigFromFile(path)
 	stager := initStager(cfg)
 	bifrost := initBifrost(cfg)
 
@@ -207,14 +210,7 @@ func launchEventReporter(uri, ca, cert, key, namespace string) {
 	client := cc_client.NewCcClient(uri, tlsConf)
 	reporter := events.NewCrashReporter(work, &route.SimpleLoopScheduler{}, client, lager.NewLogger("instance-crash-reporter"))
 	clientset := createKubeClient()
-
-	crashInformer := k8sevent.NewCrashInformer(
-		clientset,
-		0,
-		namespace,
-		work,
-		make(chan struct{}),
-	)
+	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, work, make(chan struct{}))
 
 	go crashInformer.Start()
 	go reporter.Run()
@@ -230,7 +226,7 @@ func getStagerImage(cfg *eirini.Config) string {
 
 func exitWithError(err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Exit: %s", err.Error())
+		fmt.Fprintf(os.Stderr, "Error: %s", err.Error())
 		os.Exit(1)
 	}
 }

@@ -3,7 +3,6 @@ package statefulsets_test
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	types "k8s.io/client-go/kubernetes/typed/apps/v1beta2"
 	coretypes "k8s.io/client-go/kubernetes/typed/core/v1"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -29,18 +29,22 @@ const (
 )
 
 var _ = BeforeSuite(func() {
-	config, err := clientcmd.BuildConfigFromFlags("",
-		filepath.Join(os.Getenv("HOME"), ".kube", "config"),
-	)
+	config, err := clientcmd.BuildConfigFromFlags("", os.Getenv("INTEGRATION_KUBECONFIG"))
 	Expect(err).ToNot(HaveOccurred())
 
 	clientset, err = kubernetes.NewForConfig(config)
 	Expect(err).ToNot(HaveOccurred())
 
-	namespace = "opi-integration"
+	namespace = "opi-integration-test"
+
 	if !namespaceExists() {
 		createNamespace()
 	}
+})
+
+var _ = AfterSuite(func() {
+	err := clientset.CoreV1().Namespaces().Delete(namespace, &meta.DeleteOptions{})
+	Expect(err).ToNot(HaveOccurred())
 })
 
 func TestIntegration(t *testing.T) {
@@ -54,9 +58,7 @@ func namespaceExists() bool {
 }
 
 func createNamespace() {
-	namespaceSpec := &v1.Namespace{
-		ObjectMeta: meta.ObjectMeta{Name: namespace},
-	}
+	namespaceSpec := &v1.Namespace{ObjectMeta: meta.ObjectMeta{Name: namespace}}
 
 	if _, err := clientset.CoreV1().Namespaces().Create(namespaceSpec); err != nil {
 		panic(err)

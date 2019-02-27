@@ -10,9 +10,9 @@ main(){
 }
 
 run_tests() {
-  pushd "$BASEDIR" || exit 1
+  pushd "$BASEDIR" > /dev/null || exit 1
     ginkgo -r -keepGoing --skipPackage=launcher,packs,integration
-  popd || exit 1
+  popd > /dev/null || exit 1
 }
 
 main "$@"

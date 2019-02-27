@@ -3,10 +3,11 @@ package util
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 )
 
 type CertPaths struct {
@@ -19,7 +20,7 @@ func CreateTLSHTTPClient(certPaths []CertPaths) (*http.Client, error) {
 	for _, c := range certPaths {
 		cert, err := tls.LoadX509KeyPair(c.Crt, c.Key)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "could not load cert")
 		}
 		certs = append(certs, cert)
 

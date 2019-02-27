@@ -31,7 +31,7 @@ issues:
   exclude-rules:
     - path: k8s/metrics.go
       text: G107
-    - path: integration/statefulsets/statefulsets_suite_test.go
+    - path: integration/statefulsets_suite_test.go
       linters:
       - deadcode
       - varcheck
