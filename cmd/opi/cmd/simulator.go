@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -63,7 +64,14 @@ func (d *DesirerSimulator) Update(updated *opi.LRP) error {
 }
 
 func (d *DesirerSimulator) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
-	return []*opi.Instance{}, nil
+	if identifier.GUID == "jeff" && identifier.Version == "0.1.0" {
+		return []*opi.Instance{
+			{Index: 0, Since: 123456, State: opi.RunningState},
+			{Index: 1, Since: 567891, State: opi.RunningState},
+		}, nil
+	}
+
+	return []*opi.Instance{}, errors.New("no such app")
 }
 
 func (d *DesirerSimulator) Stop(identifier opi.LRPIdentifier) error {
