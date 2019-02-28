@@ -3,7 +3,8 @@ package bifrost
 import (
 	"fmt"
 
-	"code.cloudfoundry.org/eirini/launcher"
+	"code.cloudfoundry.org/eirini"
+
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/util"
@@ -42,7 +43,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		panic(err)
 	}
 
-	lev := launcher.SetupEnv(request.StartCommand)
+	lev := eirini.SetupEnv(request.StartCommand)
 
 	identifier := opi.LRPIdentifier{
 		GUID:    request.GUID,
@@ -64,7 +65,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		LRPIdentifier:   identifier,
 		Image:           request.DockerImageURL,
 		TargetInstances: request.NumInstances,
-		Command:         append(launcher.InitProcess, launcher.Launch),
+		Command:         append(eirini.InitProcess, eirini.Launch),
 		Env:             mergeMaps(request.Environment, lev),
 		Health: opi.Healtcheck{
 			Type:      request.HealthCheckType,

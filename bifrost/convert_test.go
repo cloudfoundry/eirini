@@ -3,8 +3,9 @@ package bifrost_test
 import (
 	"encoding/json"
 
+	"code.cloudfoundry.org/eirini"
+
 	"code.cloudfoundry.org/eirini/bifrost"
-	"code.cloudfoundry.org/eirini/launcher"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/util/utilfakes"
@@ -139,7 +140,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			})
 
 			It("should set the start command", func() {
-				Expect(lrp.Command).To(Equal(append(launcher.InitProcess, launcher.Launch)))
+				Expect(lrp.Command).To(Equal(append(eirini.InitProcess, eirini.Launch)))
 			})
 
 			It("should set the VCAP_APPLICATION environment variable", func() {
