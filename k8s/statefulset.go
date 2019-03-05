@@ -20,6 +20,7 @@ import (
 const (
 	eventKilling          = "Killing"
 	eventFailedScheduling = "FailedScheduling"
+	appSourceType         = "APP"
 )
 
 type StatefulSetDesirer struct {
@@ -343,22 +344,20 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	}
 
 	statefulSet.Name = lrp.Name
-	statefulSet.Spec.Template.Labels = map[string]string{
-		"guid":    lrp.GUID,
-		"version": lrp.Version,
+
+	labels := map[string]string{
+		"guid":        lrp.GUID,
+		"version":     lrp.Version,
+		"source_type": appSourceType,
 	}
+
+	statefulSet.Spec.Template.Labels = labels
 
 	statefulSet.Spec.Selector = &meta.LabelSelector{
-		MatchLabels: map[string]string{
-			"guid":    lrp.GUID,
-			"version": lrp.Version,
-		},
+		MatchLabels: labels,
 	}
 
-	statefulSet.Labels = map[string]string{
-		"guid":    lrp.GUID,
-		"version": lrp.Version,
-	}
+	statefulSet.Labels = labels
 
 	statefulSet.Annotations = lrp.Metadata
 	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
