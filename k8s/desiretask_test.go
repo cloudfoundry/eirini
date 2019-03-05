@@ -30,11 +30,17 @@ var _ = Describe("Desiretask", func() {
 	)
 
 	assertGeneralSpec := func(job *batch.Job) {
+
+		labels := map[string]string{
+			"guid":        "env-app-id",
+			"source_type": "STG",
+		}
+
 		Expect(job.Name).To(Equal("the-stage-is-yours"))
 		Expect(job.Spec.ActiveDeadlineSeconds).To(Equal(int64ptr(900)))
 		Expect(job.Spec.Template.Spec.RestartPolicy).To(Equal(v1.RestartPolicyNever))
-		Expect(job.Spec.Template.Labels).To(Equal(map[string]string{"name": "env-app-id"}))
-		Expect(job.Labels).To(Equal(map[string]string{"name": "env-app-id"}))
+		Expect(job.Spec.Template.Labels).To(Equal(labels))
+		Expect(job.Labels).To(Equal(labels))
 	}
 
 	assertContainer := func(container v1.Container) {

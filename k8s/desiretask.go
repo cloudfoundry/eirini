@@ -10,7 +10,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const ActiveDeadlineSeconds = 900
+const (
+	ActiveDeadlineSeconds = 900
+	stagingSourceType     = "STG"
+)
 
 type TaskDesirer struct {
 	Namespace       string
@@ -93,12 +96,13 @@ func toJob(task *opi.Task) *batch.Job {
 
 	job.Name = task.Env[eirini.EnvStagingGUID]
 
-	job.Spec.Template.Labels = map[string]string{
-		"name": task.Env[eirini.EnvAppID],
+	labels := map[string]string{
+		"guid":        task.Env[eirini.EnvAppID],
+		"source_type": stagingSourceType,
 	}
 
-	job.Labels = map[string]string{
-		"name": task.Env[eirini.EnvAppID],
-	}
+	job.Spec.Template.Labels = labels
+	job.Labels = labels
+
 	return job
 }
