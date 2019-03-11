@@ -47,7 +47,7 @@ type Properties struct {
 	CCCertsSecretName string `yaml:"cc_certs_secret_name"`
 	RegistryAddress   string `yaml:"registry_address"`
 	EiriniAddress     string `yaml:"eirini_address"`
-	StagerImageTag    string `yaml:"stager_image_tag"`
+	StagerImage       string `yaml:"stager_image"`
 
 	MetricsSourceAddress string `yaml:"metrics_source_address"`
 	LoggregatorAddress   string `yaml:"loggregator_address"`

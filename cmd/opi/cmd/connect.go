@@ -217,11 +217,7 @@ func launchEventReporter(uri, ca, cert, key, namespace string) {
 }
 
 func getStagerImage(cfg *eirini.Config) string {
-	if len(cfg.Properties.StagerImageTag) != 0 {
-		return fmt.Sprintf("%s:%s", stager.Image, cfg.Properties.StagerImageTag)
-	}
-
-	return fmt.Sprintf("%s:%s", stager.Image, stager.DefaultTag)
+	return cfg.Properties.StagerImage
 }
 
 func exitWithError(err error) {
