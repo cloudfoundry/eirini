@@ -36,6 +36,12 @@ issues:
       - deadcode
       - varcheck
       - unused
+    - path: recipe/cmd/buildpack/manager.go
+      linters:
+      - gosec
+    - path: integration/recipe/buildpackmanager_test.go
+      linters:
+      - gosec
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 

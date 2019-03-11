@@ -14,11 +14,6 @@ import (
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
-const (
-	Image      = "eirini/recipe"
-	DefaultTag = "latest"
-)
-
 type Stager struct {
 	Desirer    opi.TaskDesirer
 	Config     *eirini.StagerConfig
