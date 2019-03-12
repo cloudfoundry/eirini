@@ -8,6 +8,7 @@
 * [Add public SSH key to github.com](https://help.github.com/articles/connecting-to-github-with-ssh/) and verify
 * Ask the anchor to be invited to the retro
 * Ask the PM to be invited to the IPM
+* Ask the anchor to be [added to the eirini@cloudfoundry.org](https://groups.google.com/a/cloudfoundry.org/forum/#!managemembers/eirini/members) mailing list
 * Update [the onboarding document](https://github.com/cloudfoundry-incubator/eirini/blob/master/onboarding.markdown) if necessary
 
 Additionally, for new members of the core team:
