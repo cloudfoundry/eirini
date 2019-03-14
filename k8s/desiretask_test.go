@@ -35,12 +35,13 @@ var _ = Describe("Desiretask", func() {
 			"guid":        "env-app-id",
 			"source_type": "STG",
 		}
-
+		automountServiceAccountToken := false
 		Expect(job.Name).To(Equal("the-stage-is-yours"))
 		Expect(job.Spec.ActiveDeadlineSeconds).To(Equal(int64ptr(900)))
 		Expect(job.Spec.Template.Spec.RestartPolicy).To(Equal(v1.RestartPolicyNever))
 		Expect(job.Spec.Template.Labels).To(Equal(labels))
 		Expect(job.Labels).To(Equal(labels))
+		Expect(job.Spec.Template.Spec.AutomountServiceAccountToken).To(Equal(&automountServiceAccountToken))
 	}
 
 	assertContainer := func(container v1.Container) {
