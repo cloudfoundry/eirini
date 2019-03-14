@@ -592,6 +592,8 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 		panic(err)
 	}
 
+	automountServiceAccountToken := false
+
 	statefulSet := &v1beta2.StatefulSet{
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: &targetInstances,
@@ -603,6 +605,7 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 					},
 				},
 				Spec: v1.PodSpec{
+					AutomountServiceAccountToken: &automountServiceAccountToken,
 					Containers: []v1.Container{
 						{
 							Name:           "opi",

@@ -304,7 +304,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	}
 
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
-
+	automountServiceAccountToken := false
 	statefulSet := &v1beta2.StatefulSet{
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: int32ptr(lrp.TargetInstances),
@@ -316,6 +316,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 					},
 				},
 				Spec: v1.PodSpec{
+					AutomountServiceAccountToken: &automountServiceAccountToken,
 					Containers: []v1.Container{
 						{
 							Name:    "opi",
