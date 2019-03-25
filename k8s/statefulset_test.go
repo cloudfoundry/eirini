@@ -96,6 +96,18 @@ var _ = Describe("Statefulset", func() {
 			Expect(statefulSet.Spec.Template.Annotations[cf.ProcessGUID]).To(Equal("Baldur"))
 		})
 
+		It("should set space name as a label", func() {
+			statefulSet, getErr := client.AppsV1beta2().StatefulSets(namespace).Get("Baldur", meta.GetOptions{})
+			Expect(getErr).ToNot(HaveOccurred())
+			expectLabel(statefulSet, cf.VcapSpaceName, "space-foo")
+		})
+
+		It("should set app name as a label", func() {
+			statefulSet, getErr := client.AppsV1beta2().StatefulSets(namespace).Get("Baldur", meta.GetOptions{})
+			Expect(getErr).ToNot(HaveOccurred())
+			expectLabel(statefulSet, cf.VcapAppName, "app-foo")
+		})
+
 		Context("When redeploying an existing LRP", func() {
 			BeforeEach(func() {
 				lrp = createLRP("Baldur", "1234.5", "my.example.route")
@@ -638,9 +650,11 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	statefulSet.Namespace = namespace
 
 	labels := map[string]string{
-		"guid":        lrp.GUID,
-		"version":     lrp.Version,
-		"source_type": "APP",
+		"guid":           lrp.GUID,
+		"version":        lrp.Version,
+		"source_type":    "APP",
+		cf.VcapSpaceName: lrp.SpaceName,
+		cf.VcapAppName:   lrp.AppName,
 	}
 
 	statefulSet.Spec.Template.Labels = labels
@@ -685,7 +699,9 @@ func createLRP(processGUID, lastUpdated, routes string) *opi.LRP {
 			GUID:    "guid_1234",
 			Version: "version_1234",
 		},
-		Name: processGUID,
+		Name:      processGUID,
+		AppName:   "app-foo",
+		SpaceName: "space-foo",
 		Command: []string{
 			"/bin/sh",
 			"-c",
@@ -709,4 +725,10 @@ func createLRP(processGUID, lastUpdated, routes string) *opi.LRP {
 			},
 		},
 	}
+}
+
+func expectLabel(statefulSet *v1beta2.StatefulSet, key, value string) {
+	Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(key, value))
+	Expect(statefulSet.Labels).To(HaveKeyWithValue(key, value))
+	Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(key, value))
 }

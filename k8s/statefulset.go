@@ -238,6 +238,8 @@ func statefulSetToLRP(s v1beta2.StatefulSet) *opi.LRP {
 			Version: s.Annotations[cf.VcapVersion],
 		},
 		Name:             s.Name,
+		AppName:          s.Labels[cf.VcapAppName],
+		SpaceName:        s.Labels[cf.VcapSpaceName],
 		Image:            container.Image,
 		Command:          container.Command,
 		RunningInstances: int(s.Status.ReadyReplicas),
@@ -347,9 +349,11 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	statefulSet.Name = lrp.Name
 
 	labels := map[string]string{
-		"guid":        lrp.GUID,
-		"version":     lrp.Version,
-		"source_type": appSourceType,
+		"guid":           lrp.GUID,
+		"version":        lrp.Version,
+		"source_type":    appSourceType,
+		cf.VcapSpaceName: lrp.SpaceName,
+		cf.VcapAppName:   lrp.AppName,
 	}
 
 	statefulSet.Spec.Template.Labels = labels

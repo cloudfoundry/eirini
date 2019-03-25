@@ -108,6 +108,14 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(lrp.Name).To(Equal("LRPHashedName"))
 			})
 
+			It("should set the app name", func() {
+				Expect(lrp.AppName).To(Equal("bumblebee"))
+			})
+
+			It("should set the space name", func() {
+				Expect(lrp.SpaceName).To(Equal("transformers"))
+			})
+
 			It("should set the correct TargetInstances", func() {
 				Expect(lrp.TargetInstances).To(Equal(3))
 			})
