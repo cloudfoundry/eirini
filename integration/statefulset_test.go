@@ -3,6 +3,8 @@
 package statefulsets_test
 
 import (
+	"fmt"
+
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
@@ -17,32 +19,20 @@ import (
 var _ = Describe("StatefulSet Manager", func() {
 
 	var (
-		desirer       opi.Desirer
-		lrp           *opi.LRP
-		err           error
-		lrpIdentifier opi.LRPIdentifier
+		desirer opi.Desirer
+		odinLRP *opi.LRP
+		thorLRP *opi.LRP
+		err     error
 	)
 
 	BeforeEach(func() {
-		lrpIdentifier = opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}
-		lrp = &opi.LRP{
-			Name: "odin",
-			Command: []string{
-				"/bin/sh",
-				"-c",
-				"while true; do echo hello; sleep 10;done",
-			},
-			TargetInstances: 2,
-			Image:           "busybox",
-			Metadata: map[string]string{
-				cf.ProcessGUID: "odin",
-			},
-			LRPIdentifier: lrpIdentifier,
-		}
+		odinLRP = createLRP("odin")
+		thorLRP = createLRP("thor")
 	})
 
 	AfterEach(func() {
-		cleanupStatefulSet(lrp.Name)
+		cleanupStatefulSet(odinLRP.Name)
+		cleanupStatefulSet(thorLRP.Name)
 		Eventually(listAllStatefulSets, timeout).Should(BeEmpty())
 	})
 
@@ -56,36 +46,54 @@ var _ = Describe("StatefulSet Manager", func() {
 	Context("When creating a StatefulSet", func() {
 
 		JustBeforeEach(func() {
-			err = desirer.Desire(lrp)
-		})
-
-		It("should not fail", func() {
+			err = desirer.Desire(odinLRP)
+			Expect(err).ToNot(HaveOccurred())
+			err = desirer.Desire(thorLRP)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should create a StatefulSet object", func() {
-			statefulset, getErr := clientset.AppsV1beta2().StatefulSets(namespace).Get(lrp.Name, meta.GetOptions{})
+			statefulset, getErr := clientset.AppsV1beta2().StatefulSets(namespace).Get(odinLRP.Name, meta.GetOptions{})
 			Expect(getErr).ToNot(HaveOccurred())
 
-			Expect(statefulset.Name).To(Equal(lrp.Name))
-			Expect(statefulset.Spec.Template.Spec.Containers[0].Command).To(Equal(lrp.Command))
-			Expect(statefulset.Spec.Template.Spec.Containers[0].Image).To(Equal(lrp.Image))
-			Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(lrp.TargetInstances)))
+			Expect(statefulset.Name).To(Equal(odinLRP.Name))
+			Expect(statefulset.Spec.Template.Spec.Containers[0].Command).To(Equal(odinLRP.Command))
+			Expect(statefulset.Spec.Template.Spec.Containers[0].Image).To(Equal(odinLRP.Image))
+			Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(odinLRP.TargetInstances)))
 		})
 
 		It("should create all associated pods", func() {
 			Eventually(func() []string {
-				return getPodNames(lrpIdentifier)
+				return podNamesFromPods(listPods(odinLRP.LRPIdentifier))
 			}, timeout).Should(ConsistOf("odin-0", "odin-1"))
+		})
+
+		It("should be able to list pods by space name", func() {
+			labelSelector := fmt.Sprintf("space_name=%s", "space-foo")
+			Eventually(func() []string {
+				return podNamesFromPods(listPodsByLabel(labelSelector))
+			}, timeout).Should(ConsistOf("odin-0", "odin-1", "thor-0", "thor-1"))
+		})
+
+		It("should be able to list pods by application name", func() {
+			labelSelector := fmt.Sprintf("application_name=%s", odinLRP.AppName)
+			Eventually(func() []string {
+				return podNamesFromPods(listPodsByLabel(labelSelector))
+			}, timeout).Should(ConsistOf("odin-0", "odin-1"))
+
+			labelSelector = fmt.Sprintf("application_name=%s", thorLRP.AppName)
+			Eventually(func() []string {
+				return podNamesFromPods(listPodsByLabel(labelSelector))
+			}, timeout).Should(ConsistOf("thor-0", "thor-1"))
 		})
 	})
 
 	Context("When deleting a LRP", func() {
 
 		JustBeforeEach(func() {
-			err = desirer.Desire(lrp)
+			err = desirer.Desire(odinLRP)
 			Expect(err).ToNot(HaveOccurred())
-			err = desirer.Stop(lrpIdentifier)
+			err = desirer.Stop(odinLRP.LRPIdentifier)
 		})
 
 		It("should not fail", func() {
@@ -100,7 +108,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		It("should delete the associated pods", func() {
 			Eventually(func() []v1.Pod {
-				return listPods(lrpIdentifier)
+				return listPods(odinLRP.LRPIdentifier)
 			}, timeout).Should(BeEmpty())
 		})
 	})
@@ -108,13 +116,13 @@ var _ = Describe("StatefulSet Manager", func() {
 	Context("When getting an app", func() {
 
 		JustBeforeEach(func() {
-			err = desirer.Desire(lrp)
+			err = desirer.Desire(odinLRP)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("correctly reports the running instances", func() {
 			Eventually(func() int {
-				l, e := desirer.Get(lrpIdentifier)
+				l, e := desirer.Get(odinLRP.LRPIdentifier)
 				Expect(e).ToNot(HaveOccurred())
 				return l.RunningInstances
 			}, timeout).Should(Equal(2))
@@ -122,7 +130,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		Context("When one of the instances if failing", func() {
 			BeforeEach(func() {
-				lrp = &opi.LRP{
+				odinLRP = &opi.LRP{
 					Name: "odin",
 					Command: []string{
 						"/bin/sh",
@@ -134,15 +142,15 @@ var _ = Describe("StatefulSet Manager", func() {
 					Metadata: map[string]string{
 						cf.ProcessGUID: "odin",
 					},
-					LRPIdentifier: lrpIdentifier,
+					LRPIdentifier: odinLRP.LRPIdentifier,
 				}
 			})
 
 			It("correctly reports the running instances", func() {
 				Eventually(func() int {
-					lrp, err := desirer.Get(lrpIdentifier)
+					odinLRP, err := desirer.Get(odinLRP.LRPIdentifier)
 					Expect(err).ToNot(HaveOccurred())
-					return lrp.RunningInstances
+					return odinLRP.RunningInstances
 				}, timeout).Should(Equal(1))
 			})
 		})
@@ -153,4 +161,24 @@ var _ = Describe("StatefulSet Manager", func() {
 func int32ptr(i int) *int32 {
 	i32 := int32(i)
 	return &i32
+}
+
+func createLRP(name string) *opi.LRP {
+	return &opi.LRP{
+		Name: name,
+		Command: []string{
+			"/bin/sh",
+			"-c",
+			"while true; do echo hello; sleep 10;done",
+		},
+		AppName:         name,
+		SpaceName:       "space-foo",
+		TargetInstances: 2,
+		Image:           "busybox",
+		Metadata: map[string]string{
+			cf.ProcessGUID: name,
+		},
+		LRPIdentifier: opi.LRPIdentifier{GUID: "guid_" + name, Version: "version_" + name},
+	}
+
 }
