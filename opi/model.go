@@ -35,6 +35,8 @@ func (i *LRPIdentifier) ProcessGUID() string {
 type LRP struct {
 	LRPIdentifier
 	Name             string
+	AppName          string
+	SpaceName        string
 	Image            string
 	Command          []string
 	Env              map[string]string
