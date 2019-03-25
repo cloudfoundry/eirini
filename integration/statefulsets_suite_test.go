@@ -95,16 +95,20 @@ func listStatefulSets(appName string) []v1beta2.StatefulSet {
 	return list.Items
 }
 
-func listPods(lrpIdentifier opi.LRPIdentifier) []v1.Pod {
-	labelSelector := fmt.Sprintf("guid=%s,version=%s", lrpIdentifier.GUID, lrpIdentifier.Version)
+func listPodsByLabel(labelSelector string) []v1.Pod {
 	pods, err := clientset.CoreV1().Pods(namespace).List(meta.ListOptions{LabelSelector: labelSelector})
 	Expect(err).NotTo(HaveOccurred())
 	return pods.Items
 }
 
-func getPodNames(lrpIdentifier opi.LRPIdentifier) []string {
+func listPods(lrpIdentifier opi.LRPIdentifier) []v1.Pod {
+	labelSelector := fmt.Sprintf("guid=%s,version=%s", lrpIdentifier.GUID, lrpIdentifier.Version)
+	return listPodsByLabel(labelSelector)
+}
+
+func podNamesFromPods(pods []v1.Pod) []string {
 	names := []string{}
-	for _, p := range listPods(lrpIdentifier) {
+	for _, p := range pods {
 		names = append(names, p.Name)
 	}
 	return names
