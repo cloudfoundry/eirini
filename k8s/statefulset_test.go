@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
-	"k8s.io/client-go/testing"
 	testcore "k8s.io/client-go/testing"
 )
 
@@ -254,30 +253,12 @@ var _ = Describe("Statefulset", func() {
 				createLRP("thor", "4567.8", "my.example.route"),
 				createLRP("mimir", "9012.3", "my.example.route"),
 			}
-			reactionFunc := func(action testing.Action) (handled bool, ret runtime.Object, err error) {
-				createAction, ok := action.(testing.CreateAction)
-				if !ok {
-					return
-				}
-				statefulset, ok := createAction.GetObject().(*v1beta2.StatefulSet)
-				if !ok {
-					return
-				}
-				if statefulset.Name != "" {
-					return
-				}
-				statefulset.Name = statefulset.GenerateName
-				client.Unlock()
-				client.Fake.Invokes(testing.NewCreateAction(action.GetResource(), action.GetNamespace(), statefulset), &v1beta2.StatefulSet{})
-				client.Lock()
-				return true, statefulset, err
-
-			}
-
-			client.Fake.PrependReactor("create", "statefulsets", reactionFunc)
 
 			for _, l := range expectedLRPs {
-				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l))
+				statefulset := toStatefulSet(l)
+				// FakeClient does not generate names for us
+				statefulset.Name = statefulset.GenerateName
+				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(statefulset)
 				Expect(createErr).ToNot(HaveOccurred())
 			}
 		})
