@@ -49,8 +49,8 @@ var _ = Describe("Statefulset", func() {
 
 	getStatefulSet := func(lrp *opi.LRP) *v1beta2.StatefulSet {
 		labelSelector := fmt.Sprintf("guid=%s,version=%s", lrp.LRPIdentifier.GUID, lrp.LRPIdentifier.Version)
-		ss, err := client.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{LabelSelector: labelSelector})
-		Expect(err).NotTo(HaveOccurred())
+		ss, getErr := client.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{LabelSelector: labelSelector})
+		Expect(getErr).NotTo(HaveOccurred())
 		return &ss.Items[0]
 	}
 
@@ -233,8 +233,8 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			It("should not create the app", func() {
-				sets, err := client.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{})
-				Expect(err).NotTo(HaveOccurred())
+				sets, listErr := client.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{})
+				Expect(listErr).NotTo(HaveOccurred())
 				Expect(sets.Items).To(BeEmpty())
 			})
 		})
