@@ -237,7 +237,6 @@ func statefulSetToLRP(s v1beta2.StatefulSet) *opi.LRP {
 			GUID:    s.Annotations[cf.VcapAppID],
 			Version: s.Annotations[cf.VcapVersion],
 		},
-		Name:             s.Name,
 		AppName:          s.Labels[cf.VcapAppName],
 		SpaceName:        s.Labels[cf.VcapSpaceName],
 		Image:            container.Image,
@@ -307,7 +306,11 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
 	automountServiceAccountToken := false
+	namePrefix := util.TruncateString(fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName), 40)
 	statefulSet := &v1beta2.StatefulSet{
+		ObjectMeta: meta.ObjectMeta{
+			GenerateName: fmt.Sprintf("%s-", namePrefix),
+		},
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: int32ptr(lrp.TargetInstances),
 			Template: v1.PodTemplateSpec{
@@ -345,8 +348,6 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 			},
 		},
 	}
-
-	statefulSet.Name = lrp.Name
 
 	labels := map[string]string{
 		"guid":           lrp.GUID,
