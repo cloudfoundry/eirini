@@ -11,6 +11,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/api/apps/v1beta2"
@@ -20,9 +21,9 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+	"k8s.io/client-go/testing"
 	testcore "k8s.io/client-go/testing"
 )
 
@@ -35,7 +36,7 @@ var _ = Describe("Statefulset", func() {
 
 	var (
 		err                   error
-		client                kubernetes.Interface
+		client                *fake.Clientset
 		statefulSetDesirer    opi.Desirer
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
 		readinessProbeCreator *k8sfakes.FakeProbeCreator
@@ -47,8 +48,16 @@ var _ = Describe("Statefulset", func() {
 		return list.Items
 	}
 
+	getStatefulSet := func(lrp *opi.LRP) *v1beta2.StatefulSet {
+		labelSelector := fmt.Sprintf("guid=%s,version=%s", lrp.LRPIdentifier.GUID, lrp.LRPIdentifier.Version)
+		ss, err := client.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{LabelSelector: labelSelector})
+		Expect(err).NotTo(HaveOccurred())
+		return &ss.Items[0]
+	}
+
 	BeforeEach(func() {
 		client = fake.NewSimpleClientset()
+
 		livenessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
 	})
@@ -77,9 +86,7 @@ var _ = Describe("Statefulset", func() {
 		})
 
 		It("should create the desired statefulSet", func() {
-			statefulSet, getErr := client.AppsV1beta2().StatefulSets(namespace).Get("Baldur", meta.GetOptions{})
-			Expect(getErr).ToNot(HaveOccurred())
-
+			statefulSet := getStatefulSet(lrp)
 			Expect(statefulSet).To(Equal(toStatefulSet(lrp)))
 		})
 
@@ -92,20 +99,28 @@ var _ = Describe("Statefulset", func() {
 		})
 
 		It("should provide the process-guid to the pod annotations", func() {
-			statefulSet, _ := client.AppsV1beta2().StatefulSets(namespace).Get("Baldur", meta.GetOptions{})
-			Expect(statefulSet.Spec.Template.Annotations[cf.ProcessGUID]).To(Equal("Baldur"))
+			statefulSet := getStatefulSet(lrp)
+			Expect(statefulSet.Spec.Template.Annotations[cf.ProcessGUID]).To(Equal("Baldur-guid"))
 		})
 
 		It("should set space name as a label", func() {
-			statefulSet, getErr := client.AppsV1beta2().StatefulSets(namespace).Get("Baldur", meta.GetOptions{})
-			Expect(getErr).ToNot(HaveOccurred())
+			statefulSet := getStatefulSet(lrp)
 			expectLabel(statefulSet, cf.VcapSpaceName, "space-foo")
 		})
 
 		It("should set app name as a label", func() {
-			statefulSet, getErr := client.AppsV1beta2().StatefulSets(namespace).Get("Baldur", meta.GetOptions{})
-			Expect(getErr).ToNot(HaveOccurred())
-			expectLabel(statefulSet, cf.VcapAppName, "app-foo")
+			statefulSet := getStatefulSet(lrp)
+			expectLabel(statefulSet, cf.VcapAppName, "Baldur")
+		})
+
+		It("should set generate name for the stateful set", func() {
+			statefulSet := getStatefulSet(lrp)
+			Expect(statefulSet.GenerateName).To(Equal("Baldur-space-foo-"))
+		})
+
+		It("should not set name for the stateful set", func() {
+			statefulSet := getStatefulSet(lrp)
+			Expect(statefulSet.Name).To(BeEmpty())
 		})
 
 		Context("When redeploying an existing LRP", func() {
@@ -162,19 +177,12 @@ var _ = Describe("Statefulset", func() {
 		Context("when the app exists", func() {
 
 			var (
-				appName string
+				lrp *opi.LRP
 			)
 
-			getStatefulSet := func(appName string) *v1beta2.StatefulSet {
-				statefulSet, getErr := client.AppsV1beta2().StatefulSets(namespace).Get(appName, meta.GetOptions{})
-				Expect(getErr).ToNot(HaveOccurred())
-				return statefulSet
-			}
-
 			BeforeEach(func() {
-				appName = "update"
 
-				lrp := createLRP("update", "7653.2", `["my.example.route"]`)
+				lrp = createLRP("update", "7653.2", `["my.example.route"]`)
 
 				statefulSet := toStatefulSet(lrp)
 				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(statefulSet)
@@ -184,7 +192,6 @@ var _ = Describe("Statefulset", func() {
 			Context("with replica count modified", func() {
 
 				JustBeforeEach(func() {
-					lrp := createLRP("update", "7653.2", `["my.example.route"]`)
 					lrp.TargetInstances = 5
 					lrp.Metadata = map[string]string{cf.LastUpdated: "123214.2"}
 					err = statefulSetDesirer.Update(lrp)
@@ -196,7 +203,7 @@ var _ = Describe("Statefulset", func() {
 
 				It("updates the desired number of app instances", func() {
 					Eventually(func() int32 {
-						return *getStatefulSet(appName).Spec.Replicas
+						return *getStatefulSet(lrp).Spec.Replicas
 					}).Should(Equal(int32(5)))
 				})
 			})
@@ -204,14 +211,13 @@ var _ = Describe("Statefulset", func() {
 			Context("with modified routes", func() {
 
 				JustBeforeEach(func() {
-					lrp := createLRP("update", "7653.2", `["my.example.route"]`)
 					lrp.Metadata = map[string]string{cf.VcapAppUris: `["my.example.route", "my.second.example.route"]`}
 					err = statefulSetDesirer.Update(lrp)
 				})
 
 				It("should update the stored routes", func() {
 					Eventually(func() string {
-						return getStatefulSet(appName).Annotations[eirini.RegisteredRoutes]
+						return getStatefulSet(lrp).Annotations[eirini.RegisteredRoutes]
 					}, 1*time.Second).Should(Equal(`["my.example.route", "my.second.example.route"]`))
 				})
 			})
@@ -219,12 +225,8 @@ var _ = Describe("Statefulset", func() {
 
 		Context("when the app does not exist", func() {
 
-			var (
-				appName string
-			)
-
 			JustBeforeEach(func() {
-				err = statefulSetDesirer.Update(&opi.LRP{Name: appName, TargetInstances: 2})
+				err = statefulSetDesirer.Update(createLRP("name", "!234.0", "[something.strange]"))
 			})
 
 			It("should return an error", func() {
@@ -232,8 +234,9 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			It("should not create the app", func() {
-				_, err = client.AppsV1beta2().StatefulSets(namespace).Get(appName, meta.GetOptions{})
-				Expect(err).To(HaveOccurred())
+				sets, err := client.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(sets.Items).To(BeEmpty())
 			})
 		})
 	})
@@ -251,6 +254,28 @@ var _ = Describe("Statefulset", func() {
 				createLRP("thor", "4567.8", "my.example.route"),
 				createLRP("mimir", "9012.3", "my.example.route"),
 			}
+			reactionFunc := func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+				createAction, ok := action.(testing.CreateAction)
+				if !ok {
+					return
+				}
+				statefulset, ok := createAction.GetObject().(*v1beta2.StatefulSet)
+				if !ok {
+					return
+				}
+				if statefulset.Name != "" {
+					return
+				}
+				statefulset.Name = statefulset.GenerateName
+				client.Unlock()
+				client.Fake.Invokes(testing.NewCreateAction(action.GetResource(), action.GetNamespace(), statefulset), &v1beta2.StatefulSet{})
+				client.Lock()
+				return true, statefulset, err
+
+			}
+
+			client.Fake.PrependReactor("create", "statefulsets", reactionFunc)
+
 			for _, l := range expectedLRPs {
 				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(l))
 				Expect(createErr).ToNot(HaveOccurred())
@@ -290,7 +315,7 @@ var _ = Describe("Statefulset", func() {
 				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
 					return true, nil, errors.New("boom")
 				}
-				client.(*fake.Clientset).PrependReactor("list", "statefulsets", reaction)
+				client.PrependReactor("list", "statefulsets", reaction)
 			})
 
 			It("should return an error", func() {
@@ -606,7 +631,11 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 
 	automountServiceAccountToken := false
 
+	namePrefix := util.TruncateString(fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName), 40)
 	statefulSet := &v1beta2.StatefulSet{
+		ObjectMeta: meta.ObjectMeta{
+			GenerateName: fmt.Sprintf("%s-", namePrefix),
+		},
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: &targetInstances,
 			Template: v1.PodTemplateSpec{
@@ -644,8 +673,6 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 			},
 		},
 	}
-
-	statefulSet.Name = lrp.Name
 
 	statefulSet.Namespace = namespace
 
@@ -693,14 +720,13 @@ func createVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]v1.Volume, []v1.Vol
 	return vols, volumeMounts
 }
 
-func createLRP(processGUID, lastUpdated, routes string) *opi.LRP {
+func createLRP(name, lastUpdated, routes string) *opi.LRP {
 	return &opi.LRP{
 		LRPIdentifier: opi.LRPIdentifier{
 			GUID:    "guid_1234",
 			Version: "version_1234",
 		},
-		Name:      processGUID,
-		AppName:   "app-foo",
+		AppName:   name,
 		SpaceName: "space-foo",
 		Command: []string{
 			"/bin/sh",
@@ -712,7 +738,7 @@ func createLRP(processGUID, lastUpdated, routes string) *opi.LRP {
 		Image:            "busybox",
 		Ports:            []int32{8888, 9999},
 		Metadata: map[string]string{
-			cf.ProcessGUID: processGUID,
+			cf.ProcessGUID: name + "-guid",
 			cf.LastUpdated: lastUpdated,
 			cf.VcapAppUris: routes,
 			cf.VcapAppID:   "guid_1234",
