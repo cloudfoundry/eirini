@@ -74,12 +74,22 @@ func services() coretypes.ServiceInterface {
 	return clientset.CoreV1().Services(namespace)
 }
 
-func cleanupStatefulSet(appName string) {
-	if _, err := statefulSets().Get(appName, meta.GetOptions{}); err == nil {
-		backgroundPropagation := meta.DeletePropagationBackground
-		err = statefulSets().Delete(appName, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
-		Expect(err).ToNot(HaveOccurred())
-	}
+func getStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
+	ss, getErr := clientset.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{LabelSelector: labelSelector(lrp)})
+	Expect(getErr).NotTo(HaveOccurred())
+	return &ss.Items[0]
+}
+
+func labelSelector(lrp *opi.LRP) string {
+	return fmt.Sprintf("guid=%s,version=%s", lrp.LRPIdentifier.GUID, lrp.LRPIdentifier.Version)
+}
+
+func cleanupStatefulSet(lrp *opi.LRP) {
+	backgroundPropagation := meta.DeletePropagationBackground
+	deleteOptions := &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation}
+	listOptions := meta.ListOptions{LabelSelector: labelSelector(lrp)}
+	err := statefulSets().DeleteCollection(deleteOptions, listOptions)
+	Expect(err).ToNot(HaveOccurred())
 }
 
 func listAllStatefulSets() []v1beta2.StatefulSet {
