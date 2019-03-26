@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/api/apps/v1beta2"
 	v1 "k8s.io/api/core/v1"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("StatefulSet Manager", func() {
@@ -31,8 +30,8 @@ var _ = Describe("StatefulSet Manager", func() {
 	})
 
 	AfterEach(func() {
-		cleanupStatefulSet(odinLRP.Name)
-		cleanupStatefulSet(thorLRP.Name)
+		cleanupStatefulSet(odinLRP)
+		cleanupStatefulSet(thorLRP)
 		Eventually(listAllStatefulSets, timeout).Should(BeEmpty())
 	})
 
@@ -53,38 +52,53 @@ var _ = Describe("StatefulSet Manager", func() {
 		})
 
 		It("should create a StatefulSet object", func() {
-			statefulset, getErr := clientset.AppsV1beta2().StatefulSets(namespace).Get(odinLRP.Name, meta.GetOptions{})
-			Expect(getErr).ToNot(HaveOccurred())
-
-			Expect(statefulset.Name).To(Equal(odinLRP.Name))
+			statefulset := getStatefulSet(odinLRP)
+			Expect(statefulset.Name).To(ContainSubstring(odinLRP.Name))
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Command).To(Equal(odinLRP.Command))
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Image).To(Equal(odinLRP.Image))
 			Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(odinLRP.TargetInstances)))
 		})
 
 		It("should create all associated pods", func() {
+			var pods []string
 			Eventually(func() []string {
-				return podNamesFromPods(listPods(odinLRP.LRPIdentifier))
-			}, timeout).Should(ConsistOf("odin-0", "odin-1"))
+				pods = podNamesFromPods(listPods(odinLRP.LRPIdentifier))
+				return pods
+			}, timeout).Should(HaveLen(2))
+			Expect(pods[0]).To(ContainSubstring("odin"))
+			Expect(pods[1]).To(ContainSubstring("odin"))
 		})
 
 		It("should be able to list pods by space name", func() {
 			labelSelector := fmt.Sprintf("space_name=%s", "space-foo")
+			var pods []string
 			Eventually(func() []string {
-				return podNamesFromPods(listPodsByLabel(labelSelector))
-			}, timeout).Should(ConsistOf("odin-0", "odin-1", "thor-0", "thor-1"))
+				pods = podNamesFromPods(listPodsByLabel(labelSelector))
+				return pods
+			}, timeout).Should(HaveLen(4))
+			Expect(pods[0]).To(SatisfyAny(ContainSubstring("odin"), ContainSubstring("thor")))
+			Expect(pods[1]).To(SatisfyAny(ContainSubstring("odin"), ContainSubstring("thor")))
+			Expect(pods[2]).To(SatisfyAny(ContainSubstring("odin"), ContainSubstring("thor")))
+			Expect(pods[3]).To(SatisfyAny(ContainSubstring("odin"), ContainSubstring("thor")))
 		})
 
 		It("should be able to list pods by application name", func() {
 			labelSelector := fmt.Sprintf("application_name=%s", odinLRP.AppName)
+			var pods []string
 			Eventually(func() []string {
-				return podNamesFromPods(listPodsByLabel(labelSelector))
-			}, timeout).Should(ConsistOf("odin-0", "odin-1"))
+				pods = podNamesFromPods(listPodsByLabel(labelSelector))
+				return pods
+			}, timeout).Should(HaveLen(2))
+			Expect(pods[0]).To(ContainSubstring("odin"))
+			Expect(pods[1]).To(ContainSubstring("odin"))
 
 			labelSelector = fmt.Sprintf("application_name=%s", thorLRP.AppName)
 			Eventually(func() []string {
-				return podNamesFromPods(listPodsByLabel(labelSelector))
-			}, timeout).Should(ConsistOf("thor-0", "thor-1"))
+				pods = podNamesFromPods(listPodsByLabel(labelSelector))
+				return pods
+			}, timeout).Should(HaveLen(2))
+			Expect(pods[0]).To(ContainSubstring("thor"))
+			Expect(pods[1]).To(ContainSubstring("thor"))
 		})
 	})
 
@@ -129,26 +143,19 @@ var _ = Describe("StatefulSet Manager", func() {
 		})
 
 		Context("When one of the instances if failing", func() {
+			var failingLRP *opi.LRP
 			BeforeEach(func() {
-				odinLRP = &opi.LRP{
-					Name: "odin",
-					Command: []string{
-						"/bin/sh",
-						"-c",
-						"if [ $INSTANCE_INDEX -eq 1 ]; then exit; else  while true; do echo hello; sleep 10;done; fi;",
-					},
-					TargetInstances: 2,
-					Image:           "busybox",
-					Metadata: map[string]string{
-						cf.ProcessGUID: "odin",
-					},
-					LRPIdentifier: odinLRP.LRPIdentifier,
+				failingLRP = createLRP("odin")
+				failingLRP.Command = []string{
+					"/bin/sh",
+					"-c",
+					"if [ $INSTANCE_INDEX -eq 1 ]; then exit; else  while true; do echo hello; sleep 10;done; fi;",
 				}
 			})
 
 			It("correctly reports the running instances", func() {
 				Eventually(func() int {
-					odinLRP, err := desirer.Get(odinLRP.LRPIdentifier)
+					odinLRP, err := desirer.Get(failingLRP.LRPIdentifier)
 					Expect(err).ToNot(HaveOccurred())
 					return odinLRP.RunningInstances
 				}, timeout).Should(Equal(1))
