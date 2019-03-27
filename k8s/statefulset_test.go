@@ -74,64 +74,79 @@ var _ = Describe("Statefulset", func() {
 	Context("When creating an LRP", func() {
 		var lrp *opi.LRP
 
-		JustBeforeEach(func() {
-			livenessProbeCreator.Returns(&v1.Probe{})
-			readinessProbeCreator.Returns(&v1.Probe{})
-			lrp = createLRP("Baldur", "1234.5", "my.example.route")
-			err = statefulSetDesirer.Desire(lrp)
-		})
-
-		It("should not fail", func() {
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should create the desired statefulSet", func() {
-			statefulSet := getStatefulSet(lrp)
-			Expect(statefulSet).To(Equal(toStatefulSet(lrp)))
-		})
-
-		It("should creates a healthcheck probe", func() {
-			Expect(livenessProbeCreator.CallCount()).To(Equal(1))
-		})
-
-		It("should creates a readiness probe", func() {
-			Expect(readinessProbeCreator.CallCount()).To(Equal(1))
-		})
-
-		It("should provide the process-guid to the pod annotations", func() {
-			statefulSet := getStatefulSet(lrp)
-			Expect(statefulSet.Spec.Template.Annotations[cf.ProcessGUID]).To(Equal("Baldur-guid"))
-		})
-
-		It("should set space name as a label", func() {
-			statefulSet := getStatefulSet(lrp)
-			expectLabel(statefulSet, cf.VcapSpaceName, "space-foo")
-		})
-
-		It("should set app name as a label", func() {
-			statefulSet := getStatefulSet(lrp)
-			expectLabel(statefulSet, cf.VcapAppName, "Baldur")
-		})
-
-		It("should set generate name for the stateful set", func() {
-			statefulSet := getStatefulSet(lrp)
-			Expect(statefulSet.GenerateName).To(Equal("baldur-space-foo-"))
-		})
-
-		It("should not set name for the stateful set", func() {
-			statefulSet := getStatefulSet(lrp)
-			Expect(statefulSet.Name).To(BeEmpty())
-		})
-
-		Context("When redeploying an existing LRP", func() {
-			BeforeEach(func() {
+		Context("When app name only has [a-z0-9]", func() {
+			JustBeforeEach(func() {
+				livenessProbeCreator.Returns(&v1.Probe{})
+				readinessProbeCreator.Returns(&v1.Probe{})
 				lrp = createLRP("Baldur", "1234.5", "my.example.route")
-				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp))
-				Expect(createErr).ToNot(HaveOccurred())
+				err = statefulSetDesirer.Desire(lrp)
 			})
 
-			It("should fail", func() {
-				Expect(err).To(HaveOccurred())
+			It("should not fail", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should create the desired statefulSet", func() {
+				statefulSet := getStatefulSet(lrp)
+				Expect(statefulSet).To(Equal(toStatefulSet(lrp)))
+			})
+
+			It("should creates a healthcheck probe", func() {
+				Expect(livenessProbeCreator.CallCount()).To(Equal(1))
+			})
+
+			It("should creates a readiness probe", func() {
+				Expect(readinessProbeCreator.CallCount()).To(Equal(1))
+			})
+
+			It("should provide the process-guid to the pod annotations", func() {
+				statefulSet := getStatefulSet(lrp)
+				Expect(statefulSet.Spec.Template.Annotations[cf.ProcessGUID]).To(Equal("Baldur-guid"))
+			})
+
+			It("should set space name as a label", func() {
+				statefulSet := getStatefulSet(lrp)
+				expectLabel(statefulSet, cf.VcapSpaceName, "space-foo")
+			})
+
+			It("should set app name as a label", func() {
+				statefulSet := getStatefulSet(lrp)
+				expectLabel(statefulSet, cf.VcapAppName, "Baldur")
+			})
+
+			It("should set generate name for the stateful set", func() {
+				statefulSet := getStatefulSet(lrp)
+				Expect(statefulSet.GenerateName).To(Equal("baldur-space-foo-"))
+			})
+
+			It("should not set name for the stateful set", func() {
+				statefulSet := getStatefulSet(lrp)
+				Expect(statefulSet.Name).To(BeEmpty())
+			})
+
+			Context("When redeploying an existing LRP", func() {
+				BeforeEach(func() {
+					lrp = createLRP("Baldur", "1234.5", "my.example.route")
+					_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp))
+					Expect(createErr).ToNot(HaveOccurred())
+				})
+
+				It("should fail", func() {
+					Expect(err).To(HaveOccurred())
+				})
+			})
+		})
+
+		Context("When the app name contains unsupported characters", func() {
+			JustBeforeEach(func() {
+				lrp = createLRP("Балдър", "1234.5", "my.example.route")
+				err := statefulSetDesirer.Desire(lrp)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should use the guid as a name", func() {
+				statefulSet := getStatefulSet(lrp)
+				Expect(statefulSet.GenerateName).To(Equal("guid_1234-"))
 			})
 		})
 	})

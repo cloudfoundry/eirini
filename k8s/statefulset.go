@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/util"
@@ -309,7 +310,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	namePrefix := util.TruncateString(fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName), 40)
 	statefulSet := &v1beta2.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", strings.ToLower(namePrefix)),
+			GenerateName: fmt.Sprintf("%s-", utils.SanitizeName(namePrefix, lrp.GUID)),
 		},
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: int32ptr(lrp.TargetInstances),
