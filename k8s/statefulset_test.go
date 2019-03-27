@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"code.cloudfoundry.org/eirini"
@@ -114,7 +115,7 @@ var _ = Describe("Statefulset", func() {
 
 		It("should set generate name for the stateful set", func() {
 			statefulSet := getStatefulSet(lrp)
-			Expect(statefulSet.GenerateName).To(Equal("Baldur-space-foo-"))
+			Expect(statefulSet.GenerateName).To(Equal("baldur-space-foo-"))
 		})
 
 		It("should not set name for the stateful set", func() {
@@ -615,7 +616,7 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	namePrefix := util.TruncateString(fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName), 40)
 	statefulSet := &v1beta2.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", namePrefix),
+			GenerateName: fmt.Sprintf("%s-", strings.ToLower(namePrefix)),
 		},
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: &targetInstances,
