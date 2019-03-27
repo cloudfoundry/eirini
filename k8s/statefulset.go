@@ -309,7 +309,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	namePrefix := util.TruncateString(fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName), 40)
 	statefulSet := &v1beta2.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", namePrefix),
+			GenerateName: fmt.Sprintf("%s-", strings.ToLower(namePrefix)),
 		},
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: int32ptr(lrp.TargetInstances),
