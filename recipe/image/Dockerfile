@@ -1,7 +1,5 @@
-ARG stack
-FROM packs/cf
-
-ARG buildpacks
+ARG baseimage=packs/cf
+FROM ${baseimage}
 
 WORKDIR /workspace
 
