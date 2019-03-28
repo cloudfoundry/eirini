@@ -52,7 +52,6 @@ func (d *DesirerSimulator) List() ([]*opi.LRP, error) {
 
 func (d *DesirerSimulator) Get(identifier opi.LRPIdentifier) (*opi.LRP, error) {
 	return &opi.LRP{
-		Name:             "jeff",
 		TargetInstances:  4,
 		RunningInstances: 2,
 		Metadata:         map[string]string{},

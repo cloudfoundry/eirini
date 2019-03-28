@@ -51,7 +51,6 @@ var _ = Describe("Bifrost", func() {
 
 			BeforeEach(func() {
 				lrp = opi.LRP{
-					Name:  "lrp_name",
 					Image: "docker.png",
 				}
 				converter.ConvertReturns(lrp, nil)
@@ -112,9 +111,8 @@ var _ = Describe("Bifrost", func() {
 			desiredLRPSchedulingInfos []*models.DesiredLRPSchedulingInfo
 		)
 
-		createLRP := func(name, processGUID, lastUpdated string) *opi.LRP {
+		createLRP := func(processGUID, lastUpdated string) *opi.LRP {
 			return &opi.LRP{
-				Name: name,
 				Metadata: map[string]string{
 					cf.ProcessGUID: processGUID,
 					cf.LastUpdated: lastUpdated,
@@ -140,9 +138,9 @@ var _ = Describe("Bifrost", func() {
 
 			BeforeEach(func() {
 				lrps = []*opi.LRP{
-					createLRP("1234", "abcd", "3464634.2"),
-					createLRP("5678", "efgh", "235.26535"),
-					createLRP("0213", "ijkl", "2342342.2"),
+					createLRP("abcd", "3464634.2"),
+					createLRP("efgh", "235.26535"),
+					createLRP("ijkl", "2342342.2"),
 				}
 			})
 
@@ -219,7 +217,6 @@ var _ = Describe("Bifrost", func() {
 
 			BeforeEach(func() {
 				lrp := opi.LRP{
-					Name:            "app_name",
 					TargetInstances: 2,
 					Metadata: map[string]string{
 						cf.LastUpdated: "whenever",
@@ -248,7 +245,6 @@ var _ = Describe("Bifrost", func() {
 				It("should submit the updated LRP", func() {
 					Expect(opiClient.UpdateCallCount()).To(Equal(1))
 					lrp := opiClient.UpdateArgsForCall(0)
-					Expect(lrp.Name).To(Equal("app_name"))
 					Expect(lrp.TargetInstances).To(Equal(int(*updateRequest.Update.Instances)))
 					Expect(lrp.Metadata[cf.LastUpdated]).To(Equal("21421321.3"))
 				})
@@ -386,7 +382,6 @@ var _ = Describe("Bifrost", func() {
 		Context("when the app exists", func() {
 			BeforeEach(func() {
 				lrp = &opi.LRP{
-					Name:            "app_name",
 					TargetInstances: 5,
 				}
 
@@ -402,7 +397,7 @@ var _ = Describe("Bifrost", func() {
 
 			It("should return a DesiredLRP", func() {
 				Expect(desiredLRP).ToNot(BeNil())
-				Expect(desiredLRP.ProcessGuid).To(Equal("app_name"))
+				Expect(desiredLRP.ProcessGuid).To(Equal("guid_1234-version_1234"))
 				Expect(desiredLRP.Instances).To(Equal(int32(5)))
 			})
 		})

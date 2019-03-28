@@ -140,7 +140,7 @@ var _ = Describe("Statefulset", func() {
 		Context("When the app name contains unsupported characters", func() {
 			JustBeforeEach(func() {
 				lrp = createLRP("Балдър", "1234.5", "my.example.route")
-				err := statefulSetDesirer.Desire(lrp)
+				err = statefulSetDesirer.Desire(lrp)
 				Expect(err).ToNot(HaveOccurred())
 			})
 

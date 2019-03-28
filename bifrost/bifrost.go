@@ -83,7 +83,7 @@ func (b *Bifrost) GetApp(ctx context.Context, identifier opi.LRPIdentifier) *mod
 	}
 
 	desiredLRP := &models.DesiredLRP{
-		ProcessGuid: lrp.Name,
+		ProcessGuid: identifier.ProcessGUID(),
 		Instances:   int32(lrp.TargetInstances),
 	}
 
