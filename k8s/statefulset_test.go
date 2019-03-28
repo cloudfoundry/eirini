@@ -104,19 +104,14 @@ var _ = Describe("Statefulset", func() {
 				Expect(statefulSet.Spec.Template.Annotations[cf.ProcessGUID]).To(Equal("Baldur-guid"))
 			})
 
-			It("should set space name as a label", func() {
-				statefulSet := getStatefulSet(lrp)
-				expectLabel(statefulSet, cf.VcapSpaceName, "space-foo")
-			})
-
-			It("should set app name as a label", func() {
-				statefulSet := getStatefulSet(lrp)
-				expectLabel(statefulSet, cf.VcapAppName, "Baldur")
-			})
-
 			It("should set generate name for the stateful set", func() {
 				statefulSet := getStatefulSet(lrp)
 				Expect(statefulSet.GenerateName).To(Equal("baldur-space-foo-"))
+			})
+
+			It("should set space name as annotation on the statefulset", func() {
+				statefulSet := getStatefulSet(lrp)
+				Expect(statefulSet.Annotations[cf.VcapSpaceName]).To(Equal("space-foo"))
 			})
 
 			It("should not set name for the stateful set", func() {
@@ -160,7 +155,9 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			expectedLRP = createLRP("Baldur", "1234.5", "my.example.route")
-			_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(expectedLRP))
+			// This is because toStatefulSet function mutates the metatdata map
+			lrpToCreateStatefulSet := createLRP("Baldur", "1234.5", "my.example.route")
+			_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrpToCreateStatefulSet))
 			Expect(createErr).ToNot(HaveOccurred())
 		})
 
@@ -269,8 +266,14 @@ var _ = Describe("Statefulset", func() {
 				createLRP("thor", "4567.8", "my.example.route"),
 				createLRP("mimir", "9012.3", "my.example.route"),
 			}
+			// This is because toStatefulSet function mutates the metatdata map
+			lrpsToCreateStatefulSets := []*opi.LRP{
+				createLRP("odin", "1234.5", "my.example.route"),
+				createLRP("thor", "4567.8", "my.example.route"),
+				createLRP("mimir", "9012.3", "my.example.route"),
+			}
 
-			for _, l := range expectedLRPs {
+			for _, l := range lrpsToCreateStatefulSets {
 				statefulset := toStatefulSet(l)
 				// FakeClient does not generate names for us
 				statefulset.Name = statefulset.GenerateName
@@ -674,11 +677,9 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	statefulSet.Namespace = namespace
 
 	labels := map[string]string{
-		"guid":           lrp.GUID,
-		"version":        lrp.Version,
-		"source_type":    "APP",
-		cf.VcapSpaceName: lrp.SpaceName,
-		cf.VcapAppName:   lrp.AppName,
+		"guid":        lrp.GUID,
+		"version":     lrp.Version,
+		"source_type": "APP",
 	}
 
 	statefulSet.Spec.Template.Labels = labels
@@ -691,6 +692,7 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 
 	statefulSet.Annotations = lrp.Metadata
 	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
+	statefulSet.Annotations[cf.VcapSpaceName] = lrp.SpaceName
 
 	return statefulSet
 }
@@ -738,6 +740,7 @@ func createLRP(name, lastUpdated, routes string) *opi.LRP {
 			cf.ProcessGUID: name + "-guid",
 			cf.LastUpdated: lastUpdated,
 			cf.VcapAppUris: routes,
+			cf.VcapAppName: name,
 			cf.VcapAppID:   "guid_1234",
 			cf.VcapVersion: "version_1234",
 		},
@@ -748,10 +751,4 @@ func createLRP(name, lastUpdated, routes string) *opi.LRP {
 			},
 		},
 	}
-}
-
-func expectLabel(statefulSet *v1beta2.StatefulSet, key, value string) {
-	Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(key, value))
-	Expect(statefulSet.Labels).To(HaveKeyWithValue(key, value))
-	Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(key, value))
 }

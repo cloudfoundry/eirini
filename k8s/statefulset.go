@@ -238,19 +238,19 @@ func statefulSetToLRP(s v1beta2.StatefulSet) *opi.LRP {
 			GUID:    s.Annotations[cf.VcapAppID],
 			Version: s.Annotations[cf.VcapVersion],
 		},
-		AppName:          s.Labels[cf.VcapAppName],
-		SpaceName:        s.Labels[cf.VcapSpaceName],
+		AppName:          s.Annotations[cf.VcapAppName],
+		SpaceName:        s.Annotations[cf.VcapSpaceName],
 		Image:            container.Image,
 		Command:          container.Command,
 		RunningInstances: int(s.Status.ReadyReplicas),
 		Ports:            ports,
 		Metadata: map[string]string{
-			cf.ProcessGUID:          s.Annotations[cf.ProcessGUID],
-			cf.LastUpdated:          s.Annotations[cf.LastUpdated],
-			cf.VcapAppUris:          s.Annotations[cf.VcapAppUris],
-			eirini.RegisteredRoutes: s.Annotations[cf.VcapAppUris],
-			cf.VcapAppID:            s.Annotations[cf.VcapAppID],
-			cf.VcapVersion:          s.Annotations[cf.VcapVersion],
+			cf.ProcessGUID: s.Annotations[cf.ProcessGUID],
+			cf.LastUpdated: s.Annotations[cf.LastUpdated],
+			cf.VcapAppUris: s.Annotations[cf.VcapAppUris],
+			cf.VcapAppID:   s.Annotations[cf.VcapAppID],
+			cf.VcapVersion: s.Annotations[cf.VcapVersion],
+			cf.VcapAppName: s.Annotations[cf.VcapAppName],
 		},
 		MemoryMB:     memory,
 		VolumeMounts: volMounts,
@@ -351,11 +351,9 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	}
 
 	labels := map[string]string{
-		"guid":           lrp.GUID,
-		"version":        lrp.Version,
-		"source_type":    appSourceType,
-		cf.VcapSpaceName: lrp.SpaceName,
-		cf.VcapAppName:   lrp.AppName,
+		"guid":        lrp.GUID,
+		"version":     lrp.Version,
+		"source_type": appSourceType,
 	}
 
 	statefulSet.Spec.Template.Labels = labels
@@ -368,6 +366,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 
 	statefulSet.Annotations = lrp.Metadata
 	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
+	statefulSet.Annotations[cf.VcapSpaceName] = lrp.SpaceName
 
 	return statefulSet
 }
