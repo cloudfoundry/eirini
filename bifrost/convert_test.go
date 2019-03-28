@@ -102,12 +102,6 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should hash the LRP name", func() {
-				Expect(hasher.HashCallCount()).To(Equal(1))
-				Expect(hasher.HashArgsForCall(0)).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360-2fdc448f-6bac-4085-9426-87d0124c433a"))
-				Expect(lrp.Name).To(Equal("LRPHashedName"))
-			})
-
 			It("should set the app name", func() {
 				Expect(lrp.AppName).To(Equal("bumblebee"))
 			})

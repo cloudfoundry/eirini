@@ -20,11 +20,6 @@ type LRPIdentifier struct {
 	Hasher        util.Hasher
 }
 
-func (i *LRPIdentifier) Name() string {
-	hashed, _ := i.Hasher.Hash(fmt.Sprintf("%s-%s", i.GUID, i.Version))
-	return hashed
-}
-
 func (i *LRPIdentifier) ProcessGUID() string {
 	return fmt.Sprintf("%s-%s", i.GUID, i.Version)
 }
@@ -34,7 +29,6 @@ func (i *LRPIdentifier) ProcessGUID() string {
 // killing and recreating as needed to maintain that guarantee
 type LRP struct {
 	LRPIdentifier
-	Name             string
 	AppName          string
 	SpaceName        string
 	Image            string
