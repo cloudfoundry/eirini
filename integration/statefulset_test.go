@@ -1,10 +1,6 @@
-// +build integration
-
 package statefulsets_test
 
 import (
-	"fmt"
-
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
@@ -25,8 +21,8 @@ var _ = Describe("StatefulSet Manager", func() {
 	)
 
 	BeforeEach(func() {
-		odinLRP = createLRP("odin")
-		thorLRP = createLRP("thor")
+		odinLRP = createLRP("ödin", "guid-odin")
+		thorLRP = createLRP("thor", "guid-thor")
 	})
 
 	AfterEach(func() {
@@ -53,7 +49,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		It("should create a StatefulSet object", func() {
 			statefulset := getStatefulSet(odinLRP)
-			Expect(statefulset.Name).To(ContainSubstring(odinLRP.Name))
+			Expect(statefulset.Name).To(ContainSubstring(odinLRP.GUID))
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Command).To(Equal(odinLRP.Command))
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Image).To(Equal(odinLRP.Image))
 			Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(odinLRP.TargetInstances)))
@@ -67,38 +63,6 @@ var _ = Describe("StatefulSet Manager", func() {
 			}, timeout).Should(HaveLen(2))
 			Expect(pods[0]).To(ContainSubstring("odin"))
 			Expect(pods[1]).To(ContainSubstring("odin"))
-		})
-
-		It("should be able to list pods by space name", func() {
-			labelSelector := fmt.Sprintf("space_name=%s", "space-foo")
-			var pods []string
-			Eventually(func() []string {
-				pods = podNamesFromPods(listPodsByLabel(labelSelector))
-				return pods
-			}, timeout).Should(HaveLen(4))
-			Expect(pods[0]).To(SatisfyAny(ContainSubstring("odin"), ContainSubstring("thor")))
-			Expect(pods[1]).To(SatisfyAny(ContainSubstring("odin"), ContainSubstring("thor")))
-			Expect(pods[2]).To(SatisfyAny(ContainSubstring("odin"), ContainSubstring("thor")))
-			Expect(pods[3]).To(SatisfyAny(ContainSubstring("odin"), ContainSubstring("thor")))
-		})
-
-		It("should be able to list pods by application name", func() {
-			labelSelector := fmt.Sprintf("application_name=%s", odinLRP.AppName)
-			var pods []string
-			Eventually(func() []string {
-				pods = podNamesFromPods(listPodsByLabel(labelSelector))
-				return pods
-			}, timeout).Should(HaveLen(2))
-			Expect(pods[0]).To(ContainSubstring("odin"))
-			Expect(pods[1]).To(ContainSubstring("odin"))
-
-			labelSelector = fmt.Sprintf("application_name=%s", thorLRP.AppName)
-			Eventually(func() []string {
-				pods = podNamesFromPods(listPodsByLabel(labelSelector))
-				return pods
-			}, timeout).Should(HaveLen(2))
-			Expect(pods[0]).To(ContainSubstring("thor"))
-			Expect(pods[1]).To(ContainSubstring("thor"))
 		})
 	})
 
@@ -145,7 +109,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		Context("When one of the instances if failing", func() {
 			var failingLRP *opi.LRP
 			BeforeEach(func() {
-				failingLRP = createLRP("odin")
+				failingLRP = createLRP("odin", "guid-odin")
 				failingLRP.Command = []string{
 					"/bin/sh",
 					"-c",
@@ -170,9 +134,8 @@ func int32ptr(i int) *int32 {
 	return &i32
 }
 
-func createLRP(name string) *opi.LRP {
+func createLRP(name string, guid string) *opi.LRP {
 	return &opi.LRP{
-		Name: name,
 		Command: []string{
 			"/bin/sh",
 			"-c",
@@ -185,7 +148,6 @@ func createLRP(name string) *opi.LRP {
 		Metadata: map[string]string{
 			cf.ProcessGUID: name,
 		},
-		LRPIdentifier: opi.LRPIdentifier{GUID: "guid_" + name, Version: "version_" + name},
+		LRPIdentifier: opi.LRPIdentifier{GUID: guid, Version: "version_" + guid},
 	}
-
 }
