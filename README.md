@@ -56,4 +56,4 @@ $ cd bifrost # select the package to test
 $ ginkgo
 ```
 
-For details on how you can contribute to the Eirini project, please read the [CONTRIBUTING](CONTRIBUTING.md) document.
+For details on how you can contribute to the Eirini project, please read the [CONTRIBUTING](.github/contributing.md) document.
