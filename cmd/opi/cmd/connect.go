@@ -183,7 +183,7 @@ func launchRouteEmitter(namespace, natsPassword, natsIP string) {
 	workChan := make(chan *route.Message)
 	instanceInformer := k8sroute.NewInstanceChangeInformer(clientset, syncPeriod, namespace)
 	uriInformer := k8sroute.NewURIChangeInformer(clientset, syncPeriod, namespace)
-	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{})
+	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{}, os.Stdout)
 
 	go re.Start()
 	go instanceInformer.Start(workChan)

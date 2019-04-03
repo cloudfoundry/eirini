@@ -3,11 +3,13 @@ package route_test
 import (
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"code.cloudfoundry.org/eirini/route/routefakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 
 	. "code.cloudfoundry.org/eirini/route"
 )
@@ -17,9 +19,11 @@ var _ = Describe("Emitter", func() {
 	const timeout = 500 * time.Millisecond
 
 	var (
-		scheduler    *routefakes.FakeTaskScheduler
-		publisher    *routefakes.FakePublisher
-		workChannel  chan *Message
+		scheduler   *routefakes.FakeTaskScheduler
+		publisher   *routefakes.FakePublisher
+		workChannel chan *Message
+		log         *gbytes.Buffer
+
 		emitter      *Emitter
 		routes       *Message
 		publishCount int
@@ -58,7 +62,8 @@ var _ = Describe("Emitter", func() {
 			TLSPort:            8443,
 		}
 
-		emitter = NewEmitter(publisher, workChannel, scheduler)
+		log = gbytes.NewBuffer()
+		emitter = NewEmitter(publisher, workChannel, scheduler, io.MultiWriter(GinkgoWriter, log))
 		emitter.Start()
 	})
 
@@ -117,8 +122,17 @@ var _ = Describe("Emitter", func() {
 			It("should publish the registered routes", func() {
 				assertPublishedRoutes("router.register", "route1.my.app.com", 0)
 			})
+
+			It("prints an informative message that registration failed", func() {
+				Eventually(log, timeout).Should(gbytes.Say("failed to publish registered route: Failed to publish message"))
+			})
+
 			It("should publish the unregistered routes", func() {
 				assertPublishedRoutes("router.unregister", "removed.route1.my.app.com", 1)
+			})
+
+			It("prints an informative message that unregistration failed", func() {
+				Eventually(log, timeout).Should(gbytes.Say("failed to publish unregistered route: Failed to publish message"))
 			})
 		})
 	})
