@@ -2,10 +2,11 @@ package route
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"io"
 
 	nats "github.com/nats-io/go-nats"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -29,13 +30,15 @@ type Emitter struct {
 	publisher Publisher
 	scheduler TaskScheduler
 	work      <-chan *Message
+	log       io.Writer
 }
 
-func NewEmitter(publisher Publisher, workChannel <-chan *Message, scheduler TaskScheduler) *Emitter {
+func NewEmitter(publisher Publisher, workChannel <-chan *Message, scheduler TaskScheduler, log io.Writer) *Emitter {
 	return &Emitter{
 		publisher: publisher,
 		scheduler: scheduler,
 		work:      workChannel,
+		log:       log,
 	}
 }
 
@@ -58,9 +61,10 @@ func (e *Emitter) registerRoutes(route *Message) {
 
 	err := e.publish(registerSubject, route)
 	if err != nil {
-		fmt.Println("failed to publish registered route:", err.Error())
+		fmt.Fprintln(e.log, "failed to publish registered route:", err.Error())
 	}
 }
+
 func (e *Emitter) unregisterRoutes(route *Message) {
 	if len(route.UnregisteredRoutes) == 0 {
 		return
@@ -68,7 +72,7 @@ func (e *Emitter) unregisterRoutes(route *Message) {
 
 	err := e.publish(unregisterSubject, route)
 	if err != nil {
-		fmt.Println("failed to publish unregistered route:", err.Error())
+		fmt.Fprintln(e.log, "failed to publish unregistered route:", err.Error())
 	}
 }
 
@@ -92,8 +96,7 @@ func (e *Emitter) publish(subject string, route *Message) error {
 
 	routeJSON, err := json.Marshal(message)
 	if err != nil {
-		fmt.Println("Faild to marshal route message:", err.Error())
-		return err
+		return errors.Wrap(err, "failed to marshal route message:")
 	}
 
 	if err = e.publisher.Publish(subject, routeJSON); err != nil {
