@@ -127,11 +127,22 @@ var _ = Describe("Bifrost", func() {
 				Desirer: opiClient,
 				Logger:  lager,
 			}
-			opiClient.ListReturns(lrps, nil)
+			lrps = []*opi.LRP{}
 		})
 
 		JustBeforeEach(func() {
 			desiredLRPSchedulingInfos, err = bfrst.List(context.Background())
+		})
+
+		Context("When no running LRPs exist", func() {
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return an empty list of DesiredLRPSchedulingInfo", func() {
+				Expect(len(desiredLRPSchedulingInfos)).To(Equal(0))
+			})
 		})
 
 		Context("When listing running LRPs", func() {
@@ -142,6 +153,7 @@ var _ = Describe("Bifrost", func() {
 					createLRP("efgh", "235.26535"),
 					createLRP("ijkl", "2342342.2"),
 				}
+				opiClient.ListReturns(lrps, nil)
 			})
 
 			It("should not return an error", func() {
@@ -156,21 +168,6 @@ var _ = Describe("Bifrost", func() {
 				Expect(desiredLRPSchedulingInfos[0].Annotation).To(Equal("3464634.2"))
 				Expect(desiredLRPSchedulingInfos[1].Annotation).To(Equal("235.26535"))
 				Expect(desiredLRPSchedulingInfos[2].Annotation).To(Equal("2342342.2"))
-			})
-		})
-
-		Context("When no running LRPs exist", func() {
-
-			BeforeEach(func() {
-				lrps = []*opi.LRP{}
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return an empty list of DesiredLRPSchedulingInfo", func() {
-				Expect(len(desiredLRPSchedulingInfos)).To(Equal(0))
 			})
 		})
 
