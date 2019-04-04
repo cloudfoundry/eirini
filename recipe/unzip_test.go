@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,33 +28,35 @@ var _ = Describe("Unzip function", func() {
 
 	Context("Unzip succeeds", func() {
 
-		fileContents := map[string]string{
-			"file1":                       "this is the content of test file 1",
-			"innerDir/file2":              "this is the content of test file 2",
-			"innerDir/innermostDir/file3": "this is the content of test file 3",
-		}
+		var (
+			fileContents    map[string]string
+			filePermissions map[string]os.FileMode
+		)
 
-		filePermissions := map[string]os.FileMode{
-			"file1":                       0742,
-			"innerDir/file2":              0651,
-			"innerDir/innermostDir/file3": 0777,
-		}
-
-		getRoot := func(path string) string {
-			pathParts := strings.Split(path, "/")
-			return pathParts[0]
-		}
-
-		removeFile := func(file string) {
-			ioErr := os.RemoveAll(file)
-			Expect(ioErr).ToNot(HaveOccurred())
-		}
-
-		cleanUpFiles := func() {
-			for filePath := range fileContents {
-				rootDir := getRoot(filePath)
-				removeFile(rootDir)
+		BeforeEach(func() {
+			fileContents = map[string]string{
+				"file1":                       "this is the content of test file 1",
+				"innerDir/file2":              "this is the content of test file 2",
+				"innerDir/innermostDir/file3": "this is the content of test file 3",
 			}
+
+			filePermissions = map[string]os.FileMode{
+				"file1":                       0742,
+				"innerDir/file2":              0651,
+				"innerDir/innermostDir/file3": 0777,
+			}
+		})
+
+		createTempDir := func() string {
+			tmpDir, e := ioutil.TempDir("", "")
+			Expect(e).NotTo(HaveOccurred())
+			return tmpDir
+		}
+
+		getCWD := func() string {
+			cwd, e := os.Getwd()
+			Expect(e).NotTo(HaveOccurred())
+			return cwd
 		}
 
 		assertFileContents := func(file string, expectedContent string) {
@@ -98,14 +99,24 @@ var _ = Describe("Unzip function", func() {
 		}
 
 		Context("When target directory is current working directory", func() {
+			var (
+				tmpDir     string
+				testRunDir string
+			)
 
 			BeforeEach(func() {
-				srcZip = "testdata/unzip_me.zip"
+				tmpDir = createTempDir()
+				testRunDir = getCWD()
+
+				Expect(os.Chdir(tmpDir)).To(Succeed())
+
+				srcZip = filepath.Join(testRunDir, "testdata/unzip_me.zip")
 				targetDir = "."
 			})
 
 			AfterEach(func() {
-				cleanUpFiles()
+				Expect(os.Chdir(testRunDir)).To(Succeed())
+				Expect(os.RemoveAll(tmpDir)).To(Succeed())
 			})
 
 			assertFilesUnzippedSuccessfully()
@@ -113,15 +124,11 @@ var _ = Describe("Unzip function", func() {
 
 		Context("When target directory is not empty string", func() {
 			BeforeEach(func() {
-				targetDir = "testdata/tmp"
-
-				ioErr := os.Mkdir(targetDir, 0750)
-				Expect(ioErr).ToNot(HaveOccurred())
+				targetDir = createTempDir()
 			})
 
 			AfterEach(func() {
-				ioErr := os.RemoveAll(targetDir)
-				Expect(ioErr).ToNot(HaveOccurred())
+				Expect(os.RemoveAll(targetDir)).To(Succeed())
 			})
 
 			Context("When the zip does not contain the directory files", func() {
