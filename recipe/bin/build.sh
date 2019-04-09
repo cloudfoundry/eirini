@@ -12,7 +12,7 @@ main() {
 }
 
 build-image() {
-  docker build -t "nimak/recipe-${1}:${TAG}" -f ${BASEDIR}/image/Dockerfile-${1} .
+  docker build -t "eirini/recipe-${1}:${TAG}" -f ${BASEDIR}/image/Dockerfile-${1} .
 }
 
 main
