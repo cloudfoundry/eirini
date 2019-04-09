@@ -81,9 +81,6 @@ var _ = Describe("StagingText", func() {
 		err = chownR(cacheDir, "vcap", "vcap")
 		Expect(err).NotTo(HaveOccurred())
 
-		err = os.Setenv(eirini.EnvPacksBuilderPath, binaries.PacksBuilderPath)
-		Expect(err).NotTo(HaveOccurred())
-
 		buildpacksDir, err = ioutil.TempDir("", "buildpacks")
 		Expect(err).NotTo(HaveOccurred())
 		err = os.Setenv(eirini.EnvBuildpacksDir, buildpacksDir)
@@ -148,8 +145,6 @@ var _ = Describe("StagingText", func() {
 		err = os.Unsetenv(eirini.EnvOutputBuildArtifactsCache)
 		Expect(err).NotTo(HaveOccurred())
 		err = os.Unsetenv(eirini.EnvEiriniAddress)
-		Expect(err).NotTo(HaveOccurred())
-		err = os.Unsetenv(eirini.EnvPacksBuilderPath)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
