@@ -11,18 +11,22 @@ import (
 )
 
 type DropletUploader struct {
-	HTTPClient *http.Client
+	Client *http.Client
 }
 
-func (u *DropletUploader) Upload(path, url string) error {
-	if path == "" {
+func (u *DropletUploader) Upload(
+	dropletUploadURL string,
+	dropletLocation string,
+) error {
+
+	if dropletLocation == "" {
 		return errors.New("empty path parameter")
 	}
-	if url == "" {
+	if dropletUploadURL == "" {
 		return errors.New("empty url parameter")
 	}
 
-	return u.uploadFile(path, url)
+	return u.uploadFile(dropletLocation, dropletUploadURL)
 }
 
 func (u *DropletUploader) uploadFile(fileLocation, url string) error {
@@ -56,7 +60,7 @@ func fileSize(file *os.File) (int64, error) {
 }
 
 func (u *DropletUploader) do(req *http.Request) error {
-	resp, err := u.HTTPClient.Do(req)
+	resp, err := u.Client.Do(req)
 	if err != nil {
 		return err
 	}

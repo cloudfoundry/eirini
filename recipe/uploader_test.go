@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	. "code.cloudfoundry.org/eirini/recipe"
-
+	"code.cloudfoundry.org/eirini/recipe"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -15,7 +14,7 @@ var _ = Describe("Uploader", func() {
 
 	var (
 		server       *ghttp.Server
-		uploader     Uploader
+		uploader     recipe.Uploader
 		testFilePath string
 		url          string
 		err          error
@@ -24,10 +23,6 @@ var _ = Describe("Uploader", func() {
 	BeforeEach(func() {
 		server = ghttp.NewServer()
 		url = fmt.Sprintf("%s/dog/pictures/upload", server.URL())
-
-		uploader = &DropletUploader{
-			HTTPClient: &http.Client{},
-		}
 
 		server.RouteToHandler("POST", "/dog/pictures/upload",
 			ghttp.CombineHandlers(
@@ -39,7 +34,14 @@ var _ = Describe("Uploader", func() {
 	})
 
 	JustBeforeEach(func() {
-		err = uploader.Upload(testFilePath, url)
+		uploader = &recipe.DropletUploader{
+			Client: &http.Client{},
+		}
+
+		err = uploader.Upload(
+			url,
+			testFilePath,
+		)
 	})
 
 	Context("Upload a file", func() {

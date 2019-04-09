@@ -8,7 +8,7 @@ require (
 	code.cloudfoundry.org/buildpackapplifecycle v0.0.0-20181126193040-928cda2ee7d6
 	code.cloudfoundry.org/bytefmt v0.0.0-20180906201452-2aa6f33b730c // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0 // indirect
-	code.cloudfoundry.org/cli v6.42.0+incompatible
+	code.cloudfoundry.org/cli v6.42.0+incompatible // indirect
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	code.cloudfoundry.org/consuladapter v0.0.0-20190222031846-a0ec466a22b6 // indirect
 	code.cloudfoundry.org/diego-logging-client v0.0.0-20190305170508-3772ae28d895 // indirect
@@ -22,15 +22,15 @@ require (
 	code.cloudfoundry.org/rep v0.0.0-20190419142419-b672b2c94173 // indirect
 	code.cloudfoundry.org/rfc5424 v0.0.0-20180905210152-236a6d29298a // indirect
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
-	code.cloudfoundry.org/tlsconfig v0.0.0-20190419002020-eb9396db5a71 // indirect
+	code.cloudfoundry.org/tlsconfig v0.0.0-20190419002020-eb9396db5a71
 	code.cloudfoundry.org/tps v0.0.0-20181108184806-c2c8a168ada5
-	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
+	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50
 	code.cloudfoundry.org/ykk v0.0.0-20170424192843-e4df4ce2fd4d // indirect
 	github.com/Microsoft/go-winio v0.4.11 // indirect
 	github.com/SermoDigital/jose v0.0.0-20161205224733-f6df55f235c2 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/bmatcuk/doublestar v1.1.1 // indirect
-	github.com/buildpack/packs v0.0.0-20180629204239-a109d270e3ec
+	github.com/buildpack/packs v0.0.0-20180629204239-a109d270e3ec // indirect
 	github.com/charlievieth/fs v0.0.0-20170613215519-7dc373669fa1 // indirect
 	github.com/cloudfoundry/bosh-cli v3.0.1+incompatible // indirect
 	github.com/cloudfoundry/bosh-utils v0.0.0-20181224171034-c2cf699102bd // indirect
@@ -47,7 +47,7 @@ require (
 	github.com/gogo/protobuf v1.2.0
 	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/google/btree v1.0.0 // indirect
-	github.com/google/go-containerregistry v0.0.0-20190130212916-1496eb6b0470
+	github.com/google/go-containerregistry v0.0.0-20190130212916-1496eb6b0470 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/gophercloud/gophercloud v0.0.0-20190424031112-b9b92a825806 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
@@ -70,7 +70,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/sclevine/spec v1.2.0
+	github.com/sclevine/spec v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.3.0 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3 // indirect

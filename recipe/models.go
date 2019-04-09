@@ -3,7 +3,7 @@ package recipe
 import bap "code.cloudfoundry.org/buildpackapplifecycle"
 
 type Executor interface {
-	ExecuteRecipe(config Config) error
+	ExecuteRecipe() error
 }
 
 //go:generate counterfeiter . StagingResultModifier
@@ -18,7 +18,7 @@ type Uploader interface {
 
 //go:generate counterfeiter . Installer
 type Installer interface {
-	Install(appID, targetDir string) error
+	Install() error
 }
 
 //go:generate counterfeiter . Commander

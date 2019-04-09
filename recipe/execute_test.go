@@ -3,7 +3,6 @@ package recipe_test
 import (
 	"errors"
 	"io/ioutil"
-	"net/http"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -11,16 +10,20 @@ import (
 	"github.com/onsi/gomega/ghttp"
 
 	bap "code.cloudfoundry.org/buildpackapplifecycle"
-	. "code.cloudfoundry.org/eirini/recipe"
+	"code.cloudfoundry.org/eirini/eirinifakes"
+	"code.cloudfoundry.org/eirini/recipe"
 	"code.cloudfoundry.org/eirini/recipe/recipefakes"
+)
+
+const (
+	downloadDir = "some-dir"
 )
 
 var _ = Describe("PacksExecutor", func() {
 
 	var (
-		executor       Executor
-		installer      *recipefakes.FakeInstaller
-		uploader       *recipefakes.FakeUploader
+		executor       recipe.Executor
+		extractor      *eirinifakes.FakeExtractor
 		commander      *recipefakes.FakeCommander
 		resultModifier *recipefakes.FakeStagingResultModifier
 		tmpfile        *os.File
@@ -41,10 +44,9 @@ var _ = Describe("PacksExecutor", func() {
 	}
 
 	BeforeEach(func() {
-		installer = new(recipefakes.FakeInstaller)
-		uploader = new(recipefakes.FakeUploader)
 		commander = new(recipefakes.FakeCommander)
 		resultModifier = new(recipefakes.FakeStagingResultModifier)
+		extractor = new(eirinifakes.FakeExtractor)
 
 		resultModifier.ModifyStub = func(result bap.StagingResult) (bap.StagingResult, error) {
 			return result, nil
@@ -55,19 +57,19 @@ var _ = Describe("PacksExecutor", func() {
 
 	JustBeforeEach(func() {
 		createTmpFile()
-		packsConf := PacksBuilderConf{
+		packsConf := recipe.PacksBuilderConf{
+			PacksBuilderPath:          "/packs/builder",
 			BuildpacksDir:             "/var/lib/buildpacks",
 			OutputDropletLocation:     "/out/droplet.tgz",
 			OutputBuildArtifactsCache: "/cache/cache.tgz",
 			OutputMetadataLocation:    tmpfile.Name(),
 		}
 
-		executor = &PacksExecutor{
-			Conf:           packsConf,
-			Installer:      installer,
-			Uploader:       uploader,
-			Commander:      commander,
-			ResultModifier: resultModifier,
+		executor = &recipe.PacksExecutor{
+			Conf:        packsConf,
+			Commander:   commander,
+			Extractor:   extractor,
+			DownloadDir: downloadDir,
 		}
 
 	})
@@ -98,167 +100,48 @@ var _ = Describe("PacksExecutor", func() {
 		})
 
 		JustBeforeEach(func() {
-			recipeConf := Config{
-				AppID:              "app-id",
-				StagingGUID:        "staging-guid",
-				CompletionCallback: "completion-call-me-back",
-				EiriniAddr:         server.URL(),
-				DropletUploadURL:   "droplet.eu/upload",
-				PackageDownloadURL: server.URL() + "app-id",
-			}
-			err = executor.ExecuteRecipe(recipeConf)
+			err = executor.ExecuteRecipe()
 		})
 
 		AfterEach(func() {
 			server.Close()
 		})
 
+		Context("when extracting fails", func() {
+			BeforeEach(func() {
+				extractor.ExtractReturns(errors.New("some-error"))
+			})
+
+			It("should fail to execute", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("some-error"))
+			})
+		})
+
 		It("should not return an error", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should download and extract the app bits", func() {
-			Expect(installer.InstallCallCount()).To(Equal(1))
-
-			downloadURL, workspaceDir := installer.InstallArgsForCall(0)
-			Expect(downloadURL).To(Equal(server.URL() + "app-id"))
-			Expect(workspaceDir).To(Equal("/workspace"))
+		It("should call the extractor", func() {
+			downloadPath, actualTargetDir := extractor.ExtractArgsForCall(0)
+			Expect(extractor.ExtractCallCount()).To(Equal(1))
+			Expect(downloadPath).To(ContainSubstring(downloadDir))
+			Expect(actualTargetDir).NotTo(BeEmpty())
 		})
 
 		It("should run the packs builder", func() {
 			Expect(commander.ExecCallCount()).To(Equal(1))
+			_, actualTargetDir := extractor.ExtractArgsForCall(0)
 
 			cmd, args := commander.ExecArgsForCall(0)
 			Expect(cmd).To(Equal("/packs/builder"))
 			Expect(args).To(ConsistOf(
+				"-buildDir", actualTargetDir,
 				"-buildpacksDir", "/var/lib/buildpacks",
 				"-outputDroplet", "/out/droplet.tgz",
 				"-outputBuildArtifactsCache", "/cache/cache.tgz",
 				"-outputMetadata", tmpfile.Name(),
 			))
-		})
-
-		It("should upload the droplet", func() {
-			Expect(uploader.UploadCallCount()).To(Equal(1))
-
-			path, url := uploader.UploadArgsForCall(0)
-			Expect(path).To(Equal("/out/droplet.tgz"))
-			Expect(url).To(Equal("droplet.eu/upload"))
-		})
-
-		It("should send successful completion response", func() {
-			Expect(server.ReceivedRequests()).To(HaveLen(1))
-		})
-
-		Context("and unmarshalling the staging result fails", func() {
-			BeforeEach(func() {
-				resultContents = "{ not valid json"
-			})
-
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-		})
-
-		Context("and the result modifier fails", func() {
-			BeforeEach(func() {
-				resultModifier.ModifyReturns(bap.StagingResult{}, errors.New("Unmodifiable"))
-			})
-
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-
-		})
-		Context("and download or extract of app bits fails", func() {
-
-			BeforeEach(func() {
-				installer.InstallReturns(errors.New("boom"))
-				server.RouteToHandler("PUT", "/stage/staging-guid/completed",
-					ghttp.VerifyJSON(`{
-						"task_guid": "staging-guid",
-						"failed": true,
-						"failure_reason": "boom",
-						"result": "",
-						"annotation": "{\"lifecycle\":\"\",\"completion_callback\":\"completion-call-me-back\"}",
-						"created_at": 0
-					}`),
-				)
-			})
-
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should send completion response with a failure", func() {
-				Expect(server.ReceivedRequests()).To(HaveLen(1))
-			})
-
-		})
-
-		Context("and it fails to execute packs builder", func() {
-
-			BeforeEach(func() {
-				commander.ExecReturns(errors.New("boomz"))
-				server.RouteToHandler("PUT", "/stage/staging-guid/completed",
-					ghttp.VerifyJSON(`{
-						"task_guid": "staging-guid",
-						"failed": true,
-						"failure_reason": "boomz",
-						"result": "",
-						"annotation": "{\"lifecycle\":\"\",\"completion_callback\":\"completion-call-me-back\"}",
-						"created_at": 0
-					}`),
-				)
-			})
-
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should send completion response with a failure", func() {
-				Expect(server.ReceivedRequests()).To(HaveLen(1))
-			})
-		})
-
-		Context("and it fails to upload the droplet", func() {
-
-			BeforeEach(func() {
-				uploader.UploadReturns(errors.New("booma"))
-				server.RouteToHandler("PUT", "/stage/staging-guid/completed",
-					ghttp.VerifyJSON(`{
-						"task_guid": "staging-guid",
-						"failed": true,
-						"failure_reason": "booma",
-						"result": "",
-						"annotation": "{\"lifecycle\":\"\",\"completion_callback\":\"completion-call-me-back\"}",
-						"created_at": 0
-					}`),
-				)
-			})
-
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should send completion response with a failure", func() {
-				Expect(server.ReceivedRequests()).To(HaveLen(1))
-			})
-		})
-
-		Context("and eirini returns response with failure status", func() {
-
-			BeforeEach(func() {
-				server.RouteToHandler("PUT", "/stage/staging-guid/completed",
-					ghttp.RespondWith(http.StatusInternalServerError, ""),
-				)
-			})
-
-			It("should return an error", func() {
-				Expect(server.ReceivedRequests()).To(HaveLen(1))
-				Expect(err).To(HaveOccurred())
-			})
-
 		})
 
 	})
