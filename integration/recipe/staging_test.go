@@ -2,6 +2,7 @@ package recipe_test
 
 import (
 	"crypto/md5"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -35,6 +36,7 @@ var _ = Describe("StagingText", func() {
 	)
 
 	var (
+		err            error
 		server         *ghttp.Server
 		appbitBytes    []byte
 		buildpackBytes []byte
@@ -45,10 +47,13 @@ var _ = Describe("StagingText", func() {
 		outputDir      string
 		cacheDir       string
 		certsPath      string
+		tlsConfig      *tls.Config
+		buildpackJSON  []byte
+		actualBytes    []byte
+		expectedBytes  []byte
 	)
 
 	BeforeEach(func() {
-		var err error
 
 		workspaceDir, err = ioutil.TempDir("", "workspace")
 		Expect(err).NotTo(HaveOccurred())
@@ -100,7 +105,7 @@ var _ = Describe("StagingText", func() {
 		keyPath := filepath.Join(certsPath, "cc-server-crt-key")
 		caCertPath := filepath.Join(certsPath, "internal-ca-cert")
 
-		tlsConfig, err := tlsconfig.Build(
+		tlsConfig, err = tlsconfig.Build(
 			tlsconfig.WithInternalServiceDefaults(),
 			tlsconfig.WithIdentityFromFile(certPath, keyPath),
 		).Server(
@@ -183,7 +188,7 @@ var _ = Describe("StagingText", func() {
 					},
 				}
 
-				buildpackJSON, err := json.Marshal(buildpacks)
+				buildpackJSON, err = json.Marshal(buildpacks)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = os.Setenv(eirini.EnvBuildpacks, string(buildpackJSON))
@@ -207,7 +212,7 @@ var _ = Describe("StagingText", func() {
 				expectedFile := filepath.Join(buildpacksDir, "config.json")
 				Expect(expectedFile).To(BeARegularFile())
 
-				actualBytes, err := ioutil.ReadFile(expectedFile)
+				actualBytes, err = ioutil.ReadFile(expectedFile)
 				Expect(err).ToNot(HaveOccurred())
 
 				var actualBuildpacks []recipe.Buildpack
@@ -224,9 +229,9 @@ var _ = Describe("StagingText", func() {
 			})
 
 			It("places the app bits in the workspace", func() {
-				actualBytes, err := ioutil.ReadFile(path.Join(workspaceDir, eirini.AppBits))
+				actualBytes, err = ioutil.ReadFile(path.Join(workspaceDir, eirini.AppBits))
 				Expect(err).NotTo(HaveOccurred())
-				expectedBytes, err := ioutil.ReadFile("testdata/dora.zip")
+				expectedBytes, err = ioutil.ReadFile("testdata/dora.zip")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(actualBytes).To(Equal(expectedBytes))
 			})
@@ -241,7 +246,7 @@ var _ = Describe("StagingText", func() {
 						},
 					}
 
-					buildpackJSON, err := json.Marshal(buildpacks)
+					buildpackJSON, err = json.Marshal(buildpacks)
 					Expect(err).ToNot(HaveOccurred())
 
 					err = os.Setenv(eirini.EnvBuildpacks, string(buildpackJSON))
@@ -303,7 +308,7 @@ var _ = Describe("StagingText", func() {
 						},
 					}
 
-					buildpackJSON, err := json.Marshal(buildpacks)
+					buildpackJSON, err = json.Marshal(buildpacks)
 					Expect(err).ToNot(HaveOccurred())
 
 					err = os.Setenv(eirini.EnvBuildpacks, string(buildpackJSON))
@@ -364,7 +369,7 @@ var _ = Describe("StagingText", func() {
 						},
 					}
 
-					buildpackJSON, err := json.Marshal(buildpacks)
+					buildpackJSON, err = json.Marshal(buildpacks)
 					Expect(err).ToNot(HaveOccurred())
 
 					err = os.Setenv(eirini.EnvBuildpacks, string(buildpackJSON))
@@ -468,7 +473,7 @@ var _ = Describe("StagingText", func() {
 					},
 				}
 
-				buildpackJSON, err := json.Marshal(buildpacks)
+				buildpackJSON, err = json.Marshal(buildpacks)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = os.Setenv(eirini.EnvBuildpacks, string(buildpackJSON))
@@ -542,6 +547,7 @@ var _ = Describe("StagingText", func() {
 
 func verifyResponse(failed bool, reason string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+
 		body, err := ioutil.ReadAll(req.Body)
 		req.Body.Close()
 		Expect(err).ShouldNot(HaveOccurred())
@@ -559,6 +565,7 @@ func verifyResponse(failed bool, reason string) http.HandlerFunc {
 }
 
 func chownR(path, username, group string) error {
+
 	uid, gid, err := getIds(username, group)
 	if err != nil {
 		return err
@@ -573,12 +580,15 @@ func chownR(path, username, group string) error {
 }
 
 func getIds(username, group string) (uid int, gid int, err error) {
-	g, err := user.LookupGroup(group)
+
+	var g *user.Group
+	g, err = user.LookupGroup(group)
 	if err != nil {
 		return -1, -1, err
 	}
 
-	u, err := user.Lookup(username)
+	var u *user.User
+	u, err = user.Lookup(username)
 	if err != nil {
 		return -1, -1, err
 	}

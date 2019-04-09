@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/recipe"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
@@ -68,7 +69,7 @@ var _ = Describe("Responder", func() {
 			Context("when preparing the response results", func() {
 				Context("when the results file is missing", func() {
 					It("should error with missing file msg", func() {
-						_, err := responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
+						_, err = responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
 						Expect(err).To(HaveOccurred())
 						Expect(err.Error()).To(ContainSubstring("failed to read result.json"))
 					})
@@ -81,7 +82,7 @@ var _ = Describe("Responder", func() {
 						buildpacks, err = json.Marshal([]cc_messages.Buildpack{buildpack})
 						Expect(err).NotTo(HaveOccurred())
 
-						_, err := responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
+						_, err = responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
 						Expect(err).To(HaveOccurred())
 						Expect(err.Error()).To(ContainSubstring("unexpected end of JSON input"))
 					})
@@ -117,7 +118,8 @@ var _ = Describe("Responder", func() {
 				})
 
 				It("should respond with failure", func() {
-					resp, err := responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
+					var resp *models.TaskCallbackResponse
+					resp, err = responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
 					Expect(err).NotTo(HaveOccurred())
 					err = responder.RespondWithSuccess(resp)
 					Expect(err).NotTo(HaveOccurred())
@@ -129,7 +131,6 @@ var _ = Describe("Responder", func() {
 })
 
 func resultsFile(content string) string {
-	var err error
 
 	tmpfile, err := ioutil.TempFile("", "metadata_result")
 	Expect(err).ToNot(HaveOccurred())

@@ -43,6 +43,10 @@ issues:
     - path: recipe/buildpackmanager_test.go
       linters:
       - gosec
+    - path: integration/recipe/staging_test.go
+      linters:
+      - gosec
+      - unparam
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 
