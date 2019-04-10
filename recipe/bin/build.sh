@@ -3,7 +3,8 @@
 set -euo pipefail
 
 readonly BASEDIR="$(cd $(dirname $0)/.. && pwd)"
-readonly TAG="${1?Provide a tag please}"
+readonly DOCKER_USER="${1?Provide a docker user please}"
+readonly TAG="${2?Provide a tag please}"
 
 main() {
   build-image downloader
@@ -12,7 +13,7 @@ main() {
 }
 
 build-image() {
-  docker build -t "eirini/recipe-${1}:${TAG}" -f ${BASEDIR}/image/Dockerfile-${1} .
+  docker build -t "${DOCKER_USER}/recipe-${1}:${TAG}" -f ${BASEDIR}/image/Dockerfile-${1} .
 }
 
 main
