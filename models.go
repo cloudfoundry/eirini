@@ -59,6 +59,8 @@ type Properties struct {
 	CCCertPath string `yaml:"cc_cert_path"`
 	CCKeyPath  string `yaml:"cc_key_path"`
 	CCCAPath   string `yaml:"cc_ca_path"`
+
+	KubeConfigPath string `yaml:"kube_config_path"`
 }
 
 //go:generate counterfeiter . Stager
