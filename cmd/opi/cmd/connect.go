@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/events"
@@ -31,7 +33,6 @@ import (
 	nats "github.com/nats-io/go-nats"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/rest"
 
 	// For gcp and oidc authentication
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -57,6 +58,7 @@ func connect(cmd *cobra.Command, args []string) {
 	bifrost := initBifrost(cfg)
 
 	launchRouteEmitter(
+		cfg.Properties.KubeConfigPath,
 		cfg.Properties.KubeNamespace,
 		cfg.Properties.NatsPassword,
 		cfg.Properties.NatsIP,
@@ -80,12 +82,14 @@ func connect(cmd *cobra.Command, args []string) {
 		}
 	}()
 	launchMetricsEmitter(
+		cfg.Properties.KubeConfigPath,
 		fmt.Sprintf("%s/namespaces/%s/pods", cfg.Properties.MetricsSourceAddress, cfg.Properties.KubeNamespace),
 		loggregatorClient,
 		cfg.Properties.KubeNamespace,
 	)
 
 	launchEventReporter(
+		cfg.Properties.KubeConfigPath,
 		cfg.Properties.CcInternalAPI,
 		cfg.Properties.CCCAPath,
 		cfg.Properties.CCCertPath,
@@ -102,7 +106,7 @@ func connect(cmd *cobra.Command, args []string) {
 }
 
 func initStager(cfg *eirini.Config) eirini.Stager {
-	clientset := createKubeClient()
+	clientset := createKubeClient(cfg.Properties.KubeConfigPath)
 	taskDesirer := &k8s.TaskDesirer{
 		Namespace:       cfg.Properties.KubeNamespace,
 		CCUploaderIP:    cfg.Properties.CcUploaderIP,
@@ -135,7 +139,7 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	syncLogger := lager.NewLogger("bifrost")
 	syncLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 	kubeNamespace := cfg.Properties.KubeNamespace
-	clientset := createKubeClient()
+	clientset := createKubeClient(cfg.Properties.KubeConfigPath)
 	desirer := k8s.NewStatefulSetDesirer(clientset, kubeNamespace)
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
@@ -149,9 +153,17 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	}
 }
 
-func createKubeClient() kubernetes.Interface {
-	config, err := rest.InClusterConfig()
-	exitWithError(err)
+func createKubeClient(kubeConfigPath string) kubernetes.Interface {
+	var config *rest.Config
+	var err error
+
+	if kubeConfigPath != "" {
+		config, err = clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+		exitWithError(err)
+	} else {
+		config, err = rest.InClusterConfig()
+		exitWithError(err)
+	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	exitWithError(err)
@@ -174,11 +186,11 @@ func initConnect() {
 	connectCmd.Flags().StringP("config", "c", "", "Path to the erini config file")
 }
 
-func launchRouteEmitter(namespace, natsPassword, natsIP string) {
+func launchRouteEmitter(kubeConfigPath, namespace, natsPassword, natsIP string) {
 	nc, err := nats.Connect(util.GenerateNatsURL(natsPassword, natsIP))
 	exitWithError(err)
 
-	clientset := createKubeClient()
+	clientset := createKubeClient(kubeConfigPath)
 	syncPeriod := 10 * time.Second
 	workChan := make(chan *route.Message)
 	instanceInformer := k8sroute.NewInstanceChangeInformer(clientset, syncPeriod, namespace)
@@ -190,9 +202,9 @@ func launchRouteEmitter(namespace, natsPassword, natsIP string) {
 	go uriInformer.Start(workChan)
 }
 
-func launchMetricsEmitter(source string, loggregatorClient *loggregator.IngressClient, namespace string) {
+func launchMetricsEmitter(kubeConfigPath, source string, loggregatorClient *loggregator.IngressClient, namespace string) {
 	work := make(chan []metrics.Message, 20)
-	clientset := createKubeClient()
+	clientset := createKubeClient(kubeConfigPath)
 	podClient := clientset.CoreV1().Pods(namespace)
 	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, source, podClient)
 	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
@@ -202,14 +214,14 @@ func launchMetricsEmitter(source string, loggregatorClient *loggregator.IngressC
 	go emitter.Start()
 }
 
-func launchEventReporter(uri, ca, cert, key, namespace string) {
+func launchEventReporter(kubeConfigPath, uri, ca, cert, key, namespace string) {
 	work := make(chan events.CrashReport, 20)
 	tlsConf, err := cc_client.NewTLSConfig(cert, key, ca)
 	exitWithError(err)
 
 	client := cc_client.NewCcClient(uri, tlsConf)
 	reporter := events.NewCrashReporter(work, &route.SimpleLoopScheduler{}, client, lager.NewLogger("instance-crash-reporter"))
-	clientset := createKubeClient()
+	clientset := createKubeClient(kubeConfigPath)
 	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, work, make(chan struct{}))
 
 	go crashInformer.Start()
