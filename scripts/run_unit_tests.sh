@@ -11,7 +11,7 @@ main(){
 
 run_tests() {
   pushd "$BASEDIR" > /dev/null || exit 1
-    ginkgo -r -keepGoing --skipPackage=launcher,packs,integration
+    ginkgo -r -keepGoing --skipPackage=launcher,packs,integration -randomizeAllSpecs
   popd > /dev/null || exit 1
 }
 
