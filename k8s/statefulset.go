@@ -313,7 +313,8 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 			GenerateName: fmt.Sprintf("%s-", utils.SanitizeName(namePrefix, lrp.GUID)),
 		},
 		Spec: v1beta2.StatefulSetSpec{
-			Replicas: int32ptr(lrp.TargetInstances),
+			PodManagementPolicy: "Parallel",
+			Replicas:            int32ptr(lrp.TargetInstances),
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
 					Annotations: map[string]string{

@@ -86,11 +86,6 @@ var _ = Describe("Statefulset", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should create the desired statefulSet", func() {
-				statefulSet := getStatefulSet(lrp)
-				Expect(statefulSet).To(Equal(toStatefulSet(lrp)))
-			})
-
 			It("should creates a healthcheck probe", func() {
 				Expect(livenessProbeCreator.CallCount()).To(Equal(1))
 			})
@@ -117,6 +112,11 @@ var _ = Describe("Statefulset", func() {
 			It("should not set name for the stateful set", func() {
 				statefulSet := getStatefulSet(lrp)
 				Expect(statefulSet.Name).To(BeEmpty())
+			})
+
+			It("should set podManagementPolicy to parallel", func() {
+				statefulSet := getStatefulSet(lrp)
+				Expect(string(statefulSet.Spec.PodManagementPolicy)).To(Equal("Parallel"))
 			})
 
 			Context("When redeploying an existing LRP", func() {
