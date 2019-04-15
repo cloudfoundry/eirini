@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"code.cloudfoundry.org/eirini"
@@ -154,16 +153,8 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 }
 
 func createKubeClient(kubeConfigPath string) kubernetes.Interface {
-	var config *rest.Config
-	var err error
-
-	if kubeConfigPath != "" {
-		config, err = clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-		exitWithError(err)
-	} else {
-		config, err = rest.InClusterConfig()
-		exitWithError(err)
-	}
+	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+	exitWithError(err)
 
 	clientset, err := kubernetes.NewForConfig(config)
 	exitWithError(err)
