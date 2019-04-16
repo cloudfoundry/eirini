@@ -5,7 +5,7 @@ go 1.12
 require (
 	cloud.google.com/go v0.35.1 // indirect
 	code.cloudfoundry.org/bbs v0.0.0-20190129005423-893e3473b7d0
-	code.cloudfoundry.org/buildpackapplifecycle v0.0.0-20181126193040-928cda2ee7d6
+	code.cloudfoundry.org/buildpackapplifecycle v0.0.0-20181126193040-928cda2ee7d6 // indirect
 	code.cloudfoundry.org/bytefmt v0.0.0-20180906201452-2aa6f33b730c // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0 // indirect
 	code.cloudfoundry.org/cli v6.42.0+incompatible // indirect
@@ -22,9 +22,9 @@ require (
 	code.cloudfoundry.org/rep v0.0.0-20190419142419-b672b2c94173 // indirect
 	code.cloudfoundry.org/rfc5424 v0.0.0-20180905210152-236a6d29298a // indirect
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
-	code.cloudfoundry.org/tlsconfig v0.0.0-20190419002020-eb9396db5a71
+	code.cloudfoundry.org/tlsconfig v0.0.0-20190419002020-eb9396db5a71 // indirect
 	code.cloudfoundry.org/tps v0.0.0-20181108184806-c2c8a168ada5
-	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50
+	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
 	code.cloudfoundry.org/ykk v0.0.0-20170424192843-e4df4ce2fd4d // indirect
 	github.com/Microsoft/go-winio v0.4.11 // indirect
 	github.com/SermoDigital/jose v0.0.0-20161205224733-f6df55f235c2 // indirect

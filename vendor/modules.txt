@@ -4,8 +4,6 @@ cloud.google.com/go/compute/metadata
 code.cloudfoundry.org/bbs/models
 code.cloudfoundry.org/bbs/format
 code.cloudfoundry.org/bbs/encryption
-# code.cloudfoundry.org/buildpackapplifecycle v0.0.0-20181126193040-928cda2ee7d6
-code.cloudfoundry.org/buildpackapplifecycle
 # code.cloudfoundry.org/go-diodes v0.0.0-20180905200951-72629b5276e3
 code.cloudfoundry.org/go-diodes
 # code.cloudfoundry.org/go-loggregator v7.2.0+incompatible
@@ -19,8 +17,6 @@ code.cloudfoundry.org/lager/lagerctx
 code.cloudfoundry.org/rfc5424
 # code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
 code.cloudfoundry.org/runtimeschema/cc_messages
-# code.cloudfoundry.org/tlsconfig v0.0.0-20190419002020-eb9396db5a71
-code.cloudfoundry.org/tlsconfig
 # code.cloudfoundry.org/tps v0.0.0-20181108184806-c2c8a168ada5
 code.cloudfoundry.org/tps/cc_client
 # code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50
