@@ -8,18 +8,12 @@ import (
 
 const RootfsVersionLabel = "rootfs-version"
 
-//go:generate counterfeiter . Waiter
-type Waiter interface {
-	Wait() error
-}
-
-type Patcher struct {
+type StatefulSetPatcher struct {
 	Version string
 	Client  v1beta2.StatefulSetInterface
-	Waiter  Waiter
 }
 
-func (p Patcher) Patch() error {
+func (p StatefulSetPatcher) Patch() error {
 	listOpts := metav1.ListOptions{}
 	ss, err := p.Client.List(listOpts)
 	if err != nil {
@@ -32,8 +26,6 @@ func (p Patcher) Patch() error {
 		if err != nil {
 			return errors.Wrap(err, "failed to update statefulset")
 		}
-
 	}
-	err = p.Waiter.Wait()
-	return errors.Wrap(err, "failed to wait for update")
+	return nil
 }

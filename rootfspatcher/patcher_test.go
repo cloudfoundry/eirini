@@ -13,7 +13,6 @@ import (
 	testcore "k8s.io/client-go/testing"
 
 	. "code.cloudfoundry.org/eirini/rootfspatcher"
-	"code.cloudfoundry.org/eirini/rootfspatcher/rootfspatcherfakes"
 )
 
 var _ = Describe("Patcher", func() {
@@ -21,7 +20,6 @@ var _ = Describe("Patcher", func() {
 		client     *fake.Clientset
 		namespace  string
 		patcher    Patcher
-		waiter     *rootfspatcherfakes.FakeWaiter
 		newVersion string
 	)
 	BeforeEach(func() {
@@ -35,13 +33,10 @@ var _ = Describe("Patcher", func() {
 		}
 		client.AppsV1beta2().StatefulSets(namespace).Create(&ss)
 
-		waiter = &rootfspatcherfakes.FakeWaiter{}
-
 		newVersion = "version2"
-		patcher = Patcher{
+		patcher = StatefulSetPatcher{
 			Version: newVersion,
 			Client:  client.AppsV1beta2().StatefulSets(namespace),
-			Waiter:  waiter,
 		}
 	})
 
@@ -50,11 +45,6 @@ var _ = Describe("Patcher", func() {
 		updatedSS, err := client.AppsV1beta2().StatefulSets(namespace).List(metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(updatedSS.Items[0].Labels).To(HaveKeyWithValue(RootfsVersionLabel, newVersion))
-	})
-
-	It("should wait for all pods to become running", func() {
-		patcher.Patch()
-		Expect(waiter.WaitCallCount()).To(Equal(1))
 	})
 
 	It("should return error if it cannot list statefulsets", func() {
@@ -72,10 +62,4 @@ var _ = Describe("Patcher", func() {
 		client.PrependReactor("update", "statefulsets", errReaction)
 		Expect(patcher.Patch()).To(MatchError("failed to update statefulset: fake error"))
 	})
-
-	It("should return error if the waiter returns an error", func() {
-		waiter.WaitReturns(errors.New("cannot wait"))
-		Expect(patcher.Patch()).To(MatchError("failed to wait for update: cannot wait"))
-	})
-
 })
