@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/eirini/util"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -27,6 +28,7 @@ const (
 type StatefulSetDesirer struct {
 	Client                kubernetes.Interface
 	Namespace             string
+	RootfsVersion         string
 	LivenessProbeCreator  ProbeCreator
 	ReadinessProbeCreator ProbeCreator
 	Hasher                util.Hasher
@@ -35,10 +37,11 @@ type StatefulSetDesirer struct {
 //go:generate counterfeiter . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(client kubernetes.Interface, namespace string) opi.Desirer {
+func NewStatefulSetDesirer(client kubernetes.Interface, namespace string, rootfsVersion string) opi.Desirer {
 	return &StatefulSetDesirer{
 		Client:                client,
 		Namespace:             namespace,
+		RootfsVersion:         rootfsVersion,
 		LivenessProbeCreator:  CreateLivenessProbe,
 		ReadinessProbeCreator: CreateReadinessProbe,
 		Hasher:                util.TruncatedSHA256Hasher{},
@@ -361,18 +364,24 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 		},
 	}
 
-	labels := map[string]string{
+	selectorLabels := map[string]string{
 		"guid":        lrp.GUID,
 		"version":     lrp.Version,
 		"source_type": appSourceType,
 	}
 
-	statefulSet.Spec.Template.Labels = labels
-
 	statefulSet.Spec.Selector = &meta.LabelSelector{
-		MatchLabels: labels,
+		MatchLabels: selectorLabels,
 	}
 
+	labels := map[string]string{
+		"guid":                           lrp.GUID,
+		"version":                        lrp.Version,
+		"source_type":                    appSourceType,
+		rootfspatcher.RootfsVersionLabel: m.RootfsVersion,
+	}
+
+	statefulSet.Spec.Template.Labels = labels
 	statefulSet.Labels = labels
 
 	statefulSet.Annotations = lrp.Metadata

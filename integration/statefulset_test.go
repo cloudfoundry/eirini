@@ -34,6 +34,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		desirer = k8s.NewStatefulSetDesirer(
 			clientset,
 			namespace,
+			"rootfsversion",
 		)
 	})
 

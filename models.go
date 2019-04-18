@@ -61,6 +61,8 @@ type Properties struct {
 	CCCAPath   string `yaml:"cc_ca_path"`
 
 	KubeConfigPath string `yaml:"kube_config_path"`
+
+	RootfsVersion string `yaml:"rootfs_version"`
 }
 
 //go:generate counterfeiter . Stager
