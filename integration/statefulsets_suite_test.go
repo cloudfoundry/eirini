@@ -2,6 +2,7 @@ package statefulsets_test
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"testing"
 	"time"
@@ -36,7 +37,7 @@ var _ = BeforeSuite(func() {
 	clientset, err = kubernetes.NewForConfig(config)
 	Expect(err).ToNot(HaveOccurred())
 
-	namespace = "opi-integration-test"
+	namespace = fmt.Sprintf("opi-integration-test-%d", rand.Intn(1000))
 
 	if !namespaceExists() {
 		createNamespace()
