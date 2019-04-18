@@ -33,7 +33,8 @@ var _ = Describe("PodWaiter", func() {
 				}},
 			},
 		}
-		Expect(client.CoreV1().Pods(namespace).Create(&pod)).To(Succeed())
+		_, err := client.CoreV1().Pods(namespace).Create(&pod)
+		Expect(err).ToNot(HaveOccurred())
 		waiter = PodWaiter{
 			Timeout:       1 * time.Second,
 			Client:        client.CoreV1().Pods(namespace),
@@ -54,7 +55,8 @@ var _ = Describe("PodWaiter", func() {
 		updatedPod.Labels[RootfsVersionLabel] = "version2"
 		updatedPod.Status.ContainerStatuses[0].Ready = true
 		updatedPod.Status.ContainerStatuses[0].State.Running = &corev1.ContainerStateRunning{}
-		Expect(client.CoreV1().Pods(namespace).Update(updatedPod)).To(Succeed())
+		_, err := client.CoreV1().Pods(namespace).Update(updatedPod)
+		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(channel).Should(Receive(nil))
 	})
@@ -71,7 +73,8 @@ var _ = Describe("PodWaiter", func() {
 		updatedPod := pod.DeepCopy()
 		updatedPod.Labels[RootfsVersionLabel] = "version2"
 		updatedPod.Status.ContainerStatuses[0].State.Running = &corev1.ContainerStateRunning{}
-		Expect(client.CoreV1().Pods(namespace).Update(updatedPod)).To(Succeed())
+		_, err := client.CoreV1().Pods(namespace).Update(updatedPod)
+		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(channel, "2s").Should(Receive(MatchError("timed out after 1s")))
 	})
@@ -88,7 +91,8 @@ var _ = Describe("PodWaiter", func() {
 		updatedPod := pod.DeepCopy()
 		updatedPod.Labels[RootfsVersionLabel] = "version2"
 		updatedPod.Status.ContainerStatuses[0].Ready = true
-		Expect(client.CoreV1().Pods(namespace).Update(updatedPod)).To(Succeed())
+		_, err := client.CoreV1().Pods(namespace).Update(updatedPod)
+		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(channel, "2s").Should(Receive(MatchError("timed out after 1s")))
 	})

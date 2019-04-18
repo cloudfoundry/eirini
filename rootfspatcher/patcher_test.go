@@ -41,7 +41,8 @@ var _ = Describe("Patcher", func() {
 				},
 			},
 		}
-		Expect(client.AppsV1beta2().StatefulSets(namespace).Create(&ss)).To(Succeed())
+		_, err := client.AppsV1beta2().StatefulSets(namespace).Create(&ss)
+		Expect(err).ToNot(HaveOccurred())
 
 		newVersion = "version2"
 		patcher = StatefulSetPatcher{
