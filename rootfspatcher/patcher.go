@@ -22,6 +22,7 @@ func (p StatefulSetPatcher) Patch() error {
 
 	for _, statefulset := range ss.Items {
 		statefulset.Labels[RootfsVersionLabel] = p.Version
+		statefulset.Spec.Template.Labels[RootfsVersionLabel] = p.Version
 		_, err := p.Client.Update(&statefulset)
 		if err != nil {
 			return errors.Wrap(err, "failed to update statefulset")

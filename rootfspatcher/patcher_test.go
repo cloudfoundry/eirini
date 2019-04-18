@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"k8s.io/api/apps/v1beta2"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -16,12 +17,14 @@ import (
 )
 
 var _ = Describe("Patcher", func() {
+
 	var (
 		client     *fake.Clientset
 		namespace  string
 		patcher    Patcher
 		newVersion string
 	)
+
 	BeforeEach(func() {
 		namespace = "test-ns"
 		client = fake.NewSimpleClientset()
@@ -29,6 +32,13 @@ var _ = Describe("Patcher", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   "some-app",
 				Labels: map[string]string{RootfsVersionLabel: "version1"},
+			},
+			Spec: v1beta2.StatefulSetSpec{
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{RootfsVersionLabel: "version1"},
+					},
+				},
 			},
 		}
 		client.AppsV1beta2().StatefulSets(namespace).Create(&ss)
@@ -45,6 +55,7 @@ var _ = Describe("Patcher", func() {
 		updatedSS, err := client.AppsV1beta2().StatefulSets(namespace).List(metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(updatedSS.Items[0].Labels).To(HaveKeyWithValue(RootfsVersionLabel, newVersion))
+		Expect(updatedSS.Items[0].Spec.Template.Labels).To(HaveKeyWithValue(RootfsVersionLabel, newVersion))
 	})
 
 	It("should return error if it cannot list statefulsets", func() {
