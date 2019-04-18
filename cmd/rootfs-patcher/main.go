@@ -18,15 +18,15 @@ func main() {
 	statefulSetClient := kubeClient.AppsV1beta2().StatefulSets(namespace)
 	podClient := kubeClient.CoreV1().Pods(namespace)
 
+	patcher := rootfspatcher.StatefulSetPatcher{
+		Version: rootfsVersion,
+		Client:  statefulSetClient,
+	}
+
 	waiter := rootfspatcher.PodWaiter{
 		Client:        podClient,
 		Timeout:       timeout,
 		RootfsVersion: rootfsVersion,
-	}
-
-	patcher := rootfspatcher.StatefulSetPatcher{
-		Version: rootfsVersion,
-		Client:  statefulSetClient,
 	}
 
 	err = rootfspatcher.PatchAndWait(patcher, waiter)

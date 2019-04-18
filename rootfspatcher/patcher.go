@@ -20,7 +20,8 @@ func (p StatefulSetPatcher) Patch() error {
 		return errors.Wrap(err, "failed to list statefulsets")
 	}
 
-	for _, statefulset := range ss.Items {
+	for _, s := range ss.Items {
+		statefulset := s
 		statefulset.Labels[RootfsVersionLabel] = p.Version
 		statefulset.Spec.Template.Labels[RootfsVersionLabel] = p.Version
 		_, err := p.Client.Update(&statefulset)

@@ -41,7 +41,7 @@ var _ = Describe("Patcher", func() {
 				},
 			},
 		}
-		client.AppsV1beta2().StatefulSets(namespace).Create(&ss)
+		Expect(client.AppsV1beta2().StatefulSets(namespace).Create(&ss)).To(Succeed())
 
 		newVersion = "version2"
 		patcher = StatefulSetPatcher{
@@ -51,7 +51,7 @@ var _ = Describe("Patcher", func() {
 	})
 
 	It("should update all statefulsets with new version", func() {
-		patcher.Patch()
+		Expect(patcher.Patch()).To(Succeed())
 		updatedSS, err := client.AppsV1beta2().StatefulSets(namespace).List(metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(updatedSS.Items[0].Labels).To(HaveKeyWithValue(RootfsVersionLabel, newVersion))

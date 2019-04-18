@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	. "code.cloudfoundry.org/eirini/rootfspatcher"
@@ -23,7 +23,7 @@ var _ = Describe("PodWaiter", func() {
 		client = fake.NewSimpleClientset()
 		namespace = "test-ns"
 		pod = corev1.Pod{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:   "test-pod",
 				Labels: map[string]string{RootfsVersionLabel: "version1"},
 			},
@@ -33,7 +33,7 @@ var _ = Describe("PodWaiter", func() {
 				}},
 			},
 		}
-		client.CoreV1().Pods(namespace).Create(&pod)
+		Expect(client.CoreV1().Pods(namespace).Create(&pod)).To(Succeed())
 		waiter = PodWaiter{
 			Timeout:       1 * time.Second,
 			Client:        client.CoreV1().Pods(namespace),
@@ -54,7 +54,7 @@ var _ = Describe("PodWaiter", func() {
 		updatedPod.Labels[RootfsVersionLabel] = "version2"
 		updatedPod.Status.ContainerStatuses[0].Ready = true
 		updatedPod.Status.ContainerStatuses[0].State.Running = &corev1.ContainerStateRunning{}
-		client.CoreV1().Pods(namespace).Update(updatedPod)
+		Expect(client.CoreV1().Pods(namespace).Update(updatedPod)).To(Succeed())
 
 		Eventually(channel).Should(Receive(nil))
 	})
@@ -71,7 +71,7 @@ var _ = Describe("PodWaiter", func() {
 		updatedPod := pod.DeepCopy()
 		updatedPod.Labels[RootfsVersionLabel] = "version2"
 		updatedPod.Status.ContainerStatuses[0].State.Running = &corev1.ContainerStateRunning{}
-		client.CoreV1().Pods(namespace).Update(updatedPod)
+		Expect(client.CoreV1().Pods(namespace).Update(updatedPod)).To(Succeed())
 
 		Eventually(channel, "2s").Should(Receive(MatchError("timed out after 1s")))
 	})
@@ -88,7 +88,7 @@ var _ = Describe("PodWaiter", func() {
 		updatedPod := pod.DeepCopy()
 		updatedPod.Labels[RootfsVersionLabel] = "version2"
 		updatedPod.Status.ContainerStatuses[0].Ready = true
-		client.CoreV1().Pods(namespace).Update(updatedPod)
+		Expect(client.CoreV1().Pods(namespace).Update(updatedPod)).To(Succeed())
 
 		Eventually(channel, "2s").Should(Receive(MatchError("timed out after 1s")))
 	})
