@@ -92,6 +92,11 @@ var _ = Describe("StatefulSet Manager", func() {
 	})
 
 	Context("When getting an app", func() {
+		numberOfInstancesFn := func() int {
+			lrp, err := desirer.Get(odinLRP.LRPIdentifier)
+			Expect(err).ToNot(HaveOccurred())
+			return lrp.RunningInstances
+		}
 
 		JustBeforeEach(func() {
 			err = desirer.Desire(odinLRP)
@@ -99,30 +104,27 @@ var _ = Describe("StatefulSet Manager", func() {
 		})
 
 		It("correctly reports the running instances", func() {
-			Eventually(func() int {
-				l, e := desirer.Get(odinLRP.LRPIdentifier)
-				Expect(e).ToNot(HaveOccurred())
-				return l.RunningInstances
-			}, timeout).Should(Equal(2))
+			Eventually(numberOfInstancesFn, timeout).Should(Equal(2))
+			Consistently(numberOfInstancesFn, "10s").Should(Equal(2))
 		})
 
 		Context("When one of the instances if failing", func() {
-			var failingLRP *opi.LRP
 			BeforeEach(func() {
-				failingLRP = createLRP("odin", "guid-odin")
-				failingLRP.Command = []string{
+				odinLRP = createLRP("odin", "guid-odin")
+				odinLRP.Health = opi.Healtcheck{
+					Type: "port",
+					Port: 3000,
+				}
+				odinLRP.Command = []string{
 					"/bin/sh",
 					"-c",
-					"if [ $INSTANCE_INDEX -eq 1 ]; then exit; else  while true; do echo hello; sleep 10;done; fi;",
+					`if [ $(echo $HOSTNAME | sed 's|.*-\(.*\)|\1|') -eq 1 ]; then exit; else  while true; do echo hello; nc -l -p 3000 ;done; fi;`,
 				}
 			})
 
 			It("correctly reports the running instances", func() {
-				Eventually(func() int {
-					odinLRP, err := desirer.Get(failingLRP.LRPIdentifier)
-					Expect(err).ToNot(HaveOccurred())
-					return odinLRP.RunningInstances
-				}, timeout).Should(Equal(1))
+				Eventually(numberOfInstancesFn, timeout).Should(Equal(1))
+				Consistently(numberOfInstancesFn, "10s").Should(Equal(1))
 			})
 		})
 	})
