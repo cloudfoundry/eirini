@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"time"
 
@@ -9,26 +10,33 @@ import (
 )
 
 func main() {
-	rootfsVersion := os.Args[1]
-	namespace := os.Args[2]
-	timeout, err := time.ParseDuration(os.Args[3])
-	cmd.ExitWithError(err)
+	rootfsVersion := flag.String("rootfs-version", "", "Version of rootfs")
+	namespace := flag.String("namespace", "", "Namespace where eirini runs apps")
+	timeout := flag.Duration("timeout", 1*time.Hour, "Timeout for waiting for rootfs patching to be finished")
+	kubeConfigPath := flag.String("kubeconfig", "", "Config for kubernetes, leave empty to use in cluster config")
 
-	kubeClient := cmd.CreateKubeClient("")
-	statefulSetClient := kubeClient.AppsV1beta2().StatefulSets(namespace)
-	podClient := kubeClient.CoreV1().Pods(namespace)
+	flag.Parse()
+
+	if *rootfsVersion == "" || *namespace == "" {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	kubeClient := cmd.CreateKubeClient(*kubeConfigPath)
+	statefulSetClient := kubeClient.AppsV1beta2().StatefulSets(*namespace)
+	podClient := kubeClient.CoreV1().Pods(*namespace)
 
 	patcher := rootfspatcher.StatefulSetPatcher{
-		Version: rootfsVersion,
+		Version: *rootfsVersion,
 		Client:  statefulSetClient,
 	}
 
 	waiter := rootfspatcher.PodWaiter{
 		Client:        podClient,
-		Timeout:       timeout,
-		RootfsVersion: rootfsVersion,
+		Timeout:       *timeout,
+		RootfsVersion: *rootfsVersion,
 	}
 
-	err = rootfspatcher.PatchAndWait(patcher, waiter)
+	err := rootfspatcher.PatchAndWait(patcher, waiter)
 	cmd.ExitWithError(err)
 }
