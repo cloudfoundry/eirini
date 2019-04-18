@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 readonly BASEDIR="$(cd "$(dirname "$0")"/.. && pwd)"
 INTEGRATION_KUBECONFIG=${INTEGRATION_KUBECONFIG:?must be a path to a valid kubeconfig}
 
