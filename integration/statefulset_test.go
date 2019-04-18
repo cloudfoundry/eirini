@@ -17,7 +17,6 @@ var _ = Describe("StatefulSet Manager", func() {
 		desirer opi.Desirer
 		odinLRP *opi.LRP
 		thorLRP *opi.LRP
-		err     error
 	)
 
 	BeforeEach(func() {
@@ -41,7 +40,7 @@ var _ = Describe("StatefulSet Manager", func() {
 	Context("When creating a StatefulSet", func() {
 
 		JustBeforeEach(func() {
-			err = desirer.Desire(odinLRP)
+			err := desirer.Desire(odinLRP)
 			Expect(err).ToNot(HaveOccurred())
 			err = desirer.Desire(thorLRP)
 			Expect(err).ToNot(HaveOccurred())
@@ -69,12 +68,9 @@ var _ = Describe("StatefulSet Manager", func() {
 	Context("When deleting a LRP", func() {
 
 		JustBeforeEach(func() {
-			err = desirer.Desire(odinLRP)
+			err := desirer.Desire(odinLRP)
 			Expect(err).ToNot(HaveOccurred())
 			err = desirer.Stop(odinLRP.LRPIdentifier)
-		})
-
-		It("should not fail", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -99,7 +95,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		}
 
 		JustBeforeEach(func() {
-			err = desirer.Desire(odinLRP)
+			err := desirer.Desire(odinLRP)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
