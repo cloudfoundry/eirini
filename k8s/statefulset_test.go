@@ -118,6 +118,11 @@ var _ = Describe("Statefulset", func() {
 				Expect(string(statefulSet.Spec.PodManagementPolicy)).To(Equal("Parallel"))
 			})
 
+			It("should set imagePullPolicy to Always", func() {
+				statefulSet := getStatefulSet(lrp)
+				Expect(string(statefulSet.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal("Always"))
+			})
+
 			Context("When redeploying an existing LRP", func() {
 				BeforeEach(func() {
 					lrp = createLRP("Baldur", "1234.5", "my.example.route")

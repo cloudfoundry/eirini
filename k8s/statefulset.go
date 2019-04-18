@@ -335,11 +335,12 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 					AutomountServiceAccountToken: &automountServiceAccountToken,
 					Containers: []corev1.Container{
 						{
-							Name:    "opi",
-							Image:   lrp.Image,
-							Command: lrp.Command,
-							Env:     envs,
-							Ports:   ports,
+							Name:            "opi",
+							Image:           lrp.Image,
+							ImagePullPolicy: corev1.PullAlways,
+							Command:         lrp.Command,
+							Env:             envs,
+							Ports:           ports,
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
 									corev1.ResourceMemory: memory,
