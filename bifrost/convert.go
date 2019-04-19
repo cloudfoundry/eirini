@@ -7,19 +7,16 @@ import (
 
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 )
 
 type DropletToImageConverter struct {
-	hasher     util.Hasher
 	logger     lager.Logger
 	registryIP string
 }
 
-func NewConverter(hasher util.Hasher, logger lager.Logger, registryIP string) *DropletToImageConverter {
+func NewConverter(logger lager.Logger, registryIP string) *DropletToImageConverter {
 	return &DropletToImageConverter{
-		hasher:     hasher,
 		logger:     logger,
 		registryIP: registryIP,
 	}
@@ -48,7 +45,6 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 	identifier := opi.LRPIdentifier{
 		GUID:    request.GUID,
 		Version: request.Version,
-		Hasher:  c.hasher,
 	}
 
 	volumeMounts := []opi.VolumeMount{}

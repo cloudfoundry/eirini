@@ -2,8 +2,6 @@ package opi
 
 import (
 	"fmt"
-
-	"code.cloudfoundry.org/eirini/util"
 )
 
 const (
@@ -17,7 +15,6 @@ const (
 
 type LRPIdentifier struct {
 	GUID, Version string
-	Hasher        util.Hasher
 }
 
 func (i *LRPIdentifier) ProcessGUID() string {

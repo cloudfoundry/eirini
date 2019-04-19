@@ -143,7 +143,7 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 	registryIP := cfg.Properties.RegistryAddress
-	converter := bifrost.NewConverter(&util.TruncatedSHA256Hasher{}, convertLogger, registryIP)
+	converter := bifrost.NewConverter(convertLogger, registryIP)
 
 	return &bifrost.Bifrost{
 		Converter: converter,

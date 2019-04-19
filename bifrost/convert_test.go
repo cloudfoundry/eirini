@@ -8,7 +8,6 @@ import (
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/util/utilfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,7 +16,6 @@ import (
 
 var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	var (
-		hasher           *utilfakes.FakeHasher
 		fakeServer       *ghttp.Server
 		logger           *lagertest.TestLogger
 		lrp              opi.LRP
@@ -27,7 +25,6 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	)
 
 	BeforeEach(func() {
-		hasher = new(utilfakes.FakeHasher)
 		fakeServer = ghttp.NewServer()
 		logger = lagertest.NewTestLogger("test")
 		fakeServer.AppendHandlers(
@@ -83,12 +80,11 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				},
 			},
 		}
-		hasher.HashReturns("LRPHashedName", nil)
 	})
 
 	JustBeforeEach(func() {
 		regIP := "eirini-registry.service.cf.internal"
-		converter = bifrost.NewConverter(hasher, logger, regIP)
+		converter = bifrost.NewConverter(logger, regIP)
 		lrp, err = converter.Convert(desireLRPRequest)
 	})
 
