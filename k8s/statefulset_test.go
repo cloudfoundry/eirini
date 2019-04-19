@@ -15,8 +15,8 @@ import (
 	"code.cloudfoundry.org/eirini/util/utilfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/api/apps/v1beta2"
-	v1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,15 +43,15 @@ var _ = Describe("Statefulset", func() {
 		hasher                *utilfakes.FakeHasher
 	)
 
-	listStatefulSets := func() []v1beta2.StatefulSet {
-		list, listErr := client.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{})
+	listStatefulSets := func() []appsv1.StatefulSet {
+		list, listErr := client.AppsV1().StatefulSets(namespace).List(meta.ListOptions{})
 		Expect(listErr).NotTo(HaveOccurred())
 		return list.Items
 	}
 
-	getStatefulSet := func(lrp *opi.LRP) *v1beta2.StatefulSet {
+	getStatefulSet := func(lrp *opi.LRP) *appsv1.StatefulSet {
 		labelSelector := fmt.Sprintf("guid=%s,version=%s", lrp.LRPIdentifier.GUID, lrp.LRPIdentifier.Version)
-		ss, getErr := client.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{LabelSelector: labelSelector})
+		ss, getErr := client.AppsV1().StatefulSets(namespace).List(meta.ListOptions{LabelSelector: labelSelector})
 		Expect(getErr).NotTo(HaveOccurred())
 		return &ss.Items[0]
 	}
@@ -80,8 +80,8 @@ var _ = Describe("Statefulset", func() {
 
 		Context("When app name only has [a-z0-9]", func() {
 			JustBeforeEach(func() {
-				livenessProbeCreator.Returns(&v1.Probe{})
-				readinessProbeCreator.Returns(&v1.Probe{})
+				livenessProbeCreator.Returns(&corev1.Probe{})
+				readinessProbeCreator.Returns(&corev1.Probe{})
 				lrp = createLRP("Baldur", "1234.5", "my.example.route")
 				err = statefulSetDesirer.Desire(lrp)
 			})
@@ -121,7 +121,7 @@ var _ = Describe("Statefulset", func() {
 			Context("When redeploying an existing LRP", func() {
 				BeforeEach(func() {
 					lrp = createLRP("Baldur", "1234.5", "my.example.route")
-					_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp))
+					_, createErr := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
 					Expect(createErr).ToNot(HaveOccurred())
 				})
 
@@ -156,7 +156,7 @@ var _ = Describe("Statefulset", func() {
 			expectedLRP = createLRP("Baldur", "1234.5", "my.example.route")
 			// This is because toStatefulSet function mutates the metatdata map
 			lrpToCreateStatefulSet := createLRP("Baldur", "1234.5", "my.example.route")
-			_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrpToCreateStatefulSet))
+			_, createErr := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrpToCreateStatefulSet))
 			Expect(createErr).ToNot(HaveOccurred())
 		})
 
@@ -196,7 +196,7 @@ var _ = Describe("Statefulset", func() {
 				lrp = createLRP("update", "7653.2", `["my.example.route"]`)
 
 				statefulSet := toStatefulSet(lrp)
-				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(statefulSet)
+				_, createErr := client.AppsV1().StatefulSets(namespace).Create(statefulSet)
 				Expect(createErr).NotTo(HaveOccurred())
 			})
 
@@ -245,7 +245,7 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			It("should not create the app", func() {
-				sets, listErr := client.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{})
+				sets, listErr := client.AppsV1().StatefulSets(namespace).List(meta.ListOptions{})
 				Expect(listErr).NotTo(HaveOccurred())
 				Expect(sets.Items).To(BeEmpty())
 			})
@@ -274,7 +274,7 @@ var _ = Describe("Statefulset", func() {
 
 			for _, l := range lrpsToCreateStatefulSets {
 				statefulset := toStatefulSet(l)
-				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(statefulset)
+				_, createErr := client.AppsV1().StatefulSets(namespace).Create(statefulset)
 				Expect(createErr).ToNot(HaveOccurred())
 			}
 		})
@@ -326,7 +326,7 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			lrp := createLRP("Baldur", "1234.5", "my.example.route")
-			_, err = client.AppsV1beta2().StatefulSets(namespace).Create(toStatefulSet(lrp))
+			_, err = client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -353,8 +353,8 @@ var _ = Describe("Statefulset", func() {
 
 		var (
 			instances []*opi.Instance
-			pod1      *v1.Pod
-			pod2      *v1.Pod
+			pod1      *corev1.Pod
+			pod2      *corev1.Pod
 		)
 
 		BeforeEach(func() {
@@ -409,12 +409,12 @@ var _ = Describe("Statefulset", func() {
 
 		Context("and the pod has crashed", func() {
 			BeforeEach(func() {
-				pod1.Status.ContainerStatuses[0].State = v1.ContainerState{
-					Terminated: &v1.ContainerStateTerminated{},
+				pod1.Status.ContainerStatuses[0].State = corev1.ContainerState{
+					Terminated: &corev1.ContainerStateTerminated{},
 				}
 
-				pod2.Status.ContainerStatuses[0].State = v1.ContainerState{
-					Waiting: &v1.ContainerStateWaiting{},
+				pod2.Status.ContainerStatuses[0].State = corev1.ContainerState{
+					Waiting: &corev1.ContainerStateWaiting{},
 				}
 			})
 
@@ -432,17 +432,17 @@ var _ = Describe("Statefulset", func() {
 		Context("and the StatefulSet was deleted/stopped", func() {
 
 			BeforeEach(func() {
-				event1 := &v1.Event{
+				event1 := &corev1.Event{
 					Reason: "Killing",
-					InvolvedObject: v1.ObjectReference{
+					InvolvedObject: corev1.ObjectReference{
 						Name:      "odin-0",
 						Namespace: namespace,
 						UID:       "odin-0-uid",
 					},
 				}
-				event2 := &v1.Event{
+				event2 := &corev1.Event{
 					Reason: "Killing",
-					InvolvedObject: v1.ObjectReference{
+					InvolvedObject: corev1.ObjectReference{
 						Name:      "odin-1",
 						Namespace: namespace,
 						UID:       "odin-1-uid",
@@ -469,7 +469,7 @@ var _ = Describe("Statefulset", func() {
 
 		Context("and the pod is pending", func() {
 			BeforeEach(func() {
-				pod1.Status.Phase = v1.PodPending
+				pod1.Status.Phase = corev1.PodPending
 				pod2.Status.ContainerStatuses[0].Ready = false
 			})
 
@@ -486,8 +486,8 @@ var _ = Describe("Statefulset", func() {
 
 		Context("and the pod phase is unknown", func() {
 			BeforeEach(func() {
-				pod1.Status.Phase = v1.PodUnknown
-				pod2.Status.Phase = v1.PodUnknown
+				pod1.Status.Phase = corev1.PodUnknown
+				pod2.Status.Phase = corev1.PodUnknown
 			})
 
 			It("should not return an error", func() {
@@ -504,8 +504,8 @@ var _ = Describe("Statefulset", func() {
 		Context("the container status is not available yet", func() {
 
 			BeforeEach(func() {
-				pod1.Status.ContainerStatuses = []v1.ContainerStatus{}
-				pod2.Status.ContainerStatuses = []v1.ContainerStatus{}
+				pod1.Status.ContainerStatuses = []corev1.ContainerStatus{}
+				pod2.Status.ContainerStatuses = []corev1.ContainerStatus{}
 			})
 
 			It("should not return an error", func() {
@@ -523,10 +523,10 @@ var _ = Describe("Statefulset", func() {
 		Context("and the node has insufficient memory", func() {
 
 			BeforeEach(func() {
-				insufficientMemoryEvent := &v1.Event{
+				insufficientMemoryEvent := &corev1.Event{
 					Reason:  "FailedScheduling",
 					Message: "Some string including Insufficient memory",
-					InvolvedObject: v1.ObjectReference{
+					InvolvedObject: corev1.ObjectReference{
 						Name:      "odin-0",
 						Namespace: namespace,
 						UID:       "odin-0-uid",
@@ -551,8 +551,8 @@ var _ = Describe("Statefulset", func() {
 	})
 })
 
-func toPod(lrpName string, index int, time *meta.Time) *v1.Pod {
-	pod := v1.Pod{}
+func toPod(lrpName string, index int, time *meta.Time) *corev1.Pod {
+	pod := corev1.Pod{}
 	pod.Name = lrpName + "-" + strconv.Itoa(index)
 	pod.UID = types.UID(pod.Name + "-uid")
 	pod.Labels = map[string]string{
@@ -561,10 +561,10 @@ func toPod(lrpName string, index int, time *meta.Time) *v1.Pod {
 	}
 
 	pod.Status.StartTime = time
-	pod.Status.Phase = v1.PodRunning
-	pod.Status.ContainerStatuses = []v1.ContainerStatus{
+	pod.Status.Phase = corev1.PodRunning
+	pod.Status.ContainerStatuses = []corev1.ContainerStatus{
 		{
-			State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
+			State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
 			Ready: true,
 		},
 	}
@@ -579,29 +579,29 @@ func toInstance(index int, since int64, state string) *opi.Instance {
 	}
 }
 
-func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
+func toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	envs := MapToEnvVar(lrp.Env)
-	fieldEnvs := []v1.EnvVar{
+	fieldEnvs := []corev1.EnvVar{
 		{
 			Name: "POD_NAME",
-			ValueFrom: &v1.EnvVarSource{
-				FieldRef: &v1.ObjectFieldSelector{
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "metadata.name",
 				},
 			},
 		},
 		{
 			Name: "CF_INSTANCE_IP",
-			ValueFrom: &v1.EnvVarSource{
-				FieldRef: &v1.ObjectFieldSelector{
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "status.podIP",
 				},
 			},
 		},
 		{
 			Name: "CF_INSTANCE_INTERNAL_IP",
-			ValueFrom: &v1.EnvVarSource{
-				FieldRef: &v1.ObjectFieldSelector{
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "status.podIP",
 				},
 			},
@@ -609,9 +609,9 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	}
 
 	envs = append(envs, fieldEnvs...)
-	ports := []v1.ContainerPort{}
+	ports := []corev1.ContainerPort{}
 	for _, port := range lrp.Ports {
-		ports = append(ports, v1.ContainerPort{ContainerPort: port})
+		ports = append(ports, corev1.ContainerPort{ContainerPort: port})
 	}
 
 	vols, volumeMounts := createVolumeSpecs(lrp.VolumeMounts)
@@ -629,37 +629,37 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	automountServiceAccountToken := false
 
 	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
-	statefulSet := &v1beta2.StatefulSet{
+	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name: fmt.Sprintf("%s-random", strings.ToLower(namePrefix)),
 		},
-		Spec: v1beta2.StatefulSetSpec{
+		Spec: appsv1.StatefulSetSpec{
 			Replicas: &targetInstances,
-			Template: v1.PodTemplateSpec{
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
 					Annotations: map[string]string{
 						cf.ProcessGUID: lrp.Metadata[cf.ProcessGUID],
 						cf.VcapAppID:   lrp.Metadata[cf.VcapAppID],
 					},
 				},
-				Spec: v1.PodSpec{
+				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken: &automountServiceAccountToken,
-					Containers: []v1.Container{
+					Containers: []corev1.Container{
 						{
 							Name:           "opi",
 							Image:          lrp.Image,
 							Command:        lrp.Command,
 							Env:            envs,
 							Ports:          ports,
-							LivenessProbe:  &v1.Probe{},
-							ReadinessProbe: &v1.Probe{},
-							Resources: v1.ResourceRequirements{
-								Limits: v1.ResourceList{
-									v1.ResourceMemory: memory,
+							LivenessProbe:  &corev1.Probe{},
+							ReadinessProbe: &corev1.Probe{},
+							Resources: corev1.ResourceRequirements{
+								Limits: corev1.ResourceList{
+									corev1.ResourceMemory: memory,
 								},
-								Requests: v1.ResourceList{
-									v1.ResourceMemory: memory,
-									v1.ResourceCPU:    cpu,
+								Requests: corev1.ResourceList{
+									corev1.ResourceMemory: memory,
+									corev1.ResourceCPU:    cpu,
 								},
 							},
 							VolumeMounts: volumeMounts,
@@ -694,21 +694,21 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	return statefulSet
 }
 
-func createVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]v1.Volume, []v1.VolumeMount) {
+func createVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount) {
 
-	vols := []v1.Volume{}
-	volumeMounts := []v1.VolumeMount{}
+	vols := []corev1.Volume{}
+	volumeMounts := []corev1.VolumeMount{}
 	for _, vol := range lrpVolumeMounts {
-		vols = append(vols, v1.Volume{
+		vols = append(vols, corev1.Volume{
 			Name: vol.ClaimName,
-			VolumeSource: v1.VolumeSource{
-				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: vol.ClaimName,
 				},
 			},
 		})
 
-		volumeMounts = append(volumeMounts, v1.VolumeMount{
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      vol.ClaimName,
 			MountPath: vol.MountPath,
 		})

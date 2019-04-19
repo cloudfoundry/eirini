@@ -10,11 +10,11 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/api/apps/v1beta2"
-	v1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	types "k8s.io/client-go/kubernetes/typed/apps/v1beta2"
+	types "k8s.io/client-go/kubernetes/typed/apps/v1"
 	coretypes "k8s.io/client-go/kubernetes/typed/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
@@ -60,7 +60,7 @@ func namespaceExists() bool {
 }
 
 func createNamespace() {
-	namespaceSpec := &v1.Namespace{ObjectMeta: meta.ObjectMeta{Name: namespace}}
+	namespaceSpec := &corev1.Namespace{ObjectMeta: meta.ObjectMeta{Name: namespace}}
 
 	if _, err := clientset.CoreV1().Namespaces().Create(namespaceSpec); err != nil {
 		panic(err)
@@ -68,14 +68,14 @@ func createNamespace() {
 }
 
 func statefulSets() types.StatefulSetInterface {
-	return clientset.AppsV1beta2().StatefulSets(namespace)
+	return clientset.AppsV1().StatefulSets(namespace)
 }
 
 func services() coretypes.ServiceInterface {
 	return clientset.CoreV1().Services(namespace)
 }
 
-func getStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
+func getStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	ss, getErr := statefulSets().List(meta.ListOptions{LabelSelector: labelSelector(lrp)})
 	Expect(getErr).NotTo(HaveOccurred())
 	return &ss.Items[0]
@@ -93,31 +93,31 @@ func cleanupStatefulSet(lrp *opi.LRP) {
 	Expect(err).ToNot(HaveOccurred())
 }
 
-func listAllStatefulSets() []v1beta2.StatefulSet {
+func listAllStatefulSets() []appsv1.StatefulSet {
 	list, err := statefulSets().List(meta.ListOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	return list.Items
 }
 
-func listStatefulSets(appName string) []v1beta2.StatefulSet {
+func listStatefulSets(appName string) []appsv1.StatefulSet {
 	labelSelector := fmt.Sprintf("name=%s", appName)
 	list, err := statefulSets().List(meta.ListOptions{LabelSelector: labelSelector})
 	Expect(err).NotTo(HaveOccurred())
 	return list.Items
 }
 
-func listPodsByLabel(labelSelector string) []v1.Pod {
+func listPodsByLabel(labelSelector string) []corev1.Pod {
 	pods, err := clientset.CoreV1().Pods(namespace).List(meta.ListOptions{LabelSelector: labelSelector})
 	Expect(err).NotTo(HaveOccurred())
 	return pods.Items
 }
 
-func listPods(lrpIdentifier opi.LRPIdentifier) []v1.Pod {
+func listPods(lrpIdentifier opi.LRPIdentifier) []corev1.Pod {
 	labelSelector := fmt.Sprintf("guid=%s,version=%s", lrpIdentifier.GUID, lrpIdentifier.Version)
 	return listPodsByLabel(labelSelector)
 }
 
-func podNamesFromPods(pods []v1.Pod) []string {
+func podNamesFromPods(pods []corev1.Pod) []string {
 	names := []string{}
 	for _, p := range pods {
 		names = append(names, p.Name)

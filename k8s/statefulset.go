@@ -10,12 +10,12 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/util"
 	"github.com/pkg/errors"
-	"k8s.io/api/apps/v1beta2"
-	v1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	types "k8s.io/client-go/kubernetes/typed/apps/v1beta2"
+	types "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
 
 const (
@@ -33,7 +33,7 @@ type StatefulSetDesirer struct {
 }
 
 //go:generate counterfeiter . ProbeCreator
-type ProbeCreator func(lrp *opi.LRP) *v1.Probe
+type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
 func NewStatefulSetDesirer(client kubernetes.Interface, namespace string) opi.Desirer {
 	return &StatefulSetDesirer{
@@ -94,7 +94,7 @@ func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 	return statefulSetToLRP(*statefulset), nil
 }
 
-func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*v1beta2.StatefulSet, error) {
+func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error) {
 	options := meta.ListOptions{LabelSelector: fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)}
 	statefulSet, err := m.statefulSets().List(options)
 	if err != nil {
@@ -153,12 +153,12 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	return instances, nil
 }
 
-func getPodState(pod v1.Pod, events *v1.EventList) (string, string) {
+func getPodState(pod corev1.Pod, events *corev1.EventList) (string, string) {
 	if hasInsufficientMemory(events) {
 		return opi.ErrorState, opi.InsufficientMemoryError
 	}
 
-	if statusNotAvailable(&pod) || pod.Status.Phase == v1.PodUnknown {
+	if statusNotAvailable(&pod) || pod.Status.Phase == corev1.PodUnknown {
 		return opi.UnknownState, ""
 	}
 
@@ -177,7 +177,7 @@ func getPodState(pod v1.Pod, events *v1.EventList) (string, string) {
 	return opi.UnknownState, ""
 }
 
-func hasInsufficientMemory(eventList *v1.EventList) bool {
+func hasInsufficientMemory(eventList *corev1.EventList) bool {
 	events := eventList.Items
 
 	if len(events) == 0 {
@@ -188,28 +188,28 @@ func hasInsufficientMemory(eventList *v1.EventList) bool {
 	return event.Reason == eventFailedScheduling && strings.Contains(event.Message, "Insufficient memory")
 }
 
-func statusNotAvailable(pod *v1.Pod) bool {
+func statusNotAvailable(pod *corev1.Pod) bool {
 	return pod.Status.ContainerStatuses == nil || len(pod.Status.ContainerStatuses) == 0
 }
 
-func podPending(pod *v1.Pod) bool {
+func podPending(pod *corev1.Pod) bool {
 	status := pod.Status.ContainerStatuses[0]
-	return pod.Status.Phase == v1.PodPending || (status.State.Running != nil && !status.Ready)
+	return pod.Status.Phase == corev1.PodPending || (status.State.Running != nil && !status.Ready)
 }
 
-func podCrashed(status v1.ContainerStatus) bool {
+func podCrashed(status corev1.ContainerStatus) bool {
 	return status.State.Waiting != nil || status.State.Terminated != nil
 }
 
-func podRunning(status v1.ContainerStatus) bool {
+func podRunning(status corev1.ContainerStatus) bool {
 	return status.State.Running != nil && status.Ready
 }
 
 func (m *StatefulSetDesirer) statefulSets() types.StatefulSetInterface {
-	return m.Client.AppsV1beta2().StatefulSets(m.Namespace)
+	return m.Client.AppsV1().StatefulSets(m.Namespace)
 }
 
-func statefulSetsToLRPs(statefulSets *v1beta2.StatefulSetList) []*opi.LRP {
+func statefulSetsToLRPs(statefulSets *appsv1.StatefulSetList) []*opi.LRP {
 	lrps := []*opi.LRP{}
 	for _, s := range statefulSets.Items {
 		lrp := statefulSetToLRP(s)
@@ -218,7 +218,7 @@ func statefulSetsToLRPs(statefulSets *v1beta2.StatefulSetList) []*opi.LRP {
 	return lrps
 }
 
-func statefulSetToLRP(s v1beta2.StatefulSet) *opi.LRP {
+func statefulSetToLRP(s appsv1.StatefulSet) *opi.LRP {
 	ports := []int32{}
 	container := s.Spec.Template.Spec.Containers[0]
 
@@ -259,29 +259,29 @@ func statefulSetToLRP(s v1beta2.StatefulSet) *opi.LRP {
 	}
 }
 
-func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
+func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	envs := MapToEnvVar(lrp.Env)
-	fieldEnvs := []v1.EnvVar{
+	fieldEnvs := []corev1.EnvVar{
 		{
 			Name: "POD_NAME",
-			ValueFrom: &v1.EnvVarSource{
-				FieldRef: &v1.ObjectFieldSelector{
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "metadata.name",
 				},
 			},
 		},
 		{
 			Name: "CF_INSTANCE_IP",
-			ValueFrom: &v1.EnvVarSource{
-				FieldRef: &v1.ObjectFieldSelector{
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "status.podIP",
 				},
 			},
 		},
 		{
 			Name: "CF_INSTANCE_INTERNAL_IP",
-			ValueFrom: &v1.EnvVarSource{
-				FieldRef: &v1.ObjectFieldSelector{
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "status.podIP",
 				},
 			},
@@ -289,9 +289,9 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	}
 
 	envs = append(envs, fieldEnvs...)
-	ports := []v1.ContainerPort{}
+	ports := []corev1.ContainerPort{}
 	for _, port := range lrp.Ports {
-		ports = append(ports, v1.ContainerPort{ContainerPort: port})
+		ports = append(ports, corev1.ContainerPort{ContainerPort: port})
 	}
 
 	livenessProbe := m.LivenessProbeCreator(lrp)
@@ -317,36 +317,36 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
 	namePrefix = utils.SanitizeName(namePrefix, lrp.GUID)
 
-	statefulSet := &v1beta2.StatefulSet{
+	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name: fmt.Sprintf("%s-%s", namePrefix, nameSuffix),
 		},
-		Spec: v1beta2.StatefulSetSpec{
+		Spec: appsv1.StatefulSetSpec{
 			PodManagementPolicy: "Parallel",
 			Replicas:            int32ptr(lrp.TargetInstances),
-			Template: v1.PodTemplateSpec{
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
 					Annotations: map[string]string{
 						cf.ProcessGUID: lrp.Metadata[cf.ProcessGUID],
 						cf.VcapAppID:   lrp.Metadata[cf.VcapAppID],
 					},
 				},
-				Spec: v1.PodSpec{
+				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken: &automountServiceAccountToken,
-					Containers: []v1.Container{
+					Containers: []corev1.Container{
 						{
 							Name:    "opi",
 							Image:   lrp.Image,
 							Command: lrp.Command,
 							Env:     envs,
 							Ports:   ports,
-							Resources: v1.ResourceRequirements{
-								Limits: v1.ResourceList{
-									v1.ResourceMemory: memory,
+							Resources: corev1.ResourceRequirements{
+								Limits: corev1.ResourceList{
+									corev1.ResourceMemory: memory,
 								},
-								Requests: v1.ResourceList{
-									v1.ResourceMemory: memory,
-									v1.ResourceCPU:    cpu,
+								Requests: corev1.ResourceList{
+									corev1.ResourceMemory: memory,
+									corev1.ResourceCPU:    cpu,
 								},
 							},
 							LivenessProbe:  livenessProbe,
@@ -381,19 +381,19 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 	return statefulSet
 }
 
-func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]v1.Volume, []v1.VolumeMount) {
-	volumes := []v1.Volume{}
-	volumeMounts := []v1.VolumeMount{}
+func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount) {
+	volumes := []corev1.Volume{}
+	volumeMounts := []corev1.VolumeMount{}
 	for _, vm := range lrpVolumeMounts {
-		volumes = append(volumes, v1.Volume{
+		volumes = append(volumes, corev1.Volume{
 			Name: vm.ClaimName,
-			VolumeSource: v1.VolumeSource{
-				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: vm.ClaimName,
 				},
 			},
 		})
-		volumeMounts = append(volumeMounts, v1.VolumeMount{
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      vm.ClaimName,
 			MountPath: vm.MountPath,
 		})

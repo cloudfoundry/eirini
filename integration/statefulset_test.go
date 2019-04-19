@@ -7,8 +7,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/api/apps/v1beta2"
-	v1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("StatefulSet Manager", func() {
@@ -82,13 +82,13 @@ var _ = Describe("StatefulSet Manager", func() {
 		})
 
 		It("should delete the StatefulSet object", func() {
-			Eventually(func() []v1beta2.StatefulSet {
+			Eventually(func() []appsv1.StatefulSet {
 				return listStatefulSets("odin")
 			}, timeout).Should(BeEmpty())
 		})
 
 		It("should delete the associated pods", func() {
-			Eventually(func() []v1.Pod {
+			Eventually(func() []corev1.Pod {
 				return listPods(odinLRP.LRPIdentifier)
 			}, timeout).Should(BeEmpty())
 		})
