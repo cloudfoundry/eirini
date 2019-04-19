@@ -12,7 +12,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/util"
+	"code.cloudfoundry.org/eirini/util/utilfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/api/apps/v1beta2"
@@ -40,6 +40,7 @@ var _ = Describe("Statefulset", func() {
 		statefulSetDesirer    opi.Desirer
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
 		readinessProbeCreator *k8sfakes.FakeProbeCreator
+		hasher                *utilfakes.FakeHasher
 	)
 
 	listStatefulSets := func() []v1beta2.StatefulSet {
@@ -60,6 +61,8 @@ var _ = Describe("Statefulset", func() {
 
 		livenessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
+		hasher = new(utilfakes.FakeHasher)
+		hasher.HashReturns("random", nil)
 	})
 
 	JustBeforeEach(func() {
@@ -68,6 +71,7 @@ var _ = Describe("Statefulset", func() {
 			Namespace:             namespace,
 			LivenessProbeCreator:  livenessProbeCreator.Spy,
 			ReadinessProbeCreator: readinessProbeCreator.Spy,
+			Hasher:                hasher,
 		}
 	})
 
@@ -99,19 +103,14 @@ var _ = Describe("Statefulset", func() {
 				Expect(statefulSet.Spec.Template.Annotations[cf.ProcessGUID]).To(Equal("Baldur-guid"))
 			})
 
-			It("should set generate name for the stateful set", func() {
+			It("should set name for the stateful set", func() {
 				statefulSet := getStatefulSet(lrp)
-				Expect(statefulSet.GenerateName).To(Equal("baldur-space-foo-"))
+				Expect(statefulSet.Name).To(Equal("baldur-space-foo-random"))
 			})
 
 			It("should set space name as annotation on the statefulset", func() {
 				statefulSet := getStatefulSet(lrp)
 				Expect(statefulSet.Annotations[cf.VcapSpaceName]).To(Equal("space-foo"))
-			})
-
-			It("should not set name for the stateful set", func() {
-				statefulSet := getStatefulSet(lrp)
-				Expect(statefulSet.Name).To(BeEmpty())
 			})
 
 			It("should set podManagementPolicy to parallel", func() {
@@ -141,7 +140,7 @@ var _ = Describe("Statefulset", func() {
 
 			It("should use the guid as a name", func() {
 				statefulSet := getStatefulSet(lrp)
-				Expect(statefulSet.GenerateName).To(Equal("guid_1234-"))
+				Expect(statefulSet.Name).To(Equal("guid_1234-random"))
 			})
 		})
 	})
@@ -275,8 +274,6 @@ var _ = Describe("Statefulset", func() {
 
 			for _, l := range lrpsToCreateStatefulSets {
 				statefulset := toStatefulSet(l)
-				// FakeClient does not generate names for us
-				statefulset.Name = statefulset.GenerateName
 				_, createErr := client.AppsV1beta2().StatefulSets(namespace).Create(statefulset)
 				Expect(createErr).ToNot(HaveOccurred())
 			}
@@ -631,10 +628,10 @@ func toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 
 	automountServiceAccountToken := false
 
-	namePrefix := util.TruncateString(fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName), 40)
+	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
 	statefulSet := &v1beta2.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", strings.ToLower(namePrefix)),
+			Name: fmt.Sprintf("%s-random", strings.ToLower(namePrefix)),
 		},
 		Spec: v1beta2.StatefulSetSpec{
 			Replicas: &targetInstances,

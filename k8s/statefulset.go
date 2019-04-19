@@ -29,6 +29,7 @@ type StatefulSetDesirer struct {
 	Namespace             string
 	LivenessProbeCreator  ProbeCreator
 	ReadinessProbeCreator ProbeCreator
+	Hasher                util.Hasher
 }
 
 //go:generate counterfeiter . ProbeCreator
@@ -40,6 +41,7 @@ func NewStatefulSetDesirer(client kubernetes.Interface, namespace string) opi.De
 		Namespace:             namespace,
 		LivenessProbeCreator:  CreateLivenessProbe,
 		ReadinessProbeCreator: CreateReadinessProbe,
+		Hasher:                util.TruncatedSHA256Hasher{},
 	}
 }
 
@@ -307,10 +309,17 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
 
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
 	automountServiceAccountToken := false
-	namePrefix := util.TruncateString(fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName), 40)
+
+	nameSuffix, err := m.Hasher.Hash(fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version))
+	if err != nil {
+		panic(err)
+	}
+	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
+	namePrefix = utils.SanitizeName(namePrefix, lrp.GUID)
+
 	statefulSet := &v1beta2.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", utils.SanitizeName(namePrefix, lrp.GUID)),
+			Name: fmt.Sprintf("%s-%s", namePrefix, nameSuffix),
 		},
 		Spec: v1beta2.StatefulSetSpec{
 			PodManagementPolicy: "Parallel",

@@ -20,5 +20,9 @@ var _ = Describe("Names", func() {
 		It("should fallback to give fallback string if name contains unsupported chracters", func() {
 			Expect(SanitizeName("डोरा-дора-dora", "guid")).To(Equal("guid"))
 		})
+
+		It("removes extra characters", func() {
+			Expect(SanitizeName("1234567890-123456789012345678901234567890123456789123456789123456789000", "guid")).To(HaveLen(40))
+		})
 	})
 })

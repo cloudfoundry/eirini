@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 )
 
-const MaxHashLength = 50
+const MaxHashLength = 10
 
 //go:generate counterfeiter . Hasher
 type Hasher interface {
@@ -17,7 +17,7 @@ type Hasher interface {
 type TruncatedSHA256Hasher struct {
 }
 
-func (h *TruncatedSHA256Hasher) Hash(s string) (string, error) {
+func (h TruncatedSHA256Hasher) Hash(s string) (string, error) {
 	sha := sha256.New()
 	_, err := sha.Write([]byte(s))
 	if err != nil {
