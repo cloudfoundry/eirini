@@ -76,7 +76,7 @@ func services() coretypes.ServiceInterface {
 }
 
 func getStatefulSet(lrp *opi.LRP) *v1beta2.StatefulSet {
-	ss, getErr := clientset.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{LabelSelector: labelSelector(lrp)})
+	ss, getErr := statefulSets().List(meta.ListOptions{LabelSelector: labelSelector(lrp)})
 	Expect(getErr).NotTo(HaveOccurred())
 	return &ss.Items[0]
 }
@@ -94,14 +94,14 @@ func cleanupStatefulSet(lrp *opi.LRP) {
 }
 
 func listAllStatefulSets() []v1beta2.StatefulSet {
-	list, err := clientset.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{})
+	list, err := statefulSets().List(meta.ListOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	return list.Items
 }
 
 func listStatefulSets(appName string) []v1beta2.StatefulSet {
 	labelSelector := fmt.Sprintf("name=%s", appName)
-	list, err := clientset.AppsV1beta2().StatefulSets(namespace).List(meta.ListOptions{LabelSelector: labelSelector})
+	list, err := statefulSets().List(meta.ListOptions{LabelSelector: labelSelector})
 	Expect(err).NotTo(HaveOccurred())
 	return list.Items
 }

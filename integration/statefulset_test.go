@@ -63,6 +63,13 @@ var _ = Describe("StatefulSet Manager", func() {
 			Expect(pods[0]).To(ContainSubstring("odin"))
 			Expect(pods[1]).To(ContainSubstring("odin"))
 		})
+
+		Context("when we create the same StatefulSet again", func() {
+			It("should error", func() {
+				err := desirer.Desire(odinLRP)
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 
 	Context("When deleting a LRP", func() {
