@@ -142,7 +142,12 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 			since = pod.Status.StartTime.UnixNano()
 		}
 
-		state, placementError := getPodState(pod, events)
+		var state, placementError string
+		if hasInsufficientMemory(events) {
+			state, placementError = opi.ErrorState, opi.InsufficientMemoryError
+		} else {
+			state = utils.GetPodState(pod)
+		}
 
 		instance := opi.Instance{
 			Since:          since,
@@ -156,30 +161,6 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	return instances, nil
 }
 
-func getPodState(pod corev1.Pod, events *corev1.EventList) (string, string) {
-	if hasInsufficientMemory(events) {
-		return opi.ErrorState, opi.InsufficientMemoryError
-	}
-
-	if statusNotAvailable(&pod) || pod.Status.Phase == corev1.PodUnknown {
-		return opi.UnknownState, ""
-	}
-
-	if podPending(&pod) {
-		return opi.PendingState, ""
-	}
-
-	if podCrashed(pod.Status.ContainerStatuses[0]) {
-		return opi.CrashedState, ""
-	}
-
-	if podRunning(pod.Status.ContainerStatuses[0]) {
-		return opi.RunningState, ""
-	}
-
-	return opi.UnknownState, ""
-}
-
 func hasInsufficientMemory(eventList *corev1.EventList) bool {
 	events := eventList.Items
 
@@ -189,23 +170,6 @@ func hasInsufficientMemory(eventList *corev1.EventList) bool {
 
 	event := events[len(events)-1]
 	return event.Reason == eventFailedScheduling && strings.Contains(event.Message, "Insufficient memory")
-}
-
-func statusNotAvailable(pod *corev1.Pod) bool {
-	return pod.Status.ContainerStatuses == nil || len(pod.Status.ContainerStatuses) == 0
-}
-
-func podPending(pod *corev1.Pod) bool {
-	status := pod.Status.ContainerStatuses[0]
-	return pod.Status.Phase == corev1.PodPending || (status.State.Running != nil && !status.Ready)
-}
-
-func podCrashed(status corev1.ContainerStatus) bool {
-	return status.State.Waiting != nil || status.State.Terminated != nil
-}
-
-func podRunning(status corev1.ContainerStatus) bool {
-	return status.State.Running != nil && status.Ready
 }
 
 func (m *StatefulSetDesirer) statefulSets() types.StatefulSetInterface {
