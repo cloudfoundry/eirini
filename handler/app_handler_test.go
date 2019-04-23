@@ -364,6 +364,89 @@ var _ = Describe("AppHandler", func() {
 		})
 	})
 
+	Context("Stop an app instance", func() {
+		var (
+			path     string
+			response *http.Response
+		)
+
+		BeforeEach(func() {
+			path = "/apps/app_1234/version_1234/stop/1"
+		})
+
+		JustBeforeEach(func() {
+			ts := httptest.NewServer(New(bifrost, stager, lager))
+			req, err := http.NewRequest("PUT", ts.URL+path, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			client := &http.Client{}
+			response, err = client.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return a 200 HTTP status code", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusOK))
+		})
+
+		It("should stop the app instance", func() {
+			Expect(bifrost.StopInstanceCallCount()).To(Equal(1))
+		})
+
+		It("should target the right app and the right instance index", func() {
+			_, identifier, index := bifrost.StopInstanceArgsForCall(0)
+			Expect(identifier.GUID).To(Equal("app_1234"))
+			Expect(identifier.Version).To(Equal("version_1234"))
+			Expect(index).To(Equal(uint(1)))
+		})
+
+		Context("when app stop is not successful", func() {
+			Context("because of some internal error", func() {
+				BeforeEach(func() {
+					bifrost.StopInstanceReturns(errors.New("something-bad-happened"))
+				})
+
+				It("should return a 500 HTTP status code", func() {
+					Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+				})
+
+				It("should log the failure", func() {
+					messages := lager.LogMessages()
+					Expect(messages).To(ConsistOf("app-handler-test.stop-app-instance-failed"))
+				})
+			})
+
+			Context("because of a invalid index", func() {
+				BeforeEach(func() {
+					path = "/apps/app_1234/version_1234/stop/x"
+				})
+
+				It("should return a 400 HTTP status code", func() {
+					Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+				})
+
+				It("should log the failure", func() {
+					messages := lager.LogMessages()
+					Expect(messages).To(ConsistOf("app-handler-test.stop-app-instance-failed"))
+				})
+			})
+
+			Context("because of a negative index", func() {
+				BeforeEach(func() {
+					path = "/apps/app_1234/version_1234/stop/-1"
+				})
+
+				It("should return a 400 HTTP status code", func() {
+					Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+				})
+
+				It("should log the failure", func() {
+					messages := lager.LogMessages()
+					Expect(messages).To(ConsistOf("app-handler-test.stop-app-instance-failed"))
+				})
+			})
+		})
+	})
+
 	Context("Get Instances", func() {
 		var (
 			path     string

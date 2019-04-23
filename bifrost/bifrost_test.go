@@ -448,6 +448,43 @@ var _ = Describe("Bifrost", func() {
 		})
 	})
 
+	Context("Stop an app instance", func() {
+		BeforeEach(func() {
+			opiClient = new(opifakes.FakeDesirer)
+
+			lager = lagertest.NewTestLogger("bifrost-stop-test")
+			bfrst = &bifrost.Bifrost{
+				Desirer: opiClient,
+				Logger:  lager,
+			}
+		})
+
+		JustBeforeEach(func() {
+			err = bfrst.StopInstance(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
+		})
+
+		It("should not return an error", func() {
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should call the desirer with the expected guid and index", func() {
+			identifier, index := opiClient.StopInstanceArgsForCall(0)
+			Expect(identifier.GUID).To(Equal("guid_1234"))
+			Expect(identifier.Version).To(Equal("version_1234"))
+			Expect(index).To(Equal(uint(1)))
+		})
+
+		Context("when desirer's stop instance fails", func() {
+			BeforeEach(func() {
+				opiClient.StopInstanceReturns(errors.New("failed-to-stop"))
+			})
+
+			It("returns a meaningful error", func() {
+				Expect(err).To(MatchError(ContainSubstring("desirer failed to stop instance")))
+			})
+		})
+	})
+
 	Context("Get all instances of an app", func() {
 		var (
 			instances    []*cf.Instance

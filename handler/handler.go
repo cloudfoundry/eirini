@@ -25,6 +25,7 @@ func registerAppsEndpoints(handler *httprouter.Router, appHandler *App) {
 	handler.PUT("/apps/:process_guid", appHandler.Desire)
 	handler.POST("/apps/:process_guid", appHandler.Update)
 	handler.PUT("/apps/:process_guid/:version_guid/stop", appHandler.Stop)
+	handler.PUT("/apps/:process_guid/:version_guid/stop/:instance", appHandler.StopInstance)
 	handler.GET("/apps/:process_guid/:version_guid/instances", appHandler.GetInstances)
 	handler.GET("/apps/:process_guid/:version_guid", appHandler.GetApp)
 }

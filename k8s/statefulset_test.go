@@ -349,6 +349,63 @@ var _ = Describe("Statefulset", func() {
 		})
 	})
 
+	Context("Stop an LRP instance", func() {
+
+		BeforeEach(func() {
+			lrp := createLRP("Baldur", "1234.5", "my.example.route")
+			_, err = client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
+			Expect(err).ToNot(HaveOccurred())
+
+			pod0 := toPod("baldur-space-foo-random", 0, nil)
+			_, err = client.CoreV1().Pods(namespace).Create(pod0)
+			Expect(err).ToNot(HaveOccurred())
+
+			pod1 := toPod("baldur-space-foo-random", 1, nil)
+			_, err = client.CoreV1().Pods(namespace).Create(pod1)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("deletes a pod instance", func() {
+			err = statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
+			Expect(err).ToNot(HaveOccurred())
+
+			pods, err := client.CoreV1().Pods(namespace).List(meta.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pods.Items).To(HaveLen(1))
+			Expect(pods.Items[0].Name).To(Equal("baldur-space-foo-random-0"))
+		})
+
+		Context("when there's an internal K8s error", func() {
+
+			It("should return an error", func() {
+
+				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, errors.New("boom")
+				}
+				client.PrependReactor("list", "statefulsets", reaction)
+
+				err = statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
+				Expect(err).To(MatchError("failed to get statefulset: boom"))
+			})
+		})
+
+		Context("when the statefulset does not exist", func() {
+
+			It("returns an error", func() {
+				err = statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "some", Version: "thing"}, 1)
+				Expect(err).To(MatchError("app does not exist"))
+			})
+		})
+
+		Context("when the instance does not exist", func() {
+
+			It("returns an error", func() {
+				err = statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 42)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
+
 	Context("Get LRP instances", func() {
 
 		var (

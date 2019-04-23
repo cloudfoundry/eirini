@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
@@ -25,13 +26,13 @@ type App struct {
 func (a *App) Desire(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var request cf.DesireLRPRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		a.logger.Error("request-body-decoding-failed", err)
+		a.logError("request-body-decoding-failed", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if err := a.bifrost.Transfer(r.Context(), request); err != nil {
-		a.logger.Error("desire-app-failed", err)
+		a.logError("desire-app-failed", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -42,7 +43,7 @@ func (a *App) Desire(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 func (a *App) List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	desiredLRPSchedulingInfos, err := a.bifrost.List(r.Context())
 	if err != nil {
-		a.logger.Error("list-apps-failed", err)
+		a.logError("list-apps-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -56,7 +57,7 @@ func (a *App) List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	marshaler := &jsonpb.Marshaler{Indent: "", OrigName: true}
 	result, err := marshaler.MarshalToString(&response)
 	if err != nil {
-		a.logger.Error("encode-json-failed", err)
+		a.logError("encode-json-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -82,7 +83,7 @@ func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	marshaler := &jsonpb.Marshaler{Indent: "", OrigName: true}
 	result, err := marshaler.MarshalToString(&response)
 	if err != nil {
-		a.logger.Error("encode-json-failed", err)
+		a.logError("encode-json-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -95,7 +96,7 @@ func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 func (a *App) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var request cf.UpdateDesiredLRPRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		a.logger.Error("json-decoding-failure", err)
+		a.logError("json-decoding-failure", err)
 		err = writeUpdateErrorResponse(w, err, http.StatusBadRequest)
 
 		a.logError("Could not write response", err)
@@ -104,7 +105,7 @@ func (a *App) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	}
 
 	if err := a.bifrost.Update(r.Context(), request); err != nil {
-		a.logger.Error("update-app-failed", err)
+		a.logError("update-app-failed", err)
 		err = writeUpdateErrorResponse(w, err, http.StatusInternalServerError)
 		a.logError("Could not write response", err)
 	}
@@ -122,6 +123,25 @@ func (a *App) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	}
 }
 
+func (a *App) StopInstance(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	identifier := opi.LRPIdentifier{
+		GUID:    ps.ByName("process_guid"),
+		Version: ps.ByName("version_guid"),
+	}
+
+	index, err := strconv.ParseUint(ps.ByName("instance"), 10, 32)
+	if err != nil {
+		a.logError("stop-app-instance-failed", err)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	err = a.bifrost.StopInstance(r.Context(), identifier, uint(index))
+	if err != nil {
+		a.logError("stop-app-instance-failed", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	identifier := opi.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
@@ -132,7 +152,7 @@ func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		a.logger.Error("encode-json-failed", err)
+		a.logError("get-instances-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

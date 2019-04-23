@@ -135,6 +135,19 @@ var _ = Describe("Handler", func() {
 			})
 		})
 
+		Context("PUT /apps/:process_guid/stop/:instance", func() {
+
+			BeforeEach(func() {
+				method = "PUT"
+				path = "/apps/myguid/myversion/stop/1"
+				expectedStatus = http.StatusOK
+			})
+
+			It("serves the endpoint", func() {
+				assertEndpoint()
+			})
+		})
+
 		Context("POST /stage/:staging_guid", func() {
 
 			BeforeEach(func() {

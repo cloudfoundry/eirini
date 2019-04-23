@@ -85,6 +85,7 @@ type Bifrost interface {
 	List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error)
 	Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error
 	Stop(ctx context.Context, identifier opi.LRPIdentifier) error
+	StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error
 	GetApp(ctx context.Context, identifier opi.LRPIdentifier) *models.DesiredLRP
 	GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error)
 }

@@ -76,6 +76,7 @@ type Desirer interface {
 	GetInstances(identifier LRPIdentifier) ([]*Instance, error)
 	Update(lrp *LRP) error
 	Stop(identifier LRPIdentifier) error
+	StopInstance(identifier LRPIdentifier, index uint) error
 }
 
 //go:generate counterfeiter . TaskDesirer

@@ -77,6 +77,10 @@ func (d *DesirerSimulator) Stop(identifier opi.LRPIdentifier) error {
 	panic("not implemented")
 }
 
+func (d *DesirerSimulator) StopInstance(identifier opi.LRPIdentifier, index uint) error {
+	return nil
+}
+
 type ConverterSimulator struct{}
 
 func (c *ConverterSimulator) Convert(request cf.DesireLRPRequest) (opi.LRP, error) {

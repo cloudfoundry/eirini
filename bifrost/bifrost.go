@@ -94,6 +94,11 @@ func (b *Bifrost) Stop(ctx context.Context, identifier opi.LRPIdentifier) error 
 	return b.Desirer.Stop(identifier)
 }
 
+func (b *Bifrost) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error {
+	err := b.Desirer.StopInstance(identifier, index)
+	return errors.Wrap(err, "desirer failed to stop instance")
+}
+
 func (b *Bifrost) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error) {
 	opiInstances, err := b.Desirer.GetInstances(identifier)
 	if err != nil {

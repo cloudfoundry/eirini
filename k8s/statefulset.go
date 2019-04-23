@@ -66,6 +66,21 @@ func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
 	return m.statefulSets().Delete(statefulSet.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
 }
 
+func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index uint) error {
+	selector := fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)
+	options := meta.ListOptions{LabelSelector: selector}
+	statefulsets, err := m.statefulSets().List(options)
+	if err != nil {
+		return errors.Wrap(err, "failed to get statefulset")
+	}
+	if len(statefulsets.Items) == 0 {
+		return errors.New("app does not exist")
+	}
+
+	st := statefulsets.Items[0]
+	return m.Client.CoreV1().Pods(m.Namespace).Delete(fmt.Sprintf("%s-%d", st.Name, index), nil)
+}
+
 func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
 	_, err := m.statefulSets().Create(m.toStatefulSet(lrp))
 	return err

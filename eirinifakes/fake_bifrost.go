@@ -61,6 +61,19 @@ type FakeBifrost struct {
 	stopReturnsOnCall map[int]struct {
 		result1 error
 	}
+	StopInstanceStub        func(ctx context.Context, identifier opi.LRPIdentifier, index uint) error
+	stopInstanceMutex       sync.RWMutex
+	stopInstanceArgsForCall []struct {
+		ctx        context.Context
+		identifier opi.LRPIdentifier
+		index      uint
+	}
+	stopInstanceReturns struct {
+		result1 error
+	}
+	stopInstanceReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GetAppStub        func(ctx context.Context, identifier opi.LRPIdentifier) *models.DesiredLRP
 	getAppMutex       sync.RWMutex
 	getAppArgsForCall []struct {
@@ -289,6 +302,56 @@ func (fake *FakeBifrost) StopReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeBifrost) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error {
+	fake.stopInstanceMutex.Lock()
+	ret, specificReturn := fake.stopInstanceReturnsOnCall[len(fake.stopInstanceArgsForCall)]
+	fake.stopInstanceArgsForCall = append(fake.stopInstanceArgsForCall, struct {
+		ctx        context.Context
+		identifier opi.LRPIdentifier
+		index      uint
+	}{ctx, identifier, index})
+	fake.recordInvocation("StopInstance", []interface{}{ctx, identifier, index})
+	fake.stopInstanceMutex.Unlock()
+	if fake.StopInstanceStub != nil {
+		return fake.StopInstanceStub(ctx, identifier, index)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.stopInstanceReturns.result1
+}
+
+func (fake *FakeBifrost) StopInstanceCallCount() int {
+	fake.stopInstanceMutex.RLock()
+	defer fake.stopInstanceMutex.RUnlock()
+	return len(fake.stopInstanceArgsForCall)
+}
+
+func (fake *FakeBifrost) StopInstanceArgsForCall(i int) (context.Context, opi.LRPIdentifier, uint) {
+	fake.stopInstanceMutex.RLock()
+	defer fake.stopInstanceMutex.RUnlock()
+	return fake.stopInstanceArgsForCall[i].ctx, fake.stopInstanceArgsForCall[i].identifier, fake.stopInstanceArgsForCall[i].index
+}
+
+func (fake *FakeBifrost) StopInstanceReturns(result1 error) {
+	fake.StopInstanceStub = nil
+	fake.stopInstanceReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeBifrost) StopInstanceReturnsOnCall(i int, result1 error) {
+	fake.StopInstanceStub = nil
+	if fake.stopInstanceReturnsOnCall == nil {
+		fake.stopInstanceReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.stopInstanceReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeBifrost) GetApp(ctx context.Context, identifier opi.LRPIdentifier) *models.DesiredLRP {
 	fake.getAppMutex.Lock()
 	ret, specificReturn := fake.getAppReturnsOnCall[len(fake.getAppArgsForCall)]
@@ -401,6 +464,8 @@ func (fake *FakeBifrost) Invocations() map[string][][]interface{} {
 	defer fake.updateMutex.RUnlock()
 	fake.stopMutex.RLock()
 	defer fake.stopMutex.RUnlock()
+	fake.stopInstanceMutex.RLock()
+	defer fake.stopInstanceMutex.RUnlock()
 	fake.getAppMutex.RLock()
 	defer fake.getAppMutex.RUnlock()
 	fake.getInstancesMutex.RLock()
