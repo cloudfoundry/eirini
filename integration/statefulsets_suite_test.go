@@ -22,8 +22,9 @@ import (
 )
 
 var (
-	namespace string
-	clientset kubernetes.Interface
+	namespace      string
+	clientset      kubernetes.Interface
+	kubeConfigPath string
 )
 
 const (
@@ -31,6 +32,7 @@ const (
 )
 
 var _ = BeforeSuite(func() {
+	kubeConfigPath = os.Getenv("INTEGRATION_KUBECONFIG")
 	config, err := clientcmd.BuildConfigFromFlags("", os.Getenv("INTEGRATION_KUBECONFIG"))
 	Expect(err).ToNot(HaveOccurred())
 
