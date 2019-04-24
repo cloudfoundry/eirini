@@ -395,8 +395,8 @@ var _ = Describe("Statefulset", func() {
 
 		It("should return the correct number of instances", func() {
 			Expect(instances).To(HaveLen(2))
-			Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "RUNNING")))
-			Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "RUNNING")))
+			Expect(instances[0]).To(Equal(toInstance(0, 123000000000)))
+			Expect(instances[1]).To(Equal(toInstance(1, 456000000000)))
 		})
 
 		Context("and time since creation is not available yet", func() {
@@ -417,8 +417,8 @@ var _ = Describe("Statefulset", func() {
 
 			It("should return a default value", func() {
 				Expect(instances).To(HaveLen(2))
-				Expect(instances[0]).To(Equal(toInstance(0, 0, "RUNNING")))
-				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "RUNNING")))
+				Expect(instances[0]).To(Equal(toInstance(0, 0)))
+				Expect(instances[1]).To(Equal(toInstance(1, 456000000000)))
 			})
 		})
 
@@ -483,11 +483,11 @@ func toPod(lrpName string, index int, time *meta.Time) *corev1.Pod {
 	return &pod
 }
 
-func toInstance(index int, since int64, state string) *opi.Instance {
+func toInstance(index int, since int64) *opi.Instance {
 	return &opi.Instance{
 		Index: index,
 		Since: since,
-		State: state,
+		State: "RUNNING",
 	}
 }
 
