@@ -1,52 +1,49 @@
 package k8s_test
 
 import (
-	"fmt"
-	"net/http"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/ghttp"
 
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route/routefakes"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	core "k8s.io/client-go/kubernetes/typed/core/v1"
+	testcore "k8s.io/client-go/testing"
+	metricsv1beta1api "k8s.io/metrics/pkg/apis/metrics/v1beta1"
+	metricsfake "k8s.io/metrics/pkg/client/clientset/versioned/fake"
+	metricsv1typed "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
 )
 
-var _ = Describe("Metrics", func() {
+var _ = FDescribe("Metrics", func() {
 
 	var (
-		collector      *MetricsCollector
-		work           chan []metrics.Message
-		fakeServer     *ghttp.Server
-		scheduler      *routefakes.FakeTaskScheduler
-		respondHandler http.HandlerFunc
-		podClient      core.PodInterface
-		podName        string
+		collector        *MetricsCollector
+		work             chan []metrics.Message
+		metricsClient    *metricsfake.Clientset
+		podMetricsClient metricsv1typed.PodMetricsInterface
+		scheduler        *routefakes.FakeTaskScheduler
+		podClient        core.PodInterface
 	)
 
 	BeforeEach(func() {
-		respondHandler = ghttp.RespondWith(http.StatusOK, "")
+		metricsClient = &metricsfake.Clientset{}
+		podMetricsClient = metricsClient.MetricsV1beta1().PodMetricses("opi")
+
 		client := fake.NewSimpleClientset()
-		podClient = client.Core().Pods("opi")
+		podClient = client.CoreV1().Pods("opi")
 	})
 
 	JustBeforeEach(func() {
-		fakeServer = ghttp.NewServer()
-		fakeServer.AppendHandlers(
-			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", "/you/name/it"),
-				respondHandler,
-			),
-		)
-
 		scheduler = new(routefakes.FakeTaskScheduler)
 		work = make(chan []metrics.Message, 1)
-		collector = NewMetricsCollector(work, scheduler, fmt.Sprintf("%s%s", fakeServer.URL(), "/you/name/it"), podClient)
+		collector = NewMetricsCollector(work, scheduler, podMetricsClient, podClient)
 	})
 
 	Context("When collecting metrics", func() {
@@ -54,33 +51,34 @@ var _ = Describe("Metrics", func() {
 		var err error
 
 		BeforeEach(func() {
-			respondHandler = ghttp.RespondWith(http.StatusOK, `
-{
-	"metadata": {"name": "thor-9000", "namespace": "asgard"},
-	"items": [
-		{
-			"metadata": {"name": "thor-9000", "namespace": "asgard"},
-			"containers": [{
-				"name": "bran-the-builder-9000",
-				"usage": {"cpu": "420000m", "memory": "420Ki"}
-			}]
-		}
-	]
-}`)
-			podName = "thor-9000"
+
+			expectedMetrics := metricsv1beta1api.PodMetricsList{
+				ListMeta: metav1.ListMeta{
+					ResourceVersion: "2",
+				},
+				Items: []metricsv1beta1api.PodMetrics{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "pod1", Namespace: "opi", ResourceVersion: "10", Labels: map[string]string{"key": "value"}},
+						Window:     metav1.Duration{Duration: time.Minute},
+						Containers: []metricsv1beta1api.ContainerMetrics{
+							{
+								Usage: v1.ResourceList{
+									v1.ResourceCPU:     resource.MustParse("420001m"),
+									v1.ResourceMemory:  resource.MustParse("42Ki"),
+									v1.ResourceStorage: *resource.NewQuantity(9*(1024*1024), resource.DecimalSI),
+								},
+							},
+						},
+					},
+				},
+			}
+
+			metricsClient.AddReactor("list", "pods", func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &expectedMetrics, nil
+			})
 		})
 
 		JustBeforeEach(func() {
-			_, createErr := podClient.Create(&v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: podName,
-					Labels: map[string]string{
-						"guid": "app-guid",
-					},
-				},
-			})
-			Expect(createErr).ToNot(HaveOccurred())
-
 			collector.Start()
 			task := scheduler.ScheduleArgsForCall(0)
 			err = task()
@@ -90,11 +88,7 @@ var _ = Describe("Metrics", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should use the right source url", func() {
-			Expect(fakeServer.ReceivedRequests()).To(HaveLen(1))
-		})
-
-		It("should send the received metrics", func() {
+		FIt("should send the received metrics", func() {
 			Eventually(work).Should(Receive(Equal([]metrics.Message{
 				{
 					AppID:       "app-guid",
@@ -111,11 +105,6 @@ var _ = Describe("Metrics", func() {
 		Context("there are no items", func() {
 
 			BeforeEach(func() {
-				respondHandler = ghttp.RespondWith(http.StatusOK, `
-{
-	"metadata": {"name": "thor-1000", "namespace": "myspace"},
-	"items": []
-}`)
 			})
 
 			It("should not return an error", func() {
@@ -130,16 +119,6 @@ var _ = Describe("Metrics", func() {
 		Context("there are no containers", func() {
 
 			BeforeEach(func() {
-				respondHandler = ghttp.RespondWith(http.StatusOK, `
-{
-	"metadata": {"name": "thor-9000", "namespace": "asgard"},
-	"items": [
-		{
-			"metadata": {"name": "thor-9000", "namespace": "asgard"},
-			"containers": []
-		}
-	]
-}`)
 			})
 
 			It("should not return an error", func() {
@@ -153,19 +132,6 @@ var _ = Describe("Metrics", func() {
 
 		Context("memory metric does not have a unit", func() {
 			BeforeEach(func() {
-				respondHandler = ghttp.RespondWith(http.StatusOK, `
-{
-	"metadata": {"name": "thor-9000", "namespace": "asgard"},
-	"items": [
-		{
-			"metadata": {"name": "thor-9000", "namespace": "asgard"},
-			"containers": [{
-				"name": "bran-the-builder-9000",
-				"usage": {"cpu": "420000m", "memory": "420"}
-			}]
-		}
-	]
-}`)
 			})
 
 			It("should return not an error", func() {
@@ -189,21 +155,6 @@ var _ = Describe("Metrics", func() {
 
 		Context("pod name doesn't have an index (eg staging tasks)", func() {
 			BeforeEach(func() {
-				respondHandler = ghttp.RespondWith(http.StatusOK, `
-{
-	"metadata": {"name": "thor-thunder0", "namespace": "asgard"},
-	"items": [
-		{
-			"metadata": {"name": "thor-thunder0", "namespace": "asgard" },
-			"containers": [{
-				"name": "bran-the-builder",
-				"usage": {"cpu": "420000m", "memory": "420M"}
-			}]
-		}
-	]
-}`)
-
-				podName = "thor-thunder0"
 			})
 
 			It("should return an error", func() {
@@ -218,7 +169,6 @@ var _ = Describe("Metrics", func() {
 		Context("metrics source responds with an error", func() {
 
 			BeforeEach(func() {
-				respondHandler = ghttp.RespondWith(http.StatusBadRequest, "")
 			})
 
 			It("should return an error", func() {
