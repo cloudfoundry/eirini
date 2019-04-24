@@ -12,9 +12,8 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/util/utilfakes"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
-	"code.cloudfoundry.org/eirini/util"
+	"code.cloudfoundry.org/eirini/util/utilfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -423,28 +422,6 @@ var _ = Describe("Statefulset", func() {
 			})
 		})
 
-		Context("and the pod has crashed", func() {
-			BeforeEach(func() {
-				pod1.Status.ContainerStatuses[0].State = corev1.ContainerState{
-					Terminated: &corev1.ContainerStateTerminated{},
-				}
-
-				pod2.Status.ContainerStatuses[0].State = corev1.ContainerState{
-					Waiting: &corev1.ContainerStateWaiting{},
-				}
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return a default value", func() {
-				Expect(instances).To(HaveLen(2))
-				Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "CRASHED")))
-				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "CRASHED")))
-			})
-		})
-
 		Context("and the StatefulSet was deleted/stopped", func() {
 
 			BeforeEach(func() {
@@ -483,87 +460,6 @@ var _ = Describe("Statefulset", func() {
 			})
 		})
 
-		Context("and the pod is pending", func() {
-			BeforeEach(func() {
-				pod1.Status.Phase = corev1.PodPending
-				pod2.Status.ContainerStatuses[0].Ready = false
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return a default value", func() {
-				Expect(instances).To(HaveLen(2))
-				Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "CLAIMED")))
-				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "CLAIMED")))
-			})
-		})
-
-		Context("and the pod phase is unknown", func() {
-			BeforeEach(func() {
-				pod1.Status.Phase = corev1.PodUnknown
-				pod2.Status.Phase = corev1.PodUnknown
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return a default value", func() {
-				Expect(instances).To(HaveLen(2))
-				Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "UNKNOWN")))
-				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "UNKNOWN")))
-			})
-		})
-
-		Context("the container status is not available yet", func() {
-
-			BeforeEach(func() {
-				pod1.Status.ContainerStatuses = []corev1.ContainerStatus{}
-				pod2.Status.ContainerStatuses = []corev1.ContainerStatus{}
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return an unknown status", func() {
-				Expect(instances).To(HaveLen(2))
-				Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "UNKNOWN")))
-				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "UNKNOWN")))
-			})
-
-		})
-
-		Context("and the node has insufficient memory", func() {
-
-			BeforeEach(func() {
-				insufficientMemoryEvent := &corev1.Event{
-					Reason:  "FailedScheduling",
-					Message: "Some string including Insufficient memory",
-					InvolvedObject: corev1.ObjectReference{
-						Name:      "odin-0",
-						Namespace: namespace,
-						UID:       "odin-0-uid",
-					},
-				}
-
-				_, clientErr := client.CoreV1().Events(namespace).Create(insufficientMemoryEvent)
-				Expect(clientErr).ToNot(HaveOccurred())
-			})
-
-			It("shouldn't return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return an unknown status", func() {
-				Expect(instances).To(HaveLen(2))
-				instance := toInstance(0, 123000000000, "UNCLAIMED")
-				instance.PlacementError = "Insufficient resources: memory"
-				Expect(instances).To(ContainElement(instance))
-			})
-		})
 	})
 })
 
