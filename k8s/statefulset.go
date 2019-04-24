@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/eirini/util"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -27,6 +28,7 @@ const (
 type StatefulSetDesirer struct {
 	Client                kubernetes.Interface
 	Namespace             string
+	RootfsVersion         string
 	LivenessProbeCreator  ProbeCreator
 	ReadinessProbeCreator ProbeCreator
 	Hasher                util.Hasher
@@ -35,10 +37,11 @@ type StatefulSetDesirer struct {
 //go:generate counterfeiter . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(client kubernetes.Interface, namespace string) opi.Desirer {
+func NewStatefulSetDesirer(client kubernetes.Interface, namespace string, rootfsVersion string) opi.Desirer {
 	return &StatefulSetDesirer{
 		Client:                client,
 		Namespace:             namespace,
+		RootfsVersion:         rootfsVersion,
 		LivenessProbeCreator:  CreateLivenessProbe,
 		ReadinessProbeCreator: CreateReadinessProbe,
 		Hasher:                util.TruncatedSHA256Hasher{},
@@ -154,7 +157,12 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 			since = pod.Status.StartTime.UnixNano()
 		}
 
-		state, placementError := getPodState(pod, events)
+		var state, placementError string
+		if hasInsufficientMemory(events) {
+			state, placementError = opi.ErrorState, opi.InsufficientMemoryError
+		} else {
+			state = utils.GetPodState(pod)
+		}
 
 		instance := opi.Instance{
 			Since:          since,
@@ -168,30 +176,6 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	return instances, nil
 }
 
-func getPodState(pod corev1.Pod, events *corev1.EventList) (string, string) {
-	if hasInsufficientMemory(events) {
-		return opi.ErrorState, opi.InsufficientMemoryError
-	}
-
-	if statusNotAvailable(&pod) || pod.Status.Phase == corev1.PodUnknown {
-		return opi.UnknownState, ""
-	}
-
-	if podPending(&pod) {
-		return opi.PendingState, ""
-	}
-
-	if podCrashed(pod.Status.ContainerStatuses[0]) {
-		return opi.CrashedState, ""
-	}
-
-	if podRunning(pod.Status.ContainerStatuses[0]) {
-		return opi.RunningState, ""
-	}
-
-	return opi.UnknownState, ""
-}
-
 func hasInsufficientMemory(eventList *corev1.EventList) bool {
 	events := eventList.Items
 
@@ -201,23 +185,6 @@ func hasInsufficientMemory(eventList *corev1.EventList) bool {
 
 	event := events[len(events)-1]
 	return event.Reason == eventFailedScheduling && strings.Contains(event.Message, "Insufficient memory")
-}
-
-func statusNotAvailable(pod *corev1.Pod) bool {
-	return pod.Status.ContainerStatuses == nil || len(pod.Status.ContainerStatuses) == 0
-}
-
-func podPending(pod *corev1.Pod) bool {
-	status := pod.Status.ContainerStatuses[0]
-	return pod.Status.Phase == corev1.PodPending || (status.State.Running != nil && !status.Ready)
-}
-
-func podCrashed(status corev1.ContainerStatus) bool {
-	return status.State.Waiting != nil || status.State.Terminated != nil
-}
-
-func podRunning(status corev1.ContainerStatus) bool {
-	return status.State.Running != nil && status.Ready
 }
 
 func (m *StatefulSetDesirer) statefulSets() types.StatefulSetInterface {
@@ -350,11 +317,12 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 					AutomountServiceAccountToken: &automountServiceAccountToken,
 					Containers: []corev1.Container{
 						{
-							Name:    "opi",
-							Image:   lrp.Image,
-							Command: lrp.Command,
-							Env:     envs,
-							Ports:   ports,
+							Name:            "opi",
+							Image:           lrp.Image,
+							ImagePullPolicy: corev1.PullAlways,
+							Command:         lrp.Command,
+							Env:             envs,
+							Ports:           ports,
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
 									corev1.ResourceMemory: memory,
@@ -375,18 +343,24 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 		},
 	}
 
-	labels := map[string]string{
+	selectorLabels := map[string]string{
 		"guid":        lrp.GUID,
 		"version":     lrp.Version,
 		"source_type": appSourceType,
 	}
 
-	statefulSet.Spec.Template.Labels = labels
-
 	statefulSet.Spec.Selector = &meta.LabelSelector{
-		MatchLabels: labels,
+		MatchLabels: selectorLabels,
 	}
 
+	labels := map[string]string{
+		"guid":                           lrp.GUID,
+		"version":                        lrp.Version,
+		"source_type":                    appSourceType,
+		rootfspatcher.RootfsVersionLabel: m.RootfsVersion,
+	}
+
+	statefulSet.Spec.Template.Labels = labels
 	statefulSet.Labels = labels
 
 	statefulSet.Annotations = lrp.Metadata

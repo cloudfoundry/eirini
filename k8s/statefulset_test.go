@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/eirini/util/utilfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -41,6 +42,7 @@ var _ = Describe("Statefulset", func() {
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
 		readinessProbeCreator *k8sfakes.FakeProbeCreator
 		hasher                *utilfakes.FakeHasher
+		rootfsVersion         string
 	)
 
 	listStatefulSets := func() []appsv1.StatefulSet {
@@ -63,12 +65,14 @@ var _ = Describe("Statefulset", func() {
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		hasher = new(utilfakes.FakeHasher)
 		hasher.HashReturns("random", nil)
+		rootfsVersion = "version1"
 	})
 
 	JustBeforeEach(func() {
 		statefulSetDesirer = &StatefulSetDesirer{
 			Client:                client,
 			Namespace:             namespace,
+			RootfsVersion:         rootfsVersion,
 			LivenessProbeCreator:  livenessProbeCreator.Spy,
 			ReadinessProbeCreator: readinessProbeCreator.Spy,
 			Hasher:                hasher,
@@ -116,6 +120,17 @@ var _ = Describe("Statefulset", func() {
 			It("should set podManagementPolicy to parallel", func() {
 				statefulSet := getStatefulSet(lrp)
 				Expect(string(statefulSet.Spec.PodManagementPolicy)).To(Equal("Parallel"))
+			})
+
+			It("should set imagePullPolicy to Always", func() {
+				statefulSet := getStatefulSet(lrp)
+				Expect(string(statefulSet.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal("Always"))
+			})
+
+			It("should set rootfsVersion as a label", func() {
+				statefulSet := getStatefulSet(lrp)
+				Expect(statefulSet.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
 			})
 
 			Context("When redeploying an existing LRP", func() {
@@ -437,8 +452,8 @@ var _ = Describe("Statefulset", func() {
 
 		It("should return the correct number of instances", func() {
 			Expect(instances).To(HaveLen(2))
-			Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "RUNNING")))
-			Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "RUNNING")))
+			Expect(instances[0]).To(Equal(toInstance(0, 123000000000)))
+			Expect(instances[1]).To(Equal(toInstance(1, 456000000000)))
 		})
 
 		Context("and time since creation is not available yet", func() {
@@ -459,30 +474,8 @@ var _ = Describe("Statefulset", func() {
 
 			It("should return a default value", func() {
 				Expect(instances).To(HaveLen(2))
-				Expect(instances[0]).To(Equal(toInstance(0, 0, "RUNNING")))
-				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "RUNNING")))
-			})
-		})
-
-		Context("and the pod has crashed", func() {
-			BeforeEach(func() {
-				pod1.Status.ContainerStatuses[0].State = corev1.ContainerState{
-					Terminated: &corev1.ContainerStateTerminated{},
-				}
-
-				pod2.Status.ContainerStatuses[0].State = corev1.ContainerState{
-					Waiting: &corev1.ContainerStateWaiting{},
-				}
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return a default value", func() {
-				Expect(instances).To(HaveLen(2))
-				Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "CRASHED")))
-				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "CRASHED")))
+				Expect(instances[0]).To(Equal(toInstance(0, 0)))
+				Expect(instances[1]).To(Equal(toInstance(1, 456000000000)))
 			})
 		})
 
@@ -524,87 +517,6 @@ var _ = Describe("Statefulset", func() {
 			})
 		})
 
-		Context("and the pod is pending", func() {
-			BeforeEach(func() {
-				pod1.Status.Phase = corev1.PodPending
-				pod2.Status.ContainerStatuses[0].Ready = false
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return a default value", func() {
-				Expect(instances).To(HaveLen(2))
-				Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "CLAIMED")))
-				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "CLAIMED")))
-			})
-		})
-
-		Context("and the pod phase is unknown", func() {
-			BeforeEach(func() {
-				pod1.Status.Phase = corev1.PodUnknown
-				pod2.Status.Phase = corev1.PodUnknown
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return a default value", func() {
-				Expect(instances).To(HaveLen(2))
-				Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "UNKNOWN")))
-				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "UNKNOWN")))
-			})
-		})
-
-		Context("the container status is not available yet", func() {
-
-			BeforeEach(func() {
-				pod1.Status.ContainerStatuses = []corev1.ContainerStatus{}
-				pod2.Status.ContainerStatuses = []corev1.ContainerStatus{}
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return an unknown status", func() {
-				Expect(instances).To(HaveLen(2))
-				Expect(instances[0]).To(Equal(toInstance(0, 123000000000, "UNKNOWN")))
-				Expect(instances[1]).To(Equal(toInstance(1, 456000000000, "UNKNOWN")))
-			})
-
-		})
-
-		Context("and the node has insufficient memory", func() {
-
-			BeforeEach(func() {
-				insufficientMemoryEvent := &corev1.Event{
-					Reason:  "FailedScheduling",
-					Message: "Some string including Insufficient memory",
-					InvolvedObject: corev1.ObjectReference{
-						Name:      "odin-0",
-						Namespace: namespace,
-						UID:       "odin-0-uid",
-					},
-				}
-
-				_, clientErr := client.CoreV1().Events(namespace).Create(insufficientMemoryEvent)
-				Expect(clientErr).ToNot(HaveOccurred())
-			})
-
-			It("shouldn't return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return an unknown status", func() {
-				Expect(instances).To(HaveLen(2))
-				instance := toInstance(0, 123000000000, "UNCLAIMED")
-				instance.PlacementError = "Insufficient resources: memory"
-				Expect(instances).To(ContainElement(instance))
-			})
-		})
 	})
 })
 
@@ -628,11 +540,11 @@ func toPod(lrpName string, index int, time *meta.Time) *corev1.Pod {
 	return &pod
 }
 
-func toInstance(index int, since int64, state string) *opi.Instance {
+func toInstance(index int, since int64) *opi.Instance {
 	return &opi.Instance{
 		Index: index,
 		Since: since,
-		State: state,
+		State: "RUNNING",
 	}
 }
 
