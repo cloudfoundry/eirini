@@ -22,8 +22,7 @@ func GetPodState(pod v1.Pod) string {
 		return opi.RunningState
 	}
 
-	return ""
-	//return opi.UnknownState
+	return opi.UnknownState
 }
 
 func statusNotAvailable(pod *v1.Pod) bool {
