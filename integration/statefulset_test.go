@@ -121,7 +121,13 @@ var _ = Describe("StatefulSet Manager", func() {
 				odinLRP.Command = []string{
 					"/bin/sh",
 					"-c",
-					`if [ $(echo $HOSTNAME | sed 's|.*-\(.*\)|\1|') -eq 1 ]; then exit; else  while true; do echo hello; nc -l -p 3000 ;done; fi;`,
+					`if [ $(echo $HOSTNAME | sed 's|.*-\(.*\)|\1|') -eq 1 ]; then
+	exit;
+else
+	while true; do
+		nc -lk -p 3000 -e echo just a server;
+	done;
+fi;`,
 				}
 			})
 
