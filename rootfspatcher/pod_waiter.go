@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"code.cloudfoundry.org/eirini/k8s/utils"
+	"code.cloudfoundry.org/eirini/opi"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -50,14 +52,14 @@ func (p PodWaiter) poll(ready chan<- interface{}, stop <-chan interface{}) {
 func (p PodWaiter) podsUpdated() bool {
 	pods, _ := p.Client.List(metav1.ListOptions{})
 	for _, pod := range pods.Items {
-		if pod.Labels[RootfsVersionLabel] != p.RootfsVersion || !isRunningAndReady(pod) {
+		if pod.Labels[RootfsVersionLabel] != p.RootfsVersion || !isRunning(pod) {
 			return false
 		}
 	}
 	return true
 }
 
-func isRunningAndReady(pod corev1.Pod) bool {
-	return pod.Status.ContainerStatuses[0].Ready &&
-		pod.Status.ContainerStatuses[0].State.Running != nil
+func isRunning(pod corev1.Pod) bool {
+	state := utils.GetPodState(pod)
+	return state == opi.RunningState
 }
