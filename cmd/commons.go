@@ -5,9 +5,11 @@ import (
 	"os"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+
+	// Kubernetes has a tricky way to add authentication
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 func CreateKubeClient(kubeConfigPath string) kubernetes.Interface {
