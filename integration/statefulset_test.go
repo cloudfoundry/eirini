@@ -1,6 +1,8 @@
 package statefulsets_test
 
 import (
+	"math/rand"
+
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
@@ -20,14 +22,16 @@ var _ = Describe("StatefulSet Manager", func() {
 	)
 
 	BeforeEach(func() {
-		odinLRP = createLRP("ödin", "guid-odin")
-		thorLRP = createLRP("thor", "guid-thor")
+		odinLRP = createLRP("ödin")
+		thorLRP = createLRP("thor")
 	})
 
 	AfterEach(func() {
 		cleanupStatefulSet(odinLRP)
 		cleanupStatefulSet(thorLRP)
-		Eventually(listAllStatefulSets, timeout).Should(BeEmpty())
+		Eventually(func() []appsv1.StatefulSet {
+			return listAllStatefulSets(odinLRP, thorLRP)
+		}, timeout).Should(BeEmpty())
 	})
 
 	JustBeforeEach(func() {
@@ -61,8 +65,8 @@ var _ = Describe("StatefulSet Manager", func() {
 				pods = podNamesFromPods(listPods(odinLRP.LRPIdentifier))
 				return pods
 			}, timeout).Should(HaveLen(2))
-			Expect(pods[0]).To(ContainSubstring("odin"))
-			Expect(pods[1]).To(ContainSubstring("odin"))
+			Expect(pods[0]).To(ContainSubstring(odinLRP.GUID))
+			Expect(pods[1]).To(ContainSubstring(odinLRP.GUID))
 		})
 
 		Context("when we create the same StatefulSet again", func() {
@@ -114,7 +118,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		Context("When one of the instances if failing", func() {
 			BeforeEach(func() {
-				odinLRP = createLRP("odin", "guid-odin")
+				odinLRP = createLRP("odin")
 				odinLRP.Health = opi.Healtcheck{
 					Type: "port",
 					Port: 3000,
@@ -146,7 +150,18 @@ func int32ptr(i int) *int32 {
 	return &i32
 }
 
-func createLRP(name string, guid string) *opi.LRP {
+const letters = "abcdefghijklmnopqrstuvwxyz1234567890"
+
+func randomString() string {
+	b := make([]byte, 10)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
+func createLRP(name string) *opi.LRP {
+	guid := randomString()
 	return &opi.LRP{
 		Command: []string{
 			"/bin/sh",

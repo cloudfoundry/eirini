@@ -95,8 +95,15 @@ func cleanupStatefulSet(lrp *opi.LRP) {
 	Expect(err).ToNot(HaveOccurred())
 }
 
-func listAllStatefulSets() []appsv1.StatefulSet {
-	list, err := statefulSets().List(meta.ListOptions{})
+func listAllStatefulSets(lrp1, lrp2 *opi.LRP) []appsv1.StatefulSet {
+	labels := fmt.Sprintf("guid in (%s, %s),version in (%s, %s)",
+		lrp1.LRPIdentifier.GUID,
+		lrp2.LRPIdentifier.GUID,
+		lrp1.LRPIdentifier.Version,
+		lrp2.LRPIdentifier.Version,
+	)
+
+	list, err := statefulSets().List(meta.ListOptions{LabelSelector: labels})
 	Expect(err).NotTo(HaveOccurred())
 	return list.Items
 }

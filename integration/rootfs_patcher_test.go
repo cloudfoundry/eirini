@@ -27,8 +27,8 @@ var _ = Describe("RootfsPatcher", func() {
 			namespace,
 			"old_rootfsversion",
 		)
-		odinLRP = createLRP("ödin", "guid-odin")
-		thorLRP = createLRP("thor", "guid-thor")
+		odinLRP = createLRP("ödin")
+		thorLRP = createLRP("thor")
 
 		var err error
 		patcherPath, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/rootfs-patcher")
