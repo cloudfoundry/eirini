@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"os"
-	"time"
 
 	"code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
@@ -12,7 +11,7 @@ import (
 func main() {
 	rootfsVersion := flag.String("rootfs-version", "", "Version of rootfs")
 	namespace := flag.String("namespace", "", "Namespace where eirini runs apps")
-	timeout := flag.Duration("timeout", 1*time.Hour, "Timeout for waiting for rootfs patching to be finished")
+	timeout := flag.Duration("timeout", -1, "Timeout for waiting for rootfs patching to be finished")
 	kubeConfigPath := flag.String("kubeconfig", "", "Config for kubernetes, leave empty to use in cluster config")
 
 	flag.Parse()

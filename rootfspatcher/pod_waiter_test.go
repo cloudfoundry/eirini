@@ -108,4 +108,27 @@ var _ = Describe("PodWaiter", func() {
 
 		Eventually(channel, "2s").Should(Receive(MatchError("timed out after 1s")))
 	})
+
+	It("should not timeout if timeout duration is -1", func() {
+		channel := make(chan error, 1)
+		defer close(channel)
+
+		waiter.Timeout = -1
+
+		go func(ch chan<- error) {
+			err := waiter.Wait()
+			ch <- err
+		}(channel)
+
+		Consistently(channel, "2s").ShouldNot(Receive())
+
+		updatedPod := pod.DeepCopy()
+		updatedPod.Labels[RootfsVersionLabel] = "version2"
+		updatedPod.Status.ContainerStatuses[0].Ready = true
+		updatedPod.Status.ContainerStatuses[0].State.Running = &corev1.ContainerStateRunning{}
+		_, err := client.CoreV1().Pods(namespace).Update(updatedPod)
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(channel, "2s").Should(Receive(nil))
+	})
 })

@@ -26,11 +26,15 @@ func (p PodWaiter) Wait() error {
 
 	go p.poll(ready, stop)
 
+	t := time.NewTimer(p.Timeout)
+	if p.Timeout < 0 {
+		t.Stop()
+	}
 	select {
 	case <-ready:
 		stop <- nil
 		return nil
-	case <-time.After(p.Timeout):
+	case <-t.C:
 		return fmt.Errorf("timed out after %s", p.Timeout.String())
 	}
 }
