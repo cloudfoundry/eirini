@@ -52,7 +52,7 @@ var _ = Describe("Statefulset", func() {
 		return list.Items
 	}
 
-	getStatefulSet := func(lrp *opi.LRP) *appsv1.StatefulSet {
+	getStatefulSetFromK8s := func(lrp *opi.LRP) *appsv1.StatefulSet {
 		labelSelector := fmt.Sprintf("guid=%s,version=%s", lrp.LRPIdentifier.GUID, lrp.LRPIdentifier.Version)
 		ss, getErr := client.AppsV1().StatefulSets(namespace).List(meta.ListOptions{LabelSelector: labelSelector})
 		Expect(getErr).NotTo(HaveOccurred())
@@ -104,37 +104,37 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			It("should provide original request", func() {
-				statefulSet := getStatefulSet(lrp)
+				statefulSet := getStatefulSetFromK8s(lrp)
 				Expect(statefulSet.Annotations["original_request"]).To(Equal(lrp.LRP))
 			})
 
 			It("should provide the process-guid to the pod annotations", func() {
-				statefulSet := getStatefulSet(lrp)
+				statefulSet := getStatefulSetFromK8s(lrp)
 				Expect(statefulSet.Spec.Template.Annotations[cf.ProcessGUID]).To(Equal("Baldur-guid"))
 			})
 
 			It("should set name for the stateful set", func() {
-				statefulSet := getStatefulSet(lrp)
+				statefulSet := getStatefulSetFromK8s(lrp)
 				Expect(statefulSet.Name).To(Equal("baldur-space-foo-random"))
 			})
 
 			It("should set space name as annotation on the statefulset", func() {
-				statefulSet := getStatefulSet(lrp)
+				statefulSet := getStatefulSetFromK8s(lrp)
 				Expect(statefulSet.Annotations[cf.VcapSpaceName]).To(Equal("space-foo"))
 			})
 
 			It("should set podManagementPolicy to parallel", func() {
-				statefulSet := getStatefulSet(lrp)
+				statefulSet := getStatefulSetFromK8s(lrp)
 				Expect(string(statefulSet.Spec.PodManagementPolicy)).To(Equal("Parallel"))
 			})
 
 			It("should set imagePullPolicy to Always", func() {
-				statefulSet := getStatefulSet(lrp)
+				statefulSet := getStatefulSetFromK8s(lrp)
 				Expect(string(statefulSet.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal("Always"))
 			})
 
 			It("should set rootfsVersion as a label", func() {
-				statefulSet := getStatefulSet(lrp)
+				statefulSet := getStatefulSetFromK8s(lrp)
 				Expect(statefulSet.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
 				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
 			})
@@ -160,7 +160,7 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			It("should use the guid as a name", func() {
-				statefulSet := getStatefulSet(lrp)
+				statefulSet := getStatefulSetFromK8s(lrp)
 				Expect(statefulSet.Name).To(Equal("guid_1234-random"))
 			})
 		})
@@ -208,15 +208,16 @@ var _ = Describe("Statefulset", func() {
 		Context("when the app exists", func() {
 
 			var (
-				lrp *opi.LRP
+				lrp                 *opi.LRP
+				originalStatefulSet *appsv1.StatefulSet
 			)
 
 			BeforeEach(func() {
 
 				lrp = createLRP("update", `["my.example.route"]`)
 
-				statefulSet := toStatefulSet(lrp)
-				_, createErr := client.AppsV1().StatefulSets(namespace).Create(statefulSet)
+				originalStatefulSet = toStatefulSet(lrp)
+				_, createErr := client.AppsV1().StatefulSets(namespace).Create(originalStatefulSet)
 				Expect(createErr).NotTo(HaveOccurred())
 			})
 
@@ -224,33 +225,46 @@ var _ = Describe("Statefulset", func() {
 
 				JustBeforeEach(func() {
 					lrp.TargetInstances = 5
+					lrp.Metadata[cf.LastUpdated] = "never"
 					err = statefulSetDesirer.Update(lrp)
-				})
-
-				It("scales the app without error", func() {
 					Expect(err).ToNot(HaveOccurred())
 				})
 
-				It("updates the desired number of app instances", func() {
+				It("only updates the desired number of app instances and last updated", func() {
 					Eventually(func() int32 {
-						return *getStatefulSet(lrp).Spec.Replicas
+						return *getStatefulSetFromK8s(lrp).Spec.Replicas
 					}).Should(Equal(int32(5)))
+					newAnnotations := getStatefulSetFromK8s(lrp).GetAnnotations()
+					Expect(newAnnotations[cf.LastUpdated]).To(Equal("never"))
+					originalAnnotations := originalStatefulSet.GetAnnotations()
+					delete(originalAnnotations, cf.LastUpdated)
+					delete(newAnnotations, cf.LastUpdated)
+					Expect(originalAnnotations).To(Equal(newAnnotations))
 				})
 			})
 
 			Context("with modified routes", func() {
-
 				JustBeforeEach(func() {
-					lrp.Metadata = map[string]string{cf.VcapAppUris: `["my.example.route", "my.second.example.route"]`}
+					lrp.Metadata = map[string]string{cf.VcapAppUris: `["my.example.route", "my.second.example.route"]`, cf.LastUpdated: "yes"}
 					err = statefulSetDesirer.Update(lrp)
+					Expect(err).ToNot(HaveOccurred())
 				})
 
-				It("should update the stored routes", func() {
+				It("only updates the stored routes", func() {
 					Eventually(func() string {
-						return getStatefulSet(lrp).Annotations[eirini.RegisteredRoutes]
+						return getStatefulSetFromK8s(lrp).Annotations[eirini.RegisteredRoutes]
 					}, 1*time.Second).Should(Equal(`["my.example.route", "my.second.example.route"]`))
+					newAnnotations := getStatefulSetFromK8s(lrp).GetAnnotations()
+					Expect(newAnnotations[cf.LastUpdated]).To(Equal("yes"))
+					originalAnnotations := originalStatefulSet.GetAnnotations()
+					delete(originalAnnotations, eirini.RegisteredRoutes)
+					delete(originalAnnotations, cf.LastUpdated)
+					delete(newAnnotations, eirini.RegisteredRoutes)
+					delete(newAnnotations, cf.LastUpdated)
+					Expect(originalAnnotations).To(Equal(newAnnotations))
 				})
 			})
+
 		})
 
 		Context("when the app does not exist", func() {
