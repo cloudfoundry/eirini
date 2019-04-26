@@ -384,7 +384,8 @@ var _ = Describe("Statefulset", func() {
 			err = statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
 			Expect(err).ToNot(HaveOccurred())
 
-			pods, err := client.CoreV1().Pods(namespace).List(meta.ListOptions{})
+			var pods *corev1.PodList
+			pods, err = client.CoreV1().Pods(namespace).List(meta.ListOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(pods.Items).To(HaveLen(1))
 			Expect(pods.Items[0].Name).To(Equal("baldur-space-foo-random-0"))
