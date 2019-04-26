@@ -3,10 +3,10 @@ package route_test
 import (
 	"errors"
 	"fmt"
-	"io"
 	"time"
 
 	"code.cloudfoundry.org/eirini/route/routefakes"
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -22,7 +22,7 @@ var _ = Describe("Emitter", func() {
 		scheduler   *routefakes.FakeTaskScheduler
 		publisher   *routefakes.FakePublisher
 		workChannel chan *Message
-		log         *gbytes.Buffer
+		logger      *lagertest.TestLogger
 
 		emitter      *Emitter
 		routes       *Message
@@ -62,8 +62,8 @@ var _ = Describe("Emitter", func() {
 			TLSPort:            8443,
 		}
 
-		log = gbytes.NewBuffer()
-		emitter = NewEmitter(publisher, workChannel, scheduler, io.MultiWriter(GinkgoWriter, log))
+		logger = lagertest.NewTestLogger("test-logger")
+		emitter = NewEmitter(publisher, workChannel, scheduler, logger)
 		emitter.Start()
 	})
 
@@ -124,7 +124,8 @@ var _ = Describe("Emitter", func() {
 			})
 
 			It("prints an informative message that registration failed", func() {
-				Eventually(log, timeout).Should(gbytes.Say("failed to publish registered route: Failed to publish message"))
+				Eventually(logger.Buffer(), timeout).Should(gbytes.Say(`"message":"test-logger.failed-to-publish-registered-route"`))
+				Eventually(logger.Buffer(), timeout).Should(gbytes.Say(`"error":"Failed to publish message"`))
 			})
 
 			It("should publish the unregistered routes", func() {
@@ -132,7 +133,8 @@ var _ = Describe("Emitter", func() {
 			})
 
 			It("prints an informative message that unregistration failed", func() {
-				Eventually(log, timeout).Should(gbytes.Say("failed to publish unregistered route: Failed to publish message"))
+				Eventually(logger.Buffer(), timeout).Should(gbytes.Say(`"message":"test-logger.failed-to-publish-unregistered-route"`))
+				Eventually(logger.Buffer(), timeout).Should(gbytes.Say(`"error":"Failed to publish message"`))
 			})
 		})
 	})

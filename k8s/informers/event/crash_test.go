@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/eirini/events"
 	. "code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/models/cf"
+	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -44,7 +45,7 @@ var _ = Describe("Event", func() {
 		informerStopper = make(chan struct{})
 
 		client = fake.NewSimpleClientset()
-		crashInformer = NewCrashInformer(client, 0, namespace, reportChan, informerStopper)
+		crashInformer = NewCrashInformer(client, 0, namespace, reportChan, informerStopper, lagertest.NewTestLogger("test-logger"))
 
 		watcher = watch.NewFake()
 		fakecs := client.(*fake.Clientset)

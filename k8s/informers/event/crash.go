@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/util"
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
@@ -22,6 +23,7 @@ type CrashInformer struct {
 	namespace   string
 	reportChan  chan events.CrashReport
 	stopperChan chan struct{}
+	logger      lager.Logger
 }
 
 func NewCrashInformer(
@@ -30,6 +32,7 @@ func NewCrashInformer(
 	namespace string,
 	reportChan chan events.CrashReport,
 	stopperChan chan struct{},
+	logger lager.Logger,
 ) *CrashInformer {
 	return &CrashInformer{
 		clientset:   client,
@@ -37,6 +40,7 @@ func NewCrashInformer(
 		namespace:   namespace,
 		reportChan:  reportChan,
 		stopperChan: stopperChan,
+		logger:      logger,
 	}
 }
 
@@ -81,6 +85,7 @@ func (c *CrashInformer) updateFunc(_ interface{}, newObj interface{}) {
 func (c *CrashInformer) reportState(pod *v1.Pod) {
 	events, err := k8s.GetEvents(c.clientset, *pod)
 	if err != nil || k8s.IsStopped(events) {
+		c.logger.Error("failed-to-get-k8s-events", err, lager.Data{"pod-is-stopped": k8s.IsStopped(events)})
 		return
 	}
 
@@ -97,6 +102,8 @@ func (c *CrashInformer) sendStateReport(
 ) {
 	if report, err := toReport(pod, reason, exitStatus, exitDescription, crashTimestamp); err == nil {
 		c.reportChan <- report
+	} else {
+		c.logger.Error("failed-to-create-crash-report", err, lager.Data{"pod-name": pod.Name, "process-guid": pod.Annotations[cf.ProcessGUID]})
 	}
 }
 

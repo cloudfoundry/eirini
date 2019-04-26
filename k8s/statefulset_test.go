@@ -15,6 +15,7 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/eirini/util/utilfakes"
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -77,6 +78,7 @@ var _ = Describe("Statefulset", func() {
 			LivenessProbeCreator:  livenessProbeCreator.Spy,
 			ReadinessProbeCreator: readinessProbeCreator.Spy,
 			Hasher:                hasher,
+			Logger:                lagertest.NewTestLogger("test-logger"),
 		}
 	})
 

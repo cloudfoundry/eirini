@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -98,8 +97,8 @@ func connect(cmd *cobra.Command, args []string) {
 	handlerLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 	handler := handler.New(bifrost, stager, handlerLogger)
 
-	log.Println("opi connected")
-	log.Fatal(http.ListenAndServe("0.0.0.0:8085", handler))
+	handlerLogger.Info("opi-connected")
+	handlerLogger.Fatal("opi-crashed", http.ListenAndServe("0.0.0.0:8085", handler))
 }
 
 func initStager(cfg *eirini.Config) eirini.Stager {
@@ -137,7 +136,9 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	syncLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 	kubeNamespace := cfg.Properties.KubeNamespace
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
-	desirer := k8s.NewStatefulSetDesirer(clientset, kubeNamespace, cfg.Properties.RootfsVersion)
+	desireLogger := lager.NewLogger("desirer")
+	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+	desirer := k8s.NewStatefulSetDesirer(clientset, kubeNamespace, cfg.Properties.RootfsVersion, desireLogger)
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 	registryIP := cfg.Properties.RegistryAddress
@@ -174,7 +175,9 @@ func launchRouteEmitter(kubeConfigPath, namespace, natsPassword, natsIP string) 
 	workChan := make(chan *route.Message)
 	instanceInformer := k8sroute.NewInstanceChangeInformer(clientset, syncPeriod, namespace)
 	uriInformer := k8sroute.NewURIChangeInformer(clientset, syncPeriod, namespace)
-	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{}, os.Stdout)
+	emitterLogger := lager.NewLogger("route-emitter")
+	emitterLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{}, emitterLogger)
 
 	go re.Start()
 	go instanceInformer.Start(workChan)
@@ -201,7 +204,9 @@ func launchEventReporter(kubeConfigPath, uri, ca, cert, key, namespace string) {
 	client := cc_client.NewCcClient(uri, tlsConf)
 	reporter := events.NewCrashReporter(work, &route.SimpleLoopScheduler{}, client, lager.NewLogger("instance-crash-reporter"))
 	clientset := cmdcommons.CreateKubeClient(kubeConfigPath)
-	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, work, make(chan struct{}))
+	crashLogger := lager.NewLogger("instance-crash-informer")
+	crashLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, work, make(chan struct{}), crashLogger)
 
 	go crashInformer.Start()
 	go reporter.Run()

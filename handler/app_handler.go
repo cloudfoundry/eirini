@@ -158,6 +158,7 @@ func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter
 		Version: ps.ByName("version_guid"),
 	}
 	instances, err := a.bifrost.GetInstances(r.Context(), identifier)
+	a.logError("get-instances-failed", err)
 	response := a.createGetInstancesResponse(identifier.ProcessGUID(), instances, err)
 
 	err = json.NewEncoder(w).Encode(response)

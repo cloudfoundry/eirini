@@ -2,9 +2,8 @@ package route
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
 
+	"code.cloudfoundry.org/lager"
 	nats "github.com/nats-io/go-nats"
 	"github.com/pkg/errors"
 )
@@ -30,15 +29,15 @@ type Emitter struct {
 	publisher Publisher
 	scheduler TaskScheduler
 	work      <-chan *Message
-	log       io.Writer
+	logger    lager.Logger
 }
 
-func NewEmitter(publisher Publisher, workChannel <-chan *Message, scheduler TaskScheduler, log io.Writer) *Emitter {
+func NewEmitter(publisher Publisher, workChannel <-chan *Message, scheduler TaskScheduler, logger lager.Logger) *Emitter {
 	return &Emitter{
 		publisher: publisher,
 		scheduler: scheduler,
 		work:      workChannel,
-		log:       log,
+		logger:    logger,
 	}
 }
 
@@ -61,7 +60,7 @@ func (e *Emitter) registerRoutes(route *Message) {
 
 	err := e.publish(registerSubject, route)
 	if err != nil {
-		fmt.Fprintln(e.log, "failed to publish registered route:", err.Error())
+		e.logger.Error("failed-to-publish-registered-route", err, lager.Data{"routes": route.Routes})
 	}
 }
 
@@ -72,7 +71,7 @@ func (e *Emitter) unregisterRoutes(route *Message) {
 
 	err := e.publish(unregisterSubject, route)
 	if err != nil {
-		fmt.Fprintln(e.log, "failed to publish unregistered route:", err.Error())
+		e.logger.Error("failed-to-publish-unregistered-route", err, lager.Data{"routes": route.UnregisteredRoutes})
 	}
 }
 
