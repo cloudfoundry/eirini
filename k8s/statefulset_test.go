@@ -3,6 +3,7 @@ package k8s_test
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -86,7 +87,7 @@ var _ = Describe("Statefulset", func() {
 			JustBeforeEach(func() {
 				livenessProbeCreator.Returns(&corev1.Probe{})
 				readinessProbeCreator.Returns(&corev1.Probe{})
-				lrp = createLRP("Baldur", "1234.5", "my.example.route")
+				lrp = createLRP("Baldur", "my.example.route")
 				err = statefulSetDesirer.Desire(lrp)
 			})
 
@@ -140,7 +141,7 @@ var _ = Describe("Statefulset", func() {
 
 			Context("When redeploying an existing LRP", func() {
 				BeforeEach(func() {
-					lrp = createLRP("Baldur", "1234.5", "my.example.route")
+					lrp = createLRP("Baldur", "my.example.route")
 					_, createErr := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
 					Expect(createErr).ToNot(HaveOccurred())
 				})
@@ -153,7 +154,7 @@ var _ = Describe("Statefulset", func() {
 
 		Context("When the app name contains unsupported characters", func() {
 			JustBeforeEach(func() {
-				lrp = createLRP("Балдър", "1234.5", "my.example.route")
+				lrp = createLRP("Балдър", "my.example.route")
 				err = statefulSetDesirer.Desire(lrp)
 				Expect(err).ToNot(HaveOccurred())
 			})
@@ -166,19 +167,14 @@ var _ = Describe("Statefulset", func() {
 	})
 
 	Context("When getting an app", func() {
-
 		var (
 			expectedLRP *opi.LRP
 			actualLRP   *opi.LRP
 		)
 
 		BeforeEach(func() {
-			expectedLRP = createLRP("Baldur", "1234.5", "my.example.route")
-			expectedLRP.LRP = ""
-
-			// This is because toStatefulSet function mutates the metadata map
-			lrpToCreateStatefulSet := createLRP("Baldur", "1234.5", "my.example.route")
-			_, createErr := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrpToCreateStatefulSet))
+			expectedLRP = createLRP("Baldur", "my.example.route")
+			_, createErr := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(expectedLRP))
 			Expect(createErr).ToNot(HaveOccurred())
 		})
 
@@ -190,7 +186,9 @@ var _ = Describe("Statefulset", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("return the expected LRP", func() {
+		It("return the same LRP except metadata and original LRP request", func() {
+			expectedLRP.Metadata = cleanupMetadata(expectedLRP.Metadata)
+			expectedLRP.LRP = ""
 			Expect(expectedLRP).To(Equal(actualLRP))
 		})
 
@@ -215,7 +213,7 @@ var _ = Describe("Statefulset", func() {
 
 			BeforeEach(func() {
 
-				lrp = createLRP("update", "7653.2", `["my.example.route"]`)
+				lrp = createLRP("update", `["my.example.route"]`)
 
 				statefulSet := toStatefulSet(lrp)
 				_, createErr := client.AppsV1().StatefulSets(namespace).Create(statefulSet)
@@ -226,7 +224,6 @@ var _ = Describe("Statefulset", func() {
 
 				JustBeforeEach(func() {
 					lrp.TargetInstances = 5
-					lrp.Metadata = map[string]string{cf.LastUpdated: "123214.2"}
 					err = statefulSetDesirer.Update(lrp)
 				})
 
@@ -259,7 +256,7 @@ var _ = Describe("Statefulset", func() {
 		Context("when the app does not exist", func() {
 
 			JustBeforeEach(func() {
-				err = statefulSetDesirer.Update(createLRP("name", "!234.0", "[something.strange]"))
+				err = statefulSetDesirer.Update(createLRP("name", "[something.strange]"))
 			})
 
 			It("should return an error", func() {
@@ -283,20 +280,12 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			expectedLRPs = []*opi.LRP{
-				createLRP("odin", "1234.5", "my.example.route"),
-				createLRP("thor", "4567.8", "my.example.route"),
-				createLRP("mimir", "9012.3", "my.example.route"),
+				createLRP("odin", "my.example.route"),
+				createLRP("thor", "my.example.route"),
+				createLRP("mimir", "my.example.route"),
 			}
-			// This is because toStatefulSet function mutates the metatdata map
-			lrpsToCreateStatefulSets := []*opi.LRP{
-				createLRP("odin", "1234.5", "my.example.route"),
-				createLRP("thor", "4567.8", "my.example.route"),
-				createLRP("mimir", "9012.3", "my.example.route"),
-			}
+
 			for _, l := range expectedLRPs {
-				l.LRP = ""
-			}
-			for _, l := range lrpsToCreateStatefulSets {
 				statefulset := toStatefulSet(l)
 				_, createErr := client.AppsV1().StatefulSets(namespace).Create(statefulset)
 				Expect(createErr).ToNot(HaveOccurred())
@@ -312,6 +301,13 @@ var _ = Describe("Statefulset", func() {
 		})
 
 		It("translates all existing statefulSets to opi.LRPs", func() {
+			// clean metadata and LRP because we do not return LRP
+			// and return only subset of metadata fields
+			for _, l := range expectedLRPs {
+				l.Metadata = cleanupMetadata(l.Metadata)
+				l.LRP = ""
+			}
+
 			Expect(actualLRPs).To(ConsistOf(expectedLRPs))
 		})
 
@@ -349,7 +345,7 @@ var _ = Describe("Statefulset", func() {
 	Context("Stop an LRP", func() {
 
 		BeforeEach(func() {
-			lrp := createLRP("Baldur", "1234.5", "my.example.route")
+			lrp := createLRP("Baldur", "my.example.route")
 			_, err = client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -376,7 +372,7 @@ var _ = Describe("Statefulset", func() {
 	Context("Stop an LRP instance", func() {
 
 		BeforeEach(func() {
-			lrp := createLRP("Baldur", "1234.5", "my.example.route")
+			lrp := createLRP("Baldur", "my.example.route")
 			_, err = client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
 			Expect(err).ToNot(HaveOccurred())
 
@@ -695,7 +691,18 @@ func createVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []co
 	return vols, volumeMounts
 }
 
-func createLRP(name, lastUpdated, routes string) *opi.LRP {
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func randStringBytes() string {
+	b := make([]byte, 10)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+
+func createLRP(name, routes string) *opi.LRP {
+	lastUpdated := randStringBytes()
 	return &opi.LRP{
 		LRPIdentifier: opi.LRPIdentifier{
 			GUID:    "guid_1234",
@@ -728,4 +735,21 @@ func createLRP(name, lastUpdated, routes string) *opi.LRP {
 		},
 		LRP: "original request",
 	}
+}
+
+func cleanupMetadata(m map[string]string) map[string]string {
+	var fields = []string{
+		"process_guid",
+		"last_updated",
+		"application_uris",
+		"application_id",
+		"version",
+		"application_name",
+	}
+
+	result := map[string]string{}
+	for _, f := range fields {
+		result[f] = m[f]
+	}
+	return result
 }
