@@ -94,11 +94,11 @@ var _ = Describe("Statefulset", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should creates a healthcheck probe", func() {
+			It("should create a healthcheck probe", func() {
 				Expect(livenessProbeCreator.CallCount()).To(Equal(1))
 			})
 
-			It("should creates a readiness probe", func() {
+			It("should create a readiness probe", func() {
 				Expect(readinessProbeCreator.CallCount()).To(Equal(1))
 			})
 
