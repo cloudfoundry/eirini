@@ -6,6 +6,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
+	"code.cloudfoundry.org/lager"
 )
 
 func main() {
@@ -29,11 +30,14 @@ func main() {
 		Version: *rootfsVersion,
 		Client:  statefulSetClient,
 	}
+	logger := lager.NewLogger("Pod Waiter")
+	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
 
 	waiter := rootfspatcher.PodWaiter{
 		Client:        podClient,
-		Timeout:       *timeout,
+		Logger:        logger,
 		RootfsVersion: *rootfsVersion,
+		Timeout:       *timeout,
 	}
 
 	err := rootfspatcher.PatchAndWait(patcher, waiter)

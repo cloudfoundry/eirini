@@ -6,15 +6,17 @@ import (
 
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/lager"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 type PodWaiter struct {
-	Timeout       time.Duration
 	Client        clientcorev1.PodInterface
+	Logger        lager.Logger
 	RootfsVersion string
+	Timeout       time.Duration
 }
 
 func (p PodWaiter) Wait() error {
@@ -54,7 +56,13 @@ func (p PodWaiter) poll(ready chan<- interface{}, stop <-chan interface{}) {
 }
 
 func (p PodWaiter) podsUpdated() bool {
-	pods, _ := p.Client.List(metav1.ListOptions{})
+	pods, err := p.Client.List(metav1.ListOptions{})
+
+	if err != nil {
+		p.Logger.Error("failed to list pods", err)
+		return false
+	}
+
 	for _, pod := range pods.Items {
 		if pod.Labels[RootfsVersionLabel] != p.RootfsVersion || !isRunning(pod) {
 			return false

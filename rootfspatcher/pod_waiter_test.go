@@ -1,21 +1,26 @@
 package rootfspatcher_test
 
 import (
+	"errors"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/testing"
 
 	. "code.cloudfoundry.org/eirini/rootfspatcher"
+	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("PodWaiter", func() {
 	var (
 		client    *fake.Clientset
 		pod       corev1.Pod
+		logger    *lagertest.TestLogger
 		namespace string
 		waiter    PodWaiter
 	)
@@ -35,10 +40,12 @@ var _ = Describe("PodWaiter", func() {
 		}
 		_, err := client.CoreV1().Pods(namespace).Create(&pod)
 		Expect(err).ToNot(HaveOccurred())
+		logger = lagertest.NewTestLogger("test")
 		waiter = PodWaiter{
-			Timeout:       1 * time.Second,
 			Client:        client.CoreV1().Pods(namespace),
+			Logger:        logger,
 			RootfsVersion: "version2",
+			Timeout:       1 * time.Second,
 		}
 	})
 
@@ -130,5 +137,16 @@ var _ = Describe("PodWaiter", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(channel, "2s").Should(Receive(nil))
+	})
+
+	It("should log if listing pods fails", func() {
+		reactor := func(action testing.Action) (bool, runtime.Object, error) {
+			return true, nil, errors.New("made up failure")
+		}
+		client.PrependReactor("list", "pods", reactor)
+
+		waiter.Wait()
+
+		Expect(logger.LogMessages()).To(ContainElement("test.failed to list pods"))
 	})
 })
