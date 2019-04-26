@@ -140,13 +140,13 @@ var _ = Describe("PodWaiter", func() {
 	})
 
 	It("should log if listing pods fails", func() {
-		reactor := func(action testing.Action) (bool, runtime.Object, error) {
+		client.PrependReactor("list", "pods", func(action testing.Action) (bool, runtime.Object, error) {
 			return true, nil, errors.New("made up failure")
-		}
-		client.PrependReactor("list", "pods", reactor)
+		})
 
-		waiter.Wait()
-
+		err := waiter.Wait()
+		Expect(err).To(HaveOccurred())
 		Expect(logger.LogMessages()).To(ContainElement("test.failed to list pods"))
+		Expect(logger.Logs()[0].Data["error"]).To(Equal("made up failure"))
 	})
 })
