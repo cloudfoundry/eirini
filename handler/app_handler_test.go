@@ -111,6 +111,20 @@ var _ = Describe("AppHandler", func() {
 			})
 		})
 
+		Context("when the body is empty", func() {
+			BeforeEach(func() {
+				body = ""
+			})
+
+			It("should return a 400 Bad Request HTTP status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			})
+
+			It("should not update the app", func() {
+				Expect(bifrost.TransferCallCount()).To(Equal(0))
+			})
+		})
+
 	})
 
 	Context("List Apps", func() {

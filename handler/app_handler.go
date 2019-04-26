@@ -27,7 +27,11 @@ type App struct {
 func (a *App) Desire(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var request cf.DesireLRPRequest
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(r.Body)
+	if _, err := buf.ReadFrom(r.Body); err != nil {
+		a.logError("request-body-cannot-be-read", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	if err := json.Unmarshal(buf.Bytes(), &request); err != nil {
 		a.logError("request-body-decoding-failed", err)
