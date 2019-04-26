@@ -92,6 +92,7 @@ var _ = Describe("AppHandler", func() {
 						VolumeID: "vol1",
 					},
 				},
+				LRP: body,
 			}
 
 			Expect(bifrost.TransferCallCount()).To(Equal(1))

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -25,11 +26,16 @@ type App struct {
 
 func (a *App) Desire(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var request cf.DesireLRPRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r.Body)
+
+	if err := json.Unmarshal(buf.Bytes(), &request); err != nil {
 		a.logError("request-body-decoding-failed", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	request.LRP = buf.String()
 
 	if err := a.bifrost.Transfer(r.Context(), request); err != nil {
 		a.logError("desire-app-failed", err)

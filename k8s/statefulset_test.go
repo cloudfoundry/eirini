@@ -102,6 +102,11 @@ var _ = Describe("Statefulset", func() {
 				Expect(readinessProbeCreator.CallCount()).To(Equal(1))
 			})
 
+			It("should provide original request", func() {
+				statefulSet := getStatefulSet(lrp)
+				Expect(statefulSet.Annotations["original_request"]).To(Equal(lrp.LRP))
+			})
+
 			It("should provide the process-guid to the pod annotations", func() {
 				statefulSet := getStatefulSet(lrp)
 				Expect(statefulSet.Spec.Template.Annotations[cf.ProcessGUID]).To(Equal("Baldur-guid"))
@@ -169,7 +174,9 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			expectedLRP = createLRP("Baldur", "1234.5", "my.example.route")
-			// This is because toStatefulSet function mutates the metatdata map
+			expectedLRP.LRP = ""
+
+			// This is because toStatefulSet function mutates the metadata map
 			lrpToCreateStatefulSet := createLRP("Baldur", "1234.5", "my.example.route")
 			_, createErr := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrpToCreateStatefulSet))
 			Expect(createErr).ToNot(HaveOccurred())
@@ -286,7 +293,9 @@ var _ = Describe("Statefulset", func() {
 				createLRP("thor", "4567.8", "my.example.route"),
 				createLRP("mimir", "9012.3", "my.example.route"),
 			}
-
+			for _, l := range expectedLRPs {
+				l.LRP = ""
+			}
 			for _, l := range lrpsToCreateStatefulSets {
 				statefulset := toStatefulSet(l)
 				_, createErr := client.AppsV1().StatefulSets(namespace).Create(statefulset)
@@ -717,5 +726,6 @@ func createLRP(name, lastUpdated, routes string) *opi.LRP {
 				MountPath: "/some/path",
 			},
 		},
+		LRP: "original request",
 	}
 }

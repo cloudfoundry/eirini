@@ -23,6 +23,7 @@ const (
 	EnvEiriniAddress      = "EIRINI_ADDRESS"
 
 	RegisteredRoutes = "routes"
+	OriginalRequest  = "original_request"
 
 	CCUploaderInternalURL = "cc-uploader.service.cf.internal"
 	CCCertsMountPath      = "/etc/config/certs"

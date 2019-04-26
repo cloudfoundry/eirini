@@ -49,6 +49,7 @@ type DesireLRPRequest struct {
 	MemoryMB                int64                       `json:"memory_mb"`
 	CPUWeight               uint8                       `json:"cpu_weight"`
 	VolumeMounts            []VolumeMount               `json:"volume_mounts"`
+	LRP                     string
 }
 
 type StagingRequest struct {

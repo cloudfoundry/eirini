@@ -366,6 +366,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	statefulSet.Annotations = lrp.Metadata
 	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
 	statefulSet.Annotations[cf.VcapSpaceName] = lrp.SpaceName
+	statefulSet.Annotations[eirini.OriginalRequest] = lrp.LRP
 
 	return statefulSet
 }

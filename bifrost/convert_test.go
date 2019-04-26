@@ -79,6 +79,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 					MountDir: "/path/two",
 				},
 			},
+			LRP: "full LRP request",
 		}
 	})
 
@@ -192,6 +193,10 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 					ClaimName: "claim-two",
 					MountPath: "/path/two",
 				}))
+			})
+
+			It("should set the LRP request", func() {
+				Expect(lrp.LRP).To(Equal("full LRP request"))
 			})
 		}
 

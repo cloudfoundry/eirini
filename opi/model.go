@@ -39,6 +39,7 @@ type LRP struct {
 	MemoryMB         int64
 	CPUWeight        uint8
 	VolumeMounts     []VolumeMount
+	LRP              string
 }
 
 type VolumeMount struct {
