@@ -1,16 +1,24 @@
 package rootfspatcher
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
+	apps "k8s.io/api/apps/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/typed/apps/v1beta2"
 )
 
 const RootfsVersionLabel = "rootfs-version"
 
+//go:generate counterfeiter . StatefulSetPatchLister
+type StatefulSetPatchLister interface {
+	Update(*apps.StatefulSet) (*apps.StatefulSet, error)
+	List(metav1.ListOptions) (*apps.StatefulSetList, error)
+}
+
 type StatefulSetPatcher struct {
 	Version string
-	Client  v1beta2.StatefulSetInterface
+	Client  StatefulSetPatchLister
 }
 
 func (p StatefulSetPatcher) Patch() error {
@@ -21,6 +29,7 @@ func (p StatefulSetPatcher) Patch() error {
 	}
 
 	for _, s := range ss.Items {
+		fmt.Println("test!!!!!")
 		statefulset := s
 		statefulset.Labels[RootfsVersionLabel] = p.Version
 		statefulset.Spec.Template.Labels[RootfsVersionLabel] = p.Version

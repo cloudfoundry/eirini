@@ -14,20 +14,30 @@ import (
 	testcore "k8s.io/client-go/testing"
 
 	. "code.cloudfoundry.org/eirini/rootfspatcher"
+	"code.cloudfoundry.org/eirini/rootfspatcher/rootfspatcherfakes"
 )
 
 var _ = Describe("Patcher", func() {
 
 	var (
 		client     *fake.Clientset
+		fakeClient *rootfspatcherfakes.FakeStatefulSetPatchLister
 		namespace  string
 		patcher    Patcher
 		newVersion string
 	)
 
 	BeforeEach(func() {
+		newVersion = "version2"
 		namespace = "test-ns"
 		client = fake.NewSimpleClientset()
+		patcher = StatefulSetPatcher{
+			Version: newVersion,
+			Client:  client.AppsV1beta2().StatefulSets(namespace),
+		}
+	})
+
+	JustBeforeEach(func() {
 		ss := v1beta2.StatefulSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   "some-app",
@@ -43,12 +53,6 @@ var _ = Describe("Patcher", func() {
 		}
 		_, err := client.AppsV1beta2().StatefulSets(namespace).Create(&ss)
 		Expect(err).ToNot(HaveOccurred())
-
-		newVersion = "version2"
-		patcher = StatefulSetPatcher{
-			Version: newVersion,
-			Client:  client.AppsV1beta2().StatefulSets(namespace),
-		}
 	})
 
 	It("should update all statefulsets with new version", func() {
@@ -73,5 +77,50 @@ var _ = Describe("Patcher", func() {
 		}
 		client.PrependReactor("update", "statefulsets", errReaction)
 		Expect(patcher.Patch()).To(MatchError("failed to update statefulset: fake error"))
+	})
+
+	Context("When new version is equal to old version", func() {
+		var (
+			count int
+		)
+
+		BeforeEach(func() {
+			newVersion = "version1"
+			fakeClient = new(rootfspatcherfakes.FakeStatefulSetPatchLister)
+			patcher = StatefulSetPatcher{
+				Version: newVersion,
+				Client:  fakeClient,
+			}
+
+			ss := v1beta2.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   "some-app",
+					Labels: map[string]string{RootfsVersionLabel: "version1"},
+				},
+				Spec: v1beta2.StatefulSetSpec{
+					Template: corev1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{RootfsVersionLabel: "version1"},
+						},
+					},
+				},
+			}
+
+			list := &v1beta2.StatefulSetList{
+				Items: []v1beta2.StatefulSet{
+					ss,
+				},
+			}
+
+			fakeClient.ListReturns(list, nil)
+			count = fakeClient.UpdateCallCount()
+		})
+
+		FIt("shouldn't call the update function", func() {
+			err := patcher.Patch()
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(count).To(Equal(0))
+		})
 	})
 })
