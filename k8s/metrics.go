@@ -55,9 +55,9 @@ func (c *MetricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodM
 		// }
 		usage := container.Usage
 		res := usage[apiv1.ResourceCPU]
-		cpuValue := res.MilliValue()
+		cpuValue := res.Value()
 		res = usage[apiv1.ResourceMemory]
-		memoryValue := res.Value() / 1024
+		memoryValue := res.Value()
 
 		// pod, _ := c.podClient.Get(metric.Name, metav1.GetOptions{})
 		// if err != nil {
@@ -66,9 +66,9 @@ func (c *MetricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodM
 
 		messages = append(messages, metrics.Message{
 			// AppID:       pod.Labels["guid"],
-			AppID: "guid",
+			AppID: "app-guid",
 			// IndexID:     strconv.Itoa(indexID),
-			IndexID:     "0",
+			IndexID:     "9000",
 			CPU:         float64(cpuValue),
 			Memory:      float64(memoryValue),
 			MemoryQuota: 10,

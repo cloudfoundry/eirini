@@ -63,8 +63,8 @@ var _ = FDescribe("Metrics", func() {
 						Containers: []metricsv1beta1api.ContainerMetrics{
 							{
 								Usage: v1.ResourceList{
-									v1.ResourceCPU:     resource.MustParse("420001m"),
-									v1.ResourceMemory:  resource.MustParse("42Ki"),
+									v1.ResourceCPU:     resource.MustParse("420000m"),
+									v1.ResourceMemory:  resource.MustParse("420Ki"),
 									v1.ResourceStorage: *resource.NewQuantity(9*(1024*1024), resource.DecimalSI),
 								},
 							},
