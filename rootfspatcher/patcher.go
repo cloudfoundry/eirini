@@ -3,6 +3,7 @@ package rootfspatcher
 import (
 	"fmt"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	apps "k8s.io/api/apps/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -10,33 +11,38 @@ import (
 
 const RootfsVersionLabel = "rootfs-version"
 
-//go:generate counterfeiter . StatefulSetPatchLister
-type StatefulSetPatchLister interface {
+//go:generate counterfeiter . StatefulSetUpdaterLister
+type StatefulSetUpdaterLister interface {
 	Update(*apps.StatefulSet) (*apps.StatefulSet, error)
 	List(metav1.ListOptions) (*apps.StatefulSetList, error)
 }
 
 type StatefulSetPatcher struct {
-	Version string
-	Client  StatefulSetPatchLister
+	Version      string
+	StatefulSets StatefulSetUpdaterLister
+	Logger       lager.Logger
 }
 
 func (p StatefulSetPatcher) Patch() error {
 	listOpts := metav1.ListOptions{}
-	ss, err := p.Client.List(listOpts)
+	sts, err := p.StatefulSets.List(listOpts)
 	if err != nil {
 		return errors.Wrap(err, "failed to list statefulsets")
 	}
 
-	for _, s := range ss.Items {
-		fmt.Println("test!!!!!")
-		statefulset := s
-		statefulset.Labels[RootfsVersionLabel] = p.Version
-		statefulset.Spec.Template.Labels[RootfsVersionLabel] = p.Version
-		_, err := p.Client.Update(&statefulset)
+	failuresOccured := 0
+	for _, s := range sts.Items {
+		s.Labels[RootfsVersionLabel] = p.Version
+		s.Spec.Template.Labels[RootfsVersionLabel] = p.Version
+		_, err := p.StatefulSets.Update(&s)
 		if err != nil {
-			return errors.Wrap(err, "failed to update statefulset")
+			failuresOccured++
 		}
 	}
+
+	if failuresOccured > 0 {
+		return errors.New(fmt.Sprintf("failed to update %d statefulsets", failuresOccured))
+	}
+
 	return nil
 }
