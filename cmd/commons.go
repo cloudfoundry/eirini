@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	metricsclientset "k8s.io/metrics/pkg/client/clientset/versioned"
@@ -34,7 +31,6 @@ func CreateKubeClient(kubeConfigPath string) kubernetes.Interface {
 
 func ExitWithError(err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
-		os.Exit(1)
+		panic(err)
 	}
 }
