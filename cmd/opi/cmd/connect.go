@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/bifrost"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/handler"
+	"code.cloudfoundry.org/eirini/k8s"
 	k8sevent "code.cloudfoundry.org/eirini/k8s/informers/event"
 	k8sroute "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/metrics"
@@ -20,15 +22,11 @@ import (
 	"code.cloudfoundry.org/eirini/util"
 	loggregator "code.cloudfoundry.org/go-loggregator"
 	"code.cloudfoundry.org/lager"
-
-	yaml "gopkg.in/yaml.v2"
-
-	"code.cloudfoundry.org/eirini/bifrost"
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/tps/cc_client"
 	nats "github.com/nats-io/go-nats"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	yaml "gopkg.in/yaml.v2"
 
 	// For gcp and oidc authentication
 	_ "k8s.io/client-go/plugin/pkg/client/auth"

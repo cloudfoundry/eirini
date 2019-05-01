@@ -51,6 +51,13 @@ code.cloudfoundry.org/runtimeschema/cc_messages
 code.cloudfoundry.org/tps/cc_client
 # code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50
 code.cloudfoundry.org/urljoiner
+# github.com/Azure/go-autorest v11.1.2+incompatible
+github.com/Azure/go-autorest/autorest
+github.com/Azure/go-autorest/autorest/adal
+github.com/Azure/go-autorest/autorest/azure
+github.com/Azure/go-autorest/logger
+github.com/Azure/go-autorest/version
+github.com/Azure/go-autorest/autorest/date
 # github.com/Microsoft/go-winio v0.4.11
 github.com/Microsoft/go-winio
 # github.com/SermoDigital/jose v0.0.0-20161205224733-f6df55f235c2
@@ -83,6 +90,8 @@ github.com/cyphar/filepath-securejoin
 github.com/davecgh/go-spew/spew
 # github.com/deckarep/golang-set v1.7.1
 github.com/deckarep/golang-set
+# github.com/dgrijalva/jwt-go v0.0.0-20160705203006-01aeca54ebda
+github.com/dgrijalva/jwt-go
 # github.com/docker/distribution v2.7.1+incompatible
 github.com/docker/distribution/reference
 github.com/docker/distribution/digestset
@@ -112,7 +121,7 @@ github.com/docker/go-connections/tlsconfig
 github.com/docker/go-units
 # github.com/evanphx/json-patch v4.1.0+incompatible
 github.com/evanphx/json-patch
-# github.com/fatih/color v0.0.0-20181010231311-3f9d52f7176a
+# github.com/fatih/color v1.7.0
 github.com/fatih/color
 # github.com/gogo/protobuf v1.2.0
 github.com/gogo/protobuf/jsonpb
@@ -197,7 +206,7 @@ github.com/nats-io/go-nats/util
 github.com/nats-io/nkeys
 # github.com/nats-io/nuid v1.0.0
 github.com/nats-io/nuid
-# github.com/onsi/ginkgo v1.7.0
+# github.com/onsi/ginkgo v1.8.0
 github.com/onsi/ginkgo
 github.com/onsi/ginkgo/config
 github.com/onsi/ginkgo/internal/codelocation
@@ -216,7 +225,7 @@ github.com/onsi/ginkgo/internal/leafnodes
 github.com/onsi/ginkgo/internal/spec
 github.com/onsi/ginkgo/internal/specrunner
 github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty
-# github.com/onsi/gomega v1.4.3
+# github.com/onsi/gomega v1.5.0
 github.com/onsi/gomega
 github.com/onsi/gomega/ghttp
 github.com/onsi/gomega/gexec
@@ -404,8 +413,6 @@ k8s.io/apimachinery/pkg/api/resource
 k8s.io/apimachinery/pkg/apis/meta/v1
 k8s.io/apimachinery/pkg/util/intstr
 k8s.io/apimachinery/pkg/labels
-k8s.io/apimachinery/pkg/util/net
-k8s.io/apimachinery/pkg/util/yaml
 k8s.io/apimachinery/pkg/runtime
 k8s.io/apimachinery/pkg/runtime/schema
 k8s.io/apimachinery/pkg/util/errors
@@ -416,6 +423,7 @@ k8s.io/apimachinery/pkg/fields
 k8s.io/apimachinery/pkg/selection
 k8s.io/apimachinery/pkg/util/runtime
 k8s.io/apimachinery/pkg/watch
+k8s.io/apimachinery/pkg/util/net
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
 k8s.io/apimachinery/pkg/util/cache
@@ -427,6 +435,7 @@ k8s.io/apimachinery/pkg/util/wait
 k8s.io/apimachinery/pkg/runtime/serializer
 k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/runtime/serializer/streaming
+k8s.io/apimachinery/pkg/util/yaml
 k8s.io/apimachinery/pkg/conversion/queryparams
 k8s.io/apimachinery/pkg/util/json
 k8s.io/apimachinery/pkg/util/validation/field
@@ -444,10 +453,8 @@ k8s.io/apimachinery/pkg/util/mergepatch
 k8s.io/apimachinery/third_party/forked/golang/json
 # k8s.io/client-go v0.0.0-20190425172711-65184652c889
 k8s.io/client-go/kubernetes
-k8s.io/client-go/plugin/pkg/client/auth/gcp
-k8s.io/client-go/plugin/pkg/client/auth/oidc
-k8s.io/client-go/tools/clientcmd
 k8s.io/client-go/plugin/pkg/client/auth
+k8s.io/client-go/tools/clientcmd
 k8s.io/client-go/kubernetes/typed/apps/v1
 k8s.io/client-go/kubernetes/typed/core/v1
 k8s.io/client-go/informers
@@ -489,13 +496,14 @@ k8s.io/client-go/kubernetes/typed/storage/v1alpha1
 k8s.io/client-go/kubernetes/typed/storage/v1beta1
 k8s.io/client-go/rest
 k8s.io/client-go/util/flowcontrol
-k8s.io/client-go/util/jsonpath
+k8s.io/client-go/plugin/pkg/client/auth/azure
+k8s.io/client-go/plugin/pkg/client/auth/gcp
+k8s.io/client-go/plugin/pkg/client/auth/oidc
+k8s.io/client-go/plugin/pkg/client/auth/openstack
 k8s.io/client-go/tools/auth
 k8s.io/client-go/tools/clientcmd/api
 k8s.io/client-go/tools/clientcmd/api/latest
 k8s.io/client-go/util/homedir
-k8s.io/client-go/plugin/pkg/client/auth/azure
-k8s.io/client-go/plugin/pkg/client/auth/openstack
 k8s.io/client-go/kubernetes/scheme
 k8s.io/client-go/tools/reference
 k8s.io/client-go/kubernetes/fake
@@ -526,7 +534,7 @@ k8s.io/client-go/rest/watch
 k8s.io/client-go/tools/metrics
 k8s.io/client-go/transport
 k8s.io/client-go/util/cert
-k8s.io/client-go/third_party/forked/golang/template
+k8s.io/client-go/util/jsonpath
 k8s.io/client-go/tools/clientcmd/api/v1
 k8s.io/client-go/discovery/fake
 k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1/fake
@@ -602,6 +610,7 @@ k8s.io/client-go/pkg/apis/clientauthentication/v1alpha1
 k8s.io/client-go/pkg/apis/clientauthentication/v1beta1
 k8s.io/client-go/util/connrotation
 k8s.io/client-go/util/keyutil
+k8s.io/client-go/third_party/forked/golang/template
 k8s.io/client-go/listers/admissionregistration/v1beta1
 k8s.io/client-go/listers/apps/v1
 k8s.io/client-go/listers/apps/v1beta1

@@ -31,8 +31,6 @@ linters:
 issues:
   exclude-use-default: true
   exclude-rules:
-    - path: k8s/metrics.go
-      text: G107
     - path: integration/statefulsets_suite_test.go
       linters:
       - deadcode
