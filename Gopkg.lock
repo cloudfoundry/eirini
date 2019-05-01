@@ -25,17 +25,7 @@
   branch = "master"
   digest = "1:3bbc8a2ff6dc55c420ff6f371d497635e1a0ec23ceb20fb8da92788db86986af"
   name = "code.cloudfoundry.org/buildpackapplifecycle"
-  packages = [
-    ".",
-    "containerpath",
-    "credhub",
-    "databaseuri",
-    "env",
-    "launcher/profile",
-    "platformoptions",
-    "shell",
-    "shell/exec",
-  ]
+  packages = ["."]
   pruneopts = ""
   revision = "928cda2ee7d6cb476865e1a79a98807f67bae882"
 
@@ -80,23 +70,6 @@
   version = "v6.42.0"
 
 [[projects]]
-  digest = "1:67395399d13b790693696b7ce6f5a9cafeceabd72da4ee0e48dcb2961d0837c0"
-  name = "code.cloudfoundry.org/credhub-cli"
-  packages = [
-    "credhub/auth",
-    "credhub/auth/uaa",
-    "credhub/credentials",
-    "credhub/credentials/generate",
-    "credhub/credentials/values",
-    "credhub/permissions",
-    "credhub/server",
-    "errors",
-  ]
-  pruneopts = ""
-  revision = "c165e469eaa892c155e9f6df623dd032ea640c2e"
-  version = "2.2.1"
-
-[[projects]]
   branch = "master"
   digest = "1:f320951b97c5f1ef4c4ab5e85d34dcaf0ed05761837f64ecc109db895f751e80"
   name = "code.cloudfoundry.org/go-diodes"
@@ -122,17 +95,6 @@
   packages = ["fileutils"]
   pruneopts = ""
   revision = "4d0c80011a0f37da1711c184028bc40137cd45af"
-
-[[projects]]
-  branch = "master"
-  digest = "1:00de48681277a073e228567d07719789d1b174ed0a80a673219ffc85c4a710b2"
-  name = "code.cloudfoundry.org/goshims"
-  packages = [
-    "osshim",
-    "osshim/os_fake",
-  ]
-  pruneopts = ""
-  revision = "208d33e0c8f9a1424681d37141d9a7d02bb5b2c0"
 
 [[projects]]
   digest = "1:673cab9bb26a0011fbc34255ec4a6695ecb31cf6338860263959c415e3aa3dd1"
@@ -237,14 +199,6 @@
   revision = "7dc373669fa10ddf827c37c595dee30a2f001be9"
 
 [[projects]]
-  digest = "1:67395399d13b790693696b7ce6f5a9cafeceabd72da4ee0e48dcb2961d0837c0"
-  name = "github.com/cloudfoundry-incubator/credhub-cli"
-  packages = ["credhub"]
-  pruneopts = ""
-  revision = "c165e469eaa892c155e9f6df623dd032ea640c2e"
-  version = "2.2.1"
-
-[[projects]]
   digest = "1:fa19a17599e0ff0ca7b00a53377fcd3933593255708b9fe275accbbf165cb066"
   name = "github.com/cloudfoundry/bosh-cli"
   packages = ["director/template"]
@@ -263,21 +217,6 @@
   ]
   pruneopts = ""
   revision = "c2cf699102bd7878141b9810117cba777852f1be"
-
-[[projects]]
-  branch = "master"
-  digest = "1:b9aa4288038198d87f3e6eb7e844a8840766d8be27e69fd78f5d81bbba089018"
-  name = "github.com/cloudfoundry/go-socks5"
-  packages = ["."]
-  pruneopts = ""
-  revision = "54f73bdb8a8e85a6611d3d29ab9bbf98c2a060d7"
-
-[[projects]]
-  digest = "1:18269b274db559412124bf9a1fd1fb27fdacb4bcad4a4b347b097daf8975de6d"
-  name = "github.com/cloudfoundry/socks5-proxy"
-  packages = ["."]
-  pruneopts = ""
-  revision = "3c6b4eec9c2d16c1dac4c42bdb5f755ba09daff8"
 
 [[projects]]
   digest = "1:2b508b111ea77918c2c49dd6e3d8286100b7c84a77e9504f89806bd3cb567dee"
@@ -475,14 +414,6 @@
   ]
   pruneopts = ""
   revision = "c63ab54fda8f77302f8d414e19933f2b6026a089"
-
-[[projects]]
-  digest = "1:b759103c9b4135568253c17d2866064cde398e93764b611caabf5aa8e3059685"
-  name = "github.com/hashicorp/go-version"
-  packages = ["."]
-  pruneopts = ""
-  revision = "d40cf49b3a77bba84a7afdbd7f1dc295d114efb1"
-  version = "v1.1.0"
 
 [[projects]]
   digest = "1:3313a63031ae281e5f6fd7b0bbca733dfa04d2429df86519e3b4d4c016ccb836"
@@ -722,14 +653,6 @@
   version = "v0.8.1"
 
 [[projects]]
-  digest = "1:7f569d906bdd20d906b606415b7d794f798f91a62fcfb6a4daa6d50690fb7a3f"
-  name = "github.com/satori/go.uuid"
-  packages = ["."]
-  pruneopts = ""
-  revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
-  version = "v1.2.0"
-
-[[projects]]
   digest = "1:e8a9c13aafa206fa29b9015213c2312cc97a6e33c44f17be34d4029a8d94585d"
   name = "github.com/sclevine/spec"
   packages = ["."]
@@ -777,13 +700,8 @@
   digest = "1:7ff50a9d7274023440ba56840b3bafefaff430b5bed61eef6b4ea13b475eb2db"
   name = "golang.org/x/crypto"
   packages = [
-    "curve25519",
     "ed25519",
     "ed25519/internal/edwards25519",
-    "internal/chacha20",
-    "internal/subtle",
-    "poly1305",
-    "ssh",
     "ssh/terminal",
   ]
   pruneopts = ""
@@ -1310,18 +1228,8 @@
   input-imports = [
     "code.cloudfoundry.org/bbs/models",
     "code.cloudfoundry.org/buildpackapplifecycle",
-    "code.cloudfoundry.org/buildpackapplifecycle/containerpath",
-    "code.cloudfoundry.org/buildpackapplifecycle/credhub",
-    "code.cloudfoundry.org/buildpackapplifecycle/databaseuri",
-    "code.cloudfoundry.org/buildpackapplifecycle/env",
-    "code.cloudfoundry.org/buildpackapplifecycle/launcher/profile",
-    "code.cloudfoundry.org/buildpackapplifecycle/platformoptions",
-    "code.cloudfoundry.org/buildpackapplifecycle/shell",
-    "code.cloudfoundry.org/buildpackapplifecycle/shell/exec",
     "code.cloudfoundry.org/cli/cf/appfiles",
     "code.cloudfoundry.org/go-loggregator",
-    "code.cloudfoundry.org/goshims/osshim",
-    "code.cloudfoundry.org/goshims/osshim/os_fake",
     "code.cloudfoundry.org/lager",
     "code.cloudfoundry.org/lager/lagerctx",
     "code.cloudfoundry.org/lager/lagertest",
@@ -1331,7 +1239,6 @@
     "github.com/buildpack/packs/cf",
     "github.com/buildpack/packs/heroku/app",
     "github.com/buildpack/packs/img",
-    "github.com/cloudfoundry-incubator/credhub-cli/credhub",
     "github.com/deckarep/golang-set",
     "github.com/gogo/protobuf/jsonpb",
     "github.com/google/go-containerregistry/pkg/authn",
@@ -1350,10 +1257,8 @@
     "github.com/onsi/gomega/ghttp",
     "github.com/onsi/gomega/gstruct",
     "github.com/pkg/errors",
-    "github.com/satori/go.uuid",
     "github.com/sclevine/spec",
     "github.com/spf13/cobra",
-    "golang.org/x/sys/windows",
     "gopkg.in/yaml.v2",
     "k8s.io/api/apps/v1",
     "k8s.io/api/apps/v1beta2",
@@ -1369,11 +1274,11 @@
     "k8s.io/client-go/informers",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/fake",
+    "k8s.io/client-go/kubernetes/typed/apps/v1",
     "k8s.io/client-go/kubernetes/typed/apps/v1beta2",
     "k8s.io/client-go/kubernetes/typed/core/v1",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/client-go/plugin/pkg/client/auth/oidc",
-    "k8s.io/client-go/rest",
     "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
