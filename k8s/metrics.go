@@ -6,6 +6,7 @@ import (
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/util"
+	"golang.org/x/xerrors"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -31,11 +32,11 @@ func NewMetricsCollector(work chan []metrics.Message, scheduler route.TaskSchedu
 
 func (c *MetricsCollector) Start() {
 	c.scheduler.Schedule(func() error {
-		metrics, _ := c.metricsClient.List(metav1.ListOptions{})
+		metrics, err := c.metricsClient.List(metav1.ListOptions{})
+		if err != nil {
+			return xerrors.Errorf("%w", err)
+		}
 		messages, _ := c.convertMetricsList(metrics)
-		// if err != nil {
-		// 	return err //todo: wrap
-		// }
 
 		if len(messages) > 0 {
 			c.work <- messages
