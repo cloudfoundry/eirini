@@ -1,7 +1,7 @@
 package k8s_test
 
 import (
-	"time"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,6 +30,7 @@ var _ = FDescribe("Metrics", func() {
 		podMetricsClient metricsv1typed.PodMetricsInterface
 		scheduler        *routefakes.FakeTaskScheduler
 		podClient        core.PodInterface
+		expectedMetrics  metricsv1beta1api.PodMetricsList
 	)
 
 	BeforeEach(func() {
@@ -52,20 +53,15 @@ var _ = FDescribe("Metrics", func() {
 
 		BeforeEach(func() {
 
-			expectedMetrics := metricsv1beta1api.PodMetricsList{
-				ListMeta: metav1.ListMeta{
-					ResourceVersion: "2",
-				},
+			expectedMetrics = metricsv1beta1api.PodMetricsList{
 				Items: []metricsv1beta1api.PodMetrics{
 					{
-						ObjectMeta: metav1.ObjectMeta{Name: "pod1", Namespace: "opi", ResourceVersion: "10", Labels: map[string]string{"key": "value"}},
-						Window:     metav1.Duration{Duration: time.Minute},
+						ObjectMeta: metav1.ObjectMeta{Name: "app-guid-9000", Namespace: "opi", ResourceVersion: "10", Labels: map[string]string{"key": "value"}},
 						Containers: []metricsv1beta1api.ContainerMetrics{
 							{
 								Usage: v1.ResourceList{
-									v1.ResourceCPU:     resource.MustParse("420000m"),
-									v1.ResourceMemory:  resource.MustParse("420Ki"),
-									v1.ResourceStorage: *resource.NewQuantity(9*(1024*1024), resource.DecimalSI),
+									v1.ResourceCPU:    resource.MustParse("420000m"),
+									v1.ResourceMemory: resource.MustParse("420Ki"),
 								},
 							},
 						},
@@ -88,7 +84,7 @@ var _ = FDescribe("Metrics", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		FIt("should send the received metrics", func() {
+		It("should send the received metrics", func() {
 			Eventually(work).Should(Receive(Equal([]metrics.Message{
 				{
 					AppID:       "app-guid",
@@ -105,6 +101,7 @@ var _ = FDescribe("Metrics", func() {
 		Context("there are no items", func() {
 
 			BeforeEach(func() {
+				expectedMetrics = metricsv1beta1api.PodMetricsList{}
 			})
 
 			It("should not return an error", func() {
@@ -119,6 +116,14 @@ var _ = FDescribe("Metrics", func() {
 		Context("there are no containers", func() {
 
 			BeforeEach(func() {
+				expectedMetrics = metricsv1beta1api.PodMetricsList{
+					Items: []metricsv1beta1api.PodMetrics{
+						{
+							ObjectMeta: metav1.ObjectMeta{Name: "pod1", Namespace: "opi", ResourceVersion: "10", Labels: map[string]string{"key": "value"}},
+							Containers: []metricsv1beta1api.ContainerMetrics{},
+						},
+					},
+				}
 			})
 
 			It("should not return an error", func() {
@@ -130,35 +135,27 @@ var _ = FDescribe("Metrics", func() {
 			})
 		})
 
-		Context("memory metric does not have a unit", func() {
-			BeforeEach(func() {
-			})
-
-			It("should return not an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should send the received metrics", func() {
-				Eventually(work).Should(Receive(Equal([]metrics.Message{
-					{
-						AppID:       "app-guid",
-						IndexID:     "9000",
-						CPU:         420,
-						Memory:      430080,
-						MemoryQuota: 10,
-						Disk:        42000000,
-						DiskQuota:   10,
-					},
-				})))
-			})
-		})
-
 		Context("pod name doesn't have an index (eg staging tasks)", func() {
 			BeforeEach(func() {
+				expectedMetrics = metricsv1beta1api.PodMetricsList{
+					Items: []metricsv1beta1api.PodMetrics{
+						{
+							ObjectMeta: metav1.ObjectMeta{Name: "iamstagingtask", Namespace: "opi", ResourceVersion: "10", Labels: map[string]string{"key": "value"}},
+							Containers: []metricsv1beta1api.ContainerMetrics{
+								{
+									Usage: v1.ResourceList{
+										v1.ResourceCPU:    resource.MustParse("420000m"),
+										v1.ResourceMemory: resource.MustParse("420Ki"),
+									},
+								},
+							},
+						},
+					},
+				}
 			})
 
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
+			It("should not return an error", func() {
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("should not send a message", func() {
@@ -169,6 +166,9 @@ var _ = FDescribe("Metrics", func() {
 		Context("metrics source responds with an error", func() {
 
 			BeforeEach(func() {
+				metricsClient.PrependReactor("list", "pods", func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, fmt.Errorf("Better luck next time")
+				})
 			})
 
 			It("should return an error", func() {

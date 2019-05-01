@@ -1,8 +1,11 @@
 package k8s
 
 import (
+	"strconv"
+
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route"
+	"code.cloudfoundry.org/eirini/util"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -49,10 +52,10 @@ func (c *MetricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodM
 			continue
 		}
 		container := metric.Containers[0]
-		// _, indexID, _ := util.ParseAppNameAndIndex(metric.Name)
-		// if err != nil {
-		// 	return nil, err
-		// }
+		_, indexID, err := util.ParseAppNameAndIndex(metric.Name)
+		if err != nil {
+			return nil, err
+		}
 		usage := container.Usage
 		res := usage[apiv1.ResourceCPU]
 		cpuValue := res.Value()
@@ -66,9 +69,8 @@ func (c *MetricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodM
 
 		messages = append(messages, metrics.Message{
 			// AppID:       pod.Labels["guid"],
-			AppID: "app-guid",
-			// IndexID:     strconv.Itoa(indexID),
-			IndexID:     "9000",
+			AppID:       "app-guid",
+			IndexID:     strconv.Itoa(indexID),
 			CPU:         float64(cpuValue),
 			Memory:      float64(memoryValue),
 			MemoryQuota: 10,
