@@ -188,7 +188,10 @@ func launchMetricsEmitter(clientset kubernetes.Interface, metricsClient metricsc
 	podClient := clientset.CoreV1().Pods(namespace)
 
 	podMetricsClient := metricsClient.MetricsV1beta1().PodMetricses(namespace)
-	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, podMetricsClient, podClient)
+	metricsLogger := lager.NewLogger("metrics-collector")
+	metricsLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, podMetricsClient, podClient, metricsLogger)
+
 	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
 	emitter := metrics.NewEmitter(work, &route.SimpleLoopScheduler{}, forwarder)
 
@@ -202,7 +205,9 @@ func launchEventReporter(clientset kubernetes.Interface, uri, ca, cert, key, nam
 	cmdcommons.ExitWithError(err)
 
 	client := cc_client.NewCcClient(uri, tlsConf)
-	reporter := events.NewCrashReporter(work, &route.SimpleLoopScheduler{}, client, lager.NewLogger("instance-crash-reporter"))
+	crashReporterLogger := lager.NewLogger("instance-crash-reporter")
+	crashReporterLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+	reporter := events.NewCrashReporter(work, &route.SimpleLoopScheduler{}, client, crashReporterLogger)
 	crashLogger := lager.NewLogger("instance-crash-informer")
 	crashLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, work, make(chan struct{}), crashLogger)
