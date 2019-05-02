@@ -35,7 +35,6 @@ func NewMetricsCollector(work chan []metrics.Message, scheduler route.TaskSchedu
 
 func (c *MetricsCollector) Start() {
 	c.scheduler.Schedule(func() error {
-		c.logger.Info("metrics-collection-started")
 		metrics, err := c.metricsClient.List(metav1.ListOptions{})
 		if err != nil {
 			return xerrors.Errorf("%w", err)

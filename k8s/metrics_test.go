@@ -83,10 +83,6 @@ var _ = Describe("Metrics", func() {
 			err = task()
 		})
 
-		It("should log that it is working", func() {
-			Eventually(logger.Buffer()).Should(gbytes.Say(`"message":"test-logger.metrics-collection-started"`))
-		})
-
 		It("should not return an error", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
