@@ -93,7 +93,7 @@ func connect(cmd *cobra.Command, args []string) {
 	)
 
 	handlerLogger := lager.NewLogger("handler")
-	handlerLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
+	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	handler := handler.New(bifrost, stager, handlerLogger)
 
 	handlerLogger.Info("opi-connected")
@@ -132,14 +132,14 @@ func initStager(cfg *eirini.Config) eirini.Stager {
 
 func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	syncLogger := lager.NewLogger("bifrost")
-	syncLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
+	syncLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	kubeNamespace := cfg.Properties.KubeNamespace
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	desirer := k8s.NewStatefulSetDesirer(clientset, kubeNamespace, cfg.Properties.RootfsVersion, desireLogger)
 	convertLogger := lager.NewLogger("convert")
-	convertLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
+	convertLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	registryIP := cfg.Properties.RegistryAddress
 	converter := bifrost.NewConverter(convertLogger, registryIP)
 
