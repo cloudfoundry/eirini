@@ -155,7 +155,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 			continue
 		}
 
-		_, index, err := util.ParseAppNameAndIndex(pod.Name)
+		index, err := util.ParseAppIndex(pod.Name)
 		if err != nil {
 			return []*opi.Instance{}, err
 		}

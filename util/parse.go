@@ -5,21 +5,20 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 )
 
-func ParseAppNameAndIndex(podName string) (string, int, error) {
+func ParseAppIndex(podName string) (int, error) {
 	sl := strings.Split(podName, "-")
 
 	if len(sl) <= 1 {
-		return "", 0, fmt.Errorf("could not parse app name from %s", podName)
+		return 0, fmt.Errorf("could not parse app name from %s", podName)
 	}
-	appName := strings.Join(sl[:len(sl)-1], "")
 	index, err := strconv.Atoi(sl[len(sl)-1])
 
 	if err != nil {
-		return "", 0, errors.Wrap(err, "pod name does not contain an index")
+		return 0, xerrors.Errorf("pod %s name does not contain an index: %v", podName, err)
 	}
 
-	return appName, index, nil
+	return index, nil
 }

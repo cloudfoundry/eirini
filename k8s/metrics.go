@@ -57,7 +57,7 @@ func (c *MetricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodM
 			continue
 		}
 		container := metric.Containers[0]
-		_, indexID, err := util.ParseAppNameAndIndex(metric.Name)
+		indexID, err := util.ParseAppIndex(metric.Name)
 		if err != nil {
 			c.logger.Info("incorrect-pod-name", lager.Data{"pod": metric.Name})
 			continue

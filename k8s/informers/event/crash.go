@@ -115,7 +115,7 @@ func toReport(
 	crashTimestamp int64,
 ) (events.CrashReport, error) {
 	container := pod.Status.ContainerStatuses[0]
-	_, index, err := util.ParseAppNameAndIndex(pod.Name)
+	index, err := util.ParseAppIndex(pod.Name)
 	if err != nil {
 		return events.CrashReport{}, err
 	}
