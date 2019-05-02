@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/eirini/util"
+	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -32,12 +33,13 @@ type StatefulSetDesirer struct {
 	LivenessProbeCreator  ProbeCreator
 	ReadinessProbeCreator ProbeCreator
 	Hasher                util.Hasher
+	Logger                lager.Logger
 }
 
 //go:generate counterfeiter . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(client kubernetes.Interface, namespace string, rootfsVersion string) opi.Desirer {
+func NewStatefulSetDesirer(client kubernetes.Interface, namespace string, rootfsVersion string, logger lager.Logger) opi.Desirer {
 	return &StatefulSetDesirer{
 		Client:                client,
 		Namespace:             namespace,
@@ -45,12 +47,14 @@ func NewStatefulSetDesirer(client kubernetes.Interface, namespace string, rootfs
 		LivenessProbeCreator:  CreateLivenessProbe,
 		ReadinessProbeCreator: CreateReadinessProbe,
 		Hasher:                util.TruncatedSHA256Hasher{},
+		Logger:                logger,
 	}
 }
 
 func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 	statefulsets, err := m.statefulSets().List(meta.ListOptions{})
 	if err != nil {
+		m.Logger.Error("failed-to-list-statefulsets", err)
 		return nil, err
 	}
 
@@ -74,6 +78,7 @@ func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index ui
 	options := meta.ListOptions{LabelSelector: selector}
 	statefulsets, err := m.statefulSets().List(options)
 	if err != nil {
+		m.Logger.Error("failed-to-get-statefulsets", err, lager.Data{"process-guid": identifier.GUID})
 		return errors.Wrap(err, "failed to get statefulset")
 	}
 	if len(statefulsets.Items) == 0 {
@@ -116,6 +121,7 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 	options := meta.ListOptions{LabelSelector: fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)}
 	statefulSet, err := m.statefulSets().List(options)
 	if err != nil {
+		m.Logger.Error("failed-to-get-statefulset", err, lager.Data{"process-guid": identifier.GUID})
 		return nil, err
 	}
 	statefulsets := statefulSet.Items
@@ -133,6 +139,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	options := meta.ListOptions{LabelSelector: fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)}
 	pods, err := m.Client.CoreV1().Pods(m.Namespace).List(options)
 	if err != nil {
+		m.Logger.Error("failed-to-list-pods", err, lager.Data{"process-guid": identifier.GUID})
 		return []*opi.Instance{}, err
 	}
 
@@ -140,6 +147,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	for _, pod := range pods.Items {
 		events, err := GetEvents(m.Client, pod)
 		if err != nil {
+			m.Logger.Error("failed-to-get-k8s-events", err, lager.Data{"pod-name": pod.Name})
 			return []*opi.Instance{}, err
 		}
 

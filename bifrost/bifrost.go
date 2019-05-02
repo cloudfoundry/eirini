@@ -96,12 +96,16 @@ func (b *Bifrost) Stop(ctx context.Context, identifier opi.LRPIdentifier) error 
 
 func (b *Bifrost) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error {
 	err := b.Desirer.StopInstance(identifier, index)
+	if err != nil {
+		b.Logger.Error("failed-to-stop-instance", err, lager.Data{"process-guid": identifier.GUID})
+	}
 	return errors.Wrap(err, "desirer failed to stop instance")
 }
 
 func (b *Bifrost) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error) {
 	opiInstances, err := b.Desirer.GetInstances(identifier)
 	if err != nil {
+		b.Logger.Error("failed-to-get-instances", err, lager.Data{"process-guid": identifier.GUID})
 		return []*cf.Instance{}, errors.Wrap(err, fmt.Sprintf("failed to get instances for app with guid: %s", identifier.GUID))
 	}
 
