@@ -163,7 +163,7 @@ func setConfigFromFile(path string) *eirini.Config {
 }
 
 func initConnect() {
-	connectCmd.Flags().StringP("config", "c", "", "Path to the erini config file")
+	connectCmd.Flags().StringP("config", "c", "", "Path to the Eirini config file")
 }
 
 func launchRouteEmitter(clientset kubernetes.Interface, namespace, natsPassword, natsIP string) {
