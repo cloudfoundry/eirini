@@ -21,7 +21,7 @@ import (
 	metricsv1typed "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
 )
 
-var _ = FDescribe("Metrics", func() {
+var _ = Describe("Metrics", func() {
 
 	var (
 		collector        *MetricsCollector
@@ -31,14 +31,26 @@ var _ = FDescribe("Metrics", func() {
 		scheduler        *routefakes.FakeTaskScheduler
 		podClient        core.PodInterface
 		expectedMetrics  metricsv1beta1api.PodMetricsList
+		podName          string
 	)
 
 	BeforeEach(func() {
+		podName = "thor-thunder-9000"
 		metricsClient = &metricsfake.Clientset{}
 		podMetricsClient = metricsClient.MetricsV1beta1().PodMetricses("opi")
 
 		client := fake.NewSimpleClientset()
 		podClient = client.CoreV1().Pods("opi")
+
+		_, createErr := podClient.Create(&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: podName,
+				Labels: map[string]string{
+					"guid": "app-guid",
+				},
+			},
+		})
+		Expect(createErr).ToNot(HaveOccurred())
 	})
 
 	JustBeforeEach(func() {
@@ -48,25 +60,11 @@ var _ = FDescribe("Metrics", func() {
 	})
 
 	Context("When collecting metrics", func() {
-
 		var err error
 
 		BeforeEach(func() {
-
 			expectedMetrics = metricsv1beta1api.PodMetricsList{
-				Items: []metricsv1beta1api.PodMetrics{
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "app-guid-9000", Namespace: "opi", ResourceVersion: "10", Labels: map[string]string{"key": "value"}},
-						Containers: []metricsv1beta1api.ContainerMetrics{
-							{
-								Usage: v1.ResourceList{
-									v1.ResourceCPU:    resource.MustParse("420000m"),
-									v1.ResourceMemory: resource.MustParse("420Ki"),
-								},
-							},
-						},
-					},
-				},
+				Items: []metricsv1beta1api.PodMetrics{metricForPod(podName)},
 			}
 
 			metricsClient.AddReactor("list", "pods", func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
@@ -99,7 +97,6 @@ var _ = FDescribe("Metrics", func() {
 		})
 
 		Context("there are no items", func() {
-
 			BeforeEach(func() {
 				expectedMetrics = metricsv1beta1api.PodMetricsList{}
 			})
@@ -116,13 +113,10 @@ var _ = FDescribe("Metrics", func() {
 		Context("there are no containers", func() {
 
 			BeforeEach(func() {
+				metric := metricForPod(podName)
+				metric.Containers = []metricsv1beta1api.ContainerMetrics{}
 				expectedMetrics = metricsv1beta1api.PodMetricsList{
-					Items: []metricsv1beta1api.PodMetrics{
-						{
-							ObjectMeta: metav1.ObjectMeta{Name: "pod1", Namespace: "opi", ResourceVersion: "10", Labels: map[string]string{"key": "value"}},
-							Containers: []metricsv1beta1api.ContainerMetrics{},
-						},
-					},
+					Items: []metricsv1beta1api.PodMetrics{metric},
 				}
 			})
 
@@ -172,8 +166,36 @@ var _ = FDescribe("Metrics", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(err).To(MatchError(ContainSubstring("metrics source responded with code: 400")))
+				Expect(err).To(MatchError(ContainSubstring("Better luck next time")))
+			})
+		})
+
+		Context("when pod client fails to get the pod", func() {
+			BeforeEach(func() {
+				Expect(podClient.Delete(podName, &metav1.DeleteOptions{})).To(Succeed())
+			})
+
+			It("executes successfully", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("should not send metrics", func() {
+				Consistently(work).ShouldNot(Receive())
 			})
 		})
 	})
 })
+
+func metricForPod(podName string) metricsv1beta1api.PodMetrics {
+	return metricsv1beta1api.PodMetrics{
+		ObjectMeta: metav1.ObjectMeta{Name: podName, Namespace: "opi", ResourceVersion: "10", Labels: map[string]string{"key": "value"}},
+		Containers: []metricsv1beta1api.ContainerMetrics{
+			{
+				Usage: v1.ResourceList{
+					v1.ResourceCPU:    resource.MustParse("420000m"),
+					v1.ResourceMemory: resource.MustParse("420Ki"),
+				},
+			},
+		},
+	}
+}
