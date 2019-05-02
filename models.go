@@ -50,9 +50,7 @@ type Properties struct {
 	EiriniAddress     string `yaml:"eirini_address"`
 	StagerImage       string `yaml:"stager_image"`
 
-	MetricsSourceAddress string `yaml:"metrics_source_address"`
-	LoggregatorAddress   string `yaml:"loggregator_address"`
-
+	LoggregatorAddress  string `yaml:"loggregator_address"`
 	LoggregatorCertPath string `yaml:"loggergator_cert_path"`
 	LoggregatorKeyPath  string `yaml:"loggregator_key_path"`
 	LoggregatorCAPath   string `yaml:"loggregator_ca_path"`

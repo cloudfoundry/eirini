@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -27,6 +26,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
+	"k8s.io/client-go/kubernetes"
+	metricsclientset "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	// For gcp and oidc authentication
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -49,9 +50,11 @@ func connect(cmd *cobra.Command, args []string) {
 	cfg := setConfigFromFile(path)
 	stager := initStager(cfg)
 	bifrost := initBifrost(cfg)
+	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
+	metricsClient := cmdcommons.CreateMetricsClient(cfg.Properties.KubeConfigPath)
 
 	launchRouteEmitter(
-		cfg.Properties.KubeConfigPath,
+		clientset,
 		cfg.Properties.KubeNamespace,
 		cfg.Properties.NatsPassword,
 		cfg.Properties.NatsIP,
@@ -75,14 +78,14 @@ func connect(cmd *cobra.Command, args []string) {
 		}
 	}()
 	launchMetricsEmitter(
-		cfg.Properties.KubeConfigPath,
-		fmt.Sprintf("%s/namespaces/%s/pods", cfg.Properties.MetricsSourceAddress, cfg.Properties.KubeNamespace),
+		clientset,
+		metricsClient,
 		loggregatorClient,
 		cfg.Properties.KubeNamespace,
 	)
 
 	launchEventReporter(
-		cfg.Properties.KubeConfigPath,
+		clientset,
 		cfg.Properties.CcInternalAPI,
 		cfg.Properties.CCCAPath,
 		cfg.Properties.CCCertPath,
@@ -163,11 +166,10 @@ func initConnect() {
 	connectCmd.Flags().StringP("config", "c", "", "Path to the erini config file")
 }
 
-func launchRouteEmitter(kubeConfigPath, namespace, natsPassword, natsIP string) {
+func launchRouteEmitter(clientset kubernetes.Interface, namespace, natsPassword, natsIP string) {
 	nc, err := nats.Connect(util.GenerateNatsURL(natsPassword, natsIP))
 	cmdcommons.ExitWithError(err)
 
-	clientset := cmdcommons.CreateKubeClient(kubeConfigPath)
 	syncPeriod := 10 * time.Second
 	workChan := make(chan *route.Message)
 	instanceInformer := k8sroute.NewInstanceChangeInformer(clientset, syncPeriod, namespace)
@@ -181,11 +183,12 @@ func launchRouteEmitter(kubeConfigPath, namespace, natsPassword, natsIP string) 
 	go uriInformer.Start(workChan)
 }
 
-func launchMetricsEmitter(kubeConfigPath, source string, loggregatorClient *loggregator.IngressClient, namespace string) {
+func launchMetricsEmitter(clientset kubernetes.Interface, metricsClient metricsclientset.Interface, loggregatorClient *loggregator.IngressClient, namespace string) {
 	work := make(chan []metrics.Message, 20)
-	clientset := cmdcommons.CreateKubeClient(kubeConfigPath)
 	podClient := clientset.CoreV1().Pods(namespace)
-	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, source, podClient)
+
+	podMetricsClient := metricsClient.MetricsV1beta1().PodMetricses(namespace)
+	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, podMetricsClient, podClient)
 	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
 	emitter := metrics.NewEmitter(work, &route.SimpleLoopScheduler{}, forwarder)
 
@@ -193,14 +196,13 @@ func launchMetricsEmitter(kubeConfigPath, source string, loggregatorClient *logg
 	go emitter.Start()
 }
 
-func launchEventReporter(kubeConfigPath, uri, ca, cert, key, namespace string) {
+func launchEventReporter(clientset kubernetes.Interface, uri, ca, cert, key, namespace string) {
 	work := make(chan events.CrashReport, 20)
 	tlsConf, err := cc_client.NewTLSConfig(cert, key, ca)
 	cmdcommons.ExitWithError(err)
 
 	client := cc_client.NewCcClient(uri, tlsConf)
 	reporter := events.NewCrashReporter(work, &route.SimpleLoopScheduler{}, client, lager.NewLogger("instance-crash-reporter"))
-	clientset := cmdcommons.CreateKubeClient(kubeConfigPath)
 	crashLogger := lager.NewLogger("instance-crash-informer")
 	crashLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, work, make(chan struct{}), crashLogger)
