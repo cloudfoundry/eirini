@@ -23,7 +23,7 @@ func main() {
 	}
 
 	kubeClient := cmd.CreateKubeClient(*kubeConfigPath)
-	statefulSetClient := kubeClient.AppsV1beta2().StatefulSets(*namespace)
+	statefulSetClient := kubeClient.AppsV1().StatefulSets(*namespace)
 	podClient := kubeClient.CoreV1().Pods(*namespace)
 
 	logger := lager.NewLogger("Pod Patcher")

@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"k8s.io/api/apps/v1beta2"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -23,7 +23,7 @@ var _ = Describe("Patcher", func() {
 		newVersion               string
 		logger                   *lagertest.TestLogger
 		err                      error
-		stsList                  *v1beta2.StatefulSetList
+		stsList                  *v1.StatefulSetList
 	)
 
 	BeforeEach(func() {
@@ -36,8 +36,8 @@ var _ = Describe("Patcher", func() {
 			Logger:       logger,
 		}
 
-		stsList = &v1beta2.StatefulSetList{
-			Items: []v1beta2.StatefulSet{
+		stsList = &v1.StatefulSetList{
+			Items: []v1.StatefulSet{
 				createStatefulSet("some-app", "version1"),
 			},
 		}
@@ -76,7 +76,7 @@ var _ = Describe("Patcher", func() {
 		Context("When Patch fails", func() {
 			Context("because it cannot list statefulsets", func() {
 				BeforeEach(func() {
-					statefulsetUpdaterLister.ListReturns(&v1beta2.StatefulSetList{}, errors.New("arrrgh"))
+					statefulsetUpdaterLister.ListReturns(&v1.StatefulSetList{}, errors.New("arrrgh"))
 				})
 
 				It("should fail with a meaningful error message", func() {
@@ -86,7 +86,7 @@ var _ = Describe("Patcher", func() {
 
 			Context("because it cannot update statefulsets", func() {
 				BeforeEach(func() {
-					statefulsetUpdaterLister.UpdateReturns(&v1beta2.StatefulSet{}, errors.New("brrrgh"))
+					statefulsetUpdaterLister.UpdateReturns(&v1.StatefulSet{}, errors.New("brrrgh"))
 				})
 
 				It("should fail with a meaningful error message", func() {
@@ -126,7 +126,7 @@ var _ = Describe("Patcher", func() {
 
 			Context("When Patch fails with multiple statefulsets", func() {
 				BeforeEach(func() {
-					statefulsetUpdaterLister.UpdateReturns(&v1beta2.StatefulSet{}, errors.New("brrrgh"))
+					statefulsetUpdaterLister.UpdateReturns(&v1.StatefulSet{}, errors.New("brrrgh"))
 				})
 
 				It("should fail with a meaningful error message", func() {
@@ -137,13 +137,13 @@ var _ = Describe("Patcher", func() {
 	})
 })
 
-func createStatefulSet(name, version string) v1beta2.StatefulSet {
-	return v1beta2.StatefulSet{
+func createStatefulSet(name, version string) v1.StatefulSet {
+	return v1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
 			Labels: map[string]string{RootfsVersionLabel: version},
 		},
-		Spec: v1beta2.StatefulSetSpec{
+		Spec: v1.StatefulSetSpec{
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{RootfsVersionLabel: version},
