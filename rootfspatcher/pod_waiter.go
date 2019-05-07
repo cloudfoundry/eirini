@@ -37,6 +37,7 @@ func (p PodWaiter) Wait() error {
 		stop <- nil
 		return nil
 	case <-t.C:
+		stop <- nil
 		return fmt.Errorf("timed out after %s", p.Timeout.String())
 	}
 }
