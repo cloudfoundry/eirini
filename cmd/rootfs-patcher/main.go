@@ -29,9 +29,9 @@ func main() {
 	logger := lager.NewLogger("Pod Patcher")
 	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
 	patcher := rootfspatcher.StatefulSetPatcher{
-		Version: *rootfsVersion,
-		Client:  statefulSetClient,
-		Logger:  logger,
+		Version:      *rootfsVersion,
+		StatefulSets: statefulSetClient,
+		Logger:       logger,
 	}
 
 	logger = lager.NewLogger("Pod Waiter")
