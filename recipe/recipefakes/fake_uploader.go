@@ -8,11 +8,11 @@ import (
 )
 
 type FakeUploader struct {
-	UploadStub        func(path, url string) error
+	UploadStub        func(string, string) error
 	uploadMutex       sync.RWMutex
 	uploadArgsForCall []struct {
-		path string
-		url  string
+		arg1 string
+		arg2 string
 	}
 	uploadReturns struct {
 		result1 error
@@ -24,22 +24,23 @@ type FakeUploader struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeUploader) Upload(path string, url string) error {
+func (fake *FakeUploader) Upload(arg1 string, arg2 string) error {
 	fake.uploadMutex.Lock()
 	ret, specificReturn := fake.uploadReturnsOnCall[len(fake.uploadArgsForCall)]
 	fake.uploadArgsForCall = append(fake.uploadArgsForCall, struct {
-		path string
-		url  string
-	}{path, url})
-	fake.recordInvocation("Upload", []interface{}{path, url})
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	fake.recordInvocation("Upload", []interface{}{arg1, arg2})
 	fake.uploadMutex.Unlock()
 	if fake.UploadStub != nil {
-		return fake.UploadStub(path, url)
+		return fake.UploadStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.uploadReturns.result1
+	fakeReturns := fake.uploadReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeUploader) UploadCallCount() int {
@@ -48,13 +49,22 @@ func (fake *FakeUploader) UploadCallCount() int {
 	return len(fake.uploadArgsForCall)
 }
 
+func (fake *FakeUploader) UploadCalls(stub func(string, string) error) {
+	fake.uploadMutex.Lock()
+	defer fake.uploadMutex.Unlock()
+	fake.UploadStub = stub
+}
+
 func (fake *FakeUploader) UploadArgsForCall(i int) (string, string) {
 	fake.uploadMutex.RLock()
 	defer fake.uploadMutex.RUnlock()
-	return fake.uploadArgsForCall[i].path, fake.uploadArgsForCall[i].url
+	argsForCall := fake.uploadArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeUploader) UploadReturns(result1 error) {
+	fake.uploadMutex.Lock()
+	defer fake.uploadMutex.Unlock()
 	fake.UploadStub = nil
 	fake.uploadReturns = struct {
 		result1 error
@@ -62,6 +72,8 @@ func (fake *FakeUploader) UploadReturns(result1 error) {
 }
 
 func (fake *FakeUploader) UploadReturnsOnCall(i int, result1 error) {
+	fake.uploadMutex.Lock()
+	defer fake.uploadMutex.Unlock()
 	fake.UploadStub = nil
 	if fake.uploadReturnsOnCall == nil {
 		fake.uploadReturnsOnCall = make(map[int]struct {

@@ -10,12 +10,12 @@ import (
 )
 
 type FakeCcClient struct {
-	AppCrashedStub        func(proccessGuid string, crashedRequest cc_messages.AppCrashedRequest, logger lager.Logger) error
+	AppCrashedStub        func(string, cc_messages.AppCrashedRequest, lager.Logger) error
 	appCrashedMutex       sync.RWMutex
 	appCrashedArgsForCall []struct {
-		proccessGuid   string
-		crashedRequest cc_messages.AppCrashedRequest
-		logger         lager.Logger
+		arg1 string
+		arg2 cc_messages.AppCrashedRequest
+		arg3 lager.Logger
 	}
 	appCrashedReturns struct {
 		result1 error
@@ -27,23 +27,24 @@ type FakeCcClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCcClient) AppCrashed(proccessGuid string, crashedRequest cc_messages.AppCrashedRequest, logger lager.Logger) error {
+func (fake *FakeCcClient) AppCrashed(arg1 string, arg2 cc_messages.AppCrashedRequest, arg3 lager.Logger) error {
 	fake.appCrashedMutex.Lock()
 	ret, specificReturn := fake.appCrashedReturnsOnCall[len(fake.appCrashedArgsForCall)]
 	fake.appCrashedArgsForCall = append(fake.appCrashedArgsForCall, struct {
-		proccessGuid   string
-		crashedRequest cc_messages.AppCrashedRequest
-		logger         lager.Logger
-	}{proccessGuid, crashedRequest, logger})
-	fake.recordInvocation("AppCrashed", []interface{}{proccessGuid, crashedRequest, logger})
+		arg1 string
+		arg2 cc_messages.AppCrashedRequest
+		arg3 lager.Logger
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("AppCrashed", []interface{}{arg1, arg2, arg3})
 	fake.appCrashedMutex.Unlock()
 	if fake.AppCrashedStub != nil {
-		return fake.AppCrashedStub(proccessGuid, crashedRequest, logger)
+		return fake.AppCrashedStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.appCrashedReturns.result1
+	fakeReturns := fake.appCrashedReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeCcClient) AppCrashedCallCount() int {
@@ -52,13 +53,22 @@ func (fake *FakeCcClient) AppCrashedCallCount() int {
 	return len(fake.appCrashedArgsForCall)
 }
 
+func (fake *FakeCcClient) AppCrashedCalls(stub func(string, cc_messages.AppCrashedRequest, lager.Logger) error) {
+	fake.appCrashedMutex.Lock()
+	defer fake.appCrashedMutex.Unlock()
+	fake.AppCrashedStub = stub
+}
+
 func (fake *FakeCcClient) AppCrashedArgsForCall(i int) (string, cc_messages.AppCrashedRequest, lager.Logger) {
 	fake.appCrashedMutex.RLock()
 	defer fake.appCrashedMutex.RUnlock()
-	return fake.appCrashedArgsForCall[i].proccessGuid, fake.appCrashedArgsForCall[i].crashedRequest, fake.appCrashedArgsForCall[i].logger
+	argsForCall := fake.appCrashedArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeCcClient) AppCrashedReturns(result1 error) {
+	fake.appCrashedMutex.Lock()
+	defer fake.appCrashedMutex.Unlock()
 	fake.AppCrashedStub = nil
 	fake.appCrashedReturns = struct {
 		result1 error
@@ -66,6 +76,8 @@ func (fake *FakeCcClient) AppCrashedReturns(result1 error) {
 }
 
 func (fake *FakeCcClient) AppCrashedReturnsOnCall(i int, result1 error) {
+	fake.appCrashedMutex.Lock()
+	defer fake.appCrashedMutex.Unlock()
 	fake.AppCrashedStub = nil
 	if fake.appCrashedReturnsOnCall == nil {
 		fake.appCrashedReturnsOnCall = make(map[int]struct {

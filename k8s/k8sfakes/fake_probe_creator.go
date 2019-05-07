@@ -10,10 +10,10 @@ import (
 )
 
 type FakeProbeCreator struct {
-	Stub        func(lrp *opi.LRP) *v1.Probe
+	Stub        func(*opi.LRP) *v1.Probe
 	mutex       sync.RWMutex
 	argsForCall []struct {
-		lrp *opi.LRP
+		arg1 *opi.LRP
 	}
 	returns struct {
 		result1 *v1.Probe
@@ -25,16 +25,16 @@ type FakeProbeCreator struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeProbeCreator) Spy(lrp *opi.LRP) *v1.Probe {
+func (fake *FakeProbeCreator) Spy(arg1 *opi.LRP) *v1.Probe {
 	fake.mutex.Lock()
 	ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
 	fake.argsForCall = append(fake.argsForCall, struct {
-		lrp *opi.LRP
-	}{lrp})
-	fake.recordInvocation("ProbeCreator", []interface{}{lrp})
+		arg1 *opi.LRP
+	}{arg1})
+	fake.recordInvocation("ProbeCreator", []interface{}{arg1})
 	fake.mutex.Unlock()
 	if fake.Stub != nil {
-		return fake.Stub(lrp)
+		return fake.Stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -48,13 +48,21 @@ func (fake *FakeProbeCreator) CallCount() int {
 	return len(fake.argsForCall)
 }
 
+func (fake *FakeProbeCreator) Calls(stub func(*opi.LRP) *v1.Probe) {
+	fake.mutex.Lock()
+	defer fake.mutex.Unlock()
+	fake.Stub = stub
+}
+
 func (fake *FakeProbeCreator) ArgsForCall(i int) *opi.LRP {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
-	return fake.argsForCall[i].lrp
+	return fake.argsForCall[i].arg1
 }
 
 func (fake *FakeProbeCreator) Returns(result1 *v1.Probe) {
+	fake.mutex.Lock()
+	defer fake.mutex.Unlock()
 	fake.Stub = nil
 	fake.returns = struct {
 		result1 *v1.Probe
@@ -62,6 +70,8 @@ func (fake *FakeProbeCreator) Returns(result1 *v1.Probe) {
 }
 
 func (fake *FakeProbeCreator) ReturnsOnCall(i int, result1 *v1.Probe) {
+	fake.mutex.Lock()
+	defer fake.mutex.Unlock()
 	fake.Stub = nil
 	if fake.returnsOnCall == nil {
 		fake.returnsOnCall = make(map[int]struct {

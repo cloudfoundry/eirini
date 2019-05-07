@@ -35,10 +35,17 @@ func (fake *FakeForwarder) ForwardCallCount() int {
 	return len(fake.forwardArgsForCall)
 }
 
+func (fake *FakeForwarder) ForwardCalls(stub func(metrics.Message)) {
+	fake.forwardMutex.Lock()
+	defer fake.forwardMutex.Unlock()
+	fake.ForwardStub = stub
+}
+
 func (fake *FakeForwarder) ForwardArgsForCall(i int) metrics.Message {
 	fake.forwardMutex.RLock()
 	defer fake.forwardMutex.RUnlock()
-	return fake.forwardArgsForCall[i].arg1
+	argsForCall := fake.forwardArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeForwarder) Invocations() map[string][][]interface{} {

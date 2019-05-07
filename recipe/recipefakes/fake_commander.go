@@ -8,11 +8,11 @@ import (
 )
 
 type FakeCommander struct {
-	ExecStub        func(cmd string, args ...string) error
+	ExecStub        func(string, ...string) error
 	execMutex       sync.RWMutex
 	execArgsForCall []struct {
-		cmd  string
-		args []string
+		arg1 string
+		arg2 []string
 	}
 	execReturns struct {
 		result1 error
@@ -24,22 +24,23 @@ type FakeCommander struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCommander) Exec(cmd string, args ...string) error {
+func (fake *FakeCommander) Exec(arg1 string, arg2 ...string) error {
 	fake.execMutex.Lock()
 	ret, specificReturn := fake.execReturnsOnCall[len(fake.execArgsForCall)]
 	fake.execArgsForCall = append(fake.execArgsForCall, struct {
-		cmd  string
-		args []string
-	}{cmd, args})
-	fake.recordInvocation("Exec", []interface{}{cmd, args})
+		arg1 string
+		arg2 []string
+	}{arg1, arg2})
+	fake.recordInvocation("Exec", []interface{}{arg1, arg2})
 	fake.execMutex.Unlock()
 	if fake.ExecStub != nil {
-		return fake.ExecStub(cmd, args...)
+		return fake.ExecStub(arg1, arg2...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.execReturns.result1
+	fakeReturns := fake.execReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeCommander) ExecCallCount() int {
@@ -48,13 +49,22 @@ func (fake *FakeCommander) ExecCallCount() int {
 	return len(fake.execArgsForCall)
 }
 
+func (fake *FakeCommander) ExecCalls(stub func(string, ...string) error) {
+	fake.execMutex.Lock()
+	defer fake.execMutex.Unlock()
+	fake.ExecStub = stub
+}
+
 func (fake *FakeCommander) ExecArgsForCall(i int) (string, []string) {
 	fake.execMutex.RLock()
 	defer fake.execMutex.RUnlock()
-	return fake.execArgsForCall[i].cmd, fake.execArgsForCall[i].args
+	argsForCall := fake.execArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeCommander) ExecReturns(result1 error) {
+	fake.execMutex.Lock()
+	defer fake.execMutex.Unlock()
 	fake.ExecStub = nil
 	fake.execReturns = struct {
 		result1 error
@@ -62,6 +72,8 @@ func (fake *FakeCommander) ExecReturns(result1 error) {
 }
 
 func (fake *FakeCommander) ExecReturnsOnCall(i int, result1 error) {
+	fake.execMutex.Lock()
+	defer fake.execMutex.Unlock()
 	fake.ExecStub = nil
 	if fake.execReturnsOnCall == nil {
 		fake.execReturnsOnCall = make(map[int]struct {

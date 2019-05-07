@@ -8,32 +8,10 @@ import (
 )
 
 type FakeTaskDesirer struct {
-	DesireStub        func(task *opi.Task) error
-	desireMutex       sync.RWMutex
-	desireArgsForCall []struct {
-		task *opi.Task
-	}
-	desireReturns struct {
-		result1 error
-	}
-	desireReturnsOnCall map[int]struct {
-		result1 error
-	}
-	DesireStagingStub        func(task *opi.Task) error
-	desireStagingMutex       sync.RWMutex
-	desireStagingArgsForCall []struct {
-		task *opi.Task
-	}
-	desireStagingReturns struct {
-		result1 error
-	}
-	desireStagingReturnsOnCall map[int]struct {
-		result1 error
-	}
-	DeleteStub        func(name string) error
+	DeleteStub        func(string) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
-		name string
+		arg1 string
 	}
 	deleteReturns struct {
 		result1 error
@@ -41,121 +19,48 @@ type FakeTaskDesirer struct {
 	deleteReturnsOnCall map[int]struct {
 		result1 error
 	}
+	DesireStub        func(*opi.Task) error
+	desireMutex       sync.RWMutex
+	desireArgsForCall []struct {
+		arg1 *opi.Task
+	}
+	desireReturns struct {
+		result1 error
+	}
+	desireReturnsOnCall map[int]struct {
+		result1 error
+	}
+	DesireStagingStub        func(*opi.Task) error
+	desireStagingMutex       sync.RWMutex
+	desireStagingArgsForCall []struct {
+		arg1 *opi.Task
+	}
+	desireStagingReturns struct {
+		result1 error
+	}
+	desireStagingReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskDesirer) Desire(task *opi.Task) error {
-	fake.desireMutex.Lock()
-	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
-	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
-		task *opi.Task
-	}{task})
-	fake.recordInvocation("Desire", []interface{}{task})
-	fake.desireMutex.Unlock()
-	if fake.DesireStub != nil {
-		return fake.DesireStub(task)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.desireReturns.result1
-}
-
-func (fake *FakeTaskDesirer) DesireCallCount() int {
-	fake.desireMutex.RLock()
-	defer fake.desireMutex.RUnlock()
-	return len(fake.desireArgsForCall)
-}
-
-func (fake *FakeTaskDesirer) DesireArgsForCall(i int) *opi.Task {
-	fake.desireMutex.RLock()
-	defer fake.desireMutex.RUnlock()
-	return fake.desireArgsForCall[i].task
-}
-
-func (fake *FakeTaskDesirer) DesireReturns(result1 error) {
-	fake.DesireStub = nil
-	fake.desireReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeTaskDesirer) DesireReturnsOnCall(i int, result1 error) {
-	fake.DesireStub = nil
-	if fake.desireReturnsOnCall == nil {
-		fake.desireReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.desireReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeTaskDesirer) DesireStaging(task *opi.Task) error {
-	fake.desireStagingMutex.Lock()
-	ret, specificReturn := fake.desireStagingReturnsOnCall[len(fake.desireStagingArgsForCall)]
-	fake.desireStagingArgsForCall = append(fake.desireStagingArgsForCall, struct {
-		task *opi.Task
-	}{task})
-	fake.recordInvocation("DesireStaging", []interface{}{task})
-	fake.desireStagingMutex.Unlock()
-	if fake.DesireStagingStub != nil {
-		return fake.DesireStagingStub(task)
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.desireStagingReturns.result1
-}
-
-func (fake *FakeTaskDesirer) DesireStagingCallCount() int {
-	fake.desireStagingMutex.RLock()
-	defer fake.desireStagingMutex.RUnlock()
-	return len(fake.desireStagingArgsForCall)
-}
-
-func (fake *FakeTaskDesirer) DesireStagingArgsForCall(i int) *opi.Task {
-	fake.desireStagingMutex.RLock()
-	defer fake.desireStagingMutex.RUnlock()
-	return fake.desireStagingArgsForCall[i].task
-}
-
-func (fake *FakeTaskDesirer) DesireStagingReturns(result1 error) {
-	fake.DesireStagingStub = nil
-	fake.desireStagingReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeTaskDesirer) DesireStagingReturnsOnCall(i int, result1 error) {
-	fake.DesireStagingStub = nil
-	if fake.desireStagingReturnsOnCall == nil {
-		fake.desireStagingReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.desireStagingReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeTaskDesirer) Delete(name string) error {
+func (fake *FakeTaskDesirer) Delete(arg1 string) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
-		name string
-	}{name})
-	fake.recordInvocation("Delete", []interface{}{name})
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("Delete", []interface{}{arg1})
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
-		return fake.DeleteStub(name)
+		return fake.DeleteStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.deleteReturns.result1
+	fakeReturns := fake.deleteReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeTaskDesirer) DeleteCallCount() int {
@@ -164,13 +69,22 @@ func (fake *FakeTaskDesirer) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
+func (fake *FakeTaskDesirer) DeleteCalls(stub func(string) error) {
+	fake.deleteMutex.Lock()
+	defer fake.deleteMutex.Unlock()
+	fake.DeleteStub = stub
+}
+
 func (fake *FakeTaskDesirer) DeleteArgsForCall(i int) string {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
-	return fake.deleteArgsForCall[i].name
+	argsForCall := fake.deleteArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeTaskDesirer) DeleteReturns(result1 error) {
+	fake.deleteMutex.Lock()
+	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = nil
 	fake.deleteReturns = struct {
 		result1 error
@@ -178,6 +92,8 @@ func (fake *FakeTaskDesirer) DeleteReturns(result1 error) {
 }
 
 func (fake *FakeTaskDesirer) DeleteReturnsOnCall(i int, result1 error) {
+	fake.deleteMutex.Lock()
+	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = nil
 	if fake.deleteReturnsOnCall == nil {
 		fake.deleteReturnsOnCall = make(map[int]struct {
@@ -189,15 +105,135 @@ func (fake *FakeTaskDesirer) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeTaskDesirer) Desire(arg1 *opi.Task) error {
+	fake.desireMutex.Lock()
+	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
+	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
+		arg1 *opi.Task
+	}{arg1})
+	fake.recordInvocation("Desire", []interface{}{arg1})
+	fake.desireMutex.Unlock()
+	if fake.DesireStub != nil {
+		return fake.DesireStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.desireReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeTaskDesirer) DesireCallCount() int {
+	fake.desireMutex.RLock()
+	defer fake.desireMutex.RUnlock()
+	return len(fake.desireArgsForCall)
+}
+
+func (fake *FakeTaskDesirer) DesireCalls(stub func(*opi.Task) error) {
+	fake.desireMutex.Lock()
+	defer fake.desireMutex.Unlock()
+	fake.DesireStub = stub
+}
+
+func (fake *FakeTaskDesirer) DesireArgsForCall(i int) *opi.Task {
+	fake.desireMutex.RLock()
+	defer fake.desireMutex.RUnlock()
+	argsForCall := fake.desireArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeTaskDesirer) DesireReturns(result1 error) {
+	fake.desireMutex.Lock()
+	defer fake.desireMutex.Unlock()
+	fake.DesireStub = nil
+	fake.desireReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeTaskDesirer) DesireReturnsOnCall(i int, result1 error) {
+	fake.desireMutex.Lock()
+	defer fake.desireMutex.Unlock()
+	fake.DesireStub = nil
+	if fake.desireReturnsOnCall == nil {
+		fake.desireReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.desireReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeTaskDesirer) DesireStaging(arg1 *opi.Task) error {
+	fake.desireStagingMutex.Lock()
+	ret, specificReturn := fake.desireStagingReturnsOnCall[len(fake.desireStagingArgsForCall)]
+	fake.desireStagingArgsForCall = append(fake.desireStagingArgsForCall, struct {
+		arg1 *opi.Task
+	}{arg1})
+	fake.recordInvocation("DesireStaging", []interface{}{arg1})
+	fake.desireStagingMutex.Unlock()
+	if fake.DesireStagingStub != nil {
+		return fake.DesireStagingStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.desireStagingReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeTaskDesirer) DesireStagingCallCount() int {
+	fake.desireStagingMutex.RLock()
+	defer fake.desireStagingMutex.RUnlock()
+	return len(fake.desireStagingArgsForCall)
+}
+
+func (fake *FakeTaskDesirer) DesireStagingCalls(stub func(*opi.Task) error) {
+	fake.desireStagingMutex.Lock()
+	defer fake.desireStagingMutex.Unlock()
+	fake.DesireStagingStub = stub
+}
+
+func (fake *FakeTaskDesirer) DesireStagingArgsForCall(i int) *opi.Task {
+	fake.desireStagingMutex.RLock()
+	defer fake.desireStagingMutex.RUnlock()
+	argsForCall := fake.desireStagingArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeTaskDesirer) DesireStagingReturns(result1 error) {
+	fake.desireStagingMutex.Lock()
+	defer fake.desireStagingMutex.Unlock()
+	fake.DesireStagingStub = nil
+	fake.desireStagingReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeTaskDesirer) DesireStagingReturnsOnCall(i int, result1 error) {
+	fake.desireStagingMutex.Lock()
+	defer fake.desireStagingMutex.Unlock()
+	fake.DesireStagingStub = nil
+	if fake.desireStagingReturnsOnCall == nil {
+		fake.desireStagingReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.desireStagingReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeTaskDesirer) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	fake.desireStagingMutex.RLock()
 	defer fake.desireStagingMutex.RUnlock()
-	fake.deleteMutex.RLock()
-	defer fake.deleteMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
