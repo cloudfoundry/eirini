@@ -31,11 +31,13 @@ func (p StatefulSetPatcher) Patch() error {
 	}
 
 	failuresOccured := 0
+	p.Logger.Info(fmt.Sprintf("found %d stateful sets to patch", len(sts.Items)))
 	for _, s := range sts.Items {
 		s.Labels[RootfsVersionLabel] = p.Version
 		s.Spec.Template.Labels[RootfsVersionLabel] = p.Version
 		_, err := p.StatefulSets.Update(&s)
 		if err != nil {
+			p.Logger.Error("failed to patch", err)
 			failuresOccured++
 		}
 	}

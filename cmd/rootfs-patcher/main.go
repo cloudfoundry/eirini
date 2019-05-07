@@ -26,11 +26,15 @@ func main() {
 	statefulSetClient := kubeClient.AppsV1beta2().StatefulSets(*namespace)
 	podClient := kubeClient.CoreV1().Pods(*namespace)
 
+	logger := lager.NewLogger("Pod Patcher")
+	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
 	patcher := rootfspatcher.StatefulSetPatcher{
 		Version: *rootfsVersion,
 		Client:  statefulSetClient,
+		Logger:  logger,
 	}
-	logger := lager.NewLogger("Pod Waiter")
+
+	logger = lager.NewLogger("Pod Waiter")
 	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
 
 	waiter := rootfspatcher.PodWaiter{

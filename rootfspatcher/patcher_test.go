@@ -28,6 +28,7 @@ var _ = Describe("Patcher", func() {
 
 	BeforeEach(func() {
 		newVersion = "version1"
+		logger = lagertest.NewTestLogger("test")
 		statefulsetUpdaterLister = new(rootfspatcherfakes.FakeStatefulSetUpdaterLister)
 		patcher = StatefulSetPatcher{
 			Version:      newVersion,
