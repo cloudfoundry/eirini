@@ -6,6 +6,7 @@ run:
     - vendor
     - recipe/packs
     - launcher/buildpackapplifecycle
+  modules-download-mode: vendor
 
 linters-settings:
   govet:
