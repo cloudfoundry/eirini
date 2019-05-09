@@ -2,6 +2,7 @@ package rootfspatcher_test
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -120,10 +121,10 @@ var _ = Describe("PodWaiter", func() {
 		channel := make(chan error, 1)
 		defer close(channel)
 
-		waiter.Timeout = -1
-
 		go func(ch chan<- error) {
+			waiter.Timeout = -1
 			err := waiter.Wait()
+			fmt.Fprintf(GinkgoWriter, "waiter response: %#v", err)
 			ch <- err
 		}(channel)
 
