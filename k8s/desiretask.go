@@ -14,7 +14,7 @@ const (
 	ActiveDeadlineSeconds = 900
 	stagingSourceType     = "STG"
 	parallelism           = 1
-	completions           = 3
+	completions           = 1
 )
 
 type TaskDesirer struct {
