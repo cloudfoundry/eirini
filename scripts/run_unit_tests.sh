@@ -4,6 +4,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 readonly BASEDIR="$(cd "$(dirname "$0")"/.. && pwd)"
+export GO111MODULE=on
 
 main(){
   run_tests
@@ -11,7 +12,7 @@ main(){
 
 run_tests() {
   pushd "$BASEDIR" > /dev/null || exit 1
-    ginkgo -r -keepGoing --skipPackage=launcher,packs,integration -randomizeAllSpecs
+    ginkgo -mod=vendor -race -p -r -keepGoing --skipPackage=launcher,packs,integration -randomizeAllSpecs
   popd > /dev/null || exit 1
 }
 
