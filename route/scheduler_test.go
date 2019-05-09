@@ -1,6 +1,7 @@
 package route_test
 
 import (
+	"sync/atomic"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -15,33 +16,27 @@ var _ = Describe("Scheduler", func() {
 		Context("When task is Scheduled", func() {
 
 			var (
-				callCount int
-				ticker    *time.Ticker
-				task      Task
-				duration  time.Duration
-				scheduler TaskScheduler
+				ticker   *time.Ticker
+				duration time.Duration
+				count    int32
 			)
 
 			BeforeEach(func() {
 				duration = time.Duration(20) * time.Millisecond
 				ticker = time.NewTicker(duration)
-				scheduler = &TickerTaskScheduler{Ticker: ticker}
-				callCount = 0
-				task = func() error {
-					callCount++
-					return nil
-				}
-			})
-
-			JustBeforeEach(func() {
-				go scheduler.Schedule(task)
 			})
 
 			It("should call the provided function on each tick", func() {
+				scheduler := &TickerTaskScheduler{Ticker: ticker}
+				task := func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				}
+				go scheduler.Schedule(task)
 				time.Sleep(50 * time.Millisecond)
 				ticker.Stop()
 
-				Expect(callCount).To(Equal(2))
+				Expect(atomic.LoadInt32(&count)).To(Equal(int32(2)))
 			})
 
 		})
