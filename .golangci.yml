@@ -4,7 +4,6 @@ run:
   # which dirs to skip: they won't be analyzed;
   skip-dirs:
     - vendor
-    - recipe/packs
     - launcher/buildpackapplifecycle
   modules-download-mode: vendor
 
@@ -37,12 +36,6 @@ issues:
       - deadcode
       - varcheck
       - unused
-    - path: recipe/cmd/buildpack/manager.go
-      linters:
-      - gosec
-    - path: integration/recipe/buildpackmanager_test.go
-      linters:
-      - gosec
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 

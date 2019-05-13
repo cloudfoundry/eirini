@@ -44,8 +44,8 @@ var _ = Describe("Desiretask", func() {
 		Expect(job.Spec.Template.Spec.AutomountServiceAccountToken).To(Equal(&automountServiceAccountToken))
 	}
 
-	assertContainer := func(container v1.Container) {
-		Expect(container.Name).To(Equal("opi-task"))
+	assertContainer := func(container v1.Container, name string) {
+		Expect(container.Name).To(Equal(name))
 		Expect(container.Image).To(Equal(Image))
 		Expect(container.ImagePullPolicy).To(Equal(v1.PullAlways))
 
@@ -98,8 +98,7 @@ var _ = Describe("Desiretask", func() {
 
 			containers := job.Spec.Template.Spec.Containers
 			Expect(containers).To(HaveLen(1))
-
-			assertContainer(containers[0])
+			assertContainer(containers[0], "opi-task")
 		})
 
 		Context("and the job already exists", func() {
@@ -115,6 +114,8 @@ var _ = Describe("Desiretask", func() {
 	})
 
 	Context("When desiring a staging task", func() {
+
+		var stagingTask *opi.StagingTask
 
 		toKeyPath := func(key string) v1.KeyToPath {
 			return v1.KeyToPath{
@@ -132,9 +133,10 @@ var _ = Describe("Desiretask", func() {
 		}
 
 		assertVolumes := func(job *batch.Job) {
-			Expect(job.Spec.Template.Spec.Volumes).To(HaveLen(1))
-			volume := job.Spec.Template.Spec.Volumes[0]
+			Expect(job.Spec.Template.Spec.Volumes).To(HaveLen(4))
 
+			// secrets mount
+			volume := job.Spec.Template.Spec.Volumes[0]
 			Expect(volume.Name).To(Equal("cc-certs-volume"))
 			Expect(volume.VolumeSource.Secret.SecretName).To(Equal("secret-certs"))
 			Expect(volume.VolumeSource.Secret.Items).To(ConsistOf(
@@ -144,15 +146,67 @@ var _ = Describe("Desiretask", func() {
 				toKeyPath(eirini.CCUploaderKeyName),
 				toKeyPath(eirini.CCInternalCACertName),
 			))
+
+			// buildpacks mount
+			volume = job.Spec.Template.Spec.Volumes[1]
+			Expect(volume.Name).To(Equal(eirini.RecipeOutputName))
+
+			// workspace mount
+			volume = job.Spec.Template.Spec.Volumes[2]
+			Expect(volume.Name).To(Equal(eirini.RecipeBuildPacksName))
+
+			// output mount
+			volume = job.Spec.Template.Spec.Volumes[3]
+			Expect(volume.Name).To(Equal(eirini.RecipeWorkspaceName))
 		}
 
 		assertContainerVolumeMount := func(job *batch.Job) {
-			Expect(job.Spec.Template.Spec.Containers[0].VolumeMounts).To(HaveLen(1))
-			mount := job.Spec.Template.Spec.Containers[0].VolumeMounts[0]
+			Expect(job.Spec.Template.Spec.InitContainers[0].VolumeMounts).To(HaveLen(3))
 
-			Expect(mount.Name).To(Equal("cc-certs-volume"))
-			Expect(mount.ReadOnly).To(Equal(true))
-			Expect(mount.MountPath).To(Equal("/etc/config/certs"))
+			// checking downloader volumes
+			secretMount := job.Spec.Template.Spec.InitContainers[0].VolumeMounts[0]
+			Expect(secretMount.Name).To(Equal("cc-certs-volume"))
+			Expect(secretMount.ReadOnly).To(Equal(true))
+			Expect(secretMount.MountPath).To(Equal("/etc/config/certs"))
+
+			buildpackMount := job.Spec.Template.Spec.InitContainers[0].VolumeMounts[1]
+			Expect(buildpackMount.Name).To(Equal(eirini.RecipeBuildPacksName))
+			Expect(buildpackMount.ReadOnly).To(Equal(false))
+			Expect(buildpackMount.MountPath).To(Equal(eirini.RecipeBuildPacksDir))
+
+			workspaceMount := job.Spec.Template.Spec.InitContainers[0].VolumeMounts[2]
+			Expect(workspaceMount.Name).To(Equal(eirini.RecipeWorkspaceName))
+			Expect(workspaceMount.ReadOnly).To(Equal(false))
+			Expect(workspaceMount.MountPath).To(Equal(eirini.RecipeWorkspaceDir))
+
+			// checking executor volumes
+			Expect(job.Spec.Template.Spec.InitContainers[1].VolumeMounts).To(HaveLen(3))
+			buildpackMount = job.Spec.Template.Spec.InitContainers[1].VolumeMounts[0]
+			Expect(buildpackMount.Name).To(Equal(eirini.RecipeBuildPacksName))
+			Expect(buildpackMount.ReadOnly).To(Equal(false))
+			Expect(buildpackMount.MountPath).To(Equal(eirini.RecipeBuildPacksDir))
+
+			workspaceMount = job.Spec.Template.Spec.InitContainers[1].VolumeMounts[1]
+			Expect(workspaceMount.Name).To(Equal(eirini.RecipeWorkspaceName))
+			Expect(workspaceMount.ReadOnly).To(Equal(false))
+			Expect(workspaceMount.MountPath).To(Equal(eirini.RecipeWorkspaceDir))
+
+			outputMount := job.Spec.Template.Spec.InitContainers[1].VolumeMounts[2]
+			Expect(outputMount.Name).To(Equal(eirini.RecipeOutputName))
+			Expect(outputMount.ReadOnly).To(Equal(false))
+			Expect(outputMount.MountPath).To(Equal(eirini.RecipeOutputLocation))
+
+			// checking uploader volumes
+			Expect(job.Spec.Template.Spec.Containers[0].VolumeMounts).To(HaveLen(2))
+			secretMount = job.Spec.Template.Spec.Containers[0].VolumeMounts[0]
+			Expect(secretMount.Name).To(Equal("cc-certs-volume"))
+			Expect(secretMount.ReadOnly).To(Equal(true))
+			Expect(secretMount.MountPath).To(Equal("/etc/config/certs"))
+
+			outputMount = job.Spec.Template.Spec.Containers[0].VolumeMounts[1]
+			Expect(outputMount.Name).To(Equal(eirini.RecipeOutputName))
+			Expect(outputMount.ReadOnly).To(Equal(false))
+			Expect(outputMount.MountPath).To(Equal(eirini.RecipeOutputLocation))
 		}
 
 		assertStagingSpec := func(job *batch.Job) {
@@ -161,8 +215,26 @@ var _ = Describe("Desiretask", func() {
 			assertContainerVolumeMount(job)
 		}
 
+		BeforeEach(func() {
+			stagingTask = &opi.StagingTask{
+				DownloaderImage: Image,
+				ExecutorImage:   Image,
+				UploaderImage:   Image,
+				Task: &opi.Task{
+					Env: map[string]string{
+						eirini.EnvDownloadURL:        "example.com/download",
+						eirini.EnvDropletUploadURL:   "example.com/upload",
+						eirini.EnvAppID:              "env-app-id",
+						eirini.EnvStagingGUID:        "the-stage-is-yours",
+						eirini.EnvCompletionCallback: "example.com/call/me/maybe",
+						eirini.EnvEiriniAddress:      "http://opi.cf.internal",
+					},
+				},
+			}
+		})
+
 		JustBeforeEach(func() {
-			err = desirer.DesireStaging(task)
+			err = desirer.DesireStaging(stagingTask)
 		})
 
 		It("should not return an error", func() {
@@ -175,16 +247,21 @@ var _ = Describe("Desiretask", func() {
 
 			assertGeneralSpec(job)
 
+			initContainers := job.Spec.Template.Spec.InitContainers
+			Expect(initContainers).To(HaveLen(2))
+
 			containers := job.Spec.Template.Spec.Containers
 			Expect(containers).To(HaveLen(1))
 
-			assertContainer(containers[0])
+			assertContainer(initContainers[0], "opi-task-downloader")
+			assertContainer(initContainers[1], "opi-task-executor")
+			assertContainer(containers[0], "opi-task-uploader")
 			assertStagingSpec(job)
 		})
 
 		Context("When the staging task already exists", func() {
 			BeforeEach(func() {
-				err = desirer.DesireStaging(task)
+				err = desirer.DesireStaging(stagingTask)
 				Expect(err).ToNot(HaveOccurred())
 			})
 

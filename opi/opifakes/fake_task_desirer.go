@@ -30,10 +30,10 @@ type FakeTaskDesirer struct {
 	desireReturnsOnCall map[int]struct {
 		result1 error
 	}
-	DesireStagingStub        func(*opi.Task) error
+	DesireStagingStub        func(*opi.StagingTask) error
 	desireStagingMutex       sync.RWMutex
 	desireStagingArgsForCall []struct {
-		arg1 *opi.Task
+		arg1 *opi.StagingTask
 	}
 	desireStagingReturns struct {
 		result1 error
@@ -165,11 +165,11 @@ func (fake *FakeTaskDesirer) DesireReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeTaskDesirer) DesireStaging(arg1 *opi.Task) error {
+func (fake *FakeTaskDesirer) DesireStaging(arg1 *opi.StagingTask) error {
 	fake.desireStagingMutex.Lock()
 	ret, specificReturn := fake.desireStagingReturnsOnCall[len(fake.desireStagingArgsForCall)]
 	fake.desireStagingArgsForCall = append(fake.desireStagingArgsForCall, struct {
-		arg1 *opi.Task
+		arg1 *opi.StagingTask
 	}{arg1})
 	fake.recordInvocation("DesireStaging", []interface{}{arg1})
 	fake.desireStagingMutex.Unlock()
@@ -189,13 +189,13 @@ func (fake *FakeTaskDesirer) DesireStagingCallCount() int {
 	return len(fake.desireStagingArgsForCall)
 }
 
-func (fake *FakeTaskDesirer) DesireStagingCalls(stub func(*opi.Task) error) {
+func (fake *FakeTaskDesirer) DesireStagingCalls(stub func(*opi.StagingTask) error) {
 	fake.desireStagingMutex.Lock()
 	defer fake.desireStagingMutex.Unlock()
 	fake.DesireStagingStub = stub
 }
 
-func (fake *FakeTaskDesirer) DesireStagingArgsForCall(i int) *opi.Task {
+func (fake *FakeTaskDesirer) DesireStagingArgsForCall(i int) *opi.StagingTask {
 	fake.desireStagingMutex.RLock()
 	defer fake.desireStagingMutex.RUnlock()
 	argsForCall := fake.desireStagingArgsForCall[i]

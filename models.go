@@ -17,13 +17,18 @@ const (
 	EnvAppID              = "APP_ID"
 	EnvStagingGUID        = "STAGING_GUID"
 	EnvCompletionCallback = "COMPLETION_CALLBACK"
-	EnvCfUsername         = "CF_USERNAME"
-	EnvCfPassword         = "CF_PASSWORD"
-	EnvAPIAddress         = "API_ADDRESS"
 	EnvEiriniAddress      = "EIRINI_ADDRESS"
 
 	RegisteredRoutes = "routes"
 	OriginalRequest  = "original_request"
+
+	RecipeBuildPacksDir    = "/var/lib/buildpacks"
+	RecipeBuildPacksName   = "recipe-buildpacks"
+	RecipeWorkspaceDir     = "/recipe_workspace"
+	RecipeWorkspaceName    = "recipe-workspace"
+	RecipeOutputName       = "staging-output"
+	RecipeOutputLocation   = "/out"
+	RecipePacksBuilderPath = "/packs/builder"
 
 	CCUploaderInternalURL = "cc-uploader.service.cf.internal"
 	CCCertsMountPath      = "/etc/config/certs"
@@ -48,7 +53,9 @@ type Properties struct {
 	CCCertsSecretName string `yaml:"cc_certs_secret_name"`
 	RegistryAddress   string `yaml:"registry_address"`
 	EiriniAddress     string `yaml:"eirini_address"`
-	StagerImage       string `yaml:"stager_image"`
+	DownloaderImage   string `yaml:"downloader_image"`
+	UploaderImage     string `yaml:"uploader_image"`
+	ExecutorImage     string `yaml:"executor_image"`
 
 	LoggregatorAddress  string `yaml:"loggregator_address"`
 	LoggregatorCertPath string `yaml:"loggergator_cert_path"`
@@ -71,8 +78,10 @@ type Stager interface {
 }
 
 type StagerConfig struct {
-	EiriniAddress string
-	Image         string
+	EiriniAddress   string
+	DownloaderImage string
+	UploaderImage   string
+	ExecutorImage   string
 }
 
 //go:generate counterfeiter . Extractor

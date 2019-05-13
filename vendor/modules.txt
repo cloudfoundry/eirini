@@ -4,41 +4,11 @@ cloud.google.com/go/compute/metadata
 code.cloudfoundry.org/bbs/models
 code.cloudfoundry.org/bbs/format
 code.cloudfoundry.org/bbs/encryption
-# code.cloudfoundry.org/buildpackapplifecycle v0.0.0-20181126193040-928cda2ee7d6
-code.cloudfoundry.org/buildpackapplifecycle
-# code.cloudfoundry.org/bytefmt v0.0.0-20180906201452-2aa6f33b730c
-code.cloudfoundry.org/bytefmt
-# code.cloudfoundry.org/cli v6.42.0+incompatible
-code.cloudfoundry.org/cli/cf/appfiles
-code.cloudfoundry.org/cli/cf/errors
-code.cloudfoundry.org/cli/cf/models
-code.cloudfoundry.org/cli/cf/util/glob
-code.cloudfoundry.org/cli/cf/i18n
-code.cloudfoundry.org/cli/cf/formatters
-code.cloudfoundry.org/cli/i18n/resources
-code.cloudfoundry.org/cli/util/ui
-code.cloudfoundry.org/cli/command/translatableerror
-code.cloudfoundry.org/cli/types
-code.cloudfoundry.org/cli/util/configv3
-code.cloudfoundry.org/cli/actor/actionerror
-code.cloudfoundry.org/cli/api/cloudcontroller/ccerror
-code.cloudfoundry.org/cli/api/plugin/pluginerror
-code.cloudfoundry.org/cli/api/uaa
-code.cloudfoundry.org/cli/util/clissh/ssherror
-code.cloudfoundry.org/cli/util/download
-code.cloudfoundry.org/cli/util/manifest
-code.cloudfoundry.org/cli/util
-code.cloudfoundry.org/cli/version
-code.cloudfoundry.org/cli/api/cloudcontroller/ccv2/constant
-code.cloudfoundry.org/cli/api/uaa/constant
-code.cloudfoundry.org/cli/api/uaa/internal
 # code.cloudfoundry.org/go-diodes v0.0.0-20180905200951-72629b5276e3
 code.cloudfoundry.org/go-diodes
 # code.cloudfoundry.org/go-loggregator v7.2.0+incompatible
 code.cloudfoundry.org/go-loggregator
 code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2
-# code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f
-code.cloudfoundry.org/gofileutils/fileutils
 # code.cloudfoundry.org/lager v2.0.0+incompatible
 code.cloudfoundry.org/lager
 code.cloudfoundry.org/lager/lagertest
@@ -58,71 +28,14 @@ github.com/Azure/go-autorest/autorest/azure
 github.com/Azure/go-autorest/logger
 github.com/Azure/go-autorest/version
 github.com/Azure/go-autorest/autorest/date
-# github.com/Microsoft/go-winio v0.4.11
-github.com/Microsoft/go-winio
-# github.com/SermoDigital/jose v0.0.0-20161205224733-f6df55f235c2
-github.com/SermoDigital/jose/jws
-github.com/SermoDigital/jose
-github.com/SermoDigital/jose/crypto
-github.com/SermoDigital/jose/jwt
-# github.com/blang/semver v3.5.1+incompatible
-github.com/blang/semver
-# github.com/bmatcuk/doublestar v1.1.1
-github.com/bmatcuk/doublestar
-# github.com/buildpack/packs v0.0.0-20180629204239-a109d270e3ec
-github.com/buildpack/packs
-github.com/buildpack/packs/cf
-github.com/buildpack/packs/img
-github.com/buildpack/packs/heroku/app
-# github.com/charlievieth/fs v0.0.0-20170613215519-7dc373669fa1
-github.com/charlievieth/fs
-# github.com/cloudfoundry/bosh-cli v3.0.1+incompatible
-github.com/cloudfoundry/bosh-cli/director/template
-# github.com/cloudfoundry/bosh-utils v0.0.0-20181224171034-c2cf699102bd
-github.com/cloudfoundry/bosh-utils/errors
-github.com/cloudfoundry/bosh-utils/system
-github.com/cloudfoundry/bosh-utils/logger
-# github.com/cppforlife/go-patch v0.2.0
-github.com/cppforlife/go-patch/patch
-# github.com/cyphar/filepath-securejoin v0.2.2
-github.com/cyphar/filepath-securejoin
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/deckarep/golang-set v1.7.1
 github.com/deckarep/golang-set
 # github.com/dgrijalva/jwt-go v0.0.0-20160705203006-01aeca54ebda
 github.com/dgrijalva/jwt-go
-# github.com/docker/distribution v2.7.1+incompatible
-github.com/docker/distribution/reference
-github.com/docker/distribution/digestset
-# github.com/docker/docker v0.0.0-20180531152204-71cd53e4a197
-github.com/docker/docker/api/types
-github.com/docker/docker/client
-github.com/docker/docker/api/types/container
-github.com/docker/docker/api/types/filters
-github.com/docker/docker/api/types/mount
-github.com/docker/docker/api/types/network
-github.com/docker/docker/api/types/registry
-github.com/docker/docker/api/types/swarm
-github.com/docker/docker/api
-github.com/docker/docker/api/types/events
-github.com/docker/docker/api/types/image
-github.com/docker/docker/api/types/time
-github.com/docker/docker/api/types/versions
-github.com/docker/docker/api/types/volume
-github.com/docker/docker/api/types/blkiodev
-github.com/docker/docker/api/types/strslice
-github.com/docker/docker/api/types/swarm/runtime
-# github.com/docker/go-connections v0.4.0
-github.com/docker/go-connections/nat
-github.com/docker/go-connections/sockets
-github.com/docker/go-connections/tlsconfig
-# github.com/docker/go-units v0.3.3
-github.com/docker/go-units
 # github.com/evanphx/json-patch v4.1.0+incompatible
 github.com/evanphx/json-patch
-# github.com/fatih/color v1.7.0
-github.com/fatih/color
 # github.com/gogo/protobuf v1.2.0
 github.com/gogo/protobuf/jsonpb
 github.com/gogo/protobuf/gogoproto
@@ -138,21 +51,6 @@ github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
-# github.com/google/go-containerregistry v0.0.0-20190130212916-1496eb6b0470
-github.com/google/go-containerregistry/pkg/v1
-github.com/google/go-containerregistry/pkg/v1/remote
-github.com/google/go-containerregistry/pkg/authn
-github.com/google/go-containerregistry/pkg/name
-github.com/google/go-containerregistry/pkg/v1/daemon
-github.com/google/go-containerregistry/pkg/v1/mutate
-github.com/google/go-containerregistry/pkg/v1/tarball
-github.com/google/go-containerregistry/pkg/v1/types
-github.com/google/go-containerregistry/pkg/v1/partial
-github.com/google/go-containerregistry/pkg/v1/remote/transport
-github.com/google/go-containerregistry/pkg/v1/stream
-github.com/google/go-containerregistry/pkg/v1/v1util
-github.com/google/go-containerregistry/pkg/v1/empty
-github.com/google/go-containerregistry/pkg/v1/random
 # github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
 github.com/google/gofuzz
 # github.com/googleapis/gnostic v0.2.0
@@ -184,16 +82,6 @@ github.com/inconshreveable/mousetrap
 github.com/json-iterator/go
 # github.com/julienschmidt/httprouter v1.2.0
 github.com/julienschmidt/httprouter
-# github.com/konsorten/go-windows-terminal-sequences v1.0.1
-github.com/konsorten/go-windows-terminal-sequences
-# github.com/lunixbochs/vtclean v0.0.0-20180621232353-2d01aacdc34a
-github.com/lunixbochs/vtclean
-# github.com/mattn/go-colorable v0.0.9
-github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.4
-github.com/mattn/go-isatty
-# github.com/mattn/go-runewidth v0.0.0-20181218000649-703b5e6b11ae
-github.com/mattn/go-runewidth
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
@@ -243,24 +131,12 @@ github.com/onsi/gomega/matchers/support/goraph/bipartitegraph
 github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
-# github.com/opencontainers/go-digest v1.0.0-rc1
-github.com/opencontainers/go-digest
-# github.com/opencontainers/image-spec v1.0.1
-github.com/opencontainers/image-spec/specs-go/v1
-github.com/opencontainers/image-spec/specs-go
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
-# github.com/sclevine/spec v1.2.0
-github.com/sclevine/spec
-# github.com/sirupsen/logrus v1.3.0
-github.com/sirupsen/logrus
 # github.com/spf13/cobra v0.0.3
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.3
 github.com/spf13/pflag
-# github.com/vito/go-interact v0.0.0-20171111012221-fa338ed9e9ec
-github.com/vito/go-interact/interact
-github.com/vito/go-interact/interact/terminal
 # golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 golang.org/x/crypto/ssh/terminal
 golang.org/x/crypto/ed25519
@@ -269,15 +145,13 @@ golang.org/x/crypto/ed25519/internal/edwards25519
 golang.org/x/net/context
 golang.org/x/net/http2
 golang.org/x/net/trace
-golang.org/x/net/context/ctxhttp
 golang.org/x/net/html/charset
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
-golang.org/x/net/proxy
 golang.org/x/net/html
-golang.org/x/net/internal/socks
+golang.org/x/net/context/ctxhttp
 golang.org/x/net/html/atom
 # golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
 golang.org/x/oauth2
@@ -285,8 +159,6 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6
-golang.org/x/sync/errgroup
 # golang.org/x/sys v0.0.0-20190312061237-fead79001313
 golang.org/x/sys/unix
 golang.org/x/sys/windows
@@ -298,7 +170,6 @@ golang.org/x/text/transform
 golang.org/x/text/secure/bidirule
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-golang.org/x/text/language
 golang.org/x/text/encoding/internal/identifier
 golang.org/x/text/encoding/internal
 golang.org/x/text/encoding/japanese
@@ -306,10 +177,11 @@ golang.org/x/text/encoding/korean
 golang.org/x/text/encoding/simplifiedchinese
 golang.org/x/text/encoding/traditionalchinese
 golang.org/x/text/encoding/unicode
-golang.org/x/text/internal/language
-golang.org/x/text/internal/language/compact
+golang.org/x/text/language
 golang.org/x/text/internal/utf8internal
 golang.org/x/text/runes
+golang.org/x/text/internal/language
+golang.org/x/text/internal/language/compact
 golang.org/x/text/internal/tag
 # golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
 golang.org/x/time/rate
@@ -361,8 +233,6 @@ google.golang.org/grpc/credentials/internal
 google.golang.org/grpc/balancer/base
 google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/internal/syscall
-# gopkg.in/cheggaaa/pb.v1 v1.0.27
-gopkg.in/cheggaaa/pb.v1
 # gopkg.in/fsnotify.v1 v1.4.7
 gopkg.in/fsnotify.v1
 # gopkg.in/inf.v0 v0.9.1

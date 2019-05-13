@@ -30,8 +30,10 @@ var _ = Describe("Stager", func() {
 
 		logger := lagertest.NewTestLogger("test")
 		config := &eirini.StagerConfig{
-			EiriniAddress: "http://opi.cf.internal",
-			Image:         "eirini/recipe:tagged",
+			EiriniAddress:   "http://opi.cf.internal",
+			DownloaderImage: "eirini/recipe-downloader:tagged",
+			UploaderImage:   "eirini/recipe-uploader:tagged",
+			ExecutorImage:   "eirini/recipe-runner:tagged",
 		}
 
 		stager = &Stager{
@@ -90,17 +92,21 @@ var _ = Describe("Stager", func() {
 		It("should desire a converted task without overriding eirini env variables", func() {
 			Expect(taskDesirer.DesireStagingCallCount()).To(Equal(1))
 			task := taskDesirer.DesireStagingArgsForCall(0)
-			Expect(task).To(Equal(&opi.Task{
-				Image: "eirini/recipe:tagged",
-				Env: map[string]string{
-					"HOWARD":                     "the alien",
-					eirini.EnvDownloadURL:        "example.com/download",
-					eirini.EnvDropletUploadURL:   "example.com/upload",
-					eirini.EnvAppID:              request.AppGUID,
-					eirini.EnvStagingGUID:        stagingGUID,
-					eirini.EnvCompletionCallback: request.CompletionCallback,
-					eirini.EnvBuildpacks:         `[{"name":"go_buildpack","key":"1234eeff","url":"example.com/build/pack","skip_detect":true}]`,
-					eirini.EnvEiriniAddress:      "http://opi.cf.internal",
+			Expect(task).To(Equal(&opi.StagingTask{
+				DownloaderImage: "eirini/recipe-downloader:tagged",
+				UploaderImage:   "eirini/recipe-uploader:tagged",
+				ExecutorImage:   "eirini/recipe-runner:tagged",
+				Task: &opi.Task{
+					Env: map[string]string{
+						"HOWARD":                     "the alien",
+						eirini.EnvDownloadURL:        "example.com/download",
+						eirini.EnvDropletUploadURL:   "example.com/upload",
+						eirini.EnvAppID:              request.AppGUID,
+						eirini.EnvStagingGUID:        stagingGUID,
+						eirini.EnvCompletionCallback: request.CompletionCallback,
+						eirini.EnvBuildpacks:         `[{"name":"go_buildpack","key":"1234eeff","url":"example.com/build/pack","skip_detect":true}]`,
+						eirini.EnvEiriniAddress:      "http://opi.cf.internal",
+					},
 				},
 			}))
 		})

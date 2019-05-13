@@ -40,7 +40,7 @@ func (s *Stager) Stage(stagingGUID string, request cf.StagingRequest) error {
 	return s.Desirer.DesireStaging(task)
 }
 
-func (s *Stager) createStagingTask(stagingGUID string, request cf.StagingRequest) (*opi.Task, error) {
+func (s *Stager) createStagingTask(stagingGUID string, request cf.StagingRequest) (*opi.StagingTask, error) {
 	s.Logger.Debug("create-staging-task", lager.Data{"app-id": request.AppGUID, "staging-guid": stagingGUID})
 
 	lifecycleData := request.LifecycleData
@@ -61,9 +61,11 @@ func (s *Stager) createStagingTask(stagingGUID string, request cf.StagingRequest
 
 	stagingEnv := mergeEnvVriables(eiriniEnv, request.Environment)
 
-	stagingTask := &opi.Task{
-		Image: s.Config.Image,
-		Env:   stagingEnv,
+	stagingTask := &opi.StagingTask{
+		DownloaderImage: s.Config.DownloaderImage,
+		UploaderImage:   s.Config.UploaderImage,
+		ExecutorImage:   s.Config.ExecutorImage,
+		Task:            &opi.Task{Env: stagingEnv},
 	}
 	return stagingTask, nil
 }
