@@ -136,6 +136,7 @@ RSpec.describe 'Loggregator Fluentd' do
       kclient = double('kubernetes client stub')
       f.instance_variable_set(:@client, kclient)
       f.instance_variable_set(:@cache, {})
+      f.instance_variable_set(:@namespace, "test_namespace_name")
       expect(kclient).to receive(:get_pod).with(
         'test_pod_name',
         'test_namespace_name'
@@ -171,6 +172,7 @@ RSpec.describe 'Loggregator Fluentd' do
       kclient = double('kubernetes client stub')
       f.instance_variable_set(:@client, kclient)
       f.instance_variable_set(:@cache, {})
+      f.instance_variable_set(:@namespace, "test_namespace_name")
       expect(kclient).to receive(:get_pod).with(
         'test_pod_name',
         'test_namespace_name'
