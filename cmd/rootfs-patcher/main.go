@@ -38,10 +38,10 @@ func main() {
 	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
 
 	waiter := rootfspatcher.PodWaiter{
-		Client:        podClient,
-		Logger:        logger,
-		RootfsVersion: *rootfsVersion,
-		Timeout:       *timeout,
+		PodLister:         podClient,
+		Logger:            logger,
+		ExpectedPodLabels: map[string]string{rootfspatcher.RootfsVersionLabel: *rootfsVersion},
+		Timeout:           *timeout,
 	}
 
 	err := rootfspatcher.PatchAndWait(patcher, waiter)

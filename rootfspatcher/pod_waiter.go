@@ -1,22 +1,26 @@
 package rootfspatcher
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
-	"code.cloudfoundry.org/eirini/k8s/utils"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	apicore "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+//go:generate counterfeiter . PodLister
+type PodLister interface {
+	List(opts meta.ListOptions) (*apicore.PodList, error)
+}
+
 type PodWaiter struct {
-	Client        clientcorev1.PodInterface
-	Logger        lager.Logger
-	RootfsVersion string
-	Timeout       time.Duration
+	PodLister         PodLister
+	Logger            lager.Logger
+	Timeout           time.Duration
+	PodLabelSelector  string
+	ExpectedPodLabels map[string]string
 }
 
 func (p PodWaiter) Wait() error {
@@ -30,7 +34,7 @@ func (p PodWaiter) Wait() error {
 
 	t := time.NewTimer(p.Timeout)
 	if p.Timeout < 0 {
-		t.Stop()
+		return errors.New("provided timeout is not valid")
 	}
 	select {
 	case <-ready:
@@ -57,7 +61,7 @@ func (p PodWaiter) poll(ready chan<- interface{}, stop <-chan interface{}) {
 }
 
 func (p PodWaiter) podsUpdated() bool {
-	pods, err := p.Client.List(metav1.ListOptions{})
+	pods, err := p.PodLister.List(meta.ListOptions{LabelSelector: p.PodLabelSelector})
 
 	if err != nil {
 		p.Logger.Error("failed to list pods", err)
@@ -65,14 +69,23 @@ func (p PodWaiter) podsUpdated() bool {
 	}
 
 	for _, pod := range pods.Items {
-		if pod.Labels[RootfsVersionLabel] != p.RootfsVersion || !isRunning(pod) {
+		if !p.expectedPodLabelsSet(pod) || !isReady(pod) {
 			return false
 		}
 	}
 	return true
 }
+func (p PodWaiter) expectedPodLabelsSet(pod apicore.Pod) bool {
+	for key, expectedValue := range p.ExpectedPodLabels {
+		actualValue, ok := pod.Labels[key]
+		if !ok || expectedValue != actualValue {
+			return false
+		}
+	}
 
-func isRunning(pod corev1.Pod) bool {
-	state := utils.GetPodState(pod)
-	return state == opi.RunningState
+	return true
+}
+
+func isReady(pod apicore.Pod) bool {
+	return pod.Status.ContainerStatuses[0].Ready
 }

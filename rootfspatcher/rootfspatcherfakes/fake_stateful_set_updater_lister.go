@@ -5,109 +5,46 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/rootfspatcher"
-	v1 "k8s.io/api/apps/v1"
-	v1a "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apps "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type FakeStatefulSetUpdaterLister struct {
-	ListStub        func(v1a.ListOptions) (*v1.StatefulSetList, error)
-	listMutex       sync.RWMutex
-	listArgsForCall []struct {
-		arg1 v1a.ListOptions
-	}
-	listReturns struct {
-		result1 *v1.StatefulSetList
-		result2 error
-	}
-	listReturnsOnCall map[int]struct {
-		result1 *v1.StatefulSetList
-		result2 error
-	}
-	UpdateStub        func(*v1.StatefulSet) (*v1.StatefulSet, error)
+	UpdateStub        func(*apps.StatefulSet) (*apps.StatefulSet, error)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
-		arg1 *v1.StatefulSet
+		arg1 *apps.StatefulSet
 	}
 	updateReturns struct {
-		result1 *v1.StatefulSet
+		result1 *apps.StatefulSet
 		result2 error
 	}
 	updateReturnsOnCall map[int]struct {
-		result1 *v1.StatefulSet
+		result1 *apps.StatefulSet
+		result2 error
+	}
+	ListStub        func(metav1.ListOptions) (*apps.StatefulSetList, error)
+	listMutex       sync.RWMutex
+	listArgsForCall []struct {
+		arg1 metav1.ListOptions
+	}
+	listReturns struct {
+		result1 *apps.StatefulSetList
+		result2 error
+	}
+	listReturnsOnCall map[int]struct {
+		result1 *apps.StatefulSetList
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetUpdaterLister) List(arg1 v1a.ListOptions) (*v1.StatefulSetList, error) {
-	fake.listMutex.Lock()
-	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
-	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		arg1 v1a.ListOptions
-	}{arg1})
-	fake.recordInvocation("List", []interface{}{arg1})
-	fake.listMutex.Unlock()
-	if fake.ListStub != nil {
-		return fake.ListStub(arg1)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	fakeReturns := fake.listReturns
-	return fakeReturns.result1, fakeReturns.result2
-}
-
-func (fake *FakeStatefulSetUpdaterLister) ListCallCount() int {
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
-	return len(fake.listArgsForCall)
-}
-
-func (fake *FakeStatefulSetUpdaterLister) ListCalls(stub func(v1a.ListOptions) (*v1.StatefulSetList, error)) {
-	fake.listMutex.Lock()
-	defer fake.listMutex.Unlock()
-	fake.ListStub = stub
-}
-
-func (fake *FakeStatefulSetUpdaterLister) ListArgsForCall(i int) v1a.ListOptions {
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
-	argsForCall := fake.listArgsForCall[i]
-	return argsForCall.arg1
-}
-
-func (fake *FakeStatefulSetUpdaterLister) ListReturns(result1 *v1.StatefulSetList, result2 error) {
-	fake.listMutex.Lock()
-	defer fake.listMutex.Unlock()
-	fake.ListStub = nil
-	fake.listReturns = struct {
-		result1 *v1.StatefulSetList
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeStatefulSetUpdaterLister) ListReturnsOnCall(i int, result1 *v1.StatefulSetList, result2 error) {
-	fake.listMutex.Lock()
-	defer fake.listMutex.Unlock()
-	fake.ListStub = nil
-	if fake.listReturnsOnCall == nil {
-		fake.listReturnsOnCall = make(map[int]struct {
-			result1 *v1.StatefulSetList
-			result2 error
-		})
-	}
-	fake.listReturnsOnCall[i] = struct {
-		result1 *v1.StatefulSetList
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeStatefulSetUpdaterLister) Update(arg1 *v1.StatefulSet) (*v1.StatefulSet, error) {
+func (fake *FakeStatefulSetUpdaterLister) Update(arg1 *apps.StatefulSet) (*apps.StatefulSet, error) {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
-		arg1 *v1.StatefulSet
+		arg1 *apps.StatefulSet
 	}{arg1})
 	fake.recordInvocation("Update", []interface{}{arg1})
 	fake.updateMutex.Unlock()
@@ -117,8 +54,7 @@ func (fake *FakeStatefulSetUpdaterLister) Update(arg1 *v1.StatefulSet) (*v1.Stat
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.updateReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fake.updateReturns.result1, fake.updateReturns.result2
 }
 
 func (fake *FakeStatefulSetUpdaterLister) UpdateCallCount() int {
@@ -127,41 +63,81 @@ func (fake *FakeStatefulSetUpdaterLister) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeStatefulSetUpdaterLister) UpdateCalls(stub func(*v1.StatefulSet) (*v1.StatefulSet, error)) {
-	fake.updateMutex.Lock()
-	defer fake.updateMutex.Unlock()
-	fake.UpdateStub = stub
-}
-
-func (fake *FakeStatefulSetUpdaterLister) UpdateArgsForCall(i int) *v1.StatefulSet {
+func (fake *FakeStatefulSetUpdaterLister) UpdateArgsForCall(i int) *apps.StatefulSet {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
-	argsForCall := fake.updateArgsForCall[i]
-	return argsForCall.arg1
+	return fake.updateArgsForCall[i].arg1
 }
 
-func (fake *FakeStatefulSetUpdaterLister) UpdateReturns(result1 *v1.StatefulSet, result2 error) {
-	fake.updateMutex.Lock()
-	defer fake.updateMutex.Unlock()
+func (fake *FakeStatefulSetUpdaterLister) UpdateReturns(result1 *apps.StatefulSet, result2 error) {
 	fake.UpdateStub = nil
 	fake.updateReturns = struct {
-		result1 *v1.StatefulSet
+		result1 *apps.StatefulSet
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetUpdaterLister) UpdateReturnsOnCall(i int, result1 *v1.StatefulSet, result2 error) {
-	fake.updateMutex.Lock()
-	defer fake.updateMutex.Unlock()
+func (fake *FakeStatefulSetUpdaterLister) UpdateReturnsOnCall(i int, result1 *apps.StatefulSet, result2 error) {
 	fake.UpdateStub = nil
 	if fake.updateReturnsOnCall == nil {
 		fake.updateReturnsOnCall = make(map[int]struct {
-			result1 *v1.StatefulSet
+			result1 *apps.StatefulSet
 			result2 error
 		})
 	}
 	fake.updateReturnsOnCall[i] = struct {
-		result1 *v1.StatefulSet
+		result1 *apps.StatefulSet
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStatefulSetUpdaterLister) List(arg1 metav1.ListOptions) (*apps.StatefulSetList, error) {
+	fake.listMutex.Lock()
+	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
+	fake.listArgsForCall = append(fake.listArgsForCall, struct {
+		arg1 metav1.ListOptions
+	}{arg1})
+	fake.recordInvocation("List", []interface{}{arg1})
+	fake.listMutex.Unlock()
+	if fake.ListStub != nil {
+		return fake.ListStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.listReturns.result1, fake.listReturns.result2
+}
+
+func (fake *FakeStatefulSetUpdaterLister) ListCallCount() int {
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
+	return len(fake.listArgsForCall)
+}
+
+func (fake *FakeStatefulSetUpdaterLister) ListArgsForCall(i int) metav1.ListOptions {
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
+	return fake.listArgsForCall[i].arg1
+}
+
+func (fake *FakeStatefulSetUpdaterLister) ListReturns(result1 *apps.StatefulSetList, result2 error) {
+	fake.ListStub = nil
+	fake.listReturns = struct {
+		result1 *apps.StatefulSetList
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStatefulSetUpdaterLister) ListReturnsOnCall(i int, result1 *apps.StatefulSetList, result2 error) {
+	fake.ListStub = nil
+	if fake.listReturnsOnCall == nil {
+		fake.listReturnsOnCall = make(map[int]struct {
+			result1 *apps.StatefulSetList
+			result2 error
+		})
+	}
+	fake.listReturnsOnCall[i] = struct {
+		result1 *apps.StatefulSetList
 		result2 error
 	}{result1, result2}
 }
@@ -169,10 +145,10 @@ func (fake *FakeStatefulSetUpdaterLister) UpdateReturnsOnCall(i int, result1 *v1
 func (fake *FakeStatefulSetUpdaterLister) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

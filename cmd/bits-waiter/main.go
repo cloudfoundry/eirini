@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/eirini/cmd"
-	"code.cloudfoundry.org/eirini/rootfspatcher/wait"
+	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/lager"
 )
 
@@ -27,11 +27,11 @@ func main() {
 	logger := lager.NewLogger("Bits Waiter")
 	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
 
-	bitsWaiter := wait.PodsRunning{
-		Logger:    logger,
-		PodLister: podClient,
-		Timeout:   *timeout,
-		Label:     "name=bits",
+	bitsWaiter := rootfspatcher.PodWaiter{
+		Logger:           logger,
+		PodLister:        podClient,
+		Timeout:          *timeout,
+		PodLabelSelector: "name=bits",
 	}
 
 	err := bitsWaiter.Wait()
