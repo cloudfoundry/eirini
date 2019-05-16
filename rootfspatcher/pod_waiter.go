@@ -87,5 +87,6 @@ func (p PodWaiter) expectedPodLabelsSet(pod apicore.Pod) bool {
 }
 
 func isReady(pod apicore.Pod) bool {
-	return pod.Status.ContainerStatuses[0].Ready
+	statuses := pod.Status.ContainerStatuses
+	return len(statuses) > 0 && statuses[0].Ready
 }
