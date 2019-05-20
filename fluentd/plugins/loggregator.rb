@@ -1,5 +1,5 @@
-require 'fluent/output'
-require 'fluent/filter'
+require 'fluent/plugin/output'
+require 'fluent/plugin/filter'
 
 require 'ingress_services_pb'
 require 'envelope_pb'
