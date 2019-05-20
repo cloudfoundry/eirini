@@ -22,7 +22,7 @@ RSpec.describe 'Loggregator Fluentd' do
       env.tags['pod_name'] = 'test_pod_name'
       expectedBatch.batch << env
 
-      output = Fluent::Plugin::LoggregatorOutput.new
+      output = Fluent::LoggregatorOutput.new
 
       grpc = double('gRPC stub')
       output.instance_variable_set(:@stub, grpc)
@@ -64,7 +64,7 @@ RSpec.describe 'Loggregator Fluentd' do
         env.tags['pod_name'] = 'test_pod_name-44'
         expectedBatch.batch << env
 
-        output = Fluent::Plugin::LoggregatorOutput.new
+        output = Fluent::LoggregatorOutput.new
 
         grpc = double('gRPC stub')
         output.instance_variable_set(:@stub, grpc)
@@ -105,7 +105,7 @@ RSpec.describe 'Loggregator Fluentd' do
           env.tags['pod_name'] = 'test_pod_name-44'
           expectedBatch.batch << env
 
-          output = Fluent::Plugin::LoggregatorOutput.new
+          output = Fluent::LoggregatorOutput.new
 
           grpc = double('gRPC stub')
           output.instance_variable_set(:@stub, grpc)
@@ -132,7 +132,7 @@ RSpec.describe 'Loggregator Fluentd' do
 
   context 'SourceIDFilter' do
     it 'asks the kubernetes client for owner information' do
-      f = Fluent::Plugin::SourceIDFilter.new
+      f = Fluent::SourceIDFilter.new
       kclient = double('kubernetes client stub')
       f.instance_variable_set(:@client, kclient)
       f.instance_variable_set(:@cache, {})
@@ -168,7 +168,7 @@ RSpec.describe 'Loggregator Fluentd' do
     end
 
     it 'caches results' do
-      f = Fluent::Plugin::SourceIDFilter.new
+      f = Fluent::SourceIDFilter.new
       kclient = double('kubernetes client stub')
       f.instance_variable_set(:@client, kclient)
       f.instance_variable_set(:@cache, {})
