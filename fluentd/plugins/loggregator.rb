@@ -4,9 +4,9 @@ require 'fluent/plugin/filter'
 require 'ingress_services_pb'
 require 'envelope_pb'
 
-module Fluent
+module Fluent::Plugin
   class LoggregatorOutput < Output
-    Plugin.register_output('loggregator', self)
+    Fluent::Plugin.register_output('loggregator', self)
 
     def load_certs(conf)
       files = [
@@ -94,7 +94,7 @@ module Fluent
   end
 
   class SourceIDFilter < Filter
-    Plugin.register_filter('source_id', self)
+    Fluent::Plugin.register_filter('source_id', self)
 
     def configure(_conf)
       @client = KubernetesClient.new
