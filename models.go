@@ -45,6 +45,7 @@ type Config struct {
 }
 
 type Properties struct {
+	ClientCAPath   string `yaml:"client_ca_path"`
 	ServerCertPath string `yaml:"server_cert_path"`
 	ServerKeyPath  string `yaml:"server_key_path"`
 	TLSPort        int    `yaml:"tls_port"`

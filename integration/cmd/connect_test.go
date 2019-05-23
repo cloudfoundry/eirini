@@ -1,10 +1,13 @@
 package cmd_test
 
 import (
+	"crypto/tls"
+	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
 
+	"code.cloudfoundry.org/eirini"
 	natsserver "github.com/nats-io/gnatsd/server"
 	natstest "github.com/nats-io/nats-server/test"
 	. "github.com/onsi/ginkgo"
@@ -20,6 +23,7 @@ var _ = Describe("connect command", func() {
 
 		cmdPath    string
 		command    *exec.Cmd
+		config     *eirini.Config
 		configFile *os.File
 
 		natsPassword   string
@@ -69,10 +73,11 @@ var _ = Describe("connect command", func() {
 
 		Context("where server TLS is enabled", func() {
 			BeforeEach(func() {
-				config := defaultEiriniConfig(natsServerOpts)
+				config = defaultEiriniConfig(natsServerOpts)
 				config.Properties.ServerCertPath = pathToTestFixture("cert")
 				config.Properties.ServerKeyPath = pathToTestFixture("key")
-				config.Properties.TLSPort = 4321
+				config.Properties.TLSPort = int(nextAvailPort())
+				config.Properties.ClientCAPath = pathToTestFixture("cert")
 				configFile, err = createOpiConfigFromFixtures(config)
 
 				command = exec.Command(cmdPath, "connect", "-c", configFile.Name())
@@ -80,15 +85,56 @@ var _ = Describe("connect command", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should start serving HTTPS traffic", func() {
-				Eventually(func() (*http.Response, error) {
-					return httpClient.Get("https://localhost:4321/")
-				}, "5s").Should(PointTo(MatchFields(IgnoreExtras, Fields{
-					"TLS": PointTo(MatchFields(IgnoreExtras, Fields{
-						"HandshakeComplete": BeTrue(),
-					})),
-				})))
+			Context("when sending a request without a client certificate", func() {
+				It("we should receive a mTLS-related connection failure", func() {
+					Eventually(func() string {
+						_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
+						if err != nil {
+							return err.Error()
+						}
+						return ""
+					}, "5s").Should(ContainSubstring("remote error: tls: bad certificate"))
+				})
 			})
+
+			Context("when sending a request with an invalid client certificate", func() {
+				BeforeEach(func() {
+					clientCert, err := tls.LoadX509KeyPair(pathToTestFixture("untrusted-cert"), pathToTestFixture("untrusted-key"))
+					Expect(err).ToNot(HaveOccurred())
+
+					httpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{clientCert}
+				})
+
+				It("we should receive a mTLS-related connection failure", func() {
+					Eventually(func() string {
+						_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
+						if err != nil {
+							return err.Error()
+						}
+						return ""
+					}, "5s").Should(ContainSubstring("remote error: tls: bad certificate"))
+				})
+			})
+
+			Context("when sending a request with a valid client certificate", func() {
+				BeforeEach(func() {
+					clientCert, err := tls.LoadX509KeyPair(pathToTestFixture("cert"), pathToTestFixture("key"))
+					Expect(err).ToNot(HaveOccurred())
+
+					httpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{clientCert}
+				})
+
+				It("we should successfully connect", func() {
+					Eventually(func() (*http.Response, error) {
+						return httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
+					}, "5s").Should(PointTo(MatchFields(IgnoreExtras, Fields{
+						"TLS": PointTo(MatchFields(IgnoreExtras, Fields{
+							"HandshakeComplete": BeTrue(),
+						})),
+					})))
+				})
+			})
+
 		})
 	})
 })

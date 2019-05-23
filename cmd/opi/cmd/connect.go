@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -99,14 +101,38 @@ func connect(cmd *cobra.Command, args []string) {
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	handler := handler.New(bifrost, stager, handlerLogger)
 
+	var server *http.Server
 	handlerLogger.Info("opi-connected")
-	if cfg.Properties.ServerCertPath != "" && cfg.Properties.ServerKeyPath != "" {
-		addr := fmt.Sprintf("0.0.0.0:%d", cfg.Properties.TLSPort)
+	if cfg.Properties.ServerCertPath != "" && cfg.Properties.ServerKeyPath != "" && cfg.Properties.ClientCAPath != "" {
+		server = &http.Server{
+			Addr:      fmt.Sprintf("0.0.0.0:%d", cfg.Properties.TLSPort),
+			Handler:   handler,
+			TLSConfig: serverTLSConfig(cfg),
+		}
 		handlerLogger.Fatal("opi-crashed",
-			http.ListenAndServeTLS(addr, cfg.Properties.ServerCertPath, cfg.Properties.ServerKeyPath, handler))
+			server.ListenAndServeTLS(cfg.Properties.ServerCertPath, cfg.Properties.ServerKeyPath))
 	} else {
+		server = &http.Server{
+			Addr:    "0.0.0.0:8085",
+			Handler: handler,
+		}
 		handlerLogger.Fatal("opi-crashed",
-			http.ListenAndServe("0.0.0.0:8085", handler))
+			server.ListenAndServe())
+	}
+}
+
+func serverTLSConfig(cfg *eirini.Config) *tls.Config {
+	bs, err := ioutil.ReadFile(cfg.Properties.ClientCAPath)
+	cmdcommons.ExitWithError(err)
+
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(bs) {
+		panic("invalid client CA cert data")
+	}
+
+	return &tls.Config{
+		ClientCAs:  certPool,
+		ClientAuth: tls.RequireAndVerifyClientCert,
 	}
 }
 
