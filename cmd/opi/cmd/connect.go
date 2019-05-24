@@ -103,7 +103,7 @@ func connect(cmd *cobra.Command, args []string) {
 
 	var server *http.Server
 	handlerLogger.Info("opi-connected")
-	if cfg.Properties.ServerCertPath != "" && cfg.Properties.ServerKeyPath != "" && cfg.Properties.ClientCAPath != "" {
+	if isTLSEnabled(cfg) {
 		server = &http.Server{
 			Addr:      fmt.Sprintf("0.0.0.0:%d", cfg.Properties.TLSPort),
 			Handler:   handler,
@@ -136,8 +136,8 @@ func serverTLSConfig(cfg *eirini.Config) *tls.Config {
 	}
 }
 
-func tlsEnabled(cfg *eirini.Config) bool {
-	return cfg.Properties.CCCAPath != "" && cfg.Properties.CCCertPath != "" && cfg.Properties.CCKeyPath != ""
+func isTLSEnabled(cfg *eirini.Config) bool {
+	return cfg.Properties.ServerCertPath != "" && cfg.Properties.ServerKeyPath != "" && cfg.Properties.ClientCAPath != ""
 }
 
 func initStager(cfg *eirini.Config) eirini.Stager {

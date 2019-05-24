@@ -32,7 +32,7 @@ var _ = Describe("connect command", func() {
 	)
 
 	BeforeEach(func() {
-		httpClient = makeTestHttpClient()
+		httpClient = makeTestHTTPClient()
 
 		natsPassword = "password"
 		natsServerOpts = natstest.DefaultTestOptions

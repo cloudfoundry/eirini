@@ -67,7 +67,7 @@ func createOpiConfigFromFixtures(config *eirini.Config) (*os.File, error) {
 	return configFile, err
 }
 
-func makeTestHttpClient() *http.Client {
+func makeTestHTTPClient() *http.Client {
 	bs, err := ioutil.ReadFile(pathToTestFixture("cert"))
 	Expect(err).ToNot(HaveOccurred())
 
