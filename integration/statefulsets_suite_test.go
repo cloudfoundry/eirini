@@ -38,11 +38,12 @@ var _ = BeforeSuite(func() {
 	clientset, err = kubernetes.NewForConfig(config)
 	Expect(err).ToNot(HaveOccurred())
 
-	namespace = fmt.Sprintf("opi-integration-test-%d", rand.Intn(1000))
+	namespace = fmt.Sprintf("opi-integration-test-%d", rand.Intn(100000000))
 
-	if !namespaceExists() {
-		createNamespace()
+	for namespaceExists(namespace) {
+		namespace = fmt.Sprintf("opi-integration-test-%d", rand.Intn(100000000))
 	}
+	createNamespace(namespace)
 })
 
 var _ = AfterSuite(func() {
@@ -55,12 +56,12 @@ func TestIntegration(t *testing.T) {
 	RunSpecs(t, "Integration Suite")
 }
 
-func namespaceExists() bool {
+func namespaceExists(namespace string) bool {
 	_, err := clientset.CoreV1().Namespaces().Get(namespace, meta.GetOptions{})
 	return err == nil
 }
 
-func createNamespace() {
+func createNamespace(namespace string) {
 	namespaceSpec := &corev1.Namespace{ObjectMeta: meta.ObjectMeta{Name: namespace}}
 
 	if _, err := clientset.CoreV1().Namespaces().Create(namespaceSpec); err != nil {
