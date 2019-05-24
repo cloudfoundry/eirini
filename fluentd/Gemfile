@@ -2,5 +2,5 @@ source 'https://rubygems.org'
 
 gem 'rspec'
 gem 'webmock'
-gem 'fluentd'
+gem 'fluentd', '1.4.2'
 gem 'grpc'
