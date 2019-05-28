@@ -45,9 +45,15 @@ type Config struct {
 }
 
 type Properties struct {
+	ClientCAPath   string `yaml:"client_ca_path"`
+	ServerCertPath string `yaml:"server_cert_path"`
+	ServerKeyPath  string `yaml:"server_key_path"`
+	TLSPort        int    `yaml:"tls_port"`
+
 	KubeNamespace     string `yaml:"kube_namespace"`
 	NatsPassword      string `yaml:"nats_password"`
 	NatsIP            string `yaml:"nats_ip"`
+	NatsPort          int    `yaml:"nats_port"`
 	CcUploaderIP      string `yaml:"cc_uploader_ip"`
 	CcInternalAPI     string `yaml:"cc_internal_api"`
 	CCCertsSecretName string `yaml:"cc_certs_secret_name"`
