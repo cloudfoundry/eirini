@@ -62,17 +62,15 @@ func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<-
 	}
 
 	for _, r := range userDefinedRoutes {
-		routes, err := route.NewMessage(
-			deletedPod.Name,
-			deletedPod.Name,
-			deletedPod.Status.PodIP,
+		routes, err := NewRouteMessage(
+			deletedPod,
 			uint32(r.Port),
+			route.Routes{UnregisteredRoutes: []string{r.Hostname}},
 		)
 		if err != nil {
 			c.logError("failed-to-construct-a-route-message", err, deletedPod)
 			continue
 		}
-		routes.UnregisteredRoutes = []string{r.Hostname}
 		work <- routes
 	}
 }
@@ -91,17 +89,15 @@ func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<-
 	}
 
 	for _, r := range userDefinedRoutes {
-		routes, err := route.NewMessage(
-			updatedPod.Name,
-			updatedPod.Name,
-			updatedPod.Status.PodIP,
+		routes, err := NewRouteMessage(
+			updatedPod,
 			uint32(r.Port),
+			route.Routes{RegisteredRoutes: []string{r.Hostname}},
 		)
 		if err != nil {
 			c.logError("failed-to-construct-a-route-message", err, updatedPod)
 			continue
 		}
-		routes.Routes = []string{r.Hostname}
 		work <- routes
 	}
 }

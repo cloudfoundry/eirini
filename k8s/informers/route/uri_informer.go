@@ -1,6 +1,7 @@
 package route
 
 import (
+	"errors"
 	"time"
 
 	"code.cloudfoundry.org/eirini"
@@ -17,12 +18,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type routes struct {
-	RegisterRoutes   []string
-	UnregisterRoutes []string
-}
-
-type portGroup map[int32]routes
+type portGroup map[int32]route.Routes
 
 type URIChangeInformer struct {
 	Cancel     <-chan struct{}
@@ -40,6 +36,32 @@ func NewURIChangeInformer(client kubernetes.Interface, syncPeriod time.Duration,
 		Cancel:     make(<-chan struct{}),
 		Logger:     lager.NewLogger("uri-change-informer"),
 	}
+}
+
+func NewRouteMessage(pod *v1.Pod, port uint32, routes route.Routes) (*route.Message, error) {
+	if len(pod.Status.PodIP) == 0 {
+		return nil, errors.New("missing-ip-address")
+	}
+
+	message := &route.Message{
+		Routes: route.Routes{
+			UnregisteredRoutes: routes.UnregisteredRoutes,
+		},
+		Name:       pod.Name,
+		InstanceID: pod.Name,
+		Address:    pod.Status.PodIP,
+		Port:       port,
+		TLSPort:    0,
+	}
+	if isReady(pod.Status.Conditions) {
+		message.RegisteredRoutes = routes.RegisteredRoutes
+	}
+
+	if len(message.RegisteredRoutes) == 0 && len(message.UnregisteredRoutes) == 0 {
+		return nil, errors.New("no-routes-provided")
+	}
+
+	return message, nil
 }
 
 func (c *URIChangeInformer) Start(work chan<- *route.Message) {
@@ -89,13 +111,13 @@ func groupRoutesByPort(remove, add set.Set) portGroup {
 	for _, toAdd := range add.ToSlice() {
 		current := toAdd.(cf.Route)
 		routes := group[current.Port]
-		routes.RegisterRoutes = append(routes.RegisterRoutes, current.Hostname)
+		routes.RegisteredRoutes = append(routes.RegisteredRoutes, current.Hostname)
 		group[current.Port] = routes
 	}
 	for _, toRemove := range remove.ToSlice() {
 		current := toRemove.(cf.Route)
 		routes := group[current.Port]
-		routes.UnregisterRoutes = append(routes.UnregisterRoutes, current.Hostname)
+		routes.UnregisteredRoutes = append(routes.UnregisteredRoutes, current.Hostname)
 		group[current.Port] = routes
 	}
 
@@ -123,24 +145,15 @@ func (c *URIChangeInformer) sendRoutesForAllPods(work chan<- *route.Message, sta
 		c.logError("failed-to-get-child-pods", err, statefulset)
 		return
 	}
+
 	for _, pod := range pods {
-		if !isReady(pod.Status.Conditions) {
-			continue
-		}
+		pod := pod
 		for port, routes := range grouped {
-			podRoute, err := route.NewMessage(
-				pod.Name,
-				pod.Name,
-				pod.Status.PodIP,
-				uint32(port),
-			)
+			podRoute, err := NewRouteMessage(&pod, uint32(port), routes)
 			if err != nil {
 				c.logPodError("failed-to-construct-a-route-message", err, statefulset, pod)
-				return
+				continue
 			}
-
-			podRoute.Routes = routes.RegisterRoutes
-			podRoute.UnregisteredRoutes = routes.UnregisterRoutes
 			work <- podRoute
 		}
 	}

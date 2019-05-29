@@ -144,8 +144,10 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 		It("should not prevent other routes to be sent", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+				Routes: route.Routes{
+					RegisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
+				},
 				Name:       "mr-stateful-1",
-				Routes:     []string{"mr-stateful.50.60.70.80.nip.io"},
 				InstanceID: "mr-stateful-1",
 				Address:    "50.60.70.80",
 				Port:       8080,
@@ -155,8 +157,11 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 		It("should not prevent other routes to be sent", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+				Routes: route.Routes{
+
+					RegisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
+				},
 				Name:       "mr-stateful-1",
-				Routes:     []string{"mr-bombastic.50.60.70.80.nip.io"},
 				InstanceID: "mr-stateful-1",
 				Address:    "50.60.70.80",
 				Port:       6565,
@@ -181,8 +186,11 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 		It("should send the first route", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+				Routes: route.Routes{
+					RegisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
+				},
+
 				Name:       "mr-stateful-0",
-				Routes:     []string{"mr-stateful.50.60.70.80.nip.io"},
 				InstanceID: "mr-stateful-0",
 				Address:    "10.20.30.40",
 				Port:       8080,
@@ -192,8 +200,11 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 		It("should send the first route", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+				Routes: route.Routes{
+					RegisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
+				},
+
 				Name:       "mr-stateful-0",
-				Routes:     []string{"mr-bombastic.50.60.70.80.nip.io"},
 				InstanceID: "mr-stateful-0",
 				Address:    "10.20.30.40",
 				Port:       6565,
@@ -203,8 +214,11 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 		It("should send the second route", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+				Routes: route.Routes{
+					RegisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
+				},
+
 				Name:       "mr-stateful-1",
-				Routes:     []string{"mr-stateful.50.60.70.80.nip.io"},
 				InstanceID: "mr-stateful-1",
 				Address:    "50.60.70.80",
 				Port:       8080,
@@ -214,8 +228,11 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 		It("should send the second route", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+				Routes: route.Routes{
+					RegisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
+				},
+
 				Name:       "mr-stateful-1",
-				Routes:     []string{"mr-bombastic.50.60.70.80.nip.io"},
 				InstanceID: "mr-stateful-1",
 				Address:    "50.60.70.80",
 				Port:       6565,
@@ -237,8 +254,11 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 			It("should not prevent other routes to be sent", func() {
 				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+					Routes: route.Routes{
+						RegisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
+					},
+
 					Name:       "mr-stateful-1",
-					Routes:     []string{"mr-stateful.50.60.70.80.nip.io"},
 					InstanceID: "mr-stateful-1",
 					Address:    "50.60.70.80",
 					Port:       8080,
@@ -248,8 +268,11 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 			It("should not prevent other routes to be sent", func() {
 				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+					Routes: route.Routes{
+						RegisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
+					},
+
 					Name:       "mr-stateful-1",
-					Routes:     []string{"mr-bombastic.50.60.70.80.nip.io"},
 					InstanceID: "mr-stateful-1",
 					Address:    "50.60.70.80",
 					Port:       6565,
@@ -273,8 +296,11 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 				It("should not prevent other routes to be sent", func() {
 					Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+						Routes: route.Routes{
+							RegisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
+						},
+
 						Name:       "mr-stateful-1",
-						Routes:     []string{"mr-stateful.50.60.70.80.nip.io"},
 						InstanceID: "mr-stateful-1",
 						Address:    "50.60.70.80",
 						Port:       8080,
@@ -284,8 +310,11 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 				It("should not prevent other routes to be sent", func() {
 					Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+						Routes: route.Routes{
+							RegisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
+						},
+
 						Name:       "mr-stateful-1",
-						Routes:     []string{"mr-bombastic.50.60.70.80.nip.io"},
 						InstanceID: "mr-stateful-1",
 						Address:    "50.60.70.80",
 						Port:       6565,
@@ -328,45 +357,57 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 		It("should send the unregister routes", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
-				Name:               "mr-stateful-0",
-				UnregisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
-				InstanceID:         "mr-stateful-0",
-				Address:            "10.20.30.40",
-				Port:               8080,
-				TLSPort:            0,
+				Routes: route.Routes{
+					UnregisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
+				},
+
+				Name:       "mr-stateful-0",
+				InstanceID: "mr-stateful-0",
+				Address:    "10.20.30.40",
+				Port:       8080,
+				TLSPort:    0,
 			})))
 		})
 
 		It("should send the unregister routes", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
-				Name:               "mr-stateful-0",
-				UnregisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
-				InstanceID:         "mr-stateful-0",
-				Address:            "10.20.30.40",
-				Port:               6565,
-				TLSPort:            0,
+				Routes: route.Routes{
+					UnregisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
+				},
+
+				Name:       "mr-stateful-0",
+				InstanceID: "mr-stateful-0",
+				Address:    "10.20.30.40",
+				Port:       6565,
+				TLSPort:    0,
 			})))
 		})
 
 		It("should NOT send a unregister message for other pods", func() {
 			Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(Equal(&route.Message{
-				Name:               "mr-stateful-1",
-				UnregisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
-				InstanceID:         "mr-stateful-1",
-				Address:            "50.60.70.80",
-				Port:               8080,
-				TLSPort:            0,
+				Routes: route.Routes{
+					UnregisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
+				},
+
+				Name:       "mr-stateful-1",
+				InstanceID: "mr-stateful-1",
+				Address:    "50.60.70.80",
+				Port:       8080,
+				TLSPort:    0,
 			})))
 		})
 
 		It("should NOT send a unregister message for other pods", func() {
 			Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(Equal(&route.Message{
-				Name:               "mr-stateful-1",
-				UnregisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
-				InstanceID:         "mr-stateful-1",
-				Address:            "50.60.70.80",
-				Port:               6565,
-				TLSPort:            0,
+				Routes: route.Routes{
+					UnregisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
+				},
+
+				Name:       "mr-stateful-1",
+				InstanceID: "mr-stateful-1",
+				Address:    "50.60.70.80",
+				Port:       6565,
+				TLSPort:    0,
 			})))
 		})
 
@@ -388,23 +429,29 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 			It("should not prevent other routes to be sent", func() {
 				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
-					Name:               "mr-stateful-1",
-					UnregisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
-					InstanceID:         "mr-stateful-1",
-					Address:            "50.60.70.80",
-					Port:               8080,
-					TLSPort:            0,
+					Routes: route.Routes{
+						UnregisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
+					},
+
+					Name:       "mr-stateful-1",
+					InstanceID: "mr-stateful-1",
+					Address:    "50.60.70.80",
+					Port:       8080,
+					TLSPort:    0,
 				})))
 			})
 
 			It("should not prevent other routes to be sent", func() {
 				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
-					Name:               "mr-stateful-1",
-					UnregisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
-					InstanceID:         "mr-stateful-1",
-					Address:            "50.60.70.80",
-					Port:               6565,
-					TLSPort:            0,
+					Routes: route.Routes{
+						UnregisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
+					},
+
+					Name:       "mr-stateful-1",
+					InstanceID: "mr-stateful-1",
+					Address:    "50.60.70.80",
+					Port:       6565,
+					TLSPort:    0,
 				})))
 			})
 

@@ -53,13 +53,15 @@ var _ = Describe("Emitter", func() {
 		publishCount = 2
 
 		routes = &Message{
-			Routes:             []string{"route1.my.app.com"},
-			UnregisteredRoutes: []string{"removed.route1.my.app.com"},
-			Name:               "app1",
-			InstanceID:         "instance-id",
-			Address:            "203.0.113.2",
-			Port:               8080,
-			TLSPort:            8443,
+			Routes: Routes{
+				RegisteredRoutes:   []string{"route1.my.app.com"},
+				UnregisteredRoutes: []string{"removed.route1.my.app.com"},
+			},
+			Name:       "app1",
+			InstanceID: "instance-id",
+			Address:    "203.0.113.2",
+			Port:       8080,
+			TLSPort:    8443,
 		}
 
 		logger = lagertest.NewTestLogger("test-logger")
@@ -104,7 +106,7 @@ var _ = Describe("Emitter", func() {
 		Context("When there are no registered routes", func() {
 
 			BeforeEach(func() {
-				routes.Routes = []string{}
+				routes.RegisteredRoutes = []string{}
 				publishCount = 1
 			})
 

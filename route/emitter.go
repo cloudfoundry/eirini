@@ -54,7 +54,7 @@ func (e *Emitter) emit(route *Message) {
 }
 
 func (e *Emitter) registerRoutes(route *Message) {
-	if len(route.Routes) == 0 {
+	if len(route.RegisteredRoutes) == 0 {
 		return
 	}
 
@@ -84,7 +84,7 @@ func (e *Emitter) publish(subject string, route *Message) error {
 		Host:              route.Address,
 		Port:              route.Port,
 		TLSPort:           route.TLSPort,
-		URIs:              route.Routes,
+		URIs:              route.RegisteredRoutes,
 		App:               route.Name,
 		PrivateInstanceID: route.InstanceID,
 	}
