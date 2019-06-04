@@ -12,7 +12,6 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/opi/opifakes"
-	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,7 +25,7 @@ var _ = Describe("Bifrost", func() {
 		request   cf.DesireLRPRequest
 		converter *bifrostfakes.FakeConverter
 		desirer   *opifakes.FakeDesirer
-		lager     lager.Logger
+		lager     *lagertest.TestLogger
 		opiClient *opifakes.FakeDesirer
 	)
 
@@ -38,10 +37,11 @@ var _ = Describe("Bifrost", func() {
 		})
 
 		JustBeforeEach(func() {
+			lager = lagertest.NewTestLogger("bifrost")
 			bfrst = &bifrost.Bifrost{
 				Converter: converter,
 				Desirer:   desirer,
-				Logger:    lagertest.NewTestLogger("bifrost"),
+				Logger:    lager,
 			}
 			err = bfrst.Transfer(context.Background(), request)
 		})
@@ -75,6 +75,7 @@ var _ = Describe("Bifrost", func() {
 		Context("When lrp transfer fails", func() {
 			Context("when Converter fails", func() {
 				BeforeEach(func() {
+					request = cf.DesireLRPRequest{GUID: "my-guid"}
 					converter.ConvertReturns(opi.LRP{}, errors.New("failed-to-convert"))
 				})
 
@@ -90,6 +91,12 @@ var _ = Describe("Bifrost", func() {
 				It("should not use Desirer", func() {
 					Expect(desirer.DesireCallCount()).To(Equal(0))
 				})
+
+				It("should log a guid", func() {
+					logs := lager.Logs()
+					Expect(logs[0].Data["desire-lrp-request"]).To(ContainElement("my-guid"))
+				})
+
 			})
 
 			Context("When Desirer fails", func() {

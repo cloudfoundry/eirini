@@ -42,7 +42,7 @@ func (a *App) Desire(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	request.LRP = buf.String()
 
 	if err := a.bifrost.Transfer(r.Context(), request); err != nil {
-		a.logError("desire-app-failed", err)
+		a.logErrorWithData("desire-app-failed", err, lager.Data{"guid": "myguid"})
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -209,5 +209,11 @@ func writeUpdateErrorResponse(w http.ResponseWriter, err error, statusCode int) 
 func (a *App) logError(msg string, err error) {
 	if err != nil {
 		a.logger.Error(msg, err)
+	}
+}
+
+func (a *App) logErrorWithData(msg string, err error, data lager.Data) {
+	if err != nil {
+		a.logger.Error(msg, err, lager.Data(data))
 	}
 }

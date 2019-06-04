@@ -100,14 +100,24 @@ var _ = Describe("AppHandler", func() {
 			Expect(request).To(Equal(expectedRequest))
 		})
 
-		Context("When the endpoint process guid does not match the desired app process guid", func() {
+		Context("When Bifrost fails to handle desire request", func() {
 
 			BeforeEach(func() {
-				body = `{"process_guid" : "myguid2", "start_command": "./start", "environment": [ { "name": "env_var", "value": "env_var_value" } ], "num_instances": 5}`
+				bifrost.TransferReturns(errors.New("aaargh"))
 			})
 
 			It("should return BadRequest status", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			})
+
+			It("should log an appropriate error message", func() {
+				messages := lager.LogMessages()
+				Expect(messages).To(ConsistOf("app-handler-test.desire-app-failed"))
+			})
+
+			It("should log the guid", func() {
+				logs := lager.Logs()
+				Expect(logs[0].Data).To(ContainElement("myguid"))
 			})
 		})
 
