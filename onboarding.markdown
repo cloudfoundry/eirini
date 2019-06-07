@@ -13,7 +13,7 @@
 
 Additionally, for new members of the core team:
 
-* Join the [Eirini](https://github.com/orgs/cloudfoundry-incubator/teams/eirini/members) and [CI](https://github.com/orgs/cf-cube-ci/teams/cube/members) teams
+* Ask the anchor to be added to the [CF Eirini team](https://github.com/orgs/cloudfoundry-incubator/teams/eirini/members) and the [CI](https://github.com/orgs/cf-cube-ci/teams/cube/members) team
 * Ask @smoser-ibm to create a [SL](https://control.softlayer.com) account for you
 * Create a [new VPN password](https://control.softlayer.com/account/user/profile)
 * Set up the [VPN client](http://knowledgelayer.softlayer.com/procedure/ssl-vpn-mac-os-x-1010)
