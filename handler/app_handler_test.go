@@ -115,7 +115,7 @@ var _ = Describe("AppHandler", func() {
 				Expect(messages).To(ConsistOf("app-handler-test.desire-app-failed"))
 			})
 
-			It("should log the guid", func() {
+			It("should log the app guid", func() {
 				logs := lager.Logs()
 				Expect(logs[0].Data).To(ContainElement("myguid"))
 			})
@@ -128,6 +128,14 @@ var _ = Describe("AppHandler", func() {
 
 			It("should return a 400 Bad Request HTTP status code", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			})
+
+			It("should log the app guid", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+				log := logs[0]
+				Expect(log.Message).To(Equal("app-handler-test.request-body-decoding-failed"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
 			})
 
 			It("should not update the app", func() {
@@ -254,6 +262,15 @@ var _ = Describe("AppHandler", func() {
 			It("should return a response object containing the error", func() {
 				verifyResponseObject()
 			})
+
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+
+				log := logs[0]
+				Expect(log.Message).To(Equal("app-handler-test.json-decoding-failed"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
+			})
 		})
 
 		Context("when update fails", func() {
@@ -263,6 +280,15 @@ var _ = Describe("AppHandler", func() {
 
 			It("should return a 500 HTTP status code", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+			})
+
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+
+				log := logs[0]
+				Expect(log.Message).To(Equal("app-handler-test.update-app-failed"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
 			})
 
 			It("shoud return a response object containing the error", func() {
@@ -334,7 +360,6 @@ var _ = Describe("AppHandler", func() {
 			It("should return a 404 HTTP status code", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
 			})
-
 		})
 	})
 
@@ -381,9 +406,13 @@ var _ = Describe("AppHandler", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
 			})
 
-			It("should log the failure", func() {
-				messages := lager.LogMessages()
-				Expect(messages).To(ConsistOf("app-handler-test.stop-app-failed"))
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+
+				log := logs[0]
+				Expect(log.Message).To(Equal("app-handler-test.stop-app-failed"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "app_1234"))
 			})
 
 		})
@@ -434,10 +463,15 @@ var _ = Describe("AppHandler", func() {
 					Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
 				})
 
-				It("should log the failure", func() {
-					messages := lager.LogMessages()
-					Expect(messages).To(ConsistOf("app-handler-test.stop-app-instance-failed"))
+				It("should provide a helpful log message", func() {
+					logs := lager.Logs()
+					Expect(logs).To(HaveLen(1))
+
+					log := logs[0]
+					Expect(log.Message).To(Equal("app-handler-test.stop-app-instance-failed"))
+					Expect(log.Data).To(HaveKeyWithValue("guid", "app_1234"))
 				})
+
 			})
 
 			Context("because of a invalid index", func() {
@@ -449,10 +483,15 @@ var _ = Describe("AppHandler", func() {
 					Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
 				})
 
-				It("should log the failure", func() {
-					messages := lager.LogMessages()
-					Expect(messages).To(ConsistOf("app-handler-test.stop-app-instance-failed"))
+				It("should provide a helpful log message", func() {
+					logs := lager.Logs()
+					Expect(logs).To(HaveLen(1))
+
+					log := logs[0]
+					Expect(log.Message).To(Equal("app-handler-test.parsing-instance-index-failed"))
+					Expect(log.Data).To(HaveKeyWithValue("guid", "app_1234"))
 				})
+
 			})
 
 			Context("because of a negative index", func() {
@@ -464,10 +503,15 @@ var _ = Describe("AppHandler", func() {
 					Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
 				})
 
-				It("should log the failure", func() {
-					messages := lager.LogMessages()
-					Expect(messages).To(ConsistOf("app-handler-test.stop-app-instance-failed"))
+				It("should provide a helpful log message", func() {
+					logs := lager.Logs()
+					Expect(logs).To(HaveLen(1))
+
+					log := logs[0]
+					Expect(log.Message).To(Equal("app-handler-test.parsing-instance-index-failed"))
+					Expect(log.Data).To(HaveKeyWithValue("guid", "app_1234"))
 				})
+
 			})
 		})
 	})
@@ -550,7 +594,17 @@ var _ = Describe("AppHandler", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(body)).To(MatchJSON(expectedResponse))
 			})
+
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+
+				log := logs[0]
+				Expect(log.Message).To(Equal("app-handler-test.get-instances-failed"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "guid_1234"))
+			})
 		})
+
 	})
 })
 

@@ -24,17 +24,17 @@ type App struct {
 	logger  lager.Logger
 }
 
-func (a *App) Desire(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (a *App) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var request cf.DesireLRPRequest
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(r.Body); err != nil {
-		a.logError("request-body-cannot-be-read", err)
+		a.logErrorWithData("request-body-cannot-be-read", err, lager.Data{"guid": ps.ByName("process_guid")})
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if err := json.Unmarshal(buf.Bytes(), &request); err != nil {
-		a.logError("request-body-decoding-failed", err)
+		a.logErrorWithData("request-body-decoding-failed", err, lager.Data{"guid": ps.ByName("process_guid")})
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -42,7 +42,7 @@ func (a *App) Desire(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	request.LRP = buf.String()
 
 	if err := a.bifrost.Transfer(r.Context(), request); err != nil {
-		a.logErrorWithData("desire-app-failed", err, lager.Data{"guid": "myguid"})
+		a.logErrorWithData("desire-app-failed", err, lager.Data{"guid": ps.ByName("process_guid")})
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -93,7 +93,7 @@ func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	marshaler := &jsonpb.Marshaler{Indent: "", OrigName: true}
 	result, err := marshaler.MarshalToString(&response)
 	if err != nil {
-		a.logError("encode-json-failed", err)
+		a.logErrorWithData("encode-json-failed", err, lager.Data{"guid": ps.ByName("process_guid")})
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -106,18 +106,18 @@ func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 func (a *App) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var request cf.UpdateDesiredLRPRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		a.logError("json-decoding-failure", err)
-		err = writeUpdateErrorResponse(w, err, http.StatusBadRequest)
+		a.logErrorWithData("json-decoding-failed", err, lager.Data{"guid": ps.ByName("process_guid")})
 
-		a.logError("Could not write response", err)
+		err = writeUpdateErrorResponse(w, err, http.StatusBadRequest)
+		a.logErrorWithData("could-not-write-response", err, lager.Data{"guid": ps.ByName("process_guid")})
 
 		return
 	}
 
 	if err := a.bifrost.Update(r.Context(), request); err != nil {
-		a.logError("update-app-failed", err)
+		a.logErrorWithData("update-app-failed", err, lager.Data{"guid": ps.ByName("process_guid")})
 		err = writeUpdateErrorResponse(w, err, http.StatusInternalServerError)
-		a.logError("Could not write response", err)
+		a.logErrorWithData("could-not-write-response", err, lager.Data{"guid": ps.ByName("process_guid")})
 	}
 }
 
@@ -128,7 +128,7 @@ func (a *App) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	}
 	err := a.bifrost.Stop(r.Context(), identifier)
 	if err != nil {
-		a.logError("stop-app-failed", err)
+		a.logErrorWithData("stop-app-failed", err, lager.Data{"guid": ps.ByName("process_guid")})
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
@@ -141,13 +141,13 @@ func (a *App) StopInstance(w http.ResponseWriter, r *http.Request, ps httprouter
 
 	index, err := strconv.ParseUint(ps.ByName("instance"), 10, 32)
 	if err != nil {
-		a.logError("stop-app-instance-failed", err)
+		a.logErrorWithData("parsing-instance-index-failed", err, lager.Data{"guid": ps.ByName("process_guid")})
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	err = a.bifrost.StopInstance(r.Context(), identifier, uint(index))
 	if err != nil {
-		a.logError("stop-app-instance-failed", err)
+		a.logErrorWithData("stop-app-instance-failed", err, lager.Data{"guid": ps.ByName("process_guid")})
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
@@ -158,12 +158,12 @@ func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter
 		Version: ps.ByName("version_guid"),
 	}
 	instances, err := a.bifrost.GetInstances(r.Context(), identifier)
-	a.logError("get-instances-failed", err)
+	a.logErrorWithData("get-instances-failed", err, lager.Data{"guid": ps.ByName("process_guid")})
 	response := a.createGetInstancesResponse(identifier.ProcessGUID(), instances, err)
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		a.logError("get-instances-failed", err)
+		a.logErrorWithData("encoding-response-failed", err, lager.Data{"guid": ps.ByName("process_guid")})
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -214,6 +214,6 @@ func (a *App) logError(msg string, err error) {
 
 func (a *App) logErrorWithData(msg string, err error, data lager.Data) {
 	if err != nil {
-		a.logger.Error(msg, err, lager.Data(data))
+		a.logger.Error(msg, err, data)
 	}
 }
