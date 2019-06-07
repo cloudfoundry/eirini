@@ -110,15 +110,14 @@ var _ = Describe("AppHandler", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
 			})
 
-			It("should log an appropriate error message", func() {
-				messages := lager.LogMessages()
-				Expect(messages).To(ConsistOf("app-handler-test.desire-app-failed"))
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+				log := logs[0]
+				Expect(log.Message).To(Equal("app-handler-test.desire-app.bifrost-failed"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
 			})
 
-			It("should log the app guid", func() {
-				logs := lager.Logs()
-				Expect(logs[0].Data).To(ContainElement("myguid"))
-			})
 		})
 
 		Context("when the body is empty", func() {
@@ -130,11 +129,11 @@ var _ = Describe("AppHandler", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
 			})
 
-			It("should log the app guid", func() {
+			It("should provide a helpful log message", func() {
 				logs := lager.Logs()
 				Expect(logs).To(HaveLen(1))
 				log := logs[0]
-				Expect(log.Message).To(Equal("app-handler-test.request-body-decoding-failed"))
+				Expect(log.Message).To(Equal("app-handler-test.desire-app.request-body-decoding-failed"))
 				Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
 			})
 
@@ -155,6 +154,7 @@ var _ = Describe("AppHandler", func() {
 
 		BeforeEach(func() {
 			schedInfos = createSchedulingInfos()
+			bifrost.ListReturns(schedInfos, nil)
 		})
 
 		JustBeforeEach(func() {
@@ -162,7 +162,6 @@ var _ = Describe("AppHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 			responseRecorder = httptest.NewRecorder()
 			appHandler = NewAppHandler(bifrost, lager)
-			bifrost.ListReturns(schedInfos, nil)
 			appHandler.List(responseRecorder, req, httprouter.Params{})
 			expectedResponse := models.DesiredLRPSchedulingInfosResponse{
 				DesiredLrpSchedulingInfos: schedInfos,
@@ -180,11 +179,13 @@ var _ = Describe("AppHandler", func() {
 
 				Expect(strings.Trim(string(body), "\n")).To(Equal(expectedJSONResponse))
 			})
+
 		})
 
 		Context("When there are no existing apps", func() {
 			BeforeEach(func() {
 				schedInfos = []*models.DesiredLRPSchedulingInfo{}
+				bifrost.ListReturns(schedInfos, nil)
 			})
 
 			It("should return an empty list of DesiredLRPSchedulingInfo", func() {
@@ -195,106 +196,24 @@ var _ = Describe("AppHandler", func() {
 
 				Expect(strings.Trim(string(body), "\n")).To(Equal(expectedJSONResponse))
 			})
-		})
-	})
 
-	Context("Update an app", func() {
-		var (
-			path     string
-			body     string
-			response *http.Response
-		)
-
-		verifyResponseObject := func() {
-			var responseObj models.DesiredLRPLifecycleResponse
-			err := json.NewDecoder(response.Body).Decode(&responseObj)
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(responseObj.Error.Message).ToNot(BeNil())
-		}
-
-		BeforeEach(func() {
-			path = "/apps/myguid"
-			body = `{"guid": "app-id", "version": "version-id", "update": {"instances": 5}}`
 		})
 
-		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, stager, lager))
-			req, err := http.NewRequest("POST", ts.URL+path, bytes.NewReader([]byte(body)))
-			Expect(err).NotTo(HaveOccurred())
-
-			client := &http.Client{}
-			response, err = client.Do(req)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		Context("when the update is successful", func() {
+		Context("When bifrost returns an error", func() {
 			BeforeEach(func() {
-				bifrost.UpdateReturns(nil)
+				bifrost.ListReturns(nil, errors.New("something-went-wrong"))
 			})
 
-			It("should return a 200 HTTP stauts code", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusOK))
-			})
-
-			It("should translate the request", func() {
-				Expect(bifrost.UpdateCallCount()).To(Equal(1))
-				_, request := bifrost.UpdateArgsForCall(0)
-				Expect(request.GUID).To(Equal("app-id"))
-				Expect(request.Version).To(Equal("version-id"))
-				Expect(*request.Update.Instances).To(Equal(int32(5)))
-			})
-		})
-
-		Context("when the json is invalid", func() {
-			BeforeEach(func() {
-				body = "{invalid.json"
-			})
-
-			It("should return a 400 Bad Request HTTP status code", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
-			})
-
-			It("should not update the app", func() {
-				Expect(bifrost.UpdateCallCount()).To(Equal(0))
-			})
-
-			It("should return a response object containing the error", func() {
-				verifyResponseObject()
+			It("should return BadRequest status", func() {
+				Expect(responseRecorder.Code).To(Equal(http.StatusInternalServerError))
 			})
 
 			It("should provide a helpful log message", func() {
 				logs := lager.Logs()
 				Expect(logs).To(HaveLen(1))
-
 				log := logs[0]
-				Expect(log.Message).To(Equal("app-handler-test.json-decoding-failed"))
-				Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
+				Expect(log.Message).To(Equal("app-handler-test.list-apps.bifrost-failed"))
 			})
-		})
-
-		Context("when update fails", func() {
-			BeforeEach(func() {
-				bifrost.UpdateReturns(errors.New("Failed to update"))
-			})
-
-			It("should return a 500 HTTP status code", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
-			})
-
-			It("should provide a helpful log message", func() {
-				logs := lager.Logs()
-				Expect(logs).To(HaveLen(1))
-
-				log := logs[0]
-				Expect(log.Message).To(Equal("app-handler-test.update-app-failed"))
-				Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
-			})
-
-			It("shoud return a response object containing the error", func() {
-				verifyResponseObject()
-			})
-
 		})
 	})
 
@@ -359,159 +278,6 @@ var _ = Describe("AppHandler", func() {
 
 			It("should return a 404 HTTP status code", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
-			})
-		})
-	})
-
-	Context("Stop an app", func() {
-		var (
-			path     string
-			response *http.Response
-		)
-
-		BeforeEach(func() {
-			path = "/apps/app_1234/version_1234/stop"
-		})
-
-		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, stager, lager))
-			req, err := http.NewRequest("PUT", ts.URL+path, nil)
-			Expect(err).NotTo(HaveOccurred())
-
-			client := &http.Client{}
-			response, err = client.Do(req)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should return a 200 HTTP status code", func() {
-			Expect(response.StatusCode).To(Equal(http.StatusOK))
-		})
-
-		It("should stop the app", func() {
-			Expect(bifrost.StopCallCount()).To(Equal(1))
-		})
-
-		It("should target the right app", func() {
-			_, identifier := bifrost.StopArgsForCall(0)
-			Expect(identifier.GUID).To(Equal("app_1234"))
-			Expect(identifier.Version).To(Equal("version_1234"))
-		})
-
-		Context("when app stop is not successful", func() {
-			BeforeEach(func() {
-				bifrost.StopReturns(errors.New("someting-bad-happened"))
-			})
-
-			It("should return a 500 HTTP status code", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
-			})
-
-			It("should provide a helpful log message", func() {
-				logs := lager.Logs()
-				Expect(logs).To(HaveLen(1))
-
-				log := logs[0]
-				Expect(log.Message).To(Equal("app-handler-test.stop-app-failed"))
-				Expect(log.Data).To(HaveKeyWithValue("guid", "app_1234"))
-			})
-
-		})
-	})
-
-	Context("Stop an app instance", func() {
-		var (
-			path     string
-			response *http.Response
-		)
-
-		BeforeEach(func() {
-			path = "/apps/app_1234/version_1234/stop/1"
-		})
-
-		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, stager, lager))
-			req, err := http.NewRequest("PUT", ts.URL+path, nil)
-			Expect(err).NotTo(HaveOccurred())
-
-			client := &http.Client{}
-			response, err = client.Do(req)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should return a 200 HTTP status code", func() {
-			Expect(response.StatusCode).To(Equal(http.StatusOK))
-		})
-
-		It("should stop the app instance", func() {
-			Expect(bifrost.StopInstanceCallCount()).To(Equal(1))
-		})
-
-		It("should target the right app and the right instance index", func() {
-			_, identifier, index := bifrost.StopInstanceArgsForCall(0)
-			Expect(identifier.GUID).To(Equal("app_1234"))
-			Expect(identifier.Version).To(Equal("version_1234"))
-			Expect(index).To(Equal(uint(1)))
-		})
-
-		Context("when app stop is not successful", func() {
-			Context("because of some internal error", func() {
-				BeforeEach(func() {
-					bifrost.StopInstanceReturns(errors.New("something-bad-happened"))
-				})
-
-				It("should return a 500 HTTP status code", func() {
-					Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
-				})
-
-				It("should provide a helpful log message", func() {
-					logs := lager.Logs()
-					Expect(logs).To(HaveLen(1))
-
-					log := logs[0]
-					Expect(log.Message).To(Equal("app-handler-test.stop-app-instance-failed"))
-					Expect(log.Data).To(HaveKeyWithValue("guid", "app_1234"))
-				})
-
-			})
-
-			Context("because of a invalid index", func() {
-				BeforeEach(func() {
-					path = "/apps/app_1234/version_1234/stop/x"
-				})
-
-				It("should return a 400 HTTP status code", func() {
-					Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
-				})
-
-				It("should provide a helpful log message", func() {
-					logs := lager.Logs()
-					Expect(logs).To(HaveLen(1))
-
-					log := logs[0]
-					Expect(log.Message).To(Equal("app-handler-test.parsing-instance-index-failed"))
-					Expect(log.Data).To(HaveKeyWithValue("guid", "app_1234"))
-				})
-
-			})
-
-			Context("because of a negative index", func() {
-				BeforeEach(func() {
-					path = "/apps/app_1234/version_1234/stop/-1"
-				})
-
-				It("should return a 400 HTTP status code", func() {
-					Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
-				})
-
-				It("should provide a helpful log message", func() {
-					logs := lager.Logs()
-					Expect(logs).To(HaveLen(1))
-
-					log := logs[0]
-					Expect(log.Message).To(Equal("app-handler-test.parsing-instance-index-failed"))
-					Expect(log.Data).To(HaveKeyWithValue("guid", "app_1234"))
-				})
-
 			})
 		})
 	})
@@ -600,11 +366,264 @@ var _ = Describe("AppHandler", func() {
 				Expect(logs).To(HaveLen(1))
 
 				log := logs[0]
-				Expect(log.Message).To(Equal("app-handler-test.get-instances-failed"))
+				Expect(log.Message).To(Equal("app-handler-test.get-app-instances.bifrost-failed"))
 				Expect(log.Data).To(HaveKeyWithValue("guid", "guid_1234"))
 			})
 		})
 
+	})
+
+	Context("Update an app", func() {
+		var (
+			path     string
+			body     string
+			response *http.Response
+		)
+
+		verifyResponseObject := func() {
+			var responseObj models.DesiredLRPLifecycleResponse
+			err := json.NewDecoder(response.Body).Decode(&responseObj)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(responseObj.Error.Message).ToNot(BeNil())
+		}
+
+		BeforeEach(func() {
+			path = "/apps/myguid"
+			body = `{"guid": "app-id", "version": "version-id", "update": {"instances": 5}}`
+		})
+
+		JustBeforeEach(func() {
+			ts := httptest.NewServer(New(bifrost, stager, lager))
+			req, err := http.NewRequest("POST", ts.URL+path, bytes.NewReader([]byte(body)))
+			Expect(err).NotTo(HaveOccurred())
+
+			client := &http.Client{}
+			response, err = client.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		Context("when the update is successful", func() {
+			BeforeEach(func() {
+				bifrost.UpdateReturns(nil)
+			})
+
+			It("should return a 200 HTTP stauts code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusOK))
+			})
+
+			It("should translate the request", func() {
+				Expect(bifrost.UpdateCallCount()).To(Equal(1))
+				_, request := bifrost.UpdateArgsForCall(0)
+				Expect(request.GUID).To(Equal("app-id"))
+				Expect(request.Version).To(Equal("version-id"))
+				Expect(*request.Update.Instances).To(Equal(int32(5)))
+			})
+		})
+
+		Context("when the json is invalid", func() {
+			BeforeEach(func() {
+				body = "{invalid.json"
+			})
+
+			It("should return a 400 Bad Request HTTP status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			})
+
+			It("should not update the app", func() {
+				Expect(bifrost.UpdateCallCount()).To(Equal(0))
+			})
+
+			It("should return a response object containing the error", func() {
+				verifyResponseObject()
+			})
+
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+
+				log := logs[0]
+				Expect(log.Message).To(Equal("app-handler-test.update-app.json-decoding-failed"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
+			})
+		})
+
+		Context("when update fails", func() {
+			BeforeEach(func() {
+				bifrost.UpdateReturns(errors.New("Failed to update"))
+			})
+
+			It("should return a 500 HTTP status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+			})
+
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+
+				log := logs[0]
+				Expect(log.Message).To(Equal("app-handler-test.update-app.bifrost-failed"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
+			})
+
+			It("shoud return a response object containing the error", func() {
+				verifyResponseObject()
+			})
+
+		})
+	})
+
+	Context("Stop an app", func() {
+		var (
+			path     string
+			response *http.Response
+		)
+
+		BeforeEach(func() {
+			path = "/apps/app_1234/version_1234/stop"
+		})
+
+		JustBeforeEach(func() {
+			ts := httptest.NewServer(New(bifrost, stager, lager))
+			req, err := http.NewRequest("PUT", ts.URL+path, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			client := &http.Client{}
+			response, err = client.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return a 200 HTTP status code", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusOK))
+		})
+
+		It("should stop the app", func() {
+			Expect(bifrost.StopCallCount()).To(Equal(1))
+		})
+
+		It("should target the right app", func() {
+			_, identifier := bifrost.StopArgsForCall(0)
+			Expect(identifier.GUID).To(Equal("app_1234"))
+			Expect(identifier.Version).To(Equal("version_1234"))
+		})
+
+		Context("when app stop is not successful", func() {
+			BeforeEach(func() {
+				bifrost.StopReturns(errors.New("someting-bad-happened"))
+			})
+
+			It("should return a 500 HTTP status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+			})
+
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+
+				log := logs[0]
+				Expect(log.Message).To(Equal("app-handler-test.stop-app.bifrost-failed"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "app_1234"))
+			})
+
+		})
+	})
+
+	Context("Stop an app instance", func() {
+		var (
+			path     string
+			response *http.Response
+		)
+
+		BeforeEach(func() {
+			path = "/apps/app_1234/version_1234/stop/1"
+		})
+
+		JustBeforeEach(func() {
+			ts := httptest.NewServer(New(bifrost, stager, lager))
+			req, err := http.NewRequest("PUT", ts.URL+path, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			client := &http.Client{}
+			response, err = client.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return a 200 HTTP status code", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusOK))
+		})
+
+		It("should stop the app instance", func() {
+			Expect(bifrost.StopInstanceCallCount()).To(Equal(1))
+		})
+
+		It("should target the right app and the right instance index", func() {
+			_, identifier, index := bifrost.StopInstanceArgsForCall(0)
+			Expect(identifier.GUID).To(Equal("app_1234"))
+			Expect(identifier.Version).To(Equal("version_1234"))
+			Expect(index).To(Equal(uint(1)))
+		})
+
+		Context("when app stop is not successful", func() {
+			Context("because of some internal error", func() {
+				BeforeEach(func() {
+					bifrost.StopInstanceReturns(errors.New("something-bad-happened"))
+				})
+
+				It("should return a 500 HTTP status code", func() {
+					Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+				})
+
+				It("should provide a helpful log message", func() {
+					logs := lager.Logs()
+					Expect(logs).To(HaveLen(1))
+
+					log := logs[0]
+					Expect(log.Message).To(Equal("app-handler-test.stop-app-instance.bifrost-failed"))
+					Expect(log.Data).To(HaveKeyWithValue("guid", "app_1234"))
+				})
+
+			})
+
+			Context("because of a invalid index", func() {
+				BeforeEach(func() {
+					path = "/apps/app_1234/version_1234/stop/x"
+				})
+
+				It("should return a 400 HTTP status code", func() {
+					Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+				})
+
+				It("should provide a helpful log message", func() {
+					logs := lager.Logs()
+					Expect(logs).To(HaveLen(1))
+
+					log := logs[0]
+					Expect(log.Message).To(Equal("app-handler-test.stop-app-instance.parsing-instance-index-failed"))
+					Expect(log.Data).To(HaveKeyWithValue("guid", "app_1234"))
+				})
+
+			})
+
+			Context("because of a negative index", func() {
+				BeforeEach(func() {
+					path = "/apps/app_1234/version_1234/stop/-1"
+				})
+
+				It("should return a 400 HTTP status code", func() {
+					Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+				})
+
+				It("should provide a helpful log message", func() {
+					logs := lager.Logs()
+					Expect(logs).To(HaveLen(1))
+
+					log := logs[0]
+					Expect(log.Message).To(Equal("app-handler-test.stop-app-instance.parsing-instance-index-failed"))
+					Expect(log.Data).To(HaveKeyWithValue("guid", "app_1234"))
+				})
+
+			})
+		})
 	})
 })
 

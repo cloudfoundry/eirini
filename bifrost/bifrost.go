@@ -21,7 +21,7 @@ type Bifrost struct {
 func (b *Bifrost) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
 	desiredLRP, err := b.Converter.Convert(request)
 	if err != nil {
-		b.Logger.Error("failed-to-convert-request", err, lager.Data{"desire-lrp-request": request})
+		b.Logger.Error("transfer.failed-to-convert-request", err, lager.Data{"guid": request.GUID})
 		return err
 	}
 	return b.Desirer.Desire(&desiredLRP)
@@ -30,13 +30,11 @@ func (b *Bifrost) Transfer(ctx context.Context, request cf.DesireLRPRequest) err
 func (b *Bifrost) List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error) {
 	lrps, err := b.Desirer.List()
 	if err != nil {
-		b.Logger.Error("failed-to-list-deployments", err)
+		b.Logger.Error("desirer-failed-to-list-lrps", err)
 		return nil, errors.Wrap(err, "failed to list desired LRPs")
 	}
 
-	infos := toDesiredLRPSchedulingInfo(lrps)
-
-	return infos, nil
+	return toDesiredLRPSchedulingInfo(lrps), nil
 }
 
 func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []*models.DesiredLRPSchedulingInfo {
@@ -51,6 +49,7 @@ func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []*models.DesiredLRPSchedulingI
 }
 
 func (b *Bifrost) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error {
+	logger := b.Logger.Session("update-lrp", lager.Data{"guid": update.GUID})
 	identifier := opi.LRPIdentifier{
 		GUID:    update.GUID,
 		Version: update.Version,
@@ -58,7 +57,7 @@ func (b *Bifrost) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest)
 
 	lrp, err := b.Desirer.Get(identifier)
 	if err != nil {
-		b.Logger.Error("application-not-found", err, lager.Data{"process-guid": update.ProcessGuid})
+		logger.Error("desirer-failed-to-get-lrp", err)
 		return err
 	}
 
@@ -67,6 +66,7 @@ func (b *Bifrost) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest)
 
 	routes, err := getURIs(update)
 	if err != nil {
+		logger.Error("failed-to-get-uris", err)
 		return err
 	}
 
@@ -78,7 +78,7 @@ func (b *Bifrost) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest)
 func (b *Bifrost) GetApp(ctx context.Context, identifier opi.LRPIdentifier) *models.DesiredLRP {
 	lrp, err := b.Desirer.Get(identifier)
 	if err != nil {
-		b.Logger.Error("failed-to-get-deployment", err, lager.Data{"process-guid": identifier.GUID})
+		b.Logger.Error("get-lrp.desirer-failed-to-get-lrp", err, lager.Data{"guid": identifier.GUID})
 		return nil
 	}
 
@@ -95,17 +95,17 @@ func (b *Bifrost) Stop(ctx context.Context, identifier opi.LRPIdentifier) error 
 }
 
 func (b *Bifrost) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error {
-	err := b.Desirer.StopInstance(identifier, index)
-	if err != nil {
-		b.Logger.Error("failed-to-stop-instance", err, lager.Data{"process-guid": identifier.GUID})
+	if err := b.Desirer.StopInstance(identifier, index); err != nil {
+		b.Logger.Error("stop-instance.desirer-failed-to-stop-instance", err, lager.Data{"guid": identifier.GUID})
+		return errors.Wrap(err, "desirer failed to stop instance")
 	}
-	return errors.Wrap(err, "desirer failed to stop instance")
+	return nil
 }
 
 func (b *Bifrost) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error) {
 	opiInstances, err := b.Desirer.GetInstances(identifier)
 	if err != nil {
-		b.Logger.Error("failed-to-get-instances", err, lager.Data{"process-guid": identifier.GUID})
+		b.Logger.Error("get-instances.desirer-failed-to-get-instances", err, lager.Data{"guid": identifier.GUID})
 		return []*cf.Instance{}, errors.Wrap(err, fmt.Sprintf("failed to get instances for app with guid: %s", identifier.GUID))
 	}
 

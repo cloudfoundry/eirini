@@ -26,23 +26,25 @@ var _ = Describe("Bifrost", func() {
 		converter *bifrostfakes.FakeConverter
 		desirer   *opifakes.FakeDesirer
 		lager     *lagertest.TestLogger
-		opiClient *opifakes.FakeDesirer
 	)
+
+	BeforeEach(func() {
+		converter = new(bifrostfakes.FakeConverter)
+		desirer = new(opifakes.FakeDesirer)
+		lager = lagertest.NewTestLogger("bifrost-test")
+	})
+
+	JustBeforeEach(func() {
+		bfrst = &bifrost.Bifrost{
+			Converter: converter,
+			Desirer:   desirer,
+			Logger:    lager,
+		}
+	})
 
 	Context("Transfer", func() {
 
-		BeforeEach(func() {
-			converter = new(bifrostfakes.FakeConverter)
-			desirer = new(opifakes.FakeDesirer)
-		})
-
 		JustBeforeEach(func() {
-			lager = lagertest.NewTestLogger("bifrost")
-			bfrst = &bifrost.Bifrost{
-				Converter: converter,
-				Desirer:   desirer,
-				Logger:    lager,
-			}
 			err = bfrst.Transfer(context.Background(), request)
 		})
 
@@ -92,9 +94,12 @@ var _ = Describe("Bifrost", func() {
 					Expect(desirer.DesireCallCount()).To(Equal(0))
 				})
 
-				It("should log a guid", func() {
+				It("should provide a helpful log message", func() {
 					logs := lager.Logs()
-					Expect(logs[0].Data["desire-lrp-request"]).To(ContainElement("my-guid"))
+					Expect(logs).To(HaveLen(1))
+					log := logs[0]
+					Expect(log.Message).To(Equal("bifrost-test.transfer.failed-to-convert-request"))
+					Expect(log.Data).To(HaveKeyWithValue("guid", "my-guid"))
 				})
 
 			})
@@ -128,12 +133,6 @@ var _ = Describe("Bifrost", func() {
 		}
 
 		BeforeEach(func() {
-			opiClient = new(opifakes.FakeDesirer)
-			lager = lagertest.NewTestLogger("bifrost-test")
-			bfrst = &bifrost.Bifrost{
-				Desirer: opiClient,
-				Logger:  lager,
-			}
 			lrps = []*opi.LRP{}
 		})
 
@@ -160,7 +159,7 @@ var _ = Describe("Bifrost", func() {
 					createLRP("efgh", "235.26535"),
 					createLRP("ijkl", "2342342.2"),
 				}
-				opiClient.ListReturns(lrps, nil)
+				desirer.ListReturns(lrps, nil)
 			})
 
 			It("should not return an error", func() {
@@ -181,12 +180,18 @@ var _ = Describe("Bifrost", func() {
 		Context("When an error occurs", func() {
 
 			BeforeEach(func() {
-				opiClient.ListReturns(nil, errors.New("arrgh"))
+				desirer.ListReturns(nil, errors.New("arrgh"))
 			})
 
 			It("should return a meaningful errormessage", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).Should(ContainSubstring("failed to list desired LRPs"))
+			})
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+				log := logs[0]
+				Expect(log.Message).To(Equal("bifrost-test.desirer-failed-to-list-lrps"))
 			})
 		})
 	})
@@ -194,7 +199,6 @@ var _ = Describe("Bifrost", func() {
 	Context("Update an app", func() {
 
 		var (
-			bfrst         bifrost.Bifrost
 			updateRequest cf.UpdateDesiredLRPRequest
 		)
 
@@ -203,17 +207,9 @@ var _ = Describe("Bifrost", func() {
 				GUID:    "guid_1234",
 				Version: "version_1234",
 			}
-			opiClient = new(opifakes.FakeDesirer)
-
-			lager = lagertest.NewTestLogger("bifrost-update-test")
 		})
 
 		JustBeforeEach(func() {
-			bfrst = bifrost.Bifrost{
-				Desirer: opiClient,
-				Logger:  lager,
-			}
-
 			err = bfrst.Update(context.Background(), updateRequest)
 		})
 
@@ -227,7 +223,7 @@ var _ = Describe("Bifrost", func() {
 						cf.VcapAppUris: `[{"hostname":"my.route","port":8080},{"hostname":"your.route","port":5555}]`,
 					},
 				}
-				opiClient.GetReturns(&lrp, nil)
+				desirer.GetReturns(&lrp, nil)
 			})
 
 			Context("with instance count modified", func() {
@@ -236,19 +232,19 @@ var _ = Describe("Bifrost", func() {
 					updatedInstances := int32(5)
 					updatedTimestamp := "21421321.3"
 					updateRequest.Update = &models.DesiredLRPUpdate{Instances: &updatedInstances, Annotation: &updatedTimestamp}
-					opiClient.UpdateReturns(nil)
+					desirer.UpdateReturns(nil)
 				})
 
 				It("should get the existing LRP", func() {
-					Expect(opiClient.GetCallCount()).To(Equal(1))
-					identifier := opiClient.GetArgsForCall(0)
+					Expect(desirer.GetCallCount()).To(Equal(1))
+					identifier := desirer.GetArgsForCall(0)
 					Expect(identifier.GUID).To(Equal("guid_1234"))
 					Expect(identifier.Version).To(Equal("version_1234"))
 				})
 
 				It("should submit the updated LRP", func() {
-					Expect(opiClient.UpdateCallCount()).To(Equal(1))
-					lrp := opiClient.UpdateArgsForCall(0)
+					Expect(desirer.UpdateCallCount()).To(Equal(1))
+					lrp := desirer.UpdateArgsForCall(0)
 					Expect(lrp.TargetInstances).To(Equal(int(*updateRequest.Update.Instances)))
 					Expect(lrp.Metadata[cf.LastUpdated]).To(Equal("21421321.3"))
 				})
@@ -259,7 +255,7 @@ var _ = Describe("Bifrost", func() {
 
 				Context("when the update fails", func() {
 					BeforeEach(func() {
-						opiClient.UpdateReturns(errors.New("failed to update app"))
+						desirer.UpdateReturns(errors.New("failed to update app"))
 					})
 
 					It("should propagate the error", func() {
@@ -296,19 +292,19 @@ var _ = Describe("Bifrost", func() {
 						Annotation: &updatedTimestamp,
 					}
 
-					opiClient.UpdateReturns(nil)
+					desirer.UpdateReturns(nil)
 				})
 
 				It("should get the existing LRP", func() {
-					Expect(opiClient.GetCallCount()).To(Equal(1))
-					identifier := opiClient.GetArgsForCall(0)
+					Expect(desirer.GetCallCount()).To(Equal(1))
+					identifier := desirer.GetArgsForCall(0)
 					Expect(identifier.GUID).To(Equal("guid_1234"))
 					Expect(identifier.Version).To(Equal("version_1234"))
 				})
 
 				It("should have the updated routes", func() {
-					Expect(opiClient.UpdateCallCount()).To(Equal(1))
-					lrp := opiClient.UpdateArgsForCall(0)
+					Expect(desirer.UpdateCallCount()).To(Equal(1))
+					lrp := desirer.UpdateArgsForCall(0)
 					Expect(lrp.Metadata[cf.VcapAppUris]).To(Equal(`[{"hostname":"my.route","port":8080},{"hostname":"my.other.route","port":7777}]`))
 				})
 
@@ -326,8 +322,8 @@ var _ = Describe("Bifrost", func() {
 					})
 
 					It("should update it to an empty array", func() {
-						Expect(opiClient.UpdateCallCount()).To(Equal(1))
-						lrp := opiClient.UpdateArgsForCall(0)
+						Expect(desirer.UpdateCallCount()).To(Equal(1))
+						lrp := desirer.UpdateArgsForCall(0)
 						Expect(lrp.Metadata[cf.VcapAppUris]).To(Equal(`[]`))
 					})
 				})
@@ -337,44 +333,44 @@ var _ = Describe("Bifrost", func() {
 		Context("when the app does not exist", func() {
 
 			BeforeEach(func() {
-				opiClient.GetReturns(nil, errors.New("app does not exist"))
+				desirer.GetReturns(nil, errors.New("app does not exist"))
 			})
 
 			It("should try to get the LRP", func() {
-				Expect(opiClient.GetCallCount()).To(Equal(1))
-				identifier := opiClient.GetArgsForCall(0)
+				Expect(desirer.GetCallCount()).To(Equal(1))
+				identifier := desirer.GetArgsForCall(0)
 				Expect(identifier.GUID).To(Equal("guid_1234"))
 				Expect(identifier.Version).To(Equal("version_1234"))
 
 			})
 
 			It("should not submit anything to be updated", func() {
-				Expect(opiClient.UpdateCallCount()).To(Equal(0))
+				Expect(desirer.UpdateCallCount()).To(Equal(0))
 			})
 
 			It("should propagate the error", func() {
 				Expect(err).To(HaveOccurred())
 			})
+
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+				log := logs[0]
+				Expect(log.Message).To(Equal("bifrost-test.update-lrp.desirer-failed-to-get-lrp"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "guid_1234"))
+
+			})
+
 		})
 	})
 
-	Context("get an App", func() {
+	Context("Get an App", func() {
 		var (
 			desiredLRP *models.DesiredLRP
 			lrp        *opi.LRP
 		)
 
-		BeforeEach(func() {
-			opiClient = new(opifakes.FakeDesirer)
-
-			lager = lagertest.NewTestLogger("bifrost-update-test")
-		})
-
 		JustBeforeEach(func() {
-			bfrst = &bifrost.Bifrost{
-				Desirer: opiClient,
-				Logger:  lager,
-			}
 			identifier := opi.LRPIdentifier{
 				GUID:    "guid_1234",
 				Version: "version_1234",
@@ -389,12 +385,12 @@ var _ = Describe("Bifrost", func() {
 					TargetInstances: 5,
 				}
 
-				opiClient.GetReturns(lrp, nil)
+				desirer.GetReturns(lrp, nil)
 			})
 
 			It("should use the desirer to get the lrp", func() {
-				Expect(opiClient.GetCallCount()).To(Equal(1))
-				identifier := opiClient.GetArgsForCall(0)
+				Expect(desirer.GetCallCount()).To(Equal(1))
+				identifier := desirer.GetArgsForCall(0)
 				Expect(identifier.GUID).To(Equal("guid_1234"))
 				Expect(identifier.Version).To(Equal("version_1234"))
 			})
@@ -408,26 +404,26 @@ var _ = Describe("Bifrost", func() {
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				opiClient.GetReturns(nil, errors.New("Failed to get LRP"))
+				desirer.GetReturns(nil, errors.New("Failed to get LRP"))
 			})
 
 			It("should return an error", func() {
-				Expect(opiClient.GetCallCount()).To(Equal(1))
+				Expect(desirer.GetCallCount()).To(Equal(1))
 				Expect(desiredLRP).To(BeNil())
+			})
+
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+				log := logs[0]
+				Expect(log.Message).To(Equal("bifrost-test.get-lrp.desirer-failed-to-get-lrp"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "guid_1234"))
+
 			})
 		})
 	})
 
 	Context("Stop an app", func() {
-		BeforeEach(func() {
-			opiClient = new(opifakes.FakeDesirer)
-
-			lager = lagertest.NewTestLogger("bifrost-stop-test")
-			bfrst = &bifrost.Bifrost{
-				Desirer: opiClient,
-				Logger:  lager,
-			}
-		})
 
 		JustBeforeEach(func() {
 			err = bfrst.Stop(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
@@ -438,7 +434,7 @@ var _ = Describe("Bifrost", func() {
 		})
 
 		It("should call the desirer with the expected guid", func() {
-			identifier := opiClient.StopArgsForCall(0)
+			identifier := desirer.StopArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("guid_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 		})
@@ -446,7 +442,7 @@ var _ = Describe("Bifrost", func() {
 		Context("when desirer's stop fails", func() {
 
 			BeforeEach(func() {
-				opiClient.StopReturns(errors.New("failed-to-stop"))
+				desirer.StopReturns(errors.New("failed-to-stop"))
 			})
 
 			It("returns an error", func() {
@@ -456,15 +452,6 @@ var _ = Describe("Bifrost", func() {
 	})
 
 	Context("Stop an app instance", func() {
-		BeforeEach(func() {
-			opiClient = new(opifakes.FakeDesirer)
-
-			lager = lagertest.NewTestLogger("bifrost-stop-test")
-			bfrst = &bifrost.Bifrost{
-				Desirer: opiClient,
-				Logger:  lager,
-			}
-		})
 
 		JustBeforeEach(func() {
 			err = bfrst.StopInstance(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
@@ -475,7 +462,7 @@ var _ = Describe("Bifrost", func() {
 		})
 
 		It("should call the desirer with the expected guid and index", func() {
-			identifier, index := opiClient.StopInstanceArgsForCall(0)
+			identifier, index := desirer.StopInstanceArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("guid_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 			Expect(index).To(Equal(uint(1)))
@@ -483,12 +470,22 @@ var _ = Describe("Bifrost", func() {
 
 		Context("when desirer's stop instance fails", func() {
 			BeforeEach(func() {
-				opiClient.StopInstanceReturns(errors.New("failed-to-stop"))
+				desirer.StopInstanceReturns(errors.New("failed-to-stop"))
 			})
 
 			It("returns a meaningful error", func() {
 				Expect(err).To(MatchError(ContainSubstring("desirer failed to stop instance")))
 			})
+
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+				log := logs[0]
+				Expect(log.Message).To(Equal("bifrost-test.stop-instance.desirer-failed-to-stop-instance"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "guid_1234"))
+
+			})
+
 		})
 	})
 
@@ -499,29 +496,22 @@ var _ = Describe("Bifrost", func() {
 		)
 
 		BeforeEach(func() {
-			opiClient = new(opifakes.FakeDesirer)
-			lager = lagertest.NewTestLogger("bifrost-get-instances-test")
 			opiInstances = []*opi.Instance{
 				{Index: 0, Since: 123, State: opi.RunningState},
 				{Index: 1, Since: 345, State: opi.CrashedState},
 				{Index: 2, Since: 678, State: opi.ErrorState, PlacementError: "this is not the place"},
 			}
 
-			opiClient.GetInstancesReturns(opiInstances, nil)
+			desirer.GetInstancesReturns(opiInstances, nil)
 		})
 
 		JustBeforeEach(func() {
-			bfrst = &bifrost.Bifrost{
-				Desirer: opiClient,
-				Logger:  lager,
-			}
-
 			instances, err = bfrst.GetInstances(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 		})
 
 		It("should get the app instances from Desirer", func() {
-			Expect(opiClient.GetInstancesCallCount()).To(Equal(1))
-			identifier := opiClient.GetInstancesArgsForCall(0)
+			Expect(desirer.GetInstancesCallCount()).To(Equal(1))
+			identifier := desirer.GetInstancesArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("guid_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 		})
@@ -540,11 +530,20 @@ var _ = Describe("Bifrost", func() {
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				opiClient.GetInstancesReturns([]*opi.Instance{}, errors.New("not found"))
+				desirer.GetInstancesReturns([]*opi.Instance{}, errors.New("not found"))
 			})
 
 			It("returns an error", func() {
 				Expect(err).To(HaveOccurred())
+			})
+
+			It("should provide a helpful log message", func() {
+				logs := lager.Logs()
+				Expect(logs).To(HaveLen(1))
+				log := logs[0]
+				Expect(log.Message).To(Equal("bifrost-test.get-instances.desirer-failed-to-get-instances"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "guid_1234"))
+
 			})
 		})
 
