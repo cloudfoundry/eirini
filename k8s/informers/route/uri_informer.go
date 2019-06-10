@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
+	eiriniroute "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 	set "github.com/deckarep/golang-set"
 	apps_v1 "k8s.io/api/apps/v1"
@@ -18,7 +19,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type portGroup map[int32]route.Routes
+type portGroup map[int32]eiriniroute.Routes
 
 type URIChangeInformer struct {
 	Cancel     <-chan struct{}
@@ -38,13 +39,13 @@ func NewURIChangeInformer(client kubernetes.Interface, syncPeriod time.Duration,
 	}
 }
 
-func NewRouteMessage(pod *v1.Pod, port uint32, routes route.Routes) (*route.Message, error) {
+func NewRouteMessage(pod *v1.Pod, port uint32, routes eiriniroute.Routes) (*eiriniroute.Message, error) {
 	if len(pod.Status.PodIP) == 0 {
 		return nil, errors.New("missing ip address")
 	}
 
-	message := &route.Message{
-		Routes: route.Routes{
+	message := &eiriniroute.Message{
+		Routes: eiriniroute.Routes{
 			UnregisteredRoutes: routes.UnregisteredRoutes,
 		},
 		Name:       pod.Name,
@@ -64,7 +65,7 @@ func NewRouteMessage(pod *v1.Pod, port uint32, routes route.Routes) (*route.Mess
 	return message, nil
 }
 
-func (c *URIChangeInformer) Start(work chan<- *route.Message) {
+func (c *URIChangeInformer) Start(work chan<- *eiriniroute.Message) {
 	factory := informers.NewSharedInformerFactoryWithOptions(c.Client,
 		c.SyncPeriod,
 		informers.WithNamespace(c.Namespace))
@@ -82,7 +83,7 @@ func (c *URIChangeInformer) Start(work chan<- *route.Message) {
 	informer.Run(c.Cancel)
 }
 
-func (c *URIChangeInformer) onUpdate(oldObj, updatedObj interface{}, work chan<- *route.Message) {
+func (c *URIChangeInformer) onUpdate(oldObj, updatedObj interface{}, work chan<- *eiriniroute.Message) {
 	oldStatefulSet := oldObj.(*apps_v1.StatefulSet)
 	updatedStatefulSet := updatedObj.(*apps_v1.StatefulSet)
 
@@ -127,7 +128,7 @@ func groupRoutesByPort(remove, add set.Set) portGroup {
 	return group
 }
 
-func (c *URIChangeInformer) onDelete(obj interface{}, work chan<- *route.Message) {
+func (c *URIChangeInformer) onDelete(obj interface{}, work chan<- *eiriniroute.Message) {
 	deletedStatefulSet := obj.(*apps_v1.StatefulSet)
 	loggerSession := c.Logger.Session("statefulset-delete", lager.Data{"guid": deletedStatefulSet.Spec.Template.Annotations[cf.ProcessGUID]})
 

@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
+	eiriniroute "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	apps "k8s.io/api/apps/v1"
@@ -35,7 +36,7 @@ func NewInstanceChangeInformer(client kubernetes.Interface, syncPeriod time.Dura
 	}
 }
 
-func (c *InstanceChangeInformer) Start(work chan<- *route.Message) {
+func (c *InstanceChangeInformer) Start(work chan<- *eiriniroute.Message) {
 	factory := informers.NewSharedInformerFactoryWithOptions(c.Client,
 		c.SyncPeriod,
 		informers.WithNamespace(c.Namespace))
@@ -53,7 +54,7 @@ func (c *InstanceChangeInformer) Start(work chan<- *route.Message) {
 	podInformer.Run(c.Cancel)
 }
 
-func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<- *route.Message) {
+func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<- *eiriniroute.Message) {
 	deletedPod := deletedObj.(*v1.Pod)
 	loggerSession := c.Logger.Session("pod-delete", lager.Data{"pod-name": deletedPod.Name, "guid": deletedPod.Annotations[cf.ProcessGUID]})
 	userDefinedRoutes, err := c.getUserDefinedRoutes(deletedPod)
@@ -66,7 +67,7 @@ func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<-
 		routes, err := NewRouteMessage(
 			deletedPod,
 			uint32(r.Port),
-			route.Routes{UnregisteredRoutes: []string{r.Hostname}},
+			eiriniroute.Routes{UnregisteredRoutes: []string{r.Hostname}},
 		)
 		if err != nil {
 			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
@@ -76,7 +77,7 @@ func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<-
 	}
 }
 
-func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<- *route.Message) {
+func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<- *eiriniroute.Message) {
 	updatedPod := updatedObj.(*v1.Pod)
 	loggerSession := c.Logger.Session("pod-update", lager.Data{"pod-name": updatedPod.Name, "guid": updatedPod.Annotations[cf.ProcessGUID]})
 	if !isReady(updatedPod.Status.Conditions) {
@@ -94,7 +95,7 @@ func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<-
 		routes, err := NewRouteMessage(
 			updatedPod,
 			uint32(r.Port),
-			route.Routes{RegisteredRoutes: []string{r.Hostname}},
+			eiriniroute.Routes{RegisteredRoutes: []string{r.Hostname}},
 		)
 		if err != nil {
 			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})

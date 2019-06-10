@@ -7,6 +7,7 @@ import (
 	. "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
+	eiriniroute "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,10 +30,10 @@ var _ = Describe("InstanceChangeInformer", func() {
 	)
 
 	var (
-		informer   route.Informer
+		informer   eiriniroute.Informer
 		client     kubernetes.Interface
 		podWatcher *watch.FakeWatcher
-		workChan   chan *route.Message
+		workChan   chan *eiriniroute.Message
 		stopChan   chan struct{}
 		logger     *lagertest.TestLogger
 		pod0       *corev1.Pod
@@ -77,7 +78,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 		setWatcher(client)
 
 		stopChan = make(chan struct{})
-		workChan = make(chan *route.Message, 5)
+		workChan = make(chan *eiriniroute.Message, 5)
 
 		logger = lagertest.NewTestLogger("instance-informer-test")
 
