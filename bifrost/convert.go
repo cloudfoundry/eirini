@@ -23,10 +23,11 @@ func NewConverter(logger lager.Logger, registryIP string) *DropletToImageConvert
 }
 
 func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP, error) {
+	logger := c.logger.Session("convert-request", lager.Data{"guid": request.GUID})
 	vcapJSON := request.Environment["VCAP_APPLICATION"]
 	vcap, err := parseVcapApplication(vcapJSON)
 	if err != nil {
-		c.logger.Error("failed-to-parse-vcap-app", err, lager.Data{"vcap-json": vcapJSON})
+		logger.Error("failed-to-parse-vcap-app", err, lager.Data{"vcap-json": vcapJSON})
 		return opi.LRP{}, err
 	}
 
@@ -36,7 +37,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 
 	routesJSON, err := getRequestedRoutes(request)
 	if err != nil {
-		c.logger.Error("failed-to-marshal-vcap-app-uris", err, lager.Data{"app-guid": vcap.AppID})
+		c.logger.Error("failed-to-marshal-vcap-app-uris", err)
 		panic(err)
 	}
 
