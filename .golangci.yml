@@ -36,6 +36,9 @@ issues:
       - deadcode
       - varcheck
       - unused
+    - path: _test\.go
+      linters:
+      - dupl
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 

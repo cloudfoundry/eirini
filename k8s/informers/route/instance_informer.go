@@ -2,13 +2,13 @@ package route
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
+	"github.com/pkg/errors"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,13 +25,13 @@ type InstanceChangeInformer struct {
 	Logger     lager.Logger
 }
 
-func NewInstanceChangeInformer(client kubernetes.Interface, syncPeriod time.Duration, namespace string) route.Informer {
+func NewInstanceChangeInformer(client kubernetes.Interface, syncPeriod time.Duration, namespace string, logger lager.Logger) route.Informer {
 	return &InstanceChangeInformer{
 		Client:     client,
 		SyncPeriod: syncPeriod,
 		Namespace:  namespace,
 		Cancel:     make(<-chan struct{}),
-		Logger:     lager.NewLogger("instance-change-informer"),
+		Logger:     logger,
 	}
 }
 
@@ -55,9 +55,10 @@ func (c *InstanceChangeInformer) Start(work chan<- *route.Message) {
 
 func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<- *route.Message) {
 	deletedPod := deletedObj.(*v1.Pod)
+	loggerSession := c.Logger.Session("pod-delete", lager.Data{"pod-name": deletedPod.Name, "guid": deletedPod.Annotations[cf.ProcessGUID]})
 	userDefinedRoutes, err := c.getUserDefinedRoutes(deletedPod)
 	if err != nil {
-		c.logError("failed-to-get-user-defined-routes", err, deletedPod)
+		loggerSession.Debug("failed-to-get-user-defined-routes", lager.Data{"error": err.Error()})
 		return
 	}
 
@@ -68,7 +69,7 @@ func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<-
 			route.Routes{UnregisteredRoutes: []string{r.Hostname}},
 		)
 		if err != nil {
-			c.logError("failed-to-construct-a-route-message", err, deletedPod)
+			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
 			continue
 		}
 		work <- routes
@@ -77,14 +78,15 @@ func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<-
 
 func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<- *route.Message) {
 	updatedPod := updatedObj.(*v1.Pod)
+	loggerSession := c.Logger.Session("pod-update", lager.Data{"pod-name": updatedPod.Name, "guid": updatedPod.Annotations[cf.ProcessGUID]})
 	if !isReady(updatedPod.Status.Conditions) {
-		c.logDebug("pod-not-ready", updatedPod)
+		loggerSession.Debug("pod-status-not-ready", lager.Data{"statuses": updatedPod.Status.Conditions})
 		return
 	}
 
 	userDefinedRoutes, err := c.getUserDefinedRoutes(updatedPod)
 	if err != nil {
-		c.logError("failed-to-get-user-defined-routes", err, updatedPod)
+		loggerSession.Debug("failed-to-get-user-defined-routes", lager.Data{"error": err.Error()})
 		return
 	}
 
@@ -95,7 +97,7 @@ func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<-
 			route.Routes{RegisteredRoutes: []string{r.Hostname}},
 		)
 		if err != nil {
-			c.logError("failed-to-construct-a-route-message", err, updatedPod)
+			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
 			continue
 		}
 		work <- routes
@@ -105,8 +107,7 @@ func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<-
 func (c *InstanceChangeInformer) getUserDefinedRoutes(pod *v1.Pod) ([]cf.Route, error) {
 	owner, err := c.getOwner(pod)
 	if err != nil {
-		c.logError("unexpected-pod-owner", err, pod)
-		return []cf.Route{}, err
+		return []cf.Route{}, errors.Wrap(err, "failed to get owner")
 	}
 
 	return decodeRoutes(owner.Annotations[eirini.RegisteredRoutes])
@@ -127,12 +128,16 @@ func (c *InstanceChangeInformer) logDebug(message string, pod *v1.Pod) {
 func (c *InstanceChangeInformer) getOwner(pod *v1.Pod) (*apps.StatefulSet, error) {
 	ownerReferences := pod.OwnerReferences
 
-	if len(ownerReferences) != 1 {
-		return nil, fmt.Errorf("unexpected owner count - expected 1, but got %d", len(ownerReferences))
+	if len(ownerReferences) == 0 {
+		return nil, errors.New("there are no owners")
+	}
+	for _, owner := range ownerReferences {
+		if owner.Kind == "StatefulSet" {
+			return c.Client.AppsV1().StatefulSets(c.Namespace).Get(owner.Name, meta.GetOptions{})
+		}
 	}
 
-	ownerName := ownerReferences[0].Name
-	return c.Client.AppsV1().StatefulSets(c.Namespace).Get(ownerName, meta.GetOptions{})
+	return nil, errors.New("there are no statefulset owners")
 }
 
 func isReady(conditions []v1.PodCondition) bool {

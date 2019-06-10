@@ -107,6 +107,7 @@ func (s *Stager) executeRequest(request *http.Request) error {
 		l.Error("cc-staging-complete-failed", err)
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
 		l.Error("cc-staging-complete-failed-status-code", nil, lager.Data{"status-code": resp.StatusCode})
 		return fmt.Errorf("callback-response-unsuccessful, code: %d", resp.StatusCode)

@@ -28,19 +28,19 @@ type URIChangeInformer struct {
 	Logger     lager.Logger
 }
 
-func NewURIChangeInformer(client kubernetes.Interface, syncPeriod time.Duration, namespace string) route.Informer {
+func NewURIChangeInformer(client kubernetes.Interface, syncPeriod time.Duration, namespace string, logger lager.Logger) route.Informer {
 	return &URIChangeInformer{
 		Client:     client,
 		SyncPeriod: syncPeriod,
 		Namespace:  namespace,
 		Cancel:     make(<-chan struct{}),
-		Logger:     lager.NewLogger("uri-change-informer"),
+		Logger:     logger,
 	}
 }
 
 func NewRouteMessage(pod *v1.Pod, port uint32, routes route.Routes) (*route.Message, error) {
 	if len(pod.Status.PodIP) == 0 {
-		return nil, errors.New("missing-ip-address")
+		return nil, errors.New("missing ip address")
 	}
 
 	message := &route.Message{
@@ -86,20 +86,23 @@ func (c *URIChangeInformer) onUpdate(oldObj, updatedObj interface{}, work chan<-
 	oldStatefulSet := oldObj.(*apps_v1.StatefulSet)
 	updatedStatefulSet := updatedObj.(*apps_v1.StatefulSet)
 
+	loggerSession := c.Logger.Session("statefulset-update", lager.Data{"guid": updatedStatefulSet.Spec.Template.Annotations[cf.ProcessGUID]})
+
 	updatedSet, err := decodeRoutesAsSet(updatedStatefulSet)
 	if err != nil {
-		c.logError("failed-to-decode-updated-user-defined-routes", err, updatedStatefulSet)
+		loggerSession.Error("failed-to-decode-updated-user-defined-routes", err)
 	}
 
 	oldSet, err := decodeRoutesAsSet(oldStatefulSet)
 	if err != nil {
-		c.logError("failed-to-decode-old-user-defined-routes", err, oldStatefulSet)
+		loggerSession.Error("failed-to-decode-old-user-defined-routes", err)
 	}
 
 	removedRoutes := oldSet.Difference(updatedSet)
 	grouped := groupRoutesByPort(removedRoutes, updatedSet)
 
 	c.sendRoutesForAllPods(
+		loggerSession,
 		work,
 		updatedStatefulSet,
 		grouped,
@@ -126,23 +129,26 @@ func groupRoutesByPort(remove, add set.Set) portGroup {
 
 func (c *URIChangeInformer) onDelete(obj interface{}, work chan<- *route.Message) {
 	deletedStatefulSet := obj.(*apps_v1.StatefulSet)
+	loggerSession := c.Logger.Session("statefulset-delete", lager.Data{"guid": deletedStatefulSet.Spec.Template.Annotations[cf.ProcessGUID]})
+
 	routeSet, err := decodeRoutesAsSet(deletedStatefulSet)
 	if err != nil {
-		c.logError("failed-to-decode-deleted-user-defined-routes", err, deletedStatefulSet)
+		loggerSession.Error("failed-to-decode-deleted-user-defined-routes", err)
 	}
 
 	routeGroups := groupRoutesByPort(routeSet, set.NewSet())
 	c.sendRoutesForAllPods(
+		loggerSession,
 		work,
 		deletedStatefulSet,
 		routeGroups,
 	)
 }
 
-func (c *URIChangeInformer) sendRoutesForAllPods(work chan<- *route.Message, statefulset *apps_v1.StatefulSet, grouped portGroup) {
+func (c *URIChangeInformer) sendRoutesForAllPods(loggerSession lager.Logger, work chan<- *route.Message, statefulset *apps_v1.StatefulSet, grouped portGroup) {
 	pods, err := c.getChildrenPods(statefulset)
 	if err != nil {
-		c.logError("failed-to-get-child-pods", err, statefulset)
+		loggerSession.Error("failed-to-get-child-pods", err)
 		return
 	}
 
@@ -151,7 +157,7 @@ func (c *URIChangeInformer) sendRoutesForAllPods(work chan<- *route.Message, sta
 		for port, routes := range grouped {
 			podRoute, err := NewRouteMessage(&pod, uint32(port), routes)
 			if err != nil {
-				c.logPodError("failed-to-construct-a-route-message", err, statefulset, pod)
+				loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
 				continue
 			}
 			work <- podRoute

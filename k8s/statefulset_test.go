@@ -15,7 +15,6 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/eirini/util/utilfakes"
-	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -78,7 +77,6 @@ var _ = Describe("Statefulset", func() {
 			LivenessProbeCreator:  livenessProbeCreator.Spy,
 			ReadinessProbeCreator: readinessProbeCreator.Spy,
 			Hasher:                hasher,
-			Logger:                lagertest.NewTestLogger("test-logger"),
 		}
 	})
 
@@ -149,7 +147,7 @@ var _ = Describe("Statefulset", func() {
 				})
 
 				It("should fail", func() {
-					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(ContainSubstring("failed to create statefulset")))
 				})
 			})
 		})
@@ -200,9 +198,8 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ContainSubstring("statefulset not found")))
 			})
-
 		})
 	})
 
@@ -221,6 +218,21 @@ var _ = Describe("Statefulset", func() {
 				originalStatefulSet = toStatefulSet(lrp)
 				_, createErr := client.AppsV1().StatefulSets(namespace).Create(originalStatefulSet)
 				Expect(createErr).NotTo(HaveOccurred())
+			})
+
+			Context("when update fails", func() {
+
+				BeforeEach(func() {
+					reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
+						return true, nil, errors.New("boom")
+					}
+					client.PrependReactor("update", "statefulsets", reaction)
+				})
+
+				It("should return a meaningful message", func() {
+					Expect(statefulSetDesirer.Update(lrp)).To(MatchError(ContainSubstring("failed to update statefulset")))
+				})
+
 			})
 
 			Context("with replica count modified", func() {
@@ -276,7 +288,7 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ContainSubstring("failed to get statefulset")))
 			})
 
 			It("should not create the app", func() {
@@ -284,6 +296,7 @@ var _ = Describe("Statefulset", func() {
 				Expect(listErr).NotTo(HaveOccurred())
 				Expect(sets.Items).To(BeEmpty())
 			})
+
 		})
 	})
 
@@ -351,8 +364,8 @@ var _ = Describe("Statefulset", func() {
 				client.PrependReactor("list", "statefulsets", reaction)
 			})
 
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
+			It("should return a meaningful error", func() {
+				Expect(err).To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
 
 		})
@@ -373,6 +386,25 @@ var _ = Describe("Statefulset", func() {
 			Eventually(listStatefulSets, timeout).Should(BeEmpty())
 		})
 
+		Context("when kubernetes fails to list statefulsets", func() {
+
+			BeforeEach(func() {
+				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, errors.New("boom")
+				}
+				client.PrependReactor("list", "statefulsets", reaction)
+			})
+
+			JustBeforeEach(func() {
+				err = statefulSetDesirer.Stop(opi.LRPIdentifier{})
+			})
+
+			It("should return a meaningful error", func() {
+				Expect(err).To(MatchError(ContainSubstring("failed to list statefulsets")))
+			})
+
+		})
+
 		Context("when the statefulSet does not exist", func() {
 
 			JustBeforeEach(func() {
@@ -380,7 +412,7 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			It("returns an error", func() {
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ContainSubstring("statefulset not found")))
 			})
 		})
 	})
@@ -438,7 +470,7 @@ var _ = Describe("Statefulset", func() {
 
 			It("returns an error", func() {
 				err = statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 42)
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ContainSubstring("failed to delete pod")))
 			})
 		})
 	})
@@ -476,6 +508,36 @@ var _ = Describe("Statefulset", func() {
 			Expect(instances).To(HaveLen(2))
 			Expect(instances[0]).To(Equal(toInstance(0, 123000000000)))
 			Expect(instances[1]).To(Equal(toInstance(1, 456000000000)))
+		})
+
+		Context("when pod list fails", func() {
+
+			BeforeEach(func() {
+				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, errors.New("boom")
+				}
+				client.PrependReactor("list", "pods", reaction)
+			})
+
+			It("should return a meaningful error", func() {
+				Expect(err).To(MatchError(ContainSubstring("failed to list pods")))
+			})
+
+		})
+
+		Context("when getting events fails", func() {
+
+			BeforeEach(func() {
+				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, errors.New("boom")
+				}
+				client.PrependReactor("list", "events", reaction)
+			})
+
+			It("should return a meaningful error", func() {
+				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("failed to get events for pod %s", "odin-0"))))
+			})
+
 		})
 
 		Context("and time since creation is not available yet", func() {

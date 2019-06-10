@@ -31,7 +31,6 @@ func simulate(cmd *cobra.Command, args []string) {
 	bifrost := &bifrost.Bifrost{
 		Converter: &ConverterSimulator{},
 		Desirer:   &DesirerSimulator{},
-		Logger:    syncLogger,
 	}
 
 	stager := &StagerSimulator{}

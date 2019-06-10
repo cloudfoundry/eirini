@@ -11,7 +11,6 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
-	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("RootfsPatcher", func() {
@@ -27,7 +26,6 @@ var _ = Describe("RootfsPatcher", func() {
 			clientset,
 			namespace,
 			"old_rootfsversion",
-			lagertest.NewTestLogger("test-logger"),
 		)
 		odinLRP = createLRP("ödin")
 		thorLRP = createLRP("thor")

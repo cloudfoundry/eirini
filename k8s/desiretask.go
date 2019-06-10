@@ -3,6 +3,8 @@ package k8s
 import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/lager"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -22,6 +24,7 @@ type TaskDesirer struct {
 	CCUploaderIP    string
 	CertsSecretName string
 	Client          kubernetes.Interface
+	Logger          lager.Logger
 }
 
 func (d *TaskDesirer) Desire(task *opi.Task) error {
@@ -39,20 +42,21 @@ func (d *TaskDesirer) Desire(task *opi.Task) error {
 	job.Spec.Template.Spec.Containers = containers
 
 	_, err := d.Client.BatchV1().Jobs(d.Namespace).Create(job)
-	return err
+	return errors.Wrap(err, "job already exists")
 }
 
 func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 	job := d.toStagingJob(task)
 	_, err := d.Client.BatchV1().Jobs(d.Namespace).Create(job)
-	return err
+	return errors.Wrap(err, "job already exists")
 }
 
 func (d *TaskDesirer) Delete(name string) error {
 	backgroundPropagation := meta_v1.DeletePropagationBackground
-	return d.Client.BatchV1().Jobs(d.Namespace).Delete(name, &meta_v1.DeleteOptions{
+	err := d.Client.BatchV1().Jobs(d.Namespace).Delete(name, &meta_v1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
+	return errors.Wrap(err, "job does not exist")
 }
 
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {

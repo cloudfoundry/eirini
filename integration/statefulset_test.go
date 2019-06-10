@@ -6,7 +6,6 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -40,7 +39,6 @@ var _ = Describe("StatefulSet Manager", func() {
 			clientset,
 			namespace,
 			"rootfsversion",
-			lagertest.NewTestLogger("test-logger"),
 		)
 	})
 

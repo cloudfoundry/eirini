@@ -1,7 +1,6 @@
 package route_test
 
 import (
-	"context"
 	"errors"
 	"time"
 
@@ -18,8 +17,9 @@ import (
 	testcore "k8s.io/client-go/testing"
 
 	. "code.cloudfoundry.org/eirini/k8s/informers/route"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
-	"code.cloudfoundry.org/lager/lagerctx"
+	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 )
 
@@ -97,24 +97,7 @@ var _ = Describe("URIChangeInformer", func() {
 		stopChan = make(chan struct{})
 		workChan = make(chan *route.Message, 5)
 
-		logger = lagertest.NewTestLogger("test")
-		ctx := lagerctx.NewContext(context.Background(), logger)
-
-		informer = URIChangeInformer{
-			Client:     client,
-			Cancel:     stopChan,
-			Namespace:  namespace,
-			SyncPeriod: 0,
-			Logger:     lagerctx.FromContext(ctx),
-		}
-	})
-
-	AfterEach(func() {
-		close(stopChan)
-	})
-
-	JustBeforeEach(func() {
-		go informer.Start(workChan)
+		logger = lagertest.NewTestLogger("uri-informer-test")
 
 		statefulset = &apps_v1.StatefulSet{
 			ObjectMeta: meta.ObjectMeta{
@@ -138,8 +121,32 @@ var _ = Describe("URIChangeInformer", func() {
 						"name": "the-app-name",
 					},
 				},
+				Template: v1.PodTemplateSpec{
+					ObjectMeta: meta.ObjectMeta{
+						Annotations: map[string]string{
+							cf.ProcessGUID: "myguid",
+						},
+					},
+				},
 			},
 		}
+
+		informer = URIChangeInformer{
+			Client:     client,
+			Cancel:     stopChan,
+			Namespace:  namespace,
+			SyncPeriod: 0,
+			Logger:     logger,
+		}
+	})
+
+	AfterEach(func() {
+		close(stopChan)
+	})
+
+	JustBeforeEach(func() {
+		go informer.Start(workChan)
+
 		watcher.Add(statefulset)
 
 		_, err := client.CoreV1().Pods(namespace).Create(pod0)
@@ -168,7 +175,7 @@ var _ = Describe("URIChangeInformer", func() {
 			watcher.Modify(copyWithModifiedRoute(statefulset, newRoutes))
 		})
 
-		It("should register the new route for the first pod", func() {
+		It("should register the first new route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name": Equal("mr-stateful-0"),
 				"Routes": MatchAllFields(Fields{
@@ -182,7 +189,7 @@ var _ = Describe("URIChangeInformer", func() {
 			}))))
 		})
 
-		It("should register the new route for the first pod", func() {
+		It("should register the second new route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name": Equal("mr-stateful-0"),
 				"Routes": MatchAllFields(Fields{
@@ -195,7 +202,7 @@ var _ = Describe("URIChangeInformer", func() {
 				"TLSPort":    BeNumerically("==", 0),
 			}))))
 		})
-		It("should register the new route for the first pod", func() {
+		It("should register the third new route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name": Equal("mr-stateful-0"),
 				"Routes": MatchAllFields(Fields{
@@ -209,7 +216,7 @@ var _ = Describe("URIChangeInformer", func() {
 			}))))
 		})
 
-		It("should register the new route for the second pod", func() {
+		It("should register the first new route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name": Equal("mr-stateful-1"),
 				"Routes": MatchAllFields(Fields{
@@ -223,7 +230,7 @@ var _ = Describe("URIChangeInformer", func() {
 			}))))
 		})
 
-		It("should register the new route for the second pod", func() {
+		It("should register the second new route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name": Equal("mr-stateful-1"),
 				"Routes": MatchAllFields(Fields{
@@ -237,7 +244,7 @@ var _ = Describe("URIChangeInformer", func() {
 			}))))
 		})
 
-		It("should register the new route for the second pod", func() {
+		It("should register the third new route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name": Equal("mr-stateful-1"),
 				"Routes": MatchAllFields(Fields{
@@ -261,6 +268,7 @@ var _ = Describe("URIChangeInformer", func() {
 					"Name": Equal("mr-stateful-0"),
 				}))))
 			})
+
 		})
 
 		Context("and the first pod has no ip", func() {
@@ -283,6 +291,17 @@ var _ = Describe("URIChangeInformer", func() {
 				}))))
 			})
 
+			It("should provide a helpful log message", func() {
+				Eventually(func() int {
+					logs := logger.Logs()
+					return len(logs)
+				}).Should(BeNumerically(">", 0))
+
+				log := logger.Logs()[0]
+				Expect(log.Message).To(Equal("uri-informer-test.statefulset-update.failed-to-construct-a-route-message"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
+				Expect(log.Data).To(HaveKeyWithValue("error", "missing ip address"))
+			})
 		})
 	})
 
@@ -339,7 +358,7 @@ var _ = Describe("URIChangeInformer", func() {
 					]`))
 		})
 
-		It("should unregister the deleted route for the first pod", func() {
+		It("should unregister the first changed route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name": Equal("mr-stateful-0"),
 				"Routes": MatchAllFields(Fields{
@@ -353,7 +372,7 @@ var _ = Describe("URIChangeInformer", func() {
 			}))))
 		})
 
-		It("should unregister the deleted route for the second pod", func() {
+		It("should unregister the firt changed route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name": Equal("mr-stateful-0"),
 				"Routes": MatchAllFields(Fields{
@@ -367,7 +386,7 @@ var _ = Describe("URIChangeInformer", func() {
 			}))))
 		})
 
-		It("should unregister the deleted route for the first pod", func() {
+		It("should unregister the first changed route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name": Equal("mr-stateful-1"),
 				"Routes": MatchAllFields(Fields{
@@ -381,7 +400,7 @@ var _ = Describe("URIChangeInformer", func() {
 			}))))
 		})
 
-		It("should unregister the deleted route for the second pod", func() {
+		It("should unregister the first changed route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
 				"Name": Equal("mr-stateful-1"),
 				"Routes": MatchAllFields(Fields{
@@ -440,11 +459,81 @@ var _ = Describe("URIChangeInformer", func() {
 		})
 	})
 
+	Context("When decoding updated user defined routes fails", func() {
+		BeforeEach(func() {
+			statefulset.Annotations["routes"] = "[]"
+		})
+
+		JustBeforeEach(func() {
+			watcher.Modify(copyWithModifiedRoute(statefulset, `[`))
+		})
+
+		It("should not register a new route", func() {
+			Consistently(workChan, routeMessageTimeout).ShouldNot(Receive())
+		})
+
+		It("should provide a helpful message", func() {
+			Eventually(func() int {
+				logs := logger.Logs()
+				return len(logs)
+			}).Should(BeNumerically(">", 0))
+
+			log := logger.Logs()[0]
+			Expect(log.Message).To(Equal("uri-informer-test.statefulset-update.failed-to-decode-updated-user-defined-routes"))
+			Expect(log.LogLevel).To(Equal(lager.ERROR))
+			Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
+			Expect(log.Data).To(HaveKeyWithValue("error", "unexpected end of JSON input"))
+		})
+	})
+
+	Context("When decoding old user defined routes fails", func() {
+		BeforeEach(func() {
+			statefulset.Annotations["routes"] = "["
+		})
+
+		JustBeforeEach(func() {
+			watcher.Modify(copyWithModifiedRoute(statefulset, `[
+						{
+							"hostname": "mr-stateful.50.60.70.80.nip.io",
+							"port": 8080
+						}
+					]`))
+		})
+
+		It("should still register the new route", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+				"Name": Equal("mr-stateful-1"),
+				"Routes": MatchAllFields(Fields{
+					"RegisteredRoutes":   ConsistOf("mr-stateful.50.60.70.80.nip.io"),
+					"UnregisteredRoutes": BeEmpty(),
+				}),
+				"InstanceID": Equal("mr-stateful-1"),
+				"Address":    Equal("50.60.70.80"),
+				"Port":       BeNumerically("==", 8080),
+				"TLSPort":    BeNumerically("==", 0),
+			}))))
+		})
+
+		It("should provide a helpful message", func() {
+			Eventually(func() int {
+				logs := logger.Logs()
+				return len(logs)
+			}).Should(BeNumerically(">", 0))
+
+			log := logger.Logs()[0]
+			Expect(log.Message).To(Equal("uri-informer-test.statefulset-update.failed-to-decode-old-user-defined-routes"))
+			Expect(log.LogLevel).To(Equal(lager.ERROR))
+			Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
+			Expect(log.Data).To(HaveKeyWithValue("error", "unexpected end of JSON input"))
+		})
+
+	})
+
 	Context("When the pods cannot be listed", func() {
 
 		BeforeEach(func() {
 			reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-				return true, nil, errors.New("boom")
+				return true, nil, errors.New("listing pods went boom")
 			}
 			informer.Client.(*fake.Clientset).PrependReactor("list", "pods", reaction)
 		})
@@ -462,8 +551,17 @@ var _ = Describe("URIChangeInformer", func() {
 			Consistently(workChan, routeMessageTimeout).ShouldNot(Receive())
 		})
 
-		It("should print an error", func() {
-			Eventually(logger.LogMessages, routeMessageTimeout).Should(ContainElement("test.failed-to-get-child-pods"))
+		It("should provide a helpful log message", func() {
+			Eventually(func() int {
+				logs := logger.Logs()
+				return len(logs)
+			}).Should(BeNumerically(">", 0))
+
+			log := logger.Logs()[0]
+			Expect(log.Message).To(Equal("uri-informer-test.statefulset-update.failed-to-get-child-pods"))
+			Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
+			Expect(log.LogLevel).To(Equal(lager.ERROR))
+			Expect(log.Data).To(HaveKeyWithValue("error", "listing pods went boom"))
 		})
 	})
 
@@ -631,7 +729,29 @@ var _ = Describe("URIChangeInformer", func() {
 					"TLSPort":    BeNumerically("==", 0),
 				}))))
 			})
+		})
 
+		Context("and decoding routes fails", func() {
+			BeforeEach(func() {
+				statefulset.Annotations["routes"] = "["
+			})
+
+			It("shouldn't send any messages", func() {
+				Consistently(workChan, routeMessageTimeout).ShouldNot(Receive())
+			})
+
+			It("should provide a helpful message", func() {
+				Eventually(func() int {
+					logs := logger.Logs()
+					return len(logs)
+				}).Should(BeNumerically(">", 0))
+
+				log := logger.Logs()[0]
+				Expect(log.Message).To(Equal("uri-informer-test.statefulset-delete.failed-to-decode-deleted-user-defined-routes"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
+				Expect(log.LogLevel).To(Equal(lager.ERROR))
+				Expect(log.Data).To(HaveKeyWithValue("error", "unexpected end of JSON input"))
+			})
 		})
 	})
 })

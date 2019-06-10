@@ -236,17 +236,8 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				}
 			})
 
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should provide a helpful log message", func() {
-				logs := logger.Logs()
-				Expect(logs).To(HaveLen(1))
-				log := logs[0]
-				Expect(log.Message).To(Equal("converter-test.convert-request.failed-to-parse-vcap-app"))
-				Expect(log.Data).To(HaveKeyWithValue("guid", "b194809b-88c0-49af-b8aa-69da097fc360"))
-				Expect(log.Data).To(HaveKeyWithValue("vcap-json", "{something is wrong"))
+			It("should return a meaningful error", func() {
+				Expect(err).To(MatchError(ContainSubstring("failed to parse vcap app")))
 			})
 
 		})

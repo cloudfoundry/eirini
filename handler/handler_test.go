@@ -101,7 +101,7 @@ var _ = Describe("Handler", func() {
 				path = "/apps/myguid/myversion"
 				expectedStatus = http.StatusOK
 
-				bifrost.GetAppReturns(&models.DesiredLRP{})
+				bifrost.GetAppReturns(&models.DesiredLRP{}, nil)
 			})
 
 			It("serves the endpoint", func() {

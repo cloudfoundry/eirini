@@ -25,17 +25,17 @@ type App struct {
 }
 
 func (a *App) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	logger := a.logger.Session("desire-app", lager.Data{"guid": ps.ByName("process_guid")})
+	loggerSession := a.logger.Session("desire-app", lager.Data{"guid": ps.ByName("process_guid")})
 	var request cf.DesireLRPRequest
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(r.Body); err != nil {
-		logger.Error("request-body-cannot-be-read", err)
+		loggerSession.Error("request-body-cannot-be-read", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if err := json.Unmarshal(buf.Bytes(), &request); err != nil {
-		logger.Error("request-body-decoding-failed", err)
+		loggerSession.Error("request-body-decoding-failed", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -43,7 +43,7 @@ func (a *App) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	request.LRP = buf.String()
 
 	if err := a.bifrost.Transfer(r.Context(), request); err != nil {
-		logger.Error("bifrost-failed", err)
+		loggerSession.Error("bifrost-failed", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -52,10 +52,10 @@ func (a *App) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 }
 
 func (a *App) List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	logger := a.logger.Session("list-apps")
+	loggerSession := a.logger.Session("list-apps")
 	desiredLRPSchedulingInfos, err := a.bifrost.List(r.Context())
 	if err != nil {
-		logger.Error("bifrost-failed", err)
+		loggerSession.Error("bifrost-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -69,24 +69,25 @@ func (a *App) List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	marshaler := &jsonpb.Marshaler{Indent: "", OrigName: true}
 	result, err := marshaler.MarshalToString(&response)
 	if err != nil {
-		logger.Error("encode-json-failed", err)
+		loggerSession.Error("encode-json-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if _, err = w.Write([]byte(result)); err != nil {
-		logger.Error("failed-to-write-response", err)
+		loggerSession.Error("failed-to-write-response", err)
 	}
 }
 
 func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	logger := a.logger.Session("get-app", lager.Data{"guid": ps.ByName("process_guid")})
+	loggerSession := a.logger.Session("get-app", lager.Data{"guid": ps.ByName("process_guid")})
 	identifier := opi.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
 	}
-	desiredLRP := a.bifrost.GetApp(r.Context(), identifier)
-	if desiredLRP == nil {
+	desiredLRP, err := a.bifrost.GetApp(r.Context(), identifier)
+	if err != nil {
+		loggerSession.Error("failed-to-get-lrp", err, lager.Data{"guid": identifier.GUID})
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -97,18 +98,18 @@ func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	marshaler := &jsonpb.Marshaler{Indent: "", OrigName: true}
 	result, err := marshaler.MarshalToString(&response)
 	if err != nil {
-		logger.Error("encode-json-failed", err)
+		loggerSession.Error("encode-json-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if _, err = w.Write([]byte(result)); err != nil {
-		logger.Error("Could not write response", err)
+		loggerSession.Error("Could not write response", err)
 	}
 }
 
 func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	logger := a.logger.Session("get-app-instances", lager.Data{"guid": ps.ByName("process_guid")})
+	loggerSession := a.logger.Session("get-app-instances", lager.Data{"guid": ps.ByName("process_guid")})
 	identifier := opi.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
@@ -117,7 +118,7 @@ func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter
 
 	instances, err := a.bifrost.GetInstances(r.Context(), identifier)
 	if err != nil {
-		logger.Error("bifrost-failed", err)
+		loggerSession.Error("bifrost-failed", err)
 		response.Error = err.Error()
 		response.Instances = []*cf.Instance{}
 	} else {
@@ -126,43 +127,43 @@ func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		logger.Error("encoding-response-failed", err)
+		loggerSession.Error("encoding-response-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 }
 
 func (a *App) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	logger := a.logger.Session("update-app", lager.Data{"guid": ps.ByName("process_guid")})
+	loggerSession := a.logger.Session("update-app", lager.Data{"guid": ps.ByName("process_guid")})
 	var request cf.UpdateDesiredLRPRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		logger.Error("json-decoding-failed", err)
+		loggerSession.Error("json-decoding-failed", err)
 
-		writeUpdateErrorResponse(w, err, http.StatusBadRequest, logger)
+		writeUpdateErrorResponse(w, err, http.StatusBadRequest, loggerSession)
 		return
 	}
 
 	if err := a.bifrost.Update(r.Context(), request); err != nil {
-		logger.Error("bifrost-failed", err)
-		writeUpdateErrorResponse(w, err, http.StatusInternalServerError, logger)
+		loggerSession.Error("bifrost-failed", err)
+		writeUpdateErrorResponse(w, err, http.StatusInternalServerError, loggerSession)
 	}
 }
 
 func (a *App) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	logger := a.logger.Session("stop-app", lager.Data{"guid": ps.ByName("process_guid")})
+	loggerSession := a.logger.Session("stop-app", lager.Data{"guid": ps.ByName("process_guid")})
 	identifier := opi.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
 	}
 	err := a.bifrost.Stop(r.Context(), identifier)
 	if err != nil {
-		logger.Error("bifrost-failed", err)
+		loggerSession.Error("bifrost-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
 func (a *App) StopInstance(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	logger := a.logger.Session("stop-app-instance", lager.Data{"guid": ps.ByName("process_guid")})
+	loggerSession := a.logger.Session("stop-app-instance", lager.Data{"guid": ps.ByName("process_guid")})
 	identifier := opi.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
@@ -170,18 +171,18 @@ func (a *App) StopInstance(w http.ResponseWriter, r *http.Request, ps httprouter
 
 	index, err := strconv.ParseUint(ps.ByName("instance"), 10, 32)
 	if err != nil {
-		logger.Error("parsing-instance-index-failed", err)
+		loggerSession.Error("parsing-instance-index-failed", err)
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	err = a.bifrost.StopInstance(r.Context(), identifier, uint(index))
 	if err != nil {
-		logger.Error("bifrost-failed", err)
+		loggerSession.Error("bifrost-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
-func writeUpdateErrorResponse(w http.ResponseWriter, err error, statusCode int, logger lager.Logger) {
+func writeUpdateErrorResponse(w http.ResponseWriter, err error, statusCode int, loggerSession lager.Logger) {
 	w.WriteHeader(statusCode)
 
 	response := models.DesiredLRPLifecycleResponse{
@@ -196,6 +197,6 @@ func writeUpdateErrorResponse(w http.ResponseWriter, err error, statusCode int, 
 	}
 
 	if _, err = w.Write(body); err != nil {
-		logger.Error("could-not-write-response", err)
+		loggerSession.Error("could-not-write-response", err)
 	}
 }

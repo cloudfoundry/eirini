@@ -252,7 +252,7 @@ var _ = Describe("AppHandler", func() {
 					ProcessGuid: "guid_1234-version_1234",
 					Instances:   5,
 				}
-				bifrost.GetAppReturns(desiredLRP)
+				bifrost.GetAppReturns(desiredLRP, nil)
 			})
 
 			It("should return a 200 HTTP status code", func() {
@@ -273,7 +273,7 @@ var _ = Describe("AppHandler", func() {
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				bifrost.GetAppReturns(nil)
+				bifrost.GetAppReturns(nil, errors.New("boom"))
 			})
 
 			It("should return a 404 HTTP status code", func() {

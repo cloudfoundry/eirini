@@ -82,12 +82,8 @@ var _ = Describe("Desiretask", func() {
 
 	Context("When desiring a task", func() {
 
-		JustBeforeEach(func() {
-			err = desirer.Desire(task)
-		})
-
-		It("should not return an error", func() {
-			Expect(err).ToNot(HaveOccurred())
+		BeforeEach(func() {
+			Expect(desirer.Desire(task)).To(Succeed())
 		})
 
 		It("should desire the task", func() {
@@ -102,13 +98,9 @@ var _ = Describe("Desiretask", func() {
 		})
 
 		Context("and the job already exists", func() {
-			BeforeEach(func() {
-				err = desirer.Desire(task)
-				Expect(err).ToNot(HaveOccurred())
-			})
 
 			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
+				Expect(desirer.Desire(task)).To(MatchError(ContainSubstring("job already exists")))
 			})
 		})
 	})
@@ -233,12 +225,8 @@ var _ = Describe("Desiretask", func() {
 			}
 		})
 
-		JustBeforeEach(func() {
-			err = desirer.DesireStaging(stagingTask)
-		})
-
-		It("should not return an error", func() {
-			Expect(err).ToNot(HaveOccurred())
+		BeforeEach(func() {
+			Expect(desirer.DesireStaging(stagingTask)).To(Succeed())
 		})
 
 		It("should desire the staging task", func() {
@@ -260,34 +248,22 @@ var _ = Describe("Desiretask", func() {
 		})
 
 		Context("When the staging task already exists", func() {
-			BeforeEach(func() {
-				err = desirer.DesireStaging(stagingTask)
-				Expect(err).ToNot(HaveOccurred())
-			})
-
 			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
+				Expect(desirer.DesireStaging(stagingTask)).To(MatchError(ContainSubstring("job already exists")))
+
 			})
 		})
 	})
 
 	Context("When deleting a task", func() {
 
-		JustBeforeEach(func() {
-			err = desirer.Delete("the-stage-is-yours")
-		})
-
 		Context("that already exists", func() {
 			BeforeEach(func() {
-				err = desirer.Desire(task)
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
+				Expect(desirer.Desire(task)).To(Succeed())
 			})
 
 			It("should delete the job", func() {
+				Expect(desirer.Delete("the-stage-is-yours")).To(Succeed())
 				_, err = fakeClient.BatchV1().Jobs(Namespace).Get("env-app-id", meta_v1.GetOptions{})
 				Expect(err).To(HaveOccurred())
 			})
@@ -296,7 +272,7 @@ var _ = Describe("Desiretask", func() {
 		Context("that does not exist", func() {
 
 			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
+				Expect(desirer.Delete("the-stage-is-yours")).To(MatchError(ContainSubstring("job does not exist")))
 			})
 		})
 

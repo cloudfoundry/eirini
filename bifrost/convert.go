@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
+	"github.com/pkg/errors"
 
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
@@ -23,23 +24,17 @@ func NewConverter(logger lager.Logger, registryIP string) *DropletToImageConvert
 }
 
 func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP, error) {
-	logger := c.logger.Session("convert-request", lager.Data{"guid": request.GUID})
 	vcapJSON := request.Environment["VCAP_APPLICATION"]
 	vcap, err := parseVcapApplication(vcapJSON)
 	if err != nil {
-		logger.Error("failed-to-parse-vcap-app", err, lager.Data{"vcap-json": vcapJSON})
-		return opi.LRP{}, err
+		return opi.LRP{}, errors.Wrap(err, "failed to parse vcap app")
 	}
 
 	if request.DockerImageURL == "" {
 		request.DockerImageURL = c.imageURI(request.DropletGUID, request.DropletHash)
 	}
 
-	routesJSON, err := getRequestedRoutes(request)
-	if err != nil {
-		c.logger.Error("failed-to-marshal-vcap-app-uris", err)
-		panic(err)
-	}
+	routesJSON := getRequestedRoutes(request)
 
 	lev := eirini.SetupEnv(request.StartCommand)
 
@@ -87,22 +82,22 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 	}, nil
 }
 
-func getRequestedRoutes(request cf.DesireLRPRequest) (string, error) {
+func getRequestedRoutes(request cf.DesireLRPRequest) string {
 	routes := request.Routes
 	if routes == nil {
-		return "", nil
+		return ""
 	}
 	if _, ok := routes["cf-router"]; !ok {
-		return "", nil
+		return ""
 	}
 
 	cfRouterRoutes := routes["cf-router"]
 	data, err := cfRouterRoutes.MarshalJSON()
 	if err != nil {
-		return "", err
+		panic("This should never happen!")
 	}
 
-	return string(data), nil
+	return string(data)
 }
 
 func (c *DropletToImageConverter) imageURI(dropletGUID, dropletHash string) string {

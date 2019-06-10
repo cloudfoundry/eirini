@@ -179,7 +179,7 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	desirer := k8s.NewStatefulSetDesirer(clientset, kubeNamespace, cfg.Properties.RootfsVersion, desireLogger)
+	desirer := k8s.NewStatefulSetDesirer(clientset, kubeNamespace, cfg.Properties.RootfsVersion)
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	registryIP := cfg.Properties.RegistryAddress
@@ -188,7 +188,6 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	return &bifrost.Bifrost{
 		Converter: converter,
 		Desirer:   desirer,
-		Logger:    syncLogger,
 	}
 }
 
@@ -213,7 +212,8 @@ func launchRouteEmitter(clientset kubernetes.Interface, namespace, natsPassword,
 
 	syncPeriod := 10 * time.Second
 	workChan := make(chan *route.Message)
-	instanceInformer := k8sroute.NewInstanceChangeInformer(clientset, syncPeriod, namespace)
+	logger := lager.NewLogger("instance-change-informer")
+	instanceInformer := k8sroute.NewInstanceChangeInformer(clientset, syncPeriod, namespace, logger)
 	uriInformer := k8sroute.NewURIChangeInformer(clientset, syncPeriod, namespace)
 	emitterLogger := lager.NewLogger("route-emitter")
 	emitterLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
@@ -231,7 +231,7 @@ func launchMetricsEmitter(clientset kubernetes.Interface, metricsClient metricsc
 	podMetricsClient := metricsClient.MetricsV1beta1().PodMetricses(namespace)
 	metricsLogger := lager.NewLogger("metrics-collector")
 	metricsLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, podMetricsClient, podClient, metricsLogger)
+	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, podMetricsClient, podClient)
 
 	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
 	emitter := metrics.NewEmitter(work, &route.SimpleLoopScheduler{}, forwarder)

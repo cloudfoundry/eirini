@@ -66,9 +66,15 @@ func (c *CrashInformer) updateFunc(_ interface{}, newObj interface{}) {
 		return
 	}
 
+	_, err := util.ParseAppIndex(pod.Name)
+	if err != nil {
+		c.logger.Error("failed-to-parse-app-index", err, lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[cf.ProcessGUID]})
+		return
+	}
+
 	terminated := pod.Status.ContainerStatuses[0].State.Terminated
 	if terminated != nil && terminated.ExitCode != 0 {
-		c.reportState(pod)
+		c.reportTerminatedState(pod)
 		return
 	}
 
@@ -82,10 +88,13 @@ func (c *CrashInformer) updateFunc(_ interface{}, newObj interface{}) {
 	}
 }
 
-func (c *CrashInformer) reportState(pod *v1.Pod) {
+func (c *CrashInformer) reportTerminatedState(pod *v1.Pod) {
 	events, err := k8s.GetEvents(c.clientset, *pod)
-	if err != nil || k8s.IsStopped(events) {
-		c.logger.Error("failed-to-get-k8s-events", err, lager.Data{"pod-is-stopped": k8s.IsStopped(events)})
+	if err != nil {
+		c.logger.Error("failed-to-get-k8s-events", err, lager.Data{"guid": pod.Annotations[cf.ProcessGUID]})
+		return
+	}
+	if k8s.IsStopped(events) {
 		return
 	}
 
@@ -100,27 +109,10 @@ func (c *CrashInformer) sendStateReport(
 	exitDescription string,
 	crashTimestamp int64,
 ) {
-	if report, err := toReport(pod, reason, exitStatus, exitDescription, crashTimestamp); err == nil {
-		c.reportChan <- report
-	} else {
-		c.logger.Error("failed-to-create-crash-report", err, lager.Data{"pod-name": pod.Name, "process-guid": pod.Annotations[cf.ProcessGUID]})
-	}
-}
-
-func toReport(
-	pod *v1.Pod,
-	reason string,
-	exitStatus int,
-	exitDescription string,
-	crashTimestamp int64,
-) (events.CrashReport, error) {
+	index, _ := util.ParseAppIndex(pod.Name)
 	container := pod.Status.ContainerStatuses[0]
-	index, err := util.ParseAppIndex(pod.Name)
-	if err != nil {
-		return events.CrashReport{}, err
-	}
 
-	return events.CrashReport{
+	c.reportChan <- events.CrashReport{
 		ProcessGUID: pod.Annotations[cf.ProcessGUID],
 		AppCrashedRequest: cc_messages.AppCrashedRequest{
 			Reason:          reason,
@@ -131,5 +123,6 @@ func toReport(
 			CrashTimestamp:  crashTimestamp,
 			CrashCount:      int(container.RestartCount),
 		},
-	}, nil
+	}
+
 }

@@ -54,7 +54,7 @@ var _ = Describe("connect command", func() {
 		}
 	})
 
-	Context("when we invoke connect commmand with valid config", func() {
+	Context("when we invoke connect command with valid config", func() {
 		Context("where server TLS is disabled", func() {
 			BeforeEach(func() {
 				configFile, err = createOpiConfigFromFixtures(defaultEiriniConfig(natsServerOpts))

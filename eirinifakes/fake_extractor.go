@@ -8,11 +8,11 @@ import (
 )
 
 type FakeExtractor struct {
-	ExtractStub        func(string, string) error
+	ExtractStub        func(src, targetDir string) error
 	extractMutex       sync.RWMutex
 	extractArgsForCall []struct {
-		arg1 string
-		arg2 string
+		src       string
+		targetDir string
 	}
 	extractReturns struct {
 		result1 error
@@ -24,23 +24,22 @@ type FakeExtractor struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeExtractor) Extract(arg1 string, arg2 string) error {
+func (fake *FakeExtractor) Extract(src string, targetDir string) error {
 	fake.extractMutex.Lock()
 	ret, specificReturn := fake.extractReturnsOnCall[len(fake.extractArgsForCall)]
 	fake.extractArgsForCall = append(fake.extractArgsForCall, struct {
-		arg1 string
-		arg2 string
-	}{arg1, arg2})
-	fake.recordInvocation("Extract", []interface{}{arg1, arg2})
+		src       string
+		targetDir string
+	}{src, targetDir})
+	fake.recordInvocation("Extract", []interface{}{src, targetDir})
 	fake.extractMutex.Unlock()
 	if fake.ExtractStub != nil {
-		return fake.ExtractStub(arg1, arg2)
+		return fake.ExtractStub(src, targetDir)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.extractReturns
-	return fakeReturns.result1
+	return fake.extractReturns.result1
 }
 
 func (fake *FakeExtractor) ExtractCallCount() int {
@@ -49,22 +48,13 @@ func (fake *FakeExtractor) ExtractCallCount() int {
 	return len(fake.extractArgsForCall)
 }
 
-func (fake *FakeExtractor) ExtractCalls(stub func(string, string) error) {
-	fake.extractMutex.Lock()
-	defer fake.extractMutex.Unlock()
-	fake.ExtractStub = stub
-}
-
 func (fake *FakeExtractor) ExtractArgsForCall(i int) (string, string) {
 	fake.extractMutex.RLock()
 	defer fake.extractMutex.RUnlock()
-	argsForCall := fake.extractArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return fake.extractArgsForCall[i].src, fake.extractArgsForCall[i].targetDir
 }
 
 func (fake *FakeExtractor) ExtractReturns(result1 error) {
-	fake.extractMutex.Lock()
-	defer fake.extractMutex.Unlock()
 	fake.ExtractStub = nil
 	fake.extractReturns = struct {
 		result1 error
@@ -72,8 +62,6 @@ func (fake *FakeExtractor) ExtractReturns(result1 error) {
 }
 
 func (fake *FakeExtractor) ExtractReturnsOnCall(i int, result1 error) {
-	fake.extractMutex.Lock()
-	defer fake.extractMutex.Unlock()
 	fake.ExtractStub = nil
 	if fake.extractReturnsOnCall == nil {
 		fake.extractReturnsOnCall = make(map[int]struct {

@@ -5,12 +5,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route/routefakes"
-	"code.cloudfoundry.org/lager/lagertest"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +34,6 @@ var _ = Describe("Metrics", func() {
 		podMetricsClient metricsv1typed.PodMetricsInterface
 		scheduler        *routefakes.FakeTaskScheduler
 		expectedMetrics  metricsv1beta1api.PodMetricsList
-		logger           *lagertest.TestLogger
 		validMetrics     metricsv1beta1api.PodMetrics
 		brokenMetrics    metricsv1beta1api.PodMetrics
 		wrongNameMetrics metricsv1beta1api.PodMetrics
@@ -44,7 +41,6 @@ var _ = Describe("Metrics", func() {
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("test-logger")
 		metricsClient = &metricsfake.Clientset{}
 		podMetricsClient = metricsClient.MetricsV1beta1().PodMetricses("opi")
 
@@ -61,7 +57,7 @@ var _ = Describe("Metrics", func() {
 	JustBeforeEach(func() {
 		scheduler = new(routefakes.FakeTaskScheduler)
 		work = make(chan []metrics.Message, 1)
-		collector = NewMetricsCollector(work, scheduler, podMetricsClient, podClient, logger)
+		collector = NewMetricsCollector(work, scheduler, podMetricsClient, podClient)
 	})
 
 	Context("When collecting metrics", func() {
@@ -130,10 +126,6 @@ var _ = Describe("Metrics", func() {
 				Consistently(work).ShouldNot(Receive())
 			})
 
-			It("should log that situation", func() {
-				Eventually(logger.Buffer()).Should(gbytes.Say(`"message":"test-logger.pod-with-no-containers"`))
-				Eventually(logger.Buffer()).Should(gbytes.Say(`"pod":"broken-pod-metrics-0"`))
-			})
 		})
 
 		Context("pod name doesn't have an index (eg staging tasks)", func() {
@@ -151,10 +143,6 @@ var _ = Describe("Metrics", func() {
 				Expect(work).ShouldNot(Receive())
 			})
 
-			It("should log that situation", func() {
-				Eventually(logger.Buffer()).Should(gbytes.Say(`"message":"test-logger.incorrect-pod-name"`))
-				Eventually(logger.Buffer()).Should(gbytes.Say(`"pod":"iamstagingtask"`))
-			})
 		})
 
 		Context("metrics source responds with an error", func() {
@@ -185,10 +173,6 @@ var _ = Describe("Metrics", func() {
 				Consistently(work).ShouldNot(Receive())
 			})
 
-			It("should log that situation", func() {
-				Eventually(logger.Buffer()).Should(gbytes.Say(`"message":"test-logger.cannot-find-pod"`))
-				Eventually(logger.Buffer()).Should(gbytes.Say(`"pod":"pod-less-0"`))
-			})
 		})
 
 		Context("when there is a mix of broken metricsand valid metrics", func() {

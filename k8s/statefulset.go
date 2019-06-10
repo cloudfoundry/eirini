@@ -10,7 +10,6 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/eirini/util"
-	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -33,13 +32,12 @@ type StatefulSetDesirer struct {
 	LivenessProbeCreator  ProbeCreator
 	ReadinessProbeCreator ProbeCreator
 	Hasher                util.Hasher
-	Logger                lager.Logger
 }
 
 //go:generate counterfeiter . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(client kubernetes.Interface, namespace string, rootfsVersion string, logger lager.Logger) opi.Desirer {
+func NewStatefulSetDesirer(client kubernetes.Interface, namespace string, rootfsVersion string) opi.Desirer {
 	return &StatefulSetDesirer{
 		Client:                client,
 		Namespace:             namespace,
@@ -47,20 +45,16 @@ func NewStatefulSetDesirer(client kubernetes.Interface, namespace string, rootfs
 		LivenessProbeCreator:  CreateLivenessProbe,
 		ReadinessProbeCreator: CreateReadinessProbe,
 		Hasher:                util.TruncatedSHA256Hasher{},
-		Logger:                logger,
 	}
 }
 
 func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 	statefulsets, err := m.statefulSets().List(meta.ListOptions{})
 	if err != nil {
-		m.Logger.Error("failed-to-list-statefulsets", err)
-		return nil, err
+		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}
 
-	lrps := statefulSetsToLRPs(statefulsets)
-
-	return lrps, nil
+	return statefulSetsToLRPs(statefulsets), nil
 }
 
 func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
@@ -78,26 +72,26 @@ func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index ui
 	options := meta.ListOptions{LabelSelector: selector}
 	statefulsets, err := m.statefulSets().List(options)
 	if err != nil {
-		m.Logger.Error("failed-to-get-statefulsets", err, lager.Data{"process-guid": identifier.GUID})
 		return errors.Wrap(err, "failed to get statefulset")
 	}
 	if len(statefulsets.Items) == 0 {
 		return errors.New("app does not exist")
 	}
 
-	st := statefulsets.Items[0]
-	return m.Client.CoreV1().Pods(m.Namespace).Delete(fmt.Sprintf("%s-%d", st.Name, index), nil)
+	name := statefulsets.Items[0].Name
+	err = m.Client.CoreV1().Pods(m.Namespace).Delete(fmt.Sprintf("%s-%d", name, index), nil)
+	return errors.Wrap(err, "failed to delete pod")
 }
 
 func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
 	_, err := m.statefulSets().Create(m.toStatefulSet(lrp))
-	return err
+	return errors.Wrap(err, "failed to create statefulset")
 }
 
 func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
 	statefulSet, err := m.getStatefulSet(opi.LRPIdentifier{GUID: lrp.GUID, Version: lrp.Version})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get statefulset")
 	}
 
 	count := int32(lrp.TargetInstances)
@@ -106,7 +100,7 @@ func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
 	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
 
 	_, err = m.statefulSets().Update(statefulSet)
-	return err
+	return errors.Wrap(err, "failed to update statefulset")
 }
 
 func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error) {
@@ -121,13 +115,12 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 	options := meta.ListOptions{LabelSelector: fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)}
 	statefulSet, err := m.statefulSets().List(options)
 	if err != nil {
-		m.Logger.Error("failed-to-get-statefulset", err, lager.Data{"process-guid": identifier.GUID})
-		return nil, err
+		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}
 	statefulsets := statefulSet.Items
 	switch len(statefulsets) {
 	case 0:
-		return nil, errors.New("app not found")
+		return nil, errors.New("statefulset not found")
 	case 1:
 		return &statefulsets[0], nil
 	default:
@@ -139,16 +132,14 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	options := meta.ListOptions{LabelSelector: fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)}
 	pods, err := m.Client.CoreV1().Pods(m.Namespace).List(options)
 	if err != nil {
-		m.Logger.Error("failed-to-list-pods", err, lager.Data{"process-guid": identifier.GUID})
-		return []*opi.Instance{}, err
+		return []*opi.Instance{}, errors.Wrap(err, "failed to list pods")
 	}
 
 	instances := []*opi.Instance{}
 	for _, pod := range pods.Items {
 		events, err := GetEvents(m.Client, pod)
 		if err != nil {
-			m.Logger.Error("failed-to-get-k8s-events", err, lager.Data{"pod-name": pod.Name})
-			return []*opi.Instance{}, err
+			return []*opi.Instance{}, errors.Wrapf(err, "failed to get events for pod %s", pod.Name)
 		}
 
 		if IsStopped(events) {
