@@ -3,6 +3,7 @@ package event_test
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"code.cloudfoundry.org/eirini/events"
@@ -35,7 +36,8 @@ var _ = Describe("Event", func() {
 
 		logger *lagertest.TestLogger
 
-		crashTime meta.Time
+		crashTime  meta.Time
+		informerWG sync.WaitGroup
 	)
 
 	BeforeEach(func() {
@@ -49,11 +51,16 @@ var _ = Describe("Event", func() {
 		watcher = watch.NewFake()
 		client.PrependWatchReactor("pods", testing.DefaultWatchReactor(watcher, nil))
 
-		go crashInformer.Start()
+		informerWG.Add(1)
+		go func() {
+			crashInformer.Start()
+			informerWG.Done()
+		}()
 	})
 
 	AfterEach(func() {
 		close(informerStopper)
+		informerWG.Wait()
 	})
 
 	Context("When app is in CrashLoopBackOff", func() {
