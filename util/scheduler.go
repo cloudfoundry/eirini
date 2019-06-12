@@ -1,8 +1,9 @@
 package util
 
 import (
-	"fmt"
 	"time"
+
+	"code.cloudfoundry.org/lager"
 )
 
 type Task func() error
@@ -14,22 +15,31 @@ type TaskScheduler interface {
 
 type TickerTaskScheduler struct {
 	Ticker *time.Ticker
+	Logger lager.Logger
 }
 
 func (t *TickerTaskScheduler) Schedule(task Task) {
 	for range t.Ticker.C {
 		if err := task(); err != nil {
-			fmt.Println("Task failed to execute. Reason: ", err.Error())
+			t.Logger.Error("task-failed", err)
 		}
 	}
 }
 
-type SimpleLoopScheduler struct{}
+type SimpleLoopScheduler struct {
+	CancelChan chan struct{}
+	Logger     lager.Logger
+}
 
 func (s *SimpleLoopScheduler) Schedule(task Task) {
 	for {
-		if err := task(); err != nil {
-			fmt.Println("Task failed to execute. Reason: ", err.Error())
+		select {
+		case <-s.CancelChan:
+			return
+		default:
+			if err := task(); err != nil {
+				s.Logger.Error("task-failed", err)
+			}
 		}
 	}
 }
