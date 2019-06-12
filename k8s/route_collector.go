@@ -1,4 +1,4 @@
-package routes
+package k8s
 
 import (
 	"encoding/json"
@@ -15,21 +15,21 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type Collector struct {
+type RouteCollector struct {
 	client    kubernetes.Interface
 	namespace string
 	logger    lager.Logger
 }
 
-func NewCollector(client kubernetes.Interface, namespace string, logger lager.Logger) Collector {
-	return Collector{
+func NewCollector(client kubernetes.Interface, namespace string, logger lager.Logger) RouteCollector {
+	return RouteCollector{
 		client:    client,
 		namespace: namespace,
 		logger:    logger,
 	}
 }
 
-func (c Collector) Collect() ([]route.Message, error) {
+func (c RouteCollector) Collect() ([]route.Message, error) {
 	pods, err := c.client.CoreV1().Pods(c.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list pods")
@@ -64,7 +64,7 @@ func (c Collector) Collect() ([]route.Message, error) {
 	return routeMessages, nil
 }
 
-func (c Collector) getRoutes(pod corev1.Pod, statefulsets map[string]appsv1.StatefulSet) ([]cf.Route, error) {
+func (c RouteCollector) getRoutes(pod corev1.Pod, statefulsets map[string]appsv1.StatefulSet) ([]cf.Route, error) {
 	if !podReady(pod) {
 		return nil, fmt.Errorf("pod %s is not ready", pod.Name)
 	}
@@ -88,7 +88,7 @@ func (c Collector) getRoutes(pod corev1.Pod, statefulsets map[string]appsv1.Stat
 	return routes, nil
 }
 
-func (c Collector) getStatefulSets() (map[string]appsv1.StatefulSet, error) {
+func (c RouteCollector) getStatefulSets() (map[string]appsv1.StatefulSet, error) {
 	statefulsetList, err := c.client.AppsV1().StatefulSets(c.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")

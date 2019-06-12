@@ -1,4 +1,4 @@
-package routes_test
+package k8s_test
 
 import (
 	"encoding/json"
@@ -15,13 +15,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 
-	. "code.cloudfoundry.org/eirini/k8s/routes"
+	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	testcore "k8s.io/client-go/testing"
 )
 
-var _ = Describe("Route Collector", func() {
+var _ = Describe("RouteCollector", func() {
 	var (
 		pods          []*corev1.Pod
 		statefulsets  []*appsv1.StatefulSet
@@ -32,7 +32,7 @@ var _ = Describe("Route Collector", func() {
 		pod22         *corev1.Pod
 		routeMessages []route.Message
 		client        *fake.Clientset
-		collector     Collector
+		collector     RouteCollector
 		logger        *lagertest.TestLogger
 		err           error
 	)
