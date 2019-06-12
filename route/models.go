@@ -17,3 +17,8 @@ type Message struct {
 type Informer interface {
 	Start(work chan<- *Message)
 }
+
+//go:generate counterfeiter . Collector
+type Collector interface {
+	Collect() ([]Message, error)
+}
