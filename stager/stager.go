@@ -96,6 +96,10 @@ func (s *Stager) CompleteStaging(task *models.TaskCallbackResponse) error {
 		return err
 	}
 
+	if task.Failed {
+		return nil
+	}
+
 	return s.Desirer.Delete(task.TaskGuid)
 }
 

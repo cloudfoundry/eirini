@@ -203,6 +203,10 @@ var _ = Describe("Stager", func() {
 			It("should post the response", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
+
+			It("should not delete the task", func() {
+				Expect(taskDesirer.DeleteCallCount()).To(Equal(0))
+			})
 		})
 
 		Context("and the staging result is not a valid json", func() {
