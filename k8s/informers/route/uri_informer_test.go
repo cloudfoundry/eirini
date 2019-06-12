@@ -2,6 +2,7 @@ package route_test
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -39,6 +40,7 @@ var _ = Describe("URIChangeInformer", func() {
 		logger      *lagertest.TestLogger
 		statefulset *apps_v1.StatefulSet
 		pod0, pod1  *v1.Pod
+		informerWG  sync.WaitGroup
 	)
 
 	createPod := func(name, ip string) *v1.Pod {
@@ -142,10 +144,15 @@ var _ = Describe("URIChangeInformer", func() {
 
 	AfterEach(func() {
 		close(stopChan)
+		informerWG.Wait()
 	})
 
 	JustBeforeEach(func() {
-		go informer.Start(workChan)
+		informerWG.Add(1)
+		go func() {
+			informer.Start(workChan)
+			informerWG.Done()
+		}()
 
 		watcher.Add(statefulset)
 
@@ -156,7 +163,6 @@ var _ = Describe("URIChangeInformer", func() {
 	})
 
 	Context("When a new route is added by the user", func() {
-
 		JustBeforeEach(func() {
 			newRoutes := `[
 						{
