@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/eirini/metrics"
-	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/util"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,10 +16,10 @@ type MetricsCollector struct {
 	work          chan<- []metrics.Message
 	metricsClient metricsv1beta1.PodMetricsInterface
 	podClient     typedv1.PodInterface
-	scheduler     route.TaskScheduler
+	scheduler     util.TaskScheduler
 }
 
-func NewMetricsCollector(work chan []metrics.Message, scheduler route.TaskScheduler, metricsClient metricsv1beta1.PodMetricsInterface, podClient typedv1.PodInterface) *MetricsCollector {
+func NewMetricsCollector(work chan []metrics.Message, scheduler util.TaskScheduler, metricsClient metricsv1beta1.PodMetricsInterface, podClient typedv1.PodInterface) *MetricsCollector {
 	return &MetricsCollector{
 		work:          work,
 		metricsClient: metricsClient,

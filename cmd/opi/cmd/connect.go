@@ -223,7 +223,7 @@ func launchRouteEmitter(clientset kubernetes.Interface, namespace, natsPassword,
 	uriInformer := k8sroute.NewURIChangeInformer(clientset, syncPeriod, namespace, uriInformerLogger)
 
 	emitterLogger := logger.Session("emitter")
-	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{}, emitterLogger)
+	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &util.SimpleLoopScheduler{}, emitterLogger)
 
 	go re.Start()
 	go instanceInformer.Start(workChan)
@@ -237,10 +237,10 @@ func launchMetricsEmitter(clientset kubernetes.Interface, metricsClient metricsc
 	podMetricsClient := metricsClient.MetricsV1beta1().PodMetricses(namespace)
 	metricsLogger := lager.NewLogger("metrics-collector")
 	metricsLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	collector := k8s.NewMetricsCollector(work, &route.SimpleLoopScheduler{}, podMetricsClient, podClient)
+	collector := k8s.NewMetricsCollector(work, &util.SimpleLoopScheduler{}, podMetricsClient, podClient)
 
 	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
-	emitter := metrics.NewEmitter(work, &route.SimpleLoopScheduler{}, forwarder)
+	emitter := metrics.NewEmitter(work, &util.SimpleLoopScheduler{}, forwarder)
 
 	go collector.Start()
 	go emitter.Start()
@@ -254,7 +254,7 @@ func launchEventReporter(clientset kubernetes.Interface, uri, ca, cert, key, nam
 	client := cc_client.NewCcClient(uri, tlsConf)
 	crashReporterLogger := lager.NewLogger("instance-crash-reporter")
 	crashReporterLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	reporter := events.NewCrashReporter(work, &route.SimpleLoopScheduler{}, client, crashReporterLogger)
+	reporter := events.NewCrashReporter(work, &util.SimpleLoopScheduler{}, client, crashReporterLogger)
 	crashLogger := lager.NewLogger("instance-crash-informer")
 	crashLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, work, make(chan struct{}), crashLogger)

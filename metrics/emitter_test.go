@@ -6,7 +6,7 @@ import (
 
 	. "code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/metrics/metricsfakes"
-	"code.cloudfoundry.org/eirini/route/routefakes"
+	"code.cloudfoundry.org/eirini/util/utilfakes"
 )
 
 var _ = Describe("emitter", func() {
@@ -14,14 +14,14 @@ var _ = Describe("emitter", func() {
 	var (
 		emitter   *Emitter
 		work      chan []Message
-		scheduler *routefakes.FakeTaskScheduler
+		scheduler *utilfakes.FakeTaskScheduler
 		forwarder *metricsfakes.FakeForwarder
 		err       error
 	)
 
 	BeforeEach(func() {
 		work = make(chan []Message, 5)
-		scheduler = new(routefakes.FakeTaskScheduler)
+		scheduler = new(utilfakes.FakeTaskScheduler)
 		forwarder = new(metricsfakes.FakeForwarder)
 		emitter = NewEmitter(work, scheduler, forwarder)
 	})

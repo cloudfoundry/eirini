@@ -8,7 +8,7 @@ import (
 
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/metrics"
-	"code.cloudfoundry.org/eirini/route/routefakes"
+	"code.cloudfoundry.org/eirini/util/utilfakes"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +32,7 @@ var _ = Describe("Metrics", func() {
 		work             chan []metrics.Message
 		metricsClient    *metricsfake.Clientset
 		podMetricsClient metricsv1typed.PodMetricsInterface
-		scheduler        *routefakes.FakeTaskScheduler
+		scheduler        *utilfakes.FakeTaskScheduler
 		expectedMetrics  metricsv1beta1api.PodMetricsList
 		validMetrics     metricsv1beta1api.PodMetrics
 		brokenMetrics    metricsv1beta1api.PodMetrics
@@ -55,7 +55,7 @@ var _ = Describe("Metrics", func() {
 	})
 
 	JustBeforeEach(func() {
-		scheduler = new(routefakes.FakeTaskScheduler)
+		scheduler = new(utilfakes.FakeTaskScheduler)
 		work = make(chan []metrics.Message, 1)
 		collector = NewMetricsCollector(work, scheduler, podMetricsClient, podClient)
 	})

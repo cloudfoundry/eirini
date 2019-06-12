@@ -8,7 +8,7 @@ import (
 
 	. "code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/events/eventsfakes"
-	"code.cloudfoundry.org/eirini/route/routefakes"
+	"code.cloudfoundry.org/eirini/util/utilfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
@@ -17,7 +17,7 @@ var _ = Describe("Crashreporter", func() {
 
 	var (
 		work          chan CrashReport
-		scheduler     *routefakes.FakeTaskScheduler
+		scheduler     *utilfakes.FakeTaskScheduler
 		crashReporter *CrashReporter
 		ccClient      *eventsfakes.FakeCcClient
 		crashReports  CrashReport
@@ -25,7 +25,7 @@ var _ = Describe("Crashreporter", func() {
 	)
 
 	BeforeEach(func() {
-		scheduler = new(routefakes.FakeTaskScheduler)
+		scheduler = new(utilfakes.FakeTaskScheduler)
 		work = make(chan CrashReport, 1)
 		ccClient = new(eventsfakes.FakeCcClient)
 		crashReporter = NewCrashReporter(work, scheduler, ccClient, lagertest.NewTestLogger("tester"))

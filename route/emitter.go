@@ -3,6 +3,7 @@ package route
 import (
 	"encoding/json"
 
+	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	nats "github.com/nats-io/go-nats"
 	"github.com/pkg/errors"
@@ -27,12 +28,12 @@ func (p *NATSPublisher) Publish(subj string, data []byte) error {
 
 type Emitter struct {
 	publisher Publisher
-	scheduler TaskScheduler
+	scheduler util.TaskScheduler
 	work      <-chan *Message
 	logger    lager.Logger
 }
 
-func NewEmitter(publisher Publisher, workChannel <-chan *Message, scheduler TaskScheduler, logger lager.Logger) *Emitter {
+func NewEmitter(publisher Publisher, workChannel <-chan *Message, scheduler util.TaskScheduler, logger lager.Logger) *Emitter {
 	return &Emitter{
 		publisher: publisher,
 		scheduler: scheduler,

@@ -1,11 +1,9 @@
 package metrics
 
-import (
-	"code.cloudfoundry.org/eirini/route"
-)
+import "code.cloudfoundry.org/eirini/util"
 
 type Emitter struct {
-	scheduler route.TaskScheduler
+	scheduler util.TaskScheduler
 	forwarder Forwarder
 	work      <-chan []Message
 }
@@ -25,7 +23,7 @@ type Forwarder interface {
 	Forward(Message)
 }
 
-func NewEmitter(work <-chan []Message, scheduler route.TaskScheduler, forwarder Forwarder) *Emitter {
+func NewEmitter(work <-chan []Message, scheduler util.TaskScheduler, forwarder Forwarder) *Emitter {
 	return &Emitter{
 		scheduler: scheduler,
 		forwarder: forwarder,

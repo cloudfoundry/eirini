@@ -1,7 +1,7 @@
 package events
 
 import (
-	"code.cloudfoundry.org/eirini/route"
+	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
@@ -18,12 +18,12 @@ type CrashReport struct {
 
 type CrashReporter struct {
 	reports   <-chan CrashReport
-	scheduler route.TaskScheduler
+	scheduler util.TaskScheduler
 	client    CcClient
 	logger    lager.Logger
 }
 
-func NewCrashReporter(reportChan <-chan CrashReport, scheduler route.TaskScheduler, client CcClient, logger lager.Logger) *CrashReporter {
+func NewCrashReporter(reportChan <-chan CrashReport, scheduler util.TaskScheduler, client CcClient, logger lager.Logger) *CrashReporter {
 	return &CrashReporter{
 		reports:   reportChan,
 		scheduler: scheduler,

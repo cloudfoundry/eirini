@@ -1,4 +1,4 @@
-package route_test
+package util_test
 
 import (
 	"sync/atomic"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "code.cloudfoundry.org/eirini/route"
+	. "code.cloudfoundry.org/eirini/util"
 )
 
 var _ = Describe("Scheduler", func() {

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini/route/routefakes"
+	"code.cloudfoundry.org/eirini/util/utilfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,7 +20,7 @@ var _ = Describe("Emitter", func() {
 	const timeout = 500 * time.Millisecond
 
 	var (
-		scheduler   *routefakes.FakeTaskScheduler
+		scheduler   *utilfakes.FakeTaskScheduler
 		publisher   *routefakes.FakePublisher
 		workChannel chan *Message
 		logger      *lagertest.TestLogger
@@ -47,7 +48,7 @@ var _ = Describe("Emitter", func() {
 	}
 
 	BeforeEach(func() {
-		scheduler = new(routefakes.FakeTaskScheduler)
+		scheduler = new(utilfakes.FakeTaskScheduler)
 		publisher = new(routefakes.FakePublisher)
 		workChannel = make(chan *Message, 1)
 		publishCount = 2
