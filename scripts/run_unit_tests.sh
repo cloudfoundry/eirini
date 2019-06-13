@@ -12,7 +12,7 @@ main(){
 
 run_tests() {
   pushd "$BASEDIR" > /dev/null || exit 1
-    ginkgo -mod=vendor -p -r -keepGoing --skipPackage=launcher,packs,integration -randomizeAllSpecs
+    ginkgo -mod=vendor -race -p -r -keepGoing --skipPackage=launcher,packs,integration -randomizeAllSpecs
   popd > /dev/null || exit 1
 }
 

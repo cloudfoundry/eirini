@@ -46,17 +46,20 @@ var _ = Describe("Event", func() {
 
 		logger = lagertest.NewTestLogger("crash-event-logger-test")
 		client = fake.NewSimpleClientset()
-		crashInformer := NewCrashInformer(client, 0, namespace, reportChan, informerStopper, logger)
 
 		watcher = watch.NewFake()
 		client.PrependWatchReactor("pods", testing.DefaultWatchReactor(watcher, nil))
+	})
 
+	startWatcher := func() {
+		informerWG = sync.WaitGroup{}
 		informerWG.Add(1)
+		crashInformer := NewCrashInformer(client, 0, namespace, reportChan, informerStopper, logger)
 		go func() {
 			crashInformer.Start()
 			informerWG.Done()
 		}()
-	})
+	}
 
 	AfterEach(func() {
 		close(informerStopper)
@@ -65,6 +68,7 @@ var _ = Describe("Event", func() {
 
 	Context("When app is in CrashLoopBackOff", func() {
 		BeforeEach(func() {
+			startWatcher()
 			normy := createPod()
 			watcher.Add(normy)
 
@@ -115,6 +119,7 @@ var _ = Describe("Event", func() {
 		)
 
 		BeforeEach(func() {
+			startWatcher()
 			normy = createPod()
 			watcher.Add(normy)
 
@@ -134,7 +139,6 @@ var _ = Describe("Event", func() {
 		})
 
 		Context("with non-zero exit status", func() {
-
 			BeforeEach(func() {
 				termy.Status.ContainerStatuses[0].State.Terminated.ExitCode = 1
 				watcher.Modify(termy)
@@ -174,6 +178,7 @@ var _ = Describe("Event", func() {
 	Context("When a pod name is incorrect", func() {
 
 		BeforeEach(func() {
+			startWatcher()
 			statelessy := createStatelessPod("test-pod")
 			watcher.Add(statelessy)
 			watcher.Modify(statelessy)
@@ -199,6 +204,7 @@ var _ = Describe("Event", func() {
 	Context("When app is waiting, but NOT because of CrashLoopBackOff", func() {
 
 		BeforeEach(func() {
+			startWatcher()
 			normy := createPod()
 			watcher.Add(normy)
 
@@ -227,6 +233,7 @@ var _ = Describe("Event", func() {
 		Context("container statuses is nil", func() {
 
 			BeforeEach(func() {
+				startWatcher()
 				normy := createPod()
 				watcher.Add(normy)
 
@@ -242,6 +249,7 @@ var _ = Describe("Event", func() {
 		Context("container statuses is empty", func() {
 
 			BeforeEach(func() {
+				startWatcher()
 				normy := createPod()
 				watcher.Add(normy)
 
@@ -258,6 +266,7 @@ var _ = Describe("Event", func() {
 	Context("When pod is stopped", func() {
 
 		BeforeEach(func() {
+			startWatcher()
 			event := v1.Event{
 				InvolvedObject: v1.ObjectReference{
 					Namespace: namespace,
@@ -293,6 +302,7 @@ var _ = Describe("Event", func() {
 				return true, nil, errors.New("boom")
 			}
 			client.PrependReactor("list", "events", reaction)
+			startWatcher()
 
 			termy := createPod()
 			watcher.Add(termy)
