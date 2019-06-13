@@ -4,11 +4,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini/events"
-	"code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -18,12 +14,17 @@ import (
 const CrashLoopBackOff = "CrashLoopBackOff"
 
 type CrashInformer struct {
-	clientset   kubernetes.Interface
-	syncPeriod  time.Duration
-	namespace   string
-	reportChan  chan events.CrashReport
-	stopperChan chan struct{}
-	logger      lager.Logger
+	clientset       kubernetes.Interface
+	syncPeriod      time.Duration
+	namespace       string
+	reportChan      chan events.CrashReport
+	stopperChan     chan struct{}
+	logger          lager.Logger
+	reportGenerator CrashReportGenerator
+}
+
+type CrashReportGenerator interface {
+	Generate(*v1.Pod, kubernetes.Interface, lager.Logger) (events.CrashReport, bool)
 }
 
 func NewCrashInformer(
@@ -33,14 +34,16 @@ func NewCrashInformer(
 	reportChan chan events.CrashReport,
 	stopperChan chan struct{},
 	logger lager.Logger,
+	reportGenerator CrashReportGenerator,
 ) *CrashInformer {
 	return &CrashInformer{
-		clientset:   client,
-		syncPeriod:  syncPeriod,
-		namespace:   namespace,
-		reportChan:  reportChan,
-		stopperChan: stopperChan,
-		logger:      logger,
+		clientset:       client,
+		syncPeriod:      syncPeriod,
+		namespace:       namespace,
+		reportChan:      reportChan,
+		stopperChan:     stopperChan,
+		logger:          logger,
+		reportGenerator: reportGenerator,
 	}
 }
 
@@ -61,68 +64,8 @@ func (c *CrashInformer) Start() {
 
 func (c *CrashInformer) updateFunc(_ interface{}, newObj interface{}) {
 	pod := newObj.(*v1.Pod)
-	statuses := pod.Status.ContainerStatuses
-	if len(statuses) == 0 {
-		return
+	report, send := c.reportGenerator.Generate(pod, c.clientset, c.logger)
+	if send {
+		c.reportChan <- report
 	}
-
-	_, err := util.ParseAppIndex(pod.Name)
-	if err != nil {
-		c.logger.Error("failed-to-parse-app-index", err, lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[cf.ProcessGUID]})
-		return
-	}
-
-	terminated := pod.Status.ContainerStatuses[0].State.Terminated
-	if terminated != nil && terminated.ExitCode != 0 {
-		c.reportTerminatedState(pod)
-		return
-	}
-
-	waiting := pod.Status.ContainerStatuses[0].State.Waiting
-	if waiting != nil && waiting.Reason == CrashLoopBackOff {
-		container := pod.Status.ContainerStatuses[0]
-		exitStatus := int(container.LastTerminationState.Terminated.ExitCode)
-		exitDescription := container.LastTerminationState.Terminated.Reason
-		crashTimestamp := int64(container.LastTerminationState.Terminated.StartedAt.Second())
-		c.sendStateReport(pod, waiting.Reason, exitStatus, exitDescription, crashTimestamp)
-	}
-}
-
-func (c *CrashInformer) reportTerminatedState(pod *v1.Pod) {
-	events, err := k8s.GetEvents(c.clientset, *pod)
-	if err != nil {
-		c.logger.Error("failed-to-get-k8s-events", err, lager.Data{"guid": pod.Annotations[cf.ProcessGUID]})
-		return
-	}
-	if k8s.IsStopped(events) {
-		return
-	}
-
-	terminated := pod.Status.ContainerStatuses[0].State.Terminated
-	c.sendStateReport(pod, terminated.Reason, int(terminated.ExitCode), terminated.Reason, int64(terminated.StartedAt.Second()))
-}
-
-func (c *CrashInformer) sendStateReport(
-	pod *v1.Pod,
-	reason string,
-	exitStatus int,
-	exitDescription string,
-	crashTimestamp int64,
-) {
-	index, _ := util.ParseAppIndex(pod.Name)
-	container := pod.Status.ContainerStatuses[0]
-
-	c.reportChan <- events.CrashReport{
-		ProcessGUID: pod.Annotations[cf.ProcessGUID],
-		AppCrashedRequest: cc_messages.AppCrashedRequest{
-			Reason:          reason,
-			Instance:        pod.Name,
-			Index:           index,
-			ExitStatus:      exitStatus,
-			ExitDescription: exitDescription,
-			CrashTimestamp:  crashTimestamp,
-			CrashCount:      int(container.RestartCount),
-		},
-	}
-
 }

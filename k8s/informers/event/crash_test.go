@@ -54,7 +54,7 @@ var _ = Describe("Event", func() {
 	startWatcher := func() {
 		informerWG = sync.WaitGroup{}
 		informerWG.Add(1)
-		crashInformer := NewCrashInformer(client, 0, namespace, reportChan, informerStopper, logger)
+		crashInformer := NewCrashInformer(client, 0, namespace, reportChan, informerStopper, logger, DefaultCrashReportGenerator{})
 		go func() {
 			crashInformer.Start()
 			informerWG.Done()
@@ -69,8 +69,6 @@ var _ = Describe("Event", func() {
 	Context("When app is in CrashLoopBackOff", func() {
 		BeforeEach(func() {
 			startWatcher()
-			normy := createPod()
-			watcher.Add(normy)
 
 			loopy := createPod()
 			crashTime = meta.Time{Time: time.Now()}
@@ -91,6 +89,7 @@ var _ = Describe("Event", func() {
 					},
 				},
 			}
+			watcher.Add(loopy)
 			watcher.Modify(loopy)
 		})
 
