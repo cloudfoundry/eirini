@@ -134,11 +134,10 @@ var _ = Describe("URIChangeInformer", func() {
 		}
 
 		informer = URIChangeInformer{
-			Client:     client,
-			Cancel:     stopChan,
-			Namespace:  namespace,
-			SyncPeriod: 0,
-			Logger:     logger,
+			Client:    client,
+			Cancel:    stopChan,
+			Namespace: namespace,
+			Logger:    logger,
 		}
 	})
 

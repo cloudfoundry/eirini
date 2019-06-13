@@ -2,7 +2,6 @@ package route
 
 import (
 	"encoding/json"
-	"time"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -18,27 +17,27 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+const NoResync = 0
+
 type InstanceChangeInformer struct {
-	Cancel     <-chan struct{}
-	Client     kubernetes.Interface
-	SyncPeriod time.Duration
-	Namespace  string
-	Logger     lager.Logger
+	Cancel    <-chan struct{}
+	Client    kubernetes.Interface
+	Namespace string
+	Logger    lager.Logger
 }
 
-func NewInstanceChangeInformer(client kubernetes.Interface, syncPeriod time.Duration, namespace string, logger lager.Logger) route.Informer {
+func NewInstanceChangeInformer(client kubernetes.Interface, namespace string, logger lager.Logger) route.Informer {
 	return &InstanceChangeInformer{
-		Client:     client,
-		SyncPeriod: syncPeriod,
-		Namespace:  namespace,
-		Cancel:     make(<-chan struct{}),
-		Logger:     logger,
+		Client:    client,
+		Namespace: namespace,
+		Cancel:    make(<-chan struct{}),
+		Logger:    logger,
 	}
 }
 
 func (c *InstanceChangeInformer) Start(work chan<- *eiriniroute.Message) {
 	factory := informers.NewSharedInformerFactoryWithOptions(c.Client,
-		c.SyncPeriod,
+		NoResync,
 		informers.WithNamespace(c.Namespace))
 
 	podInformer := factory.Core().V1().Pods().Informer()

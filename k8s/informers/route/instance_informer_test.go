@@ -83,11 +83,10 @@ var _ = Describe("InstanceChangeInformer", func() {
 		logger = lagertest.NewTestLogger("instance-informer-test")
 
 		informer = &InstanceChangeInformer{
-			Client:     client,
-			Cancel:     stopChan,
-			Namespace:  namespace,
-			SyncPeriod: 0,
-			Logger:     logger,
+			Client:    client,
+			Cancel:    stopChan,
+			Namespace: namespace,
+			Logger:    logger,
 		}
 	})
 

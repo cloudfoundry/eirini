@@ -2,7 +2,6 @@ package route
 
 import (
 	"errors"
-	"time"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -22,20 +21,18 @@ import (
 type portGroup map[int32]eiriniroute.Routes
 
 type URIChangeInformer struct {
-	Cancel     <-chan struct{}
-	Client     kubernetes.Interface
-	SyncPeriod time.Duration
-	Namespace  string
-	Logger     lager.Logger
+	Cancel    <-chan struct{}
+	Client    kubernetes.Interface
+	Namespace string
+	Logger    lager.Logger
 }
 
-func NewURIChangeInformer(client kubernetes.Interface, syncPeriod time.Duration, namespace string, logger lager.Logger) route.Informer {
+func NewURIChangeInformer(client kubernetes.Interface, namespace string, logger lager.Logger) route.Informer {
 	return &URIChangeInformer{
-		Client:     client,
-		SyncPeriod: syncPeriod,
-		Namespace:  namespace,
-		Cancel:     make(<-chan struct{}),
-		Logger:     logger,
+		Client:    client,
+		Namespace: namespace,
+		Cancel:    make(<-chan struct{}),
+		Logger:    logger,
 	}
 }
 
@@ -67,7 +64,7 @@ func NewRouteMessage(pod *v1.Pod, port uint32, routes eiriniroute.Routes) (*eiri
 
 func (c *URIChangeInformer) Start(work chan<- *eiriniroute.Message) {
 	factory := informers.NewSharedInformerFactoryWithOptions(c.Client,
-		c.SyncPeriod,
+		NoResync,
 		informers.WithNamespace(c.Namespace))
 
 	informer := factory.Apps().V1().StatefulSets().Informer()
