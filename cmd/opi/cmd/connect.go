@@ -212,11 +212,17 @@ func launchRouteEmitter(clientset kubernetes.Interface, namespace, natsPassword,
 
 	syncPeriod := 10 * time.Second
 	workChan := make(chan *route.Message)
-	logger := lager.NewLogger("instance-change-informer")
-	instanceInformer := k8sroute.NewInstanceChangeInformer(clientset, syncPeriod, namespace, logger)
-	uriInformer := k8sroute.NewURIChangeInformer(clientset, syncPeriod, namespace)
-	emitterLogger := lager.NewLogger("route-emitter")
-	emitterLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+
+	logger := lager.NewLogger("route")
+	logger.RegisterSink(lager.NewPrettySink(os.Stderr, lager.DEBUG))
+
+	instanceInformerLogger := logger.Session("instance-change-informer")
+	instanceInformer := k8sroute.NewInstanceChangeInformer(clientset, syncPeriod, namespace, instanceInformerLogger)
+
+	uriInformerLogger := logger.Session("uri-change-informer")
+	uriInformer := k8sroute.NewURIChangeInformer(clientset, syncPeriod, namespace, uriInformerLogger)
+
+	emitterLogger := logger.Session("emitter")
 	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &route.SimpleLoopScheduler{}, emitterLogger)
 
 	go re.Start()
