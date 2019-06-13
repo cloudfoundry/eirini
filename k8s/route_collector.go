@@ -21,7 +21,7 @@ type RouteCollector struct {
 	logger    lager.Logger
 }
 
-func NewCollector(client kubernetes.Interface, namespace string, logger lager.Logger) RouteCollector {
+func NewRouteCollector(client kubernetes.Interface, namespace string, logger lager.Logger) RouteCollector {
 	return RouteCollector{
 		client:    client,
 		namespace: namespace,

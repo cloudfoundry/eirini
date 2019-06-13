@@ -56,8 +56,16 @@ func connect(cmd *cobra.Command, args []string) {
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
 	metricsClient := cmdcommons.CreateMetricsClient(cfg.Properties.KubeConfigPath)
 
+	routesChan := make(chan *route.Message)
+	launchRouteCollector(
+		clientset,
+		routesChan,
+		cfg.Properties.KubeNamespace,
+	)
+
 	launchRouteEmitter(
 		clientset,
+		routesChan,
 		cfg.Properties.KubeNamespace,
 		cfg.Properties.NatsPassword,
 		cfg.Properties.NatsIP,
@@ -206,7 +214,21 @@ func initConnect() {
 	connectCmd.Flags().StringP("config", "c", "", "Path to the Eirini config file")
 }
 
-func launchRouteEmitter(clientset kubernetes.Interface, namespace, natsPassword, natsIP string, natsPort int) {
+func launchRouteCollector(clientset kubernetes.Interface, workChan chan *route.Message, namespace string) {
+	logger := lager.NewLogger("route-collector")
+	collector := k8s.NewRouteCollector(clientset, namespace, logger)
+	scheduler := route.CollectorScheduler{
+		Collector: collector,
+		Scheduler: &util.TickerTaskScheduler{
+			Ticker: time.NewTicker(30 * time.Second),
+			Logger: logger.Session("route-collector-scheduler"),
+		},
+	}
+
+	go scheduler.Start(workChan)
+}
+
+func launchRouteEmitter(clientset kubernetes.Interface, workChan chan *route.Message, namespace, natsPassword, natsIP string, natsPort int) {
 	nc, err := nats.Connect(util.GenerateNatsURL(natsPassword, natsIP, natsPort))
 	cmdcommons.ExitWithError(err)
 

@@ -83,7 +83,7 @@ var _ = Describe("RouteCollector", func() {
 		pod22 = createPod("pod-22", "ss-2", "10.0.0.3")
 		client = fake.NewSimpleClientset()
 		logger = lagertest.NewTestLogger("collector-test")
-		collector = NewCollector(client, "default", logger)
+		collector = NewRouteCollector(client, "default", logger)
 		pods = []*corev1.Pod{}
 		statefulsets = []*appsv1.StatefulSet{}
 	})
