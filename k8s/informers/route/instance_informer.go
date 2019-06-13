@@ -113,18 +113,6 @@ func (c *InstanceChangeInformer) getUserDefinedRoutes(pod *v1.Pod) ([]cf.Route, 
 	return decodeRoutes(owner.Annotations[eirini.RegisteredRoutes])
 }
 
-func (c *InstanceChangeInformer) logError(message string, err error, pod *v1.Pod) {
-	if c.Logger != nil {
-		c.Logger.Error(message, err, lager.Data{"pod-name": pod.Name})
-	}
-}
-
-func (c *InstanceChangeInformer) logDebug(message string, pod *v1.Pod) {
-	if c.Logger != nil {
-		c.Logger.Debug(message, lager.Data{"pod-name": pod.Name})
-	}
-}
-
 func (c *InstanceChangeInformer) getOwner(pod *v1.Pod) (*apps.StatefulSet, error) {
 	ownerReferences := pod.OwnerReferences
 

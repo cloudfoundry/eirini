@@ -165,18 +165,6 @@ func (c *URIChangeInformer) sendRoutesForAllPods(loggerSession lager.Logger, wor
 	}
 }
 
-func (c *URIChangeInformer) logError(message string, err error, statefulset *apps_v1.StatefulSet) {
-	if c.Logger != nil {
-		c.Logger.Error(message, err, lager.Data{"statefulset-name": statefulset.Name})
-	}
-}
-
-func (c *URIChangeInformer) logPodError(message string, err error, statefulset *apps_v1.StatefulSet, pod v1.Pod) {
-	if c.Logger != nil {
-		c.Logger.Error(message, err, lager.Data{"statefulset-name": statefulset.Name, "pod-name": pod.Name})
-	}
-}
-
 func (c *URIChangeInformer) getChildrenPods(st *apps_v1.StatefulSet) ([]v1.Pod, error) {
 	set := labels.Set(st.Spec.Selector.MatchLabels)
 	opts := meta.ListOptions{LabelSelector: set.AsSelector().String()}
