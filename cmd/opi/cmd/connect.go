@@ -221,7 +221,7 @@ func launchRouteCollector(clientset kubernetes.Interface, workChan chan *route.M
 		Collector: collector,
 		Scheduler: &util.TickerTaskScheduler{
 			Ticker: time.NewTicker(30 * time.Second),
-			Logger: logger.Session("route-collector-scheduler"),
+			Logger: logger.Session("scheduler"),
 		},
 	}
 
@@ -242,7 +242,11 @@ func launchRouteEmitter(clientset kubernetes.Interface, workChan chan *route.Mes
 	uriInformer := k8sroute.NewURIChangeInformer(clientset, namespace, uriInformerLogger)
 
 	emitterLogger := logger.Session("emitter")
-	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, &util.SimpleLoopScheduler{}, emitterLogger)
+	scheduler := &util.SimpleLoopScheduler{
+		CancelChan: make(chan struct{}, 1),
+		Logger:     emitterLogger.Session("scheduler"),
+	}
+	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, scheduler, emitterLogger)
 
 	go re.Start()
 	go instanceInformer.Start(workChan)
@@ -254,12 +258,21 @@ func launchMetricsEmitter(clientset kubernetes.Interface, metricsClient metricsc
 	podClient := clientset.CoreV1().Pods(namespace)
 
 	podMetricsClient := metricsClient.MetricsV1beta1().PodMetricses(namespace)
-	metricsLogger := lager.NewLogger("metrics-collector")
+	metricsLogger := lager.NewLogger("metrics")
 	metricsLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	collector := k8s.NewMetricsCollector(work, &util.SimpleLoopScheduler{}, podMetricsClient, podClient)
+
+	collectorScheduler := &util.SimpleLoopScheduler{
+		CancelChan: make(chan struct{}, 1),
+		Logger:     metricsLogger.Session("collector.scheduler"),
+	}
+	collector := k8s.NewMetricsCollector(work, collectorScheduler, podMetricsClient, podClient)
 
 	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
-	emitter := metrics.NewEmitter(work, &util.SimpleLoopScheduler{}, forwarder)
+	emitterScheduler := &util.SimpleLoopScheduler{
+		CancelChan: make(chan struct{}, 1),
+		Logger:     metricsLogger.Session("emitter.scheduler"),
+	}
+	emitter := metrics.NewEmitter(work, emitterScheduler, forwarder)
 
 	go collector.Start()
 	go emitter.Start()
@@ -273,7 +286,13 @@ func launchEventReporter(clientset kubernetes.Interface, uri, ca, cert, key, nam
 	client := cc_client.NewCcClient(uri, tlsConf)
 	crashReporterLogger := lager.NewLogger("instance-crash-reporter")
 	crashReporterLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	reporter := events.NewCrashReporter(work, &util.SimpleLoopScheduler{}, client, crashReporterLogger)
+
+	scheduler := &util.SimpleLoopScheduler{
+		CancelChan: make(chan struct{}, 1),
+		Logger:     crashReporterLogger.Session("scheduler"),
+	}
+	reporter := events.NewCrashReporter(work, scheduler, client, crashReporterLogger)
+
 	crashLogger := lager.NewLogger("instance-crash-informer")
 	crashLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, work, make(chan struct{}), crashLogger)
