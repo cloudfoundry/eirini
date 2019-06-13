@@ -64,8 +64,7 @@ var _ = Describe("Event", func() {
 	})
 
 	Context("When app is in CrashLoopBackOff", func() {
-
-		JustBeforeEach(func() {
+		BeforeEach(func() {
 			normy := createPod()
 			watcher.Add(normy)
 
@@ -199,7 +198,7 @@ var _ = Describe("Event", func() {
 
 	Context("When app is waiting, but NOT because of CrashLoopBackOff", func() {
 
-		JustBeforeEach(func() {
+		BeforeEach(func() {
 			normy := createPod()
 			watcher.Add(normy)
 
