@@ -23,6 +23,7 @@ type CrashInformer struct {
 	reportGenerator CrashReportGenerator
 }
 
+//go:generate counterfeiter . CrashReportGenerator
 type CrashReportGenerator interface {
 	Generate(*v1.Pod, kubernetes.Interface, lager.Logger) (events.CrashReport, bool)
 }

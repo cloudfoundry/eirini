@@ -1,26 +1,32 @@
 package event_test
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
-	"code.cloudfoundry.org/eirini/events"
-	"code.cloudfoundry.org/lager/lagertest"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"code.cloudfoundry.org/eirini/events"
+	"code.cloudfoundry.org/eirini/k8s/informers/event"
+	"code.cloudfoundry.org/eirini/models/cf"
+	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	testcore "k8s.io/client-go/testing"
 )
+
+var crashTime = meta.Time{Time: time.Now()}
 
 var _ = Describe("CrashReportGenerator", func() {
 	var (
 		client *fake.Clientset
-
 		logger *lagertest.TestLogger
-
-		crashTime meta.Time
-		loopy     *v1.Pod
+		pod    *v1.Pod
 	)
 
 	BeforeEach(func() {
@@ -28,32 +34,15 @@ var _ = Describe("CrashReportGenerator", func() {
 		client = fake.NewSimpleClientset()
 	})
 
-	FContext("When app is in CrashLoopBackOff", func() {
+	Context("When app is in CrashLoopBackOff", func() {
+
 		BeforeEach(func() {
-			loopy := createPod()
-			crashTime = meta.Time{Time: time.Now()}
-			loopy.Status.ContainerStatuses = []v1.ContainerStatus{
-				{
-					RestartCount: 3,
-					State: v1.ContainerState{
-						Waiting: &v1.ContainerStateWaiting{
-							Reason: event.CrashLoopBackOff,
-						},
-					},
-					LastTerminationState: v1.ContainerState{
-						Terminated: &v1.ContainerStateTerminated{
-							ExitCode:  1,
-							Reason:    "this describes how much you screwed up",
-							StartedAt: crashTime,
-						},
-					},
-				},
-			}
+			pod = newCrashedPod()
 		})
 
 		It("should return a crashed report", func() {
 			generator := event.DefaultCrashReportGenerator{}
-			report, returned := generator.Generate(loopy, client, logger)
+			report, returned := generator.Generate(pod, client, logger)
 			Expect(returned).To(BeTrue())
 			Expect(report).To(Equal(events.CrashReport{
 				ProcessGUID: "test-pod-anno",
@@ -62,7 +51,7 @@ var _ = Describe("CrashReportGenerator", func() {
 					Instance:        "test-pod-0",
 					Index:           0,
 					ExitStatus:      1,
-					ExitDescription: "this describes how much you screwed up",
+					ExitDescription: "better luck next time",
 					CrashCount:      3,
 					CrashTimestamp:  int64(crashTime.Time.Second()),
 				},
@@ -71,226 +60,212 @@ var _ = Describe("CrashReportGenerator", func() {
 
 	})
 
-	// Context("When app has been terminated", func() {
+	Context("When app has been terminated", func() {
+		BeforeEach(func() {
+			pod = newTerminatedPod()
+		})
 
-	// 	var (
-	// 		normy *v1.Pod
-	// 		termy *v1.Pod
-	// 	)
+		It("should generate a crashed report", func() {
+			generator := event.DefaultCrashReportGenerator{}
+			report, returned := generator.Generate(pod, client, logger)
+			Expect(returned).To(BeTrue())
+			Expect(report).To(Equal(events.CrashReport{
+				ProcessGUID: "test-pod-anno",
+				AppCrashedRequest: cc_messages.AppCrashedRequest{
+					Reason:          "better luck next time",
+					Instance:        "test-pod-0",
+					Index:           0,
+					ExitStatus:      1,
+					ExitDescription: "better luck next time",
+					CrashCount:      8,
+					CrashTimestamp:  int64(crashTime.Time.Second()),
+				},
+			}))
+		})
 
-	// 	BeforeEach(func() {
-	// 		startWatcher()
-	// 		normy = createPod()
-	// 		watcher.Add(normy)
+		Context("with zero exit status", func() {
 
-	// 		termy = createPod()
-	// 		crashTime = meta.Time{Time: time.Now()}
-	// 		termy.Status.ContainerStatuses = []v1.ContainerStatus{
-	// 			{
-	// 				RestartCount: 8,
-	// 				State: v1.ContainerState{
-	// 					Terminated: &v1.ContainerStateTerminated{
-	// 						Reason:    "this describes how much you screwed up",
-	// 						StartedAt: crashTime,
-	// 					},
-	// 				},
-	// 			},
-	// 		}
-	// 	})
+			BeforeEach(func() {
+				pod.Status.ContainerStatuses[0].State.Terminated.ExitCode = 0
+			})
 
-	// 	Context("with non-zero exit status", func() {
-	// 		BeforeEach(func() {
-	// 			termy.Status.ContainerStatuses[0].State.Terminated.ExitCode = 1
-	// 			watcher.Modify(termy)
-	// 		})
+			It("should not generate the report", func() {
+				generator := event.DefaultCrashReportGenerator{}
+				_, returned := generator.Generate(pod, client, logger)
+				Expect(returned).To(BeFalse())
+			})
 
-	// 		It("should receive a crashed report", func() {
-	// 			Eventually(reportChan).Should(Receive(Equal(events.CrashReport{
-	// 				ProcessGUID: "test-pod-anno",
-	// 				AppCrashedRequest: cc_messages.AppCrashedRequest{
-	// 					Reason:          "this describes how much you screwed up",
-	// 					Instance:        "test-pod-0",
-	// 					Index:           0,
-	// 					ExitStatus:      1,
-	// 					ExitDescription: "this describes how much you screwed up",
-	// 					CrashCount:      8,
-	// 					CrashTimestamp:  int64(crashTime.Time.Second()),
-	// 				},
-	// 			})))
-	// 		})
+		})
 
-	// 	})
+		Context("When a pod name does not have index", func() {
 
-	// 	Context("with zero exit status", func() {
+			BeforeEach(func() {
+				pod.Name = "naughty-pod"
+			})
 
-	// 		BeforeEach(func() {
-	// 			termy.Status.ContainerStatuses[0].State.Terminated.ExitCode = 0
-	// 			watcher.Modify(termy)
-	// 		})
+			It("should not generate", func() {
+				generator := event.DefaultCrashReportGenerator{}
+				_, returned := generator.Generate(pod, client, logger)
+				Expect(returned).To(BeFalse())
+			})
 
-	// 		It("should not send reports", func() {
-	// 			Consistently(reportChan).ShouldNot(Receive())
-	// 		})
+			It("should provide a helpful log message", func() {
+				generator := event.DefaultCrashReportGenerator{}
+				generator.Generate(pod, client, logger)
 
-	// 	})
-	// })
+				logs := logger.Logs()
+				Expect(logs).To(HaveLen(1))
+				log := logs[0]
+				Expect(log.Message).To(Equal("crash-event-logger-test.failed-to-parse-app-index"))
+				Expect(log.Data).To(HaveKeyWithValue("pod-name", "naughty-pod"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "test-pod-anno"))
+			})
 
-	// Context("When a pod name is incorrect", func() {
+		})
 
-	// 	BeforeEach(func() {
-	// 		startWatcher()
-	// 		statelessy := createStatelessPod("test-pod")
-	// 		watcher.Add(statelessy)
-	// 		watcher.Modify(statelessy)
-	// 	})
+		Context("When pod is stopped", func() {
 
-	// 	It("should not send reports", func() {
-	// 		Consistently(reportChan).ShouldNot(Receive())
-	// 	})
+			BeforeEach(func() {
+				event := v1.Event{
+					InvolvedObject: v1.ObjectReference{
+						Namespace: "not-default",
+						Name:      "pinky-pod",
+					},
+					Reason: "Killing",
+				}
+				_, clientErr := client.CoreV1().Events("not-default").Create(&event)
+				Expect(clientErr).ToNot(HaveOccurred())
+			})
 
-	// 	It("should provide a helpful log message", func() {
-	// 		Consistently(reportChan).ShouldNot(Receive())
+			It("should not emit a crashed event", func() {
+				generator := event.DefaultCrashReportGenerator{}
+				_, returned := generator.Generate(pod, client, logger)
+				Expect(returned).To(BeFalse())
+			})
+		})
 
-	// 		logs := logger.Logs()
-	// 		Expect(logs).To(HaveLen(1))
-	// 		log := logs[0]
-	// 		Expect(log.Message).To(Equal("crash-event-logger-test.failed-to-parse-app-index"))
-	// 		Expect(log.Data).To(HaveKeyWithValue("pod-name", "test-pod"))
-	// 		Expect(log.Data).To(HaveKeyWithValue("guid", "test-pod-anno"))
-	// 	})
+		Context("When getting events fails", func() {
+			BeforeEach(func() {
+				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, errors.New("boom")
+				}
+				client.PrependReactor("list", "events", reaction)
+			})
 
-	// })
+			It("should not emit a crashed event", func() {
+				generator := event.DefaultCrashReportGenerator{}
+				_, returned := generator.Generate(pod, client, logger)
+				Expect(returned).To(BeFalse())
+			})
 
-	// Context("When app is waiting, but NOT because of CrashLoopBackOff", func() {
+			It("should provide a helpful log message", func() {
+				generator := event.DefaultCrashReportGenerator{}
+				generator.Generate(pod, client, logger)
+				logs := logger.Logs()
+				Expect(logs).To(HaveLen(1))
+				log := logs[0]
+				Expect(log.Message).To(Equal("crash-event-logger-test.failed-to-get-k8s-events"))
+				Expect(log.Data).To(HaveKeyWithValue("guid", "test-pod-anno"))
+			})
+		})
+	})
 
-	// 	BeforeEach(func() {
-	// 		startWatcher()
-	// 		normy := createPod()
-	// 		watcher.Add(normy)
+	Context("When app is waiting, but NOT because of CrashLoopBackOff", func() {
 
-	// 		sleepy := createPod()
-	// 		crashTime = meta.Time{Time: time.Now()}
-	// 		sleepy.Status.ContainerStatuses = []v1.ContainerStatus{
-	// 			{
-	// 				State: v1.ContainerState{
-	// 					Waiting: &v1.ContainerStateWaiting{
-	// 						Reason: "sleepy",
-	// 					},
-	// 				},
-	// 			},
-	// 		}
-	// 		watcher.Modify(sleepy)
-	// 	})
+		BeforeEach(func() {
+			pod = newCrashedPod()
+			pod.Status.ContainerStatuses[0].State.Waiting.Reason = "Friday"
+		})
 
-	// 	It("should not send reports", func() {
-	// 		Consistently(reportChan).ShouldNot(Receive())
-	// 	})
+		It("should not send reports", func() {
+			generator := event.DefaultCrashReportGenerator{}
+			_, returned := generator.Generate(pod, client, logger)
+			Expect(returned).To(BeFalse())
+		})
 
-	// })
+	})
 
-	// Context("When a pod has no container statuses", func() {
+	Context("When a pod has no container statuses", func() {
 
-	// 	Context("container statuses is nil", func() {
+		BeforeEach(func() {
+			pod = newCrashedPod()
+		})
 
-	// 		BeforeEach(func() {
-	// 			startWatcher()
-	// 			normy := createPod()
-	// 			watcher.Add(normy)
+		Context("container statuses is nil", func() {
+			BeforeEach(func() {
+				pod.Status.ContainerStatuses = nil
+			})
 
-	// 			normy.Status.ContainerStatuses = nil
-	// 			watcher.Modify(normy)
-	// 		})
+			It("should not send any reports", func() {
+				generator := event.DefaultCrashReportGenerator{}
+				_, returned := generator.Generate(pod, client, logger)
+				Expect(returned).To(BeFalse())
+			})
+		})
 
-	// 		It("should not send any reports", func() {
-	// 			Consistently(reportChan).ShouldNot(Receive())
-	// 		})
-	// 	})
+		Context("container statuses is empty", func() {
+			BeforeEach(func() {
+				pod.Status.ContainerStatuses = []v1.ContainerStatus{}
+			})
 
-	// 	Context("container statuses is empty", func() {
+			It("should not send any reports", func() {
+				generator := event.DefaultCrashReportGenerator{}
+				_, returned := generator.Generate(pod, client, logger)
+				Expect(returned).To(BeFalse())
+			})
+		})
+	})
 
-	// 		BeforeEach(func() {
-	// 			startWatcher()
-	// 			normy := createPod()
-	// 			watcher.Add(normy)
-
-	// 			normy.Status.ContainerStatuses = []v1.ContainerStatus{}
-	// 			watcher.Modify(normy)
-	// 		})
-
-	// 		It("should not send any reports", func() {
-	// 			Consistently(reportChan).ShouldNot(Receive())
-	// 		})
-	// 	})
-	// })
-
-	// Context("When pod is stopped", func() {
-
-	// 	BeforeEach(func() {
-	// 		startWatcher()
-	// 		event := v1.Event{
-	// 			InvolvedObject: v1.ObjectReference{
-	// 				Namespace: namespace,
-	// 				Name:      "pinky-pod",
-	// 			},
-	// 			Reason: "Killing",
-	// 		}
-	// 		_, clientErr := client.CoreV1().Events(namespace).Create(&event)
-	// 		Expect(clientErr).ToNot(HaveOccurred())
-
-	// 		termy := createPod()
-	// 		watcher.Add(termy)
-	// 		termy.Status.ContainerStatuses = []v1.ContainerStatus{
-	// 			{
-	// 				State: v1.ContainerState{
-	// 					Terminated: &v1.ContainerStateTerminated{
-	// 						ExitCode: 1,
-	// 					},
-	// 				},
-	// 			},
-	// 		}
-	// 		watcher.Modify(termy)
-	// 	})
-
-	// 	It("should not emit a crashed event", func() {
-	// 		Consistently(reportChan).ShouldNot(Receive())
-	// 	})
-	// })
-
-	// Context("When getting events fails", func() {
-	// 	BeforeEach(func() {
-	// 		reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-	// 			return true, nil, errors.New("boom")
-	// 		}
-	// 		client.PrependReactor("list", "events", reaction)
-	// 		startWatcher()
-
-	// 		termy := createPod()
-	// 		watcher.Add(termy)
-	// 		termy.Status.ContainerStatuses = []v1.ContainerStatus{
-	// 			{
-	// 				State: v1.ContainerState{
-	// 					Terminated: &v1.ContainerStateTerminated{
-	// 						ExitCode: 1,
-	// 					},
-	// 				},
-	// 			},
-	// 		}
-	// 		watcher.Modify(termy)
-	// 	})
-
-	// 	It("should not emit a crashed event", func() {
-	// 		Consistently(reportChan).ShouldNot(Receive())
-	// 	})
-
-	// 	It("should provide a helpful log message", func() {
-	// 		Consistently(reportChan).ShouldNot(Receive())
-
-	// 		logs := logger.Logs()
-	// 		Expect(logs).To(HaveLen(1))
-	// 		log := logs[0]
-	// 		Expect(log.Message).To(Equal("crash-event-logger-test.failed-to-get-k8s-events"))
-	// 		Expect(log.Data).To(HaveKeyWithValue("guid", "test-pod-anno"))
-	// 	})
-
-	// })
 })
+
+func newTerminatedPod() *v1.Pod {
+	return newPod(v1.ContainerStatus{
+		RestartCount: 8,
+		State: v1.ContainerState{
+			Terminated: &v1.ContainerStateTerminated{
+				Reason:    "better luck next time",
+				StartedAt: crashTime,
+				ExitCode:  1,
+			},
+		},
+	})
+}
+
+func newCrashedPod() *v1.Pod {
+	return newPod(v1.ContainerStatus{
+		RestartCount: 3,
+		State: v1.ContainerState{
+			Waiting: &v1.ContainerStateWaiting{
+				Reason: event.CrashLoopBackOff,
+			},
+		},
+		LastTerminationState: v1.ContainerState{
+			Terminated: &v1.ContainerStateTerminated{
+				ExitCode:  1,
+				Reason:    "better luck next time",
+				StartedAt: crashTime,
+			},
+		},
+	})
+}
+
+func newPod(status v1.ContainerStatus) *v1.Pod {
+	name := "test-pod"
+	return &v1.Pod{
+		ObjectMeta: meta.ObjectMeta{
+			Name: fmt.Sprintf("%s-%d", name, 0),
+			Annotations: map[string]string{
+				cf.ProcessGUID: fmt.Sprintf("%s-anno", name),
+			},
+			OwnerReferences: []meta.OwnerReference{
+				{
+					Kind: "StatefulSet",
+					Name: "mr-stateful",
+				},
+			},
+		},
+		Status: v1.PodStatus{
+			ContainerStatuses: []v1.ContainerStatus{status},
+		},
+	}
+}

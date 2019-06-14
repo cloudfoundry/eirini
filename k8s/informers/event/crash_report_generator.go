@@ -6,6 +6,7 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
