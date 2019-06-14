@@ -295,7 +295,7 @@ func launchEventReporter(clientset kubernetes.Interface, uri, ca, cert, key, nam
 
 	crashLogger := lager.NewLogger("instance-crash-informer")
 	crashLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, work, make(chan struct{}), crashLogger)
+	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, work, make(chan struct{}), crashLogger, k8sevent.DefaultCrashReportGenerator{})
 
 	go crashInformer.Start()
 	go reporter.Run()
