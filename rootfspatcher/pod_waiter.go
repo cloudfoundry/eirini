@@ -30,12 +30,12 @@ func (p PodWaiter) Wait() error {
 	stop := make(chan interface{}, 1)
 	defer close(stop)
 
-	go p.poll(ready, stop)
-
 	t := time.NewTimer(p.Timeout)
 	if p.Timeout < 0 {
 		return errors.New("provided timeout is not valid")
 	}
+
+	go p.poll(ready, stop)
 	select {
 	case <-ready:
 		stop <- nil

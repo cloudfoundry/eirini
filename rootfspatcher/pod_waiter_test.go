@@ -36,9 +36,6 @@ var _ = Describe("Waiter", func() {
 
 	Context("When all pods are running", func() {
 		It("should finish", func() {
-			channel := make(chan error, 1)
-			defer close(channel)
-
 			fakePodLister.ListReturns(createPodReady(), nil)
 			err := podWaiter.Wait()
 
@@ -49,9 +46,6 @@ var _ = Describe("Waiter", func() {
 
 	Context("When pods are not coming up", func() {
 		It("should time out", func() {
-			channel := make(chan error, 1)
-			defer close(channel)
-
 			fakePodLister.ListReturns(createPodUnready(), nil)
 
 			Expect(podWaiter.Wait()).To(MatchError("timed out after 1s"))
