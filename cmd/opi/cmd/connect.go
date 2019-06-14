@@ -279,7 +279,7 @@ func launchMetricsEmitter(clientset kubernetes.Interface, metricsClient metricsc
 }
 
 func launchEventReporter(clientset kubernetes.Interface, uri, ca, cert, key, namespace string) {
-	work := make(chan events.CrashReport, 20)
+	work := make(chan events.CrashReport, 1)
 	tlsConf, err := cc_client.NewTLSConfig(cert, key, ca)
 	cmdcommons.ExitWithError(err)
 
