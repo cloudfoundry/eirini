@@ -10,10 +10,10 @@ import (
 )
 
 type FakeConverter struct {
-	ConvertStub        func(request cf.DesireLRPRequest) (opi.LRP, error)
+	ConvertStub        func(cf.DesireLRPRequest) (opi.LRP, error)
 	convertMutex       sync.RWMutex
 	convertArgsForCall []struct {
-		request cf.DesireLRPRequest
+		arg1 cf.DesireLRPRequest
 	}
 	convertReturns struct {
 		result1 opi.LRP
@@ -27,21 +27,22 @@ type FakeConverter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeConverter) Convert(request cf.DesireLRPRequest) (opi.LRP, error) {
+func (fake *FakeConverter) Convert(arg1 cf.DesireLRPRequest) (opi.LRP, error) {
 	fake.convertMutex.Lock()
 	ret, specificReturn := fake.convertReturnsOnCall[len(fake.convertArgsForCall)]
 	fake.convertArgsForCall = append(fake.convertArgsForCall, struct {
-		request cf.DesireLRPRequest
-	}{request})
-	fake.recordInvocation("Convert", []interface{}{request})
+		arg1 cf.DesireLRPRequest
+	}{arg1})
+	fake.recordInvocation("Convert", []interface{}{arg1})
 	fake.convertMutex.Unlock()
 	if fake.ConvertStub != nil {
-		return fake.ConvertStub(request)
+		return fake.ConvertStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.convertReturns.result1, fake.convertReturns.result2
+	fakeReturns := fake.convertReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeConverter) ConvertCallCount() int {
@@ -50,13 +51,22 @@ func (fake *FakeConverter) ConvertCallCount() int {
 	return len(fake.convertArgsForCall)
 }
 
+func (fake *FakeConverter) ConvertCalls(stub func(cf.DesireLRPRequest) (opi.LRP, error)) {
+	fake.convertMutex.Lock()
+	defer fake.convertMutex.Unlock()
+	fake.ConvertStub = stub
+}
+
 func (fake *FakeConverter) ConvertArgsForCall(i int) cf.DesireLRPRequest {
 	fake.convertMutex.RLock()
 	defer fake.convertMutex.RUnlock()
-	return fake.convertArgsForCall[i].request
+	argsForCall := fake.convertArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeConverter) ConvertReturns(result1 opi.LRP, result2 error) {
+	fake.convertMutex.Lock()
+	defer fake.convertMutex.Unlock()
 	fake.ConvertStub = nil
 	fake.convertReturns = struct {
 		result1 opi.LRP
@@ -65,6 +75,8 @@ func (fake *FakeConverter) ConvertReturns(result1 opi.LRP, result2 error) {
 }
 
 func (fake *FakeConverter) ConvertReturnsOnCall(i int, result1 opi.LRP, result2 error) {
+	fake.convertMutex.Lock()
+	defer fake.convertMutex.Unlock()
 	fake.ConvertStub = nil
 	if fake.convertReturnsOnCall == nil {
 		fake.convertReturnsOnCall = make(map[int]struct {

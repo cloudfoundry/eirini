@@ -10,8 +10,9 @@ import (
 type FakeCollector struct {
 	CollectStub        func() ([]route.Message, error)
 	collectMutex       sync.RWMutex
-	collectArgsForCall []struct{}
-	collectReturns     struct {
+	collectArgsForCall []struct {
+	}
+	collectReturns struct {
 		result1 []route.Message
 		result2 error
 	}
@@ -26,7 +27,8 @@ type FakeCollector struct {
 func (fake *FakeCollector) Collect() ([]route.Message, error) {
 	fake.collectMutex.Lock()
 	ret, specificReturn := fake.collectReturnsOnCall[len(fake.collectArgsForCall)]
-	fake.collectArgsForCall = append(fake.collectArgsForCall, struct{}{})
+	fake.collectArgsForCall = append(fake.collectArgsForCall, struct {
+	}{})
 	fake.recordInvocation("Collect", []interface{}{})
 	fake.collectMutex.Unlock()
 	if fake.CollectStub != nil {
@@ -35,7 +37,8 @@ func (fake *FakeCollector) Collect() ([]route.Message, error) {
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.collectReturns.result1, fake.collectReturns.result2
+	fakeReturns := fake.collectReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeCollector) CollectCallCount() int {
@@ -44,7 +47,15 @@ func (fake *FakeCollector) CollectCallCount() int {
 	return len(fake.collectArgsForCall)
 }
 
+func (fake *FakeCollector) CollectCalls(stub func() ([]route.Message, error)) {
+	fake.collectMutex.Lock()
+	defer fake.collectMutex.Unlock()
+	fake.CollectStub = stub
+}
+
 func (fake *FakeCollector) CollectReturns(result1 []route.Message, result2 error) {
+	fake.collectMutex.Lock()
+	defer fake.collectMutex.Unlock()
 	fake.CollectStub = nil
 	fake.collectReturns = struct {
 		result1 []route.Message
@@ -53,6 +64,8 @@ func (fake *FakeCollector) CollectReturns(result1 []route.Message, result2 error
 }
 
 func (fake *FakeCollector) CollectReturnsOnCall(i int, result1 []route.Message, result2 error) {
+	fake.collectMutex.Lock()
+	defer fake.collectMutex.Unlock()
 	fake.CollectStub = nil
 	if fake.collectReturnsOnCall == nil {
 		fake.collectReturnsOnCall = make(map[int]struct {

@@ -10,8 +10,9 @@ import (
 type FakePatcher struct {
 	PatchStub        func() error
 	patchMutex       sync.RWMutex
-	patchArgsForCall []struct{}
-	patchReturns     struct {
+	patchArgsForCall []struct {
+	}
+	patchReturns struct {
 		result1 error
 	}
 	patchReturnsOnCall map[int]struct {
@@ -24,7 +25,8 @@ type FakePatcher struct {
 func (fake *FakePatcher) Patch() error {
 	fake.patchMutex.Lock()
 	ret, specificReturn := fake.patchReturnsOnCall[len(fake.patchArgsForCall)]
-	fake.patchArgsForCall = append(fake.patchArgsForCall, struct{}{})
+	fake.patchArgsForCall = append(fake.patchArgsForCall, struct {
+	}{})
 	fake.recordInvocation("Patch", []interface{}{})
 	fake.patchMutex.Unlock()
 	if fake.PatchStub != nil {
@@ -33,7 +35,8 @@ func (fake *FakePatcher) Patch() error {
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.patchReturns.result1
+	fakeReturns := fake.patchReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakePatcher) PatchCallCount() int {
@@ -42,7 +45,15 @@ func (fake *FakePatcher) PatchCallCount() int {
 	return len(fake.patchArgsForCall)
 }
 
+func (fake *FakePatcher) PatchCalls(stub func() error) {
+	fake.patchMutex.Lock()
+	defer fake.patchMutex.Unlock()
+	fake.PatchStub = stub
+}
+
 func (fake *FakePatcher) PatchReturns(result1 error) {
+	fake.patchMutex.Lock()
+	defer fake.patchMutex.Unlock()
 	fake.PatchStub = nil
 	fake.patchReturns = struct {
 		result1 error
@@ -50,6 +61,8 @@ func (fake *FakePatcher) PatchReturns(result1 error) {
 }
 
 func (fake *FakePatcher) PatchReturnsOnCall(i int, result1 error) {
+	fake.patchMutex.Lock()
+	defer fake.patchMutex.Unlock()
 	fake.PatchStub = nil
 	if fake.patchReturnsOnCall == nil {
 		fake.patchReturnsOnCall = make(map[int]struct {

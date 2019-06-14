@@ -8,24 +8,24 @@ import (
 )
 
 type FakeTaskScheduler struct {
-	ScheduleStub        func(task util.Task)
+	ScheduleStub        func(util.Task)
 	scheduleMutex       sync.RWMutex
 	scheduleArgsForCall []struct {
-		task util.Task
+		arg1 util.Task
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskScheduler) Schedule(task util.Task) {
+func (fake *FakeTaskScheduler) Schedule(arg1 util.Task) {
 	fake.scheduleMutex.Lock()
 	fake.scheduleArgsForCall = append(fake.scheduleArgsForCall, struct {
-		task util.Task
-	}{task})
-	fake.recordInvocation("Schedule", []interface{}{task})
+		arg1 util.Task
+	}{arg1})
+	fake.recordInvocation("Schedule", []interface{}{arg1})
 	fake.scheduleMutex.Unlock()
 	if fake.ScheduleStub != nil {
-		fake.ScheduleStub(task)
+		fake.ScheduleStub(arg1)
 	}
 }
 
@@ -35,10 +35,17 @@ func (fake *FakeTaskScheduler) ScheduleCallCount() int {
 	return len(fake.scheduleArgsForCall)
 }
 
+func (fake *FakeTaskScheduler) ScheduleCalls(stub func(util.Task)) {
+	fake.scheduleMutex.Lock()
+	defer fake.scheduleMutex.Unlock()
+	fake.ScheduleStub = stub
+}
+
 func (fake *FakeTaskScheduler) ScheduleArgsForCall(i int) util.Task {
 	fake.scheduleMutex.RLock()
 	defer fake.scheduleMutex.RUnlock()
-	return fake.scheduleArgsForCall[i].task
+	argsForCall := fake.scheduleArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeTaskScheduler) Invocations() map[string][][]interface{} {

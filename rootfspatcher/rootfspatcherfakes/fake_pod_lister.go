@@ -5,43 +5,44 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/rootfspatcher"
-	apicore "k8s.io/api/core/v1"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
+	v1a "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type FakePodLister struct {
-	ListStub        func(opts meta.ListOptions) (*apicore.PodList, error)
+	ListStub        func(v1a.ListOptions) (*v1.PodList, error)
 	listMutex       sync.RWMutex
 	listArgsForCall []struct {
-		opts meta.ListOptions
+		arg1 v1a.ListOptions
 	}
 	listReturns struct {
-		result1 *apicore.PodList
+		result1 *v1.PodList
 		result2 error
 	}
 	listReturnsOnCall map[int]struct {
-		result1 *apicore.PodList
+		result1 *v1.PodList
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePodLister) List(opts meta.ListOptions) (*apicore.PodList, error) {
+func (fake *FakePodLister) List(arg1 v1a.ListOptions) (*v1.PodList, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		opts meta.ListOptions
-	}{opts})
-	fake.recordInvocation("List", []interface{}{opts})
+		arg1 v1a.ListOptions
+	}{arg1})
+	fake.recordInvocation("List", []interface{}{arg1})
 	fake.listMutex.Unlock()
 	if fake.ListStub != nil {
-		return fake.ListStub(opts)
+		return fake.ListStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.listReturns.result1, fake.listReturns.result2
+	fakeReturns := fake.listReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakePodLister) ListCallCount() int {
@@ -50,30 +51,41 @@ func (fake *FakePodLister) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakePodLister) ListArgsForCall(i int) meta.ListOptions {
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
-	return fake.listArgsForCall[i].opts
+func (fake *FakePodLister) ListCalls(stub func(v1a.ListOptions) (*v1.PodList, error)) {
+	fake.listMutex.Lock()
+	defer fake.listMutex.Unlock()
+	fake.ListStub = stub
 }
 
-func (fake *FakePodLister) ListReturns(result1 *apicore.PodList, result2 error) {
+func (fake *FakePodLister) ListArgsForCall(i int) v1a.ListOptions {
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
+	argsForCall := fake.listArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakePodLister) ListReturns(result1 *v1.PodList, result2 error) {
+	fake.listMutex.Lock()
+	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	fake.listReturns = struct {
-		result1 *apicore.PodList
+		result1 *v1.PodList
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakePodLister) ListReturnsOnCall(i int, result1 *apicore.PodList, result2 error) {
+func (fake *FakePodLister) ListReturnsOnCall(i int, result1 *v1.PodList, result2 error) {
+	fake.listMutex.Lock()
+	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	if fake.listReturnsOnCall == nil {
 		fake.listReturnsOnCall = make(map[int]struct {
-			result1 *apicore.PodList
+			result1 *v1.PodList
 			result2 error
 		})
 	}
 	fake.listReturnsOnCall[i] = struct {
-		result1 *apicore.PodList
+		result1 *v1.PodList
 		result2 error
 	}{result1, result2}
 }

@@ -8,10 +8,10 @@ import (
 )
 
 type FakeHasher struct {
-	HashStub        func(s string) (string, error)
+	HashStub        func(string) (string, error)
 	hashMutex       sync.RWMutex
 	hashArgsForCall []struct {
-		s string
+		arg1 string
 	}
 	hashReturns struct {
 		result1 string
@@ -25,21 +25,22 @@ type FakeHasher struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeHasher) Hash(s string) (string, error) {
+func (fake *FakeHasher) Hash(arg1 string) (string, error) {
 	fake.hashMutex.Lock()
 	ret, specificReturn := fake.hashReturnsOnCall[len(fake.hashArgsForCall)]
 	fake.hashArgsForCall = append(fake.hashArgsForCall, struct {
-		s string
-	}{s})
-	fake.recordInvocation("Hash", []interface{}{s})
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("Hash", []interface{}{arg1})
 	fake.hashMutex.Unlock()
 	if fake.HashStub != nil {
-		return fake.HashStub(s)
+		return fake.HashStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.hashReturns.result1, fake.hashReturns.result2
+	fakeReturns := fake.hashReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeHasher) HashCallCount() int {
@@ -48,13 +49,22 @@ func (fake *FakeHasher) HashCallCount() int {
 	return len(fake.hashArgsForCall)
 }
 
+func (fake *FakeHasher) HashCalls(stub func(string) (string, error)) {
+	fake.hashMutex.Lock()
+	defer fake.hashMutex.Unlock()
+	fake.HashStub = stub
+}
+
 func (fake *FakeHasher) HashArgsForCall(i int) string {
 	fake.hashMutex.RLock()
 	defer fake.hashMutex.RUnlock()
-	return fake.hashArgsForCall[i].s
+	argsForCall := fake.hashArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeHasher) HashReturns(result1 string, result2 error) {
+	fake.hashMutex.Lock()
+	defer fake.hashMutex.Unlock()
 	fake.HashStub = nil
 	fake.hashReturns = struct {
 		result1 string
@@ -63,6 +73,8 @@ func (fake *FakeHasher) HashReturns(result1 string, result2 error) {
 }
 
 func (fake *FakeHasher) HashReturnsOnCall(i int, result1 string, result2 error) {
+	fake.hashMutex.Lock()
+	defer fake.hashMutex.Unlock()
 	fake.HashStub = nil
 	if fake.hashReturnsOnCall == nil {
 		fake.hashReturnsOnCall = make(map[int]struct {
