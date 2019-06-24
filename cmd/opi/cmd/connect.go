@@ -261,9 +261,9 @@ func launchMetricsEmitter(clientset kubernetes.Interface, metricsClient metricsc
 	metricsLogger := lager.NewLogger("metrics")
 	metricsLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	collectorScheduler := &util.SimpleLoopScheduler{
-		CancelChan: make(chan struct{}, 1),
-		Logger:     metricsLogger.Session("collector.scheduler"),
+	collectorScheduler := &util.TickerTaskScheduler{
+		Ticker: time.NewTicker(15 * time.Second),
+		Logger: metricsLogger.Session("collector.scheduler"),
 	}
 	collector := k8s.NewMetricsCollector(work, collectorScheduler, podMetricsClient, podClient)
 
