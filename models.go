@@ -30,6 +30,8 @@ const (
 	RecipeOutputLocation   = "/out"
 	RecipePacksBuilderPath = "/packs/builder"
 
+	AppMetricsEmissionIntervalInSecs = 15
+
 	CCUploaderInternalURL = "cc-uploader.service.cf.internal"
 	CCCertsMountPath      = "/etc/config/certs"
 	CCCertsVolumeName     = "cc-certs-volume"
@@ -50,18 +52,19 @@ type Properties struct {
 	ServerKeyPath  string `yaml:"server_key_path"`
 	TLSPort        int    `yaml:"tls_port"`
 
-	KubeNamespace     string `yaml:"kube_namespace"`
-	NatsPassword      string `yaml:"nats_password"`
-	NatsIP            string `yaml:"nats_ip"`
-	NatsPort          int    `yaml:"nats_port"`
-	CcUploaderIP      string `yaml:"cc_uploader_ip"`
-	CcInternalAPI     string `yaml:"cc_internal_api"`
-	CCCertsSecretName string `yaml:"cc_certs_secret_name"`
-	RegistryAddress   string `yaml:"registry_address"`
-	EiriniAddress     string `yaml:"eirini_address"`
-	DownloaderImage   string `yaml:"downloader_image"`
-	UploaderImage     string `yaml:"uploader_image"`
-	ExecutorImage     string `yaml:"executor_image"`
+	KubeNamespace                    string `yaml:"kube_namespace"`
+	NatsPassword                     string `yaml:"nats_password"`
+	NatsIP                           string `yaml:"nats_ip"`
+	NatsPort                         int    `yaml:"nats_port"`
+	CcUploaderIP                     string `yaml:"cc_uploader_ip"`
+	CcInternalAPI                    string `yaml:"cc_internal_api"`
+	CCCertsSecretName                string `yaml:"cc_certs_secret_name"`
+	RegistryAddress                  string `yaml:"registry_address"`
+	EiriniAddress                    string `yaml:"eirini_address"`
+	DownloaderImage                  string `yaml:"downloader_image"`
+	UploaderImage                    string `yaml:"uploader_image"`
+	ExecutorImage                    string `yaml:"executor_image"`
+	AppMetricsEmissionIntervalInSecs int    `yaml:"app_metrics_emission_interval_in_secs"`
 
 	LoggregatorAddress  string `yaml:"loggregator_address"`
 	LoggregatorCertPath string `yaml:"loggergator_cert_path"`

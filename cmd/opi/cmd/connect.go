@@ -94,6 +94,7 @@ func connect(cmd *cobra.Command, args []string) {
 		metricsClient,
 		loggregatorClient,
 		cfg.Properties.KubeNamespace,
+		cfg.Properties.AppMetricsEmissionIntervalInSecs,
 	)
 
 	launchEventReporter(
@@ -253,7 +254,13 @@ func launchRouteEmitter(clientset kubernetes.Interface, workChan chan *route.Mes
 	go uriInformer.Start(workChan)
 }
 
-func launchMetricsEmitter(clientset kubernetes.Interface, metricsClient metricsclientset.Interface, loggregatorClient *loggregator.IngressClient, namespace string) {
+func launchMetricsEmitter(
+	clientset kubernetes.Interface,
+	metricsClient metricsclientset.Interface,
+	loggregatorClient *loggregator.IngressClient,
+	namespace string,
+	metricsEmissionInterval int,
+) {
 	work := make(chan []metrics.Message, 20)
 	podClient := clientset.CoreV1().Pods(namespace)
 
@@ -261,8 +268,12 @@ func launchMetricsEmitter(clientset kubernetes.Interface, metricsClient metricsc
 	metricsLogger := lager.NewLogger("metrics")
 	metricsLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
+	tickerInterval := eirini.AppMetricsEmissionIntervalInSecs
+	if metricsEmissionInterval > 0 {
+		tickerInterval = metricsEmissionInterval
+	}
 	collectorScheduler := &util.TickerTaskScheduler{
-		Ticker: time.NewTicker(15 * time.Second),
+		Ticker: time.NewTicker(time.Duration(tickerInterval) * time.Second),
 		Logger: metricsLogger.Session("collector.scheduler"),
 	}
 	collector := k8s.NewMetricsCollector(work, collectorScheduler, podMetricsClient, podClient)
