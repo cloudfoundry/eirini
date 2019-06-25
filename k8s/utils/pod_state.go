@@ -6,11 +6,18 @@ import (
 )
 
 func GetPodState(pod corev1.Pod) string {
-	if statusNotAvailable(&pod) || pod.Status.Phase == corev1.PodUnknown {
+	if len(pod.Status.ContainerStatuses) == 0 || pod.Status.Phase == corev1.PodUnknown {
 		return opi.UnknownState
 	}
 
 	if podPending(&pod) {
+		if brokenImage(&pod) {
+			return opi.CrashedState
+		}
+		return opi.PendingState
+	}
+
+	if podNotReady(&pod) {
 		return opi.PendingState
 	}
 
@@ -25,13 +32,17 @@ func GetPodState(pod corev1.Pod) string {
 	return opi.UnknownState
 }
 
-func statusNotAvailable(pod *corev1.Pod) bool {
-	return pod.Status.ContainerStatuses == nil || len(pod.Status.ContainerStatuses) == 0
+func brokenImage(pod *corev1.Pod) bool {
+	status := pod.Status.ContainerStatuses[0]
+	return status.State.Waiting.Reason == "ErrImagePull" || status.State.Waiting.Reason == "ImagePullBackOff"
 }
 
 func podPending(pod *corev1.Pod) bool {
+	return pod.Status.Phase == corev1.PodPending
+}
+func podNotReady(pod *corev1.Pod) bool {
 	status := pod.Status.ContainerStatuses[0]
-	return pod.Status.Phase == corev1.PodPending || (status.State.Running != nil && !status.Ready)
+	return (status.State.Running != nil && !status.Ready)
 }
 
 func podCrashed(status corev1.ContainerStatus) bool {

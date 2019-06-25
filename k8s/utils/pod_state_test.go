@@ -34,12 +34,57 @@ var _ = Describe("PodState", func() {
 		It("should return 'PENDING' state", func() {
 			pod := corev1.Pod{
 				Status: corev1.PodStatus{
-					ContainerStatuses: []corev1.ContainerStatus{{}},
-					Phase:             corev1.PodPending,
+					ContainerStatuses: []corev1.ContainerStatus{{
+						State: corev1.ContainerState{
+							Waiting: &corev1.ContainerStateWaiting{
+								Reason: "It is fine",
+							},
+						},
+					}},
+					Phase: corev1.PodPending,
 				},
 			}
 			Expect(GetPodState(pod)).To(Equal(opi.PendingState))
 		})
+
+		Context("and the image cannot be pulled", func() {
+			It("should return 'CRASHED' state", func() {
+				pod := corev1.Pod{
+					Status: corev1.PodStatus{
+						ContainerStatuses: []corev1.ContainerStatus{{
+							State: corev1.ContainerState{
+								Waiting: &corev1.ContainerStateWaiting{
+									Reason: "ErrImagePull",
+								},
+							},
+						},
+						},
+						Phase: corev1.PodPending,
+					},
+				}
+				Expect(GetPodState(pod)).To(Equal(opi.CrashedState))
+			})
+		})
+
+		Context("and kubernetes has backed off from pulling the image", func() {
+			It("should return 'CRASHED' state", func() {
+				pod := corev1.Pod{
+					Status: corev1.PodStatus{
+						ContainerStatuses: []corev1.ContainerStatus{{
+							State: corev1.ContainerState{
+								Waiting: &corev1.ContainerStateWaiting{
+									Reason: "ImagePullBackOff",
+								},
+							},
+						},
+						},
+						Phase: corev1.PodPending,
+					},
+				}
+				Expect(GetPodState(pod)).To(Equal(opi.CrashedState))
+			})
+		})
+
 	})
 
 	When("the pod is Running and not Ready:", func() {
