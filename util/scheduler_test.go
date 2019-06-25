@@ -104,7 +104,6 @@ var _ = Describe("Scheduler", func() {
 		})
 
 		It("should call the provided function until the stop chanel is closed", func() {
-			Eventually(workChan).Should(Receive())
 			Consistently(func() error {
 				Eventually(workChan).Should(Receive())
 				return nil
