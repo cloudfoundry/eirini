@@ -1,4 +1,4 @@
-package main_test
+package waiter_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestBitsWaiter(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "BitsWaiter Suite")
+	RunSpecs(t, "Waiter Suite")
 }

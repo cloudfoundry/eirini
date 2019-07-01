@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/eirini/cmd"
-	"code.cloudfoundry.org/eirini/rootfspatcher"
+	"code.cloudfoundry.org/eirini/waiter"
 	"code.cloudfoundry.org/lager"
 )
 
@@ -22,16 +22,16 @@ func main() {
 	}
 
 	kubeClient := cmd.CreateKubeClient(*kubeConfigPath)
-	podClient := kubeClient.CoreV1().Pods(*namespace)
+	deploymentClient := kubeClient.AppsV1().Deployments(*namespace)
 
 	logger := lager.NewLogger("Bits Waiter")
 	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
 
-	bitsWaiter := rootfspatcher.PodWaiter{
-		Logger:           logger,
-		PodLister:        podClient,
-		Timeout:          *timeout,
-		PodLabelSelector: "name=bits",
+	bitsWaiter := waiter.Deployment{
+		Logger:            logger,
+		Deployments:       deploymentClient,
+		Timeout:           *timeout,
+		ListLabelSelector: "name=bits",
 	}
 
 	err := bitsWaiter.Wait()

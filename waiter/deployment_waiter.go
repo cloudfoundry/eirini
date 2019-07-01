@@ -1,4 +1,4 @@
-package main
+package waiter
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ type DeploymentLister interface {
 	List(metav1.ListOptions) (*appsv1.DeploymentList, error)
 }
 
-type DeploymentWaiter struct {
+type Deployment struct {
 	Deployments       DeploymentLister
 	Timeout           time.Duration
 	Logger            lager.Logger
@@ -23,7 +23,7 @@ type DeploymentWaiter struct {
 	ListLabelSelector string
 }
 
-func (w DeploymentWaiter) Wait() error {
+func (w Deployment) Wait() error {
 	ready := make(chan interface{}, 1)
 	defer close(ready)
 
@@ -45,7 +45,7 @@ func (w DeploymentWaiter) Wait() error {
 	}
 }
 
-func (w DeploymentWaiter) poll(ready chan<- interface{}, stop <-chan interface{}) {
+func (w Deployment) poll(ready chan<- interface{}, stop <-chan interface{}) {
 	for {
 		select {
 		case <-stop:
@@ -60,7 +60,7 @@ func (w DeploymentWaiter) poll(ready chan<- interface{}, stop <-chan interface{}
 	}
 }
 
-func (w DeploymentWaiter) deploymentsUpdated() bool {
+func (w Deployment) deploymentsUpdated() bool {
 	deploymentList, err := w.Deployments.List(metav1.ListOptions{LabelSelector: w.ListLabelSelector})
 	if err != nil {
 		w.Logger.Error("failed to list deployments", err)
@@ -75,7 +75,7 @@ func (w DeploymentWaiter) deploymentsUpdated() bool {
 	return true
 }
 
-func (w DeploymentWaiter) expectedPodLabelsSet(deployment appsv1.Deployment) bool {
+func (w Deployment) expectedPodLabelsSet(deployment appsv1.Deployment) bool {
 	for key, expectedValue := range w.ExpectedPodLabels {
 		actualValue, ok := deployment.Spec.Template.Labels[key]
 		if !ok || expectedValue != actualValue {
