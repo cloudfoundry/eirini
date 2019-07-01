@@ -10,7 +10,6 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/rootfspatcher"
 )
 
 var _ = Describe("RootfsPatcher", func() {
@@ -35,7 +34,7 @@ var _ = Describe("RootfsPatcher", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should update rootfs version label and wait for pods to restart", func() {
+	It("should update rootfs version label", func() {
 		err := desirer.Desire(odinLRP)
 		Expect(err).ToNot(HaveOccurred())
 		err = desirer.Desire(thorLRP)
@@ -54,17 +53,12 @@ var _ = Describe("RootfsPatcher", func() {
 		command := exec.Command(patcherPath,
 			"--kubeconfig", kubeConfigPath,
 			"--namespace", namespace,
-			"--rootfs-version", newVersion,
-			"--timeout=10m")
+			"--rootfs-version", newVersion)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Expect(err).ToNot(HaveOccurred())
-		Eventually(session, "10m").Should(gexec.Exit(0))
+		Eventually(session, "1m").Should(gexec.Exit(0))
 
-		odinPods := listPods(odinLRP.LRPIdentifier)
-		thorPods := listPods(thorLRP.LRPIdentifier)
-		Expect(odinPods[0].Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, newVersion))
-		Expect(odinPods[1].Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, newVersion))
-		Expect(thorPods[0].Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, newVersion))
-		Expect(thorPods[1].Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, newVersion))
+		//TODO check only stateful set
+		Expect(true).To(BeFalse())
 	})
 })

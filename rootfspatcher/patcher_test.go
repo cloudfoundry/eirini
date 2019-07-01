@@ -19,7 +19,7 @@ var _ = Describe("Patcher", func() {
 
 	var (
 		statefulsetUpdaterLister *rootfspatcherfakes.FakeStatefulSetUpdaterLister
-		patcher                  Patcher
+		patcher                  StatefulSetPatcher
 		newVersion               string
 		logger                   *lagertest.TestLogger
 		err                      error
