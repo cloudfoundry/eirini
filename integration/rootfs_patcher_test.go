@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/rootfspatcher"
 )
 
 var _ = Describe("RootfsPatcher", func() {
@@ -58,7 +59,8 @@ var _ = Describe("RootfsPatcher", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(session, "1m").Should(gexec.Exit(0))
 
-		//TODO check only stateful set
-		Expect(true).To(BeFalse())
+		statefulsets := listAllStatefulSets(odinLRP, thorLRP)
+		Expect(statefulsets[0].Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, newVersion))
+		Expect(statefulsets[1].Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, newVersion))
 	})
 })
