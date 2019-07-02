@@ -19,7 +19,6 @@ type Deployment struct {
 	Deployments       DeploymentLister
 	Timeout           time.Duration
 	Logger            lager.Logger
-	ExpectedPodLabels map[string]string
 	ListLabelSelector string
 }
 
@@ -68,21 +67,10 @@ func (w Deployment) deploymentsUpdated() bool {
 	}
 
 	for _, d := range deploymentList.Items {
-		if !podsReady(d) || !w.expectedPodLabelsSet(d) || d.Generation != d.Status.ObservedGeneration {
+		if !podsReady(d) || d.Generation != d.Status.ObservedGeneration {
 			return false
 		}
 	}
-	return true
-}
-
-func (w Deployment) expectedPodLabelsSet(deployment appsv1.Deployment) bool {
-	for key, expectedValue := range w.ExpectedPodLabels {
-		actualValue, ok := deployment.Spec.Template.Labels[key]
-		if !ok || expectedValue != actualValue {
-			return false
-		}
-	}
-
 	return true
 }
 
@@ -90,5 +78,6 @@ func podsReady(d appsv1.Deployment) bool {
 	desiredReplicas := *d.Spec.Replicas
 	return d.Status.ReadyReplicas == desiredReplicas &&
 		d.Status.UpdatedReplicas == desiredReplicas &&
-		d.Status.AvailableReplicas == desiredReplicas
+		d.Status.AvailableReplicas == desiredReplicas &&
+		d.Status.UnavailableReplicas == 0
 }

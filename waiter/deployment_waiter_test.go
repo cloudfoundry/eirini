@@ -35,10 +35,11 @@ var _ = Describe("DeploymentWaiter", func() {
 	It("should wait for all Deployments to be updated and ready", func() {
 		ssList := &appsv1.DeploymentList{
 			Items: []appsv1.Deployment{createDeployment(replicaStatuses{
-				desired:   1,
-				ready:     1,
-				available: 1,
-				updated:   1,
+				desired:     1,
+				ready:       1,
+				updated:     1,
+				available:   1,
+				unavailable: 0,
 			})},
 		}
 		fakeLister.ListReturns(ssList, nil)
@@ -48,19 +49,21 @@ var _ = Describe("DeploymentWaiter", func() {
 
 	It("should wait until Deployments status is tracking the updated pods", func() {
 		outdatedSS := createDeployment(replicaStatuses{
-			desired:   1,
-			ready:     1,
-			available: 1,
-			updated:   1,
+			desired:     1,
+			ready:       1,
+			updated:     1,
+			available:   1,
+			unavailable: 0,
 		})
 		outdatedSS.Generation = 3
 		outdatedSS.Status.ObservedGeneration = 2
 
 		updatedSS := createDeployment(replicaStatuses{
-			desired:   1,
-			ready:     1,
-			available: 1,
-			updated:   1,
+			desired:     1,
+			ready:       1,
+			updated:     1,
+			available:   1,
+			unavailable: 0,
 		})
 		updatedSS.Generation = 3
 		updatedSS.Status.ObservedGeneration = 3
@@ -128,64 +131,27 @@ var _ = Describe("DeploymentWaiter", func() {
 			})
 		})
 
-	})
-
-	When("pods don't match the expected labels", func() {
-		Context("key is missing", func() {
+		When("there remain unavailable replicas", func() {
 			BeforeEach(func() {
-				waiter.ExpectedPodLabels = map[string]string{
-					"foo": "bar",
-					"baz": "wat",
-				}
-
-				deployment := createDeployment(replicaStatuses{
-					desired:   1,
-					ready:     1,
-					available: 1,
-					updated:   1,
-				})
-				deployment.Labels = map[string]string{
-					"foo": "bar",
-				}
-
 				ssList := &appsv1.DeploymentList{
-					Items: []appsv1.Deployment{deployment},
+					Items: []appsv1.Deployment{createDeployment(replicaStatuses{
+						desired:     3,
+						ready:       3,
+						updated:     3,
+						available:   3,
+						unavailable: 1,
+					})},
 				}
 				fakeLister.ListReturns(ssList, nil)
 			})
 
-			It("should time out", func() {
+			It("should return error", func() {
 				Expect(waiter.Wait()).To(MatchError(ContainSubstring("timed out after")))
+
 			})
+
 		})
 
-		Context("value is different", func() {
-			BeforeEach(func() {
-				waiter.ExpectedPodLabels = map[string]string{
-					"foo": "bar",
-					"baz": "bat",
-				}
-
-				deployment := createDeployment(replicaStatuses{
-					desired:   1,
-					ready:     1,
-					available: 1,
-					updated:   1,
-				})
-				deployment.Labels = map[string]string{
-					"foo": "bar",
-				}
-
-				ssList := &appsv1.DeploymentList{
-					Items: []appsv1.Deployment{deployment},
-				}
-				fakeLister.ListReturns(ssList, nil)
-			})
-
-			It("should time out", func() {
-				Expect(waiter.Wait()).To(MatchError(ContainSubstring("timed out after")))
-			})
-		})
 	})
 
 	When("the specified timeout is not valid", func() {
@@ -227,7 +193,7 @@ var _ = Describe("DeploymentWaiter", func() {
 })
 
 type replicaStatuses struct {
-	desired, ready, available, updated int32
+	desired, ready, available, updated, unavailable int32
 }
 
 func createDeployment(replicaStatuses replicaStatuses) appsv1.Deployment {
@@ -236,9 +202,10 @@ func createDeployment(replicaStatuses replicaStatuses) appsv1.Deployment {
 			Replicas: &replicaStatuses.desired,
 		},
 		Status: appsv1.DeploymentStatus{
-			ReadyReplicas:     replicaStatuses.ready,
-			UpdatedReplicas:   replicaStatuses.updated,
-			AvailableReplicas: replicaStatuses.available,
+			ReadyReplicas:       replicaStatuses.ready,
+			UpdatedReplicas:     replicaStatuses.updated,
+			AvailableReplicas:   replicaStatuses.available,
+			UnavailableReplicas: replicaStatuses.unavailable,
 		},
 	}
 }

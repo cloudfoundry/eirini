@@ -34,6 +34,5 @@ func main() {
 		ListLabelSelector: "name=bits",
 	}
 
-	err := bitsWaiter.Wait()
-	cmd.ExitWithError(err)
+	cmd.ExitWithError(bitsWaiter.Wait())
 }
