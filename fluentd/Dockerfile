@@ -1,6 +1,6 @@
 FROM fluent/fluentd-kubernetes-daemonset:v1.4-debian-elasticsearch
 
-RUN gem install grpc
+RUN gem install grpc:1.20.0
 
 COPY ./lib/envelope_pb.rb /usr/local/lib/ruby/site_ruby/
 COPY ./lib/ingress_pb.rb /usr/local/lib/ruby/site_ruby/
