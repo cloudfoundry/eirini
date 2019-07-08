@@ -26,7 +26,8 @@ var _ = Describe("Scheduler", func() {
 			)
 
 			BeforeEach(func() {
-				duration = time.Duration(20) * time.Millisecond
+				duration = time.Duration(2) * time.Millisecond
+				count = 0
 				logger = lagertest.NewTestLogger("scheduler-test")
 				ticker = time.NewTicker(duration)
 			})
@@ -38,10 +39,10 @@ var _ = Describe("Scheduler", func() {
 					return nil
 				}
 				go scheduler.Schedule(task)
-				time.Sleep(50 * time.Millisecond)
+				time.Sleep(5 * time.Millisecond)
 				ticker.Stop()
 
-				Expect(atomic.LoadInt32(&count)).To(Equal(int32(2)))
+				Expect(atomic.LoadInt32(&count)).To(BeNumerically(">=", (int32(2))))
 			})
 
 			Context("when the function returns an error", func() {
@@ -51,7 +52,7 @@ var _ = Describe("Scheduler", func() {
 						return errors.New("task failure")
 					}
 					go scheduler.Schedule(task)
-					time.Sleep(50 * time.Millisecond)
+					time.Sleep(5 * time.Millisecond)
 					ticker.Stop()
 
 					Eventually(func() int {
