@@ -32,6 +32,10 @@ var _ = Describe("Scheduler", func() {
 				ticker = time.NewTicker(duration)
 			})
 
+			AfterEach(func() {
+				ticker.Stop()
+			})
+
 			It("should call the provided function on each tick", func() {
 				scheduler := &TickerTaskScheduler{Ticker: ticker, Logger: logger}
 				task := func() error {
@@ -39,10 +43,8 @@ var _ = Describe("Scheduler", func() {
 					return nil
 				}
 				go scheduler.Schedule(task)
-				time.Sleep(5 * time.Millisecond)
-				ticker.Stop()
 
-				Expect(atomic.LoadInt32(&count)).To(BeNumerically(">=", (int32(2))))
+				Eventually(func() int32 { return atomic.LoadInt32(&count) }).Should(BeNumerically(">=", (int32(2))))
 			})
 
 			Context("when the function returns an error", func() {
@@ -52,8 +54,6 @@ var _ = Describe("Scheduler", func() {
 						return errors.New("task failure")
 					}
 					go scheduler.Schedule(task)
-					time.Sleep(5 * time.Millisecond)
-					ticker.Stop()
 
 					Eventually(func() int {
 						return len(logger.Logs())
