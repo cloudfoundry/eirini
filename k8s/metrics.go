@@ -5,6 +5,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/util"
+	"github.com/pkg/errors"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -46,6 +47,11 @@ func (c *MetricsCollector) Start() {
 
 func (c *MetricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodMetricsList) []metrics.Message {
 	messages := []metrics.Message{}
+	pods, err := c.getPods()
+	if err != nil {
+		return messages
+	}
+
 	for _, metric := range podMetrics.Items {
 		if len(metric.Containers) == 0 {
 			continue
@@ -61,8 +67,8 @@ func (c *MetricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodM
 		res = usage[apiv1.ResourceMemory]
 		memoryValue := res.Value()
 
-		pod, err := c.podClient.Get(metric.Name, metav1.GetOptions{})
-		if err != nil {
+		pod, ok := pods[metric.Name]
+		if !ok {
 			continue
 		}
 
@@ -77,4 +83,17 @@ func (c *MetricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodM
 		})
 	}
 	return messages
+}
+
+func (c *MetricsCollector) getPods() (map[string]apiv1.Pod, error) {
+	podsList, err := c.podClient.List(metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list pods")
+	}
+	podsMap := make(map[string]apiv1.Pod)
+	for _, s := range podsList.Items {
+		podsMap[s.Name] = s
+	}
+
+	return podsMap, nil
 }
