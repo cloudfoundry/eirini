@@ -30,8 +30,9 @@ import (
 )
 
 const (
-	namespace               = "testing"
-	timeout   time.Duration = 60 * time.Second
+	namespace                        = "testing"
+	registrySecretName               = "secret-name"
+	timeout            time.Duration = 60 * time.Second
 )
 
 var _ = Describe("Statefulset", func() {
@@ -73,6 +74,7 @@ var _ = Describe("Statefulset", func() {
 		statefulSetDesirer = &StatefulSetDesirer{
 			Client:                client,
 			Namespace:             namespace,
+			RegistrySecretName:    registrySecretName,
 			RootfsVersion:         rootfsVersion,
 			LivenessProbeCreator:  livenessProbeCreator.Spy,
 			ReadinessProbeCreator: readinessProbeCreator.Spy,
@@ -126,6 +128,13 @@ var _ = Describe("Statefulset", func() {
 			It("should set podManagementPolicy to parallel", func() {
 				statefulSet := getStatefulSetFromK8s(lrp)
 				Expect(string(statefulSet.Spec.PodManagementPolicy)).To(Equal("Parallel"))
+			})
+
+			It("should set podImagePullSecret", func() {
+				statefulSet := getStatefulSetFromK8s(lrp)
+				Expect(statefulSet.Spec.Template.Spec.ImagePullSecrets).To(HaveLen(1))
+				secret := statefulSet.Spec.Template.Spec.ImagePullSecrets[0]
+				Expect(secret.Name).To(Equal("secret-name"))
 			})
 
 			It("should set imagePullPolicy to Always", func() {

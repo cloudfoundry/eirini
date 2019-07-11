@@ -60,6 +60,7 @@ type Properties struct {
 	CcInternalAPI                    string `yaml:"cc_internal_api"`
 	CCCertsSecretName                string `yaml:"cc_certs_secret_name"`
 	RegistryAddress                  string `yaml:"registry_address"`
+	RegistrySecretName               string `yaml:"registry_secret_name"`
 	EiriniAddress                    string `yaml:"eirini_address"`
 	DownloaderImage                  string `yaml:"downloader_image"`
 	UploaderImage                    string `yaml:"uploader_image"`

@@ -28,6 +28,7 @@ const (
 type StatefulSetDesirer struct {
 	Client                kubernetes.Interface
 	Namespace             string
+	RegistrySecretName    string
 	RootfsVersion         string
 	LivenessProbeCreator  ProbeCreator
 	ReadinessProbeCreator ProbeCreator
@@ -37,10 +38,11 @@ type StatefulSetDesirer struct {
 //go:generate counterfeiter . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(client kubernetes.Interface, namespace string, rootfsVersion string) opi.Desirer {
+func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion string) opi.Desirer {
 	return &StatefulSetDesirer{
 		Client:                client,
 		Namespace:             namespace,
+		RegistrySecretName:    registrySecretName,
 		RootfsVersion:         rootfsVersion,
 		LivenessProbeCreator:  CreateLivenessProbe,
 		ReadinessProbeCreator: CreateReadinessProbe,
@@ -314,6 +316,9 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 				},
 				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken: &automountServiceAccountToken,
+					ImagePullSecrets: []corev1.LocalObjectReference{
+						{Name: m.RegistrySecretName},
+					},
 					Containers: []corev1.Container{
 						{
 							Name:            "opi",

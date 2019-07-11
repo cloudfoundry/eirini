@@ -25,6 +25,7 @@ var _ = Describe("RootfsPatcher", func() {
 		desirer = k8s.NewStatefulSetDesirer(
 			clientset,
 			namespace,
+			"registy-credentials",
 			"old_rootfsversion",
 		)
 		odinLRP = createLRP("ödin")
