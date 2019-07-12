@@ -27,7 +27,7 @@ var _ = Describe("Scheduler", func() {
 
 			BeforeEach(func() {
 				duration = time.Duration(2) * time.Millisecond
-				count = 0
+				atomic.StoreInt32(&count, 0)
 				logger = lagertest.NewTestLogger("scheduler-test")
 				ticker = time.NewTicker(duration)
 			})
