@@ -1,4 +1,6 @@
 FROM alpine:latest
+ARG GIT_SHA
+RUN if [ -z "$GIT_SHA" ]; then echo "GIT_SHA not set"; exit 1; else : ; fi
 
 RUN apk add --no-cache grep curl bash
 
@@ -8,3 +10,5 @@ COPY never-tell-me-the-odds.sh /
 RUN chmod +x never-tell-me-the-odds.sh
 
 ENTRYPOINT [ "/never-tell-me-the-odds.sh" ]
+LABEL org.opencontainers.image.revision=$GIT_SHA \
+      org.opencontainers.image.source=https://code.cloudfoundry.org/eirini
