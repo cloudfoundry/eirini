@@ -311,8 +311,9 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
 					Annotations: map[string]string{
-						cf.ProcessGUID: lrp.Metadata[cf.ProcessGUID],
-						cf.VcapAppID:   lrp.Metadata[cf.VcapAppID],
+						cf.ProcessGUID:                 lrp.Metadata[cf.ProcessGUID],
+						cf.VcapAppID:                   lrp.Metadata[cf.VcapAppID],
+						corev1.SeccompPodAnnotationKey: corev1.SeccompProfileRuntimeDefault,
 					},
 				},
 				Spec: corev1.PodSpec{

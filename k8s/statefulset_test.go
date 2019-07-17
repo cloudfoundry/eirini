@@ -125,6 +125,11 @@ var _ = Describe("Statefulset", func() {
 				Expect(statefulSet.Annotations[cf.VcapSpaceName]).To(Equal("space-foo"))
 			})
 
+			It("should set seccomp pod annotation", func() {
+				statefulSet := getStatefulSetFromK8s(lrp)
+				Expect(statefulSet.Spec.Template.Annotations[corev1.SeccompPodAnnotationKey]).To(Equal(corev1.SeccompProfileRuntimeDefault))
+			})
+
 			It("should set podManagementPolicy to parallel", func() {
 				statefulSet := getStatefulSetFromK8s(lrp)
 				Expect(string(statefulSet.Spec.PodManagementPolicy)).To(Equal("Parallel"))
