@@ -137,6 +137,11 @@ var _ = Describe("Statefulset", func() {
 				Expect(secret.Name).To(Equal("secret-name"))
 			})
 
+			It("should deny privilegeEscalation", func() {
+				statefulSet := getStatefulSetFromK8s(lrp)
+				Expect(*statefulSet.Spec.Template.Spec.Containers[0].SecurityContext.AllowPrivilegeEscalation).To(Equal(false))
+			})
+
 			It("should set imagePullPolicy to Always", func() {
 				statefulSet := getStatefulSetFromK8s(lrp)
 				Expect(string(statefulSet.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal("Always"))

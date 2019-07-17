@@ -292,6 +292,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
 	automountServiceAccountToken := false
+	allowPrivilegeEscalation := false
 
 	nameSuffix, err := m.Hasher.Hash(fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version))
 	if err != nil {
@@ -327,6 +328,9 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 							Command:         lrp.Command,
 							Env:             envs,
 							Ports:           ports,
+							SecurityContext: &corev1.SecurityContext{
+								AllowPrivilegeEscalation: &allowPrivilegeEscalation,
+							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
 									corev1.ResourceMemory: memory,
