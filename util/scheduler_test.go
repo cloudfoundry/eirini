@@ -84,7 +84,7 @@ var _ = Describe("Scheduler", func() {
 
 		BeforeEach(func() {
 			task = func() error {
-				time.Sleep(4 * time.Millisecond)
+				time.Sleep(2 * time.Millisecond)
 				workChan <- 42
 				return nil
 			}
