@@ -75,13 +75,6 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 		VolumeSource: v1.VolumeSource{
 			Secret: &v1.SecretVolumeSource{
 				SecretName: d.CertsSecretName,
-				Items: []v1.KeyToPath{
-					{Key: eirini.CCAPICertName, Path: eirini.CCAPICertName},
-					{Key: eirini.CCAPIKeyName, Path: eirini.CCAPIKeyName},
-					{Key: eirini.CCUploaderCertName, Path: eirini.CCUploaderCertName},
-					{Key: eirini.CCUploaderKeyName, Path: eirini.CCUploaderKeyName},
-					{Key: eirini.CCInternalCACertName, Path: eirini.CCInternalCACertName},
-				},
 			},
 		},
 	}
@@ -99,7 +92,7 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	var downloaderVolumeMounts, executorVolumeMounts, uploaderVolumeMounts []v1.VolumeMount
 
 	downloaderVolumeMounts = append(downloaderVolumeMounts, secretsVolumeMount, buildpacksVolumeMount, workspaceVolumeMount)
-	executorVolumeMounts = append(executorVolumeMounts, buildpacksVolumeMount, workspaceVolumeMount, outputVolumeMount)
+	executorVolumeMounts = append(executorVolumeMounts, secretsVolumeMount, buildpacksVolumeMount, workspaceVolumeMount, outputVolumeMount)
 	uploaderVolumeMounts = append(uploaderVolumeMounts, secretsVolumeMount, outputVolumeMount)
 
 	envs := getEnvs(task.Task)

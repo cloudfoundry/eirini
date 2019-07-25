@@ -6,6 +6,7 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -124,13 +125,6 @@ var _ = Describe("Desiretask", func() {
 
 		var stagingTask *opi.StagingTask
 
-		toKeyPath := func(key string) v1.KeyToPath {
-			return v1.KeyToPath{
-				Key:  key,
-				Path: key,
-			}
-		}
-
 		assertHostAliases := func(job *batch.Job) {
 			Expect(job.Spec.Template.Spec.HostAliases).To(HaveLen(1))
 			hostAlias := job.Spec.Template.Spec.HostAliases[0]
@@ -141,79 +135,67 @@ var _ = Describe("Desiretask", func() {
 
 		assertVolumes := func(job *batch.Job) {
 			Expect(job.Spec.Template.Spec.Volumes).To(HaveLen(4))
-
-			// secrets mount
-			volume := job.Spec.Template.Spec.Volumes[0]
-			Expect(volume.Name).To(Equal("cc-certs-volume"))
-			Expect(volume.VolumeSource.Secret.SecretName).To(Equal("secret-certs"))
-			Expect(volume.VolumeSource.Secret.Items).To(ConsistOf(
-				toKeyPath(eirini.CCAPICertName),
-				toKeyPath(eirini.CCAPIKeyName),
-				toKeyPath(eirini.CCUploaderCertName),
-				toKeyPath(eirini.CCUploaderKeyName),
-				toKeyPath(eirini.CCInternalCACertName),
+			Expect(job.Spec.Template.Spec.Volumes).To(ConsistOf(
+				MatchFields(IgnoreExtras, Fields{
+					"Name": Equal(eirini.CCCertsVolumeName),
+					"VolumeSource": Equal(v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{SecretName: "secret-certs"},
+					}),
+				}),
+				MatchFields(IgnoreExtras, Fields{
+					"Name": Equal(eirini.RecipeOutputName),
+				}),
+				MatchFields(IgnoreExtras, Fields{
+					"Name": Equal(eirini.RecipeBuildPacksName),
+				}),
+				MatchFields(IgnoreExtras, Fields{
+					"Name": Equal(eirini.RecipeWorkspaceName),
+				}),
 			))
-
-			// buildpacks mount
-			volume = job.Spec.Template.Spec.Volumes[1]
-			Expect(volume.Name).To(Equal(eirini.RecipeOutputName))
-
-			// workspace mount
-			volume = job.Spec.Template.Spec.Volumes[2]
-			Expect(volume.Name).To(Equal(eirini.RecipeBuildPacksName))
-
-			// output mount
-			volume = job.Spec.Template.Spec.Volumes[3]
-			Expect(volume.Name).To(Equal(eirini.RecipeWorkspaceName))
 		}
 
 		assertContainerVolumeMount := func(job *batch.Job) {
-			Expect(job.Spec.Template.Spec.InitContainers[0].VolumeMounts).To(HaveLen(3))
+			buildpackVolumeMatcher := MatchFields(IgnoreExtras, Fields{
+				"Name":      Equal(eirini.RecipeBuildPacksName),
+				"ReadOnly":  Equal(false),
+				"MountPath": Equal(eirini.RecipeBuildPacksDir),
+			})
+			certsVolumeMatcher := MatchFields(IgnoreExtras, Fields{
+				"Name":      Equal(eirini.CCCertsVolumeName),
+				"ReadOnly":  Equal(true),
+				"MountPath": Equal(eirini.CCCertsMountPath),
+			})
+			workspaceVolumeMatcher := MatchFields(IgnoreExtras, Fields{
+				"Name":      Equal(eirini.RecipeWorkspaceName),
+				"ReadOnly":  Equal(false),
+				"MountPath": Equal(eirini.RecipeWorkspaceDir),
+			})
+			outputVolumeMatcher := MatchFields(IgnoreExtras, Fields{
+				"Name":      Equal(eirini.RecipeOutputName),
+				"ReadOnly":  Equal(false),
+				"MountPath": Equal(eirini.RecipeOutputLocation),
+			})
 
-			// checking downloader volumes
-			secretMount := job.Spec.Template.Spec.InitContainers[0].VolumeMounts[0]
-			Expect(secretMount.Name).To(Equal("cc-certs-volume"))
-			Expect(secretMount.ReadOnly).To(Equal(true))
-			Expect(secretMount.MountPath).To(Equal("/etc/config/certs"))
+			downloaderVolumeMounts := job.Spec.Template.Spec.InitContainers[0].VolumeMounts
+			Expect(downloaderVolumeMounts).To(ConsistOf(
+				buildpackVolumeMatcher,
+				certsVolumeMatcher,
+				workspaceVolumeMatcher,
+			))
 
-			buildpackMount := job.Spec.Template.Spec.InitContainers[0].VolumeMounts[1]
-			Expect(buildpackMount.Name).To(Equal(eirini.RecipeBuildPacksName))
-			Expect(buildpackMount.ReadOnly).To(Equal(false))
-			Expect(buildpackMount.MountPath).To(Equal(eirini.RecipeBuildPacksDir))
+			executorVolumeMounts := job.Spec.Template.Spec.InitContainers[1].VolumeMounts
+			Expect(executorVolumeMounts).To(ConsistOf(
+				buildpackVolumeMatcher,
+				certsVolumeMatcher,
+				workspaceVolumeMatcher,
+				outputVolumeMatcher,
+			))
 
-			workspaceMount := job.Spec.Template.Spec.InitContainers[0].VolumeMounts[2]
-			Expect(workspaceMount.Name).To(Equal(eirini.RecipeWorkspaceName))
-			Expect(workspaceMount.ReadOnly).To(Equal(false))
-			Expect(workspaceMount.MountPath).To(Equal(eirini.RecipeWorkspaceDir))
-
-			// checking executor volumes
-			Expect(job.Spec.Template.Spec.InitContainers[1].VolumeMounts).To(HaveLen(3))
-			buildpackMount = job.Spec.Template.Spec.InitContainers[1].VolumeMounts[0]
-			Expect(buildpackMount.Name).To(Equal(eirini.RecipeBuildPacksName))
-			Expect(buildpackMount.ReadOnly).To(Equal(false))
-			Expect(buildpackMount.MountPath).To(Equal(eirini.RecipeBuildPacksDir))
-
-			workspaceMount = job.Spec.Template.Spec.InitContainers[1].VolumeMounts[1]
-			Expect(workspaceMount.Name).To(Equal(eirini.RecipeWorkspaceName))
-			Expect(workspaceMount.ReadOnly).To(Equal(false))
-			Expect(workspaceMount.MountPath).To(Equal(eirini.RecipeWorkspaceDir))
-
-			outputMount := job.Spec.Template.Spec.InitContainers[1].VolumeMounts[2]
-			Expect(outputMount.Name).To(Equal(eirini.RecipeOutputName))
-			Expect(outputMount.ReadOnly).To(Equal(false))
-			Expect(outputMount.MountPath).To(Equal(eirini.RecipeOutputLocation))
-
-			// checking uploader volumes
-			Expect(job.Spec.Template.Spec.Containers[0].VolumeMounts).To(HaveLen(2))
-			secretMount = job.Spec.Template.Spec.Containers[0].VolumeMounts[0]
-			Expect(secretMount.Name).To(Equal("cc-certs-volume"))
-			Expect(secretMount.ReadOnly).To(Equal(true))
-			Expect(secretMount.MountPath).To(Equal("/etc/config/certs"))
-
-			outputMount = job.Spec.Template.Spec.Containers[0].VolumeMounts[1]
-			Expect(outputMount.Name).To(Equal(eirini.RecipeOutputName))
-			Expect(outputMount.ReadOnly).To(Equal(false))
-			Expect(outputMount.MountPath).To(Equal(eirini.RecipeOutputLocation))
+			uploaderVolumeMounts := job.Spec.Template.Spec.Containers[0].VolumeMounts
+			Expect(uploaderVolumeMounts).To(ConsistOf(
+				certsVolumeMatcher,
+				outputVolumeMatcher,
+			))
 		}
 
 		assertStagingSpec := func(job *batch.Job) {
