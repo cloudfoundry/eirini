@@ -8,7 +8,7 @@ export GO111MODULE=on
 
 main(){
   pushd "$BASEDIR"/integration > /dev/null || exit 1
-    ginkgo -mod=vendor -race -p -r -keepGoing -tags=integration -randomizeAllSpecs
+    ginkgo -mod=vendor -race -p -r -keepGoing -tags=integration -randomizeAllSpecs -randomizeSuites
   popd > /dev/null || exit 1
 }
 
