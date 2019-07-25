@@ -19,12 +19,12 @@ Pull requests are the best way to propose changes to the codebase. When a Pull r
 1. Sign and submit the appropriate [individual](https://www.cloudfoundry.org/wp-content/uploads/2017/01/CFF_Individual_CLA.pdf) or [corporate](https://www.cloudfoundry.org/wp-content/uploads/2017/01/CFF_Corporate_CLA.pdf) CLA
 1. Fork this project into your GitHub organisation or username
 1. Clone your fork on your local machine
-1. Make sure you are up-to-date with the upstream `develop` branch
+1. Make sure you are up-to-date with the upstream `master` branch
 1. Create your feature branch
 1. Commit your changes on your feature branch
 1. [Run unit tests and static checks](#unit-tests--static-checks)
 1. Push your feature branch to your fork
-1. Issue a Pull request against **develop**
+1. Issue a Pull request
 
 # Unit tests & static checks
 
