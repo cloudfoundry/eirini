@@ -56,6 +56,7 @@ var _ = Describe("URIChangeInformer", func() {
 				},
 				Labels: map[string]string{
 					"name": "the-app-name",
+					"guid": name + "-guid",
 				},
 			},
 			Spec: v1.PodSpec{
@@ -183,7 +184,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should register the first new route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-0"),
+				"Name": Equal("mr-stateful-0-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   ConsistOf("mr-stateful.50.60.70.80.nip.io"),
 					"UnregisteredRoutes": BeEmpty(),
@@ -197,7 +198,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should register the second new route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-0"),
+				"Name": Equal("mr-stateful-0-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   ConsistOf("mr-fantastic.50.60.70.80.nip.io"),
 					"UnregisteredRoutes": BeEmpty(),
@@ -210,7 +211,7 @@ var _ = Describe("URIChangeInformer", func() {
 		})
 		It("should register the third new route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-0"),
+				"Name": Equal("mr-stateful-0-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
 					"UnregisteredRoutes": BeEmpty(),
@@ -224,7 +225,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should register the first new route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-1"),
+				"Name": Equal("mr-stateful-1-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   ConsistOf("mr-stateful.50.60.70.80.nip.io"),
 					"UnregisteredRoutes": BeEmpty(),
@@ -238,7 +239,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should register the second new route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-1"),
+				"Name": Equal("mr-stateful-1-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   ConsistOf("mr-fantastic.50.60.70.80.nip.io"),
 					"UnregisteredRoutes": BeEmpty(),
@@ -252,7 +253,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should register the third new route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-1"),
+				"Name": Equal("mr-stateful-1-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
 					"UnregisteredRoutes": BeEmpty(),
@@ -287,7 +288,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 			It("should not send routes for the pod", func() {
 				Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Name": Equal("mr-stateful-0"),
+					"Name": Equal("mr-stateful-0-guid"),
 				}))))
 			})
 
@@ -300,13 +301,13 @@ var _ = Describe("URIChangeInformer", func() {
 
 			It("should not send routes for the first pod", func() {
 				Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Name": Equal("mr-stateful-0"),
+					"Name": Equal("mr-stateful-0-guid"),
 				}))))
 			})
 
 			It("should register routes for the second pod", func() {
 				Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Name": Equal("mr-stateful-1"),
+					"Name": Equal("mr-stateful-1-guid"),
 					"Routes": MatchFields(IgnoreExtras, Fields{
 						"RegisteredRoutes": Not(BeEmpty()),
 					}),
@@ -339,7 +340,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should unregister the deleted route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-0"),
+				"Name": Equal("mr-stateful-0-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   BeEmpty(),
 					"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
@@ -353,7 +354,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should unregister the deleted route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-1"),
+				"Name": Equal("mr-stateful-1-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   BeEmpty(),
 					"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
@@ -382,7 +383,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should unregister the first changed route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-0"),
+				"Name": Equal("mr-stateful-0-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   ConsistOf("mr-stateful.50.60.70.80.nip.io"),
 					"UnregisteredRoutes": BeEmpty(),
@@ -396,7 +397,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should unregister the firt changed route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-0"),
+				"Name": Equal("mr-stateful-0-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   BeEmpty(),
 					"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
@@ -410,7 +411,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should unregister the first changed route for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-1"),
+				"Name": Equal("mr-stateful-1-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   ConsistOf("mr-stateful.50.60.70.80.nip.io"),
 					"UnregisteredRoutes": BeEmpty(),
@@ -424,7 +425,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should unregister the first changed route for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-1"),
+				"Name": Equal("mr-stateful-1-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   BeEmpty(),
 					"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
@@ -454,7 +455,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should register both routes in a single message", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-0"),
+				"Name": Equal("mr-stateful-0-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   ConsistOf("mr-stateful.50.60.70.80.nip.io", "mr-boombastic.50.60.70.80.nip.io"),
 					"UnregisteredRoutes": BeEmpty(),
@@ -468,7 +469,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should register both routes in a single message", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-1"),
+				"Name": Equal("mr-stateful-1-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   ConsistOf("mr-stateful.50.60.70.80.nip.io", "mr-boombastic.50.60.70.80.nip.io"),
 					"UnregisteredRoutes": BeEmpty(),
@@ -524,7 +525,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should still register the new route", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-1"),
+				"Name": Equal("mr-stateful-1-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   ConsistOf("mr-stateful.50.60.70.80.nip.io"),
 					"UnregisteredRoutes": BeEmpty(),
@@ -608,14 +609,14 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should not send routes for the pod", func() {
 			Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-				"Name":             Equal("mr-stateful-0"),
+				"Name":             Equal("mr-stateful-0-guid"),
 				"RegisteredRoutes": Not(BeEmpty()),
 			}))))
 		})
 
 		It("should unregister the deleted route for the pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-0"),
+				"Name": Equal("mr-stateful-0-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   BeEmpty(),
 					"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
@@ -629,7 +630,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should register the new route for the other pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-1"),
+				"Name": Equal("mr-stateful-1-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   ConsistOf("mr-stateful.50.60.70.80.nip.io"),
 					"UnregisteredRoutes": BeEmpty(),
@@ -643,7 +644,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should unregister the deleted route for the other pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-1"),
+				"Name": Equal("mr-stateful-1-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   BeEmpty(),
 					"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
@@ -665,7 +666,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should unregister all routes for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-0"),
+				"Name": Equal("mr-stateful-0-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   BeEmpty(),
 					"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
@@ -679,7 +680,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should unregister all routes for the first pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-0"),
+				"Name": Equal("mr-stateful-0-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   BeEmpty(),
 					"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
@@ -693,7 +694,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should unregister all routes for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-1"),
+				"Name": Equal("mr-stateful-1-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   BeEmpty(),
 					"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
@@ -707,7 +708,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		It("should unregister all routes for the second pod", func() {
 			Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-				"Name": Equal("mr-stateful-1"),
+				"Name": Equal("mr-stateful-1-guid"),
 				"Routes": MatchAllFields(Fields{
 					"RegisteredRoutes":   BeEmpty(),
 					"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
@@ -726,7 +727,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 			It("should unregister all routes for the first pod", func() {
 				Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-					"Name": Equal("mr-stateful-0"),
+					"Name": Equal("mr-stateful-0-guid"),
 					"Routes": MatchAllFields(Fields{
 						"RegisteredRoutes":   BeEmpty(),
 						"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
@@ -740,7 +741,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 			It("should unregister all routes for the first pod", func() {
 				Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
-					"Name": Equal("mr-stateful-0"),
+					"Name": Equal("mr-stateful-0-guid"),
 					"Routes": MatchAllFields(Fields{
 						"RegisteredRoutes":   BeEmpty(),
 						"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io"),

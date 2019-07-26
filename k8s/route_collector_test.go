@@ -41,6 +41,9 @@ var _ = Describe("RouteCollector", func() {
 		return &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
+				Labels: map[string]string{
+					"guid": name + "-guid",
+				},
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: "apps/v1",
 					Kind:       "StatefulSet",
@@ -119,7 +122,7 @@ var _ = Describe("RouteCollector", func() {
 			Expect(routeMessages).To(ConsistOf([]route.Message{
 				{
 					InstanceID: "pod-11",
-					Name:       "pod-11",
+					Name:       "pod-11-guid",
 					Address:    "10.0.0.1",
 					Port:       80,
 					TLSPort:    0,
@@ -129,7 +132,7 @@ var _ = Describe("RouteCollector", func() {
 				},
 				{
 					InstanceID: "pod-21",
-					Name:       "pod-21",
+					Name:       "pod-21-guid",
 					Address:    "10.0.0.2",
 					Port:       9000,
 					TLSPort:    0,
@@ -139,7 +142,7 @@ var _ = Describe("RouteCollector", func() {
 				},
 				{
 					InstanceID: "pod-22",
-					Name:       "pod-22",
+					Name:       "pod-22-guid",
 					Address:    "10.0.0.3",
 					Port:       9000,
 					TLSPort:    0,
@@ -163,7 +166,7 @@ var _ = Describe("RouteCollector", func() {
 			It("should return a route message for each registered route", func() {
 				Expect(routeMessages).To(ContainElement(route.Message{
 					InstanceID: "pod-11",
-					Name:       "pod-11",
+					Name:       "pod-11-guid",
 					Address:    "10.0.0.1",
 					Port:       80,
 					TLSPort:    0,
@@ -173,7 +176,7 @@ var _ = Describe("RouteCollector", func() {
 				}))
 				Expect(routeMessages).To(ContainElement(route.Message{
 					InstanceID: "pod-11",
-					Name:       "pod-11",
+					Name:       "pod-11-guid",
 					Address:    "10.0.0.1",
 					Port:       443,
 					TLSPort:    0,
@@ -193,7 +196,7 @@ var _ = Describe("RouteCollector", func() {
 				Expect(routeMessages).To(ConsistOf([]route.Message{
 					{
 						InstanceID: "pod-21",
-						Name:       "pod-21",
+						Name:       "pod-21-guid",
 						Address:    "10.0.0.2",
 						Port:       9000,
 						TLSPort:    0,
@@ -203,7 +206,7 @@ var _ = Describe("RouteCollector", func() {
 					},
 					{
 						InstanceID: "pod-22",
-						Name:       "pod-22",
+						Name:       "pod-22-guid",
 						Address:    "10.0.0.3",
 						Port:       9000,
 						TLSPort:    0,
@@ -225,7 +228,7 @@ var _ = Describe("RouteCollector", func() {
 				Expect(routeMessages).To(ConsistOf([]route.Message{
 					{
 						InstanceID: "pod-21",
-						Name:       "pod-21",
+						Name:       "pod-21-guid",
 						Address:    "10.0.0.2",
 						Port:       9000,
 						TLSPort:    0,
@@ -235,7 +238,7 @@ var _ = Describe("RouteCollector", func() {
 					},
 					{
 						InstanceID: "pod-22",
-						Name:       "pod-22",
+						Name:       "pod-22-guid",
 						Address:    "10.0.0.3",
 						Port:       9000,
 						TLSPort:    0,
@@ -307,7 +310,7 @@ var _ = Describe("RouteCollector", func() {
 				Expect(routeMessages).To(Equal([]route.Message{
 					{
 						InstanceID: "pod-11",
-						Name:       "pod-11",
+						Name:       "pod-11-guid",
 						Address:    "10.0.0.1",
 						Port:       80,
 						TLSPort:    0,
@@ -329,7 +332,7 @@ var _ = Describe("RouteCollector", func() {
 				Expect(routeMessages).To(Equal([]route.Message{
 					{
 						InstanceID: "pod-11",
-						Name:       "pod-11",
+						Name:       "pod-11-guid",
 						Address:    "10.0.0.1",
 						Port:       80,
 						TLSPort:    0,
@@ -351,7 +354,7 @@ var _ = Describe("RouteCollector", func() {
 				Expect(routeMessages).To(Equal([]route.Message{
 					{
 						InstanceID: "pod-11",
-						Name:       "pod-11",
+						Name:       "pod-11-guid",
 						Address:    "10.0.0.1",
 						Port:       80,
 						TLSPort:    0,
