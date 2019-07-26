@@ -45,7 +45,7 @@ func NewRouteMessage(pod *v1.Pod, port uint32, routes eiriniroute.Routes) (*eiri
 		Routes: eiriniroute.Routes{
 			UnregisteredRoutes: routes.UnregisteredRoutes,
 		},
-		Name:       pod.Name,
+		Name:       pod.Labels["guid"],
 		InstanceID: pod.Name,
 		Address:    pod.Status.PodIP,
 		Port:       port,
