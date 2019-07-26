@@ -137,7 +137,7 @@ var _ = Describe("Desiretask", func() {
 			Expect(job.Spec.Template.Spec.Volumes).To(HaveLen(4))
 			Expect(job.Spec.Template.Spec.Volumes).To(ConsistOf(
 				MatchFields(IgnoreExtras, Fields{
-					"Name": Equal(eirini.CCCertsVolumeName),
+					"Name": Equal(eirini.CertsVolumeName),
 					"VolumeSource": Equal(v1.VolumeSource{
 						Secret: &v1.SecretVolumeSource{SecretName: "secret-certs"},
 					}),
@@ -161,9 +161,9 @@ var _ = Describe("Desiretask", func() {
 				"MountPath": Equal(eirini.RecipeBuildPacksDir),
 			})
 			certsVolumeMatcher := MatchFields(IgnoreExtras, Fields{
-				"Name":      Equal(eirini.CCCertsVolumeName),
+				"Name":      Equal(eirini.CertsVolumeName),
 				"ReadOnly":  Equal(true),
-				"MountPath": Equal(eirini.CCCertsMountPath),
+				"MountPath": Equal(eirini.CertsMountPath),
 			})
 			workspaceVolumeMatcher := MatchFields(IgnoreExtras, Fields{
 				"Name":      Equal(eirini.RecipeWorkspaceName),

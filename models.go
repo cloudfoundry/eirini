@@ -40,13 +40,9 @@ const (
 	AppMetricsEmissionIntervalInSecs = 15
 
 	CCUploaderInternalURL = "cc-uploader.service.cf.internal"
-	CCCertsMountPath      = "/etc/config/certs"
-	CCCertsVolumeName     = "cc-certs-volume"
-	CCAPICertName         = "cc-server-crt"
-	CCAPIKeyName          = "cc-server-crt-key"
-	CCUploaderCertName    = "cc-uploader-crt"
-	CCUploaderKeyName     = "cc-uploader-crt-key"
-	CCInternalCACertName  = "internal-ca-cert"
+
+	CertsMountPath  = "/etc/config/certs"
+	CertsVolumeName = "certs-volume"
 )
 
 type Config struct {
