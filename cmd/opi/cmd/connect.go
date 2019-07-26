@@ -112,22 +112,13 @@ func connect(cmd *cobra.Command, args []string) {
 
 	var server *http.Server
 	handlerLogger.Info("opi-connected")
-	if isTLSEnabled(cfg) {
-		server = &http.Server{
-			Addr:      fmt.Sprintf("0.0.0.0:%d", cfg.Properties.TLSPort),
-			Handler:   handler,
-			TLSConfig: serverTLSConfig(cfg),
-		}
-		handlerLogger.Fatal("opi-crashed",
-			server.ListenAndServeTLS(cfg.Properties.ServerCertPath, cfg.Properties.ServerKeyPath))
-	} else {
-		server = &http.Server{
-			Addr:    "0.0.0.0:8085",
-			Handler: handler,
-		}
-		handlerLogger.Fatal("opi-crashed",
-			server.ListenAndServe())
+	server = &http.Server{
+		Addr:      fmt.Sprintf("0.0.0.0:%d", cfg.Properties.TLSPort),
+		Handler:   handler,
+		TLSConfig: serverTLSConfig(cfg),
 	}
+	handlerLogger.Fatal("opi-crashed",
+		server.ListenAndServeTLS(cfg.Properties.ServerCertPath, cfg.Properties.ServerKeyPath))
 }
 
 func serverTLSConfig(cfg *eirini.Config) *tls.Config {
@@ -143,10 +134,6 @@ func serverTLSConfig(cfg *eirini.Config) *tls.Config {
 		ClientCAs:  certPool,
 		ClientAuth: tls.RequireAndVerifyClientCert,
 	}
-}
-
-func isTLSEnabled(cfg *eirini.Config) bool {
-	return cfg.Properties.ServerCertPath != "" && cfg.Properties.ServerKeyPath != "" && cfg.Properties.ClientCAPath != ""
 }
 
 func initStager(cfg *eirini.Config) eirini.Stager {
