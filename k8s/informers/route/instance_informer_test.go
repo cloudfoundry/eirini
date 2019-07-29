@@ -26,7 +26,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 	const (
 		namespace           = "test-me"
-		routeMessageTimeout = 600 * time.Millisecond
+		routeMessageTimeout = 30 * time.Millisecond
 	)
 
 	var (
@@ -36,7 +36,6 @@ var _ = Describe("InstanceChangeInformer", func() {
 		workChan   chan *eiriniroute.Message
 		stopChan   chan struct{}
 		logger     *lagertest.TestLogger
-		pod0       *corev1.Pod
 	)
 
 	setWatcher := func(cs kubernetes.Interface) {
@@ -120,17 +119,17 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 	Context("When a updated pod is missing its IP", func() {
 		It("should not send a route for the pod", func() {
-			pod0 = createPod("mr-stateful-0")
+			pod0 := createPod("mr-stateful-0")
 			podWatcher.Add(pod0)
 
 			pod0.Status.Message = "where my IP at?"
 			podWatcher.Modify(pod0)
 
-			Consistently(workChan, routeMessageTimeout).ShouldNot(Receive())
+			Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
 		})
 
 		It("should provide a helpful error message", func() {
-			pod0 = createPod("mr-stateful-0")
+			pod0 := createPod("mr-stateful-0")
 			podWatcher.Add(pod0)
 			pod0.Status.Message = "where my IP at?"
 			podWatcher.Modify(pod0)
@@ -152,7 +151,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 	Context("When an ip is assigned to a pod", func() {
 
 		It("should send the first route", func() {
-			pod0 = createPod("mr-stateful-0")
+			pod0 := createPod("mr-stateful-0")
 			podWatcher.Add(pod0)
 			pod0.Status.PodIP = "10.20.30.40"
 			podWatcher.Modify(pod0)
@@ -171,7 +170,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 		})
 
 		It("should send the second route", func() {
-			pod0 = createPod("mr-stateful-0")
+			pod0 := createPod("mr-stateful-0")
 			podWatcher.Add(pod0)
 			pod0.Status.PodIP = "10.20.30.40"
 			podWatcher.Modify(pod0)
@@ -194,17 +193,17 @@ var _ = Describe("InstanceChangeInformer", func() {
 	Context("When there is no owner for a pod", func() {
 
 		It("should not send routes for the pod", func() {
-			pod0 = createPod("mr-stateful-0")
+			pod0 := createPod("mr-stateful-0")
 			podWatcher.Add(pod0)
 			pod0.Status.PodIP = "10.20.30.40"
 			pod0.OwnerReferences = []metav1.OwnerReference{}
 			podWatcher.Modify(pod0)
 
-			Consistently(workChan, routeMessageTimeout).ShouldNot(Receive())
+			Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
 		})
 
 		It("should provide a helpful error message", func() {
-			pod0 = createPod("mr-stateful-0")
+			pod0 := createPod("mr-stateful-0")
 			podWatcher.Add(pod0)
 			pod0.Status.PodIP = "10.20.30.40"
 			pod0.OwnerReferences = []metav1.OwnerReference{}
@@ -227,7 +226,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 	Context("When there are multiple pod owners", func() {
 
 		It("should find the StatefulSet owner and send the route", func() {
-			pod0 = createPod("mr-stateful-0")
+			pod0 := createPod("mr-stateful-0")
 			podWatcher.Add(pod0)
 			pod0.Status.PodIP = "10.20.30.40"
 			pod0.OwnerReferences = append(pod0.OwnerReferences, metav1.OwnerReference{
@@ -250,7 +249,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 		})
 
 		It("should not send the route if there's no StatefulSet owner", func() {
-			pod0 = createPod("mr-stateful-0")
+			pod0 := createPod("mr-stateful-0")
 			podWatcher.Add(pod0)
 			pod0.Status.PodIP = "10.20.30.40"
 			pod0.OwnerReferences = []metav1.OwnerReference{
@@ -261,7 +260,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 			}
 			podWatcher.Modify(pod0)
 
-			Consistently(workChan, routeMessageTimeout).ShouldNot(Receive())
+			Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
 
 			Eventually(func() int {
 				logs := logger.Logs()
@@ -279,20 +278,44 @@ var _ = Describe("InstanceChangeInformer", func() {
 	})
 
 	Context("When pod is not ready", func() {
+		Context("when pod was ready before", func() {
+			It("sends unregister route message for the pod", func() {
+				pod0 := createPod("mr-stateful-0")
+				pod0.Status.PodIP = "10.20.30.40"
+				podWatcher.Add(pod0)
+				updatedPod0 := createPod("mr-stateful-0")
+				updatedPod0.Status.PodIP = "10.20.30.40"
+				updatedPod0.Status.Conditions[0].Status = corev1.ConditionFalse
+				podWatcher.Modify(updatedPod0)
+
+				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+					Routes: route.Routes{
+						UnregisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
+					},
+
+					Name:       "mr-stateful-0",
+					InstanceID: "mr-stateful-0",
+					Address:    "10.20.30.40",
+					Port:       6565,
+					TLSPort:    0,
+				})))
+
+			})
+		})
 
 		Context("pod ready condition is missing", func() {
 
 			It("should not send routes for the pod", func() {
-				pod0 = createPod("mr-stateful-0")
+				pod0 := createPod("mr-stateful-0")
 				podWatcher.Add(pod0)
 				pod0.Status.Conditions[0].Type = corev1.PodInitialized
 				podWatcher.Modify(pod0)
 
-				Consistently(workChan, routeMessageTimeout).ShouldNot(Receive())
+				Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
 			})
 
 			It("should provide a helpful error message", func() {
-				pod0 = createPod("mr-stateful-0")
+				pod0 := createPod("mr-stateful-0")
 				podWatcher.Add(pod0)
 				pod0.Status.Conditions[0].Type = corev1.PodInitialized
 				podWatcher.Modify(pod0)
@@ -322,16 +345,16 @@ var _ = Describe("InstanceChangeInformer", func() {
 		Context("pod readiness status is false", func() {
 
 			It("should not send routes for the pod", func() {
-				pod0 = createPod("mr-stateful-0")
+				pod0 := createPod("mr-stateful-0")
 				podWatcher.Add(pod0)
 				pod0.Status.Conditions[0].Status = corev1.ConditionFalse
 				podWatcher.Modify(pod0)
 
-				Consistently(workChan, routeMessageTimeout).ShouldNot(Receive())
+				Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
 			})
 
 			It("should provide a helpful error message", func() {
-				pod0 = createPod("mr-stateful-0")
+				pod0 := createPod("mr-stateful-0")
 				podWatcher.Add(pod0)
 				pod0.Status.Conditions[0].Status = corev1.ConditionFalse
 				podWatcher.Modify(pod0)
@@ -362,7 +385,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 	Context("When a pod is deleted", func() {
 
 		It("should send the unregister routes", func() {
-			pod0 = createPod("mr-stateful-0")
+			pod0 := createPod("mr-stateful-0")
 			pod0.Status.PodIP = "10.20.30.40"
 			podWatcher.Add(pod0)
 			podWatcher.Delete(pod0)
@@ -380,8 +403,8 @@ var _ = Describe("InstanceChangeInformer", func() {
 			})))
 		})
 
-		It("should send the unregister routes for second route", func() {
-			pod0 = createPod("mr-stateful-0")
+		It("should send the unregister routes for all routes for the application", func() {
+			pod0 := createPod("mr-stateful-0")
 			pod0.Status.PodIP = "10.20.30.40"
 			podWatcher.Add(pod0)
 			podWatcher.Delete(pod0)
@@ -401,16 +424,16 @@ var _ = Describe("InstanceChangeInformer", func() {
 		Context("there is no owner for a pod", func() {
 
 			It("should not send routes for the pod", func() {
-				pod0 = createPod("mr-stateful-0")
+				pod0 := createPod("mr-stateful-0")
 				pod0.OwnerReferences = []metav1.OwnerReference{}
 				pod0.Status.PodIP = "10.20.30.40"
 				podWatcher.Add(pod0)
 				podWatcher.Delete(pod0)
-				Consistently(workChan, routeMessageTimeout).ShouldNot(Receive())
+				Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
 			})
 
 			It("should provide a helpful error message", func() {
-				pod0 = createPod("mr-stateful-0")
+				pod0 := createPod("mr-stateful-0")
 				pod0.OwnerReferences = []metav1.OwnerReference{}
 				pod0.Status.PodIP = "10.20.30.40"
 				podWatcher.Add(pod0)
@@ -432,15 +455,15 @@ var _ = Describe("InstanceChangeInformer", func() {
 
 		Context("there is no pod IP address", func() {
 			It("should not send a route for the pod", func() {
-				pod0 = createPod("mr-stateful-0")
+				pod0 := createPod("mr-stateful-0")
 				podWatcher.Add(pod0)
 				podWatcher.Delete(pod0)
 
-				Consistently(workChan, routeMessageTimeout).ShouldNot(Receive())
+				Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
 			})
 
 			It("should provide a helpful error message", func() {
-				pod0 = createPod("mr-stateful-0")
+				pod0 := createPod("mr-stateful-0")
 				podWatcher.Add(pod0)
 				podWatcher.Delete(pod0)
 
