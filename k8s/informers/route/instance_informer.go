@@ -78,10 +78,11 @@ func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<-
 
 func (c *InstanceChangeInformer) onPodUpdate(oldObj, updatedObj interface{}, work chan<- *eiriniroute.Message) {
 	updatedPod := updatedObj.(*v1.Pod)
+	oldPod := oldObj.(*v1.Pod)
 	loggerSession := c.Logger.Session("pod-update", lager.Data{"pod-name": updatedPod.Name, "guid": updatedPod.Annotations[cf.ProcessGUID]})
 	if !isReady(updatedPod.Status.Conditions) {
-		if isReady(oldObj.(*v1.Pod).Status.Conditions) {
-			c.onPodDelete(updatedObj, work)
+		if isReady(oldPod.Status.Conditions) {
+			c.onPodDelete(oldPod, work)
 			return
 		}
 		loggerSession.Debug("pod-status-not-ready", lager.Data{"statuses": updatedPod.Status.Conditions})

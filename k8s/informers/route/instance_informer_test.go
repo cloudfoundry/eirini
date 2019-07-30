@@ -284,7 +284,6 @@ var _ = Describe("InstanceChangeInformer", func() {
 				pod0.Status.PodIP = "10.20.30.40"
 				podWatcher.Add(pod0)
 				updatedPod0 := createPod("mr-stateful-0")
-				updatedPod0.Status.PodIP = "10.20.30.40"
 				updatedPod0.Status.Conditions[0].Status = corev1.ConditionFalse
 				podWatcher.Modify(updatedPod0)
 
