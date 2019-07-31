@@ -45,9 +45,6 @@ func (c *InstanceChangeInformer) Start(work chan<- *eiriniroute.Message) {
 		UpdateFunc: func(oldObj, updatedObj interface{}) {
 			c.onPodUpdate(oldObj, updatedObj, work)
 		},
-		DeleteFunc: func(obj interface{}) {
-			c.onPodDelete(obj, work)
-		},
 	})
 
 	podInformer.Run(c.Cancel)
