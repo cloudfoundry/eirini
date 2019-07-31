@@ -191,24 +191,19 @@ var _ = Describe("InstanceChangeInformer", func() {
 	})
 
 	Context("When there is no owner for a pod", func() {
-
-		It("should not send routes for the pod", func() {
+		JustBeforeEach(func() {
 			pod0 := createPod("mr-stateful-0")
 			podWatcher.Add(pod0)
 			pod0.Status.PodIP = "10.20.30.40"
 			pod0.OwnerReferences = []metav1.OwnerReference{}
 			podWatcher.Modify(pod0)
+		})
 
+		It("should not send routes for the pod", func() {
 			Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
 		})
 
 		It("should provide a helpful error message", func() {
-			pod0 := createPod("mr-stateful-0")
-			podWatcher.Add(pod0)
-			pod0.Status.PodIP = "10.20.30.40"
-			pod0.OwnerReferences = []metav1.OwnerReference{}
-			podWatcher.Modify(pod0)
-
 			Eventually(func() int {
 				logs := logger.Logs()
 				return len(logs)
@@ -261,7 +256,6 @@ var _ = Describe("InstanceChangeInformer", func() {
 			podWatcher.Modify(pod0)
 
 			Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
-
 			Eventually(func() int {
 				logs := logger.Logs()
 				return len(logs)
@@ -276,17 +270,71 @@ var _ = Describe("InstanceChangeInformer", func() {
 		})
 
 	})
+	Context("When a pod is marked for deletion", func() {
+		var deletionTimestamp metav1.Time
+
+		JustBeforeEach(func() {
+			pod0 := createPod("mr-stateful-0")
+			pod0.Status.PodIP = "10.20.30.40"
+			podWatcher.Add(pod0)
+			deletionTimestamp = metav1.Time{
+				Time: time.Now(),
+			}
+			pod0.DeletionTimestamp = &deletionTimestamp
+			podWatcher.Modify(pod0)
+		})
+
+		It("sends unregister route message for the pod", func() {
+			Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
+				Routes: route.Routes{
+					UnregisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
+				},
+
+				Name:       "mr-stateful-0",
+				InstanceID: "mr-stateful-0",
+				Address:    "10.20.30.40",
+				Port:       6565,
+				TLSPort:    0,
+			})))
+		})
+
+		It("should provide a helpful error message", func() {
+			Eventually(func() int {
+				logs := logger.Logs()
+				return len(logs)
+			}).Should(BeNumerically(">", 0))
+
+			log := logger.Logs()[0]
+			Expect(log.Message).To(Equal("instance-informer-test.pod-update.pod-not-ready"))
+			Expect(log.LogLevel).To(Equal(lager.DEBUG))
+			Expect(log.Data).To(HaveKeyWithValue("pod-name", "mr-stateful-0"))
+			Expect(log.Data).To(HaveKeyWithValue("guid", "mr-stateful-0-anno"))
+			Expect(log.Data).To(HaveKeyWithValue("statuses", HaveLen(1)))
+			Expect(log.Data).To(HaveKeyWithValue("deletion-timestamp", deletionTimestamp.UTC().Format("2006-01-02T15:04:05Z")))
+
+			bytes, err := json.Marshal(log.Data["statuses"])
+			Expect(err).ToNot(HaveOccurred())
+			var conditions []corev1.PodCondition
+			err = json.Unmarshal(bytes, &conditions)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(conditions).To(HaveLen(1))
+			Expect(conditions[0].Status).To(Equal(corev1.ConditionTrue))
+		})
+
+	})
 
 	Context("When pod is not ready", func() {
 		Context("when pod was ready before", func() {
-			It("sends unregister route message for the pod", func() {
+			JustBeforeEach(func() {
 				pod0 := createPod("mr-stateful-0")
 				pod0.Status.PodIP = "10.20.30.40"
 				podWatcher.Add(pod0)
 				updatedPod0 := createPod("mr-stateful-0")
 				updatedPod0.Status.Conditions[0].Status = corev1.ConditionFalse
 				podWatcher.Modify(updatedPod0)
+			})
 
+			It("sends unregister route message for the pod", func() {
 				Eventually(workChan, routeMessageTimeout).Should(Receive(Equal(&route.Message{
 					Routes: route.Routes{
 						UnregisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
@@ -298,77 +346,21 @@ var _ = Describe("InstanceChangeInformer", func() {
 					Port:       6565,
 					TLSPort:    0,
 				})))
-
-			})
-		})
-
-		Context("pod ready condition is missing", func() {
-
-			It("should not send routes for the pod", func() {
-				pod0 := createPod("mr-stateful-0")
-				podWatcher.Add(pod0)
-				pod0.Status.Conditions[0].Type = corev1.PodInitialized
-				podWatcher.Modify(pod0)
-
-				Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
 			})
 
 			It("should provide a helpful error message", func() {
-				pod0 := createPod("mr-stateful-0")
-				podWatcher.Add(pod0)
-				pod0.Status.Conditions[0].Type = corev1.PodInitialized
-				podWatcher.Modify(pod0)
-
 				Eventually(func() int {
 					logs := logger.Logs()
 					return len(logs)
 				}).Should(BeNumerically(">", 0))
 
 				log := logger.Logs()[0]
-				Expect(log.Message).To(Equal("instance-informer-test.pod-update.pod-status-not-ready"))
+				Expect(log.Message).To(Equal("instance-informer-test.pod-update.pod-not-ready"))
 				Expect(log.LogLevel).To(Equal(lager.DEBUG))
 				Expect(log.Data).To(HaveKeyWithValue("pod-name", "mr-stateful-0"))
 				Expect(log.Data).To(HaveKeyWithValue("guid", "mr-stateful-0-anno"))
 				Expect(log.Data).To(HaveKeyWithValue("statuses", HaveLen(1)))
-
-				bytes, err := json.Marshal(log.Data["statuses"])
-				Expect(err).ToNot(HaveOccurred())
-				var conditions []corev1.PodCondition
-				err = json.Unmarshal(bytes, &conditions)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(conditions).To(HaveLen(1))
-				Expect(conditions[0].Type).To(Equal(corev1.PodInitialized))
-			})
-		})
-
-		Context("pod readiness status is false", func() {
-
-			It("should not send routes for the pod", func() {
-				pod0 := createPod("mr-stateful-0")
-				podWatcher.Add(pod0)
-				pod0.Status.Conditions[0].Status = corev1.ConditionFalse
-				podWatcher.Modify(pod0)
-
-				Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
-			})
-
-			It("should provide a helpful error message", func() {
-				pod0 := createPod("mr-stateful-0")
-				podWatcher.Add(pod0)
-				pod0.Status.Conditions[0].Status = corev1.ConditionFalse
-				podWatcher.Modify(pod0)
-
-				Eventually(func() int {
-					logs := logger.Logs()
-					return len(logs)
-				}).Should(BeNumerically(">", 0))
-
-				log := logger.Logs()[0]
-				Expect(log.Message).To(Equal("instance-informer-test.pod-update.pod-status-not-ready"))
-				Expect(log.LogLevel).To(Equal(lager.DEBUG))
-				Expect(log.Data).To(HaveKeyWithValue("pod-name", "mr-stateful-0"))
-				Expect(log.Data).To(HaveKeyWithValue("guid", "mr-stateful-0-anno"))
-				Expect(log.Data).To(HaveKeyWithValue("statuses", HaveLen(1)))
+				Expect(log.Data).To(HaveKeyWithValue("deletion-timestamp", BeNil()))
 
 				bytes, err := json.Marshal(log.Data["statuses"])
 				Expect(err).ToNot(HaveOccurred())
@@ -377,6 +369,28 @@ var _ = Describe("InstanceChangeInformer", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(conditions).To(HaveLen(1))
 				Expect(conditions[0].Status).To(Equal(corev1.ConditionFalse))
+			})
+		})
+
+		Context("pod ready condition is missing", func() {
+			It("should not send routes for the pod", func() {
+				pod0 := createPod("mr-stateful-0")
+				podWatcher.Add(pod0)
+				pod0.Status.Conditions[0].Type = corev1.PodInitialized
+				podWatcher.Modify(pod0)
+
+				Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
+			})
+		})
+
+		Context("and the old pod readiness status is false", func() {
+			It("should not send routes for the pod", func() {
+				pod0 := createPod("mr-stateful-0")
+				podWatcher.Add(pod0)
+				pod0.Status.Conditions[0].Status = corev1.ConditionFalse
+				podWatcher.Modify(pod0)
+
+				Consistently(workChan, routeMessageTimeout*2).ShouldNot(Receive())
 			})
 		})
 	})

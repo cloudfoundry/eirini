@@ -77,12 +77,9 @@ func (c *InstanceChangeInformer) onPodUpdate(oldObj, updatedObj interface{}, wor
 	updatedPod := updatedObj.(*v1.Pod)
 	oldPod := oldObj.(*v1.Pod)
 	loggerSession := c.Logger.Session("pod-update", lager.Data{"pod-name": updatedPod.Name, "guid": updatedPod.Annotations[cf.ProcessGUID]})
-	if !isReady(updatedPod.Status.Conditions) {
-		if isReady(oldPod.Status.Conditions) {
-			c.onPodDelete(oldPod, work)
-			return
-		}
-		loggerSession.Debug("pod-status-not-ready", lager.Data{"statuses": updatedPod.Status.Conditions})
+	if markedForDeletion(updatedPod) || !isReady(updatedPod.Status.Conditions) && isReady(oldPod.Status.Conditions) {
+		loggerSession.Debug("pod-not-ready", lager.Data{"statuses": updatedPod.Status.Conditions, "deletion-timestamp": updatedPod.DeletionTimestamp})
+		c.onPodDelete(oldPod, work)
 		return
 	}
 

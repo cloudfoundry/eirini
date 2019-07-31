@@ -11,6 +11,7 @@ import (
 	apps_v1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -263,6 +264,22 @@ var _ = Describe("URIChangeInformer", func() {
 			}))))
 		})
 
+		Context("and the pod is marked for deletion", func() {
+			BeforeEach(func() {
+				now := metav1.Time{
+					Time: time.Now(),
+				}
+
+				pod0.DeletionTimestamp = &now
+			})
+
+			It("should not send routes for the pod", func() {
+				Consistently(workChan, routeMessageTimeout).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+					"Name": Equal("mr-stateful-0"),
+				}))))
+			})
+
+		})
 		Context("and the first pod is not ready", func() {
 			BeforeEach(func() {
 				pod0.Status.Conditions[0].Status = v1.ConditionFalse
