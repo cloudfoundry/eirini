@@ -299,10 +299,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 		})
 
 		It("should provide a helpful error message", func() {
-			Eventually(func() int {
-				logs := logger.Logs()
-				return len(logs)
-			}).Should(BeNumerically(">", 0))
+			Eventually(logger.Logs).ShouldNot(BeEmpty())
 
 			log := logger.Logs()[0]
 			Expect(log.Message).To(Equal("instance-informer-test.pod-update.pod-not-ready"))
