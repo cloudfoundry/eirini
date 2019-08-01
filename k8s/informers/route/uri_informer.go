@@ -152,6 +152,9 @@ func (c *URIChangeInformer) sendRoutesForAllPods(loggerSession lager.Logger, wor
 
 	for _, pod := range pods {
 		pod := pod
+		if markedForDeletion(&pod) {
+			continue
+		}
 		for port, routes := range grouped {
 			podRoute, err := NewRouteMessage(&pod, uint32(port), routes)
 			if err != nil {
@@ -161,6 +164,10 @@ func (c *URIChangeInformer) sendRoutesForAllPods(loggerSession lager.Logger, wor
 			work <- podRoute
 		}
 	}
+}
+
+func markedForDeletion(pod *v1.Pod) bool {
+	return pod.DeletionTimestamp != nil
 }
 
 func (c *URIChangeInformer) getChildrenPods(st *apps_v1.StatefulSet) ([]v1.Pod, error) {

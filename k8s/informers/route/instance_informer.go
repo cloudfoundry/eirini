@@ -42,31 +42,36 @@ func (c *InstanceChangeInformer) Start(work chan<- *eiriniroute.Message) {
 
 	podInformer := factory.Core().V1().Pods().Informer()
 	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		UpdateFunc: func(_ interface{}, updatedObj interface{}) {
-			c.onPodUpdate(updatedObj, work)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.onPodDelete(obj, work)
+		UpdateFunc: func(oldObj, updatedObj interface{}) {
+			c.onPodUpdate(oldObj, updatedObj, work)
 		},
 	})
 
 	podInformer.Run(c.Cancel)
 }
 
-func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<- *eiriniroute.Message) {
-	deletedPod := deletedObj.(*v1.Pod)
-	loggerSession := c.Logger.Session("pod-delete", lager.Data{"pod-name": deletedPod.Name, "guid": deletedPod.Annotations[cf.ProcessGUID]})
-	userDefinedRoutes, err := c.getUserDefinedRoutes(deletedPod)
+func (c *InstanceChangeInformer) onPodUpdate(oldObj, updatedObj interface{}, work chan<- *eiriniroute.Message) {
+	updatedPod := updatedObj.(*v1.Pod)
+	oldPod := oldObj.(*v1.Pod)
+	loggerSession := c.Logger.Session("pod-update", lager.Data{"pod-name": updatedPod.Name, "guid": updatedPod.Annotations[cf.ProcessGUID]})
+
+	userDefinedRoutes, err := c.getUserDefinedRoutes(updatedPod)
 	if err != nil {
 		loggerSession.Debug("failed-to-get-user-defined-routes", lager.Data{"error": err.Error()})
 		return
 	}
 
+	if markedForDeletion(updatedPod) || !isReady(updatedPod.Status.Conditions) && isReady(oldPod.Status.Conditions) {
+		loggerSession.Debug("pod-not-ready", lager.Data{"statuses": updatedPod.Status.Conditions, "deletion-timestamp": updatedPod.DeletionTimestamp})
+		c.unregisterPodRoutes(oldPod, userDefinedRoutes, work)
+		return
+	}
+
 	for _, r := range userDefinedRoutes {
 		routes, err := NewRouteMessage(
-			deletedPod,
+			updatedPod,
 			uint32(r.Port),
-			eiriniroute.Routes{UnregisteredRoutes: []string{r.Hostname}},
+			eiriniroute.Routes{RegisteredRoutes: []string{r.Hostname}},
 		)
 		if err != nil {
 			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
@@ -76,25 +81,14 @@ func (c *InstanceChangeInformer) onPodDelete(deletedObj interface{}, work chan<-
 	}
 }
 
-func (c *InstanceChangeInformer) onPodUpdate(updatedObj interface{}, work chan<- *eiriniroute.Message) {
-	updatedPod := updatedObj.(*v1.Pod)
-	loggerSession := c.Logger.Session("pod-update", lager.Data{"pod-name": updatedPod.Name, "guid": updatedPod.Annotations[cf.ProcessGUID]})
-	if !isReady(updatedPod.Status.Conditions) {
-		loggerSession.Debug("pod-status-not-ready", lager.Data{"statuses": updatedPod.Status.Conditions})
-		return
-	}
-
-	userDefinedRoutes, err := c.getUserDefinedRoutes(updatedPod)
-	if err != nil {
-		loggerSession.Debug("failed-to-get-user-defined-routes", lager.Data{"error": err.Error()})
-		return
-	}
+func (c *InstanceChangeInformer) unregisterPodRoutes(pod *v1.Pod, userDefinedRoutes []cf.Route, work chan<- *eiriniroute.Message) {
+	loggerSession := c.Logger.Session("pod-delete", lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[cf.ProcessGUID]})
 
 	for _, r := range userDefinedRoutes {
 		routes, err := NewRouteMessage(
-			updatedPod,
+			pod,
 			uint32(r.Port),
-			eiriniroute.Routes{RegisteredRoutes: []string{r.Hostname}},
+			eiriniroute.Routes{UnregisteredRoutes: []string{r.Hostname}},
 		)
 		if err != nil {
 			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
