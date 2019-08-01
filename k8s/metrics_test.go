@@ -90,7 +90,7 @@ var _ = Describe("Metrics", func() {
 					IndexID:     "9000",
 					CPU:         420,
 					Memory:      430080,
-					MemoryQuota: 10,
+					MemoryQuota: 819200,
 					Disk:        42000000,
 					DiskQuota:   10,
 				},
@@ -199,7 +199,7 @@ var _ = Describe("Metrics", func() {
 						IndexID:     "9000",
 						CPU:         420,
 						Memory:      430080,
-						MemoryQuota: 10,
+						MemoryQuota: 819200,
 						Disk:        42000000,
 						DiskQuota:   10,
 					},
@@ -215,6 +215,17 @@ func createPodForMetrics(podName string) metricsv1beta1api.PodMetrics {
 			Name: podName,
 			Labels: map[string]string{
 				"guid": "app-guid",
+			},
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Resources: v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: resource.MustParse("800Ki"),
+						},
+					},
+				},
 			},
 		},
 	})

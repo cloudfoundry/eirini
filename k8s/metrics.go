@@ -71,13 +71,15 @@ func (c *MetricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodM
 		if !ok {
 			continue
 		}
+		appContainer := pod.Spec.Containers[0]
+		memoryLimit := appContainer.Resources.Limits.Memory()
 
 		messages = append(messages, metrics.Message{
 			AppID:       pod.Labels["guid"],
 			IndexID:     strconv.Itoa(indexID),
 			CPU:         float64(cpuValue),
 			Memory:      float64(memoryValue),
-			MemoryQuota: 10,
+			MemoryQuota: float64(memoryLimit.Value()),
 			Disk:        42000000,
 			DiskQuota:   10,
 		})
