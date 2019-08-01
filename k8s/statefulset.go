@@ -246,7 +246,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	envs := MapToEnvVar(lrp.Env)
 	fieldEnvs := []corev1.EnvVar{
 		{
-			Name: "POD_NAME",
+			Name: eirini.EnvPodName,
 			ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "metadata.name",
@@ -254,7 +254,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 			},
 		},
 		{
-			Name: "CF_INSTANCE_IP",
+			Name: eirini.EnvCFInstanceIP,
 			ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "status.podIP",
@@ -262,7 +262,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 			},
 		},
 		{
-			Name: "CF_INSTANCE_INTERNAL_IP",
+			Name: eirini.EnvCFInstanceInternalIP,
 			ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "status.podIP",

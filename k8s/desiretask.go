@@ -30,12 +30,13 @@ type TaskDesirer struct {
 func (d *TaskDesirer) Desire(task *opi.Task) error {
 	job := toJob(task)
 
+	envs := getEnvs(task)
 	containers := []v1.Container{
 		{
 			Name:            "opi-task",
 			Image:           task.Image,
 			ImagePullPolicy: v1.PullAlways,
-			Env:             MapToEnvVar(task.Env),
+			Env:             envs,
 		},
 	}
 
@@ -101,19 +102,20 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	executorVolumeMounts = append(executorVolumeMounts, buildpacksVolumeMount, workspaceVolumeMount, outputVolumeMount)
 	uploaderVolumeMounts = append(uploaderVolumeMounts, secretsVolumeMount, outputVolumeMount)
 
+	envs := getEnvs(task.Task)
 	initContainers := []v1.Container{
 		{
 			Name:            "opi-task-downloader",
 			Image:           task.DownloaderImage,
 			ImagePullPolicy: v1.PullAlways,
-			Env:             MapToEnvVar(task.Env),
+			Env:             envs,
 			VolumeMounts:    downloaderVolumeMounts,
 		},
 		{
 			Name:            "opi-task-executor",
 			Image:           task.ExecutorImage,
 			ImagePullPolicy: v1.PullAlways,
-			Env:             MapToEnvVar(task.Env),
+			Env:             envs,
 			VolumeMounts:    executorVolumeMounts,
 		},
 	}
@@ -123,7 +125,7 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 			Name:            "opi-task-uploader",
 			Image:           task.UploaderImage,
 			ImagePullPolicy: v1.PullAlways,
-			Env:             MapToEnvVar(task.Env),
+			Env:             envs,
 			VolumeMounts:    uploaderVolumeMounts,
 		},
 	}
@@ -135,6 +137,42 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	job.Spec.Template.Spec.Volumes = volumes
 
 	return job
+}
+
+func getEnvs(task *opi.Task) []v1.EnvVar {
+	envs := MapToEnvVar(task.Env)
+	fieldEnvs := []v1.EnvVar{
+		{
+			Name: eirini.EnvPodName,
+			ValueFrom: &v1.EnvVarSource{
+				FieldRef: &v1.ObjectFieldSelector{
+					FieldPath: "metadata.name",
+				},
+			},
+		},
+		{
+			Name: eirini.EnvCFInstanceIP,
+			ValueFrom: &v1.EnvVarSource{
+				FieldRef: &v1.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
+		},
+		{
+			Name: eirini.EnvCFInstanceInternalIP,
+			ValueFrom: &v1.EnvVarSource{
+				FieldRef: &v1.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
+		},
+		{Name: eirini.EnvCFInstanceAddr, Value: ""},
+		{Name: eirini.EnvCFInstancePort, Value: ""},
+		{Name: eirini.EnvCFInstancePorts, Value: "[]"},
+	}
+
+	envs = append(envs, fieldEnvs...)
+	return envs
 }
 
 func getVolume(name, path string) (v1.Volume, v1.VolumeMount) {
