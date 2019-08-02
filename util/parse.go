@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"golang.org/x/xerrors"
+	"github.com/pkg/errors"
 )
 
 func ParseAppIndex(podName string) (int, error) {
@@ -17,7 +17,7 @@ func ParseAppIndex(podName string) (int, error) {
 	index, err := strconv.Atoi(sl[len(sl)-1])
 
 	if err != nil {
-		return 0, xerrors.Errorf("pod %s name does not contain an index: %v", podName, err)
+		return 0, errors.Wrapf(err, "pod %s name does not contain an index", podName)
 	}
 
 	return index, nil
