@@ -49,6 +49,15 @@ var _ = Describe("Desiretask", func() {
 		Expect(container.Image).To(Equal(Image))
 		Expect(container.ImagePullPolicy).To(Equal(v1.PullAlways))
 
+		expectedValFrom := func(fieldPath string) *v1.EnvVarSource {
+			return &v1.EnvVarSource{
+				FieldRef: &v1.ObjectFieldSelector{
+					APIVersion: "",
+					FieldPath:  fieldPath,
+				},
+			}
+		}
+
 		Expect(container.Env).To(ConsistOf(
 			v1.EnvVar{Name: eirini.EnvDownloadURL, Value: "example.com/download"},
 			v1.EnvVar{Name: eirini.EnvDropletUploadURL, Value: "example.com/upload"},
@@ -56,6 +65,12 @@ var _ = Describe("Desiretask", func() {
 			v1.EnvVar{Name: eirini.EnvStagingGUID, Value: "the-stage-is-yours"},
 			v1.EnvVar{Name: eirini.EnvCompletionCallback, Value: "example.com/call/me/maybe"},
 			v1.EnvVar{Name: eirini.EnvEiriniAddress, Value: "http://opi.cf.internal"},
+			v1.EnvVar{Name: eirini.EnvCFInstanceInternalIP, ValueFrom: expectedValFrom("status.podIP")},
+			v1.EnvVar{Name: eirini.EnvCFInstanceIP, ValueFrom: expectedValFrom("status.podIP")},
+			v1.EnvVar{Name: eirini.EnvPodName, ValueFrom: expectedValFrom("metadata.name")},
+			v1.EnvVar{Name: eirini.EnvCFInstanceAddr, Value: ""},
+			v1.EnvVar{Name: eirini.EnvCFInstancePort, Value: ""},
+			v1.EnvVar{Name: eirini.EnvCFInstancePorts, Value: "[]"},
 		))
 	}
 
