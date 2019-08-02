@@ -3,6 +3,8 @@
 set -xeuo pipefail
 IFS=$'\n\t'
 
+readonly SECRET_REGEX="cc-certs-volume:|cc-server-crt:|cc-server-crt-key:|cc-uploader-crt:|cc-uploader-crt-key:|internal-ca-cert:|eirini-client-crt:|eirini-client-crt-key:"
+
 main(){
   create-registry-secret
   create-image-pull-secret
@@ -20,7 +22,7 @@ create-image-pull-secret(){
 }
 
 create-registry-secret(){
-  scf_secrets="$(kubectl get secret "$SECRET_NAME" --namespace="$SCF_NAMESPACE" --export -o yaml | grep -E 'cc-.*|internal-ca-.*')"
+  scf_secrets="$(kubectl get secret "$SECRET_NAME" --namespace="$SCF_NAMESPACE" --export -o yaml | grep -E "$SECRET_REGEX")"
 
   cat <<EOT >> secret.yml
 ---
