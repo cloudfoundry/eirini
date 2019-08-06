@@ -222,7 +222,7 @@ var _ = Describe("Desiretask", func() {
 			}
 		})
 
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 			Expect(desirer.DesireStaging(stagingTask)).To(Succeed())
 		})
 
@@ -248,6 +248,19 @@ var _ = Describe("Desiretask", func() {
 			It("should return an error", func() {
 				Expect(desirer.DesireStaging(stagingTask)).To(MatchError(ContainSubstring("job already exists")))
 
+			})
+		})
+
+		Context("when the CC Uploader IP is not provided", func() {
+			BeforeEach(func() {
+				desirer.(*TaskDesirer).CCUploaderIP = ""
+			})
+
+			It("should create a Kubernetes job without any HostAliases", func() {
+				job, getErr := fakeClient.BatchV1().Jobs(Namespace).Get("the-stage-is-yours", meta_v1.GetOptions{})
+				Expect(getErr).ToNot(HaveOccurred())
+
+				Expect(job.Spec.Template.Spec.HostAliases).To(BeNil())
 			})
 		})
 	})

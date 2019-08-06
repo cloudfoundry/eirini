@@ -63,11 +63,13 @@ func (d *TaskDesirer) Delete(name string) error {
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	job := toJob(task.Task)
 
-	job.Spec.Template.Spec.HostAliases = []v1.HostAlias{
-		{
-			IP:        d.CCUploaderIP,
-			Hostnames: []string{eirini.CCUploaderInternalURL},
-		},
+	if d.CCUploaderIP != "" {
+		job.Spec.Template.Spec.HostAliases = []v1.HostAlias{
+			{
+				IP:        d.CCUploaderIP,
+				Hostnames: []string{eirini.CCUploaderInternalURL},
+			},
+		}
 	}
 
 	secretsVolume := v1.Volume{
