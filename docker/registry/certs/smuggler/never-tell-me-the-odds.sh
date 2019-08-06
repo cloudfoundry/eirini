@@ -14,11 +14,14 @@ create-image-pull-secret(){
   local username password
   username="$(grep -E "signing_users:.*" -A 2 /config/bits-config |  awk -F: '/username:/{print $2}' | awk '{$1=$1};1')"
   password="$(grep -E "signing_users:.*" -A 2 /config/bits-config |  awk -F: '/password:/{print $2}' | awk '{$1=$1};1')"
+  # https://stackoverflow.com/a/45881259
+  # There is no better way to upgrade the secret
   kubectl create secret docker-registry "$REGISTRY_CREDS_SECRET_NAME" \
     --docker-server="$REGISTRY_URL" \
     --docker-username="$username" \
     --docker-password="$password" \
-    -n "$OPI_NAMESPACE"
+    -n "$OPI_NAMESPACE" --dry-run -o yaml |
+  kubectl apply -f -
 }
 
 create-registry-secret(){
