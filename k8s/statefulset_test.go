@@ -30,20 +30,17 @@ import (
 )
 
 const (
-	namespace                        = "testing"
-	registrySecretName               = "secret-name"
-	timeout            time.Duration = 60 * time.Second
+	namespace          = "testing"
+	registrySecretName = "secret-name"
 )
 
 var _ = Describe("Statefulset", func() {
 
 	var (
-		err                   error
 		client                *fake.Clientset
 		statefulSetDesirer    opi.Desirer
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
 		readinessProbeCreator *k8sfakes.FakeProbeCreator
-		hasher                *utilfakes.FakeHasher
 		rootfsVersion         string
 	)
 
@@ -65,12 +62,9 @@ var _ = Describe("Statefulset", func() {
 
 		livenessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
-		hasher = new(utilfakes.FakeHasher)
+		hasher := new(utilfakes.FakeHasher)
 		hasher.HashReturns("random", nil)
 		rootfsVersion = "version1"
-	})
-
-	JustBeforeEach(func() {
 		statefulSetDesirer = &StatefulSetDesirer{
 			Client:                client,
 			Namespace:             namespace,
@@ -83,18 +77,13 @@ var _ = Describe("Statefulset", func() {
 	})
 
 	Context("When creating an LRP", func() {
-		var lrp *opi.LRP
-
 		Context("When app name only has [a-z0-9]", func() {
-			JustBeforeEach(func() {
+			var lrp *opi.LRP
+			BeforeEach(func() {
 				livenessProbeCreator.Returns(&corev1.Probe{})
 				readinessProbeCreator.Returns(&corev1.Probe{})
 				lrp = createLRP("Baldur", "my.example.route")
-				err = statefulSetDesirer.Desire(lrp)
-			})
-
-			It("should not fail", func() {
-				Expect(err).ToNot(HaveOccurred())
+				Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
 			})
 
 			It("should create a healthcheck probe", func() {
@@ -166,26 +155,18 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			Context("When redeploying an existing LRP", func() {
-				BeforeEach(func() {
-					lrp = createLRP("Baldur", "my.example.route")
-					_, createErr := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
-					Expect(createErr).ToNot(HaveOccurred())
-				})
-
 				It("should fail", func() {
-					Expect(err).To(MatchError(ContainSubstring("failed to create statefulset")))
+					newLrp := createLRP("Baldur", "my.example.route")
+					Expect(statefulSetDesirer.Desire(newLrp)).To(MatchError(ContainSubstring("failed to create statefulset")))
 				})
 			})
 		})
 
 		Context("When the app name contains unsupported characters", func() {
-			JustBeforeEach(func() {
-				lrp = createLRP("Балдър", "my.example.route")
-				err = statefulSetDesirer.Desire(lrp)
-				Expect(err).ToNot(HaveOccurred())
-			})
-
 			It("should use the guid as a name", func() {
+				lrp := createLRP("Балдър", "my.example.route")
+				Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
+
 				statefulSet := getStatefulSetFromK8s(lrp)
 				Expect(statefulSet.Name).To(Equal("guid_1234-random"))
 			})
@@ -193,37 +174,19 @@ var _ = Describe("Statefulset", func() {
 	})
 
 	Context("When getting an app", func() {
-		var (
-			expectedLRP *opi.LRP
-			actualLRP   *opi.LRP
-		)
-
-		BeforeEach(func() {
-			expectedLRP = createLRP("Baldur", "my.example.route")
+		It("return the same LRP except metadata and original LRP request", func() {
+			expectedLRP := createLRP("Baldur", "my.example.route")
 			_, createErr := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(expectedLRP))
 			Expect(createErr).ToNot(HaveOccurred())
-		})
-
-		JustBeforeEach(func() {
-			actualLRP, err = statefulSetDesirer.Get(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
-		})
-
-		It("should not fail", func() {
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("return the same LRP except metadata and original LRP request", func() {
 			expectedLRP.Metadata = cleanupMetadata(expectedLRP.Metadata)
 			expectedLRP.LRP = ""
-			Expect(expectedLRP).To(Equal(actualLRP))
+
+			Expect(statefulSetDesirer.Get(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Equal(expectedLRP))
 		})
 
 		Context("when the app does not exist", func() {
-			JustBeforeEach(func() {
-				_, err = statefulSetDesirer.Get(opi.LRPIdentifier{GUID: "idontknow", Version: "42"})
-			})
-
 			It("should return an error", func() {
+				_, err := statefulSetDesirer.Get(opi.LRPIdentifier{GUID: "idontknow", Version: "42"})
 				Expect(err).To(MatchError(ContainSubstring("statefulset not found")))
 			})
 		})
@@ -231,19 +194,17 @@ var _ = Describe("Statefulset", func() {
 
 	Context("When updating an app", func() {
 		Context("when the app exists", func() {
-
 			var (
 				lrp                 *opi.LRP
 				originalStatefulSet *appsv1.StatefulSet
 			)
 
 			BeforeEach(func() {
-
 				lrp = createLRP("update", `["my.example.route"]`)
 
 				originalStatefulSet = toStatefulSet(lrp)
-				_, createErr := client.AppsV1().StatefulSets(namespace).Create(originalStatefulSet)
-				Expect(createErr).NotTo(HaveOccurred())
+				_, err := client.AppsV1().StatefulSets(namespace).Create(originalStatefulSet)
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			Context("when update fails", func() {
@@ -262,18 +223,16 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			Context("with replica count modified", func() {
-
-				JustBeforeEach(func() {
+				It("only updates the desired number of app instances and last updated", func() {
 					lrp.TargetInstances = 5
 					lrp.Metadata[cf.LastUpdated] = "never"
-					err = statefulSetDesirer.Update(lrp)
-					Expect(err).ToNot(HaveOccurred())
-				})
 
-				It("only updates the desired number of app instances and last updated", func() {
+					Expect(statefulSetDesirer.Update(lrp)).To(Succeed())
+
 					Eventually(func() int32 {
 						return *getStatefulSetFromK8s(lrp).Spec.Replicas
 					}).Should(Equal(int32(5)))
+
 					newAnnotations := getStatefulSetFromK8s(lrp).GetAnnotations()
 					Expect(newAnnotations[cf.LastUpdated]).To(Equal("never"))
 					originalAnnotations := originalStatefulSet.GetAnnotations()
@@ -284,18 +243,17 @@ var _ = Describe("Statefulset", func() {
 			})
 
 			Context("with modified routes", func() {
-				JustBeforeEach(func() {
-					lrp.Metadata = map[string]string{cf.VcapAppUris: `["my.example.route", "my.second.example.route"]`, cf.LastUpdated: "yes"}
-					err = statefulSetDesirer.Update(lrp)
-					Expect(err).ToNot(HaveOccurred())
-				})
-
 				It("only updates the stored routes", func() {
+					lrp.Metadata = map[string]string{cf.VcapAppUris: `["my.example.route", "my.second.example.route"]`, cf.LastUpdated: "yes"}
+					Expect(statefulSetDesirer.Update(lrp)).To(Succeed())
+
 					Eventually(func() string {
 						return getStatefulSetFromK8s(lrp).Annotations[eirini.RegisteredRoutes]
 					}, 1*time.Second).Should(Equal(`["my.example.route", "my.second.example.route"]`))
+
 					newAnnotations := getStatefulSetFromK8s(lrp).GetAnnotations()
 					Expect(newAnnotations[cf.LastUpdated]).To(Equal("yes"))
+
 					originalAnnotations := originalStatefulSet.GetAnnotations()
 					delete(originalAnnotations, eirini.RegisteredRoutes)
 					delete(originalAnnotations, cf.LastUpdated)
@@ -308,16 +266,14 @@ var _ = Describe("Statefulset", func() {
 		})
 
 		Context("when the app does not exist", func() {
-
-			JustBeforeEach(func() {
-				err = statefulSetDesirer.Update(createLRP("name", "[something.strange]"))
-			})
-
 			It("should return an error", func() {
-				Expect(err).To(MatchError(ContainSubstring("failed to get statefulset")))
+				Expect(statefulSetDesirer.Update(createLRP("name", "[something.strange]"))).
+					To(MatchError(ContainSubstring("failed to get statefulset")))
 			})
 
 			It("should not create the app", func() {
+				Expect(statefulSetDesirer.Update(createLRP("name", "[something.strange]"))).
+					To(HaveOccurred())
 				sets, listErr := client.AppsV1().StatefulSets(namespace).List(meta.ListOptions{})
 				Expect(listErr).NotTo(HaveOccurred())
 				Expect(sets.Items).To(BeEmpty())
@@ -327,14 +283,8 @@ var _ = Describe("Statefulset", func() {
 	})
 
 	Context("When listing apps", func() {
-
-		var (
-			actualLRPs   []*opi.LRP
-			expectedLRPs []*opi.LRP
-		)
-
-		BeforeEach(func() {
-			expectedLRPs = []*opi.LRP{
+		It("translates all existing statefulSets to opi.LRPs", func() {
+			expectedLRPs := []*opi.LRP{
 				createLRP("odin", "my.example.route"),
 				createLRP("thor", "my.example.route"),
 				createLRP("mimir", "my.example.route"),
@@ -345,17 +295,6 @@ var _ = Describe("Statefulset", func() {
 				_, createErr := client.AppsV1().StatefulSets(namespace).Create(statefulset)
 				Expect(createErr).ToNot(HaveOccurred())
 			}
-		})
-
-		JustBeforeEach(func() {
-			actualLRPs, err = statefulSetDesirer.List()
-		})
-
-		It("should not return an error", func() {
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("translates all existing statefulSets to opi.LRPs", func() {
 			// clean metadata and LRP because we do not return LRP
 			// and return only subset of metadata fields
 			for _, l := range expectedLRPs {
@@ -363,34 +302,25 @@ var _ = Describe("Statefulset", func() {
 				l.LRP = ""
 			}
 
-			Expect(actualLRPs).To(ConsistOf(expectedLRPs))
+			Expect(statefulSetDesirer.List()).To(ConsistOf(expectedLRPs))
 		})
 
 		Context("no statefulSets exist", func() {
 
-			BeforeEach(func() {
-				client = fake.NewSimpleClientset()
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
 			It("returns an empy list of LRPs", func() {
-				Expect(actualLRPs).To(BeEmpty())
+				Expect(statefulSetDesirer.List()).To(BeEmpty())
 			})
 		})
 
 		Context("fails to list the statefulsets", func() {
 
-			BeforeEach(func() {
+			It("should return a meaningful error", func() {
 				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
 					return true, nil, errors.New("boom")
 				}
 				client.PrependReactor("list", "statefulsets", reaction)
-			})
 
-			It("should return a meaningful error", func() {
+				_, err := statefulSetDesirer.List()
 				Expect(err).To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
 
@@ -401,44 +331,34 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			lrp := createLRP("Baldur", "my.example.route")
-			_, err = client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
+			_, err := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("deletes the statefulSet", func() {
-			err = statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
-			Expect(err).ToNot(HaveOccurred())
+			Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 
-			Eventually(listStatefulSets, timeout).Should(BeEmpty())
+			Expect(listStatefulSets()).To(BeEmpty())
 		})
 
 		Context("when kubernetes fails to list statefulsets", func() {
 
-			BeforeEach(func() {
+			It("should return a meaningful error", func() {
 				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
 					return true, nil, errors.New("boom")
 				}
 				client.PrependReactor("list", "statefulsets", reaction)
-			})
-
-			JustBeforeEach(func() {
-				err = statefulSetDesirer.Stop(opi.LRPIdentifier{})
-			})
-
-			It("should return a meaningful error", func() {
-				Expect(err).To(MatchError(ContainSubstring("failed to list statefulsets")))
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{})).
+					To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
 
 		})
 
 		Context("when the statefulSet does not exist", func() {
 
-			JustBeforeEach(func() {
-				err = statefulSetDesirer.Stop(opi.LRPIdentifier{})
-			})
-
 			It("returns an error", func() {
-				Expect(err).To(MatchError(ContainSubstring("statefulset not found")))
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{})).
+					To(MatchError(ContainSubstring("statefulset not found")))
 			})
 		})
 	})
@@ -447,7 +367,7 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			lrp := createLRP("Baldur", "my.example.route")
-			_, err = client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
+			_, err := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
 			Expect(err).ToNot(HaveOccurred())
 
 			pod0 := toPod("baldur-space-foo-random", 0, nil)
@@ -460,11 +380,10 @@ var _ = Describe("Statefulset", func() {
 		})
 
 		It("deletes a pod instance", func() {
-			err = statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)).
+				To(Succeed())
 
-			var pods *corev1.PodList
-			pods, err = client.CoreV1().Pods(namespace).List(meta.ListOptions{})
+			pods, err := client.CoreV1().Pods(namespace).List(meta.ListOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(pods.Items).To(HaveLen(1))
 			Expect(pods.Items[0].Name).To(Equal("baldur-space-foo-random-0"))
@@ -479,58 +398,45 @@ var _ = Describe("Statefulset", func() {
 				}
 				client.PrependReactor("list", "statefulsets", reaction)
 
-				err = statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
-				Expect(err).To(MatchError("failed to get statefulset: boom"))
+				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)).
+					To(MatchError("failed to get statefulset: boom"))
 			})
 		})
 
 		Context("when the statefulset does not exist", func() {
 
 			It("returns an error", func() {
-				err = statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "some", Version: "thing"}, 1)
-				Expect(err).To(MatchError("app does not exist"))
+				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "some", Version: "thing"}, 1)).
+					To(MatchError("app does not exist"))
 			})
 		})
 
 		Context("when the instance does not exist", func() {
 
 			It("returns an error", func() {
-				err = statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 42)
-				Expect(err).To(MatchError(ContainSubstring("failed to delete pod")))
+				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 42)).
+					To(MatchError(ContainSubstring("failed to delete pod")))
 			})
 		})
 	})
 
 	Context("Get LRP instances", func() {
 
-		var (
-			instances []*opi.Instance
-			pod1      *corev1.Pod
-			pod2      *corev1.Pod
-		)
-
 		BeforeEach(func() {
 			since1 := meta.Unix(123, 0)
-			pod1 = toPod("odin", 0, &since1)
+			pod1 := toPod("odin", 0, &since1)
 			since2 := meta.Unix(456, 0)
-			pod2 = toPod("odin", 1, &since2)
-		})
-
-		JustBeforeEach(func() {
-			_, err = client.CoreV1().Pods(namespace).Create(pod1)
+			pod2 := toPod("odin", 1, &since2)
+			_, err := client.CoreV1().Pods(namespace).Create(pod1)
 			Expect(err).ToNot(HaveOccurred())
 
 			_, err = client.CoreV1().Pods(namespace).Create(pod2)
 			Expect(err).ToNot(HaveOccurred())
-
-			instances, err = statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
-		})
-
-		It("should not return an error", func() {
-			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should return the correct number of instances", func() {
+			instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+			Expect(err).ToNot(HaveOccurred())
 			Expect(instances).To(HaveLen(2))
 			Expect(instances[0]).To(Equal(toInstance(0, 123000000000)))
 			Expect(instances[1]).To(Equal(toInstance(1, 456000000000)))
@@ -538,14 +444,13 @@ var _ = Describe("Statefulset", func() {
 
 		Context("when pod list fails", func() {
 
-			BeforeEach(func() {
+			It("should return a meaningful error", func() {
 				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
 					return true, nil, errors.New("boom")
 				}
 				client.PrependReactor("list", "pods", reaction)
-			})
 
-			It("should return a meaningful error", func() {
+				_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 				Expect(err).To(MatchError(ContainSubstring("failed to list pods")))
 			})
 
@@ -553,14 +458,13 @@ var _ = Describe("Statefulset", func() {
 
 		Context("when getting events fails", func() {
 
-			BeforeEach(func() {
+			It("should return a meaningful error", func() {
 				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
 					return true, nil, errors.New("boom")
 				}
 				client.PrependReactor("list", "events", reaction)
-			})
 
-			It("should return a meaningful error", func() {
+				_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("failed to get events for pod %s", "odin-0"))))
 			})
 
@@ -568,30 +472,21 @@ var _ = Describe("Statefulset", func() {
 
 		Context("and time since creation is not available yet", func() {
 
-			BeforeEach(func() {
-				pod1 = toPod("mimir", 0, nil)
-				since2 := meta.Unix(456, 0)
-				pod2 = toPod("mimir", 1, &since2)
-			})
-
-			JustBeforeEach(func() {
-				instances, err = statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
 			It("should return a default value", func() {
-				Expect(instances).To(HaveLen(2))
-				Expect(instances[0]).To(Equal(toInstance(0, 0)))
-				Expect(instances[1]).To(Equal(toInstance(1, 456000000000)))
+				pod3 := toPod("mimir", 2, nil)
+				_, err := client.CoreV1().Pods(namespace).Create(pod3)
+				Expect(err).ToNot(HaveOccurred())
+
+				instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(instances).To(HaveLen(3))
+				Expect(instances[2]).To(Equal(toInstance(2, 0)))
 			})
 		})
 
 		Context("and the StatefulSet was deleted/stopped", func() {
 
-			BeforeEach(func() {
+			It("should return a default value", func() {
 				event1 := &corev1.Event{
 					Reason: "Killing",
 					InvolvedObject: corev1.ObjectReference{
@@ -616,13 +511,9 @@ var _ = Describe("Statefulset", func() {
 				Expect(clientErr).ToNot(HaveOccurred())
 				_, clientErr = client.CoreV1().Events(namespace).Create(event2)
 				Expect(clientErr).ToNot(HaveOccurred())
-			})
 
-			It("should not return an error", func() {
+				instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should return a default value", func() {
 				Expect(instances).To(HaveLen(0))
 			})
 		})
