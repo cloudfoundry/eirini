@@ -82,6 +82,7 @@ type Properties struct {
 	KubeConfigPath string `yaml:"kube_config_path"`
 
 	RootfsVersion string `yaml:"rootfs_version"`
+	DiskLimitMB   int64  `yaml:"disk_limit_mb"`
 }
 
 //go:generate counterfeiter . Stager

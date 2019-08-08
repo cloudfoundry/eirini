@@ -179,7 +179,7 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	registryIP := cfg.Properties.RegistryAddress
-	converter := bifrost.NewConverter(convertLogger, registryIP)
+	converter := bifrost.NewConverter(convertLogger, registryIP, cfg.Properties.DiskLimitMB)
 
 	return &bifrost.Bifrost{
 		Converter: converter,
@@ -191,11 +191,12 @@ func setConfigFromFile(path string) *eirini.Config {
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
 	cmdcommons.ExitWithError(err)
 
-	var Conf eirini.Config
-	err = yaml.Unmarshal(fileBytes, &Conf)
+	var conf eirini.Config
+	conf.Properties.DiskLimitMB = 2048
+	err = yaml.Unmarshal(fileBytes, &conf)
 	cmdcommons.ExitWithError(err)
 
-	return &Conf
+	return &conf
 }
 
 func initConnect() {

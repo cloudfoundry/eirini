@@ -85,7 +85,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 	JustBeforeEach(func() {
 		regIP := "eirini-registry.service.cf.internal"
-		converter = bifrost.NewConverter(logger, regIP)
+		converter = bifrost.NewConverter(logger, regIP, 2058)
 		lrp, err = converter.Convert(desireLRPRequest)
 	})
 
@@ -122,6 +122,10 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 			It("should set the lrp memory", func() {
 				Expect(lrp.MemoryMB).To(Equal(int64(456)))
+			})
+
+			It("should set the lrp disk", func() {
+				Expect(lrp.DiskMB).To(Equal(int64(2058)))
 			})
 
 			It("should store the VCAP env variable as metadata", func() {

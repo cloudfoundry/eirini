@@ -158,6 +158,13 @@ var _ = Describe("Statefulset", func() {
 				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
 			})
 
+			It("should set disk limit", func() {
+				statefulSet := getStatefulSetFromK8s(lrp)
+				expectedLimit := resource.NewScaledQuantity(2048, resource.Mega)
+				actualLimit := statefulSet.Spec.Template.Spec.Containers[0].Resources.Limits.StorageEphemeral()
+				Expect(actualLimit).To(Equal(expectedLimit))
+			})
+
 			Context("When redeploying an existing LRP", func() {
 				BeforeEach(func() {
 					lrp = createLRP("Baldur", "my.example.route")
@@ -689,14 +696,10 @@ func toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	vols, volumeMounts := createVolumeSpecs(lrp.VolumeMounts)
 
 	targetInstances := int32(lrp.TargetInstances)
-	memory, err := resource.ParseQuantity(fmt.Sprintf("%dM", lrp.MemoryMB))
-	if err != nil {
-		panic(err)
-	}
-	cpu, err := resource.ParseQuantity(fmt.Sprintf("%dm", lrp.CPUWeight))
-	if err != nil {
-		panic(err)
-	}
+
+	memory := *resource.NewScaledQuantity(lrp.MemoryMB, resource.Mega)
+	cpu := *resource.NewScaledQuantity(int64(lrp.CPUWeight*10), resource.Milli)
+	ephemeralStorage := *resource.NewScaledQuantity(lrp.DiskMB, resource.Mega)
 
 	automountServiceAccountToken := false
 
@@ -727,7 +730,8 @@ func toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 							ReadinessProbe: &corev1.Probe{},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
-									corev1.ResourceMemory: memory,
+									corev1.ResourceMemory:           memory,
+									corev1.ResourceEphemeralStorage: ephemeralStorage,
 								},
 								Requests: corev1.ResourceList{
 									corev1.ResourceMemory: memory,
@@ -814,6 +818,7 @@ func createLRP(name, routes string) *opi.LRP {
 		},
 		RunningInstances: 0,
 		MemoryMB:         1024,
+		DiskMB:           2048,
 		Image:            "busybox",
 		Ports:            []int32{8888, 9999},
 		Metadata: map[string]string{
