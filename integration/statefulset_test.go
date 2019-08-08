@@ -1,6 +1,7 @@
 package statefulsets_test
 
 import (
+	"fmt"
 	"math/rand"
 
 	"code.cloudfoundry.org/eirini/k8s"
@@ -139,8 +140,8 @@ fi;`,
 			})
 
 			It("correctly reports the running instances", func() {
-				Eventually(numberOfInstancesFn, timeout).Should(Equal(1))
-				Consistently(numberOfInstancesFn, "10s").Should(Equal(1))
+				Eventually(numberOfInstancesFn, timeout).Should(Equal(1), fmt.Sprintf("pod %#v did not start", odinLRP.LRPIdentifier))
+				Consistently(numberOfInstancesFn, "10s").Should(Equal(1), fmt.Sprintf("pod %#v did not keep running", odinLRP.LRPIdentifier))
 			})
 		})
 	})
@@ -179,5 +180,6 @@ func createLRP(name string) *opi.LRP {
 		},
 		LRPIdentifier: opi.LRPIdentifier{GUID: guid, Version: "version_" + guid},
 		LRP:           "metadata",
+		DiskMB:        2047,
 	}
 }

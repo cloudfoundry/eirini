@@ -69,7 +69,7 @@ var _ = Describe("connect command", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		FIt("should not serve HTTP traffic", func() {
+		It("should not serve HTTP traffic", func() {
 			Eventually(func() error {
 				_, err := httpClient.Get("http://localhost:8085/")
 				return err
