@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
-	"strings"
 	"time"
 
 	"code.cloudfoundry.org/eirini"
@@ -32,16 +31,16 @@ import (
 const (
 	namespace          = "testing"
 	registrySecretName = "secret-name"
+	rootfsVersion      = "version2"
 )
 
-var _ = Describe("Statefulset", func() {
+var _ = Describe("Statefulset Desirer", func() {
 
 	var (
 		client                *fake.Clientset
 		statefulSetDesirer    opi.Desirer
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
 		readinessProbeCreator *k8sfakes.FakeProbeCreator
-		rootfsVersion         string
 	)
 
 	listStatefulSets := func() []appsv1.StatefulSet {
@@ -64,7 +63,6 @@ var _ = Describe("Statefulset", func() {
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		hasher := new(utilfakes.FakeHasher)
 		hasher.HashReturns("random", nil)
-		rootfsVersion = "version1"
 		statefulSetDesirer = &StatefulSetDesirer{
 			Client:                client,
 			Namespace:             namespace,
@@ -176,8 +174,7 @@ var _ = Describe("Statefulset", func() {
 	Context("When getting an app", func() {
 		It("return the same LRP except metadata and original LRP request", func() {
 			expectedLRP := createLRP("Baldur", "my.example.route")
-			_, createErr := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(expectedLRP))
-			Expect(createErr).ToNot(HaveOccurred())
+			Expect(statefulSetDesirer.Desire(expectedLRP)).To(Succeed())
 			expectedLRP.Metadata = cleanupMetadata(expectedLRP.Metadata)
 			expectedLRP.LRP = ""
 
@@ -195,16 +192,12 @@ var _ = Describe("Statefulset", func() {
 	Context("When updating an app", func() {
 		Context("when the app exists", func() {
 			var (
-				lrp                 *opi.LRP
-				originalStatefulSet *appsv1.StatefulSet
+				lrp *opi.LRP
 			)
 
 			BeforeEach(func() {
 				lrp = createLRP("update", `["my.example.route"]`)
-
-				originalStatefulSet = toStatefulSet(lrp)
-				_, err := client.AppsV1().StatefulSets(namespace).Create(originalStatefulSet)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
 			})
 
 			Context("when update fails", func() {
@@ -227,6 +220,8 @@ var _ = Describe("Statefulset", func() {
 					lrp.TargetInstances = 5
 					lrp.Metadata[cf.LastUpdated] = "never"
 
+					originalStatefulSet := getStatefulSetFromK8s(lrp)
+
 					Expect(statefulSetDesirer.Update(lrp)).To(Succeed())
 
 					Eventually(func() int32 {
@@ -244,6 +239,7 @@ var _ = Describe("Statefulset", func() {
 
 			Context("with modified routes", func() {
 				It("only updates the stored routes", func() {
+					originalStatefulSet := getStatefulSetFromK8s(lrp)
 					lrp.Metadata = map[string]string{cf.VcapAppUris: `["my.example.route", "my.second.example.route"]`, cf.LastUpdated: "yes"}
 					Expect(statefulSetDesirer.Update(lrp)).To(Succeed())
 
@@ -291,9 +287,7 @@ var _ = Describe("Statefulset", func() {
 			}
 
 			for _, l := range expectedLRPs {
-				statefulset := toStatefulSet(l)
-				_, createErr := client.AppsV1().StatefulSets(namespace).Create(statefulset)
-				Expect(createErr).ToNot(HaveOccurred())
+				Expect(statefulSetDesirer.Desire(l)).To(Succeed())
 			}
 			// clean metadata and LRP because we do not return LRP
 			// and return only subset of metadata fields
@@ -306,7 +300,6 @@ var _ = Describe("Statefulset", func() {
 		})
 
 		Context("no statefulSets exist", func() {
-
 			It("returns an empy list of LRPs", func() {
 				Expect(statefulSetDesirer.List()).To(BeEmpty())
 			})
@@ -331,11 +324,11 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			lrp := createLRP("Baldur", "my.example.route")
-			_, err := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
-			Expect(err).ToNot(HaveOccurred())
+			Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
 		})
 
 		It("deletes the statefulSet", func() {
+			Expect(listStatefulSets()).NotTo(BeEmpty())
 			Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 
 			Expect(listStatefulSets()).To(BeEmpty())
@@ -367,11 +360,10 @@ var _ = Describe("Statefulset", func() {
 
 		BeforeEach(func() {
 			lrp := createLRP("Baldur", "my.example.route")
-			_, err := client.AppsV1().StatefulSets(namespace).Create(toStatefulSet(lrp))
-			Expect(err).ToNot(HaveOccurred())
+			Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
 
 			pod0 := toPod("baldur-space-foo-random", 0, nil)
-			_, err = client.CoreV1().Pods(namespace).Create(pod0)
+			_, err := client.CoreV1().Pods(namespace).Create(pod0)
 			Expect(err).ToNot(HaveOccurred())
 
 			pod1 := toPod("baldur-space-foo-random", 1, nil)
@@ -547,140 +539,6 @@ func toInstance(index int, since int64) *opi.Instance {
 		Since: since,
 		State: "RUNNING",
 	}
-}
-
-func toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
-	envs := MapToEnvVar(lrp.Env)
-	fieldEnvs := []corev1.EnvVar{
-		{
-			Name: eirini.EnvPodName,
-			ValueFrom: &corev1.EnvVarSource{
-				FieldRef: &corev1.ObjectFieldSelector{
-					FieldPath: "metadata.name",
-				},
-			},
-		},
-		{
-			Name: eirini.EnvCFInstanceIP,
-			ValueFrom: &corev1.EnvVarSource{
-				FieldRef: &corev1.ObjectFieldSelector{
-					FieldPath: "status.podIP",
-				},
-			},
-		},
-		{
-			Name: eirini.EnvCFInstanceInternalIP,
-			ValueFrom: &corev1.EnvVarSource{
-				FieldRef: &corev1.ObjectFieldSelector{
-					FieldPath: "status.podIP",
-				},
-			},
-		},
-	}
-
-	envs = append(envs, fieldEnvs...)
-	ports := []corev1.ContainerPort{}
-	for _, port := range lrp.Ports {
-		ports = append(ports, corev1.ContainerPort{ContainerPort: port})
-	}
-
-	vols, volumeMounts := createVolumeSpecs(lrp.VolumeMounts)
-
-	targetInstances := int32(lrp.TargetInstances)
-
-	memory := *resource.NewScaledQuantity(lrp.MemoryMB, resource.Mega)
-	cpu := *resource.NewScaledQuantity(int64(lrp.CPUWeight*10), resource.Milli)
-	ephemeralStorage := *resource.NewScaledQuantity(lrp.DiskMB, resource.Mega)
-
-	automountServiceAccountToken := false
-
-	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
-	statefulSet := &appsv1.StatefulSet{
-		ObjectMeta: meta.ObjectMeta{
-			Name: fmt.Sprintf("%s-random", strings.ToLower(namePrefix)),
-		},
-		Spec: appsv1.StatefulSetSpec{
-			Replicas: &targetInstances,
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: meta.ObjectMeta{
-					Annotations: map[string]string{
-						cf.ProcessGUID: lrp.Metadata[cf.ProcessGUID],
-						cf.VcapAppID:   lrp.Metadata[cf.VcapAppID],
-					},
-				},
-				Spec: corev1.PodSpec{
-					AutomountServiceAccountToken: &automountServiceAccountToken,
-					Containers: []corev1.Container{
-						{
-							Name:           "opi",
-							Image:          lrp.Image,
-							Command:        lrp.Command,
-							Env:            envs,
-							Ports:          ports,
-							LivenessProbe:  &corev1.Probe{},
-							ReadinessProbe: &corev1.Probe{},
-							Resources: corev1.ResourceRequirements{
-								Limits: corev1.ResourceList{
-									corev1.ResourceMemory:           memory,
-									corev1.ResourceEphemeralStorage: ephemeralStorage,
-								},
-								Requests: corev1.ResourceList{
-									corev1.ResourceMemory: memory,
-									corev1.ResourceCPU:    cpu,
-								},
-							},
-							VolumeMounts: volumeMounts,
-						},
-					},
-					Volumes: vols,
-				},
-			},
-		},
-	}
-
-	statefulSet.Namespace = namespace
-
-	labels := map[string]string{
-		"guid":        lrp.GUID,
-		"version":     lrp.Version,
-		"source_type": "APP",
-	}
-
-	statefulSet.Spec.Template.Labels = labels
-
-	statefulSet.Spec.Selector = &meta.LabelSelector{
-		MatchLabels: labels,
-	}
-
-	statefulSet.Labels = labels
-
-	statefulSet.Annotations = lrp.Metadata
-	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
-	statefulSet.Annotations[cf.VcapSpaceName] = lrp.SpaceName
-
-	return statefulSet
-}
-
-func createVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount) {
-
-	vols := []corev1.Volume{}
-	volumeMounts := []corev1.VolumeMount{}
-	for _, vol := range lrpVolumeMounts {
-		vols = append(vols, corev1.Volume{
-			Name: vol.ClaimName,
-			VolumeSource: corev1.VolumeSource{
-				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: vol.ClaimName,
-				},
-			},
-		})
-
-		volumeMounts = append(volumeMounts, corev1.VolumeMount{
-			Name:      vol.ClaimName,
-			MountPath: vol.MountPath,
-		})
-	}
-	return vols, volumeMounts
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
