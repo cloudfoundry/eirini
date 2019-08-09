@@ -19,7 +19,6 @@ var _ = Describe("Desiretask", func() {
 	const (
 		Namespace       = "tests"
 		Image           = "docker.png"
-		CCUploaderIP    = "10.10.10.1"
 		CertsSecretName = "secret-certs"
 	)
 
@@ -90,7 +89,6 @@ var _ = Describe("Desiretask", func() {
 		}
 		desirer = &TaskDesirer{
 			Namespace:       Namespace,
-			CCUploaderIP:    CCUploaderIP,
 			CertsSecretName: CertsSecretName,
 			Client:          fakeClient,
 		}
@@ -124,14 +122,6 @@ var _ = Describe("Desiretask", func() {
 	Context("When desiring a staging task", func() {
 
 		var stagingTask *opi.StagingTask
-
-		assertHostAliases := func(job *batch.Job) {
-			Expect(job.Spec.Template.Spec.HostAliases).To(HaveLen(1))
-			hostAlias := job.Spec.Template.Spec.HostAliases[0]
-
-			Expect(hostAlias.IP).To(Equal(CCUploaderIP))
-			Expect(hostAlias.Hostnames).To(ContainElement("cc-uploader.service.cf.internal"))
-		}
 
 		assertVolumes := func(job *batch.Job) {
 			Expect(job.Spec.Template.Spec.Volumes).To(HaveLen(4))
@@ -199,7 +189,6 @@ var _ = Describe("Desiretask", func() {
 		}
 
 		assertStagingSpec := func(job *batch.Job) {
-			assertHostAliases(job)
 			assertVolumes(job)
 			assertContainerVolumeMount(job)
 		}
@@ -220,9 +209,7 @@ var _ = Describe("Desiretask", func() {
 					},
 				},
 			}
-		})
 
-		BeforeEach(func() {
 			Expect(desirer.DesireStaging(stagingTask)).To(Succeed())
 		})
 

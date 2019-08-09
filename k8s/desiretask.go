@@ -21,7 +21,6 @@ const (
 
 type TaskDesirer struct {
 	Namespace       string
-	CCUploaderIP    string
 	CertsSecretName string
 	Client          kubernetes.Interface
 	Logger          lager.Logger
@@ -62,13 +61,6 @@ func (d *TaskDesirer) Delete(name string) error {
 
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	job := toJob(task.Task)
-
-	job.Spec.Template.Spec.HostAliases = []v1.HostAlias{
-		{
-			IP:        d.CCUploaderIP,
-			Hostnames: []string{eirini.CCUploaderInternalURL},
-		},
-	}
 
 	secretsVolume := v1.Volume{
 		Name: eirini.CertsVolumeName,

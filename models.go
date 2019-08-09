@@ -39,8 +39,6 @@ const (
 
 	AppMetricsEmissionIntervalInSecs = 15
 
-	CCUploaderInternalURL = "cc-uploader.service.cf.internal"
-
 	CertsMountPath  = "/etc/config/certs"
 	CertsVolumeName = "certs-volume"
 )
@@ -59,7 +57,6 @@ type Properties struct {
 	NatsPassword                     string `yaml:"nats_password"`
 	NatsIP                           string `yaml:"nats_ip"`
 	NatsPort                         int    `yaml:"nats_port"`
-	CcUploaderIP                     string `yaml:"cc_uploader_ip"`
 	CcInternalAPI                    string `yaml:"cc_internal_api"`
 	CCCertsSecretName                string `yaml:"cc_certs_secret_name"`
 	RegistryAddress                  string `yaml:"registry_address"`

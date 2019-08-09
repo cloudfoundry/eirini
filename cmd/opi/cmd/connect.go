@@ -140,7 +140,6 @@ func initStager(cfg *eirini.Config) eirini.Stager {
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
 	taskDesirer := &k8s.TaskDesirer{
 		Namespace:       cfg.Properties.KubeNamespace,
-		CCUploaderIP:    cfg.Properties.CcUploaderIP,
 		CertsSecretName: cfg.Properties.CCCertsSecretName,
 		Client:          clientset,
 	}
