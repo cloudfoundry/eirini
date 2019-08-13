@@ -14,10 +14,14 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/eirini/util/utilfakes"
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	appsv1 "k8s.io/api/apps/v1"
+	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,6 +45,7 @@ var _ = Describe("Statefulset Desirer", func() {
 		statefulSetDesirer    opi.Desirer
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
 		readinessProbeCreator *k8sfakes.FakeProbeCreator
+		logger                *lagertest.TestLogger
 	)
 
 	listStatefulSets := func() []appsv1.StatefulSet {
@@ -63,6 +68,7 @@ var _ = Describe("Statefulset Desirer", func() {
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		hasher := new(utilfakes.FakeHasher)
 		hasher.HashReturns("random", nil)
+		logger = lagertest.NewTestLogger("handler-test")
 		statefulSetDesirer = &StatefulSetDesirer{
 			Client:                client,
 			Namespace:             namespace,
@@ -71,6 +77,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			LivenessProbeCreator:  livenessProbeCreator.Spy,
 			ReadinessProbeCreator: readinessProbeCreator.Spy,
 			Hasher:                hasher,
+			Logger:                logger,
 		}
 	})
 
@@ -327,11 +334,37 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
 		})
 
-		It("deletes the statefulSet", func() {
-			Expect(listStatefulSets()).NotTo(BeEmpty())
-			Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+		Context("Successful stop", func() {
+			It("deletes the statefulSet", func() {
+				Expect(listStatefulSets()).NotTo(BeEmpty())
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 
-			Expect(listStatefulSets()).To(BeEmpty())
+				Expect(listStatefulSets()).To(BeEmpty())
+			})
+
+			It("deletes the associated LRP jobs", func() {
+				job := createJob("guid_1234")
+				_, err := client.BatchV1().Jobs(namespace).Create(job)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+				jobs, err := client.BatchV1().Jobs(namespace).List(meta.ListOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(jobs.Items).To(BeEmpty())
+			})
+		})
+
+		Context("when kubernetes fails to list jobs", func() {
+
+			It("should return a meaningful error", func() {
+				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, errors.New("boom")
+				}
+				client.PrependReactor("list", "jobs", reaction)
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
+					To(MatchError(ContainSubstring("failed to list jobs")))
+			})
+
 		})
 
 		Context("when kubernetes fails to list statefulsets", func() {
@@ -348,10 +381,14 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		Context("when the statefulSet does not exist", func() {
-
-			It("returns an error", func() {
+			It("returns success", func() {
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{})).
-					To(MatchError(ContainSubstring("statefulset not found")))
+					To(Succeed())
+			})
+
+			It("logs useful information", func() {
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "missing_guid", Version: "some_version"})).To(Succeed())
+				Expect(logger).To(gbytes.Say("missing_guid"))
 			})
 		})
 	})
@@ -586,6 +623,28 @@ func createLRP(name, routes string) *opi.LRP {
 		},
 		LRP: "original request",
 	}
+}
+
+func createJob(guid string) *batch.Job {
+	job := &batch.Job{
+		Spec: batch.JobSpec{
+			Template: v1.PodTemplateSpec{
+				Spec: v1.PodSpec{
+					RestartPolicy: v1.RestartPolicyNever,
+				},
+			},
+		},
+	}
+
+	job.Name = guid
+
+	labels := map[string]string{
+		"guid": guid,
+	}
+
+	job.Spec.Template.Labels = labels
+	job.Labels = labels
+	return job
 }
 
 func cleanupMetadata(m map[string]string) map[string]string {

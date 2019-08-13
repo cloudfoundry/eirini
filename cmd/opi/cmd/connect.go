@@ -168,13 +168,11 @@ func initStager(cfg *eirini.Config) eirini.Stager {
 }
 
 func initBifrost(cfg *eirini.Config) eirini.Bifrost {
-	syncLogger := lager.NewLogger("bifrost")
-	syncLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	kubeNamespace := cfg.Properties.KubeNamespace
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	desirer := k8s.NewStatefulSetDesirer(clientset, kubeNamespace, cfg.Properties.RegistrySecretName, cfg.Properties.RootfsVersion)
+	desirer := k8s.NewStatefulSetDesirer(clientset, kubeNamespace, cfg.Properties.RegistrySecretName, cfg.Properties.RootfsVersion, desireLogger)
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	registryIP := cfg.Properties.RegistryAddress
@@ -204,6 +202,7 @@ func initConnect() {
 
 func launchRouteCollector(clientset kubernetes.Interface, workChan chan *route.Message, namespace string) {
 	logger := lager.NewLogger("route-collector")
+	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	collector := k8s.NewRouteCollector(clientset, namespace, logger)
 	scheduler := route.CollectorScheduler{
 		Collector: collector,

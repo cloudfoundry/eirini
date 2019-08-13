@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/eirini/util"
+	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -33,12 +34,15 @@ type StatefulSetDesirer struct {
 	LivenessProbeCreator  ProbeCreator
 	ReadinessProbeCreator ProbeCreator
 	Hasher                util.Hasher
+	Logger                lager.Logger
 }
+
+var ErrNotFound = errors.New("statefulset not found")
 
 //go:generate counterfeiter . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion string) opi.Desirer {
+func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion string, logger lager.Logger) opi.Desirer {
 	return &StatefulSetDesirer{
 		Client:                client,
 		Namespace:             namespace,
@@ -47,6 +51,7 @@ func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecre
 		LivenessProbeCreator:  CreateLivenessProbe,
 		ReadinessProbeCreator: CreateReadinessProbe,
 		Hasher:                util.TruncatedSHA256Hasher{},
+		Logger:                logger,
 	}
 }
 
@@ -60,9 +65,24 @@ func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 }
 
 func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
+	selector := fmt.Sprintf("guid=%s", identifier.GUID)
+	options := meta.ListOptions{LabelSelector: selector}
+	jobs, err := m.Client.BatchV1().Jobs(m.Namespace).List(options)
+	if err != nil {
+		return errors.Wrap(err, "failed to list jobs")
+	}
+	for _, job := range jobs.Items {
+		m.Client.BatchV1().Jobs(m.Namespace).Delete(job.Name, &meta.DeleteOptions{})
+	}
+
 	statefulSet, err := m.getStatefulSet(identifier)
 	if err != nil {
-		return err
+		if err != ErrNotFound {
+			return err
+		} else {
+			m.Logger.Info("stateful set not found", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
+			return nil
+		}
 	}
 
 	backgroundPropagation := meta.DeletePropagationBackground
@@ -122,7 +142,7 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 	statefulsets := statefulSet.Items
 	switch len(statefulsets) {
 	case 0:
-		return nil, errors.New("statefulset not found")
+		return nil, ErrNotFound
 	case 1:
 		return &statefulsets[0], nil
 	default:

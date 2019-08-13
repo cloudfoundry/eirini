@@ -11,6 +11,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
+	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("RootfsPatcher", func() {
@@ -22,11 +23,13 @@ var _ = Describe("RootfsPatcher", func() {
 	)
 
 	BeforeEach(func() {
+		logger := lagertest.NewTestLogger("test")
 		desirer = k8s.NewStatefulSetDesirer(
 			clientset,
 			namespace,
 			"registry-credentials",
 			"old_rootfsversion",
+			logger,
 		)
 		odinLRP = createLRP("ödin")
 		thorLRP = createLRP("thor")
