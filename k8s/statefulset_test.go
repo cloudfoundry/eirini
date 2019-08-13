@@ -354,8 +354,32 @@ var _ = Describe("Statefulset Desirer", func() {
 			})
 		})
 
-		Context("when kubernetes fails to list jobs", func() {
+		Context("when deletion of job fails", func() {
+			It("should return a meaningful error", func() {
+				job := createJob("guid_1234")
+				_, err := client.BatchV1().Jobs(namespace).Create(job)
+				Expect(err).NotTo(HaveOccurred())
+				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, errors.New("boom")
+				}
+				client.PrependReactor("delete", "jobs", reaction)
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
+					To(MatchError(ContainSubstring("failed to delete job")))
+			})
+		})
 
+		Context("when deletion of stateful set fails", func() {
+			It("should return a meaningful error", func() {
+				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
+					return true, nil, errors.New("boom")
+				}
+				client.PrependReactor("delete", "statefulsets", reaction)
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
+					To(MatchError(ContainSubstring("failed to delete statefulset")))
+			})
+		})
+
+		Context("when kubernetes fails to list jobs", func() {
 			It("should return a meaningful error", func() {
 				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
 					return true, nil, errors.New("boom")
@@ -364,11 +388,9 @@ var _ = Describe("Statefulset Desirer", func() {
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
 					To(MatchError(ContainSubstring("failed to list jobs")))
 			})
-
 		})
 
 		Context("when kubernetes fails to list statefulsets", func() {
-
 			It("should return a meaningful error", func() {
 				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
 					return true, nil, errors.New("boom")

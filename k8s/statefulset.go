@@ -72,21 +72,23 @@ func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
 		return errors.Wrap(err, "failed to list jobs")
 	}
 	for _, job := range jobs.Items {
-		m.Client.BatchV1().Jobs(m.Namespace).Delete(job.Name, &meta.DeleteOptions{})
+		err = m.Client.BatchV1().Jobs(m.Namespace).Delete(job.Name, &meta.DeleteOptions{})
+		if err != nil {
+			return errors.Wrap(err, "failed to delete job")
+		}
 	}
 
 	statefulSet, err := m.getStatefulSet(identifier)
 	if err != nil {
 		if err != ErrNotFound {
 			return err
-		} else {
-			m.Logger.Info("stateful set not found", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
-			return nil
 		}
+		m.Logger.Info("stateful set not found", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
+		return nil
 	}
 
 	backgroundPropagation := meta.DeletePropagationBackground
-	return m.statefulSets().Delete(statefulSet.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
+	return errors.Wrap(m.statefulSets().Delete(statefulSet.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation}), "failed to delete statefulset")
 }
 
 func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index uint) error {
