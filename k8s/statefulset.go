@@ -71,8 +71,9 @@ func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to list jobs")
 	}
+	backgroundPropagation := meta.DeletePropagationBackground
 	for _, job := range jobs.Items {
-		err = m.Client.BatchV1().Jobs(m.Namespace).Delete(job.Name, &meta.DeleteOptions{})
+		err = m.Client.BatchV1().Jobs(m.Namespace).Delete(job.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
 		if err != nil {
 			return errors.Wrap(err, "failed to delete job")
 		}
@@ -87,7 +88,6 @@ func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
 		return nil
 	}
 
-	backgroundPropagation := meta.DeletePropagationBackground
 	return errors.Wrap(m.statefulSets().Delete(statefulSet.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation}), "failed to delete statefulset")
 }
 
