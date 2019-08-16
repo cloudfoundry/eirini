@@ -26,6 +26,7 @@ var _ = Describe("RootfsPatcher", func() {
 		logger := lagertest.NewTestLogger("test")
 		desirer = k8s.NewStatefulSetDesirer(
 			clientset,
+			jobCleaner,
 			namespace,
 			"registry-credentials",
 			"old_rootfsversion",

@@ -172,7 +172,8 @@ func initBifrost(cfg *eirini.Config) eirini.Bifrost {
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	desirer := k8s.NewStatefulSetDesirer(clientset, kubeNamespace, cfg.Properties.RegistrySecretName, cfg.Properties.RootfsVersion, desireLogger)
+	jobCleaner := k8s.JobCleaner{Jobs: clientset.BatchV1().Jobs(kubeNamespace)}
+	desirer := k8s.NewStatefulSetDesirer(clientset, jobCleaner, kubeNamespace, cfg.Properties.RegistrySecretName, cfg.Properties.RootfsVersion, desireLogger)
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	registryIP := cfg.Properties.RegistryAddress

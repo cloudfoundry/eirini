@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,6 +26,7 @@ import (
 var (
 	namespace      string
 	clientset      kubernetes.Interface
+	jobCleaner     k8s.Cleaner
 	kubeConfigPath string
 )
 
@@ -45,6 +47,8 @@ var _ = BeforeSuite(func() {
 	for namespaceExists(namespace) {
 		namespace = fmt.Sprintf("opi-integration-test-%d", rand.Intn(100000000))
 	}
+
+	jobCleaner = k8s.JobCleaner{Jobs: clientset.BatchV1().Jobs(namespace)}
 	createNamespace(namespace)
 	allowPodCreation(namespace)
 })

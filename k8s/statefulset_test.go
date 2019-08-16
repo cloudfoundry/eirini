@@ -19,9 +19,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	appsv1 "k8s.io/api/apps/v1"
-	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,6 +40,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	var (
 		client                *fake.Clientset
+		jobCleaner            *k8sfakes.FakeCleaner
 		statefulSetDesirer    opi.Desirer
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
 		readinessProbeCreator *k8sfakes.FakeProbeCreator
@@ -63,6 +62,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	BeforeEach(func() {
 		client = fake.NewSimpleClientset()
+		jobCleaner = new(k8sfakes.FakeCleaner)
 
 		livenessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
@@ -71,6 +71,7 @@ var _ = Describe("Statefulset Desirer", func() {
 		logger = lagertest.NewTestLogger("handler-test")
 		statefulSetDesirer = &StatefulSetDesirer{
 			Client:                client,
+			JobCleaner:            jobCleaner,
 			Namespace:             namespace,
 			RegistrySecretName:    registrySecretName,
 			RootfsVersion:         rootfsVersion,
@@ -343,28 +344,17 @@ var _ = Describe("Statefulset Desirer", func() {
 			})
 
 			It("deletes the associated LRP jobs", func() {
-				job := createJob("guid_1234")
-				_, err := client.BatchV1().Jobs(namespace).Create(job)
-				Expect(err).NotTo(HaveOccurred())
-
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
-				jobs, err := client.BatchV1().Jobs(namespace).List(meta.ListOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(jobs.Items).To(BeEmpty())
+				Expect(jobCleaner.CleanCallCount()).To(Equal(1))
+				Expect(jobCleaner.CleanArgsForCall(0)).To(Equal("guid=guid_1234"))
 			})
 		})
 
 		Context("when deletion of job fails", func() {
 			It("should return a meaningful error", func() {
-				job := createJob("guid_1234")
-				_, err := client.BatchV1().Jobs(namespace).Create(job)
-				Expect(err).NotTo(HaveOccurred())
-				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-					return true, nil, errors.New("boom")
-				}
-				client.PrependReactor("delete", "jobs", reaction)
+				jobCleaner.CleanReturns(errors.New("oh noes"))
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
-					To(MatchError(ContainSubstring("failed to delete job")))
+					To(MatchError(ContainSubstring("failed to clean staging job")))
 			})
 		})
 
@@ -376,17 +366,6 @@ var _ = Describe("Statefulset Desirer", func() {
 				client.PrependReactor("delete", "statefulsets", reaction)
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
 					To(MatchError(ContainSubstring("failed to delete statefulset")))
-			})
-		})
-
-		Context("when kubernetes fails to list jobs", func() {
-			It("should return a meaningful error", func() {
-				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-					return true, nil, errors.New("boom")
-				}
-				client.PrependReactor("list", "jobs", reaction)
-				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
-					To(MatchError(ContainSubstring("failed to list jobs")))
 			})
 		})
 
@@ -645,28 +624,6 @@ func createLRP(name, routes string) *opi.LRP {
 		},
 		LRP: "original request",
 	}
-}
-
-func createJob(guid string) *batch.Job {
-	job := &batch.Job{
-		Spec: batch.JobSpec{
-			Template: v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
-					RestartPolicy: v1.RestartPolicyNever,
-				},
-			},
-		},
-	}
-
-	job.Name = guid
-
-	labels := map[string]string{
-		"guid": guid,
-	}
-
-	job.Spec.Template.Labels = labels
-	job.Labels = labels
-	return job
 }
 
 func cleanupMetadata(m map[string]string) map[string]string {

@@ -28,6 +28,7 @@ const (
 
 type StatefulSetDesirer struct {
 	Client                kubernetes.Interface
+	JobCleaner            Cleaner
 	Namespace             string
 	RegistrySecretName    string
 	RootfsVersion         string
@@ -42,9 +43,10 @@ var ErrNotFound = errors.New("statefulset not found")
 //go:generate counterfeiter . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion string, logger lager.Logger) opi.Desirer {
+func NewStatefulSetDesirer(client kubernetes.Interface, jobCleaner Cleaner, namespace, registrySecretName, rootfsVersion string, logger lager.Logger) opi.Desirer {
 	return &StatefulSetDesirer{
 		Client:                client,
+		JobCleaner:            jobCleaner,
 		Namespace:             namespace,
 		RegistrySecretName:    registrySecretName,
 		RootfsVersion:         rootfsVersion,
@@ -66,17 +68,9 @@ func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 
 func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
 	selector := fmt.Sprintf("guid=%s", identifier.GUID)
-	options := meta.ListOptions{LabelSelector: selector}
-	jobs, err := m.Client.BatchV1().Jobs(m.Namespace).List(options)
+	err := m.JobCleaner.Clean(selector)
 	if err != nil {
-		return errors.Wrap(err, "failed to list jobs")
-	}
-	backgroundPropagation := meta.DeletePropagationBackground
-	for _, job := range jobs.Items {
-		err = m.Client.BatchV1().Jobs(m.Namespace).Delete(job.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
-		if err != nil {
-			return errors.Wrap(err, "failed to delete job")
-		}
+		return errors.Wrap(err, "failed to clean staging job")
 	}
 
 	statefulSet, err := m.getStatefulSet(identifier)
@@ -88,6 +82,7 @@ func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
 		return nil
 	}
 
+	backgroundPropagation := meta.DeletePropagationBackground
 	return errors.Wrap(m.statefulSets().Delete(statefulSet.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation}), "failed to delete statefulset")
 }
 

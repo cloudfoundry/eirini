@@ -40,6 +40,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		logger := lagertest.NewTestLogger("test")
 		desirer = k8s.NewStatefulSetDesirer(
 			clientset,
+			jobCleaner,
 			namespace,
 			"registry-secret",
 			"rootfsversion",
