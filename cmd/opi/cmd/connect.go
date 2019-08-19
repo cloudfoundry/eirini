@@ -216,7 +216,7 @@ func launchRouteCollector(clientset kubernetes.Interface, workChan chan *route.M
 }
 
 func launchRouteEmitter(clientset kubernetes.Interface, workChan chan *route.Message, namespace, natsPassword, natsIP string, natsPort int) {
-	nc, err := nats.Connect(util.GenerateNatsURL(natsPassword, natsIP, natsPort))
+	nc, err := nats.Connect(util.GenerateNatsURL(natsPassword, natsIP, natsPort), nats.MaxReconnects(-1))
 	cmdcommons.ExitWithError(err)
 
 	logger := lager.NewLogger("route")
