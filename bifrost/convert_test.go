@@ -3,20 +3,16 @@ package bifrost_test
 import (
 	"encoding/json"
 
-	"code.cloudfoundry.org/eirini"
-
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/ghttp"
 )
 
 var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	var (
-		fakeServer       *ghttp.Server
 		logger           *lagertest.TestLogger
 		lrp              opi.LRP
 		err              error
@@ -25,15 +21,11 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	)
 
 	BeforeEach(func() {
-		fakeServer = ghttp.NewServer()
 		logger = lagertest.NewTestLogger("converter-test")
-		fakeServer.AppendHandlers(
-			ghttp.VerifyRequest("POST", "/v2/transformers/bumblebee/blobs/"),
-		)
 		updatedRoutes := []map[string]interface{}{
 			{
 				"hostname": "bumblebee.example.com",
-				"port":     8080,
+				"port":     8000,
 			},
 			{
 				"hostname": "transformers.example.com",
@@ -46,26 +38,21 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 		rawJSON := json.RawMessage(routesJSON)
 		desireLRPRequest = cf.DesireLRPRequest{
-			GUID:           "b194809b-88c0-49af-b8aa-69da097fc360",
-			Version:        "2fdc448f-6bac-4085-9426-87d0124c433a",
-			ProcessGUID:    "b194809b-88c0-49af-b8aa-69da097fc360-2fdc448f-6bac-4085-9426-87d0124c433a",
-			DropletHash:    "the-droplet-hash",
-			DropletGUID:    "the-droplet-guid",
-			DockerImageURL: "the-image-url",
-			LastUpdated:    "23534635232.3",
-			NumInstances:   3,
-			MemoryMB:       456,
-			CPUWeight:      50,
+			GUID:         "b194809b-88c0-49af-b8aa-69da097fc360",
+			Version:      "2fdc448f-6bac-4085-9426-87d0124c433a",
+			ProcessGUID:  "b194809b-88c0-49af-b8aa-69da097fc360-2fdc448f-6bac-4085-9426-87d0124c433a",
+			LastUpdated:  "23534635232.3",
+			NumInstances: 3,
+			MemoryMB:     456,
+			CPUWeight:    50,
 			Environment: map[string]string{
 				"VCAP_APPLICATION": `{"application_name":"bumblebee", "space_name":"transformers", "application_id":"b194809b-88c0-49af-b8aa-69da097fc360", "version": "something-something-uuid", "application_uris":["bumblebee.example.com", "transformers.example.com"]}`,
-				"VCAP_SERVICES":    `"user-provided": [{"binding_name": "bind-it-like-beckham","credentials": {"password": "notpassword1","username": "admin"},"instance_name": "dora","name": "serve"}]`,
-				"PORT":             "8080",
+				"VAR_FROM_CC":      "val from cc",
 			},
-			StartCommand:            "start me",
 			HealthCheckType:         "http",
 			HealthCheckHTTPEndpoint: "/heat",
 			HealthCheckTimeoutMs:    400,
-			Ports:                   []int32{8080, 8888},
+			Ports:                   []int32{8000, 8888},
 			Routes: map[string]*json.RawMessage{
 				"cf-router": &rawJSON,
 			},
@@ -87,10 +74,6 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 		regIP := "eirini-registry.service.cf.internal"
 		converter = bifrost.NewConverter(logger, regIP, 2058)
 		lrp, err = converter.Convert(desireLRPRequest)
-	})
-
-	AfterEach(func() {
-		fakeServer.Close()
 	})
 
 	Context("When request is converted successfully", func() {
@@ -142,48 +125,26 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(lrp.Metadata[cf.LastUpdated]).To(Equal("23534635232.3"))
 			})
 
-			It("should set the start command", func() {
-				Expect(lrp.Command).To(Equal(append(eirini.InitProcess, eirini.Launch)))
+			It("should set the environment variables provided by cloud controller", func() {
+				Expect(lrp.Env).To(HaveKeyWithValue("VAR_FROM_CC", desireLRPRequest.Environment["VAR_FROM_CC"]))
 			})
 
-			It("should set the VCAP_APPLICATION environment variable", func() {
-				val, ok := lrp.Env["VCAP_APPLICATION"]
-				Expect(ok).To(BeTrue())
-				Expect(val).To(Equal(desireLRPRequest.Environment["VCAP_APPLICATION"]))
+			It("should set CF_INSTANCE_* env variables", func() {
+				Expect(lrp.Env).To(HaveKeyWithValue("CF_INSTANCE_ADDR", "0.0.0.0:8080"))
+				Expect(lrp.Env).To(HaveKeyWithValue("CF_INSTANCE_PORT", "8080"))
+				Expect(lrp.Env).To(HaveKeyWithValue("CF_INSTANCE_PORTS", MatchJSON(`[{"external": 8080, "internal": 8080}]`)))
 			})
 
-			It("should set the VCAP_SERVICES environment variable", func() {
-				val, ok := lrp.Env["VCAP_SERVICES"]
-				Expect(ok).To(BeTrue())
-				Expect(val).To(Equal(desireLRPRequest.Environment["VCAP_SERVICES"]))
-			})
-
-			It("should set the launcher specific environment variables", func() {
-				val, ok := lrp.Env["PORT"]
-				Expect(ok).To(BeTrue())
-				Expect(val).To(Equal("8080"))
-			})
-
-			It("should set the start command env variable", func() {
-				val, ok := lrp.Env["START_COMMAND"]
-				Expect(ok).To(BeTrue())
-				Expect(val).To(Equal("start me"))
-			})
-
-			It("sets the healthcheck information", func() {
-				health := lrp.Health
-				Expect(health.Type).To(Equal("http"))
-				Expect(health.Port).To(Equal(int32(8080)))
-				Expect(health.Endpoint).To(Equal("/heat"))
-				Expect(health.TimeoutMs).To(Equal(uint(400)))
+			It("should set LANG env variable", func() {
+				Expect(lrp.Env).To(HaveKeyWithValue("LANG", "en_US.UTF-8"))
 			})
 
 			It("sets the app routes", func() {
-				Expect(lrp.Metadata[cf.VcapAppUris]).To(Equal(`[{"hostname":"bumblebee.example.com","port":8080},{"hostname":"transformers.example.com","port":7070}]`))
+				Expect(lrp.Metadata[cf.VcapAppUris]).To(Equal(`[{"hostname":"bumblebee.example.com","port":8000},{"hostname":"transformers.example.com","port":7070}]`))
 			})
 
 			It("should set the ports", func() {
-				Expect(lrp.Ports).To(Equal([]int32{8080, 8888}))
+				Expect(lrp.Ports).To(Equal([]int32{8000, 8888}))
 			})
 
 			It("should set the volume mounts", func() {
@@ -204,30 +165,65 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			})
 		}
 
-		Context("When the Docker image is provided", func() {
+		Context("When the app is using docker lifecycle", func() {
+			BeforeEach(func() {
+				desireLRPRequest.Lifecycle = cf.Lifecycle{
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image:   "the-image-url",
+						Command: []string{"command-in-docker"},
+					},
+				}
+			})
 			It("should directly convert DockerImageURL", func() {
 				Expect(lrp.Image).To(Equal("the-image-url"))
+			})
+
+			It("should set command from docker lifecycle", func() {
+				Expect(lrp.Command).To(Equal([]string{"command-in-docker"}))
+			})
+
+			It("sets the healthcheck information", func() {
+				health := lrp.Health
+				Expect(health.Type).To(Equal("http"))
+				Expect(health.Port).To(Equal(int32(8000)))
+				Expect(health.Endpoint).To(Equal("/heat"))
+				Expect(health.TimeoutMs).To(Equal(uint(400)))
 			})
 
 			verifyLRPConvertedSuccessfully()
 		})
 
-		Context("When the Docker Image Url is not provided", func() {
+		Context("When the app is using buildpack lifecycle", func() {
 			BeforeEach(func() {
-				desireLRPRequest.DockerImageURL = ""
+				desireLRPRequest.Lifecycle = cf.Lifecycle{
+					BuildpackLifecycle: &cf.BuildpackLifecycle{
+						DropletHash:  "the-droplet-hash",
+						DropletGUID:  "the-droplet-guid",
+						StartCommand: "start me",
+					}}
 			})
 
-			Context("when the staging is successful", func() {
-				BeforeEach(func() {
-					fakeServer.SetHandler(0, ghttp.RespondWith(201, nil))
-				})
-
-				It("should convert droplet apps via the special registry URL", func() {
-					Expect(lrp.Image).To(Equal("eirini-registry.service.cf.internal/cloudfoundry/the-droplet-guid:the-droplet-hash"))
-				})
-
-				verifyLRPConvertedSuccessfully()
+			It("sets the healthcheck information", func() {
+				health := lrp.Health
+				Expect(health.Type).To(Equal("http"))
+				Expect(health.Port).To(Equal(int32(8080)))
+				Expect(health.Endpoint).To(Equal("/heat"))
+				Expect(health.TimeoutMs).To(Equal(uint(400)))
 			})
+
+			It("should convert droplet apps via the special registry URL", func() {
+				Expect(lrp.Image).To(Equal("eirini-registry.service.cf.internal/cloudfoundry/the-droplet-guid:the-droplet-hash"))
+			})
+
+			It("should set buildpack specific env variables", func() {
+				Expect(lrp.Env).To(HaveKeyWithValue("HOME", "/home/vcap/app"))
+				Expect(lrp.Env).To(HaveKeyWithValue("PATH", "/usr/local/bin:/usr/bin:/bin"))
+				Expect(lrp.Env).To(HaveKeyWithValue("USER", "vcap"))
+				Expect(lrp.Env).To(HaveKeyWithValue("TMPDIR", "/home/vcap/tmp"))
+				Expect(lrp.Env).To(HaveKeyWithValue("START_COMMAND", "start me"))
+			})
+
+			verifyLRPConvertedSuccessfully()
 		})
 
 	})

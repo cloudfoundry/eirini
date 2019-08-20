@@ -3,7 +3,6 @@ package bifrost
 import (
 	"fmt"
 
-	"code.cloudfoundry.org/eirini"
 	"github.com/pkg/errors"
 
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -32,13 +31,47 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		return opi.LRP{}, errors.Wrap(err, "failed to parse vcap app")
 	}
 
-	if request.DockerImageURL == "" {
-		request.DockerImageURL = c.imageURI(request.DropletGUID, request.DropletHash)
+	var command []string
+	var env map[string]string
+	var image string
+
+	env = map[string]string{
+		"LANG":              "en_US.UTF-8",
+		"CF_INSTANCE_ADDR":  "0.0.0.0:8080",
+		"CF_INSTANCE_PORT":  "8080",
+		"CF_INSTANCE_PORTS": `[{"external":8080,"internal":8080}]`,
+	}
+
+	healthcheck := opi.Healtcheck{
+		Type:      request.HealthCheckType,
+		Endpoint:  request.HealthCheckHTTPEndpoint,
+		TimeoutMs: request.HealthCheckTimeoutMs,
+	}
+	switch {
+	case request.Lifecycle.DockerLifecycle != nil:
+		image = request.Lifecycle.DockerLifecycle.Image
+		command = request.Lifecycle.DockerLifecycle.Command
+		healthcheck.Port = request.Ports[0]
+
+	case request.Lifecycle.BuildpackLifecycle != nil:
+		lifecycle := request.Lifecycle.BuildpackLifecycle
+		image = c.imageURI(lifecycle.DropletGUID, lifecycle.DropletHash)
+		command = []string{"dumb-init", "--", "/lifecycle/launch"}
+		buildpackEnv := map[string]string{
+			"HOME":          "/home/vcap/app",
+			"PATH":          "/usr/local/bin:/usr/bin:/bin",
+			"USER":          "vcap",
+			"TMPDIR":        "/home/vcap/tmp",
+			"START_COMMAND": lifecycle.StartCommand,
+		}
+		env = mergeMaps(env, buildpackEnv)
+		healthcheck.Port = int32(8080)
+
+	default:
+		return opi.LRP{}, fmt.Errorf("missing lifecycle data")
 	}
 
 	routesJSON := getRequestedRoutes(request)
-
-	lev := eirini.SetupEnv(request.StartCommand)
 
 	identifier := opi.LRPIdentifier{
 		GUID:    request.GUID,
@@ -58,17 +91,12 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		AppName:         vcap.AppName,
 		SpaceName:       vcap.SpaceName,
 		LRPIdentifier:   identifier,
-		Image:           request.DockerImageURL,
+		Image:           image,
 		TargetInstances: request.NumInstances,
-		Command:         append(eirini.InitProcess, eirini.Launch),
-		Env:             mergeMaps(request.Environment, lev),
-		Health: opi.Healtcheck{
-			Type:      request.HealthCheckType,
-			Endpoint:  request.HealthCheckHTTPEndpoint,
-			TimeoutMs: request.HealthCheckTimeoutMs,
-			Port:      int32(8080),
-		},
-		Ports: request.Ports,
+		Command:         command,
+		Env:             mergeMaps(request.Environment, env),
+		Health:          healthcheck,
+		Ports:           request.Ports,
 		Metadata: map[string]string{
 			cf.VcapAppName: vcap.AppName,
 			cf.VcapAppID:   vcap.AppID,

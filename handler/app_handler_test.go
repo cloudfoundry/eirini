@@ -44,7 +44,11 @@ var _ = Describe("AppHandler", func() {
 			path = "/apps/myguid"
 			body = `{
 				"process_guid" : "myguid",
-				"start_command": "./start",
+				"lifecycle": {
+					"buildpack_lifecycle": {
+						"start_command": "./start"
+					}
+				},
 				"environment": { "env_var": "env_var_value" },
 				"instances": 5,
 				"memory_mb": 123,
@@ -75,8 +79,12 @@ var _ = Describe("AppHandler", func() {
 
 		It("should call the bifrost with the desired LRPs request from Cloud Controller", func() {
 			expectedRequest := cf.DesireLRPRequest{
-				ProcessGUID:             "myguid",
-				StartCommand:            "./start",
+				ProcessGUID: "myguid",
+				Lifecycle: cf.Lifecycle{
+					BuildpackLifecycle: &cf.BuildpackLifecycle{
+						StartCommand: "./start",
+					},
+				},
 				Environment:             map[string]string{"env_var": "env_var_value"},
 				NumInstances:            5,
 				MemoryMB:                123,

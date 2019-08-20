@@ -36,10 +36,6 @@ type DesireLRPRequest struct {
 	ProcessGUID             string                      `json:"process_guid"`
 	Ports                   []int32                     `json:"ports"`
 	Routes                  map[string]*json.RawMessage `json:"routes"`
-	DockerImageURL          string                      `json:"docker_image"`
-	DropletHash             string                      `json:"droplet_hash"`
-	DropletGUID             string                      `json:"droplet_guid"`
-	StartCommand            string                      `json:"start_command"`
 	Environment             map[string]string           `json:"environment"`
 	NumInstances            int                         `json:"instances"`
 	LastUpdated             string                      `json:"last_updated"`
@@ -49,7 +45,24 @@ type DesireLRPRequest struct {
 	MemoryMB                int64                       `json:"memory_mb"`
 	CPUWeight               uint8                       `json:"cpu_weight"`
 	VolumeMounts            []VolumeMount               `json:"volume_mounts"`
+	Lifecycle               Lifecycle                   `json:"lifecycle"`
 	LRP                     string
+}
+
+type Lifecycle struct {
+	DockerLifecycle    *DockerLifecycle    `json:"docker_lifecycle"`
+	BuildpackLifecycle *BuildpackLifecycle `json:"buildpack_lifecycle"`
+}
+
+type DockerLifecycle struct {
+	Image   string   `json:"image"`
+	Command []string `json:"command"`
+}
+
+type BuildpackLifecycle struct {
+	DropletHash  string `json:"droplet_hash"`
+	DropletGUID  string `json:"droplet_guid"`
+	StartCommand string `json:"start_command"`
 }
 
 type StagingRequest struct {
