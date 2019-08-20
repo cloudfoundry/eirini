@@ -8,9 +8,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	apps_v1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -39,16 +38,16 @@ var _ = Describe("URIChangeInformer", func() {
 		workChan    chan *eiriniroute.Message
 		stopChan    chan struct{}
 		logger      *lagertest.TestLogger
-		statefulset *apps_v1.StatefulSet
-		pod0, pod1  *v1.Pod
+		statefulset *appsv1.StatefulSet
+		pod0, pod1  *corev1.Pod
 		informerWG  sync.WaitGroup
 	)
 
-	createPod := func(name, ip string) *v1.Pod {
-		return &v1.Pod{
-			ObjectMeta: meta.ObjectMeta{
+	createPod := func(name, ip string) *corev1.Pod {
+		return &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
-				OwnerReferences: []meta.OwnerReference{
+				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind: "StatefulSet",
 						Name: "mr-stateful",
@@ -59,17 +58,17 @@ var _ = Describe("URIChangeInformer", func() {
 					"guid": name + "-guid",
 				},
 			},
-			Spec: v1.PodSpec{
-				Containers: []v1.Container{
-					{Ports: []v1.ContainerPort{{ContainerPort: 8080}}},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Ports: []corev1.ContainerPort{{ContainerPort: 8080}}},
 				},
 			},
-			Status: v1.PodStatus{
+			Status: corev1.PodStatus{
 				PodIP: ip,
-				Conditions: []v1.PodCondition{
+				Conditions: []corev1.PodCondition{
 					{
-						Type:   v1.PodReady,
-						Status: v1.ConditionTrue,
+						Type:   corev1.PodReady,
+						Status: corev1.ConditionTrue,
 					},
 				},
 			},
@@ -82,7 +81,7 @@ var _ = Describe("URIChangeInformer", func() {
 		fakecs.PrependWatchReactor("statefulsets", testcore.DefaultWatchReactor(watcher, nil))
 	}
 
-	copyWithModifiedRoute := func(st *apps_v1.StatefulSet, routes string) *apps_v1.StatefulSet {
+	copyWithModifiedRoute := func(st *appsv1.StatefulSet, routes string) *appsv1.StatefulSet {
 		thecopy := *st
 
 		thecopy.Annotations = map[string]string{
@@ -103,8 +102,8 @@ var _ = Describe("URIChangeInformer", func() {
 
 		logger = lagertest.NewTestLogger("uri-informer-test")
 
-		statefulset = &apps_v1.StatefulSet{
-			ObjectMeta: meta.ObjectMeta{
+		statefulset = &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: "mr-stateful",
 				Annotations: map[string]string{
 					"routes": `[
@@ -119,14 +118,14 @@ var _ = Describe("URIChangeInformer", func() {
 					]`,
 				},
 			},
-			Spec: apps_v1.StatefulSetSpec{
-				Selector: &meta.LabelSelector{
+			Spec: appsv1.StatefulSetSpec{
+				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
 						"name": "the-app-name",
 					},
 				},
-				Template: v1.PodTemplateSpec{
-					ObjectMeta: meta.ObjectMeta{
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
 							cf.ProcessGUID: "myguid",
 						},
@@ -279,11 +278,11 @@ var _ = Describe("URIChangeInformer", func() {
 					"Name": Equal("mr-stateful-0"),
 				}))))
 			})
-
 		})
+
 		Context("and the first pod is not ready", func() {
 			BeforeEach(func() {
-				pod0.Status.Conditions[0].Status = v1.ConditionFalse
+				pod0.Status.Conditions[0].Status = corev1.ConditionFalse
 			})
 
 			It("should not send routes for the pod", func() {
@@ -291,7 +290,6 @@ var _ = Describe("URIChangeInformer", func() {
 					"Name": Equal("mr-stateful-0-guid"),
 				}))))
 			})
-
 		})
 
 		Context("and the first pod has no ip", func() {
@@ -591,7 +589,7 @@ var _ = Describe("URIChangeInformer", func() {
 	Context("When a pod is not ready", func() {
 
 		BeforeEach(func() {
-			pod0.Status.Conditions[0].Status = v1.ConditionFalse
+			pod0.Status.Conditions[0].Status = corev1.ConditionFalse
 		})
 
 		JustBeforeEach(func() {
@@ -658,6 +656,22 @@ var _ = Describe("URIChangeInformer", func() {
 
 	})
 
+	Context("When the annotations are not updated", func() {
+
+		JustBeforeEach(func() {
+			updated := statefulset.DeepCopy()
+			updated.Labels = map[string]string{"new": "label"}
+			watcher.Modify(updated)
+		})
+
+		It("should do nothing", func() {
+			Consistently(workChan).ShouldNot(Receive())
+
+			logCount := len(logger.Logs())
+			Expect(logCount).To(BeZero())
+		})
+	})
+
 	Context("When the app is deleted", func() {
 
 		JustBeforeEach(func() {
@@ -722,7 +736,45 @@ var _ = Describe("URIChangeInformer", func() {
 
 		Context("and a pod is not ready", func() {
 			BeforeEach(func() {
-				pod0.Status.Conditions[0].Status = v1.ConditionFalse
+				pod0.Status.Conditions[0].Status = corev1.ConditionFalse
+			})
+
+			It("should unregister all routes for the first pod", func() {
+				Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+					"Name": Equal("mr-stateful-0"),
+					"Routes": MatchAllFields(Fields{
+						"RegisteredRoutes":   BeEmpty(),
+						"UnregisteredRoutes": ConsistOf("mr-stateful.50.60.70.80.nip.io"),
+					}),
+					"InstanceID": Equal("mr-stateful-0"),
+					"Address":    Equal("10.20.30.40"),
+					"Port":       BeNumerically("==", 8080),
+					"TLSPort":    BeNumerically("==", 0),
+				}))))
+			})
+
+			It("should unregister all routes for the first pod", func() {
+				Eventually(workChan, routeMessageTimeout).Should(Receive(PointTo(MatchAllFields(Fields{
+					"Name": Equal("mr-stateful-0"),
+					"Routes": MatchAllFields(Fields{
+						"RegisteredRoutes":   BeEmpty(),
+						"UnregisteredRoutes": ConsistOf("mr-boombastic.50.60.70.80.nip.io"),
+					}),
+					"InstanceID": Equal("mr-stateful-0"),
+					"Address":    Equal("10.20.30.40"),
+					"Port":       BeNumerically("==", 6565),
+					"TLSPort":    BeNumerically("==", 0),
+				}))))
+			})
+		})
+
+		Context("and the pod is marked for deletion", func() {
+			BeforeEach(func() {
+				now := metav1.Time{
+					Time: time.Now(),
+				}
+
+				pod0.DeletionTimestamp = &now
 			})
 
 			It("should unregister all routes for the first pod", func() {

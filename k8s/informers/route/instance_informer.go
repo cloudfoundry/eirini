@@ -61,7 +61,7 @@ func (c *InstanceChangeInformer) onPodUpdate(oldObj, updatedObj interface{}, wor
 		return
 	}
 
-	if markedForDeletion(updatedPod) || !isReady(updatedPod.Status.Conditions) && isReady(oldPod.Status.Conditions) {
+	if markedForDeletion(*updatedPod) || (!isReady(updatedPod.Status.Conditions) && isReady(oldPod.Status.Conditions)) {
 		loggerSession.Debug("pod-not-ready", lager.Data{"statuses": updatedPod.Status.Conditions, "deletion-timestamp": updatedPod.DeletionTimestamp})
 		c.unregisterPodRoutes(oldPod, userDefinedRoutes, work)
 		return

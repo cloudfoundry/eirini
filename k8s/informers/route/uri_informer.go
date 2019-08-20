@@ -2,6 +2,7 @@ package route
 
 import (
 	"errors"
+	"reflect"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -9,9 +10,9 @@ import (
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 	set "github.com/deckarep/golang-set"
-	apps_v1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -36,7 +37,7 @@ func NewURIChangeInformer(client kubernetes.Interface, namespace string, logger 
 	}
 }
 
-func NewRouteMessage(pod *v1.Pod, port uint32, routes eiriniroute.Routes) (*eiriniroute.Message, error) {
+func NewRouteMessage(pod *corev1.Pod, port uint32, routes eiriniroute.Routes) (*eiriniroute.Message, error) {
 	if len(pod.Status.PodIP) == 0 {
 		return nil, errors.New("missing ip address")
 	}
@@ -70,7 +71,7 @@ func (c *URIChangeInformer) Start(work chan<- *eiriniroute.Message) {
 	informer := factory.Apps().V1().StatefulSets().Informer()
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(oldObj, updatedObj interface{}) {
-			c.onUpdate(oldObj, updatedObj, work)
+			c.onAnnotationUpdate(oldObj, updatedObj, work)
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.onDelete(obj, work)
@@ -80,10 +81,18 @@ func (c *URIChangeInformer) Start(work chan<- *eiriniroute.Message) {
 	informer.Run(c.Cancel)
 }
 
-func (c *URIChangeInformer) onUpdate(oldObj, updatedObj interface{}, work chan<- *eiriniroute.Message) {
-	oldStatefulSet := oldObj.(*apps_v1.StatefulSet)
-	updatedStatefulSet := updatedObj.(*apps_v1.StatefulSet)
+func (c *URIChangeInformer) onAnnotationUpdate(oldObj, updatedObj interface{}, work chan<- *eiriniroute.Message) {
+	oldStatefulSet := oldObj.(*appsv1.StatefulSet)
+	updatedStatefulSet := updatedObj.(*appsv1.StatefulSet)
 
+	if reflect.DeepEqual(oldStatefulSet.Annotations, updatedStatefulSet.Annotations) {
+		return
+	}
+
+	c.onUpdate(oldStatefulSet, updatedStatefulSet, work)
+}
+
+func (c *URIChangeInformer) onUpdate(oldStatefulSet, updatedStatefulSet *appsv1.StatefulSet, work chan<- *eiriniroute.Message) {
 	loggerSession := c.Logger.Session("statefulset-update", lager.Data{"guid": updatedStatefulSet.Spec.Template.Annotations[cf.ProcessGUID]})
 
 	updatedSet, err := decodeRoutesAsSet(updatedStatefulSet)
@@ -99,12 +108,14 @@ func (c *URIChangeInformer) onUpdate(oldObj, updatedObj interface{}, work chan<-
 	removedRoutes := oldSet.Difference(updatedSet)
 	grouped := groupRoutesByPort(removedRoutes, updatedSet)
 
-	c.sendRoutesForAllPods(
+	routes := c.createRoutesOnUpdate(
 		loggerSession,
-		work,
 		updatedStatefulSet,
 		grouped,
 	)
+	for _, route := range routes {
+		work <- route
+	}
 }
 
 func groupRoutesByPort(remove, add set.Set) portGroup {
@@ -126,7 +137,7 @@ func groupRoutesByPort(remove, add set.Set) portGroup {
 }
 
 func (c *URIChangeInformer) onDelete(obj interface{}, work chan<- *eiriniroute.Message) {
-	deletedStatefulSet := obj.(*apps_v1.StatefulSet)
+	deletedStatefulSet := obj.(*appsv1.StatefulSet)
 	loggerSession := c.Logger.Session("statefulset-delete", lager.Data{"guid": deletedStatefulSet.Spec.Template.Annotations[cf.ProcessGUID]})
 
 	routeSet, err := decodeRoutesAsSet(deletedStatefulSet)
@@ -135,52 +146,76 @@ func (c *URIChangeInformer) onDelete(obj interface{}, work chan<- *eiriniroute.M
 	}
 
 	routeGroups := groupRoutesByPort(routeSet, set.NewSet())
-	c.sendRoutesForAllPods(
+	routes := c.createRoutesOnDelete(
 		loggerSession,
-		work,
 		deletedStatefulSet,
 		routeGroups,
 	)
+	for _, route := range routes {
+		work <- route
+	}
 }
 
-func (c *URIChangeInformer) sendRoutesForAllPods(loggerSession lager.Logger, work chan<- *route.Message, statefulset *apps_v1.StatefulSet, grouped portGroup) {
+func (c *URIChangeInformer) createRoutesOnUpdate(loggerSession lager.Logger, statefulset *appsv1.StatefulSet, grouped portGroup) []*route.Message {
 	pods, err := c.getChildrenPods(statefulset)
 	if err != nil {
 		loggerSession.Error("failed-to-get-child-pods", err)
-		return
+		return []*route.Message{}
 	}
 
+	resultRoutes := []*route.Message{}
 	for _, pod := range pods {
-		pod := pod
-		if markedForDeletion(&pod) {
+		if markedForDeletion(pod) {
+			loggerSession.Debug("skipping pod marked for deletion")
 			continue
 		}
-		for port, routes := range grouped {
-			podRoute, err := NewRouteMessage(&pod, uint32(port), routes)
-			if err != nil {
-				loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
-				continue
-			}
-			work <- podRoute
-		}
+		resultRoutes = append(resultRoutes, createRouteMessages(loggerSession, pod, grouped)...)
 	}
+	return resultRoutes
 }
 
-func markedForDeletion(pod *v1.Pod) bool {
+func (c *URIChangeInformer) createRoutesOnDelete(loggerSession lager.Logger, statefulset *appsv1.StatefulSet, grouped portGroup) []*route.Message {
+	pods, err := c.getChildrenPods(statefulset)
+	if err != nil {
+		loggerSession.Error("failed-to-get-child-pods", err)
+		return []*route.Message{}
+	}
+
+	resultRoutes := []*route.Message{}
+	for _, pod := range pods {
+		resultRoutes = append(resultRoutes, createRouteMessages(loggerSession, pod, grouped)...)
+	}
+	return resultRoutes
+}
+
+func createRouteMessages(loggerSession lager.Logger, pod corev1.Pod, grouped portGroup) []*route.Message {
+	resultRoutes := []*route.Message{}
+	for port, routes := range grouped {
+		podRoute, err := NewRouteMessage(&pod, uint32(port), routes)
+		if err != nil {
+			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
+			continue
+		}
+		resultRoutes = append(resultRoutes, podRoute)
+	}
+	return resultRoutes
+}
+
+func markedForDeletion(pod corev1.Pod) bool {
 	return pod.DeletionTimestamp != nil
 }
 
-func (c *URIChangeInformer) getChildrenPods(st *apps_v1.StatefulSet) ([]v1.Pod, error) {
+func (c *URIChangeInformer) getChildrenPods(st *appsv1.StatefulSet) ([]corev1.Pod, error) {
 	set := labels.Set(st.Spec.Selector.MatchLabels)
-	opts := meta.ListOptions{LabelSelector: set.AsSelector().String()}
+	opts := metav1.ListOptions{LabelSelector: set.AsSelector().String()}
 	podlist, err := c.Client.CoreV1().Pods(c.Namespace).List(opts)
 	if err != nil {
-		return []v1.Pod{}, err
+		return []corev1.Pod{}, err
 	}
 	return podlist.Items, nil
 }
 
-func decodeRoutesAsSet(statefulset *apps_v1.StatefulSet) (set.Set, error) {
+func decodeRoutesAsSet(statefulset *appsv1.StatefulSet) (set.Set, error) {
 	routes := set.NewSet()
 	updatedUserDefinedRoutes, err := decodeRoutes(statefulset.Annotations[eirini.RegisteredRoutes])
 	if err != nil {
