@@ -46,6 +46,9 @@ type DesireLRPRequest struct {
 	CPUWeight               uint8                       `json:"cpu_weight"`
 	VolumeMounts            []VolumeMount               `json:"volume_mounts"`
 	Lifecycle               Lifecycle                   `json:"lifecycle"`
+	DropletHash             string                      `json:"droplet_hash"`
+	DropletGUID             string                      `json:"droplet_guid"`
+	StartCommand            string                      `json:"start_command"`
 	LRP                     string
 }
 

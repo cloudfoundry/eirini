@@ -47,6 +47,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		Endpoint:  request.HealthCheckHTTPEndpoint,
 		TimeoutMs: request.HealthCheckTimeoutMs,
 	}
+
 	switch {
 	case request.Lifecycle.DockerLifecycle != nil:
 		image = request.Lifecycle.DockerLifecycle.Image
@@ -54,18 +55,15 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		healthcheck.Port = request.Ports[0]
 
 	case request.Lifecycle.BuildpackLifecycle != nil:
+		var buildpackEnv map[string]string
 		lifecycle := request.Lifecycle.BuildpackLifecycle
-		image = c.imageURI(lifecycle.DropletGUID, lifecycle.DropletHash)
-		command = []string{"dumb-init", "--", "/lifecycle/launch"}
-		buildpackEnv := map[string]string{
-			"HOME":          "/home/vcap/app",
-			"PATH":          "/usr/local/bin:/usr/bin:/bin",
-			"USER":          "vcap",
-			"TMPDIR":        "/home/vcap/tmp",
-			"START_COMMAND": lifecycle.StartCommand,
-		}
+		image, command, buildpackEnv, healthcheck.Port = c.buildpackProperties(lifecycle.DropletGUID, lifecycle.DropletHash, lifecycle.StartCommand)
 		env = mergeMaps(env, buildpackEnv)
-		healthcheck.Port = int32(8080)
+
+	case request.DropletGUID != "":
+		var buildpackEnv map[string]string
+		image, command, buildpackEnv, healthcheck.Port = c.buildpackProperties(request.DropletGUID, request.DropletHash, request.StartCommand)
+		env = mergeMaps(env, buildpackEnv)
 
 	default:
 		return opi.LRP{}, fmt.Errorf("missing lifecycle data")
@@ -111,6 +109,20 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		VolumeMounts: volumeMounts,
 		LRP:          request.LRP,
 	}, nil
+}
+
+func (c *DropletToImageConverter) buildpackProperties(dropletGUID, dropletHash, startCommand string) (string, []string, map[string]string, int32) {
+	image := c.imageURI(dropletGUID, dropletHash)
+	command := []string{"dumb-init", "--", "/lifecycle/launch"}
+	buildpackEnv := map[string]string{
+		"HOME":          "/home/vcap/app",
+		"PATH":          "/usr/local/bin:/usr/bin:/bin",
+		"USER":          "vcap",
+		"TMPDIR":        "/home/vcap/tmp",
+		"START_COMMAND": startCommand,
+	}
+
+	return image, command, buildpackEnv, int32(8080)
 }
 
 func getRequestedRoutes(request cf.DesireLRPRequest) string {

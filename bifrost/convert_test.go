@@ -226,6 +226,36 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			verifyLRPConvertedSuccessfully()
 		})
 
+		Context("When the app is using buildpack lifecycle, but desiredLRP is in old format", func() {
+			BeforeEach(func() {
+				desireLRPRequest.DropletHash = "the-droplet-hash"
+				desireLRPRequest.DropletGUID = "the-droplet-guid"
+				desireLRPRequest.StartCommand = "start me"
+			})
+
+			It("sets the healthcheck information", func() {
+				health := lrp.Health
+				Expect(health.Type).To(Equal("http"))
+				Expect(health.Port).To(Equal(int32(8080)))
+				Expect(health.Endpoint).To(Equal("/heat"))
+				Expect(health.TimeoutMs).To(Equal(uint(400)))
+			})
+
+			It("should convert droplet apps via the special registry URL", func() {
+				Expect(lrp.Image).To(Equal("eirini-registry.service.cf.internal/cloudfoundry/the-droplet-guid:the-droplet-hash"))
+			})
+
+			It("should set buildpack specific env variables", func() {
+				Expect(lrp.Env).To(HaveKeyWithValue("HOME", "/home/vcap/app"))
+				Expect(lrp.Env).To(HaveKeyWithValue("PATH", "/usr/local/bin:/usr/bin:/bin"))
+				Expect(lrp.Env).To(HaveKeyWithValue("USER", "vcap"))
+				Expect(lrp.Env).To(HaveKeyWithValue("TMPDIR", "/home/vcap/tmp"))
+				Expect(lrp.Env).To(HaveKeyWithValue("START_COMMAND", "start me"))
+			})
+
+			verifyLRPConvertedSuccessfully()
+		})
+
 	})
 
 	Context("When the request fails to be converted", func() {
