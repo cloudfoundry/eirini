@@ -1,4 +1,4 @@
-package waiter_test
+package utils_test
 
 import (
 	"errors"
@@ -7,27 +7,21 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 
-	. "code.cloudfoundry.org/eirini/waiter"
-	"code.cloudfoundry.org/eirini/waiter/waiterfakes"
+	. "code.cloudfoundry.org/eirini/k8s/utils"
+	"code.cloudfoundry.org/eirini/k8s/utils/utilsfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 )
 
-var _ = Describe("DeploymentWaiter", func() {
+var _ = Describe("Deployment Utils", func() {
 
 	var (
-		fakeLister *waiterfakes.FakeDeploymentLister
-		waiter     Deployment
+		fakeLister *utilsfakes.FakeDeploymentLister
 		logger     *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
-		fakeLister = new(waiterfakes.FakeDeploymentLister)
+		fakeLister = new(utilsfakes.FakeDeploymentLister)
 		logger = lagertest.NewTestLogger("test")
-		waiter = Deployment{
-			Deployments:       fakeLister,
-			Logger:            logger,
-			ListLabelSelector: "my=label",
-		}
 	})
 
 	It("reports ready if all Deployments are updated and ready", func() {
@@ -42,7 +36,7 @@ var _ = Describe("DeploymentWaiter", func() {
 		}
 		fakeLister.ListReturns(ssList, nil)
 
-		Expect(waiter.IsReady()).To(BeTrue())
+		Expect(IsReady(fakeLister, logger, "my=label")).To(BeTrue())
 	})
 
 	It("reports not ready if observed generation is not updated yet", func() {
@@ -58,7 +52,7 @@ var _ = Describe("DeploymentWaiter", func() {
 
 		fakeLister.ListReturns(&appsv1.DeploymentList{Items: []appsv1.Deployment{outdatedSS}}, nil)
 
-		Expect(waiter.IsReady()).To(BeFalse())
+		Expect(IsReady(fakeLister, logger, "my=label")).To(BeFalse())
 	})
 
 	It("reports not ready if there are non-ready replicas", func() {
@@ -70,7 +64,7 @@ var _ = Describe("DeploymentWaiter", func() {
 		}
 		fakeLister.ListReturns(ssList, nil)
 
-		Expect(waiter.IsReady()).To(BeFalse())
+		Expect(IsReady(fakeLister, logger, "my=label")).To(BeFalse())
 	})
 
 	It("reports not ready if there are non-updated replicas", func() {
@@ -83,7 +77,7 @@ var _ = Describe("DeploymentWaiter", func() {
 		}
 		fakeLister.ListReturns(ssList, nil)
 
-		Expect(waiter.IsReady()).To(BeFalse())
+		Expect(IsReady(fakeLister, logger, "my=label")).To(BeFalse())
 	})
 
 	It("reports not ready if current replicas are less than desired", func() {
@@ -97,7 +91,7 @@ var _ = Describe("DeploymentWaiter", func() {
 		}
 		fakeLister.ListReturns(ssList, nil)
 
-		Expect(waiter.IsReady()).To(BeFalse())
+		Expect(IsReady(fakeLister, logger, "my=label")).To(BeFalse())
 	})
 
 	It("reports not ready is there remain unavailable replicas", func() {
@@ -111,13 +105,13 @@ var _ = Describe("DeploymentWaiter", func() {
 			})},
 		}
 		fakeLister.ListReturns(ssList, nil)
-		Expect(waiter.IsReady()).To(BeFalse())
+		Expect(IsReady(fakeLister, logger, "my=label")).To(BeFalse())
 	})
 
 	When("listing Deployments fails", func() {
 		It("should log the error", func() {
 			fakeLister.ListReturns(nil, errors.New("boom?"))
-			waiter.IsReady()
+			IsReady(fakeLister, logger, "my=label")
 
 			Eventually(logger.Logs, "2s").Should(HaveLen(1))
 			log := logger.Logs()[0]
@@ -127,7 +121,7 @@ var _ = Describe("DeploymentWaiter", func() {
 
 		It("should return false", func() {
 			fakeLister.ListReturns(nil, errors.New("boom?"))
-			Expect(waiter.IsReady()).To(BeFalse())
+			Expect(IsReady(fakeLister, logger, "my=label")).To(BeFalse())
 		})
 	})
 
@@ -142,7 +136,7 @@ var _ = Describe("DeploymentWaiter", func() {
 				})},
 			}
 			fakeLister.ListReturns(ssList, nil)
-			waiter.IsReady()
+			IsReady(fakeLister, logger, "my=label")
 
 			Expect(fakeLister.ListCallCount()).To(Equal(1))
 			listOptions := fakeLister.ListArgsForCall(0)
