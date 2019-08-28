@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
 	"code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/util"
@@ -34,5 +35,8 @@ func main() {
 		ListLabelSelector: "name=bits",
 	}
 
-	cmd.ExitWithError(util.RunWithTimeout(bitsWaiter.Wait, *timeout))
+	pollUntilTrue := func(stop <-chan interface{}) {
+		util.PollUntilTrue(bitsWaiter.IsReady, 1*time.Second, stop)
+	}
+	cmd.ExitWithError(util.RunWithTimeout(pollUntilTrue, *timeout))
 }

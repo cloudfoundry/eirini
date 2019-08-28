@@ -1,6 +1,7 @@
 package util_test
 
 import (
+	"sync/atomic"
 	"time"
 
 	"code.cloudfoundry.org/eirini/util"
@@ -11,19 +12,20 @@ import (
 var _ = Describe("TimeoutRunner", func() {
 
 	It("should execute the function passed to it", func() {
-		wasExecuted := false
-		runsForever := func(_ chan<- interface{}, _ <-chan interface{}) {
-			wasExecuted = true
-			time.Sleep(1 * time.Minute)
+		var callCount int32
+		atomic.StoreInt32(&callCount, 0)
+		runsForever := func(_ <-chan interface{}) {
+			atomic.AddInt32(&callCount, 1)
 		}
 
 		_ = util.RunWithTimeout(runsForever, 1*time.Millisecond)
-		Expect(wasExecuted).To(BeTrue())
+		wasExecutedOnce := func() bool { return atomic.LoadInt32(&callCount) == 1 }
+		Eventually(wasExecutedOnce).Should(BeTrue())
 	})
 
-	When("the function doesn't write to ready chan before timeout", func() {
+	When("the function doesn't complete before timeout", func() {
 		It("should return an error with a helpful message", func() {
-			runsForever := func(_ chan<- interface{}, _ <-chan interface{}) {
+			runsForever := func(_ <-chan interface{}) {
 				time.Sleep(1 * time.Minute)
 			}
 
@@ -32,33 +34,24 @@ var _ = Describe("TimeoutRunner", func() {
 		})
 
 		It("should send a stop signal to the function", func() {
-			recievedStop := false
-			runsForever := func(_ chan<- interface{}, stop <-chan interface{}) {
+			var recievedStop int32
+			atomic.StoreInt32(&recievedStop, 0)
+			runsForever := func(stop <-chan interface{}) {
 				<-stop
-				recievedStop = true
+				atomic.AddInt32(&recievedStop, 1)
 			}
 
 			_ = util.RunWithTimeout(runsForever, 1*time.Millisecond)
-			Eventually(func() bool { return recievedStop }, 1*time.Second).Should(BeTrue())
+			recievedStopOnce := func() bool { return atomic.LoadInt32(&recievedStop) == 1 }
+			Eventually(recievedStopOnce, 1*time.Second).Should(BeTrue())
 		})
 	})
 
-	When("the function writes to ready chan before timeout", func() {
+	When("the function completes before timeout", func() {
 		It("should return no error", func() {
-			runsWithinTime := func(ready chan<- interface{}, stop <-chan interface{}) {
-				ready <- nil
-			}
+			runsWithinTime := func(stop <-chan interface{}) {}
 
 			Expect(util.RunWithTimeout(runsWithinTime, 10*time.Millisecond)).To(Succeed())
-		})
-	})
-
-	When("the function exits without writing to ready chan", func() {
-		It("should return an error with a helpful message", func() {
-			exitsWithoutTelling := func(ready chan<- interface{}, stop <-chan interface{}) {}
-
-			Expect(util.RunWithTimeout(exitsWithoutTelling, 10*time.Millisecond)).
-				To(MatchError("function completed before timeout, but did not write to ready chan"))
 		})
 	})
 })
