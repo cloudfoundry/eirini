@@ -1,8 +1,6 @@
 package waiter
 
 import (
-	"time"
-
 	"code.cloudfoundry.org/lager"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,22 +17,7 @@ type Deployment struct {
 	ListLabelSelector string
 }
 
-func (w Deployment) Wait(ready chan<- interface{}, stop <-chan interface{}) {
-	for {
-		select {
-		case <-stop:
-			return
-		default:
-			if w.deploymentsUpdated() {
-				ready <- nil
-				return
-			}
-			time.Sleep(1 * time.Second)
-		}
-	}
-}
-
-func (w Deployment) deploymentsUpdated() bool {
+func (w Deployment) IsReady() bool {
 	deploymentList, err := w.Deployments.List(metav1.ListOptions{LabelSelector: w.ListLabelSelector})
 	if err != nil {
 		w.Logger.Error("failed to list deployments", err)

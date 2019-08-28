@@ -30,7 +30,7 @@ var _ = Describe("DeploymentWaiter", func() {
 		}
 	})
 
-	It("should wait for all Deployments to be updated and ready", func() {
+	It("reports ready if all Deployments are updated and ready", func() {
 		ssList := &appsv1.DeploymentList{
 			Items: []appsv1.Deployment{createDeployment(replicaStatuses{
 				desired:     1,
@@ -42,17 +42,10 @@ var _ = Describe("DeploymentWaiter", func() {
 		}
 		fakeLister.ListReturns(ssList, nil)
 
-		ready := make(chan interface{}, 1)
-		stop := make(chan interface{}, 1)
-
-		defer close(ready)
-		defer close(stop)
-
-		waiter.Wait(ready, stop)
-		Expect(ready).To(Receive())
+		Expect(waiter.IsReady()).To(BeTrue())
 	})
 
-	It("should wait until Deployments status is tracking the updated pods", func() {
+	It("reports not ready if observed generation is not updated yet", func() {
 		outdatedSS := createDeployment(replicaStatuses{
 			desired:     1,
 			ready:       1,
@@ -63,131 +56,78 @@ var _ = Describe("DeploymentWaiter", func() {
 		outdatedSS.Generation = 3
 		outdatedSS.Status.ObservedGeneration = 2
 
-		updatedSS := createDeployment(replicaStatuses{
-			desired:     1,
-			ready:       1,
-			updated:     1,
-			available:   1,
-			unavailable: 0,
-		})
-		updatedSS.Generation = 3
-		updatedSS.Status.ObservedGeneration = 3
+		fakeLister.ListReturns(&appsv1.DeploymentList{Items: []appsv1.Deployment{outdatedSS}}, nil)
 
-		fakeLister.ListReturnsOnCall(0, &appsv1.DeploymentList{Items: []appsv1.Deployment{outdatedSS}}, nil)
-		fakeLister.ListReturnsOnCall(1, &appsv1.DeploymentList{Items: []appsv1.Deployment{updatedSS}}, nil)
-
-		ready := make(chan interface{}, 1)
-		stop := make(chan interface{}, 1)
-		defer close(ready)
-		defer close(stop)
-
-		waiter.Wait(ready, stop)
-		Expect(fakeLister.ListCallCount()).To(Equal(2))
-		Expect(ready).To(Receive())
+		Expect(waiter.IsReady()).To(BeFalse())
 	})
 
-	When("Stop is signalled", func() {
-		testItStops := func() {
-			ready := make(chan interface{}, 1)
-			stop := make(chan interface{}, 1)
-			defer close(ready)
-			defer close(stop)
-
-			exited := make(chan interface{}, 1)
-			defer close(exited)
-			go func() {
-				waiter.Wait(ready, stop)
-				exited <- nil
-			}()
-
-			stop <- nil
-			Eventually(exited).Should(Receive())
-			Expect(ready).ToNot(Receive())
+	It("reports not ready if there are non-ready replicas", func() {
+		ssList := &appsv1.DeploymentList{
+			Items: []appsv1.Deployment{createDeployment(replicaStatuses{
+				desired: 3,
+				ready:   1,
+			})},
 		}
+		fakeLister.ListReturns(ssList, nil)
 
-		When("there are non-ready replicas", func() {
-			BeforeEach(func() {
-				ssList := &appsv1.DeploymentList{
-					Items: []appsv1.Deployment{createDeployment(replicaStatuses{
-						desired: 3,
-						ready:   1,
-					})},
-				}
-				fakeLister.ListReturns(ssList, nil)
-			})
+		Expect(waiter.IsReady()).To(BeFalse())
+	})
 
-			It("should stop executing without writing to ready chan", testItStops)
-		})
+	It("reports not ready if there are non-updated replicas", func() {
+		ssList := &appsv1.DeploymentList{
+			Items: []appsv1.Deployment{createDeployment(replicaStatuses{
+				desired: 3,
+				ready:   3,
+				updated: 2,
+			})},
+		}
+		fakeLister.ListReturns(ssList, nil)
 
-		When("there are non-updated replicas", func() {
-			BeforeEach(func() {
-				ssList := &appsv1.DeploymentList{
-					Items: []appsv1.Deployment{createDeployment(replicaStatuses{
-						desired: 3,
-						ready:   3,
-						updated: 2,
-					})},
-				}
-				fakeLister.ListReturns(ssList, nil)
+		Expect(waiter.IsReady()).To(BeFalse())
+	})
 
-			})
+	It("reports not ready if current replicas are less than desired", func() {
+		ssList := &appsv1.DeploymentList{
+			Items: []appsv1.Deployment{createDeployment(replicaStatuses{
+				desired:   3,
+				ready:     3,
+				updated:   3,
+				available: 1,
+			})},
+		}
+		fakeLister.ListReturns(ssList, nil)
 
-			It("should stop executing without writing to ready chan", testItStops)
-		})
+		Expect(waiter.IsReady()).To(BeFalse())
+	})
 
-		When("current replicas are less than desired", func() {
-			BeforeEach(func() {
-				ssList := &appsv1.DeploymentList{
-					Items: []appsv1.Deployment{createDeployment(replicaStatuses{
-						desired:   3,
-						ready:     3,
-						updated:   3,
-						available: 1,
-					})},
-				}
-				fakeLister.ListReturns(ssList, nil)
-
-			})
-
-			It("should stop executing without writing to ready chan", testItStops)
-		})
-
-		When("there remain unavailable replicas", func() {
-			BeforeEach(func() {
-				ssList := &appsv1.DeploymentList{
-					Items: []appsv1.Deployment{createDeployment(replicaStatuses{
-						desired:     3,
-						ready:       3,
-						updated:     3,
-						available:   3,
-						unavailable: 1,
-					})},
-				}
-				fakeLister.ListReturns(ssList, nil)
-			})
-
-			It("should stop executing without writing to ready chan", testItStops)
-		})
+	It("reports not ready is there remain unavailable replicas", func() {
+		ssList := &appsv1.DeploymentList{
+			Items: []appsv1.Deployment{createDeployment(replicaStatuses{
+				desired:     3,
+				ready:       3,
+				updated:     3,
+				available:   3,
+				unavailable: 1,
+			})},
+		}
+		fakeLister.ListReturns(ssList, nil)
+		Expect(waiter.IsReady()).To(BeFalse())
 	})
 
 	When("listing Deployments fails", func() {
 		It("should log the error", func() {
 			fakeLister.ListReturns(nil, errors.New("boom?"))
+			waiter.IsReady()
 
-			ready := make(chan interface{}, 1)
-			stop := make(chan interface{}, 1)
-			defer close(ready)
-			defer close(stop)
-
-			go func() {
-				waiter.Wait(ready, stop)
-			}()
-
-			Eventually(logger.Logs).Should(HaveLen(1))
-			stop <- nil
+			Eventually(logger.Logs, "2s").Should(HaveLen(1))
 			log := logger.Logs()[0]
 			Expect(log.Message).To(Equal("test.failed to list deployments"))
 			Expect(log.Data).To(HaveKeyWithValue("error", "boom?"))
+		})
+
+		It("should return false", func() {
+			fakeLister.ListReturns(nil, errors.New("boom?"))
+			Expect(waiter.IsReady()).To(BeFalse())
 		})
 	})
 
@@ -202,19 +142,13 @@ var _ = Describe("DeploymentWaiter", func() {
 				})},
 			}
 			fakeLister.ListReturns(ssList, nil)
-			ready := make(chan interface{}, 1)
-			stop := make(chan interface{}, 1)
-			defer close(ready)
-			defer close(stop)
+			waiter.IsReady()
 
-			go func() {
-				waiter.Wait(ready, stop)
-			}()
-
-			Eventually(ready).Should(Receive())
+			Expect(fakeLister.ListCallCount()).To(Equal(1))
 			listOptions := fakeLister.ListArgsForCall(0)
 			Expect(listOptions.LabelSelector).To(Equal("my=label"))
 		})
+
 	})
 })
 

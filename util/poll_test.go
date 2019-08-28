@@ -1,6 +1,7 @@
 package util_test
 
 import (
+	"sync/atomic"
 	"time"
 
 	"code.cloudfoundry.org/eirini/util"
@@ -61,27 +62,35 @@ var _ = Describe("Poll", func() {
 		stop := make(chan interface{}, 1)
 		defer close(stop)
 
-		funcCalled := false
+		var funcCallCount int32
+		atomic.StoreInt32(&funcCallCount, 0)
 		f := func() bool {
-			funcCalled = true
+			atomic.AddInt32(&funcCallCount, 1)
 			stop <- nil
 			return false
 		}
 
+		stopped := make(chan interface{}, 1)
+		defer close(stopped)
+
 		go func() {
 			util.PollUntilTrue(f, 1*time.Millisecond, stop)
+			stopped <- nil
 		}()
 
-		Eventually(func() bool { return funcCalled }).Should(BeTrue())
+		funcCalledOnce := func() bool { return atomic.LoadInt32(&funcCallCount) == int32(1) }
+		Eventually(funcCalledOnce).Should(BeTrue())
+		Eventually(stopped).Should(Receive())
 	})
 
 	It("sleeps for given duration between polls", func() {
 		stop := make(chan interface{}, 1)
 		defer close(stop)
 
-		funcCalledTimes := 0
+		var funcCalledTimes int32
+		atomic.StoreInt32(&funcCalledTimes, 0)
 		f := func() bool {
-			funcCalledTimes++
+			atomic.AddInt32(&funcCalledTimes, 1)
 			return false
 		}
 
@@ -90,6 +99,6 @@ var _ = Describe("Poll", func() {
 		}()
 
 		time.Sleep(130 * time.Millisecond)
-		Expect(funcCalledTimes).To(Equal(2))
+		Expect(atomic.LoadInt32(&funcCalledTimes)).To(Equal(int32(2)))
 	})
 })
