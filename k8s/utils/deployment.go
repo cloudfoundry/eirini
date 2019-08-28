@@ -1,4 +1,4 @@
-package waiter
+package utils
 
 import (
 	"code.cloudfoundry.org/lager"
@@ -11,16 +11,10 @@ type DeploymentLister interface {
 	List(metav1.ListOptions) (*appsv1.DeploymentList, error)
 }
 
-type Deployment struct {
-	Deployments       DeploymentLister
-	Logger            lager.Logger
-	ListLabelSelector string
-}
-
-func (w Deployment) IsReady() bool {
-	deploymentList, err := w.Deployments.List(metav1.ListOptions{LabelSelector: w.ListLabelSelector})
+func IsReady(lister DeploymentLister, logger lager.Logger, labelSelector string) bool {
+	deploymentList, err := lister.List(metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
-		w.Logger.Error("failed to list deployments", err)
+		logger.Error("failed to list deployments", err)
 		return false
 	}
 

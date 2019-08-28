@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini/cmd"
+	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/util"
-	"code.cloudfoundry.org/eirini/waiter"
 	"code.cloudfoundry.org/lager"
 )
 
@@ -29,14 +29,13 @@ func main() {
 	logger := lager.NewLogger("Bits Waiter")
 	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
 
-	bitsWaiter := waiter.Deployment{
-		Logger:            logger,
-		Deployments:       deploymentClient,
-		ListLabelSelector: "name=bits",
+	bitsIsReady := func() bool {
+		return utils.IsReady(deploymentClient, logger, "name=bits")
 	}
 
 	pollUntilTrue := func(stop <-chan interface{}) {
-		util.PollUntilTrue(bitsWaiter.IsReady, 1*time.Second, stop)
+		util.PollUntilTrue(bitsIsReady, 1*time.Second, stop)
 	}
+
 	cmd.ExitWithError(util.RunWithTimeout(pollUntilTrue, *timeout))
 }
