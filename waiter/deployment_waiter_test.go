@@ -1,11 +1,10 @@
 package waiter_test
 
 import (
-	"time"
+	"errors"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 
 	. "code.cloudfoundry.org/eirini/waiter"
@@ -26,7 +25,6 @@ var _ = Describe("DeploymentWaiter", func() {
 		logger = lagertest.NewTestLogger("test")
 		waiter = Deployment{
 			Deployments:       fakeLister,
-			Timeout:           100 * time.Millisecond,
 			Logger:            logger,
 			ListLabelSelector: "my=label",
 		}
@@ -44,7 +42,14 @@ var _ = Describe("DeploymentWaiter", func() {
 		}
 		fakeLister.ListReturns(ssList, nil)
 
-		Expect(waiter.Wait()).To(Succeed())
+		ready := make(chan interface{}, 1)
+		stop := make(chan interface{}, 1)
+
+		defer close(ready)
+		defer close(stop)
+
+		waiter.Wait(ready, stop)
+		Expect(ready).To(Receive())
 	})
 
 	It("should wait until Deployments status is tracking the updated pods", func() {
@@ -71,12 +76,35 @@ var _ = Describe("DeploymentWaiter", func() {
 		fakeLister.ListReturnsOnCall(0, &appsv1.DeploymentList{Items: []appsv1.Deployment{outdatedSS}}, nil)
 		fakeLister.ListReturnsOnCall(1, &appsv1.DeploymentList{Items: []appsv1.Deployment{updatedSS}}, nil)
 
-		waiter.Timeout = 2 * time.Second
-		Expect(waiter.Wait()).To(Succeed())
+		ready := make(chan interface{}, 1)
+		stop := make(chan interface{}, 1)
+		defer close(ready)
+		defer close(stop)
+
+		waiter.Wait(ready, stop)
 		Expect(fakeLister.ListCallCount()).To(Equal(2))
+		Expect(ready).To(Receive())
 	})
 
-	When("Deployments don't become ready before timeout", func() {
+	When("Stop is signalled", func() {
+		testItStops := func() {
+			ready := make(chan interface{}, 1)
+			stop := make(chan interface{}, 1)
+			defer close(ready)
+			defer close(stop)
+
+			exited := make(chan interface{}, 1)
+			defer close(exited)
+			go func() {
+				waiter.Wait(ready, stop)
+				exited <- nil
+			}()
+
+			stop <- nil
+			Eventually(exited).Should(Receive())
+			Expect(ready).ToNot(Receive())
+		}
+
 		When("there are non-ready replicas", func() {
 			BeforeEach(func() {
 				ssList := &appsv1.DeploymentList{
@@ -86,12 +114,9 @@ var _ = Describe("DeploymentWaiter", func() {
 					})},
 				}
 				fakeLister.ListReturns(ssList, nil)
-
 			})
 
-			It("should return error", func() {
-				Expect(waiter.Wait()).To(MatchError(ContainSubstring("timed out after")))
-			})
+			It("should stop executing without writing to ready chan", testItStops)
 		})
 
 		When("there are non-updated replicas", func() {
@@ -107,9 +132,7 @@ var _ = Describe("DeploymentWaiter", func() {
 
 			})
 
-			It("should return error", func() {
-				Expect(waiter.Wait()).To(MatchError(ContainSubstring("timed out after")))
-			})
+			It("should stop executing without writing to ready chan", testItStops)
 		})
 
 		When("current replicas are less than desired", func() {
@@ -126,9 +149,7 @@ var _ = Describe("DeploymentWaiter", func() {
 
 			})
 
-			It("should return error", func() {
-				Expect(waiter.Wait()).To(MatchError(ContainSubstring("timed out after")))
-			})
+			It("should stop executing without writing to ready chan", testItStops)
 		})
 
 		When("there remain unavailable replicas", func() {
@@ -145,19 +166,7 @@ var _ = Describe("DeploymentWaiter", func() {
 				fakeLister.ListReturns(ssList, nil)
 			})
 
-			It("should return error", func() {
-				Expect(waiter.Wait()).To(MatchError(ContainSubstring("timed out after")))
-
-			})
-
-		})
-
-	})
-
-	When("the specified timeout is not valid", func() {
-		It("should return an error", func() {
-			waiter.Timeout = -1
-			Expect(waiter.Wait()).To(MatchError("provided timeout is not valid"))
+			It("should stop executing without writing to ready chan", testItStops)
 		})
 	})
 
@@ -165,8 +174,17 @@ var _ = Describe("DeploymentWaiter", func() {
 		It("should log the error", func() {
 			fakeLister.ListReturns(nil, errors.New("boom?"))
 
-			Expect(waiter.Wait()).NotTo(Succeed())
-			Expect(logger.Logs()).To(HaveLen(1))
+			ready := make(chan interface{}, 1)
+			stop := make(chan interface{}, 1)
+			defer close(ready)
+			defer close(stop)
+
+			go func() {
+				waiter.Wait(ready, stop)
+			}()
+
+			Eventually(logger.Logs).Should(HaveLen(1))
+			stop <- nil
 			log := logger.Logs()[0]
 			Expect(log.Message).To(Equal("test.failed to list deployments"))
 			Expect(log.Data).To(HaveKeyWithValue("error", "boom?"))
@@ -184,8 +202,16 @@ var _ = Describe("DeploymentWaiter", func() {
 				})},
 			}
 			fakeLister.ListReturns(ssList, nil)
+			ready := make(chan interface{}, 1)
+			stop := make(chan interface{}, 1)
+			defer close(ready)
+			defer close(stop)
 
-			_ = waiter.Wait()
+			go func() {
+				waiter.Wait(ready, stop)
+			}()
+
+			Eventually(ready).Should(Receive())
 			listOptions := fakeLister.ListArgsForCall(0)
 			Expect(listOptions.LabelSelector).To(Equal("my=label"))
 		})

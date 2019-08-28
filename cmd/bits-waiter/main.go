@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/eirini/cmd"
+	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/eirini/waiter"
 	"code.cloudfoundry.org/lager"
 )
@@ -30,9 +31,8 @@ func main() {
 	bitsWaiter := waiter.Deployment{
 		Logger:            logger,
 		Deployments:       deploymentClient,
-		Timeout:           *timeout,
 		ListLabelSelector: "name=bits",
 	}
 
-	cmd.ExitWithError(bitsWaiter.Wait())
+	cmd.ExitWithError(util.RunWithTimeout(bitsWaiter.Wait, *timeout))
 }
