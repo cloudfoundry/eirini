@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/k8s/utils/utilsfakes"
@@ -15,103 +16,93 @@ import (
 var _ = Describe("Deployment Utils", func() {
 
 	var (
-		fakeLister *utilsfakes.FakeDeploymentLister
+		fakeclient *utilsfakes.FakeDeploymentClient
 		logger     *lagertest.TestLogger
 	)
 
 	BeforeEach(func() {
-		fakeLister = new(utilsfakes.FakeDeploymentLister)
+		fakeclient = new(utilsfakes.FakeDeploymentClient)
 		logger = lagertest.NewTestLogger("test")
 	})
 
-	It("reports ready if all Deployments are updated and ready", func() {
-		ssList := &appsv1.DeploymentList{
-			Items: []appsv1.Deployment{createDeployment(replicaStatuses{
-				desired:     1,
-				ready:       1,
-				updated:     1,
-				available:   1,
-				unavailable: 0,
-			})},
-		}
-		fakeLister.ListReturns(ssList, nil)
-
-		Expect(IsReady(fakeLister, logger, "my=label")).To(BeTrue())
-	})
-
-	It("reports not ready if observed generation is not updated yet", func() {
-		outdatedSS := createDeployment(replicaStatuses{
+	It("reports ready if the Deployment is updated and ready", func() {
+		deployment := createDeployment(replicaStatuses{
 			desired:     1,
 			ready:       1,
 			updated:     1,
 			available:   1,
 			unavailable: 0,
 		})
-		outdatedSS.Generation = 3
-		outdatedSS.Status.ObservedGeneration = 2
+		fakeclient.GetReturns(&deployment, nil)
 
-		fakeLister.ListReturns(&appsv1.DeploymentList{Items: []appsv1.Deployment{outdatedSS}}, nil)
+		Expect(IsReady(fakeclient, logger, "name")).To(BeTrue())
+	})
 
-		Expect(IsReady(fakeLister, logger, "my=label")).To(BeFalse())
+	It("reports not ready if observed generation is not updated yet", func() {
+		outdatedDeployment := createDeployment(replicaStatuses{
+			desired:     1,
+			ready:       1,
+			updated:     1,
+			available:   1,
+			unavailable: 0,
+		})
+		outdatedDeployment.Generation = 3
+		outdatedDeployment.Status.ObservedGeneration = 2
+
+		fakeclient.GetReturns(&outdatedDeployment, nil)
+
+		Expect(IsReady(fakeclient, logger, "name")).To(BeFalse())
 	})
 
 	It("reports not ready if there are non-ready replicas", func() {
-		ssList := &appsv1.DeploymentList{
-			Items: []appsv1.Deployment{createDeployment(replicaStatuses{
-				desired: 3,
-				ready:   1,
-			})},
-		}
-		fakeLister.ListReturns(ssList, nil)
+		deployment := createDeployment(replicaStatuses{
+			desired: 3,
+			ready:   1,
+		})
+		fakeclient.GetReturns(&deployment, nil)
 
-		Expect(IsReady(fakeLister, logger, "my=label")).To(BeFalse())
+		Expect(IsReady(fakeclient, logger, "name")).To(BeFalse())
 	})
 
 	It("reports not ready if there are non-updated replicas", func() {
-		ssList := &appsv1.DeploymentList{
-			Items: []appsv1.Deployment{createDeployment(replicaStatuses{
-				desired: 3,
-				ready:   3,
-				updated: 2,
-			})},
-		}
-		fakeLister.ListReturns(ssList, nil)
+		deployment := createDeployment(replicaStatuses{
+			desired: 3,
+			ready:   3,
+			updated: 2,
+		})
+		fakeclient.GetReturns(&deployment, nil)
 
-		Expect(IsReady(fakeLister, logger, "my=label")).To(BeFalse())
+		Expect(IsReady(fakeclient, logger, "name")).To(BeFalse())
 	})
 
 	It("reports not ready if current replicas are less than desired", func() {
-		ssList := &appsv1.DeploymentList{
-			Items: []appsv1.Deployment{createDeployment(replicaStatuses{
-				desired:   3,
-				ready:     3,
-				updated:   3,
-				available: 1,
-			})},
-		}
-		fakeLister.ListReturns(ssList, nil)
+		deployment := createDeployment(replicaStatuses{
+			desired:   3,
+			ready:     3,
+			updated:   3,
+			available: 1,
+		})
+		fakeclient.GetReturns(&deployment, nil)
 
-		Expect(IsReady(fakeLister, logger, "my=label")).To(BeFalse())
+		Expect(IsReady(fakeclient, logger, "name")).To(BeFalse())
 	})
 
 	It("reports not ready is there remain unavailable replicas", func() {
-		ssList := &appsv1.DeploymentList{
-			Items: []appsv1.Deployment{createDeployment(replicaStatuses{
-				desired:     3,
-				ready:       3,
-				updated:     3,
-				available:   3,
-				unavailable: 1,
-			})},
-		}
-		fakeLister.ListReturns(ssList, nil)
-		Expect(IsReady(fakeLister, logger, "my=label")).To(BeFalse())
+		deployment := createDeployment(replicaStatuses{
+			desired:     3,
+			ready:       3,
+			updated:     3,
+			available:   3,
+			unavailable: 1,
+		})
+		fakeclient.GetReturns(&deployment, nil)
+		Expect(IsReady(fakeclient, logger, "name")).To(BeFalse())
 	})
 
 	When("listing Deployments fails", func() {
 		It("should log the error", func() {
-			fakeLister.ListReturns(nil, errors.New("boom?"))
-			IsReady(fakeLister, logger, "my=label")
+			fakeclient.GetReturns(nil, errors.New("boom?"))
+			IsReady(fakeclient, logger, "name")
 
 			Eventually(logger.Logs, "2s").Should(HaveLen(1))
 			log := logger.Logs()[0]
@@ -120,27 +111,26 @@ var _ = Describe("Deployment Utils", func() {
 		})
 
 		It("should return false", func() {
-			fakeLister.ListReturns(nil, errors.New("boom?"))
-			Expect(IsReady(fakeLister, logger, "my=label")).To(BeFalse())
+			fakeclient.GetReturns(nil, errors.New("boom?"))
+			Expect(IsReady(fakeclient, logger, "name")).To(BeFalse())
 		})
 	})
 
 	When("listing Deployments", func() {
 		It("should use the right label selector", func() {
-			ssList := &appsv1.DeploymentList{
-				Items: []appsv1.Deployment{createDeployment(replicaStatuses{
-					desired:   1,
-					ready:     1,
-					available: 1,
-					updated:   1,
-				})},
-			}
-			fakeLister.ListReturns(ssList, nil)
-			IsReady(fakeLister, logger, "my=label")
+			deployment := createDeployment(replicaStatuses{
+				desired:   1,
+				ready:     1,
+				available: 1,
+				updated:   1,
+			})
+			fakeclient.GetReturns(&deployment, nil)
+			IsReady(fakeclient, logger, "name")
 
-			Expect(fakeLister.ListCallCount()).To(Equal(1))
-			listOptions := fakeLister.ListArgsForCall(0)
-			Expect(listOptions.LabelSelector).To(Equal("my=label"))
+			Expect(fakeclient.GetCallCount()).To(Equal(1))
+			name, getOptions := fakeclient.GetArgsForCall(0)
+			Expect(name).To(Equal("name"))
+			Expect(getOptions).To(Equal(metav1.GetOptions{}))
 		})
 
 	})

@@ -30,7 +30,7 @@ func main() {
 	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.DEBUG))
 
 	bitsIsReady := func() bool {
-		return utils.IsReady(deploymentClient, logger, "name=bits")
+		return utils.IsReady(deploymentClient, logger, "bits")
 	}
 
 	pollUntilTrue := func(stop <-chan interface{}) {
