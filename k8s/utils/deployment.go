@@ -6,23 +6,28 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//go:generate counterfeiter . DeploymentLister
-type DeploymentLister interface {
-	List(metav1.ListOptions) (*appsv1.DeploymentList, error)
+//go:generate counterfeiter . DeploymentClient
+type DeploymentClient interface {
+	Get(name string, options metav1.GetOptions) (*appsv1.Deployment, error)
 }
 
-func IsReady(lister DeploymentLister, logger lager.Logger, labelSelector string) bool {
-	deploymentList, err := lister.List(metav1.ListOptions{LabelSelector: labelSelector})
+func IsReady(client DeploymentClient, logger lager.Logger, deploymentName string) bool {
+	deployment, err := client.Get(deploymentName, metav1.GetOptions{})
 	if err != nil {
 		logger.Error("failed to list deployments", err)
 		return false
 	}
 
-	for _, d := range deploymentList.Items {
-		if !podsReady(d) || d.Generation != d.Status.ObservedGeneration {
-			return false
-		}
+	if !podsReady(*deployment) || deployment.Generation != deployment.Status.ObservedGeneration {
+		return false
 	}
+
+	debugData := map[string]interface{}{
+		"deploymentName":       deployment.Name,
+		"deploymentStatus":     deployment.Status,
+		"deploymentGeneration": deployment.Generation,
+	}
+	logger.Debug("Deployment is updated and ready", debugData)
 	return true
 }
 
