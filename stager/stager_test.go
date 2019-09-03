@@ -204,8 +204,11 @@ var _ = Describe("Stager", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
 
-			It("should not delete the task", func() {
-				Expect(taskDesirer.DeleteCallCount()).To(Equal(0))
+			It("should delete the task", func() {
+				Expect(taskDesirer.DeleteCallCount()).To(Equal(1))
+
+				taskName := taskDesirer.DeleteArgsForCall(0)
+				Expect(taskName).To(Equal(task.TaskGuid))
 			})
 		})
 

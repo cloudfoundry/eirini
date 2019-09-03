@@ -40,7 +40,6 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	var (
 		client                *fake.Clientset
-		jobCleaner            *k8sfakes.FakeCleaner
 		statefulSetDesirer    opi.Desirer
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
 		readinessProbeCreator *k8sfakes.FakeProbeCreator
@@ -62,7 +61,6 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	BeforeEach(func() {
 		client = fake.NewSimpleClientset()
-		jobCleaner = new(k8sfakes.FakeCleaner)
 
 		livenessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
@@ -71,7 +69,6 @@ var _ = Describe("Statefulset Desirer", func() {
 		logger = lagertest.NewTestLogger("handler-test")
 		statefulSetDesirer = &StatefulSetDesirer{
 			Client:                client,
-			JobCleaner:            jobCleaner,
 			Namespace:             namespace,
 			RegistrySecretName:    registrySecretName,
 			RootfsVersion:         rootfsVersion,
@@ -341,20 +338,6 @@ var _ = Describe("Statefulset Desirer", func() {
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 
 				Expect(listStatefulSets()).To(BeEmpty())
-			})
-
-			It("deletes the associated LRP jobs", func() {
-				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
-				Expect(jobCleaner.CleanCallCount()).To(Equal(1))
-				Expect(jobCleaner.CleanArgsForCall(0)).To(Equal("guid=guid_1234"))
-			})
-		})
-
-		Context("when deletion of job fails", func() {
-			It("should return a meaningful error", func() {
-				jobCleaner.CleanReturns(errors.New("oh noes"))
-				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
-					To(MatchError(ContainSubstring("failed to clean staging job")))
 			})
 		})
 
