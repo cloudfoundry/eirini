@@ -1,0 +1,8 @@
+ ---
+applications:
+- name: eirini
+  instances: 1
+  memory: 64MB
+  host: go-to-web
+  env:
+    GOPACKAGENAME : code.cloudfoundry.org/eirini

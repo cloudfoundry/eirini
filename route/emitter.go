@@ -5,7 +5,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
-	nats "github.com/nats-io/go-nats"
+	nats "github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 )
 

@@ -11,7 +11,7 @@ import (
 
 	cfhttp "code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/eirini"
-	natsserver "github.com/nats-io/gnatsd/server"
+	natsserver "github.com/nats-io/nats-server/server"
 	. "github.com/onsi/ginkgo"
 	ginkgoconfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
