@@ -4,7 +4,6 @@ run:
   # which dirs to skip: they won't be analyzed;
   skip-dirs:
     - vendor
-    - launcher/buildpackapplifecycle
   modules-download-mode: vendor
 
 linters-settings:
@@ -27,6 +26,7 @@ linters:
     - gochecknoinits
     - typecheck
     - goconst
+    - funlen
 
 issues:
   exclude-use-default: true
