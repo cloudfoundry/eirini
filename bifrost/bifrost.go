@@ -56,7 +56,7 @@ func (b *Bifrost) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest)
 
 	u := update.GetUpdate()
 
-	lrp.TargetInstances = u.Size()
+	lrp.TargetInstances = int(u.GetInstances())
 	lrp.Metadata[cf.LastUpdated] = u.GetAnnotation()
 
 	lrp.Metadata[cf.VcapAppUris] = getURIs(update)
