@@ -425,7 +425,7 @@ var _ = Describe("AppHandler", func() {
 				_, request := bifrost.UpdateArgsForCall(0)
 				Expect(request.GUID).To(Equal("app-id"))
 				Expect(request.Version).To(Equal("version-id"))
-				Expect(*request.Update.Instances).To(Equal(int32(5)))
+				Expect(request.Update.GetInstances()).To(Equal(int32(5)))
 			})
 		})
 

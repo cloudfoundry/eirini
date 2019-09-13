@@ -8,8 +8,8 @@ import (
 	"os/exec"
 
 	"code.cloudfoundry.org/eirini"
-	natsserver "github.com/nats-io/nats-server/server"
-	natstest "github.com/nats-io/nats-server/test"
+	natsserver "github.com/nats-io/nats-server/v2/server"
+	natstest "github.com/nats-io/nats-server/v2/test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"

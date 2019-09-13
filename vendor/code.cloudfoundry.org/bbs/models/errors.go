@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 )
@@ -43,6 +44,23 @@ func (err *Error) Equal(other error) bool {
 
 func (err *Error) Error() string {
 	return err.GetMessage()
+}
+
+func (d *Error_Type) UnmarshalJSON(data []byte) error {
+	var name string
+	if err := json.Unmarshal(data, &name); err != nil {
+		return err
+	}
+
+	if v, found := Error_Type_value[name]; found {
+		*d = Error_Type(v)
+		return nil
+	}
+	return fmt.Errorf("invalid presence: %s", name)
+}
+
+func (d Error_Type) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.String())
 }
 
 var (
@@ -143,6 +161,7 @@ func (err ErrInvalidModification) Error() string {
 	return "attempt to make invalid change to field: " + err.InvalidField
 }
 
+// DEPRECATED
 var ErrActualLRPGroupInvalid = errors.New("ActualLRPGroup invalid")
 
 func NewTaskTransitionError(from, to Task_State) *Error {

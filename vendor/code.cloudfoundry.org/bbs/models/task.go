@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -183,4 +184,21 @@ func (t *Task) VersionDownTo(v format.Version) *Task {
 
 func (t *Task) Version() format.Version {
 	return format.V3
+}
+
+func (s *Task_State) UnmarshalJSON(data []byte) error {
+	var name string
+	if err := json.Unmarshal(data, &name); err != nil {
+		return err
+	}
+
+	if v, found := Task_State_value[name]; found {
+		*s = Task_State(v)
+		return nil
+	}
+	return fmt.Errorf("invalid state: %s", name)
+}
+
+func (s Task_State) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.String())
 }

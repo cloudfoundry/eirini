@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package models;
 
@@ -7,72 +7,72 @@ import "task.proto";
 import "error.proto";
 
 message TaskLifecycleResponse {
-  optional Error error = 1;
+  Error error = 1;
 }
 
 message DesireTaskRequest {
-  optional TaskDefinition task_definition = 1 [(gogoproto.jsontag) = "task_definition"];
-  optional string task_guid = 2;
-  optional string domain = 3;
+  TaskDefinition task_definition = 1 [(gogoproto.jsontag) = "task_definition"];
+  string task_guid = 2 [(gogoproto.jsontag) =  "task_guid"];
+  string domain = 3 [(gogoproto.jsontag) =  "domain"];
 }
 
 message StartTaskRequest {
-  optional string task_guid = 1;
-  optional string cell_id = 2;
+  string task_guid = 1 [(gogoproto.jsontag) =  "task_guid"];
+  string cell_id = 2 [(gogoproto.jsontag) =  "cell_id"];
 }
 
 message StartTaskResponse {
-  optional Error error = 1;
-  optional bool should_start = 2;
+  Error error = 1;
+  bool should_start = 2 [(gogoproto.jsontag) =  "should_start"];
 }
 
 message FailTaskRequest {
   option deprecated = true;
-  optional string task_guid = 1;
-  optional string failure_reason = 2;
+  string task_guid = 1 [(gogoproto.jsontag) =  "task_guid"];
+  string failure_reason = 2 [(gogoproto.jsontag) =  "failure_reason"];
 }
 
 message RejectTaskRequest {
-  optional string task_guid = 1;
-  optional string rejection_reason = 2;
+  string task_guid = 1 [(gogoproto.jsontag) =  "task_guid"];
+  string rejection_reason = 2 [(gogoproto.jsontag) =  "rejection_reason"];
 }
 
 message TaskGuidRequest {
-  optional string task_guid = 1;
+  string task_guid = 1 [(gogoproto.jsontag) =  "task_guid"];
 }
 
 message CompleteTaskRequest {
-  optional string task_guid = 1;
-  optional string cell_id = 2;
-  optional bool failed = 3;
-  optional string failure_reason = 4;
-  optional string result = 5;
+  string task_guid = 1 [(gogoproto.jsontag) =  "task_guid"];
+  string cell_id = 2 [(gogoproto.jsontag) =  "cell_id"];
+  bool failed = 3 [(gogoproto.jsontag) =  "failed"];
+  string failure_reason = 4 [(gogoproto.jsontag) =  "failure_reason"];
+  string result = 5 [(gogoproto.jsontag) =  "result"];
 }
 
 message TaskCallbackResponse {
-  optional string task_guid = 1;
-  optional bool failed = 2;
-  optional string failure_reason = 3;
-  optional string result = 4;
-  optional string annotation = 5 [(gogoproto.jsontag) = "annotation,omitempty"];
-  optional int64 created_at = 6;
+  string task_guid = 1 [(gogoproto.jsontag) =  "task_guid"];
+  bool failed = 2 [(gogoproto.jsontag) =  "failed"];
+  string failure_reason = 3 [(gogoproto.jsontag) =  "failure_reason"];
+  string result = 4 [(gogoproto.jsontag) =  "result"];
+  string annotation = 5;
+  int64 created_at = 6 [(gogoproto.jsontag) =  "created_at"];
 }
 
 message TasksRequest{
-  optional string domain = 1;
-  optional string cell_id = 2;
+  string domain = 1 [(gogoproto.jsontag) =  "domain"];
+  string cell_id = 2 [(gogoproto.jsontag) =  "cell_id"];
 }
 
 message TasksResponse{
-  optional Error error = 1;
+  Error error = 1;
   repeated Task tasks = 2;
 }
 
 message TaskByGuidRequest{
-  optional string task_guid = 1;
+  string task_guid = 1 [(gogoproto.jsontag) =  "task_guid"];
 }
 
 message TaskResponse{
-  optional Error error = 1;
-  optional Task task = 2;
+  Error error = 1;
+  Task task = 2;
 }

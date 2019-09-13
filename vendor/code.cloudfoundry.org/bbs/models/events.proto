@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package models;
 
@@ -9,78 +9,81 @@ import "task.proto";
 import "modification_tag.proto";
 
 message ActualLRPCreatedEvent  {
-  optional ActualLRPGroup actual_lrp_group = 1;
+  option deprecated = true;
+  ActualLRPGroup actual_lrp_group = 1;
 }
 
 message ActualLRPChangedEvent {
-  optional ActualLRPGroup before = 1;
-  optional ActualLRPGroup after = 2;
+  option deprecated = true;
+  ActualLRPGroup before = 1;
+  ActualLRPGroup after = 2;
 }
 
 message ActualLRPRemovedEvent {
-  optional ActualLRPGroup actual_lrp_group = 1;
+  option deprecated = true;
+  ActualLRPGroup actual_lrp_group = 1;
 }
 
 message ActualLRPInstanceCreatedEvent  {
-  optional ActualLRP actual_lrp = 1;
+  ActualLRP actual_lrp = 1;
 }
 
 message ActualLRPInfo {
-  optional ActualLRPNetInfo actual_lrp_net_info = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
-  optional int32 crash_count = 4;
-  optional string crash_reason = 5 [(gogoproto.jsontag) = "crash_reason,omitempty"];
-  optional string state = 6;
-  optional string placement_error = 7 [(gogoproto.jsontag) = "placement_error,omitempty"];
-  optional int64 since = 8;
-  optional ModificationTag modification_tag = 9 [(gogoproto.nullable) = false];
-  optional ActualLRP.Presence presence = 10;
+  ActualLRPNetInfo actual_lrp_net_info = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
+  int32 crash_count = 4 [(gogoproto.jsontag) =  "crash_count"];
+  string crash_reason = 5;
+  string state = 6 [(gogoproto.jsontag) =  "state"];
+  string placement_error = 7;
+  int64 since = 8 [(gogoproto.jsontag) =  "since"];
+  ModificationTag modification_tag = 9 [(gogoproto.nullable) = false,(gogoproto.jsontag) = "modification_tag"];
+  ActualLRP.Presence presence = 10 [(gogoproto.jsontag) = "presence"];
 }
 
 message ActualLRPInstanceChangedEvent {
-  optional ActualLRPKey actual_lrp_key                  = 1 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
-  optional ActualLRPInstanceKey actual_lrp_instance_key = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
-  optional ActualLRPInfo before                         = 3;
-  optional ActualLRPInfo after                          = 4;
+  ActualLRPKey actual_lrp_key                  = 1 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
+  ActualLRPInstanceKey actual_lrp_instance_key = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
+  ActualLRPInfo before                         = 3;
+  ActualLRPInfo after                          = 4;
 }
 
 message ActualLRPInstanceRemovedEvent {
-  optional ActualLRP actual_lrp = 1;
+  ActualLRP actual_lrp = 1;
 }
 
 message DesiredLRPCreatedEvent {
-  optional DesiredLRP desired_lrp = 1;
+  DesiredLRP desired_lrp = 1;
 }
 
 message DesiredLRPChangedEvent {
-  optional DesiredLRP before = 1;
-  optional DesiredLRP after = 2;
+  DesiredLRP before = 1;
+  DesiredLRP after = 2;
 }
 
 message DesiredLRPRemovedEvent {
-  optional DesiredLRP desired_lrp = 1;
+  DesiredLRP desired_lrp = 1;
 }
 
 message ActualLRPCrashedEvent {
-  optional ActualLRPKey actual_lrp_key = 1 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
-  optional ActualLRPInstanceKey actual_lrp_instance_key = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
-  optional int32 crash_count = 3;
-  optional string crash_reason = 4 [(gogoproto.jsontag) = "crash_reason,omitempty"];
-  optional int64 since = 5;
+  ActualLRPKey actual_lrp_key = 1 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
+  ActualLRPInstanceKey actual_lrp_instance_key = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "", (gogoproto.embed) = true];
+  int32 crash_count = 3 [(gogoproto.jsontag) =  "crash_count"];
+  string crash_reason = 4;
+  int64 since = 5 [(gogoproto.jsontag) =  "since"];
 }
 
 message EventsByCellId {
-   optional string cell_id  = 1;
+   string cell_id  = 1 [(gogoproto.jsontag) =  "cell_id"];
 }
 
 message TaskCreatedEvent {
-  optional Task task = 1;
+  Task task = 1;
 }
 
 message TaskChangedEvent {
-  optional Task before = 1;
-  optional Task after = 2;
+  Task before = 1;
+  Task after = 2;
 }
 
 message TaskRemovedEvent {
-  optional Task task = 1;
+  Task task = 1;
 }

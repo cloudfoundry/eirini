@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package models;
 
@@ -8,15 +8,15 @@ import "error.proto";
 option (gogoproto.equal_all) = false;
 
 message DomainsResponse {
-  optional Error error = 1;
+  Error error = 1;
   repeated string domains = 2;
 }
 
 message UpsertDomainResponse {
-  optional Error error = 1;
+  Error error = 1;
 }
 
 message UpsertDomainRequest {
-  optional string domain = 1;
-  optional uint32 ttl = 2;
+  string domain = 1 [(gogoproto.jsontag) = "domain"];
+  uint32 ttl = 2 [(gogoproto.jsontag) = "ttl"];
 }

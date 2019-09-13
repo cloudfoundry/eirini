@@ -194,9 +194,9 @@ var _ = Describe("Bifrost", func() {
 
 			Context("with instance count modified", func() {
 				BeforeEach(func() {
-					updatedInstances := int32(5)
-					updatedTimestamp := "21421321.3"
-					updateRequest.Update = &models.DesiredLRPUpdate{Instances: &updatedInstances, Annotation: &updatedTimestamp}
+					updateRequest.Update = &models.DesiredLRPUpdate{}
+					updateRequest.Update.SetInstances(int32(5))
+					updateRequest.Update.SetAnnotation("21421321.3")
 					desirer.UpdateReturns(nil)
 				})
 
@@ -210,7 +210,7 @@ var _ = Describe("Bifrost", func() {
 				It("should submit the updated LRP", func() {
 					Expect(desirer.UpdateCallCount()).To(Equal(1))
 					lrp := desirer.UpdateArgsForCall(0)
-					Expect(lrp.TargetInstances).To(Equal(int(*updateRequest.Update.Instances)))
+					Expect(lrp.TargetInstances).To(Equal(int(5)))
 					Expect(lrp.Metadata[cf.LastUpdated]).To(Equal("21421321.3"))
 				})
 
@@ -253,9 +253,9 @@ var _ = Describe("Bifrost", func() {
 						Routes: &models.Routes{
 							"cf-router": &rawJSON,
 						},
-						Instances:  &updatedInstances,
-						Annotation: &updatedTimestamp,
 					}
+					updateRequest.Update.SetInstances(updatedInstances)
+					updateRequest.Update.SetAnnotation(updatedTimestamp)
 
 					desirer.UpdateReturns(nil)
 				})

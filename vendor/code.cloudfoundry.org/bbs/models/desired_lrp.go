@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"net/url"
 	"regexp"
 	"time"
@@ -76,6 +77,7 @@ func NewDesiredLRP(schedInfo DesiredLRPSchedulingInfo, runInfo DesiredLRPRunInfo
 		CheckDefinition:               runInfo.CheckDefinition,
 		ImageLayers:                   runInfo.ImageLayers,
 		MetricTags:                    runInfo.MetricTags,
+		Sidecars:                      runInfo.Sidecars,
 	}
 }
 
@@ -272,6 +274,7 @@ func (d *DesiredLRP) DesiredLRPRunInfo(createdAt time.Time) DesiredLRPRunInfo {
 		d.CheckDefinition,
 		d.ImageLayers,
 		d.MetricTags,
+		d.Sidecars,
 	)
 }
 
@@ -364,6 +367,65 @@ func (desired *DesiredLRPUpdate) Validate() error {
 	return validationError.ToError()
 }
 
+func (desired *DesiredLRPUpdate) SetInstances(instances int32) {
+	desired.OptionalInstances = &DesiredLRPUpdate_Instances{
+		Instances: instances,
+	}
+}
+
+func (desired DesiredLRPUpdate) InstancesExists() bool {
+	_, ok := desired.GetOptionalInstances().(*DesiredLRPUpdate_Instances)
+	return ok
+}
+
+func (desired *DesiredLRPUpdate) SetAnnotation(annotation string) {
+	desired.OptionalAnnotation = &DesiredLRPUpdate_Annotation{
+		Annotation: annotation,
+	}
+}
+
+func (desired DesiredLRPUpdate) AnnotationExists() bool {
+	_, ok := desired.GetOptionalAnnotation().(*DesiredLRPUpdate_Annotation)
+	return ok
+}
+
+type internalDesiredLRPUpdate struct {
+	Instances  *int32  `json:"instances,omitempty"`
+	Routes     *Routes `json:"routes,omitempty"`
+	Annotation *string `json:"annotation,omitempty"`
+}
+
+func (desired *DesiredLRPUpdate) UnmarshalJSON(data []byte) error {
+	var update internalDesiredLRPUpdate
+	if err := json.Unmarshal(data, &update); err != nil {
+		return err
+	}
+
+	if update.Instances != nil {
+		desired.SetInstances(*update.Instances)
+	}
+	desired.Routes = update.Routes
+	if update.Annotation != nil {
+		desired.SetAnnotation(*update.Annotation)
+	}
+
+	return nil
+}
+
+func (desired DesiredLRPUpdate) MarshalJSON() ([]byte, error) {
+	var update internalDesiredLRPUpdate
+	if desired.InstancesExists() {
+		i := desired.GetInstances()
+		update.Instances = &i
+	}
+	update.Routes = desired.Routes
+	if desired.AnnotationExists() {
+		a := desired.GetAnnotation()
+		update.Annotation = &a
+	}
+	return json.Marshal(update)
+}
+
 func NewDesiredLRPKey(processGuid, domain, logGuid string) DesiredLRPKey {
 	return DesiredLRPKey{
 		ProcessGuid: processGuid,
@@ -408,14 +470,14 @@ func NewDesiredLRPSchedulingInfo(
 }
 
 func (s *DesiredLRPSchedulingInfo) ApplyUpdate(update *DesiredLRPUpdate) {
-	if update.Instances != nil {
-		s.Instances = *update.Instances
+	if update.InstancesExists() {
+		s.Instances = update.GetInstances()
 	}
 	if update.Routes != nil {
 		s.Routes = *update.Routes
 	}
-	if update.Annotation != nil {
-		s.Annotation = *update.Annotation
+	if update.AnnotationExists() {
+		s.Annotation = update.GetAnnotation()
 	}
 	s.ModificationTag.Increment()
 }
@@ -496,6 +558,7 @@ func NewDesiredLRPRunInfo(
 	checkDefinition *CheckDefinition,
 	imageLayers []*ImageLayer,
 	metricTags map[string]*MetricTagValue,
+	sidecars []*Sidecar,
 ) DesiredLRPRunInfo {
 	return DesiredLRPRunInfo{
 		DesiredLRPKey:                 key,
@@ -522,6 +585,7 @@ func NewDesiredLRPRunInfo(
 		CheckDefinition:               checkDefinition,
 		ImageLayers:                   imageLayers,
 		MetricTags:                    metricTags,
+		Sidecars:                      sidecars,
 	}
 }
 
@@ -580,6 +644,12 @@ func (runInfo DesiredLRPRunInfo) Validate() error {
 	err = validateMetricTags(runInfo.MetricTags, runInfo.GetMetricsGuid())
 	if err != nil {
 		validationError = validationError.Append(ErrInvalidField{"metric_tags"})
+		validationError = validationError.Append(err)
+	}
+
+	err = validateSidecars(runInfo.Sidecars)
+	if err != nil {
+		validationError = validationError.Append(ErrInvalidField{"sidecars"})
 		validationError = validationError.Append(err)
 	}
 

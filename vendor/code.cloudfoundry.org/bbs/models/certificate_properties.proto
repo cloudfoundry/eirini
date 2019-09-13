@@ -1,7 +1,8 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package models;
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 message CertificateProperties {
   repeated string organizational_unit = 1;
 }

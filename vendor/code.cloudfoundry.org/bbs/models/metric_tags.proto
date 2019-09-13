@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package models;
 
@@ -13,6 +13,6 @@ message MetricTagValue {
 
   // Note: we only expect one of the following set of fields to be
   // set.
-  optional string static        = 1 [(gogoproto.jsontag) = "static,omitempty"];
-  optional DynamicValue dynamic = 2 [(gogoproto.jsontag) = "dynamic,omitempty"];
+  string static        = 1;
+  DynamicValue dynamic = 2;
 }

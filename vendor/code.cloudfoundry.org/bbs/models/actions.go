@@ -1,12 +1,14 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"code.cloudfoundry.org/bbs/format"
+	proto "github.com/gogo/protobuf/proto"
 )
 
 const (
@@ -26,6 +28,7 @@ var ErrInvalidActionType = errors.New("invalid action type")
 type ActionInterface interface {
 	ActionType() string
 	Validate() error
+	proto.Message
 }
 
 func (a *Action) GetValue() interface{} {
@@ -523,4 +526,67 @@ func (action *Action) SetTimeoutMsFromDeprecatedTimeoutNs() {
 			subaction.SetDeprecatedTimeoutNs()
 		}
 	}
+}
+
+type internalResourceLimits struct {
+	Nofile *uint64 `json:"nofile,omitempty"`
+	Nproc  *uint64 `json:"nproc,omitempty"`
+}
+
+func (l *ResourceLimits) UnmarshalJSON(data []byte) error {
+	var limit internalResourceLimits
+	if err := json.Unmarshal(data, &limit); err != nil {
+		return err
+	}
+
+	if limit.Nofile != nil {
+		l.SetNofile(*limit.Nofile)
+	}
+	if limit.Nproc != nil {
+		l.SetNproc(*limit.Nproc)
+	}
+
+	return nil
+}
+
+func (l ResourceLimits) MarshalJSON() ([]byte, error) {
+	var limit internalResourceLimits
+	if l.NofileExists() {
+		n := l.GetNofile()
+		limit.Nofile = &n
+	}
+	if l.NprocExists() {
+		n := l.GetNproc()
+		limit.Nproc = &n
+	}
+	return json.Marshal(limit)
+}
+
+func (l *ResourceLimits) SetNofile(nofile uint64) {
+	l.OptionalNofile = &ResourceLimits_Nofile{
+		Nofile: nofile,
+	}
+}
+
+func (m *ResourceLimits) GetNofilePtr() *uint64 {
+	if x, ok := m.GetOptionalNofile().(*ResourceLimits_Nofile); ok {
+		return &x.Nofile
+	}
+	return nil
+}
+
+func (l *ResourceLimits) NofileExists() bool {
+	_, ok := l.GetOptionalNofile().(*ResourceLimits_Nofile)
+	return ok
+}
+
+func (l *ResourceLimits) SetNproc(nproc uint64) {
+	l.OptionalNproc = &ResourceLimits_Nproc{
+		Nproc: nproc,
+	}
+}
+
+func (l *ResourceLimits) NprocExists() bool {
+	_, ok := l.GetOptionalNproc().(*ResourceLimits_Nproc)
+	return ok
 }

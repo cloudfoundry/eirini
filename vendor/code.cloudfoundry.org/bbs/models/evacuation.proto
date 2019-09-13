@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package models;
 
@@ -9,39 +9,39 @@ import "error.proto";
 option (gogoproto.equal_all) = false;
 
 message EvacuationResponse {
-  optional Error error = 1;
-  optional bool keep_container = 2;
+  Error error = 1;
+  bool keep_container = 2 [(gogoproto.jsontag) = "keep_container"];
 }
 
 message EvacuateClaimedActualLRPRequest {
-  optional ActualLRPKey actual_lrp_key = 1;
-  optional ActualLRPInstanceKey actual_lrp_instance_key = 2;
+  ActualLRPKey actual_lrp_key = 1;
+  ActualLRPInstanceKey actual_lrp_instance_key = 2;
 }
 
 message EvacuateRunningActualLRPRequest {
   reserved 4; // previously removed ttl value
 
-  optional ActualLRPKey actual_lrp_key = 1;
-  optional ActualLRPInstanceKey actual_lrp_instance_key = 2;
-  optional ActualLRPNetInfo actual_lrp_net_info = 3;
+  ActualLRPKey actual_lrp_key = 1;
+  ActualLRPInstanceKey actual_lrp_instance_key = 2;
+  ActualLRPNetInfo actual_lrp_net_info = 3;
 }
 
 message EvacuateStoppedActualLRPRequest {
-  optional ActualLRPKey actual_lrp_key = 1;
-  optional ActualLRPInstanceKey actual_lrp_instance_key = 2;
+  ActualLRPKey actual_lrp_key = 1;
+  ActualLRPInstanceKey actual_lrp_instance_key = 2;
 }
 
 message EvacuateCrashedActualLRPRequest {
-  optional ActualLRPKey actual_lrp_key = 1;
-  optional ActualLRPInstanceKey actual_lrp_instance_key = 2;
-  optional string error_message = 3;
+  ActualLRPKey actual_lrp_key = 1;
+  ActualLRPInstanceKey actual_lrp_instance_key = 2;
+  string error_message = 3 [(gogoproto.jsontag) = "error_message"];
 }
 
 message RemoveEvacuatingActualLRPRequest {
-  optional ActualLRPKey actual_lrp_key = 1;
-  optional ActualLRPInstanceKey actual_lrp_instance_key = 2;
+  ActualLRPKey actual_lrp_key = 1;
+  ActualLRPInstanceKey actual_lrp_instance_key = 2;
 }
 
 message RemoveEvacuatingActualLRPResponse {
-  optional Error error = 1;
+  Error error = 1;
 }

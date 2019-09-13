@@ -1,5 +1,5 @@
 
-syntax = "proto2";
+syntax = "proto3";
 
 package models;
 
@@ -7,24 +7,24 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 message CheckDefinition {
   repeated Check checks = 1;
-  optional string log_source = 2;
+  string log_source = 2 [(gogoproto.jsontag) = "log_source"];
 }
 
 message Check {
   // oneof is hard to use right now, instead we can do this check in validation
   // oneof check {
-    optional TCPCheck tcp_check = 1 [(gogoproto.jsontag) = "tcp_check,omitempty"];
-    optional HTTPCheck http_check = 2 [(gogoproto.jsontag) = "http_check,omitempty"];
+    TCPCheck tcp_check = 1;
+    HTTPCheck http_check = 2;
   // }
 }
 
 message TCPCheck {
-  optional uint32 port = 1;
-  optional uint64 connect_timeout_ms = 2 [(gogoproto.jsontag) = "connect_timeout_ms,omitempty"];
+  uint32 port = 1 [(gogoproto.jsontag) = "port"];
+  uint64 connect_timeout_ms = 2;
 }
 
 message HTTPCheck {
-  optional uint32 port = 1;
-  optional uint64 request_timeout_ms = 2 [(gogoproto.jsontag) = "request_timeout_ms,omitempty"];
-  optional string path = 3;
+  uint32 port = 1 [(gogoproto.jsontag) = "port"];
+  uint64 request_timeout_ms = 2;
+  string path = 3 [(gogoproto.jsontag) = "path"];
 }

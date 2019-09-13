@@ -1,13 +1,63 @@
 package models
 
+import "encoding/json"
+
 func (request *ActualLRPsRequest) Validate() error {
 	return nil
 }
 
+func (request *ActualLRPsRequest) SetIndex(index int32) {
+	request.OptionalIndex = &ActualLRPsRequest_Index{Index: index}
+}
+
+func (request ActualLRPsRequest) IndexExists() bool {
+	_, ok := request.GetOptionalIndex().(*ActualLRPsRequest_Index)
+	return ok
+}
+
+type internalActualLRPsRequest struct {
+	Domain      string `json:"domain"`
+	CellId      string `json:"cell_id"`
+	ProcessGuid string `json:"process_guid"`
+	Index       *int32 `json:"index,omitempty"`
+}
+
+func (request *ActualLRPsRequest) UnmarshalJSON(data []byte) error {
+	var internalRequest internalActualLRPsRequest
+	if err := json.Unmarshal(data, &internalRequest); err != nil {
+		return err
+	}
+
+	request.Domain = internalRequest.Domain
+	request.CellId = internalRequest.CellId
+	request.ProcessGuid = internalRequest.ProcessGuid
+	if internalRequest.Index != nil {
+		request.SetIndex(*internalRequest.Index)
+	}
+
+	return nil
+}
+
+func (request ActualLRPsRequest) MarshalJSON() ([]byte, error) {
+	internalRequest := internalActualLRPsRequest{
+		Domain:      request.Domain,
+		CellId:      request.CellId,
+		ProcessGuid: request.ProcessGuid,
+	}
+
+	if request.IndexExists() {
+		i := request.GetIndex()
+		internalRequest.Index = &i
+	}
+	return json.Marshal(internalRequest)
+}
+
+// DEPRECATED
 func (request *ActualLRPGroupsRequest) Validate() error {
 	return nil
 }
 
+// DEPRECATED
 func (request *ActualLRPGroupsByProcessGuidRequest) Validate() error {
 	var validationError ValidationError
 
@@ -22,6 +72,7 @@ func (request *ActualLRPGroupsByProcessGuidRequest) Validate() error {
 	return nil
 }
 
+// DEPRECATED
 func (request *ActualLRPGroupByProcessGuidAndIndexRequest) Validate() error {
 	var validationError ValidationError
 

@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package models;
 
@@ -7,42 +7,42 @@ import "desired_lrp.proto";
 import "error.proto";
 
 message DesiredLRPLifecycleResponse {
-  optional Error error = 1;
+  Error error = 1;
 }
 
 message DesiredLRPsResponse {
-  optional Error error = 1;
+  Error error = 1;
   repeated DesiredLRP desired_lrps = 2;
 }
 
 message DesiredLRPsRequest {
-  optional string domain = 1;
+  string domain = 1 [(gogoproto.jsontag) = "domain"];
   repeated string process_guids = 2;
 }
 
 message DesiredLRPResponse {
-  optional Error error = 1;
-  optional DesiredLRP desired_lrp = 2;
+  Error error = 1;
+  DesiredLRP desired_lrp = 2;
 }
 
 message DesiredLRPSchedulingInfosResponse {
-  optional Error error = 1;
+  Error error = 1;
   repeated DesiredLRPSchedulingInfo desired_lrp_scheduling_infos = 2;
 }
 
 message DesiredLRPByProcessGuidRequest {
-  optional string process_guid = 1;
+  string process_guid = 1 [(gogoproto.jsontag) = "process_guid"];
 }
 
 message DesireLRPRequest {
-  optional DesiredLRP desired_lrp = 1;
+  DesiredLRP desired_lrp = 1;
 }
 
 message UpdateDesiredLRPRequest {
-  optional string process_guid = 1;
-  optional DesiredLRPUpdate update = 2;
+  string process_guid = 1 [(gogoproto.jsontag) = "process_guid"];
+  DesiredLRPUpdate update = 2;
 }
 
 message RemoveDesiredLRPRequest {
-  optional string process_guid = 1;
+  string process_guid = 1 [(gogoproto.jsontag) = "process_guid"];
 }

@@ -1,7 +1,9 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -25,6 +27,7 @@ var ActualLRPStates = []string{
 	ActualLRPStateCrashed,
 }
 
+// DEPRECATED
 type ActualLRPChange struct {
 	Before *ActualLRPGroup
 	After  *ActualLRPGroup
@@ -45,20 +48,37 @@ func NewActualLRPInstanceKey(instanceGuid string, cellId string) ActualLRPInstan
 	return ActualLRPInstanceKey{instanceGuid, cellId}
 }
 
-func NewActualLRPNetInfo(address string, instanceAddress string, ports ...*PortMapping) ActualLRPNetInfo {
-	return ActualLRPNetInfo{address, ports, instanceAddress}
+func NewActualLRPNetInfo(address string, instanceAddress string, preferredAddress ActualLRPNetInfo_PreferredAddress, ports ...*PortMapping) ActualLRPNetInfo {
+	return ActualLRPNetInfo{address, ports, instanceAddress, preferredAddress}
 }
 
 func EmptyActualLRPNetInfo() ActualLRPNetInfo {
-	return NewActualLRPNetInfo("", "")
+	return NewActualLRPNetInfo("", "", ActualLRPNetInfo_PreferredAddressUnknown)
 }
 
 func (info ActualLRPNetInfo) Empty() bool {
-	return info.Address == "" && len(info.Ports) == 0
+	return info.Address == "" && len(info.Ports) == 0 && info.PreferredAddress == ActualLRPNetInfo_PreferredAddressUnknown
 }
 
 func (*ActualLRPNetInfo) Version() format.Version {
 	return format.V0
+}
+
+func (d *ActualLRPNetInfo_PreferredAddress) UnmarshalJSON(data []byte) error {
+	var name string
+	if err := json.Unmarshal(data, &name); err != nil {
+		return err
+	}
+
+	if v, found := ActualLRPNetInfo_PreferredAddress_value[name]; found {
+		*d = ActualLRPNetInfo_PreferredAddress(v)
+		return nil
+	}
+	return fmt.Errorf("invalid preferred address: %s", name)
+}
+
+func (d ActualLRPNetInfo_PreferredAddress) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.String())
 }
 
 func NewPortMapping(hostPort, containerPort uint32) *PortMapping {
@@ -154,18 +174,38 @@ func (before ActualLRP) AllowsTransitionTo(lrpKey *ActualLRPKey, instanceKey *Ac
 	return valid
 }
 
+func (d *ActualLRP_Presence) UnmarshalJSON(data []byte) error {
+	var name string
+	if err := json.Unmarshal(data, &name); err != nil {
+		return err
+	}
+
+	if v, found := ActualLRP_Presence_value[name]; found {
+		*d = ActualLRP_Presence(v)
+		return nil
+	}
+	return fmt.Errorf("invalid presence: %s", name)
+}
+
+func (d ActualLRP_Presence) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.String())
+}
+
+// DEPRECATED
 func NewRunningActualLRPGroup(actualLRP *ActualLRP) *ActualLRPGroup {
 	return &ActualLRPGroup{
 		Instance: actualLRP,
 	}
 }
 
+// DEPRECATED
 func NewEvacuatingActualLRPGroup(actualLRP *ActualLRP) *ActualLRPGroup {
 	return &ActualLRPGroup{
 		Evacuating: actualLRP,
 	}
 }
 
+// DEPRECATED
 func (group ActualLRPGroup) Resolve() (*ActualLRP, bool, error) {
 	switch {
 	case group.Instance == nil && group.Evacuating == nil:
@@ -217,6 +257,9 @@ func (*ActualLRP) Version() format.Version {
 }
 
 func (actualLRPInfo *ActualLRPInfo) ToActualLRP(lrpKey ActualLRPKey, lrpInstanceKey ActualLRPInstanceKey) *ActualLRP {
+	if actualLRPInfo == nil {
+		return nil
+	}
 	return &ActualLRP{
 		ActualLRPKey:         lrpKey,
 		ActualLRPInstanceKey: lrpInstanceKey,
@@ -232,6 +275,9 @@ func (actualLRPInfo *ActualLRPInfo) ToActualLRP(lrpKey ActualLRPKey, lrpInstance
 }
 
 func (actual *ActualLRP) ToActualLRPInfo() *ActualLRPInfo {
+	if actual == nil {
+		return nil
+	}
 	return &ActualLRPInfo{
 		ActualLRPNetInfo: actual.ActualLRPNetInfo,
 		CrashCount:       actual.CrashCount,
@@ -244,6 +290,7 @@ func (actual *ActualLRP) ToActualLRPInfo() *ActualLRPInfo {
 	}
 }
 
+// DEPRECATED
 func (actual *ActualLRP) ToActualLRPGroup() *ActualLRPGroup {
 	if actual == nil {
 		return nil
@@ -405,6 +452,7 @@ func hasHigherPriority(lrp1, lrp2 *ActualLRP) bool {
 	return false
 }
 
+// DEPRECATED
 // ResolveActualLRPGroups convert the given set of lrp instances into
 // ActualLRPGroup.  This conversion is lossy.  A suspect LRP is given
 // precendence over an Ordinary instance if it is Running.  Otherwise, the
@@ -431,6 +479,7 @@ func ResolveActualLRPGroups(lrps []*ActualLRP) []*ActualLRPGroup {
 	return result
 }
 
+// DEPRECATED
 // ResolveToActualLRPGroup calls ResolveActualLRPGroups and return the first
 // LRP group.  It panics if there are more than one group.  If there no LRP
 // groups were returned by ResolveActualLRPGroups, then an empty ActualLRPGroup

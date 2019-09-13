@@ -54,8 +54,10 @@ func (b *Bifrost) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest)
 		return errors.Wrap(err, "failed to get app")
 	}
 
-	lrp.TargetInstances = int(*update.Update.Instances)
-	lrp.Metadata[cf.LastUpdated] = *update.Update.Annotation
+	u := update.GetUpdate()
+
+	lrp.TargetInstances = u.Size()
+	lrp.Metadata[cf.LastUpdated] = u.GetAnnotation()
 
 	lrp.Metadata[cf.VcapAppUris] = getURIs(update)
 	return errors.Wrap(b.Desirer.Update(lrp), "failed to update")

@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package models;
 
@@ -8,7 +8,7 @@ message ImageLayer {
   enum DigestAlgorithm {
     DigestAlgorithmInvalid = 0; // not camel cased since it isn't supposed to be used by API users
     SHA256                 = 1 [(gogoproto.enumvalue_customname) = "DigestAlgorithmSha256"];
-    SHA512                 = 2 [(gogoproto.enumvalue_customname) = "DigestAlgorithmSha512"];
+    SHA512                 = 2 [(gogoproto.enumvalue_customname) = "DigestAlgorithmSha512", deprecated=true];
   }
 
   enum MediaType {
@@ -24,11 +24,11 @@ message ImageLayer {
     EXCLUSIVE        = 2 [(gogoproto.enumvalue_customname) = "LayerTypeExclusive"];
   }
 
-  optional string name                      = 1 [(gogoproto.jsontag) = "name,omitempty"];
-  optional string url                       = 2;
-  optional string destination_path          = 3;
-  optional Type layer_type                  = 4 [(gogoproto.jsontag) = "layer_type", (gogoproto.nullable) = false];
-  optional MediaType media_type             = 5 [(gogoproto.jsontag) = "media_type", (gogoproto.nullable) = false];
-  optional DigestAlgorithm digest_algorithm = 6 [(gogoproto.jsontag) = "digest_algorithm,omitempty", (gogoproto.nullable) = false];
-  optional string digest_value              = 7 [(gogoproto.jsontag) = "digest_value,omitempty"];
+  string name                      = 1;
+  string url                       = 2 [(gogoproto.jsontag) =  "url"];
+  string destination_path          = 3 [(gogoproto.jsontag) =  "destination_path"];
+  Type layer_type                  = 4 [(gogoproto.jsontag) = "layer_type"];
+  MediaType media_type             = 5 [(gogoproto.jsontag) = "media_type"];
+  DigestAlgorithm digest_algorithm = 6;
+  string digest_value              = 7;
 }

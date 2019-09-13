@@ -1,6 +1,10 @@
 package models
 
-import strings "strings"
+import (
+	"encoding/json"
+	"fmt"
+	strings "strings"
+)
 
 func (l *ImageLayer) Validate() error {
 	var validationError ValidationError
@@ -170,4 +174,55 @@ func (t ImageLayer_Type) Valid() bool {
 	default:
 		return false
 	}
+}
+
+func (d *ImageLayer_DigestAlgorithm) UnmarshalJSON(data []byte) error {
+	var name string
+	if err := json.Unmarshal(data, &name); err != nil {
+		return err
+	}
+
+	if v, found := ImageLayer_DigestAlgorithm_value[name]; found {
+		*d = ImageLayer_DigestAlgorithm(v)
+		return nil
+	}
+	return fmt.Errorf("invalid digest_algorithm: %s", name)
+}
+
+func (d ImageLayer_DigestAlgorithm) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.String())
+}
+
+func (m *ImageLayer_MediaType) UnmarshalJSON(data []byte) error {
+	var name string
+	if err := json.Unmarshal(data, &name); err != nil {
+		return err
+	}
+
+	if v, found := ImageLayer_MediaType_value[name]; found {
+		*m = ImageLayer_MediaType(v)
+		return nil
+	}
+	return fmt.Errorf("invalid media_type: %s", name)
+}
+
+func (m ImageLayer_MediaType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(m.String())
+}
+
+func (t *ImageLayer_Type) UnmarshalJSON(data []byte) error {
+	var name string
+	if err := json.Unmarshal(data, &name); err != nil {
+		return err
+	}
+
+	if v, found := ImageLayer_Type_value[name]; found {
+		*t = ImageLayer_Type(v)
+		return nil
+	}
+	return fmt.Errorf("invalid type: %s", name)
+}
+
+func (t ImageLayer_Type) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.String())
 }

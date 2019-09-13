@@ -18,9 +18,9 @@ const (
 	EventTypeDesiredLRPChanged = "desired_lrp_changed"
 	EventTypeDesiredLRPRemoved = "desired_lrp_removed"
 
-	EventTypeActualLRPCreated = "actual_lrp_created"
-	EventTypeActualLRPChanged = "actual_lrp_changed"
-	EventTypeActualLRPRemoved = "actual_lrp_removed"
+	EventTypeActualLRPCreated = "actual_lrp_created" // DEPRECATED
+	EventTypeActualLRPChanged = "actual_lrp_changed" // DEPRECATED
+	EventTypeActualLRPRemoved = "actual_lrp_removed" // DEPRECATED
 	EventTypeActualLRPCrashed = "actual_lrp_crashed"
 
 	EventTypeActualLRPInstanceCreated = "actual_lrp_instance_created"
@@ -109,14 +109,42 @@ func (event DesiredLRPRemovedEvent) Key() string {
 
 // FIXME: change the signature
 func NewActualLRPInstanceChangedEvent(before, after *ActualLRP) *ActualLRPInstanceChangedEvent {
+	var (
+		actualLRPKey         ActualLRPKey
+		actualLRPInstanceKey ActualLRPInstanceKey
+	)
+
+	if (before != nil && before.ActualLRPKey != ActualLRPKey{}) {
+		actualLRPKey = before.ActualLRPKey
+	}
+	if (after != nil && after.ActualLRPKey != ActualLRPKey{}) {
+		actualLRPKey = after.ActualLRPKey
+	}
+
+	if (before != nil && before.ActualLRPInstanceKey != ActualLRPInstanceKey{}) {
+		actualLRPInstanceKey = before.ActualLRPInstanceKey
+	}
+	if (after != nil && after.ActualLRPInstanceKey != ActualLRPInstanceKey{}) {
+		actualLRPInstanceKey = after.ActualLRPInstanceKey
+	}
+
 	return &ActualLRPInstanceChangedEvent{
-		ActualLRPKey:         after.ActualLRPKey,
-		ActualLRPInstanceKey: after.ActualLRPInstanceKey,
+		ActualLRPKey:         actualLRPKey,
+		ActualLRPInstanceKey: actualLRPInstanceKey,
 		Before:               before.ToActualLRPInfo(),
 		After:                after.ToActualLRPInfo(),
 	}
 }
 
+func (event *ActualLRPInstanceChangedEvent) EventType() string {
+	return EventTypeActualLRPInstanceChanged
+}
+
+func (event *ActualLRPInstanceChangedEvent) Key() string {
+	return event.GetInstanceGuid()
+}
+
+// DEPRECATED
 func NewActualLRPChangedEvent(before, after *ActualLRPGroup) *ActualLRPChangedEvent {
 	return &ActualLRPChangedEvent{
 		Before: before,
@@ -124,10 +152,12 @@ func NewActualLRPChangedEvent(before, after *ActualLRPGroup) *ActualLRPChangedEv
 	}
 }
 
+// DEPRECATED
 func (event *ActualLRPChangedEvent) EventType() string {
 	return EventTypeActualLRPChanged
 }
 
+// DEPRECATED
 func (event *ActualLRPChangedEvent) Key() string {
 	actualLRP, _, resolveError := event.Before.Resolve()
 	if resolveError != nil {
@@ -154,16 +184,19 @@ func (event *ActualLRPCrashedEvent) Key() string {
 	return event.ActualLRPInstanceKey.InstanceGuid
 }
 
+// DEPRECATED
 func NewActualLRPRemovedEvent(actualLRPGroup *ActualLRPGroup) *ActualLRPRemovedEvent {
 	return &ActualLRPRemovedEvent{
 		ActualLrpGroup: actualLRPGroup,
 	}
 }
 
+// DEPRECATED
 func (event *ActualLRPRemovedEvent) EventType() string {
 	return EventTypeActualLRPRemoved
 }
 
+// DEPRECATED
 func (event *ActualLRPRemovedEvent) Key() string {
 	actualLRP, _, resolveError := event.ActualLrpGroup.Resolve()
 	if resolveError != nil {
@@ -183,19 +216,25 @@ func (event *ActualLRPInstanceRemovedEvent) EventType() string {
 }
 
 func (event *ActualLRPInstanceRemovedEvent) Key() string {
+	if event.ActualLrp == nil {
+		return ""
+	}
 	return event.ActualLrp.GetInstanceGuid()
 }
 
+// DEPRECATED
 func NewActualLRPCreatedEvent(actualLRPGroup *ActualLRPGroup) *ActualLRPCreatedEvent {
 	return &ActualLRPCreatedEvent{
 		ActualLrpGroup: actualLRPGroup,
 	}
 }
 
+// DEPRECATED
 func (event *ActualLRPCreatedEvent) EventType() string {
 	return EventTypeActualLRPCreated
 }
 
+// DEPRECATED
 func (event *ActualLRPCreatedEvent) Key() string {
 	actualLRP, _, resolveError := event.ActualLrpGroup.Resolve()
 	if resolveError != nil {
@@ -215,6 +254,9 @@ func (event *ActualLRPInstanceCreatedEvent) EventType() string {
 }
 
 func (event *ActualLRPInstanceCreatedEvent) Key() string {
+	if event.ActualLrp == nil {
+		return ""
+	}
 	return event.ActualLrp.GetInstanceGuid()
 }
 
@@ -263,12 +305,4 @@ func (event *TaskRemovedEvent) EventType() string {
 
 func (event TaskRemovedEvent) Key() string {
 	return event.Task.GetTaskGuid()
-}
-
-func (event *ActualLRPInstanceChangedEvent) EventType() string {
-	return EventTypeActualLRPInstanceChanged
-}
-
-func (event *ActualLRPInstanceChangedEvent) Key() string {
-	return event.GetInstanceGuid()
 }

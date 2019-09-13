@@ -25,13 +25,13 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type ActualLRPLifecycleResponse struct {
-	Error *Error `protobuf:"bytes,1,opt,name=error" json:"error,omitempty"`
+	Error *Error `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
 }
 
 func (m *ActualLRPLifecycleResponse) Reset()      { *m = ActualLRPLifecycleResponse{} }
 func (*ActualLRPLifecycleResponse) ProtoMessage() {}
 func (*ActualLRPLifecycleResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{0}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{0}
 }
 func (m *ActualLRPLifecycleResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -67,15 +67,16 @@ func (m *ActualLRPLifecycleResponse) GetError() *Error {
 	return nil
 }
 
+// Deprecated: Do not use.
 type ActualLRPGroupsResponse struct {
-	Error           *Error            `protobuf:"bytes,1,opt,name=error" json:"error,omitempty"`
-	ActualLrpGroups []*ActualLRPGroup `protobuf:"bytes,2,rep,name=actual_lrp_groups,json=actualLrpGroups" json:"actual_lrp_groups,omitempty"`
+	Error           *Error            `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	ActualLrpGroups []*ActualLRPGroup `protobuf:"bytes,2,rep,name=actual_lrp_groups,json=actualLrpGroups,proto3" json:"actual_lrp_groups,omitempty"`
 }
 
 func (m *ActualLRPGroupsResponse) Reset()      { *m = ActualLRPGroupsResponse{} }
 func (*ActualLRPGroupsResponse) ProtoMessage() {}
 func (*ActualLRPGroupsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{1}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{1}
 }
 func (m *ActualLRPGroupsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -118,15 +119,16 @@ func (m *ActualLRPGroupsResponse) GetActualLrpGroups() []*ActualLRPGroup {
 	return nil
 }
 
+// Deprecated: Do not use.
 type ActualLRPGroupResponse struct {
-	Error          *Error          `protobuf:"bytes,1,opt,name=error" json:"error,omitempty"`
-	ActualLrpGroup *ActualLRPGroup `protobuf:"bytes,2,opt,name=actual_lrp_group,json=actualLrpGroup" json:"actual_lrp_group,omitempty"`
+	Error          *Error          `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	ActualLrpGroup *ActualLRPGroup `protobuf:"bytes,2,opt,name=actual_lrp_group,json=actualLrpGroup,proto3" json:"actual_lrp_group,omitempty"`
 }
 
 func (m *ActualLRPGroupResponse) Reset()      { *m = ActualLRPGroupResponse{} }
 func (*ActualLRPGroupResponse) ProtoMessage() {}
 func (*ActualLRPGroupResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{2}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{2}
 }
 func (m *ActualLRPGroupResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -169,15 +171,16 @@ func (m *ActualLRPGroupResponse) GetActualLrpGroup() *ActualLRPGroup {
 	return nil
 }
 
+// Deprecated: Do not use.
 type ActualLRPGroupsRequest struct {
-	Domain string `protobuf:"bytes,1,opt,name=domain" json:"domain"`
-	CellId string `protobuf:"bytes,2,opt,name=cell_id,json=cellId" json:"cell_id"`
+	Domain string `protobuf:"bytes,1,opt,name=domain,proto3" json:"domain"`
+	CellId string `protobuf:"bytes,2,opt,name=cell_id,json=cellId,proto3" json:"cell_id"`
 }
 
 func (m *ActualLRPGroupsRequest) Reset()      { *m = ActualLRPGroupsRequest{} }
 func (*ActualLRPGroupsRequest) ProtoMessage() {}
 func (*ActualLRPGroupsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{3}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{3}
 }
 func (m *ActualLRPGroupsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -220,14 +223,15 @@ func (m *ActualLRPGroupsRequest) GetCellId() string {
 	return ""
 }
 
+// Deprecated: Do not use.
 type ActualLRPGroupsByProcessGuidRequest struct {
-	ProcessGuid string `protobuf:"bytes,1,opt,name=process_guid,json=processGuid" json:"process_guid"`
+	ProcessGuid string `protobuf:"bytes,1,opt,name=process_guid,json=processGuid,proto3" json:"process_guid"`
 }
 
 func (m *ActualLRPGroupsByProcessGuidRequest) Reset()      { *m = ActualLRPGroupsByProcessGuidRequest{} }
 func (*ActualLRPGroupsByProcessGuidRequest) ProtoMessage() {}
 func (*ActualLRPGroupsByProcessGuidRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{4}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{4}
 }
 func (m *ActualLRPGroupsByProcessGuidRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -263,9 +267,10 @@ func (m *ActualLRPGroupsByProcessGuidRequest) GetProcessGuid() string {
 	return ""
 }
 
+// Deprecated: Do not use.
 type ActualLRPGroupByProcessGuidAndIndexRequest struct {
-	ProcessGuid string `protobuf:"bytes,1,opt,name=process_guid,json=processGuid" json:"process_guid"`
-	Index       int32  `protobuf:"varint,2,opt,name=index" json:"index"`
+	ProcessGuid string `protobuf:"bytes,1,opt,name=process_guid,json=processGuid,proto3" json:"process_guid"`
+	Index       int32  `protobuf:"varint,2,opt,name=index,proto3" json:"index"`
 }
 
 func (m *ActualLRPGroupByProcessGuidAndIndexRequest) Reset() {
@@ -273,7 +278,7 @@ func (m *ActualLRPGroupByProcessGuidAndIndexRequest) Reset() {
 }
 func (*ActualLRPGroupByProcessGuidAndIndexRequest) ProtoMessage() {}
 func (*ActualLRPGroupByProcessGuidAndIndexRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{5}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{5}
 }
 func (m *ActualLRPGroupByProcessGuidAndIndexRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -317,15 +322,15 @@ func (m *ActualLRPGroupByProcessGuidAndIndexRequest) GetIndex() int32 {
 }
 
 type ClaimActualLRPRequest struct {
-	ProcessGuid          string                `protobuf:"bytes,1,opt,name=process_guid,json=processGuid" json:"process_guid"`
-	Index                int32                 `protobuf:"varint,2,opt,name=index" json:"index"`
-	ActualLrpInstanceKey *ActualLRPInstanceKey `protobuf:"bytes,3,opt,name=actual_lrp_instance_key,json=actualLrpInstanceKey" json:"actual_lrp_instance_key,omitempty"`
+	ProcessGuid          string                `protobuf:"bytes,1,opt,name=process_guid,json=processGuid,proto3" json:"process_guid"`
+	Index                int32                 `protobuf:"varint,2,opt,name=index,proto3" json:"index"`
+	ActualLrpInstanceKey *ActualLRPInstanceKey `protobuf:"bytes,3,opt,name=actual_lrp_instance_key,json=actualLrpInstanceKey,proto3" json:"actual_lrp_instance_key,omitempty"`
 }
 
 func (m *ClaimActualLRPRequest) Reset()      { *m = ClaimActualLRPRequest{} }
 func (*ClaimActualLRPRequest) ProtoMessage() {}
 func (*ClaimActualLRPRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{6}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{6}
 }
 func (m *ClaimActualLRPRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -376,15 +381,15 @@ func (m *ClaimActualLRPRequest) GetActualLrpInstanceKey() *ActualLRPInstanceKey 
 }
 
 type StartActualLRPRequest struct {
-	ActualLrpKey         *ActualLRPKey         `protobuf:"bytes,1,opt,name=actual_lrp_key,json=actualLrpKey" json:"actual_lrp_key,omitempty"`
-	ActualLrpInstanceKey *ActualLRPInstanceKey `protobuf:"bytes,2,opt,name=actual_lrp_instance_key,json=actualLrpInstanceKey" json:"actual_lrp_instance_key,omitempty"`
-	ActualLrpNetInfo     *ActualLRPNetInfo     `protobuf:"bytes,3,opt,name=actual_lrp_net_info,json=actualLrpNetInfo" json:"actual_lrp_net_info,omitempty"`
+	ActualLrpKey         *ActualLRPKey         `protobuf:"bytes,1,opt,name=actual_lrp_key,json=actualLrpKey,proto3" json:"actual_lrp_key,omitempty"`
+	ActualLrpInstanceKey *ActualLRPInstanceKey `protobuf:"bytes,2,opt,name=actual_lrp_instance_key,json=actualLrpInstanceKey,proto3" json:"actual_lrp_instance_key,omitempty"`
+	ActualLrpNetInfo     *ActualLRPNetInfo     `protobuf:"bytes,3,opt,name=actual_lrp_net_info,json=actualLrpNetInfo,proto3" json:"actual_lrp_net_info,omitempty"`
 }
 
 func (m *StartActualLRPRequest) Reset()      { *m = StartActualLRPRequest{} }
 func (*StartActualLRPRequest) ProtoMessage() {}
 func (*StartActualLRPRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{7}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{7}
 }
 func (m *StartActualLRPRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -435,15 +440,15 @@ func (m *StartActualLRPRequest) GetActualLrpNetInfo() *ActualLRPNetInfo {
 }
 
 type CrashActualLRPRequest struct {
-	ActualLrpKey         *ActualLRPKey         `protobuf:"bytes,1,opt,name=actual_lrp_key,json=actualLrpKey" json:"actual_lrp_key,omitempty"`
-	ActualLrpInstanceKey *ActualLRPInstanceKey `protobuf:"bytes,2,opt,name=actual_lrp_instance_key,json=actualLrpInstanceKey" json:"actual_lrp_instance_key,omitempty"`
-	ErrorMessage         string                `protobuf:"bytes,3,opt,name=error_message,json=errorMessage" json:"error_message"`
+	ActualLrpKey         *ActualLRPKey         `protobuf:"bytes,1,opt,name=actual_lrp_key,json=actualLrpKey,proto3" json:"actual_lrp_key,omitempty"`
+	ActualLrpInstanceKey *ActualLRPInstanceKey `protobuf:"bytes,2,opt,name=actual_lrp_instance_key,json=actualLrpInstanceKey,proto3" json:"actual_lrp_instance_key,omitempty"`
+	ErrorMessage         string                `protobuf:"bytes,3,opt,name=error_message,json=errorMessage,proto3" json:"error_message"`
 }
 
 func (m *CrashActualLRPRequest) Reset()      { *m = CrashActualLRPRequest{} }
 func (*CrashActualLRPRequest) ProtoMessage() {}
 func (*CrashActualLRPRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{8}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{8}
 }
 func (m *CrashActualLRPRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -494,14 +499,14 @@ func (m *CrashActualLRPRequest) GetErrorMessage() string {
 }
 
 type FailActualLRPRequest struct {
-	ActualLrpKey *ActualLRPKey `protobuf:"bytes,1,opt,name=actual_lrp_key,json=actualLrpKey" json:"actual_lrp_key,omitempty"`
-	ErrorMessage string        `protobuf:"bytes,2,opt,name=error_message,json=errorMessage" json:"error_message"`
+	ActualLrpKey *ActualLRPKey `protobuf:"bytes,1,opt,name=actual_lrp_key,json=actualLrpKey,proto3" json:"actual_lrp_key,omitempty"`
+	ErrorMessage string        `protobuf:"bytes,2,opt,name=error_message,json=errorMessage,proto3" json:"error_message"`
 }
 
 func (m *FailActualLRPRequest) Reset()      { *m = FailActualLRPRequest{} }
 func (*FailActualLRPRequest) ProtoMessage() {}
 func (*FailActualLRPRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{9}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{9}
 }
 func (m *FailActualLRPRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -545,13 +550,13 @@ func (m *FailActualLRPRequest) GetErrorMessage() string {
 }
 
 type RetireActualLRPRequest struct {
-	ActualLrpKey *ActualLRPKey `protobuf:"bytes,1,opt,name=actual_lrp_key,json=actualLrpKey" json:"actual_lrp_key,omitempty"`
+	ActualLrpKey *ActualLRPKey `protobuf:"bytes,1,opt,name=actual_lrp_key,json=actualLrpKey,proto3" json:"actual_lrp_key,omitempty"`
 }
 
 func (m *RetireActualLRPRequest) Reset()      { *m = RetireActualLRPRequest{} }
 func (*RetireActualLRPRequest) ProtoMessage() {}
 func (*RetireActualLRPRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{10}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{10}
 }
 func (m *RetireActualLRPRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -588,15 +593,15 @@ func (m *RetireActualLRPRequest) GetActualLrpKey() *ActualLRPKey {
 }
 
 type RemoveActualLRPRequest struct {
-	ProcessGuid          string                `protobuf:"bytes,1,opt,name=process_guid,json=processGuid" json:"process_guid"`
-	Index                int32                 `protobuf:"varint,2,opt,name=index" json:"index"`
-	ActualLrpInstanceKey *ActualLRPInstanceKey `protobuf:"bytes,3,opt,name=actual_lrp_instance_key,json=actualLrpInstanceKey" json:"actual_lrp_instance_key,omitempty"`
+	ProcessGuid          string                `protobuf:"bytes,1,opt,name=process_guid,json=processGuid,proto3" json:"process_guid"`
+	Index                int32                 `protobuf:"varint,2,opt,name=index,proto3" json:"index"`
+	ActualLrpInstanceKey *ActualLRPInstanceKey `protobuf:"bytes,3,opt,name=actual_lrp_instance_key,json=actualLrpInstanceKey,proto3" json:"actual_lrp_instance_key,omitempty"`
 }
 
 func (m *RemoveActualLRPRequest) Reset()      { *m = RemoveActualLRPRequest{} }
 func (*RemoveActualLRPRequest) ProtoMessage() {}
 func (*RemoveActualLRPRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{11}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{11}
 }
 func (m *RemoveActualLRPRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -647,14 +652,14 @@ func (m *RemoveActualLRPRequest) GetActualLrpInstanceKey() *ActualLRPInstanceKey
 }
 
 type ActualLRPsResponse struct {
-	Error      *Error       `protobuf:"bytes,1,opt,name=error" json:"error,omitempty"`
-	ActualLrps []*ActualLRP `protobuf:"bytes,2,rep,name=actual_lrps,json=actualLrps" json:"actual_lrps,omitempty"`
+	Error      *Error       `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	ActualLrps []*ActualLRP `protobuf:"bytes,2,rep,name=actual_lrps,json=actualLrps,proto3" json:"actual_lrps,omitempty"`
 }
 
 func (m *ActualLRPsResponse) Reset()      { *m = ActualLRPsResponse{} }
 func (*ActualLRPsResponse) ProtoMessage() {}
 func (*ActualLRPsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{12}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{12}
 }
 func (m *ActualLRPsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -698,16 +703,18 @@ func (m *ActualLRPsResponse) GetActualLrps() []*ActualLRP {
 }
 
 type ActualLRPsRequest struct {
-	Domain      string `protobuf:"bytes,1,opt,name=domain" json:"domain"`
-	CellId      string `protobuf:"bytes,2,opt,name=cell_id,json=cellId" json:"cell_id"`
-	ProcessGuid string `protobuf:"bytes,3,opt,name=process_guid,json=processGuid" json:"process_guid"`
-	Index       *int32 `protobuf:"varint,4,opt,name=index" json:"index,omitempty"`
+	Domain      string `protobuf:"bytes,1,opt,name=domain,proto3" json:"domain"`
+	CellId      string `protobuf:"bytes,2,opt,name=cell_id,json=cellId,proto3" json:"cell_id"`
+	ProcessGuid string `protobuf:"bytes,3,opt,name=process_guid,json=processGuid,proto3" json:"process_guid"`
+	// Types that are valid to be assigned to OptionalIndex:
+	//	*ActualLRPsRequest_Index
+	OptionalIndex isActualLRPsRequest_OptionalIndex `protobuf_oneof:"optional_index"`
 }
 
 func (m *ActualLRPsRequest) Reset()      { *m = ActualLRPsRequest{} }
 func (*ActualLRPsRequest) ProtoMessage() {}
 func (*ActualLRPsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8, []int{13}
+	return fileDescriptor_actual_lrp_requests_fcae0945c543eefb, []int{13}
 }
 func (m *ActualLRPsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -736,6 +743,26 @@ func (m *ActualLRPsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ActualLRPsRequest proto.InternalMessageInfo
 
+type isActualLRPsRequest_OptionalIndex interface {
+	isActualLRPsRequest_OptionalIndex()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type ActualLRPsRequest_Index struct {
+	Index int32 `protobuf:"varint,4,opt,name=index,proto3,oneof"`
+}
+
+func (*ActualLRPsRequest_Index) isActualLRPsRequest_OptionalIndex() {}
+
+func (m *ActualLRPsRequest) GetOptionalIndex() isActualLRPsRequest_OptionalIndex {
+	if m != nil {
+		return m.OptionalIndex
+	}
+	return nil
+}
+
 func (m *ActualLRPsRequest) GetDomain() string {
 	if m != nil {
 		return m.Domain
@@ -758,10 +785,60 @@ func (m *ActualLRPsRequest) GetProcessGuid() string {
 }
 
 func (m *ActualLRPsRequest) GetIndex() int32 {
-	if m != nil && m.Index != nil {
-		return *m.Index
+	if x, ok := m.GetOptionalIndex().(*ActualLRPsRequest_Index); ok {
+		return x.Index
 	}
 	return 0
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ActualLRPsRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ActualLRPsRequest_OneofMarshaler, _ActualLRPsRequest_OneofUnmarshaler, _ActualLRPsRequest_OneofSizer, []interface{}{
+		(*ActualLRPsRequest_Index)(nil),
+	}
+}
+
+func _ActualLRPsRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ActualLRPsRequest)
+	// optional_index
+	switch x := m.OptionalIndex.(type) {
+	case *ActualLRPsRequest_Index:
+		_ = b.EncodeVarint(4<<3 | proto.WireVarint)
+		_ = b.EncodeVarint(uint64(x.Index))
+	case nil:
+	default:
+		return fmt.Errorf("ActualLRPsRequest.OptionalIndex has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ActualLRPsRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ActualLRPsRequest)
+	switch tag {
+	case 4: // optional_index.index
+		if wire != proto.WireVarint {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeVarint()
+		m.OptionalIndex = &ActualLRPsRequest_Index{int32(x)}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ActualLRPsRequest_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ActualLRPsRequest)
+	// optional_index
+	switch x := m.OptionalIndex.(type) {
+	case *ActualLRPsRequest_Index:
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(x.Index))
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 func init() {
@@ -1172,13 +1249,37 @@ func (this *ActualLRPsRequest) Equal(that interface{}) bool {
 	if this.ProcessGuid != that1.ProcessGuid {
 		return false
 	}
-	if this.Index != nil && that1.Index != nil {
-		if *this.Index != *that1.Index {
+	if that1.OptionalIndex == nil {
+		if this.OptionalIndex != nil {
 			return false
 		}
-	} else if this.Index != nil {
+	} else if this.OptionalIndex == nil {
 		return false
-	} else if that1.Index != nil {
+	} else if !this.OptionalIndex.Equal(that1.OptionalIndex) {
+		return false
+	}
+	return true
+}
+func (this *ActualLRPsRequest_Index) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ActualLRPsRequest_Index)
+	if !ok {
+		that2, ok := that.(ActualLRPsRequest_Index)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Index != that1.Index {
 		return false
 	}
 	return true
@@ -1368,11 +1469,19 @@ func (this *ActualLRPsRequest) GoString() string {
 	s = append(s, "Domain: "+fmt.Sprintf("%#v", this.Domain)+",\n")
 	s = append(s, "CellId: "+fmt.Sprintf("%#v", this.CellId)+",\n")
 	s = append(s, "ProcessGuid: "+fmt.Sprintf("%#v", this.ProcessGuid)+",\n")
-	if this.Index != nil {
-		s = append(s, "Index: "+valueToGoStringActualLrpRequests(this.Index, "int32")+",\n")
+	if this.OptionalIndex != nil {
+		s = append(s, "OptionalIndex: "+fmt.Sprintf("%#v", this.OptionalIndex)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
+}
+func (this *ActualLRPsRequest_Index) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&models.ActualLRPsRequest_Index{` +
+		`Index:` + fmt.Sprintf("%#v", this.Index) + `}`}, ", ")
+	return s
 }
 func valueToGoStringActualLrpRequests(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
@@ -1503,14 +1612,18 @@ func (m *ActualLRPGroupsRequest) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	dAtA[i] = 0xa
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.Domain)))
-	i += copy(dAtA[i:], m.Domain)
-	dAtA[i] = 0x12
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.CellId)))
-	i += copy(dAtA[i:], m.CellId)
+	if len(m.Domain) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.Domain)))
+		i += copy(dAtA[i:], m.Domain)
+	}
+	if len(m.CellId) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.CellId)))
+		i += copy(dAtA[i:], m.CellId)
+	}
 	return i, nil
 }
 
@@ -1529,10 +1642,12 @@ func (m *ActualLRPGroupsByProcessGuidRequest) MarshalTo(dAtA []byte) (int, error
 	_ = i
 	var l int
 	_ = l
-	dAtA[i] = 0xa
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ProcessGuid)))
-	i += copy(dAtA[i:], m.ProcessGuid)
+	if len(m.ProcessGuid) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ProcessGuid)))
+		i += copy(dAtA[i:], m.ProcessGuid)
+	}
 	return i, nil
 }
 
@@ -1551,13 +1666,17 @@ func (m *ActualLRPGroupByProcessGuidAndIndexRequest) MarshalTo(dAtA []byte) (int
 	_ = i
 	var l int
 	_ = l
-	dAtA[i] = 0xa
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ProcessGuid)))
-	i += copy(dAtA[i:], m.ProcessGuid)
-	dAtA[i] = 0x10
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(m.Index))
+	if len(m.ProcessGuid) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ProcessGuid)))
+		i += copy(dAtA[i:], m.ProcessGuid)
+	}
+	if m.Index != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(m.Index))
+	}
 	return i, nil
 }
 
@@ -1576,13 +1695,17 @@ func (m *ClaimActualLRPRequest) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	dAtA[i] = 0xa
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ProcessGuid)))
-	i += copy(dAtA[i:], m.ProcessGuid)
-	dAtA[i] = 0x10
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(m.Index))
+	if len(m.ProcessGuid) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ProcessGuid)))
+		i += copy(dAtA[i:], m.ProcessGuid)
+	}
+	if m.Index != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(m.Index))
+	}
 	if m.ActualLrpInstanceKey != nil {
 		dAtA[i] = 0x1a
 		i++
@@ -1679,10 +1802,12 @@ func (m *CrashActualLRPRequest) MarshalTo(dAtA []byte) (int, error) {
 		}
 		i += n10
 	}
-	dAtA[i] = 0x1a
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ErrorMessage)))
-	i += copy(dAtA[i:], m.ErrorMessage)
+	if len(m.ErrorMessage) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ErrorMessage)))
+		i += copy(dAtA[i:], m.ErrorMessage)
+	}
 	return i, nil
 }
 
@@ -1711,10 +1836,12 @@ func (m *FailActualLRPRequest) MarshalTo(dAtA []byte) (int, error) {
 		}
 		i += n11
 	}
-	dAtA[i] = 0x12
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ErrorMessage)))
-	i += copy(dAtA[i:], m.ErrorMessage)
+	if len(m.ErrorMessage) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ErrorMessage)))
+		i += copy(dAtA[i:], m.ErrorMessage)
+	}
 	return i, nil
 }
 
@@ -1761,13 +1888,17 @@ func (m *RemoveActualLRPRequest) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	dAtA[i] = 0xa
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ProcessGuid)))
-	i += copy(dAtA[i:], m.ProcessGuid)
-	dAtA[i] = 0x10
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(m.Index))
+	if len(m.ProcessGuid) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ProcessGuid)))
+		i += copy(dAtA[i:], m.ProcessGuid)
+	}
+	if m.Index != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(m.Index))
+	}
 	if m.ActualLrpInstanceKey != nil {
 		dAtA[i] = 0x1a
 		i++
@@ -1836,26 +1967,41 @@ func (m *ActualLRPsRequest) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	dAtA[i] = 0xa
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.Domain)))
-	i += copy(dAtA[i:], m.Domain)
-	dAtA[i] = 0x12
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.CellId)))
-	i += copy(dAtA[i:], m.CellId)
-	dAtA[i] = 0x1a
-	i++
-	i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ProcessGuid)))
-	i += copy(dAtA[i:], m.ProcessGuid)
-	if m.Index != nil {
-		dAtA[i] = 0x20
+	if len(m.Domain) > 0 {
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintActualLrpRequests(dAtA, i, uint64(*m.Index))
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.Domain)))
+		i += copy(dAtA[i:], m.Domain)
+	}
+	if len(m.CellId) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.CellId)))
+		i += copy(dAtA[i:], m.CellId)
+	}
+	if len(m.ProcessGuid) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintActualLrpRequests(dAtA, i, uint64(len(m.ProcessGuid)))
+		i += copy(dAtA[i:], m.ProcessGuid)
+	}
+	if m.OptionalIndex != nil {
+		nn15, err := m.OptionalIndex.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn15
 	}
 	return i, nil
 }
 
+func (m *ActualLRPsRequest_Index) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	dAtA[i] = 0x20
+	i++
+	i = encodeVarintActualLrpRequests(dAtA, i, uint64(m.Index))
+	return i, nil
+}
 func encodeVarintActualLrpRequests(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -1921,9 +2067,13 @@ func (m *ActualLRPGroupsRequest) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.Domain)
-	n += 1 + l + sovActualLrpRequests(uint64(l))
+	if l > 0 {
+		n += 1 + l + sovActualLrpRequests(uint64(l))
+	}
 	l = len(m.CellId)
-	n += 1 + l + sovActualLrpRequests(uint64(l))
+	if l > 0 {
+		n += 1 + l + sovActualLrpRequests(uint64(l))
+	}
 	return n
 }
 
@@ -1934,7 +2084,9 @@ func (m *ActualLRPGroupsByProcessGuidRequest) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.ProcessGuid)
-	n += 1 + l + sovActualLrpRequests(uint64(l))
+	if l > 0 {
+		n += 1 + l + sovActualLrpRequests(uint64(l))
+	}
 	return n
 }
 
@@ -1945,8 +2097,12 @@ func (m *ActualLRPGroupByProcessGuidAndIndexRequest) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.ProcessGuid)
-	n += 1 + l + sovActualLrpRequests(uint64(l))
-	n += 1 + sovActualLrpRequests(uint64(m.Index))
+	if l > 0 {
+		n += 1 + l + sovActualLrpRequests(uint64(l))
+	}
+	if m.Index != 0 {
+		n += 1 + sovActualLrpRequests(uint64(m.Index))
+	}
 	return n
 }
 
@@ -1957,8 +2113,12 @@ func (m *ClaimActualLRPRequest) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.ProcessGuid)
-	n += 1 + l + sovActualLrpRequests(uint64(l))
-	n += 1 + sovActualLrpRequests(uint64(m.Index))
+	if l > 0 {
+		n += 1 + l + sovActualLrpRequests(uint64(l))
+	}
+	if m.Index != 0 {
+		n += 1 + sovActualLrpRequests(uint64(m.Index))
+	}
 	if m.ActualLrpInstanceKey != nil {
 		l = m.ActualLrpInstanceKey.Size()
 		n += 1 + l + sovActualLrpRequests(uint64(l))
@@ -2002,7 +2162,9 @@ func (m *CrashActualLRPRequest) Size() (n int) {
 		n += 1 + l + sovActualLrpRequests(uint64(l))
 	}
 	l = len(m.ErrorMessage)
-	n += 1 + l + sovActualLrpRequests(uint64(l))
+	if l > 0 {
+		n += 1 + l + sovActualLrpRequests(uint64(l))
+	}
 	return n
 }
 
@@ -2017,7 +2179,9 @@ func (m *FailActualLRPRequest) Size() (n int) {
 		n += 1 + l + sovActualLrpRequests(uint64(l))
 	}
 	l = len(m.ErrorMessage)
-	n += 1 + l + sovActualLrpRequests(uint64(l))
+	if l > 0 {
+		n += 1 + l + sovActualLrpRequests(uint64(l))
+	}
 	return n
 }
 
@@ -2041,8 +2205,12 @@ func (m *RemoveActualLRPRequest) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.ProcessGuid)
-	n += 1 + l + sovActualLrpRequests(uint64(l))
-	n += 1 + sovActualLrpRequests(uint64(m.Index))
+	if l > 0 {
+		n += 1 + l + sovActualLrpRequests(uint64(l))
+	}
+	if m.Index != 0 {
+		n += 1 + sovActualLrpRequests(uint64(m.Index))
+	}
 	if m.ActualLrpInstanceKey != nil {
 		l = m.ActualLrpInstanceKey.Size()
 		n += 1 + l + sovActualLrpRequests(uint64(l))
@@ -2076,14 +2244,30 @@ func (m *ActualLRPsRequest) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.Domain)
-	n += 1 + l + sovActualLrpRequests(uint64(l))
-	l = len(m.CellId)
-	n += 1 + l + sovActualLrpRequests(uint64(l))
-	l = len(m.ProcessGuid)
-	n += 1 + l + sovActualLrpRequests(uint64(l))
-	if m.Index != nil {
-		n += 1 + sovActualLrpRequests(uint64(*m.Index))
+	if l > 0 {
+		n += 1 + l + sovActualLrpRequests(uint64(l))
 	}
+	l = len(m.CellId)
+	if l > 0 {
+		n += 1 + l + sovActualLrpRequests(uint64(l))
+	}
+	l = len(m.ProcessGuid)
+	if l > 0 {
+		n += 1 + l + sovActualLrpRequests(uint64(l))
+	}
+	if m.OptionalIndex != nil {
+		n += m.OptionalIndex.Size()
+	}
+	return n
+}
+
+func (m *ActualLRPsRequest_Index) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovActualLrpRequests(uint64(m.Index))
 	return n
 }
 
@@ -2252,7 +2436,17 @@ func (this *ActualLRPsRequest) String() string {
 		`Domain:` + fmt.Sprintf("%v", this.Domain) + `,`,
 		`CellId:` + fmt.Sprintf("%v", this.CellId) + `,`,
 		`ProcessGuid:` + fmt.Sprintf("%v", this.ProcessGuid) + `,`,
-		`Index:` + valueToStringActualLrpRequests(this.Index) + `,`,
+		`OptionalIndex:` + fmt.Sprintf("%v", this.OptionalIndex) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ActualLRPsRequest_Index) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ActualLRPsRequest_Index{`,
+		`Index:` + fmt.Sprintf("%v", this.Index) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3863,7 +4057,7 @@ func (m *ActualLRPsRequest) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			m.Index = &v
+			m.OptionalIndex = &ActualLRPsRequest_Index{v}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipActualLrpRequests(dAtA[iNdEx:])
@@ -3991,49 +4185,52 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("actual_lrp_requests.proto", fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8)
+	proto.RegisterFile("actual_lrp_requests.proto", fileDescriptor_actual_lrp_requests_fcae0945c543eefb)
 }
 
-var fileDescriptor_actual_lrp_requests_f65a334bfa8c39e8 = []byte{
-	// 628 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x55, 0x4d, 0x4f, 0xd4, 0x40,
-	0x18, 0xee, 0x2c, 0x1f, 0xc6, 0x77, 0x01, 0xa1, 0xf2, 0xb1, 0x6e, 0x70, 0x24, 0xc3, 0x41, 0x34,
-	0x71, 0x49, 0x88, 0x27, 0x4f, 0xb2, 0x46, 0xc9, 0x06, 0x24, 0xa4, 0xe8, 0xb9, 0x29, 0xed, 0xec,
-	0x32, 0xb1, 0xed, 0x94, 0x99, 0xd6, 0xb8, 0x07, 0xa3, 0xf1, 0x17, 0x78, 0xf1, 0x3f, 0x78, 0xd5,
-	0x5f, 0xc1, 0x91, 0xc4, 0x0b, 0x27, 0x23, 0xe5, 0xe2, 0x11, 0xff, 0x81, 0xe9, 0xb4, 0x5b, 0xba,
-	0xdb, 0xa0, 0x59, 0xe5, 0xa0, 0xb7, 0x9d, 0xe7, 0x7d, 0xe6, 0x79, 0x9e, 0xf7, 0x7d, 0xdb, 0x2d,
-	0xdc, 0xb0, 0xec, 0x30, 0xb2, 0x5c, 0xd3, 0x15, 0x81, 0x29, 0xe8, 0x41, 0x44, 0x65, 0x28, 0x1b,
-	0x81, 0xe0, 0x21, 0xd7, 0xc7, 0x3d, 0xee, 0x50, 0x57, 0xd6, 0xef, 0x75, 0x58, 0xb8, 0x1f, 0xed,
-	0x35, 0x6c, 0xee, 0xad, 0x76, 0x78, 0x87, 0xaf, 0xaa, 0xf2, 0x5e, 0xd4, 0x56, 0x27, 0x75, 0x50,
-	0xbf, 0xd2, 0x6b, 0xf5, 0xe9, 0x73, 0xc5, 0x0c, 0xa9, 0x52, 0x21, 0xb8, 0x48, 0x0f, 0x64, 0x1d,
-	0xea, 0xeb, 0x8a, 0xb0, 0x65, 0xec, 0x6c, 0xb1, 0x36, 0xb5, 0xbb, 0xb6, 0x4b, 0x0d, 0x2a, 0x03,
-	0xee, 0x4b, 0xaa, 0x2f, 0xc3, 0x98, 0x22, 0xd7, 0xd0, 0x12, 0x5a, 0xa9, 0xae, 0x4d, 0x36, 0xd2,
-	0x0c, 0x8d, 0xc7, 0x09, 0x68, 0xa4, 0x35, 0xf2, 0x0e, 0xc1, 0x42, 0xae, 0xb1, 0x21, 0x78, 0x14,
-	0xc8, 0xa1, 0x04, 0xf4, 0x26, 0xcc, 0x14, 0xda, 0xee, 0x28, 0x85, 0x5a, 0x65, 0x69, 0x64, 0xa5,
-	0xba, 0x36, 0xdf, 0xbb, 0xd0, 0x6f, 0x60, 0x5c, 0x4b, 0x2f, 0x6c, 0x89, 0x20, 0x35, 0x24, 0x6f,
-	0x60, 0x7e, 0x80, 0x32, 0x54, 0x84, 0x87, 0x30, 0x3d, 0x18, 0xa1, 0x56, 0x51, 0xfc, 0x8b, 0x12,
-	0x4c, 0xf5, 0x27, 0x20, 0xcf, 0x07, 0x03, 0x48, 0x23, 0xdd, 0x9f, 0xbe, 0x08, 0xe3, 0x0e, 0xf7,
-	0x2c, 0xe6, 0xab, 0x04, 0x57, 0x9b, 0xa3, 0x87, 0x5f, 0x6f, 0x69, 0x46, 0x86, 0xe9, 0x37, 0xe1,
-	0x8a, 0x4d, 0x5d, 0xd7, 0x64, 0x8e, 0x32, 0xcc, 0xcb, 0x09, 0xd8, 0x72, 0xc8, 0x36, 0x2c, 0x0f,
-	0xc8, 0x36, 0xbb, 0x3b, 0x82, 0xdb, 0x54, 0xca, 0x8d, 0x88, 0x39, 0x3d, 0x8f, 0xdb, 0x30, 0x11,
-	0xa4, 0xa8, 0xd9, 0x89, 0x98, 0xd3, 0xe7, 0x54, 0x0d, 0xce, 0xf9, 0xe4, 0x00, 0xee, 0xf6, 0xeb,
-	0xf5, 0xc9, 0xad, 0xfb, 0x4e, 0xcb, 0x77, 0xe8, 0xab, 0x61, 0x65, 0xf5, 0x3a, 0x8c, 0xb1, 0xe4,
-	0xa2, 0xea, 0x61, 0x2c, 0x63, 0xa4, 0x10, 0xf9, 0x84, 0x60, 0xee, 0x91, 0x6b, 0x31, 0x2f, 0x37,
-	0xbe, 0x4c, 0x79, 0x7d, 0x17, 0x16, 0x0a, 0xab, 0x63, 0xbe, 0x0c, 0x2d, 0xdf, 0xa6, 0xe6, 0x0b,
-	0xda, 0xad, 0x8d, 0xa8, 0x0d, 0x2e, 0x96, 0x36, 0xd8, 0xca, 0x48, 0x9b, 0xb4, 0x6b, 0xcc, 0xe6,
-	0x7b, 0x2c, 0xa0, 0xe4, 0x07, 0x82, 0xb9, 0xdd, 0xd0, 0x12, 0x61, 0x29, 0xf3, 0x03, 0x98, 0x2a,
-	0xd8, 0x25, 0x2e, 0xe9, 0x73, 0x35, 0x5b, 0x72, 0x49, 0xd4, 0x27, 0x72, 0xf5, 0x4d, 0xda, 0xfd,
-	0x55, 0xd4, 0xca, 0x9f, 0x46, 0xd5, 0x37, 0xe0, 0x7a, 0x41, 0xd4, 0xa7, 0xa1, 0xc9, 0xfc, 0x36,
-	0xcf, 0x7a, 0xaf, 0x95, 0x04, 0xb7, 0x69, 0xd8, 0xf2, 0xdb, 0xdc, 0x98, 0xce, 0xc5, 0x32, 0x84,
-	0x7c, 0x49, 0xf6, 0x24, 0x2c, 0xb9, 0xff, 0xef, 0xf7, 0x7c, 0x07, 0x26, 0xd5, 0x7b, 0x6b, 0x7a,
-	0x54, 0x4a, 0xab, 0x43, 0x55, 0xb7, 0xbd, 0x27, 0x67, 0x42, 0x95, 0x9e, 0xa6, 0x15, 0xf2, 0x1a,
-	0x66, 0x9f, 0x58, 0xcc, 0xbd, 0xd4, 0x9e, 0x4a, 0xf6, 0x95, 0x0b, 0xed, 0x9f, 0xc1, 0xbc, 0x41,
-	0x43, 0x26, 0xe8, 0x65, 0x06, 0x20, 0x9f, 0x51, 0x22, 0xeb, 0xf1, 0x97, 0xf4, 0x3f, 0x7a, 0xa7,
-	0x3c, 0xd0, 0x73, 0xf6, 0x90, 0x5f, 0x88, 0x35, 0xa8, 0x9e, 0xe7, 0xe9, 0x7d, 0x1b, 0x66, 0x4a,
-	0x19, 0x0c, 0xc8, 0x8d, 0x25, 0xf9, 0x80, 0x60, 0xa6, 0xe8, 0xf7, 0xf7, 0x7f, 0xc6, 0xa5, 0xd9,
-	0x8e, 0xfc, 0x76, 0xb6, 0xa3, 0xf9, 0x6c, 0x51, 0x36, 0xdb, 0xe6, 0xfd, 0xa3, 0x13, 0xac, 0x1d,
-	0x9f, 0x60, 0xed, 0xec, 0x04, 0xa3, 0xb7, 0x31, 0x46, 0x1f, 0x63, 0x8c, 0x0e, 0x63, 0x8c, 0x8e,
-	0x62, 0x8c, 0xbe, 0xc5, 0x18, 0x7d, 0x8f, 0xb1, 0x76, 0x16, 0x63, 0xf4, 0xfe, 0x14, 0x6b, 0x47,
-	0xa7, 0x58, 0x3b, 0x3e, 0xc5, 0xda, 0xcf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xaf, 0xdd, 0x88, 0x6a,
-	0x19, 0x08, 0x00, 0x00,
+var fileDescriptor_actual_lrp_requests_fcae0945c543eefb = []byte{
+	// 686 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x56, 0xbf, 0x6f, 0xd3, 0x40,
+	0x14, 0xf6, 0xa5, 0x34, 0x28, 0x2f, 0x6d, 0x49, 0x4c, 0x7f, 0x84, 0x0a, 0x39, 0xc5, 0x65, 0xa8,
+	0x90, 0x48, 0xa5, 0x16, 0x31, 0x74, 0xa2, 0x46, 0x50, 0xa2, 0x16, 0x54, 0x5d, 0x99, 0xb1, 0x5c,
+	0xfb, 0x92, 0x5a, 0xd8, 0x3e, 0xe3, 0xb3, 0x11, 0xd9, 0x90, 0x90, 0x3a, 0x30, 0xf1, 0x67, 0xf0,
+	0x77, 0xc0, 0x00, 0x63, 0xc7, 0x4e, 0x51, 0xeb, 0x2e, 0x28, 0x53, 0xf9, 0x0f, 0x90, 0xef, 0x1c,
+	0x37, 0x89, 0x05, 0x6a, 0xa1, 0x48, 0x30, 0xd9, 0xef, 0xbb, 0x77, 0xdf, 0xf7, 0xbd, 0x77, 0x2f,
+	0x39, 0xc3, 0x0d, 0xc3, 0x0c, 0x23, 0xc3, 0xd1, 0x9d, 0xc0, 0xd7, 0x03, 0xf2, 0x2a, 0x22, 0x2c,
+	0x64, 0x0d, 0x3f, 0xa0, 0x21, 0x95, 0x8b, 0x2e, 0xb5, 0x88, 0xc3, 0xe6, 0xef, 0xb6, 0xed, 0x70,
+	0x2f, 0xda, 0x6d, 0x98, 0xd4, 0x5d, 0x6e, 0xd3, 0x36, 0x5d, 0xe6, 0xcb, 0xbb, 0x51, 0x8b, 0x47,
+	0x3c, 0xe0, 0x6f, 0x62, 0xdb, 0x7c, 0xe5, 0x8c, 0x31, 0x45, 0xca, 0x24, 0x08, 0x68, 0x20, 0x02,
+	0x75, 0x1d, 0xe6, 0xd7, 0x79, 0xc2, 0x16, 0xde, 0xde, 0xb2, 0x5b, 0xc4, 0xec, 0x98, 0x0e, 0xc1,
+	0x84, 0xf9, 0xd4, 0x63, 0x44, 0x5e, 0x84, 0x71, 0x9e, 0x5c, 0x43, 0x0b, 0x68, 0xa9, 0xbc, 0x32,
+	0xd9, 0x10, 0x1e, 0x1a, 0x8f, 0x12, 0x10, 0x8b, 0x35, 0x75, 0x1f, 0xc1, 0x5c, 0xc6, 0xb1, 0x11,
+	0xd0, 0xc8, 0x67, 0x17, 0x22, 0x90, 0x35, 0xa8, 0x0e, 0x94, 0xdd, 0xe6, 0x0c, 0xb5, 0xc2, 0xc2,
+	0xd8, 0x52, 0x79, 0x65, 0xb6, 0xbf, 0x61, 0x58, 0x00, 0x5f, 0x13, 0x1b, 0xb6, 0x02, 0x5f, 0x08,
+	0xae, 0x15, 0x6a, 0x48, 0x7d, 0x87, 0x60, 0x76, 0x24, 0xef, 0x42, 0x3e, 0x1e, 0x40, 0x65, 0xd4,
+	0x47, 0xad, 0xc0, 0xf3, 0x7f, 0x66, 0x63, 0x6a, 0xd8, 0x06, 0x77, 0xd1, 0x1a, 0x35, 0xc1, 0xb0,
+	0x38, 0x48, 0x59, 0x85, 0xa2, 0x45, 0x5d, 0xc3, 0xf6, 0xb8, 0x8b, 0x92, 0x06, 0xbd, 0x6e, 0x3d,
+	0x45, 0x70, 0xfa, 0x94, 0x6f, 0xc3, 0x55, 0x93, 0x38, 0x8e, 0x6e, 0x5b, 0x5c, 0xba, 0xa4, 0x95,
+	0x7b, 0xdd, 0x7a, 0x1f, 0xc2, 0xc5, 0xe4, 0xa5, 0x69, 0x71, 0x9d, 0x17, 0xb0, 0x38, 0xa2, 0xa3,
+	0x75, 0xb6, 0x03, 0x6a, 0x12, 0xc6, 0x36, 0x22, 0xdb, 0xea, 0x8b, 0xae, 0xc2, 0x84, 0x2f, 0x50,
+	0xbd, 0x1d, 0xd9, 0x56, 0x2a, 0x5d, 0xe9, 0x75, 0xeb, 0x43, 0x38, 0x2e, 0xfb, 0x67, 0x7b, 0x39,
+	0xff, 0x3e, 0x82, 0x3b, 0xc3, 0x02, 0x43, 0xfc, 0xeb, 0x9e, 0xd5, 0xf4, 0x2c, 0xf2, 0xe6, 0x4f,
+	0x74, 0xe4, 0x3a, 0x8c, 0xdb, 0x09, 0x09, 0xaf, 0x75, 0x5c, 0x2b, 0xf5, 0xba, 0x75, 0x01, 0x60,
+	0xf1, 0xe0, 0x46, 0x3e, 0x21, 0x98, 0x79, 0xe8, 0x18, 0xb6, 0x9b, 0xb9, 0xf9, 0xab, 0x9a, 0xf2,
+	0x0e, 0xcc, 0x0d, 0x8c, 0x81, 0xed, 0xb1, 0xd0, 0xf0, 0x4c, 0xa2, 0xbf, 0x24, 0x9d, 0xda, 0x18,
+	0x9f, 0x86, 0x9b, 0xb9, 0x69, 0x68, 0xa6, 0x49, 0x9b, 0xa4, 0x83, 0xa7, 0xb3, 0x99, 0x18, 0x40,
+	0xd5, 0xef, 0x08, 0x66, 0x76, 0x42, 0x23, 0x08, 0x73, 0x45, 0xac, 0xc1, 0xd4, 0x80, 0x5c, 0xa2,
+	0x22, 0x66, 0x74, 0x3a, 0xa7, 0x92, 0xb0, 0x4f, 0x64, 0xec, 0x9b, 0xa4, 0xf3, 0x2b, 0xab, 0x85,
+	0xdf, 0xb5, 0x2a, 0x6f, 0xc0, 0xf5, 0x01, 0x52, 0x8f, 0x84, 0xba, 0xed, 0xb5, 0x68, 0x5a, 0x7b,
+	0x2d, 0x47, 0xf8, 0x8c, 0x84, 0x4d, 0xaf, 0x45, 0x71, 0x25, 0x23, 0x4b, 0x11, 0xf5, 0x28, 0x39,
+	0xb8, 0xc0, 0x60, 0x7b, 0xff, 0x7e, 0xcd, 0xf7, 0x61, 0x92, 0xff, 0x07, 0xe8, 0x2e, 0x61, 0xcc,
+	0x68, 0x13, 0x5e, 0x6d, 0x49, 0xab, 0xf6, 0xba, 0xf5, 0xe1, 0x05, 0x3c, 0xc1, 0xc3, 0xa7, 0x22,
+	0x52, 0xdf, 0x23, 0x98, 0x7e, 0x6c, 0xd8, 0xce, 0xa5, 0x56, 0x98, 0x33, 0x53, 0x38, 0x9f, 0x99,
+	0xe7, 0x30, 0x8b, 0x49, 0x68, 0x07, 0xe4, 0x32, 0xdd, 0xa8, 0x9f, 0x51, 0x42, 0xeb, 0xd2, 0xd7,
+	0xe4, 0x7f, 0xfe, 0xfd, 0xb9, 0x20, 0x67, 0xd9, 0x17, 0xbc, 0x9e, 0x56, 0xa0, 0x7c, 0xe6, 0xa7,
+	0x7f, 0x31, 0x55, 0x73, 0x1e, 0x30, 0x64, 0xc2, 0x4c, 0xfd, 0x82, 0xa0, 0x3a, 0xa8, 0x77, 0xc9,
+	0x17, 0x40, 0xae, 0xf3, 0x63, 0xe7, 0xe9, 0xfc, 0xad, 0x7e, 0xe7, 0xaf, 0x8c, 0x74, 0xfe, 0x89,
+	0x94, 0xf6, 0x5e, 0xab, 0xc0, 0x14, 0xf5, 0x43, 0x9b, 0x7a, 0x86, 0xa3, 0x0b, 0xe4, 0xde, 0xc1,
+	0xb1, 0x22, 0x1d, 0x1e, 0x2b, 0xd2, 0xe9, 0xb1, 0x82, 0xde, 0xc6, 0x0a, 0xfa, 0x18, 0x2b, 0xe8,
+	0x6b, 0xac, 0xa0, 0x83, 0x58, 0x41, 0x47, 0xb1, 0x82, 0xbe, 0xc5, 0x8a, 0x74, 0x1a, 0x2b, 0xe8,
+	0xc3, 0x89, 0x22, 0x1d, 0x9c, 0x28, 0xd2, 0xe1, 0x89, 0x22, 0xed, 0x16, 0xf9, 0xd7, 0xc5, 0xea,
+	0x8f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xf0, 0x8e, 0x75, 0xa1, 0xd0, 0x08, 0x00, 0x00,
 }

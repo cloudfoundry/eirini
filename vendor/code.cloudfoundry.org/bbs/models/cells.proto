@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package models;
 
@@ -6,28 +6,28 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "error.proto";
 
 message CellCapacity {
-  optional int32 memory_mb = 1;
-  optional int32 disk_mb = 2;
-  optional int32 containers = 3;
+  int32 memory_mb = 1 [(gogoproto.jsontag) = "memory_mb"];
+  int32 disk_mb = 2 [(gogoproto.jsontag) = "disk_mb"];
+  int32 containers = 3 [(gogoproto.jsontag) = "containers"];
 }
 
 message CellPresence {
-  optional string cell_id = 1;
-  optional string rep_address = 2;
-  optional string zone = 3;
-  optional CellCapacity capacity = 4;
+  string cell_id = 1 [(gogoproto.jsontag) = "cell_id"];
+  string rep_address = 2 [(gogoproto.jsontag) = "rep_address"];
+  string zone = 3 [(gogoproto.jsontag) = "zone"];
+  CellCapacity capacity = 4;
   repeated Provider rootfs_providers = 5 [(gogoproto.jsontag) = "rootfs_provider_list,omitempty"];
-  repeated string placement_tags = 6 [(gogoproto.jsontag) = "placement_tags,omitempty"];
-  repeated string optional_placement_tags = 7 [(gogoproto.jsontag) = "optional_placement_tags,omitempty"];
-  optional string rep_url = 8;
+  repeated string placement_tags = 6;
+  repeated string optional_placement_tags = 7;
+  string rep_url = 8 [(gogoproto.jsontag) = "rep_url"];
 }
 
 message Provider {
-  optional string name = 1;
-  repeated string properties = 2 [(gogoproto.jsontag) = "properties,omitempty"];
+  string name = 1 [(gogoproto.jsontag) = "name"];
+  repeated string properties = 2;
 }
 
 message CellsResponse {
-  optional Error error = 1;
+  Error error = 1;
   repeated CellPresence cells = 2;
 }
