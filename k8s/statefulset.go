@@ -14,10 +14,11 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	types "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
 
 const (
@@ -26,9 +27,25 @@ const (
 	appSourceType         = "APP"
 )
 
+//go:generate counterfeiter . PodListerDeleter
+type PodListerDeleter interface {
+	List(opts metav1.ListOptions) (*v1.PodList, error)
+	Delete(name string, options *metav1.DeleteOptions) error
+}
+
+//go:generate counterfeiter . StatefulSetClient
+type StatefulSetClient interface {
+	Create(*appsv1.StatefulSet) (*appsv1.StatefulSet, error)
+	Update(*appsv1.StatefulSet) (*appsv1.StatefulSet, error)
+	Delete(name string, options *metav1.DeleteOptions) error
+	List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error)
+}
+
 type StatefulSetDesirer struct {
 	Client                kubernetes.Interface
 	Namespace             string
+	Pods                  PodListerDeleter
+	StatefulSets          StatefulSetClient
 	RegistrySecretName    string
 	RootfsVersion         string
 	LivenessProbeCreator  ProbeCreator
@@ -42,10 +59,8 @@ var ErrNotFound = errors.New("statefulset not found")
 //go:generate counterfeiter . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion string, logger lager.Logger) opi.Desirer {
+func NewStatefulSetDesirer(registrySecretName, rootfsVersion string, logger lager.Logger) opi.Desirer {
 	return &StatefulSetDesirer{
-		Client:                client,
-		Namespace:             namespace,
 		RegistrySecretName:    registrySecretName,
 		RootfsVersion:         rootfsVersion,
 		LivenessProbeCreator:  CreateLivenessProbe,
@@ -55,8 +70,13 @@ func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecre
 	}
 }
 
+func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
+	_, err := m.StatefulSets.Create(m.toStatefulSet(lrp))
+	return errors.Wrap(err, "failed to create statefulset")
+}
+
 func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
-	statefulsets, err := m.statefulSets().List(meta.ListOptions{})
+	statefulsets, err := m.StatefulSets.List(meta.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}
@@ -75,13 +95,13 @@ func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
 	}
 
 	backgroundPropagation := meta.DeletePropagationBackground
-	return errors.Wrap(m.statefulSets().Delete(statefulSet.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation}), "failed to delete statefulset")
+	return errors.Wrap(m.StatefulSets.Delete(statefulSet.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation}), "failed to delete statefulset")
 }
 
 func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index uint) error {
 	selector := fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)
 	options := meta.ListOptions{LabelSelector: selector}
-	statefulsets, err := m.statefulSets().List(options)
+	statefulsets, err := m.StatefulSets.List(options)
 	if err != nil {
 		return errors.Wrap(err, "failed to get statefulset")
 	}
@@ -90,13 +110,8 @@ func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index ui
 	}
 
 	name := statefulsets.Items[0].Name
-	err = m.Client.CoreV1().Pods(m.Namespace).Delete(fmt.Sprintf("%s-%d", name, index), nil)
+	err = m.Pods.Delete(fmt.Sprintf("%s-%d", name, index), nil)
 	return errors.Wrap(err, "failed to delete pod")
-}
-
-func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
-	_, err := m.statefulSets().Create(m.toStatefulSet(lrp))
-	return errors.Wrap(err, "failed to create statefulset")
 }
 
 func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
@@ -110,7 +125,7 @@ func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
 	statefulSet.Annotations[cf.LastUpdated] = lrp.Metadata[cf.LastUpdated]
 	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
 
-	_, err = m.statefulSets().Update(statefulSet)
+	_, err = m.StatefulSets.Update(statefulSet)
 	return errors.Wrap(err, "failed to update statefulset")
 }
 
@@ -124,7 +139,7 @@ func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 
 func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error) {
 	options := meta.ListOptions{LabelSelector: fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)}
-	statefulSet, err := m.statefulSets().List(options)
+	statefulSet, err := m.StatefulSets.List(options)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}
@@ -141,7 +156,7 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 
 func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
 	options := meta.ListOptions{LabelSelector: fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)}
-	pods, err := m.Client.CoreV1().Pods(m.Namespace).List(options)
+	pods, err := m.Pods.List(options)
 	if err != nil {
 		return []*opi.Instance{}, errors.Wrap(err, "failed to list pods")
 	}
@@ -195,10 +210,6 @@ func hasInsufficientMemory(eventList *corev1.EventList) bool {
 
 	event := events[len(events)-1]
 	return event.Reason == eventFailedScheduling && strings.Contains(event.Message, "Insufficient memory")
-}
-
-func (m *StatefulSetDesirer) statefulSets() types.StatefulSetInterface {
-	return m.Client.AppsV1().StatefulSets(m.Namespace)
 }
 
 func statefulSetsToLRPs(statefulSets *appsv1.StatefulSetList) []*opi.LRP {

@@ -40,6 +40,8 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	var (
 		client                *fake.Clientset
+		podClient             *k8sfakes.FakePodListerDeleter
+		statefulSetClient     *k8sfakes.FakeStatefulSetClient
 		statefulSetDesirer    opi.Desirer
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
 		readinessProbeCreator *k8sfakes.FakeProbeCreator
@@ -61,6 +63,8 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	BeforeEach(func() {
 		client = fake.NewSimpleClientset()
+		podClient = new(k8sfakes.FakePodListerDeleter)
+		statefulSetClient = new(k8sfakes.FakeStatefulSetClient)
 
 		livenessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
@@ -69,6 +73,8 @@ var _ = Describe("Statefulset Desirer", func() {
 		logger = lagertest.NewTestLogger("handler-test")
 		statefulSetDesirer = &StatefulSetDesirer{
 			Client:                client,
+			Pods:                  podClient,
+			StatefulSets:          statefulSetClient,
 			Namespace:             namespace,
 			RegistrySecretName:    registrySecretName,
 			RootfsVersion:         rootfsVersion,
@@ -81,12 +87,18 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	Context("When creating an LRP", func() {
 		Context("When app name only has [a-z0-9]", func() {
+
 			var lrp *opi.LRP
+
 			BeforeEach(func() {
 				livenessProbeCreator.Returns(&corev1.Probe{})
 				readinessProbeCreator.Returns(&corev1.Probe{})
 				lrp = createLRP("Baldur", "my.example.route")
 				Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
+			})
+
+			It("should call the statefulset client", func() {
+				Expect(statefulSetClient.CreateCallCount()).To(Equal(1))
 			})
 
 			It("should create a healthcheck probe", func() {
@@ -98,70 +110,74 @@ var _ = Describe("Statefulset Desirer", func() {
 			})
 
 			It("should provide original request", func() {
-				statefulSet := getStatefulSetFromK8s(lrp)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
 				Expect(statefulSet.Annotations["original_request"]).To(Equal(lrp.LRP))
 			})
 
 			It("should provide the process-guid to the pod annotations", func() {
-				statefulSet := getStatefulSetFromK8s(lrp)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
 				Expect(statefulSet.Spec.Template.Annotations[cf.ProcessGUID]).To(Equal("Baldur-guid"))
 			})
 
 			It("should set name for the stateful set", func() {
-				statefulSet := getStatefulSetFromK8s(lrp)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
 				Expect(statefulSet.Name).To(Equal("baldur-space-foo-random"))
 			})
 
 			It("should set space name as annotation on the statefulset", func() {
-				statefulSet := getStatefulSetFromK8s(lrp)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
 				Expect(statefulSet.Annotations[cf.VcapSpaceName]).To(Equal("space-foo"))
 			})
 
 			It("should set seccomp pod annotation", func() {
-				statefulSet := getStatefulSetFromK8s(lrp)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
 				Expect(statefulSet.Spec.Template.Annotations[corev1.SeccompPodAnnotationKey]).To(Equal(corev1.SeccompProfileRuntimeDefault))
 			})
 
 			It("should set podManagementPolicy to parallel", func() {
-				statefulSet := getStatefulSetFromK8s(lrp)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
 				Expect(string(statefulSet.Spec.PodManagementPolicy)).To(Equal("Parallel"))
 			})
 
 			It("should set podImagePullSecret", func() {
-				statefulSet := getStatefulSetFromK8s(lrp)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
 				Expect(statefulSet.Spec.Template.Spec.ImagePullSecrets).To(HaveLen(1))
 				secret := statefulSet.Spec.Template.Spec.ImagePullSecrets[0]
 				Expect(secret.Name).To(Equal("secret-name"))
 			})
 
 			It("should deny privilegeEscalation", func() {
-				statefulSet := getStatefulSetFromK8s(lrp)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
 				Expect(*statefulSet.Spec.Template.Spec.Containers[0].SecurityContext.AllowPrivilegeEscalation).To(Equal(false))
 			})
 
 			It("should set imagePullPolicy to Always", func() {
-				statefulSet := getStatefulSetFromK8s(lrp)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
 				Expect(string(statefulSet.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal("Always"))
 			})
 
 			It("should set rootfsVersion as a label", func() {
-				statefulSet := getStatefulSetFromK8s(lrp)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
 				Expect(statefulSet.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
 				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
 			})
 
 			It("should set disk limit", func() {
-				statefulSet := getStatefulSetFromK8s(lrp)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
 				expectedLimit := resource.NewScaledQuantity(2048, resource.Mega)
 				actualLimit := statefulSet.Spec.Template.Spec.Containers[0].Resources.Limits.StorageEphemeral()
 				Expect(actualLimit).To(Equal(expectedLimit))
-			})
-
-			Context("When redeploying an existing LRP", func() {
-				It("should fail", func() {
-					newLrp := createLRP("Baldur", "my.example.route")
-					Expect(statefulSetDesirer.Desire(newLrp)).To(MatchError(ContainSubstring("failed to create statefulset")))
-				})
 			})
 		})
 
@@ -170,13 +186,78 @@ var _ = Describe("Statefulset Desirer", func() {
 				lrp := createLRP("Балдър", "my.example.route")
 				Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
 
-				statefulSet := getStatefulSetFromK8s(lrp)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
 				Expect(statefulSet.Name).To(Equal("guid_1234-random"))
 			})
 		})
 	})
 
-	Context("When getting an app", func() {
+	FContext("When getting an app", func() {
+		It("translates the statefulset to an LRP", func() {
+			expectedLRP := createLRP("Baldur", "my.example.route")
+			expectedLRP.Metadata = cleanupMetadata(expectedLRP.Metadata)
+			expectedLRP.LRP = ""
+
+			statefulSetClient.ListReturns(&appsv1.StatefulSetList{
+				Items: []appsv1.StatefulSet{
+					{
+						ObjectMeta: meta.ObjectMeta{
+							Name: "baldur",
+							Annotations: map[string]string{
+								cf.ProcessGUID:   "Baldur-guid",
+								cf.LastUpdated:   expectedLRP.Metadata[cf.LastUpdated],
+								cf.VcapAppUris:   "my.example.route",
+								cf.VcapAppID:     "guid_1234",
+								cf.VcapVersion:   "version_1234",
+								cf.VcapAppName:   "Baldur",
+								cf.VcapSpaceName: "space-foo",
+							},
+						},
+						Spec: appsv1.StatefulSetSpec{
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									Containers: []corev1.Container{
+										{
+											Image: "busybox",
+											Command: []string{
+												"/bin/sh",
+												"-c",
+												"while true; do echo hello; sleep 10;done",
+											},
+											Ports: []corev1.ContainerPort{
+												{
+													ContainerPort: 8888,
+												},
+												{
+													ContainerPort: 9999,
+												},
+											},
+											Resources: corev1.ResourceRequirements{
+												Requests: corev1.ResourceList{
+													corev1.ResourceMemory: *resource.NewScaledQuantity(1024, resource.Mega),
+												},
+												Limits: corev1.ResourceList{
+													corev1.ResourceEphemeralStorage: *resource.NewScaledQuantity(2048, resource.Mega),
+												},
+											},
+											VolumeMounts: []corev1.VolumeMount{
+												{
+													Name:      "some-claim",
+													MountPath: "/some/path",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, nil)
+
+			Expect(statefulSetDesirer.Get(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Equal(expectedLRP))
+		})
+
 		It("return the same LRP except metadata and original LRP request", func() {
 			expectedLRP := createLRP("Baldur", "my.example.route")
 			Expect(statefulSetDesirer.Desire(expectedLRP)).To(Succeed())
@@ -382,24 +463,17 @@ var _ = Describe("Statefulset Desirer", func() {
 		BeforeEach(func() {
 			lrp := createLRP("Baldur", "my.example.route")
 			Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
-
-			pod0 := toPod("baldur-space-foo-random", 0, nil)
-			_, err := client.CoreV1().Pods(namespace).Create(pod0)
-			Expect(err).ToNot(HaveOccurred())
-
-			pod1 := toPod("baldur-space-foo-random", 1, nil)
-			_, err = client.CoreV1().Pods(namespace).Create(pod1)
-			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("deletes a pod instance", func() {
 			Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)).
 				To(Succeed())
 
-			pods, err := client.CoreV1().Pods(namespace).List(meta.ListOptions{})
-			Expect(err).ToNot(HaveOccurred())
-			Expect(pods.Items).To(HaveLen(1))
-			Expect(pods.Items[0].Name).To(Equal("baldur-space-foo-random-0"))
+			Expect(podClient.DeleteCallCount()).To(Equal(1))
+
+			name, options := podClient.DeleteArgsForCall(0)
+			Expect(options).To(BeNil())
+			Expect(name).To(Equal("baldur-space-foo-random-1"))
 		})
 
 		Context("when there's an internal K8s error", func() {
@@ -427,6 +501,7 @@ var _ = Describe("Statefulset Desirer", func() {
 		Context("when the instance does not exist", func() {
 
 			It("returns an error", func() {
+				podClient.DeleteReturns(errors.New("boom"))
 				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 42)).
 					To(MatchError(ContainSubstring("failed to delete pod")))
 			})
@@ -435,43 +510,90 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	Context("Get LRP instances", func() {
 
-		BeforeEach(func() {
-			since1 := meta.Unix(123, 0)
-			pod1 := toPod("odin", 0, &since1)
-			since2 := meta.Unix(456, 0)
-			pod2 := toPod("odin", 1, &since2)
-			_, err := client.CoreV1().Pods(namespace).Create(pod1)
-			Expect(err).ToNot(HaveOccurred())
+		It("should list the correct pods", func() {
+			pods := &corev1.PodList{
+				Items: []corev1.Pod{
+					{ObjectMeta: meta.ObjectMeta{Name: "whatever-0"}},
+					{ObjectMeta: meta.ObjectMeta{Name: "whatever-1"}},
+					{ObjectMeta: meta.ObjectMeta{Name: "whatever-2"}},
+				},
+			}
+			podClient.ListReturns(pods, nil)
 
-			_, err = client.CoreV1().Pods(namespace).Create(pod2)
+			_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+
 			Expect(err).ToNot(HaveOccurred())
+			Expect(podClient.ListCallCount()).To(Equal(1))
+			Expect(podClient.ListArgsForCall(0).LabelSelector).To(Equal("guid=guid_1234,version=version_1234"))
 		})
 
 		It("should return the correct number of instances", func() {
-			instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+			pods := &corev1.PodList{
+				Items: []corev1.Pod{
+					{ObjectMeta: meta.ObjectMeta{Name: "whatever-0"}},
+					{ObjectMeta: meta.ObjectMeta{Name: "whatever-1"}},
+					{ObjectMeta: meta.ObjectMeta{Name: "whatever-2"}},
+				},
+			}
+			podClient.ListReturns(pods, nil)
+			instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(instances).To(HaveLen(2))
-			Expect(instances[0]).To(Equal(toInstance(0, 123000000000)))
-			Expect(instances[1]).To(Equal(toInstance(1, 456000000000)))
+			Expect(instances).To(HaveLen(3))
+		})
+
+		It("should return the correct instances information", func() {
+			m := meta.Unix(123, 0)
+			pods := &corev1.PodList{
+				Items: []corev1.Pod{
+					{
+						ObjectMeta: meta.ObjectMeta{
+							Name: "whatever-1",
+						},
+						Status: corev1.PodStatus{
+							StartTime: &m,
+							Phase:     corev1.PodRunning,
+							ContainerStatuses: []corev1.ContainerStatus{
+								{
+									State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+									Ready: true,
+								},
+							},
+						},
+					},
+				},
+			}
+
+			podClient.ListReturns(pods, nil)
+			instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(instances).To(HaveLen(1))
+			Expect(instances[0].Index).To(Equal(1))
+			Expect(instances[0].Since).To(Equal(int64(123000000000)))
+			Expect(instances[0].State).To(Equal("RUNNING"))
+			Expect(instances[0].PlacementError).To(BeEmpty())
 		})
 
 		Context("when pod list fails", func() {
 
 			It("should return a meaningful error", func() {
-				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-					return true, nil, errors.New("boom")
-				}
-				client.PrependReactor("list", "pods", reaction)
+				podClient.ListReturns(nil, errors.New("boom"))
 
-				_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+				_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
 				Expect(err).To(MatchError(ContainSubstring("failed to list pods")))
 			})
-
 		})
 
 		Context("when getting events fails", func() {
 
 			It("should return a meaningful error", func() {
+				pods := &corev1.PodList{
+					Items: []corev1.Pod{
+						{ObjectMeta: meta.ObjectMeta{Name: "odin-0"}},
+					},
+				}
+				podClient.ListReturns(pods, nil)
+
 				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
 					return true, nil, errors.New("boom")
 				}
@@ -486,14 +608,17 @@ var _ = Describe("Statefulset Desirer", func() {
 		Context("and time since creation is not available yet", func() {
 
 			It("should return a default value", func() {
-				pod3 := toPod("mimir", 2, nil)
-				_, err := client.CoreV1().Pods(namespace).Create(pod3)
-				Expect(err).ToNot(HaveOccurred())
+				pods := &corev1.PodList{
+					Items: []corev1.Pod{
+						{ObjectMeta: meta.ObjectMeta{Name: "odin-0"}},
+					},
+				}
+				podClient.ListReturns(pods, nil)
 
-				instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+				instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
 				Expect(err).ToNot(HaveOccurred())
-				Expect(instances).To(HaveLen(3))
-				Expect(instances[2]).To(Equal(toInstance(2, 0)))
+				Expect(instances).To(HaveLen(1))
+				Expect(instances[0].Since).To(Equal(int64(0)))
 			})
 		})
 
@@ -525,7 +650,14 @@ var _ = Describe("Statefulset Desirer", func() {
 				_, clientErr = client.CoreV1().Events(namespace).Create(event2)
 				Expect(clientErr).ToNot(HaveOccurred())
 
-				instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+				pods := &corev1.PodList{
+					Items: []corev1.Pod{
+						{ObjectMeta: meta.ObjectMeta{Name: "odin-0"}},
+					},
+				}
+				podClient.ListReturns(pods, nil)
+
+				instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(instances).To(HaveLen(0))
 			})
