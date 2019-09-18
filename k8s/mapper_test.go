@@ -15,10 +15,10 @@ import (
 
 var _ = Describe("Mapper", func() {
 
-	var statefulset appsv1.StatefulSet
+	var lrp *opi.LRP
 
 	BeforeEach(func() {
-		statefulset = appsv1.StatefulSet{
+		statefulset := appsv1.StatefulSet{
 			ObjectMeta: meta.ObjectMeta{
 				Name: "baldur",
 				Annotations: map[string]string{
@@ -73,46 +73,39 @@ var _ = Describe("Mapper", func() {
 				ReadyReplicas: 3,
 			},
 		}
+		lrp = StatefulSetToLRP(statefulset)
 	})
 
 	It("should set the correct LRP identifier", func() {
-		lrp := StatefulSetToLRP(statefulset)
 		Expect(lrp.LRPIdentifier.GUID).To(Equal("guid_1234"))
 		Expect(lrp.LRPIdentifier.Version).To(Equal("version_1234"))
 	})
 
 	It("should set the correct LRP app name", func() {
-		lrp := StatefulSetToLRP(statefulset)
 		Expect(lrp.AppName).To(Equal("Baldur"))
 	})
 
 	It("should set the correct LRP space name", func() {
-		lrp := StatefulSetToLRP(statefulset)
 		Expect(lrp.SpaceName).To(Equal("space-foo"))
 	})
 
 	It("should set the correct LRP image", func() {
-		lrp := StatefulSetToLRP(statefulset)
 		Expect(lrp.Image).To(Equal("busybox"))
 	})
 
 	It("should set the correct LRP command", func() {
-		lrp := StatefulSetToLRP(statefulset)
 		Expect(lrp.Command).To(Equal([]string{"/bin/sh", "-c", "while true; do echo hello; sleep 10;done"}))
 	})
 
 	It("should set the correct LRP running instances", func() {
-		lrp := StatefulSetToLRP(statefulset)
 		Expect(lrp.RunningInstances).To(Equal(3))
 	})
 
 	It("should set the correct LRP ports", func() {
-		lrp := StatefulSetToLRP(statefulset)
 		Expect(lrp.Ports).To(Equal([]int32{8888, 9999}))
 	})
 
 	It("should translate statefulset annotations to LRP metadata", func() {
-		lrp := StatefulSetToLRP(statefulset)
 		Expect(lrp.Metadata).To(Equal(map[string]string{
 			cf.ProcessGUID: "Baldur-guid",
 			cf.LastUpdated: "last-updated-some-time-ago",
@@ -124,15 +117,11 @@ var _ = Describe("Mapper", func() {
 	})
 
 	It("should set the correct LRP disk and memory usage", func() {
-		lrp := StatefulSetToLRP(statefulset)
-
 		Expect(lrp.MemoryMB).To(Equal(int64(1024)))
 		Expect(lrp.DiskMB).To(Equal(int64(2048)))
 	})
 
 	It("should set the correct LRP volume mounts", func() {
-		lrp := StatefulSetToLRP(statefulset)
-
 		Expect(lrp.VolumeMounts).To(Equal([]opi.VolumeMount{
 			{
 				ClaimName: "some-claim",
