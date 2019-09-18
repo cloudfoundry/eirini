@@ -49,15 +49,15 @@ type StatefulSetDesirer struct {
 	Client    kubernetes.Interface
 	Namespace string
 
-	Pods                  PodListerDeleter
-	StatefulSets          StatefulSetClient
-	StatefulSetToLRP      LRPMapper
-	RegistrySecretName    string
-	RootfsVersion         string
-	LivenessProbeCreator  ProbeCreator
-	ReadinessProbeCreator ProbeCreator
-	Hasher                util.Hasher
-	Logger                lager.Logger
+	Pods                   PodListerDeleter
+	StatefulSets           StatefulSetClient
+	StatefulSetToLRPMapper LRPMapper
+	RegistrySecretName     string
+	RootfsVersion          string
+	LivenessProbeCreator   ProbeCreator
+	ReadinessProbeCreator  ProbeCreator
+	Hasher                 util.Hasher
+	Logger                 lager.Logger
 }
 
 var ErrNotFound = errors.New("statefulset not found")
@@ -67,12 +67,13 @@ type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
 func NewStatefulSetDesirer(registrySecretName, rootfsVersion string, logger lager.Logger) opi.Desirer {
 	return &StatefulSetDesirer{
-		RegistrySecretName:    registrySecretName,
-		RootfsVersion:         rootfsVersion,
-		LivenessProbeCreator:  CreateLivenessProbe,
-		ReadinessProbeCreator: CreateReadinessProbe,
-		Hasher:                util.TruncatedSHA256Hasher{},
-		Logger:                logger,
+		RegistrySecretName:     registrySecretName,
+		StatefulSetToLRPMapper: StatefulSetToLRP,
+		RootfsVersion:          rootfsVersion,
+		LivenessProbeCreator:   CreateLivenessProbe,
+		ReadinessProbeCreator:  CreateReadinessProbe,
+		Hasher:                 util.TruncatedSHA256Hasher{},
+		Logger:                 logger,
 	}
 }
 
@@ -87,7 +88,7 @@ func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}
 
-	return statefulSetsToLRPs(statefulsets), nil
+	return m.statefulSetsToLRPs(statefulsets), nil
 }
 
 func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
@@ -140,7 +141,7 @@ func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 	if err != nil {
 		return nil, err
 	}
-	return statefulSetToLRP(*statefulset), nil
+	return m.StatefulSetToLRPMapper(*statefulset), nil
 }
 
 func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error) {
@@ -218,56 +219,13 @@ func hasInsufficientMemory(eventList *corev1.EventList) bool {
 	return event.Reason == eventFailedScheduling && strings.Contains(event.Message, "Insufficient memory")
 }
 
-func statefulSetsToLRPs(statefulSets *appsv1.StatefulSetList) []*opi.LRP {
+func (m *StatefulSetDesirer) statefulSetsToLRPs(statefulSets *appsv1.StatefulSetList) []*opi.LRP {
 	lrps := []*opi.LRP{}
 	for _, s := range statefulSets.Items {
-		lrp := statefulSetToLRP(s)
+		lrp := m.StatefulSetToLRPMapper(s)
 		lrps = append(lrps, lrp)
 	}
 	return lrps
-}
-
-func statefulSetToLRP(s appsv1.StatefulSet) *opi.LRP {
-	ports := []int32{}
-	container := s.Spec.Template.Spec.Containers[0]
-
-	for _, port := range container.Ports {
-		ports = append(ports, port.ContainerPort)
-	}
-
-	memory := container.Resources.Requests.Memory().ScaledValue(resource.Mega)
-	disk := container.Resources.Limits.StorageEphemeral().ScaledValue(resource.Mega)
-	volMounts := []opi.VolumeMount{}
-	for _, vol := range container.VolumeMounts {
-		volMounts = append(volMounts, opi.VolumeMount{
-			ClaimName: vol.Name,
-			MountPath: vol.MountPath,
-		})
-	}
-
-	return &opi.LRP{
-		LRPIdentifier: opi.LRPIdentifier{
-			GUID:    s.Annotations[cf.VcapAppID],
-			Version: s.Annotations[cf.VcapVersion],
-		},
-		AppName:          s.Annotations[cf.VcapAppName],
-		SpaceName:        s.Annotations[cf.VcapSpaceName],
-		Image:            container.Image,
-		Command:          container.Command,
-		RunningInstances: int(s.Status.ReadyReplicas),
-		Ports:            ports,
-		Metadata: map[string]string{
-			cf.ProcessGUID: s.Annotations[cf.ProcessGUID],
-			cf.LastUpdated: s.Annotations[cf.LastUpdated],
-			cf.VcapAppUris: s.Annotations[cf.VcapAppUris],
-			cf.VcapAppID:   s.Annotations[cf.VcapAppID],
-			cf.VcapVersion: s.Annotations[cf.VcapVersion],
-			cf.VcapAppName: s.Annotations[cf.VcapAppName],
-		},
-		MemoryMB:     memory,
-		DiskMB:       disk,
-		VolumeMounts: volMounts,
-	}
 }
 
 func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
