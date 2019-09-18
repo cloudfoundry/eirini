@@ -45,12 +45,9 @@ type StatefulSetClient interface {
 type LRPMapper func(s appsv1.StatefulSet) *opi.LRP
 
 type StatefulSetDesirer struct {
-	//to be removed
-	Client    kubernetes.Interface
-	Namespace string
-
 	Pods                   PodListerDeleter
 	StatefulSets           StatefulSetClient
+	Events                 EventLister
 	StatefulSetToLRPMapper LRPMapper
 	RegistrySecretName     string
 	RootfsVersion          string
@@ -65,8 +62,11 @@ var ErrNotFound = errors.New("statefulset not found")
 //go:generate counterfeiter . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(registrySecretName, rootfsVersion string, logger lager.Logger) opi.Desirer {
+func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion string, logger lager.Logger) opi.Desirer {
 	return &StatefulSetDesirer{
+		Pods:                   client.CoreV1().Pods(namespace),
+		StatefulSets:           client.AppsV1().StatefulSets(namespace),
+		Events:                 client.CoreV1().Events(namespace),
 		RegistrySecretName:     registrySecretName,
 		StatefulSetToLRPMapper: StatefulSetToLRP,
 		RootfsVersion:          rootfsVersion,
@@ -170,7 +170,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 
 	instances := []*opi.Instance{}
 	for _, pod := range pods.Items {
-		events, err := GetEvents(m.Client, pod)
+		events, err := GetEvents(m.Events, pod)
 		if err != nil {
 			return []*opi.Instance{}, errors.Wrapf(err, "failed to get events for pod %s", pod.Name)
 		}

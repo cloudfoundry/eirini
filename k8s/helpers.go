@@ -5,8 +5,12 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
+
+//go:generate counterfeiter . EventLister
+type EventLister interface {
+	List(opts meta.ListOptions) (*v1.EventList, error)
+}
 
 func MapToEnvVar(env map[string]string) []v1.EnvVar {
 	envVars := []v1.EnvVar{}
@@ -27,8 +31,8 @@ func int64ptr(i int) *int64 {
 	return &u
 }
 
-func GetEvents(client kubernetes.Interface, pod v1.Pod) (*v1.EventList, error) {
-	return client.CoreV1().Events(pod.Namespace).List(meta.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s", pod.Namespace, string(pod.UID), pod.Name)})
+func GetEvents(client EventLister, pod v1.Pod) (*v1.EventList, error) {
+	return client.List(meta.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s", pod.Namespace, string(pod.UID), pod.Name)})
 }
 
 func IsStopped(eventList *v1.EventList) bool {

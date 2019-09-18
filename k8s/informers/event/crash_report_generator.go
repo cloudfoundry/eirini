@@ -42,7 +42,7 @@ func (DefaultCrashReportGenerator) Generate(pod *v1.Pod, clientset kubernetes.In
 }
 
 func generateReportForTerminatedPod(pod *v1.Pod, clientset kubernetes.Interface, logger lager.Logger) (events.CrashReport, bool) {
-	podEvents, err := k8s.GetEvents(clientset, *pod)
+	podEvents, err := k8s.GetEvents(clientset.CoreV1().Events(pod.Namespace), *pod)
 	if err != nil {
 		logger.Error("failed-to-get-k8s-events", err, lager.Data{"guid": pod.Annotations[cf.ProcessGUID]})
 		return events.CrashReport{}, false

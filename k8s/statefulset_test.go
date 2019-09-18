@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"strconv"
 
 	"code.cloudfoundry.org/eirini"
 	. "code.cloudfoundry.org/eirini/k8s"
@@ -22,11 +21,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/fake"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	testcore "k8s.io/client-go/testing"
 )
 
 const (
@@ -38,8 +32,8 @@ const (
 var _ = Describe("Statefulset Desirer", func() {
 
 	var (
-		client                *fake.Clientset
 		podClient             *k8sfakes.FakePodListerDeleter
+		eventLister           *k8sfakes.FakeEventLister
 		statefulSetClient     *k8sfakes.FakeStatefulSetClient
 		statefulSetDesirer    opi.Desirer
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
@@ -49,9 +43,9 @@ var _ = Describe("Statefulset Desirer", func() {
 	)
 
 	BeforeEach(func() {
-		client = fake.NewSimpleClientset()
 		podClient = new(k8sfakes.FakePodListerDeleter)
 		statefulSetClient = new(k8sfakes.FakeStatefulSetClient)
+		eventLister = new(k8sfakes.FakeEventLister)
 
 		livenessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
@@ -60,10 +54,8 @@ var _ = Describe("Statefulset Desirer", func() {
 		hasher.HashReturns("random", nil)
 		logger = lagertest.NewTestLogger("handler-test")
 		statefulSetDesirer = &StatefulSetDesirer{
-			Client:                 client,
 			Pods:                   podClient,
 			StatefulSets:           statefulSetClient,
-			Namespace:              namespace,
 			RegistrySecretName:     registrySecretName,
 			RootfsVersion:          rootfsVersion,
 			LivenessProbeCreator:   livenessProbeCreator.Spy,
@@ -71,6 +63,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			Hasher:                 hasher,
 			Logger:                 logger,
 			StatefulSetToLRPMapper: mapper.Spy,
+			Events:                 eventLister,
 		}
 	})
 
@@ -489,6 +482,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				},
 			}
 			podClient.ListReturns(pods, nil)
+			eventLister.ListReturns(&corev1.EventList{}, nil)
 
 			_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 
@@ -506,6 +500,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				},
 			}
 			podClient.ListReturns(pods, nil)
+			eventLister.ListReturns(&corev1.EventList{}, nil)
 			instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(instances).To(HaveLen(3))
@@ -534,6 +529,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			}
 
 			podClient.ListReturns(pods, nil)
+			eventLister.ListReturns(&corev1.EventList{}, nil)
 			instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 
 			Expect(err).ToNot(HaveOccurred())
@@ -564,10 +560,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				}
 				podClient.ListReturns(pods, nil)
 
-				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-					return true, nil, errors.New("boom")
-				}
-				client.PrependReactor("list", "events", reaction)
+				eventLister.ListReturns(nil, errors.New("I am error"))
 
 				_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("failed to get events for pod %s", "odin-0"))))
@@ -584,6 +577,7 @@ var _ = Describe("Statefulset Desirer", func() {
 					},
 				}
 				podClient.ListReturns(pods, nil)
+				eventLister.ListReturns(&corev1.EventList{}, nil)
 
 				instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
 				Expect(err).ToNot(HaveOccurred())
@@ -595,7 +589,7 @@ var _ = Describe("Statefulset Desirer", func() {
 		Context("and the StatefulSet was deleted/stopped", func() {
 
 			It("should return a default value", func() {
-				event1 := &corev1.Event{
+				event1 := corev1.Event{
 					Reason: "Killing",
 					InvolvedObject: corev1.ObjectReference{
 						Name:      "odin-0",
@@ -603,7 +597,7 @@ var _ = Describe("Statefulset Desirer", func() {
 						UID:       "odin-0-uid",
 					},
 				}
-				event2 := &corev1.Event{
+				event2 := corev1.Event{
 					Reason: "Killing",
 					InvolvedObject: corev1.ObjectReference{
 						Name:      "odin-1",
@@ -611,14 +605,12 @@ var _ = Describe("Statefulset Desirer", func() {
 						UID:       "odin-1-uid",
 					},
 				}
-
-				event1.Name = "event1"
-				event2.Name = "event2"
-
-				_, clientErr := client.CoreV1().Events(namespace).Create(event1)
-				Expect(clientErr).ToNot(HaveOccurred())
-				_, clientErr = client.CoreV1().Events(namespace).Create(event2)
-				Expect(clientErr).ToNot(HaveOccurred())
+				eventLister.ListReturns(&corev1.EventList{
+					Items: []corev1.Event{
+						event1,
+						event2,
+					},
+				}, nil)
 
 				pods := &corev1.PodList{
 					Items: []corev1.Pod{
@@ -635,34 +627,6 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	})
 })
-
-func toPod(lrpName string, index int, time *meta.Time) *corev1.Pod {
-	pod := corev1.Pod{}
-	pod.Name = lrpName + "-" + strconv.Itoa(index)
-	pod.UID = types.UID(pod.Name + "-uid")
-	pod.Labels = map[string]string{
-		"guid":    "guid_1234",
-		"version": "version_1234",
-	}
-
-	pod.Status.StartTime = time
-	pod.Status.Phase = corev1.PodRunning
-	pod.Status.ContainerStatuses = []corev1.ContainerStatus{
-		{
-			State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
-			Ready: true,
-		},
-	}
-	return &pod
-}
-
-func toInstance(index int, since int64) *opi.Instance {
-	return &opi.Instance{
-		Index: index,
-		Since: since,
-		State: "RUNNING",
-	}
-}
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -709,21 +673,4 @@ func createLRP(name, routes string) *opi.LRP {
 		},
 		LRP: "original request",
 	}
-}
-
-func cleanupMetadata(m map[string]string) map[string]string {
-	var fields = []string{
-		"process_guid",
-		"last_updated",
-		"application_uris",
-		"application_id",
-		"version",
-		"application_name",
-	}
-
-	result := map[string]string{}
-	for _, f := range fields {
-		result[f] = m[f]
-	}
-	return result
 }
