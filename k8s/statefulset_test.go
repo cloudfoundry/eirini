@@ -35,7 +35,7 @@ const (
 	rootfsVersion      = "version2"
 )
 
-var _ = XDescribe("Statefulset Desirer", func() {
+var _ = Describe("Statefulset Desirer", func() {
 
 	var (
 		client                *fake.Clientset
@@ -47,12 +47,6 @@ var _ = XDescribe("Statefulset Desirer", func() {
 		logger                *lagertest.TestLogger
 		mapper                *k8sfakes.FakeLRPMapper
 	)
-
-	listStatefulSets := func() []appsv1.StatefulSet {
-		list, listErr := client.AppsV1().StatefulSets(namespace).List(meta.ListOptions{})
-		Expect(listErr).NotTo(HaveOccurred())
-		return list.Items
-	}
 
 	BeforeEach(func() {
 		client = fake.NewSimpleClientset()
@@ -341,6 +335,7 @@ var _ = XDescribe("Statefulset Desirer", func() {
 
 		Context("no statefulSets exist", func() {
 			It("returns an empy list of LRPs", func() {
+				statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
 				Expect(statefulSetDesirer.List()).To(BeEmpty())
 				Expect(mapper.CallCount()).To(Equal(0))
 			})
@@ -349,11 +344,7 @@ var _ = XDescribe("Statefulset Desirer", func() {
 		Context("fails to list the statefulsets", func() {
 
 			It("should return a meaningful error", func() {
-				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-					return true, nil, errors.New("boom")
-				}
-				client.PrependReactor("list", "statefulsets", reaction)
-
+				statefulSetClient.ListReturns(nil, errors.New("who is this?"))
 				_, err := statefulSetDesirer.List()
 				Expect(err).To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
@@ -361,28 +352,39 @@ var _ = XDescribe("Statefulset Desirer", func() {
 		})
 	})
 
-	XContext("Stop an LRP", func() {
-
-		BeforeEach(func() {
-			lrp := createLRP("Baldur", "my.example.route")
-			Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
-		})
-
+	Context("Stop an LRP", func() {
 		Context("Successful stop", func() {
 			It("deletes the statefulSet", func() {
-				Expect(listStatefulSets()).NotTo(BeEmpty())
-				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+				st := &appsv1.StatefulSetList{
+					Items: []appsv1.StatefulSet{
+						{
+							ObjectMeta: meta.ObjectMeta{
+								Name: "baldur",
+							},
+						},
+					},
+				}
 
-				Expect(listStatefulSets()).To(BeEmpty())
+				statefulSetClient.ListReturns(st, nil)
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+				Expect(statefulSetClient.DeleteCallCount()).To(Equal(1))
 			})
 		})
 
 		Context("when deletion of stateful set fails", func() {
 			It("should return a meaningful error", func() {
-				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-					return true, nil, errors.New("boom")
+				st := &appsv1.StatefulSetList{
+					Items: []appsv1.StatefulSet{
+						{
+							ObjectMeta: meta.ObjectMeta{
+								Name: "baldur",
+							},
+						},
+					},
 				}
-				client.PrependReactor("delete", "statefulsets", reaction)
+
+				statefulSetClient.ListReturns(st, nil)
+				statefulSetClient.DeleteReturns(errors.New("boom"))
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
 					To(MatchError(ContainSubstring("failed to delete statefulset")))
 			})
@@ -390,10 +392,7 @@ var _ = XDescribe("Statefulset Desirer", func() {
 
 		Context("when kubernetes fails to list statefulsets", func() {
 			It("should return a meaningful error", func() {
-				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-					return true, nil, errors.New("boom")
-				}
-				client.PrependReactor("list", "statefulsets", reaction)
+				statefulSetClient.ListReturns(nil, errors.New("who is this?"))
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{})).
 					To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
@@ -401,6 +400,10 @@ var _ = XDescribe("Statefulset Desirer", func() {
 		})
 
 		Context("when the statefulSet does not exist", func() {
+			BeforeEach(func() {
+				statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
+			})
+
 			It("returns success", func() {
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{})).
 					To(Succeed())
@@ -414,13 +417,19 @@ var _ = XDescribe("Statefulset Desirer", func() {
 	})
 
 	Context("Stop an LRP instance", func() {
-
-		BeforeEach(func() {
-			lrp := createLRP("Baldur", "my.example.route")
-			Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
-		})
-
 		It("deletes a pod instance", func() {
+			st := &appsv1.StatefulSetList{
+				Items: []appsv1.StatefulSet{
+					{
+						ObjectMeta: meta.ObjectMeta{
+							Name: "baldur-space-foo-random",
+						},
+					},
+				},
+			}
+
+			statefulSetClient.ListReturns(st, nil)
+
 			Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)).
 				To(Succeed())
 
@@ -432,14 +441,8 @@ var _ = XDescribe("Statefulset Desirer", func() {
 		})
 
 		Context("when there's an internal K8s error", func() {
-
 			It("should return an error", func() {
-
-				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-					return true, nil, errors.New("boom")
-				}
-				client.PrependReactor("list", "statefulsets", reaction)
-
+				statefulSetClient.ListReturns(nil, errors.New("boom"))
 				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)).
 					To(MatchError("failed to get statefulset: boom"))
 			})
@@ -448,6 +451,7 @@ var _ = XDescribe("Statefulset Desirer", func() {
 		Context("when the statefulset does not exist", func() {
 
 			It("returns an error", func() {
+				statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
 				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "some", Version: "thing"}, 1)).
 					To(MatchError("app does not exist"))
 			})
@@ -456,6 +460,17 @@ var _ = XDescribe("Statefulset Desirer", func() {
 		Context("when the instance does not exist", func() {
 
 			It("returns an error", func() {
+				st := &appsv1.StatefulSetList{
+					Items: []appsv1.StatefulSet{
+						{
+							ObjectMeta: meta.ObjectMeta{
+								Name: "baldur",
+							},
+						},
+					},
+				}
+
+				statefulSetClient.ListReturns(st, nil)
 				podClient.DeleteReturns(errors.New("boom"))
 				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 42)).
 					To(MatchError(ContainSubstring("failed to delete pod")))
