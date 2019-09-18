@@ -41,11 +41,17 @@ type StatefulSetClient interface {
 	List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error)
 }
 
+//go:generate counterfeiter . LRPMapper
+type LRPMapper func(s appsv1.StatefulSet) *opi.LRP
+
 type StatefulSetDesirer struct {
-	Client                kubernetes.Interface
-	Namespace             string
+	//to be removed
+	Client    kubernetes.Interface
+	Namespace string
+
 	Pods                  PodListerDeleter
 	StatefulSets          StatefulSetClient
+	StatefulSetToLRP      LRPMapper
 	RegistrySecretName    string
 	RootfsVersion         string
 	LivenessProbeCreator  ProbeCreator
