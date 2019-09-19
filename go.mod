@@ -26,6 +26,6 @@ require (
 	k8s.io/api v0.0.0-20190430012547-97d6bb8ea5f4
 	k8s.io/apimachinery v0.0.0-20190425132440-17f84483f500
 	k8s.io/client-go v0.0.0-20190425172711-65184652c889
-	k8s.io/klog v0.3.0
+	k8s.io/klog v0.4.0
 	k8s.io/metrics v0.0.0-20190430013349-275917611743
 )
