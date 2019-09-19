@@ -1,4 +1,4 @@
-FROM fluent/fluentd-kubernetes-daemonset:v1.4-debian-elasticsearch
+FROM fluent/fluentd-kubernetes-daemonset:v1-debian-elasticsearch
 ARG GIT_SHA
 RUN if [ -z "$GIT_SHA" ]; then echo "GIT_SHA not set"; exit 1; else : ; fi
 
