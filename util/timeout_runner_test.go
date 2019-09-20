@@ -51,7 +51,7 @@ var _ = Describe("TimeoutRunner", func() {
 		It("should return no error", func() {
 			runsWithinTime := func(stop <-chan interface{}) {}
 
-			Expect(util.RunWithTimeout(runsWithinTime, 10*time.Millisecond)).To(Succeed())
+			Expect(util.RunWithTimeout(runsWithinTime, 20*time.Millisecond)).To(Succeed())
 		})
 	})
 })
