@@ -45,7 +45,7 @@ github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 github.com/gogo/protobuf/sortkeys
 github.com/gogo/protobuf/types
-# github.com/golang/protobuf v1.2.0
+# github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/jsonpb
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
@@ -153,7 +153,7 @@ golang.org/x/crypto/blowfish
 golang.org/x/crypto/ed25519
 golang.org/x/crypto/ed25519/internal/edwards25519
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
+# golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
@@ -171,7 +171,7 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20190726091711-fc99dfbffb4e
+# golang.org/x/sys v0.0.0-20190826190057-c7b8b68b1456
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
@@ -179,7 +179,7 @@ golang.org/x/sys/windows/svc
 golang.org/x/sys/windows/svc/debug
 golang.org/x/sys/windows/svc/eventlog
 golang.org/x/sys/windows/svc/mgr
-# golang.org/x/text v0.3.1-0.20181227161524-e6919f6577db
+# golang.org/x/text v0.3.2
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
