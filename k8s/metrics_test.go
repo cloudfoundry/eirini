@@ -12,11 +12,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	core "k8s.io/client-go/kubernetes/typed/core/v1"
 	metricsv1beta1api "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
-
-var podClient core.PodInterface
 
 var _ = Describe("Metrics", func() {
 
@@ -196,12 +193,6 @@ var _ = Describe("ForwardMetricsToChannel", func() {
 		Expect(work).ToNot(BeClosed())
 	})
 })
-
-func createPodForMetrics(podName string) metricsv1beta1api.PodMetrics {
-	_, createErr := podClient.Create(createPod(podName))
-	Expect(createErr).ToNot(HaveOccurred())
-	return createMetrics(podName)
-}
 
 func createMetrics(podName string) metricsv1beta1api.PodMetrics {
 	return metricsv1beta1api.PodMetrics{
