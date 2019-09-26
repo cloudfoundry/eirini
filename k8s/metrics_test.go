@@ -57,7 +57,7 @@ var _ = Describe("Metrics", func() {
 					metrics.Message{
 						AppID:       podName1,
 						IndexID:     "9000",
-						CPU:         420,
+						CPU:         420.5,
 						Memory:      430080,
 						MemoryQuota: 819200,
 						Disk:        42000000,
@@ -66,7 +66,7 @@ var _ = Describe("Metrics", func() {
 					metrics.Message{
 						AppID:       podName2,
 						IndexID:     "8000",
-						CPU:         420,
+						CPU:         420.5,
 						Memory:      430080,
 						MemoryQuota: 819200,
 						Disk:        42000000,
@@ -123,7 +123,7 @@ var _ = Describe("Metrics", func() {
 				Expect(collected).To(ConsistOf(metrics.Message{
 					AppID:       podName2,
 					IndexID:     "8000",
-					CPU:         420,
+					CPU:         420.5,
 					Memory:      430080,
 					MemoryQuota: 819200,
 					Disk:        42000000,
@@ -148,7 +148,7 @@ var _ = Describe("Metrics", func() {
 				Expect(collected).To(ConsistOf(metrics.Message{
 					AppID:       podName2,
 					IndexID:     "8000",
-					CPU:         420,
+					CPU:         420.5,
 					Memory:      430080,
 					MemoryQuota: 819200,
 					Disk:        42000000,
@@ -200,7 +200,7 @@ func createMetrics(podName string) metricsv1beta1api.PodMetrics {
 		Containers: []metricsv1beta1api.ContainerMetrics{
 			{
 				Usage: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("420000m"),
+					v1.ResourceCPU:    resource.MustParse("4205m"),
 					v1.ResourceMemory: resource.MustParse("420Ki"),
 				},
 			},

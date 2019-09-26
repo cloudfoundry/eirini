@@ -67,7 +67,8 @@ func (c *metricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodM
 		}
 		usage := container.Usage
 		res := usage[apiv1.ResourceCPU]
-		cpuValue := res.Value()
+		cpuMillicores := res.MilliValue()
+		cpuPercentage := float64(cpuMillicores) / 10
 		res = usage[apiv1.ResourceMemory]
 		memoryValue := res.Value()
 
@@ -81,7 +82,7 @@ func (c *metricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodM
 		messages = append(messages, metrics.Message{
 			AppID:       pod.Labels["guid"],
 			IndexID:     strconv.Itoa(indexID),
-			CPU:         float64(cpuValue),
+			CPU:         cpuPercentage,
 			Memory:      float64(memoryValue),
 			MemoryQuota: float64(memoryLimit.Value()),
 			Disk:        42000000,
