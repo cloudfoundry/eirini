@@ -262,7 +262,7 @@ func launchMetricsEmitter(
 		Ticker: time.NewTicker(time.Duration(tickerInterval) * time.Second),
 		Logger: metricsLogger.Session("collector.scheduler"),
 	}
-	collector := k8s.NewMetricsCollector(work, collectorScheduler, podMetricsClient, podClient)
+	collector := k8s.NewMetricsCollector(podMetricsClient, podClient)
 
 	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
 	emitterScheduler := &util.SimpleLoopScheduler{
@@ -271,7 +271,9 @@ func launchMetricsEmitter(
 	}
 	emitter := metrics.NewEmitter(work, emitterScheduler, forwarder)
 
-	go collector.Start()
+	go collectorScheduler.Schedule(func() error {
+		return k8s.ForwardMetricsToChannel(collector, work)
+	})
 	go emitter.Start()
 }
 

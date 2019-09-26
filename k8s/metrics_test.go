@@ -1,201 +1,64 @@
 package k8s_test
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 
+	"code.cloudfoundry.org/eirini/k8s"
 	. "code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/metrics"
-	"code.cloudfoundry.org/eirini/util/utilfakes"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/fake"
 	core "k8s.io/client-go/kubernetes/typed/core/v1"
-	testcore "k8s.io/client-go/testing"
 	metricsv1beta1api "k8s.io/metrics/pkg/apis/metrics/v1beta1"
-	metricsfake "k8s.io/metrics/pkg/client/clientset/versioned/fake"
-	metricsv1typed "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
 )
 
 var podClient core.PodInterface
 
 var _ = Describe("Metrics", func() {
 
-	const podName = "thor-thunder-9000"
-
-	var (
-		collector        *MetricsCollector
-		work             chan []metrics.Message
-		metricsClient    *metricsfake.Clientset
-		podMetricsClient metricsv1typed.PodMetricsInterface
-		scheduler        *utilfakes.FakeTaskScheduler
-		expectedMetrics  metricsv1beta1api.PodMetricsList
-		validMetrics     metricsv1beta1api.PodMetrics
-		brokenMetrics    metricsv1beta1api.PodMetrics
-		wrongNameMetrics metricsv1beta1api.PodMetrics
-		podlessMetrics   metricsv1beta1api.PodMetrics
+	const (
+		podName1 = "thor-thunder-9000"
+		podName2 = "loki-thunder-8000"
 	)
 
-	BeforeEach(func() {
-		metricsClient = &metricsfake.Clientset{}
-		podMetricsClient = metricsClient.MetricsV1beta1().PodMetricses("opi")
+	Describe("Collect", func() {
 
-		client := fake.NewSimpleClientset()
-		podClient = client.CoreV1().Pods("opi")
-		validMetrics = createPodForMetrics(podName)
-		wrongNameMetrics = createPodForMetrics("iamstagingtask")
-		podlessMetrics = createPodForMetrics("pod-less-0")
-		Expect(podClient.Delete("pod-less-0", &metav1.DeleteOptions{})).To(Succeed())
-		brokenMetrics = createPodForMetrics("broken-pod-metrics-0")
-		brokenMetrics.Containers = []metricsv1beta1api.ContainerMetrics{}
-	})
-
-	JustBeforeEach(func() {
-		scheduler = new(utilfakes.FakeTaskScheduler)
-		work = make(chan []metrics.Message, 1)
-		collector = NewMetricsCollector(work, scheduler, podMetricsClient, podClient)
-	})
-
-	Context("When collecting metrics", func() {
-		var err error
+		var (
+			podClient        *k8sfakes.FakePodInterface
+			podMetricsClient *k8sfakes.FakePodMetricsInterface
+			collector        k8s.MetricsCollector
+		)
 
 		BeforeEach(func() {
-			expectedMetrics = metricsv1beta1api.PodMetricsList{
-				Items: []metricsv1beta1api.PodMetrics{validMetrics},
-			}
-
-			metricsClient.AddReactor("list", "pods", func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &expectedMetrics, nil
-			})
+			podClient = new(k8sfakes.FakePodInterface)
+			podMetricsClient = new(k8sfakes.FakePodMetricsInterface)
+			collector = NewMetricsCollector(podMetricsClient, podClient)
 		})
 
-		JustBeforeEach(func() {
-			collector.Start()
-			task := scheduler.ScheduleArgsForCall(0)
-			err = task()
-		})
-
-		It("should not return an error", func() {
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should send the received metrics", func() {
-			Eventually(work).Should(Receive(Equal([]metrics.Message{
-				{
-					AppID:       "app-guid",
-					IndexID:     "9000",
-					CPU:         420,
-					Memory:      430080,
-					MemoryQuota: 819200,
-					Disk:        42000000,
-					DiskQuota:   10,
-				},
-			})))
-		})
-
-		Context("there are no items", func() {
-			BeforeEach(func() {
-				expectedMetrics = metricsv1beta1api.PodMetricsList{}
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should not send anything", func() {
-				Consistently(work).ShouldNot(Receive())
-			})
-		})
-
-		Context("there are no containers data", func() {
-			BeforeEach(func() {
-				expectedMetrics = metricsv1beta1api.PodMetricsList{
-					Items: []metricsv1beta1api.PodMetrics{brokenMetrics},
-				}
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should not send anything", func() {
-				Consistently(work).ShouldNot(Receive())
-			})
-
-		})
-
-		Context("pod name doesn't have an index (eg staging tasks)", func() {
-			BeforeEach(func() {
-				expectedMetrics = metricsv1beta1api.PodMetricsList{
-					Items: []metricsv1beta1api.PodMetrics{wrongNameMetrics},
-				}
-			})
-
-			It("should not return an error", func() {
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("should not send a message", func() {
-				Expect(work).ShouldNot(Receive())
-			})
-
-		})
-
-		Context("metrics source responds with an error", func() {
-
-			BeforeEach(func() {
-				metricsClient.PrependReactor("list", "pods", func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-					return true, nil, fmt.Errorf("Better luck next time")
-				})
-			})
-
-			It("should return an error", func() {
-				Expect(err).To(MatchError(ContainSubstring("Better luck next time")))
-			})
-		})
-
-		Context("when pod client fails to get the pod", func() {
-			BeforeEach(func() {
-				expectedMetrics = metricsv1beta1api.PodMetricsList{
-					Items: []metricsv1beta1api.PodMetrics{podlessMetrics},
-				}
-			})
-
-			It("executes successfully", func() {
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("should not send metrics", func() {
-				Consistently(work).ShouldNot(Receive())
-			})
-
-		})
-
-		Context("when there is a mix of broken metricsand valid metrics", func() {
-			BeforeEach(func() {
-				expectedMetrics = metricsv1beta1api.PodMetricsList{
+		When("all metrics are valid", func() {
+			It("should return them as messages", func() {
+				podMetrics := &metricsv1beta1api.PodMetricsList{
 					Items: []metricsv1beta1api.PodMetrics{
-						brokenMetrics,
-						podlessMetrics,
-						validMetrics,
-						wrongNameMetrics,
+						createMetrics(podName1),
+						createMetrics(podName2),
 					},
 				}
+				podMetricsClient.ListReturns(podMetrics, nil)
 
-			})
+				podList := &v1.PodList{
+					Items: []v1.Pod{*createPod(podName1), *createPod(podName2)},
+				}
+				podClient.ListReturns(podList, nil)
 
-			It("executes successfully", func() {
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("should send metrics", func() {
-				Eventually(work).Should(Receive(Equal([]metrics.Message{
-					{
-						AppID:       "app-guid",
+				collected, err := collector.Collect()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(collected).To(ConsistOf(
+					metrics.Message{
+						AppID:       podName1,
 						IndexID:     "9000",
 						CPU:         420,
 						Memory:      430080,
@@ -203,18 +66,163 @@ var _ = Describe("Metrics", func() {
 						Disk:        42000000,
 						DiskQuota:   10,
 					},
-				})))
+					metrics.Message{
+						AppID:       podName2,
+						IndexID:     "8000",
+						CPU:         420,
+						Memory:      430080,
+						MemoryQuota: 819200,
+						Disk:        42000000,
+						DiskQuota:   10,
+					},
+				))
 			})
 		})
+
+		When("there are no pods", func() {
+			It("should return empty list", func() {
+				podClient.ListReturns(&v1.PodList{Items: []v1.Pod{}}, nil)
+
+				podMetrics := metricsv1beta1api.PodMetricsList{
+					Items: []metricsv1beta1api.PodMetrics{createMetrics(podName1)},
+				}
+				podMetricsClient.ListReturns(&podMetrics, nil)
+
+				collected, err := collector.Collect()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(collected).To(BeEmpty())
+			})
+		})
+
+		When("there are no metrics", func() {
+			It("should return empty list", func() {
+				podClient.ListReturns(&v1.PodList{Items: []v1.Pod{*createPod(podName1)}}, nil)
+
+				podMetrics := metricsv1beta1api.PodMetricsList{
+					Items: []metricsv1beta1api.PodMetrics{},
+				}
+				podMetricsClient.ListReturns(&podMetrics, nil)
+
+				collected, err := collector.Collect()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(collected).To(BeEmpty())
+			})
+		})
+
+		When("there are no container metrics for a pod", func() {
+			It("should skip such pods", func() {
+				podClient.ListReturns(&v1.PodList{Items: []v1.Pod{*createPod(podName1), *createPod(podName2)}}, nil)
+
+				podMetrics := metricsv1beta1api.PodMetricsList{
+					Items: []metricsv1beta1api.PodMetrics{
+						{ObjectMeta: metav1.ObjectMeta{Name: podName1}},
+						createMetrics(podName2),
+					},
+				}
+				podMetricsClient.ListReturns(&podMetrics, nil)
+
+				collected, err := collector.Collect()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(collected).To(ConsistOf(metrics.Message{
+					AppID:       podName2,
+					IndexID:     "8000",
+					CPU:         420,
+					Memory:      430080,
+					MemoryQuota: 819200,
+					Disk:        42000000,
+					DiskQuota:   10,
+				}))
+			})
+		})
+
+		When("a pod name doesn't have an index (e.g. staging tasks)", func() {
+			It("should skip such pod", func() {
+				aPodHasNoIndex := "i-dont-have-an-index"
+
+				podClient.ListReturns(&v1.PodList{Items: []v1.Pod{*createPod(aPodHasNoIndex), *createPod(podName2)}}, nil)
+
+				podMetrics := metricsv1beta1api.PodMetricsList{
+					Items: []metricsv1beta1api.PodMetrics{createMetrics(aPodHasNoIndex), createMetrics(podName2)},
+				}
+				podMetricsClient.ListReturns(&podMetrics, nil)
+
+				collected, err := collector.Collect()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(collected).To(ConsistOf(metrics.Message{
+					AppID:       podName2,
+					IndexID:     "8000",
+					CPU:         420,
+					Memory:      430080,
+					MemoryQuota: 819200,
+					Disk:        42000000,
+					DiskQuota:   10,
+				}))
+			})
+		})
+
+		When("metrics client returns an error", func() {
+			It("should return a wrapped error", func() {
+				podMetricsClient.ListReturns(&metricsv1beta1api.PodMetricsList{}, errors.New("oopsie"))
+
+				collected, err := collector.Collect()
+				Expect(collected).To(BeEmpty())
+				Expect(err).To(MatchError(ContainSubstring("failed to list metrics: oopsie")))
+			})
+		})
+	})
+
+})
+
+var _ = Describe("ForwardMetricsToChannel", func() {
+	It("should forward the messages when collector returns them", func() {
+		collector := new(k8sfakes.FakeMetricsCollector)
+		collector.CollectReturns([]metrics.Message{{AppID: "metric"}}, nil)
+		work := make(chan []metrics.Message, 1)
+		defer close(work)
+
+		Expect(ForwardMetricsToChannel(collector, work)).To(Succeed())
+		Expect(work).To(Receive())
+		Expect(work).ToNot(BeClosed())
+	})
+
+	It("should return error if collector returns error", func() {
+		collector := new(k8sfakes.FakeMetricsCollector)
+		collector.CollectReturns(nil, errors.New("oopsie"))
+		work := make(chan []metrics.Message, 1)
+		defer close(work)
+
+		Expect(ForwardMetricsToChannel(collector, work)).To(MatchError("oopsie"))
+		Expect(work).ToNot(Receive())
+		Expect(work).ToNot(BeClosed())
 	})
 })
 
 func createPodForMetrics(podName string) metricsv1beta1api.PodMetrics {
-	_, createErr := podClient.Create(&v1.Pod{
+	_, createErr := podClient.Create(createPod(podName))
+	Expect(createErr).ToNot(HaveOccurred())
+	return createMetrics(podName)
+}
+
+func createMetrics(podName string) metricsv1beta1api.PodMetrics {
+	return metricsv1beta1api.PodMetrics{
+		ObjectMeta: metav1.ObjectMeta{Name: podName, Namespace: "opi", ResourceVersion: "10", Labels: map[string]string{"key": "value"}},
+		Containers: []metricsv1beta1api.ContainerMetrics{
+			{
+				Usage: v1.ResourceList{
+					v1.ResourceCPU:    resource.MustParse("420000m"),
+					v1.ResourceMemory: resource.MustParse("420Ki"),
+				},
+			},
+		},
+	}
+}
+
+func createPod(podName string) *v1.Pod {
+	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
 			Labels: map[string]string{
-				"guid": "app-guid",
+				"guid": podName,
 			},
 		},
 		Spec: v1.PodSpec{
@@ -225,18 +233,6 @@ func createPodForMetrics(podName string) metricsv1beta1api.PodMetrics {
 							v1.ResourceMemory: resource.MustParse("800Ki"),
 						},
 					},
-				},
-			},
-		},
-	})
-	Expect(createErr).ToNot(HaveOccurred())
-	return metricsv1beta1api.PodMetrics{
-		ObjectMeta: metav1.ObjectMeta{Name: podName, Namespace: "opi", ResourceVersion: "10", Labels: map[string]string{"key": "value"}},
-		Containers: []metricsv1beta1api.ContainerMetrics{
-			{
-				Usage: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("420000m"),
-					v1.ResourceMemory: resource.MustParse("420Ki"),
 				},
 			},
 		},

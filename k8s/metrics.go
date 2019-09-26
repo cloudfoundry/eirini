@@ -13,39 +13,43 @@ import (
 	metricsv1beta1 "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
 )
 
-type MetricsCollector struct {
-	work          chan<- []metrics.Message
-	metricsClient metricsv1beta1.PodMetricsInterface
-	podClient     typedv1.PodInterface
-	scheduler     util.TaskScheduler
+//go:generate counterfeiter . MetricsCollector
+type MetricsCollector interface {
+	Collect() ([]metrics.Message, error)
 }
 
-func NewMetricsCollector(work chan []metrics.Message, scheduler util.TaskScheduler, metricsClient metricsv1beta1.PodMetricsInterface, podClient typedv1.PodInterface) *MetricsCollector {
-	return &MetricsCollector{
-		work:          work,
+func ForwardMetricsToChannel(collector MetricsCollector, work chan<- []metrics.Message) error {
+	messages, err := collector.Collect()
+	if err != nil {
+		return err
+	}
+	work <- messages
+	return nil
+}
+
+//go:generate counterfeiter -o k8sfakes/fake_pod_interface.go ../vendor/k8s.io/client-go/kubernetes/typed/core/v1 PodInterface
+//go:generate counterfeiter -o k8sfakes/fake_pod_metrics_interface.go ../vendor/k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1 PodMetricsInterface
+type metricsCollector struct {
+	metricsClient metricsv1beta1.PodMetricsInterface
+	podClient     typedv1.PodInterface
+}
+
+func NewMetricsCollector(metricsClient metricsv1beta1.PodMetricsInterface, podClient typedv1.PodInterface) MetricsCollector {
+	return &metricsCollector{
 		metricsClient: metricsClient,
-		scheduler:     scheduler,
 		podClient:     podClient,
 	}
 }
 
-func (c *MetricsCollector) Start() {
-	c.scheduler.Schedule(func() error {
-		metrics, err := c.metricsClient.List(metav1.ListOptions{})
-		if err != nil {
-			return err
-		}
-		messages := c.convertMetricsList(metrics)
-
-		if len(messages) > 0 {
-			c.work <- messages
-		}
-
-		return nil
-	})
+func (c *metricsCollector) Collect() ([]metrics.Message, error) {
+	metrics, err := c.metricsClient.List(metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list metrics")
+	}
+	return c.convertMetricsList(metrics), nil
 }
 
-func (c *MetricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodMetricsList) []metrics.Message {
+func (c *metricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodMetricsList) []metrics.Message {
 	messages := []metrics.Message{}
 	pods, err := c.getPods()
 	if err != nil {
@@ -87,7 +91,7 @@ func (c *MetricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodM
 	return messages
 }
 
-func (c *MetricsCollector) getPods() (map[string]apiv1.Pod, error) {
+func (c *metricsCollector) getPods() (map[string]apiv1.Pod, error) {
 	podsList, err := c.podClient.List(metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list pods")
