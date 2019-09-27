@@ -345,7 +345,9 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 
 	labels := map[string]string{
 		"guid":                           lrp.GUID,
+		"process_type":                   lrp.ProcessType,
 		"version":                        lrp.Version,
+		"app_guid":                       lrp.AppGUID,
 		"source_type":                    appSourceType,
 		rootfspatcher.RootfsVersionLabel: m.RootfsVersion,
 	}

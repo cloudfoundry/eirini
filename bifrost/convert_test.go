@@ -38,15 +38,16 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 		rawJSON := json.RawMessage(routesJSON)
 		desireLRPRequest = cf.DesireLRPRequest{
-			GUID:         "b194809b-88c0-49af-b8aa-69da097fc360",
-			Version:      "2fdc448f-6bac-4085-9426-87d0124c433a",
-			ProcessGUID:  "b194809b-88c0-49af-b8aa-69da097fc360-2fdc448f-6bac-4085-9426-87d0124c433a",
+			GUID:         "capi-process-guid-01cba02034f1",
+			Version:      "capi-process-version-87d0124c433a",
+			ProcessGUID:  "capi-process-guid-69da097fc360-capi-process-version-87d0124c433a",
+			ProcessType:  "web",
 			LastUpdated:  "23534635232.3",
 			NumInstances: 3,
 			MemoryMB:     456,
 			CPUWeight:    50,
 			Environment: map[string]string{
-				"VCAP_APPLICATION": `{"application_name":"bumblebee", "space_name":"transformers", "application_id":"b194809b-88c0-49af-b8aa-69da097fc360", "version": "something-something-uuid", "application_uris":["bumblebee.example.com", "transformers.example.com"]}`,
+				"VCAP_APPLICATION": `{"application_name":"bumblebee", "space_name":"transformers", "application_id":"app-guid-69da097fc360", "version": "something-something-uuid", "application_uris":["bumblebee.example.com", "transformers.example.com"]}`,
 				"VAR_FROM_CC":      "val from cc",
 			},
 			HealthCheckType:         "http",
@@ -86,6 +87,10 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(lrp.AppName).To(Equal("bumblebee"))
 			})
 
+			It("should set the app guid", func() {
+				Expect(lrp.AppGUID).To(Equal("app-guid-69da097fc360"))
+			})
+
 			It("should set the space name", func() {
 				Expect(lrp.SpaceName).To(Equal("transformers"))
 			})
@@ -95,8 +100,12 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			})
 
 			It("should set the correct identifier", func() {
-				Expect(lrp.GUID).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360"))
-				Expect(lrp.Version).To(Equal("2fdc448f-6bac-4085-9426-87d0124c433a"))
+				Expect(lrp.GUID).To(Equal("capi-process-guid-01cba02034f1"))
+				Expect(lrp.Version).To(Equal("capi-process-version-87d0124c433a"))
+			})
+
+			It("should set the process type", func() {
+				Expect(lrp.ProcessType).To(Equal("web"))
 			})
 
 			It("should set the lrp memory", func() {
@@ -113,12 +122,12 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 			It("should store the VCAP env variable as metadata", func() {
 				Expect(lrp.Metadata[cf.VcapAppName]).To(Equal("bumblebee"))
-				Expect(lrp.Metadata[cf.VcapAppID]).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360"))
+				Expect(lrp.Metadata[cf.VcapAppID]).To(Equal("app-guid-69da097fc360"))
 				Expect(lrp.Metadata[cf.VcapVersion]).To(Equal("something-something-uuid"))
 			})
 
 			It("should store the process guid in metadata", func() {
-				Expect(lrp.Metadata[cf.ProcessGUID]).To(Equal("b194809b-88c0-49af-b8aa-69da097fc360-2fdc448f-6bac-4085-9426-87d0124c433a"))
+				Expect(lrp.Metadata[cf.ProcessGUID]).To(Equal("capi-process-guid-69da097fc360-capi-process-version-87d0124c433a"))
 			})
 
 			It("should store the last updated timestamp in metadata", func() {

@@ -34,6 +34,7 @@ type DesireLRPRequest struct {
 	GUID                    string                      `json:"guid"`
 	Version                 string                      `json:"version"`
 	ProcessGUID             string                      `json:"process_guid"`
+	ProcessType             string                      `json:"process_type"`
 	Ports                   []int32                     `json:"ports"`
 	Routes                  map[string]*json.RawMessage `json:"routes"`
 	Environment             map[string]string           `json:"environment"`
