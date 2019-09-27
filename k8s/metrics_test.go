@@ -3,15 +3,18 @@ package k8s_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/pkg/errors"
 
 	"code.cloudfoundry.org/eirini/k8s"
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/metrics"
+	"code.cloudfoundry.org/lager/lagertest"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	metricsv1beta1api "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
@@ -28,12 +31,16 @@ var _ = Describe("Metrics", func() {
 			podClient        *k8sfakes.FakePodInterface
 			podMetricsClient *k8sfakes.FakePodMetricsInterface
 			collector        k8s.MetricsCollector
+			diskClient       *k8sfakes.FakeDiskAPI
+			logger           *lagertest.TestLogger
 		)
 
 		BeforeEach(func() {
 			podClient = new(k8sfakes.FakePodInterface)
 			podMetricsClient = new(k8sfakes.FakePodMetricsInterface)
-			collector = NewMetricsCollector(podMetricsClient, podClient)
+			diskClient = new(k8sfakes.FakeDiskAPI)
+			logger = lagertest.NewTestLogger("metrics-test")
+			collector = NewMetricsCollector(podMetricsClient, podClient, diskClient, logger)
 		})
 
 		When("all metrics are valid", func() {
@@ -51,6 +58,11 @@ var _ = Describe("Metrics", func() {
 				}
 				podClient.ListReturns(podList, nil)
 
+				diskClient.GetPodMetricsReturns(map[string]float64{
+					podName1: 50,
+					podName2: 88,
+				}, nil)
+
 				collected, err := collector.Collect()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(collected).To(ConsistOf(
@@ -59,18 +71,18 @@ var _ = Describe("Metrics", func() {
 						IndexID:     "9000",
 						CPU:         420.5,
 						Memory:      430080,
-						MemoryQuota: 819200,
-						Disk:        42000000,
-						DiskQuota:   10,
+						MemoryQuota: 800000,
+						Disk:        50,
+						DiskQuota:   10000000,
 					},
 					metrics.Message{
 						AppID:       podName2,
 						IndexID:     "8000",
 						CPU:         420.5,
 						Memory:      430080,
-						MemoryQuota: 819200,
-						Disk:        42000000,
-						DiskQuota:   10,
+						MemoryQuota: 800000,
+						Disk:        88,
+						DiskQuota:   10000000,
 					},
 				))
 			})
@@ -91,8 +103,22 @@ var _ = Describe("Metrics", func() {
 			})
 		})
 
-		When("there are no metrics", func() {
-			It("should return empty list", func() {
+		When("listing pods returns an error", func() {
+			It("should return an error", func() {
+				podClient.ListReturns(&v1.PodList{Items: []v1.Pod{}}, errors.New("something done broke"))
+
+				collected, err := collector.Collect()
+				Expect(err).To(HaveOccurred())
+				Expect(collected).To(BeEmpty())
+			})
+		})
+
+		When("there are no container metrics for a pod", func() {
+			It("should return only disk metrics", func() {
+				diskClient.GetPodMetricsReturns(map[string]float64{
+					podName1: 50,
+				}, nil)
+
 				podClient.ListReturns(&v1.PodList{Items: []v1.Pod{*createPod(podName1)}}, nil)
 
 				podMetrics := metricsv1beta1api.PodMetricsList{
@@ -102,33 +128,47 @@ var _ = Describe("Metrics", func() {
 
 				collected, err := collector.Collect()
 				Expect(err).ToNot(HaveOccurred())
-				Expect(collected).To(BeEmpty())
+				Expect(collected).To(ConsistOf(
+					metrics.Message{
+						AppID:       podName1,
+						IndexID:     "9000",
+						CPU:         0,
+						Memory:      0,
+						MemoryQuota: 800000,
+						Disk:        50,
+						DiskQuota:   10000000,
+					}))
 			})
 		})
 
-		When("there are no container metrics for a pod", func() {
-			It("should skip such pods", func() {
-				podClient.ListReturns(&v1.PodList{Items: []v1.Pod{*createPod(podName1), *createPod(podName2)}}, nil)
-
-				podMetrics := metricsv1beta1api.PodMetricsList{
+		When("there are no disk metrics", func() {
+			It("should return only CPU/memory metrics", func() {
+				diskClient.GetPodMetricsReturns(map[string]float64{}, nil)
+				podMetrics := &metricsv1beta1api.PodMetricsList{
 					Items: []metricsv1beta1api.PodMetrics{
-						{ObjectMeta: metav1.ObjectMeta{Name: podName1}},
-						createMetrics(podName2),
+						createMetrics(podName1),
 					},
 				}
-				podMetricsClient.ListReturns(&podMetrics, nil)
+				podMetricsClient.ListReturns(podMetrics, nil)
+
+				podList := &v1.PodList{
+					Items: []v1.Pod{*createPod(podName1)},
+				}
+				podClient.ListReturns(podList, nil)
 
 				collected, err := collector.Collect()
 				Expect(err).ToNot(HaveOccurred())
-				Expect(collected).To(ConsistOf(metrics.Message{
-					AppID:       podName2,
-					IndexID:     "8000",
-					CPU:         420.5,
-					Memory:      430080,
-					MemoryQuota: 819200,
-					Disk:        42000000,
-					DiskQuota:   10,
-				}))
+				Expect(collected).To(ConsistOf(
+					metrics.Message{
+						AppID:       podName1,
+						IndexID:     "9000",
+						CPU:         420.5,
+						Memory:      430080,
+						MemoryQuota: 800000,
+						Disk:        0,
+						DiskQuota:   10000000,
+					},
+				))
 			})
 		})
 
@@ -143,6 +183,11 @@ var _ = Describe("Metrics", func() {
 				}
 				podMetricsClient.ListReturns(&podMetrics, nil)
 
+				diskClient.GetPodMetricsReturns(map[string]float64{
+					aPodHasNoIndex: 50,
+					podName2:       88,
+				}, nil)
+
 				collected, err := collector.Collect()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(collected).To(ConsistOf(metrics.Message{
@@ -150,20 +195,42 @@ var _ = Describe("Metrics", func() {
 					IndexID:     "8000",
 					CPU:         420.5,
 					Memory:      430080,
-					MemoryQuota: 819200,
-					Disk:        42000000,
-					DiskQuota:   10,
+					MemoryQuota: 800000,
+					Disk:        88,
+					DiskQuota:   10000000,
 				}))
 			})
 		})
 
 		When("metrics client returns an error", func() {
-			It("should return a wrapped error", func() {
+			BeforeEach(func() {
+				podList := &v1.PodList{
+					Items: []v1.Pod{*createPod(podName1)},
+				}
+				podClient.ListReturns(podList, nil)
 				podMetricsClient.ListReturns(&metricsv1beta1api.PodMetricsList{}, errors.New("oopsie"))
+				diskClient.GetPodMetricsReturns(map[string]float64{
+					podName1: 50,
+				}, nil)
+			})
 
-				collected, err := collector.Collect()
-				Expect(collected).To(BeEmpty())
-				Expect(err).To(MatchError(ContainSubstring("failed to list metrics: oopsie")))
+			It("should log the error in log", func() {
+				_, err := collector.Collect()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(logger).To(gbytes.Say("oopsie"))
+			})
+
+			It("should return disk metrics", func() {
+				Expect(collector.Collect()).To(ConsistOf(
+					metrics.Message{
+						AppID:       podName1,
+						IndexID:     "9000",
+						CPU:         0,
+						Memory:      0,
+						MemoryQuota: 800000,
+						Disk:        50,
+						DiskQuota:   10000000,
+					}))
 			})
 		})
 	})
@@ -215,13 +282,15 @@ func createPod(podName string) *v1.Pod {
 			Labels: map[string]string{
 				"guid": podName,
 			},
+			UID: types.UID(podName + "-uid"),
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
 					Resources: v1.ResourceRequirements{
 						Limits: v1.ResourceList{
-							v1.ResourceMemory: resource.MustParse("800Ki"),
+							v1.ResourceMemory:           *resource.NewScaledQuantity(800, resource.Kilo),
+							v1.ResourceEphemeralStorage: *resource.NewScaledQuantity(10, resource.Mega),
 						},
 					},
 				},

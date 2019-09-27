@@ -18,6 +18,12 @@ type Message struct {
 	DiskQuota   float64
 }
 
+type BetterMessage struct {
+	AppID string
+	IndexID string
+	CPU  *float64
+}
+
 //go:generate counterfeiter . Forwarder
 type Forwarder interface {
 	Forward(Message)

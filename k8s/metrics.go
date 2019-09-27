@@ -3,19 +3,26 @@ package k8s
 import (
 	"strconv"
 
+	"code.cloudfoundry.org/eirini/k8s/kubelet"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/util"
+	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	metricsv1beta1api "k8s.io/metrics/pkg/apis/metrics/v1beta1"
+	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	metricsv1beta1 "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
 )
 
 //go:generate counterfeiter . MetricsCollector
 type MetricsCollector interface {
 	Collect() ([]metrics.Message, error)
+}
+
+//go:generate counterfeiter . DiskAPI
+type DiskAPI interface {
+	GetPodMetrics() (map[string]float64, error)
 }
 
 func ForwardMetricsToChannel(collector MetricsCollector, work chan<- []metrics.Message) error {
@@ -32,75 +39,103 @@ func ForwardMetricsToChannel(collector MetricsCollector, work chan<- []metrics.M
 type metricsCollector struct {
 	metricsClient metricsv1beta1.PodMetricsInterface
 	podClient     typedv1.PodInterface
+	diskClient    DiskAPI
+	kubeletClient kubelet.API
+	logger        lager.Logger
 }
 
-func NewMetricsCollector(metricsClient metricsv1beta1.PodMetricsInterface, podClient typedv1.PodInterface) MetricsCollector {
+func NewMetricsCollector(metricsClient metricsv1beta1.PodMetricsInterface,
+	podClient typedv1.PodInterface,
+	diskClient DiskAPI,
+	logger lager.Logger) MetricsCollector {
 	return &metricsCollector{
 		metricsClient: metricsClient,
 		podClient:     podClient,
+		diskClient:    diskClient,
+		logger:        logger,
 	}
 }
 
 func (c *metricsCollector) Collect() ([]metrics.Message, error) {
-	metrics, err := c.metricsClient.List(metav1.ListOptions{})
+	pods, err := c.podClient.List(metav1.ListOptions{})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list metrics")
+		return []metrics.Message{}, errors.Wrap(err, "failed to list pods")
 	}
-	return c.convertMetricsList(metrics), nil
+	return c.collectMetrics(pods.Items), nil
 }
 
-func (c *metricsCollector) convertMetricsList(podMetrics *metricsv1beta1api.PodMetricsList) []metrics.Message {
+func (c *metricsCollector) collectMetrics(pods []apiv1.Pod) []metrics.Message {
+	diskMetrics, _ := c.diskClient.GetPodMetrics()
 	messages := []metrics.Message{}
-	pods, err := c.getPods()
+	podMetrics, err := c.getPodMetrics()
 	if err != nil {
-		return messages
+		c.logger.Error("Failed to get metrics from Kubernetes", err, lager.Data{})
 	}
 
-	for _, metric := range podMetrics.Items {
-		if len(metric.Containers) == 0 {
-			continue
-		}
-		container := metric.Containers[0]
-		indexID, err := util.ParseAppIndex(metric.Name)
+	for _, pod := range pods {
+		indexID, err := util.ParseAppIndex(pod.Name)
 		if err != nil {
 			continue
 		}
-		usage := container.Usage
-		res := usage[apiv1.ResourceCPU]
-		cpuMillicores := res.MilliValue()
-		cpuPercentage := float64(cpuMillicores) / 10
-		res = usage[apiv1.ResourceMemory]
-		memoryValue := res.Value()
+		cpuPercentage, memoryValue := parseMetrics(podMetrics[pod.Name])
 
-		pod, ok := pods[metric.Name]
-		if !ok {
-			continue
-		}
 		appContainer := pod.Spec.Containers[0]
 		memoryLimit := appContainer.Resources.Limits.Memory()
+		diskLimit := appContainer.Resources.Limits.StorageEphemeral()
+
+		diskUsage := diskMetrics[pod.Name]
 
 		messages = append(messages, metrics.Message{
 			AppID:       pod.Labels["guid"],
 			IndexID:     strconv.Itoa(indexID),
 			CPU:         cpuPercentage,
-			Memory:      float64(memoryValue),
+			Memory:      memoryValue,
 			MemoryQuota: float64(memoryLimit.Value()),
-			Disk:        42000000,
-			DiskQuota:   10,
+			Disk:        diskUsage,
+			DiskQuota:   float64(diskLimit.Value()),
 		})
 	}
 	return messages
 }
 
-func (c *metricsCollector) getPods() (map[string]apiv1.Pod, error) {
-	podsList, err := c.podClient.List(metav1.ListOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list pods")
-	}
-	podsMap := make(map[string]apiv1.Pod)
-	for _, s := range podsList.Items {
-		podsMap[s.Name] = s
+// func parseDiskUsage(pod apiv1.Pod, summary kubelet.StatsSummary) float64 {
+// 	for _, podStat := range summary.Pods {
+// 		if podStat.PodRef.UID == string(pod.UID) {
+// 			if len(podStat.Containers) == 0 {
+// 				return 0
+// 			}
+// 			rootfsUsedBytes := *podStat.Containers[0].Rootfs.UsedBytes
+// 			logsUsedBytes := *podStat.Containers[0].Logs.UsedBytes
+// 			return float64(rootfsUsedBytes + logsUsedBytes)
+// 		}
+// 	}
+// 	return 0
+// }
+
+func parseMetrics(metric v1beta1.PodMetrics) (cpu float64, memory float64) {
+	if len(metric.Containers) == 0 {
+		return
 	}
 
-	return podsMap, nil
+	container := metric.Containers[0]
+	usage := container.Usage
+	res := usage[apiv1.ResourceCPU]
+	cpuMillicores := res.MilliValue()
+	cpu = float64(cpuMillicores) / 10
+	res = usage[apiv1.ResourceMemory]
+	memory = float64(res.Value())
+	return
+}
+
+func (c *metricsCollector) getPodMetrics() (map[string]v1beta1.PodMetrics, error) {
+	metricsList, err := c.metricsClient.List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	metricsMap := make(map[string]v1beta1.PodMetrics)
+	for _, m := range metricsList.Items {
+		metricsMap[m.Name] = m
+	}
+
+	return metricsMap, nil
 }
