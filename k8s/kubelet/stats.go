@@ -40,7 +40,7 @@ func (d DiskMetricsClient) GetPodMetrics() (map[string]float64, error) {
 		if p.PodRef.Namespace == d.namespace && len(p.Containers) != 0 {
 			logsBytes := getUsedBytes(p.Containers[0].Logs)
 			rootfsBytes := getUsedBytes(p.Containers[0].Rootfs)
-			metrics[p.PodRef.Name] = float64(logsBytes) + float64(rootfsBytes)
+			metrics[p.PodRef.Name] = logsBytes + rootfsBytes
 		}
 	}
 	return metrics, nil

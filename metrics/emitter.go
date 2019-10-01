@@ -19,9 +19,9 @@ type Message struct {
 }
 
 type BetterMessage struct {
-	AppID string
+	AppID   string
 	IndexID string
-	CPU  *float64
+	CPU     *float64
 }
 
 //go:generate counterfeiter . Forwarder
