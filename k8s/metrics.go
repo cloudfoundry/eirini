@@ -3,7 +3,6 @@ package k8s
 import (
 	"strconv"
 
-	"code.cloudfoundry.org/eirini/k8s/kubelet"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
@@ -40,7 +39,6 @@ type metricsCollector struct {
 	metricsClient metricsv1beta1.PodMetricsInterface
 	podClient     typedv1.PodInterface
 	diskClient    DiskAPI
-	kubeletClient kubelet.API
 	logger        lager.Logger
 }
 
@@ -65,7 +63,10 @@ func (c *metricsCollector) Collect() ([]metrics.Message, error) {
 }
 
 func (c *metricsCollector) collectMetrics(pods []apiv1.Pod) []metrics.Message {
-	diskMetrics, _ := c.diskClient.GetPodMetrics()
+	diskMetrics, err := c.diskClient.GetPodMetrics()
+	if err != nil {
+		c.logger.Error("failed-to-get-disk-metrics", err, lager.Data{})
+	}
 	messages := []metrics.Message{}
 	podMetrics, err := c.getPodMetrics()
 	if err != nil {
@@ -97,20 +98,6 @@ func (c *metricsCollector) collectMetrics(pods []apiv1.Pod) []metrics.Message {
 	}
 	return messages
 }
-
-// func parseDiskUsage(pod apiv1.Pod, summary kubelet.StatsSummary) float64 {
-// 	for _, podStat := range summary.Pods {
-// 		if podStat.PodRef.UID == string(pod.UID) {
-// 			if len(podStat.Containers) == 0 {
-// 				return 0
-// 			}
-// 			rootfsUsedBytes := *podStat.Containers[0].Rootfs.UsedBytes
-// 			logsUsedBytes := *podStat.Containers[0].Logs.UsedBytes
-// 			return float64(rootfsUsedBytes + logsUsedBytes)
-// 		}
-// 	}
-// 	return 0
-// }
 
 func parseMetrics(metric v1beta1.PodMetrics) (cpu float64, memory float64) {
 	if len(metric.Containers) == 0 {

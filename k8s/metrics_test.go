@@ -103,6 +103,46 @@ var _ = Describe("Metrics", func() {
 			})
 		})
 
+		When("the disk client returns an error", func() {
+			BeforeEach(func() {
+				podMetrics := &metricsv1beta1api.PodMetricsList{
+					Items: []metricsv1beta1api.PodMetrics{
+						createMetrics(podName1),
+					},
+				}
+				podMetricsClient.ListReturns(podMetrics, nil)
+
+				podList := &v1.PodList{
+					Items: []v1.Pod{*createPod(podName1)},
+				}
+				podClient.ListReturns(podList, nil)
+
+				diskClient.GetPodMetricsReturns(nil, errors.New("oopsie"))
+			})
+
+			It("should log the error", func() {
+				_, err := collector.Collect()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(logger).To(gbytes.Say("oopsie"))
+			})
+
+			It("should emmit 0 disk usage", func() {
+				collected, err := collector.Collect()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(collected).To(ConsistOf(
+					metrics.Message{
+						AppID:       podName1,
+						IndexID:     "9000",
+						CPU:         420.5,
+						Memory:      430080,
+						MemoryQuota: 800000,
+						Disk:        0,
+						DiskQuota:   10000000,
+					}))
+
+			})
+
+		})
 		When("listing pods returns an error", func() {
 			It("should return an error", func() {
 				podClient.ListReturns(&v1.PodList{Items: []v1.Pod{}}, errors.New("something done broke"))
