@@ -14,7 +14,6 @@ type DiskMetricsClient struct {
 }
 
 func NewDiskMetricsClient(nodeClient NodeAPI, kubeletClient API, namespace string, logger lager.Logger) DiskMetricsClient {
-
 	return DiskMetricsClient{
 		nodeClient:    nodeClient,
 		kubeletClient: kubeletClient,
@@ -23,8 +22,8 @@ func NewDiskMetricsClient(nodeClient NodeAPI, kubeletClient API, namespace strin
 	}
 }
 
-func (d *DiskMetricsClient) GetPodMetrics() (map[string]float64, error) {
-	metrics := make(map[string]float64, 0)
+func (d DiskMetricsClient) GetPodMetrics() (map[string]float64, error) {
+	metrics := map[string]float64{}
 	pods := []PodStats{}
 	nodes, err := d.nodeClient.List(metav1.ListOptions{})
 	if err != nil {

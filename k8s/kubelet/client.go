@@ -17,7 +17,7 @@ func NewClient(kubeClient rest.Interface) Client {
 	}
 }
 
-func (c *Client) StatsSummary(nodename string) (StatsSummary, error) {
+func (c Client) StatsSummary(nodename string) (StatsSummary, error) {
 	var summary StatsSummary
 	result := c.kubeClient.
 		Get().

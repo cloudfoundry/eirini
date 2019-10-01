@@ -18,6 +18,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	k8sevent "code.cloudfoundry.org/eirini/k8s/informers/event"
 	k8sroute "code.cloudfoundry.org/eirini/k8s/informers/route"
+	"code.cloudfoundry.org/eirini/k8s/kubelet"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/stager"
@@ -262,7 +263,15 @@ func launchMetricsEmitter(
 		Ticker: time.NewTicker(time.Duration(tickerInterval) * time.Second),
 		Logger: metricsLogger.Session("collector.scheduler"),
 	}
-	collector := k8s.NewMetricsCollector(podMetricsClient, podClient)
+
+	metricsCollectorLogger := metricsLogger.Session("metrics-collector", lager.Data{})
+	diskClientLogger := metricsCollectorLogger.Session("disk-metrics-client", lager.Data{})
+	kubeletClient := kubelet.NewClient(clientset.CoreV1().RESTClient())
+	diskClient := kubelet.NewDiskMetricsClient(clientset.CoreV1().Nodes(),
+		kubeletClient,
+		namespace,
+		diskClientLogger)
+	collector := k8s.NewMetricsCollector(podMetricsClient, podClient, diskClient, metricsCollectorLogger)
 
 	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
 	emitterScheduler := &util.SimpleLoopScheduler{
