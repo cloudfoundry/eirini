@@ -14,7 +14,7 @@ var _ = Describe("Kubelet Client", func() {
 		client = kubelet.NewClient(clientset.CoreV1().RESTClient())
 	})
 
-	FIt("should return the stats summary for a node", func() {
+	It("should return the stats summary for a node", func() {
 		nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(nodes.Items).ToNot(BeEmpty())
@@ -29,7 +29,7 @@ var _ = Describe("Kubelet Client", func() {
 	})
 
 	When("the node name is not correct", func() {
-		FIt("should retrun an error", func() {
+		It("should retrun an error", func() {
 			name := "does-not-exist"
 			_, err := client.StatsSummary(name)
 			Expect(err).To(HaveOccurred())
