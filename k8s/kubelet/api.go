@@ -5,6 +5,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+//go:generate counterfeiter . API
 type API interface {
 	StatsSummary(nodename string) (StatsSummary, error)
 }
@@ -29,7 +30,8 @@ type ContainerStats struct {
 }
 
 type PodReference struct {
-	UID string `json:"uid"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
 }
 
 type FsStats struct {
