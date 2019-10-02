@@ -244,7 +244,7 @@ func launchRouteEmitter(clientset kubernetes.Interface, workChan chan *route.Mes
 func launchMetricsEmitter(
 	clientset kubernetes.Interface,
 	metricsClient metricsclientset.Interface,
-	loggregatorClient *loggregator.IngressClient,
+	loggregatorClient metrics.LoggregatorClient,
 	namespace string,
 	metricsEmissionInterval int,
 ) {
