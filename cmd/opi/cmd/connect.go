@@ -46,12 +46,16 @@ var connectCmd = &cobra.Command{
 func connect(cmd *cobra.Command, args []string) {
 	path, err := cmd.Flags().GetString("config")
 	cmdcommons.ExitWithError(err)
-
 	if path == "" {
 		cmdcommons.ExitWithError(errors.New("--config is missing"))
 	}
 
 	cfg := setConfigFromFile(path)
+	envNATSPassword := os.Getenv("NATS_PASSWORD")
+	if envNATSPassword != "" {
+		cfg.Properties.NatsPassword = envNATSPassword
+	}
+
 	stager := initStager(cfg)
 	bifrost := initBifrost(cfg)
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
