@@ -3,7 +3,7 @@ module code.cloudfoundry.org/eirini
 go 1.13
 
 require (
-	code.cloudfoundry.org/bbs v0.0.0-20190823213034-0eb767be244c
+	code.cloudfoundry.org/bbs v0.0.0-20190927143358-c8e9aacab090
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	code.cloudfoundry.org/consuladapter v0.0.0-20190222031846-a0ec466a22b6 // indirect
@@ -23,7 +23,7 @@ require (
 	github.com/deckarep/golang-set v1.7.1
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-test/deep v1.0.4 // indirect
-	github.com/gogo/protobuf v1.3.0
+	github.com/gogo/protobuf v1.3.1
 	github.com/hashicorp/consul/api v1.2.0 // indirect
 	github.com/julienschmidt/httprouter v1.2.0
 	github.com/lib/pq v1.2.0 // indirect
