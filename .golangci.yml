@@ -1,6 +1,6 @@
 run:
   # increase timeout for cases when tests run in parallel with linters
-  deadline: 20m
+  timeout: 20m
   # which dirs to skip: they won't be analyzed;
   skip-dirs:
     - vendor
