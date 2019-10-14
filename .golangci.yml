@@ -27,6 +27,7 @@ linters:
     - typecheck
     - goconst
     - funlen
+    - wsl
 
 issues:
   exclude-use-default: true
