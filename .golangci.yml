@@ -30,11 +30,6 @@ linters:
 issues:
   exclude-use-default: true
   exclude-rules:
-    - path: integration/statefulsets_suite_test.go
-      linters:
-      - deadcode
-      - varcheck
-      - unused
     - path: _test\.go
       linters:
       - goconst

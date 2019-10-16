@@ -17,7 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	types "k8s.io/client-go/kubernetes/typed/apps/v1"
-	coretypes "k8s.io/client-go/kubernetes/typed/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -158,10 +157,6 @@ func allowPodCreation(namespace string) {
 
 func statefulSets() types.StatefulSetInterface {
 	return clientset.AppsV1().StatefulSets(namespace)
-}
-
-func services() coretypes.ServiceInterface {
-	return clientset.CoreV1().Services(namespace)
 }
 
 func getStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
