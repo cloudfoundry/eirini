@@ -43,7 +43,18 @@ var _ = Describe("AppHandler", func() {
 		BeforeEach(func() {
 			path = "/apps/myguid"
 			body = `{
+				"guid": "guid",
 				"process_guid" : "myguid",
+				"process_type": "web",
+				"space_guid": "space-guid",
+				"space_name": "space-name",
+				"app_name": "app-name",
+				"app_guid": "app-guid",
+				"organization_guid": "org-guid",
+				"organization_name": "org-name",
+				"version": "version",
+				"placement_tags": ["place-1", "place-2"],
+				"egress_rules": ["raw message"],
 				"lifecycle": {
 					"buildpack_lifecycle": {
 						"start_command": "./start"
@@ -53,10 +64,12 @@ var _ = Describe("AppHandler", func() {
 				"instances": 5,
 				"memory_mb": 123,
 				"cpu_weight": 10,
+				"disk_mb": 256,
 				"last_updated":"1529073295.9",
 				"health_check_type":"http",
 				"health_check_http_endpoint":"/healthz",
 				"health_check_timeout_ms":400,
+				"start_timeout_ms": 320,
 				"volume_mounts": [
 					{
 						"mount_dir": "/var/vcap/data/e1df89b4-33de-4d72-b471-5495222177c8",
@@ -79,7 +92,18 @@ var _ = Describe("AppHandler", func() {
 
 		It("should call the bifrost with the desired LRPs request from Cloud Controller", func() {
 			expectedRequest := cf.DesireLRPRequest{
-				ProcessGUID: "myguid",
+				GUID:             "guid",
+				ProcessGUID:      "myguid",
+				Version:          "version",
+				ProcessType:      "web",
+				AppGUID:          "app-guid",
+				AppName:          "app-name",
+				EgressRules:      []json.RawMessage{[]byte("\"raw message\"")},
+				SpaceGUID:        "space-guid",
+				SpaceName:        "space-name",
+				OrganizationGUID: "org-guid",
+				OrganizationName: "org-name",
+				PlacementTags:    []string{"place-1", "place-2"},
 				Lifecycle: cf.Lifecycle{
 					BuildpackLifecycle: &cf.BuildpackLifecycle{
 						StartCommand: "./start",
@@ -88,11 +112,13 @@ var _ = Describe("AppHandler", func() {
 				Environment:             map[string]string{"env_var": "env_var_value"},
 				NumInstances:            5,
 				MemoryMB:                123,
+				DiskMB:                  256,
 				CPUWeight:               10,
 				LastUpdated:             "1529073295.9",
 				HealthCheckType:         "http",
 				HealthCheckHTTPEndpoint: "/healthz",
 				HealthCheckTimeoutMs:    400,
+				StartTimeoutMs:          320,
 				Ports:                   []int32{8080, 7777},
 				VolumeMounts: []cf.VolumeMount{
 					{

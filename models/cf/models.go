@@ -34,15 +34,26 @@ type DesireLRPRequest struct {
 	GUID                    string                      `json:"guid"`
 	Version                 string                      `json:"version"`
 	ProcessGUID             string                      `json:"process_guid"`
+	ProcessType             string                      `json:"process_type"`
+	AppGUID                 string                      `json:"app_guid"`
+	AppName                 string                      `json:"app_name"`
+	SpaceGUID               string                      `json:"space_guid"`
+	SpaceName               string                      `json:"space_name"`
+	OrganizationGUID        string                      `json:"organization_guid"`
+	OrganizationName        string                      `json:"organization_name"`
+	PlacementTags           []string                    `json:"placement_tags"`
 	Ports                   []int32                     `json:"ports"`
 	Routes                  map[string]*json.RawMessage `json:"routes"`
 	Environment             map[string]string           `json:"environment"`
+	EgressRules             []json.RawMessage           `json:"egress_rules"`
 	NumInstances            int                         `json:"instances"`
 	LastUpdated             string                      `json:"last_updated"`
 	HealthCheckType         string                      `json:"health_check_type"`
 	HealthCheckHTTPEndpoint string                      `json:"health_check_http_endpoint"`
 	HealthCheckTimeoutMs    uint                        `json:"health_check_timeout_ms"`
+	StartTimeoutMs          uint                        `json:"start_timeout_ms"`
 	MemoryMB                int64                       `json:"memory_mb"`
+	DiskMB                  int64                       `json:"disk_mb"`
 	CPUWeight               uint8                       `json:"cpu_weight"`
 	VolumeMounts            []VolumeMount               `json:"volume_mounts"`
 	Lifecycle               Lifecycle                   `json:"lifecycle"`
