@@ -5,16 +5,21 @@ import (
 )
 
 const (
-	cpuUnit    = "percentage"
-	memoryUnit = "bytes"
-	diskUnit   = "bytes"
+	CPUUnit    = "percentage"
+	MemoryUnit = "bytes"
+	DiskUnit   = "bytes"
 )
 
-type LoggregatorForwarder struct {
-	client *loggregator.IngressClient
+//go:generate counterfeiter . LoggregatorClient
+type LoggregatorClient interface {
+	EmitGauge(...loggregator.EmitGaugeOption)
 }
 
-func NewLoggregatorForwarder(client *loggregator.IngressClient) *LoggregatorForwarder {
+type LoggregatorForwarder struct {
+	client LoggregatorClient
+}
+
+func NewLoggregatorForwarder(client LoggregatorClient) *LoggregatorForwarder {
 	return &LoggregatorForwarder{
 		client: client,
 	}
@@ -23,10 +28,10 @@ func NewLoggregatorForwarder(client *loggregator.IngressClient) *LoggregatorForw
 func (l *LoggregatorForwarder) Forward(msg Message) {
 	l.client.EmitGauge(
 		loggregator.WithGaugeSourceInfo(msg.AppID, msg.IndexID),
-		loggregator.WithGaugeValue("cpu", msg.CPU, cpuUnit),
-		loggregator.WithGaugeValue("memory", msg.Memory, memoryUnit),
-		loggregator.WithGaugeValue("disk", msg.Disk, diskUnit),
-		loggregator.WithGaugeValue("memory_quota", msg.MemoryQuota, memoryUnit),
-		loggregator.WithGaugeValue("disk_quota", msg.DiskQuota, diskUnit),
+		loggregator.WithGaugeValue("cpu", msg.CPU, CPUUnit),
+		loggregator.WithGaugeValue("memory", msg.Memory, MemoryUnit),
+		loggregator.WithGaugeValue("memory_quota", msg.MemoryQuota, MemoryUnit),
+		loggregator.WithGaugeValue("disk", msg.Disk, DiskUnit),
+		loggregator.WithGaugeValue("disk_quota", msg.DiskQuota, DiskUnit),
 	)
 }

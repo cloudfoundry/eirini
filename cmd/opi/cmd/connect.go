@@ -18,6 +18,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	k8sevent "code.cloudfoundry.org/eirini/k8s/informers/event"
 	k8sroute "code.cloudfoundry.org/eirini/k8s/informers/route"
+	"code.cloudfoundry.org/eirini/k8s/kubelet"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/stager"
@@ -45,12 +46,16 @@ var connectCmd = &cobra.Command{
 func connect(cmd *cobra.Command, args []string) {
 	path, err := cmd.Flags().GetString("config")
 	cmdcommons.ExitWithError(err)
-
 	if path == "" {
 		cmdcommons.ExitWithError(errors.New("--config is missing"))
 	}
 
 	cfg := setConfigFromFile(path)
+	envNATSPassword := os.Getenv("NATS_PASSWORD")
+	if envNATSPassword != "" {
+		cfg.Properties.NatsPassword = envNATSPassword
+	}
+
 	stager := initStager(cfg)
 	bifrost := initBifrost(cfg)
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
@@ -243,7 +248,7 @@ func launchRouteEmitter(clientset kubernetes.Interface, workChan chan *route.Mes
 func launchMetricsEmitter(
 	clientset kubernetes.Interface,
 	metricsClient metricsclientset.Interface,
-	loggregatorClient *loggregator.IngressClient,
+	loggregatorClient metrics.LoggregatorClient,
 	namespace string,
 	metricsEmissionInterval int,
 ) {
@@ -262,7 +267,15 @@ func launchMetricsEmitter(
 		Ticker: time.NewTicker(time.Duration(tickerInterval) * time.Second),
 		Logger: metricsLogger.Session("collector.scheduler"),
 	}
-	collector := k8s.NewMetricsCollector(podMetricsClient, podClient)
+
+	metricsCollectorLogger := metricsLogger.Session("metrics-collector", lager.Data{})
+	diskClientLogger := metricsCollectorLogger.Session("disk-metrics-client", lager.Data{})
+	kubeletClient := kubelet.NewClient(clientset.CoreV1().RESTClient())
+	diskClient := kubelet.NewDiskMetricsClient(clientset.CoreV1().Nodes(),
+		kubeletClient,
+		namespace,
+		diskClientLogger)
+	collector := k8s.NewMetricsCollector(podMetricsClient, podClient, diskClient, metricsCollectorLogger)
 
 	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
 	emitterScheduler := &util.SimpleLoopScheduler{
