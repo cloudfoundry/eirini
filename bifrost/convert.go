@@ -60,11 +60,6 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		image, command, buildpackEnv, healthcheck.Port = c.buildpackProperties(lifecycle.DropletGUID, lifecycle.DropletHash, lifecycle.StartCommand)
 		env = mergeMaps(env, buildpackEnv)
 
-	case request.DropletGUID != "":
-		var buildpackEnv map[string]string
-		image, command, buildpackEnv, healthcheck.Port = c.buildpackProperties(request.DropletGUID, request.DropletHash, request.StartCommand)
-		env = mergeMaps(env, buildpackEnv)
-
 	default:
 		return opi.LRP{}, fmt.Errorf("missing lifecycle data")
 	}
