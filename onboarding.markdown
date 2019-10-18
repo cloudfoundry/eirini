@@ -24,9 +24,14 @@ Additionally, for new members of the core team:
 
 * [Inception doc](https://files.slack.com/files-pri/T02FL4A1X-FAED4MMSN/download/projecteirinipdf.pdf)
 * [Demo]( https://files.slack.com/files-pri/T02FL4A1X-FADSGHCUR/download/eirini-demo.mp4)
+* [Talks about Eirini](http://eirini.cf/#/talks)
+* [Onboarding presentation](https://cloudfoundry.slack.com/files/UACLP8DGC/FPJDTH885/projecteirini_v2.0.1.key)
+* [Kubernetes tutorial](https://kubernetes.io/docs/tutorials/hello-minikube/)
 * [Code](https://code.cloudfoundry.org/eirini)
 * [Release](https://code.cloudfoundry.org/eirini-release)
-* [Core CI Pipeline](https://ci.flintstone.cf.cloud.ibm.com/teams/eirini/pipelines/ci)
+* [CI Pipeline](https://jetson.eirini.cf-app.com/teams/main/pipelines/ci)
+* [Release Pipeline](https://jetson.eirini.cf-app.com/teams/main/pipelines/eirini-release)
+* [SCF](https://github.com/SUSE/scf) and [fissile](https://github.com/cloudfoundry-incubator/fissile)
 * [Slack Channel #eirini-dev](https://cloudfoundry.slack.com/messages/C8RU3BZ26)
 
 ## Coding Guidelines
