@@ -79,6 +79,10 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 			ClaimName: vm.VolumeID,
 		})
 	}
+	diskMB := c.diskLimitMB
+	if request.DiskMB != 0 {
+		diskMB = request.DiskMB
+	}
 
 	return opi.LRP{
 		AppName:         vcap.AppName,
@@ -99,7 +103,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 			cf.LastUpdated: request.LastUpdated,
 		},
 		MemoryMB:     request.MemoryMB,
-		DiskMB:       c.diskLimitMB,
+		DiskMB:       diskMB,
 		CPUWeight:    request.CPUWeight,
 		VolumeMounts: volumeMounts,
 		LRP:          request.LRP,
