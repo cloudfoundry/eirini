@@ -154,6 +154,20 @@ var _ = Describe("Statefulset Desirer", func() {
 				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
 			})
 
+			It("should set app_guid as a label", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+				Expect(statefulSet.Labels).To(HaveKeyWithValue("app_guid", "premium_app_guid_1234"))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue("app_guid", "premium_app_guid_1234"))
+			})
+
+			It("should set process_type as a label", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+				Expect(statefulSet.Labels).To(HaveKeyWithValue("process_type", "worker"))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue("process_type", "worker"))
+			})
+
 			It("should set disk limit", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 
@@ -645,8 +659,10 @@ func createLRP(name, routes string) *opi.LRP {
 			GUID:    "guid_1234",
 			Version: "version_1234",
 		},
-		AppName:   name,
-		SpaceName: "space-foo",
+		ProcessType: "worker",
+		AppName:     name,
+		AppGUID:     "premium_app_guid_1234",
+		SpaceName:   "space-foo",
 		Command: []string{
 			"/bin/sh",
 			"-c",

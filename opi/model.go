@@ -26,7 +26,9 @@ func (i *LRPIdentifier) ProcessGUID() string {
 // killing and recreating as needed to maintain that guarantee
 type LRP struct {
 	LRPIdentifier
+	ProcessType      string
 	AppName          string
+	AppGUID          string
 	SpaceName        string
 	Image            string
 	Command          []string

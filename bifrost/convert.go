@@ -86,8 +86,10 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 
 	return opi.LRP{
 		AppName:         vcap.AppName,
+		AppGUID:         vcap.AppID,
 		SpaceName:       vcap.SpaceName,
 		LRPIdentifier:   identifier,
+		ProcessType:     request.ProcessType,
 		Image:           image,
 		TargetInstances: request.NumInstances,
 		Command:         command,
