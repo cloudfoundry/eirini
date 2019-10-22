@@ -24,9 +24,10 @@ import (
 )
 
 const (
-	namespace          = "testing"
-	registrySecretName = "secret-name"
-	rootfsVersion      = "version2"
+	namespace             = "testing"
+	registrySecretName    = "secret-name"
+	rootfsVersion         = "version2"
+	LabelAnnotationPrefix = "cloudfoundry.org"
 )
 
 var _ = Describe("Statefulset Desirer", func() {
@@ -91,34 +92,68 @@ var _ = Describe("Statefulset Desirer", func() {
 				Expect(readinessProbeCreator.CallCount()).To(Equal(1))
 			})
 
-			It("should provide original request", func() {
+			It("should provide original request to the statefulset annotation", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 
-				Expect(statefulSet.Annotations["original_request"]).To(Equal(lrp.LRP))
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, eirini.OriginalRequest)
+				Expect(statefulSet.Annotations).To(HaveKeyWithValue(expectedKey, "original request"))
+			})
+
+			It("should provide registered routes to the statefulset annotation", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, eirini.RegisteredRoutes)
+				Expect(statefulSet.Annotations).To(HaveKeyWithValue(expectedKey, "my.example.route"))
+			})
+
+			It("should provide space name to the statefulset annotation", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, cf.VcapSpaceName)
+				Expect(statefulSet.Annotations).To(HaveKeyWithValue(expectedKey, "space-foo"))
+			})
+
+			It("should provide LRP metadata to the statefulset annotation", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+				expectedKeys := map[string]string{
+					fmt.Sprintf("%s/%s", LabelAnnotationPrefix, cf.ProcessGUID): "Baldur-guid",
+					fmt.Sprintf("%s/%s", LabelAnnotationPrefix, cf.LastUpdated): lrp.Metadata[cf.LastUpdated],
+					fmt.Sprintf("%s/%s", LabelAnnotationPrefix, cf.VcapAppUris): "my.example.route",
+					fmt.Sprintf("%s/%s", LabelAnnotationPrefix, cf.VcapAppName): "Baldur",
+					fmt.Sprintf("%s/%s", LabelAnnotationPrefix, cf.VcapAppID):   "guid_1234",
+					fmt.Sprintf("%s/%s", LabelAnnotationPrefix, cf.VcapVersion): "version_1234",
+				}
+
+				for k, v := range expectedKeys {
+					Expect(statefulSet.Annotations).To(HaveKeyWithValue(k, v))
+				}
 			})
 
 			It("should provide the process-guid to the pod annotations", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 
-				Expect(statefulSet.Spec.Template.Annotations[cf.ProcessGUID]).To(Equal("Baldur-guid"))
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, cf.ProcessGUID)
+				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(expectedKey, "Baldur-guid"))
 			})
 
-			It("should set name for the stateful set", func() {
+			It("should provide the VcapAppId to the pod annotations", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 
-				Expect(statefulSet.Name).To(Equal("baldur-space-foo-random"))
-			})
-
-			It("should set space name as annotation on the statefulset", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-
-				Expect(statefulSet.Annotations[cf.VcapSpaceName]).To(Equal("space-foo"))
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, cf.VcapAppID)
+				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(expectedKey, "guid_1234"))
 			})
 
 			It("should set seccomp pod annotation", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 
 				Expect(statefulSet.Spec.Template.Annotations[corev1.SeccompPodAnnotationKey]).To(Equal(corev1.SeccompProfileRuntimeDefault))
+			})
+
+			It("should set name for the stateful set", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+				Expect(statefulSet.Name).To(Equal("baldur-space-foo-random"))
 			})
 
 			It("should set podManagementPolicy to parallel", func() {
@@ -150,22 +185,70 @@ var _ = Describe("Statefulset Desirer", func() {
 			It("should set rootfsVersion as a label", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 
-				Expect(statefulSet.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, rootfspatcher.RootfsVersionLabel)
+				Expect(statefulSet.Labels).To(HaveKeyWithValue(expectedKey, rootfsVersion))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(expectedKey, rootfsVersion))
 			})
 
 			It("should set app_guid as a label", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 
-				Expect(statefulSet.Labels).To(HaveKeyWithValue("app_guid", "premium_app_guid_1234"))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue("app_guid", "premium_app_guid_1234"))
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, "app_guid")
+				Expect(statefulSet.Labels).To(HaveKeyWithValue(expectedKey, "premium_app_guid_1234"))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(expectedKey, "premium_app_guid_1234"))
 			})
 
 			It("should set process_type as a label", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 
-				Expect(statefulSet.Labels).To(HaveKeyWithValue("process_type", "worker"))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue("process_type", "worker"))
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, "process_type")
+				Expect(statefulSet.Labels).To(HaveKeyWithValue(expectedKey, "worker"))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(expectedKey, "worker"))
+			})
+
+			It("should set guid as a label", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, "guid")
+				Expect(statefulSet.Labels).To(HaveKeyWithValue(expectedKey, "guid_1234"))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(expectedKey, "guid_1234"))
+			})
+
+			It("should set version as a label", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, "version")
+				Expect(statefulSet.Labels).To(HaveKeyWithValue(expectedKey, "version_1234"))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(expectedKey, "version_1234"))
+			})
+
+			It("should set source_type as a label", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, "source_type")
+				Expect(statefulSet.Labels).To(HaveKeyWithValue(expectedKey, "APP"))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(expectedKey, "APP"))
+			})
+
+			It("should set guid as a label selector", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, "guid")
+				Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(expectedKey, "guid_1234"))
+			})
+
+			It("should set version as a label selector", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, "version")
+				Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(expectedKey, "version_1234"))
+			})
+
+			It("should set source_type as a label selector", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+				expectedKey := fmt.Sprintf("%s/%s", LabelAnnotationPrefix, "source_type")
+				Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(expectedKey, "APP"))
 			})
 
 			It("should set disk limit", func() {
