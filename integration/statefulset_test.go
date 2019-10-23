@@ -1,6 +1,7 @@
 package statefulsets_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 
@@ -56,6 +57,7 @@ var _ = Describe("StatefulSet Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		// join all tests in a single with By()
 		It("should create a StatefulSet object", func() {
 			statefulset := getStatefulSet(odinLRP)
 			Expect(statefulset.Name).To(ContainSubstring(odinLRP.GUID))
@@ -168,6 +170,8 @@ func randomString() string {
 
 func createLRP(name string) *opi.LRP {
 	guid := randomString()
+	routes, err := json.Marshal([]cf.Route{{Hostname: "foo.example.com", Port: 8080}})
+	Expect(err).ToNot(HaveOccurred())
 	return &opi.LRP{
 		Command: []string{
 			"/bin/sh",
@@ -180,6 +184,7 @@ func createLRP(name string) *opi.LRP {
 		Image:           "busybox",
 		Metadata: map[string]string{
 			cf.ProcessGUID: name,
+			cf.VcapAppUris: string(routes),
 		},
 		LRPIdentifier: opi.LRPIdentifier{GUID: guid, Version: "version_" + guid},
 		LRP:           "metadata",
