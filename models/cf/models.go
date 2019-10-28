@@ -7,14 +7,14 @@ import (
 )
 
 const (
-	VcapAppName   = "application_name"
-	VcapVersion   = "version"
-	VcapAppUris   = "application_uris"
-	VcapAppID     = "application_id"
-	VcapSpaceName = "space_name"
+	VcapAppName   = "cloudfoundry.org/application_name"
+	VcapVersion   = "cloudfoundry.org/version"
+	VcapAppUris   = "cloudfoundry.org/application_uris"
+	VcapAppID     = "cloudfoundry.org/application_id"
+	VcapSpaceName = "cloudfoundry.org/space_name"
 
-	LastUpdated = "last_updated"
-	ProcessGUID = "process_guid"
+	LastUpdated = "cloudfoundry.org/last_updated"
+	ProcessGUID = "cloudfoundry.org/process_guid"
 )
 
 type VcapApp struct {
