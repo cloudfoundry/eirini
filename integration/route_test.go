@@ -15,7 +15,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("Routes", func() {
@@ -185,7 +184,7 @@ fi;`,
 			})
 		})
 
-		When("a new route is registerd for an app", func() {
+		When("a new route is registered for an app", func() {
 			It("should send a regsiter route message with the new route", func() {
 				routes, err := json.Marshal([]cf.Route{
 					{Hostname: "foo.example.com", Port: 8080},
@@ -212,7 +211,6 @@ fi;`,
 
 	Context("URIChangeInformer", func() {
 		var (
-			pods       []corev1.Pod
 			workChan   chan *route.Message
 			stopChan   chan struct{}
 			informerWG sync.WaitGroup
@@ -255,7 +253,7 @@ fi;`,
 
 		When("the app is scaled down", func() {
 			It("sends unregister routes message", func() {
-				pods = listPods(odinLRP.LRPIdentifier)
+				pods := listPods(odinLRP.LRPIdentifier)
 				odinLRP.TargetInstances = 1
 				Expect(desirer.Update(odinLRP)).To(Succeed())
 
@@ -274,7 +272,7 @@ fi;`,
 
 		When("an app instance is stopped", func() {
 			It("sends unregister routes message", func() {
-				pods = listPods(odinLRP.LRPIdentifier)
+				pods := listPods(odinLRP.LRPIdentifier)
 				Expect(desirer.StopInstance(odinLRP.LRPIdentifier, 0)).To(Succeed())
 
 				Eventually(workChan, timeout).Should(Receive(Equal(&route.Message{
