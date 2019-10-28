@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
@@ -64,7 +65,7 @@ var _ = Describe("StatefulSet Manager", func() {
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Command).To(Equal(odinLRP.Command))
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Image).To(Equal(odinLRP.Image))
 			Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(odinLRP.TargetInstances)))
-			Expect(statefulset.Annotations["original_request"]).To(Equal(odinLRP.LRP))
+			Expect(statefulset.Annotations[eirini.OriginalRequest]).To(Equal(odinLRP.LRP))
 		})
 
 		It("should create all associated pods", func() {

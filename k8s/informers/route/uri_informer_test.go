@@ -17,6 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	testcore "k8s.io/client-go/testing"
 
+	"code.cloudfoundry.org/eirini"
 	. "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/models/cf"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
@@ -85,7 +86,7 @@ var _ = Describe("URIChangeInformer", func() {
 		thecopy := *st
 
 		thecopy.Annotations = map[string]string{
-			"routes": routes,
+			eirini.RegisteredRoutes: routes,
 		}
 		return &thecopy
 	}
@@ -106,7 +107,7 @@ var _ = Describe("URIChangeInformer", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "mr-stateful",
 				Annotations: map[string]string{
-					"routes": `[
+					eirini.RegisteredRoutes: `[
 						{
 							"hostname": "mr-stateful.50.60.70.80.nip.io",
 							"port": 8080
@@ -145,6 +146,7 @@ var _ = Describe("URIChangeInformer", func() {
 	AfterEach(func() {
 		close(stopChan)
 		informerWG.Wait()
+		close(workChan)
 	})
 
 	JustBeforeEach(func() {
@@ -482,7 +484,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 	Context("When decoding updated user defined routes fails", func() {
 		BeforeEach(func() {
-			statefulset.Annotations["routes"] = "[]"
+			statefulset.Annotations[eirini.RegisteredRoutes] = "[]"
 		})
 
 		JustBeforeEach(func() {
@@ -509,7 +511,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 	Context("When decoding old user defined routes fails", func() {
 		BeforeEach(func() {
-			statefulset.Annotations["routes"] = "["
+			statefulset.Annotations[eirini.RegisteredRoutes] = "["
 		})
 
 		JustBeforeEach(func() {
@@ -808,7 +810,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 		Context("and decoding routes fails", func() {
 			BeforeEach(func() {
-				statefulset.Annotations["routes"] = "["
+				statefulset.Annotations["cloudfoundry.org/routes"] = "["
 			})
 
 			It("shouldn't send any messages", func() {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"code.cloudfoundry.org/eirini"
 	. "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
@@ -103,7 +104,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "mr-stateful",
 				Annotations: map[string]string{
-					"routes": `[
+					eirini.RegisteredRoutes: `[
 						{
 							"hostname": "mr-stateful.50.60.70.80.nip.io",
 							"port": 8080
