@@ -191,7 +191,7 @@ fi;`,
 					{Hostname: "bar.example.com", Port: 9090},
 				})
 				Expect(err).ToNot(HaveOccurred())
-				odinLRP.Metadata[cf.VcapAppUris] = string(routes)
+				odinLRP.AppURIs = string(routes)
 				Expect(desirer.Update(odinLRP)).To(Succeed())
 				pods := listPods(odinLRP.LRPIdentifier)
 				Eventually(workChan, 15*time.Second).Should(Receive(Equal(&route.Message{

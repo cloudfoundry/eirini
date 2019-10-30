@@ -109,10 +109,8 @@ var _ = Describe("Bifrost", func() {
 	Context("List", func() {
 		createLRP := func(processGUID, lastUpdated string) *opi.LRP {
 			return &opi.LRP{
-				Metadata: map[string]string{
-					cf.ProcessGUID: processGUID,
-					cf.LastUpdated: lastUpdated,
-				},
+				LRPIdentifier: opi.LRPIdentifier{GUID: processGUID},
+				LastUpdated:   lastUpdated,
 			}
 		}
 
@@ -184,10 +182,8 @@ var _ = Describe("Bifrost", func() {
 			BeforeEach(func() {
 				lrp := opi.LRP{
 					TargetInstances: 2,
-					Metadata: map[string]string{
-						cf.LastUpdated: "whenever",
-						cf.VcapAppUris: `[{"hostname":"my.route","port":8080},{"hostname":"your.route","port":5555}]`,
-					},
+					LastUpdated:     "whenever",
+					AppURIs:         `[{"hostname":"my.route","port":8080},{"hostname":"your.route","port":5555}]`,
 				}
 				desirer.GetReturns(&lrp, nil)
 			})
@@ -211,7 +207,7 @@ var _ = Describe("Bifrost", func() {
 					Expect(desirer.UpdateCallCount()).To(Equal(1))
 					lrp := desirer.UpdateArgsForCall(0)
 					Expect(lrp.TargetInstances).To(Equal(int(5)))
-					Expect(lrp.Metadata[cf.LastUpdated]).To(Equal("21421321.3"))
+					Expect(lrp.LastUpdated).To(Equal("21421321.3"))
 				})
 
 				It("should not return an error", func() {
@@ -270,7 +266,7 @@ var _ = Describe("Bifrost", func() {
 				It("should have the updated routes", func() {
 					Expect(desirer.UpdateCallCount()).To(Equal(1))
 					lrp := desirer.UpdateArgsForCall(0)
-					Expect(lrp.Metadata[cf.VcapAppUris]).To(Equal(`[{"hostname":"my.route","port":8080},{"hostname":"my.other.route","port":7777}]`))
+					Expect(lrp.AppURIs).To(Equal(`[{"hostname":"my.route","port":8080},{"hostname":"my.other.route","port":7777}]`))
 				})
 
 				Context("When there are no routes provided", func() {
@@ -289,7 +285,7 @@ var _ = Describe("Bifrost", func() {
 					It("should update it to an empty array", func() {
 						Expect(desirer.UpdateCallCount()).To(Equal(1))
 						lrp := desirer.UpdateArgsForCall(0)
-						Expect(lrp.Metadata[cf.VcapAppUris]).To(Equal(`[]`))
+						Expect(lrp.AppURIs).To(Equal(`[]`))
 					})
 				})
 			})

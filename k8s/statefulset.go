@@ -129,8 +129,8 @@ func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
 
 	count := int32(lrp.TargetInstances)
 	statefulSet.Spec.Replicas = &count
-	statefulSet.Annotations[cf.LastUpdated] = lrp.Metadata[cf.LastUpdated]
-	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
+	statefulSet.Annotations[cf.LastUpdated] = lrp.LastUpdated
+	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.AppURIs
 
 	_, err = m.StatefulSets.Update(statefulSet)
 	return errors.Wrap(err, "failed to update statefulset")
@@ -291,8 +291,8 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
 					Annotations: map[string]string{
-						cf.ProcessGUID:                 lrp.Metadata[cf.ProcessGUID],
-						cf.VcapAppID:                   lrp.Metadata[cf.VcapAppID],
+						cf.ProcessGUID:                 lrp.ProcessGUID(),
+						cf.VcapAppID:                   lrp.AppGUID,
 						corev1.SeccompPodAnnotationKey: corev1.SeccompProfileRuntimeDefault,
 					},
 				},
@@ -355,10 +355,17 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	statefulSet.Spec.Template.Labels = labels
 	statefulSet.Labels = labels
 
-	statefulSet.Annotations = lrp.Metadata
-	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.Metadata[cf.VcapAppUris]
-	statefulSet.Annotations[cf.VcapSpaceName] = lrp.SpaceName
-	statefulSet.Annotations[eirini.OriginalRequest] = lrp.LRP
+	statefulSet.Annotations = map[string]string{
+		cf.VcapSpaceName:        lrp.SpaceName,
+		eirini.OriginalRequest:  lrp.LRP,
+		eirini.RegisteredRoutes: lrp.AppURIs,
+		cf.VcapAppID:            lrp.AppGUID,
+		cf.VcapVersion:          lrp.Version,
+		cf.LastUpdated:          lrp.LastUpdated,
+		cf.ProcessGUID:          lrp.ProcessGUID(),
+		cf.VcapAppUris:          lrp.AppURIs,
+		cf.VcapAppName:          lrp.AppName,
+	}
 
 	return statefulSet
 }

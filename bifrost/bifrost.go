@@ -36,8 +36,8 @@ func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []*models.DesiredLRPSchedulingI
 	infos := []*models.DesiredLRPSchedulingInfo{}
 	for _, l := range lrps {
 		info := &models.DesiredLRPSchedulingInfo{}
-		info.DesiredLRPKey.ProcessGuid = l.Metadata[cf.ProcessGUID]
-		info.Annotation = l.Metadata[cf.LastUpdated]
+		info.DesiredLRPKey.ProcessGuid = l.GUID
+		info.Annotation = l.LastUpdated
 		infos = append(infos, info)
 	}
 	return infos
@@ -57,9 +57,9 @@ func (b *Bifrost) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest)
 	u := update.GetUpdate()
 
 	lrp.TargetInstances = int(u.GetInstances())
-	lrp.Metadata[cf.LastUpdated] = u.GetAnnotation()
+	lrp.LastUpdated = u.GetAnnotation()
 
-	lrp.Metadata[cf.VcapAppUris] = getURIs(update)
+	lrp.AppURIs = getURIs(update)
 	return errors.Wrap(b.Desirer.Update(lrp), "failed to update")
 }
 

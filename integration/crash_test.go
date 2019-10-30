@@ -2,6 +2,7 @@ package statefulsets_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/events"
@@ -69,7 +70,7 @@ var _ = Describe("Crashes", func() {
 
 		It("generates crash report for the initial error", func() {
 			Eventually(reportChan, timeout).Should(Receive(MatchFields(IgnoreExtras, Fields{
-				"ProcessGUID": Equal(odinLRP.AppName),
+				"ProcessGUID": Equal(fmt.Sprintf("%s-%s", odinLRP.GUID, odinLRP.Version)),
 				"AppCrashedRequest": MatchFields(IgnoreExtras, Fields{
 					"Instance":        ContainSubstring(odinLRP.GUID),
 					"Index":           Equal(0),
@@ -82,7 +83,7 @@ var _ = Describe("Crashes", func() {
 
 		It("generates crash report when the app goes into CrashLoopBackOff", func() {
 			Eventually(reportChan, timeout).Should(Receive(MatchFields(IgnoreExtras, Fields{
-				"ProcessGUID": Equal(odinLRP.AppName),
+				"ProcessGUID": Equal(fmt.Sprintf("%s-%s", odinLRP.GUID, odinLRP.Version)),
 				"AppCrashedRequest": MatchFields(IgnoreExtras, Fields{
 					"Instance":        ContainSubstring(odinLRP.GUID),
 					"Index":           Equal(0),
@@ -109,12 +110,9 @@ func createCrashingLRP(name string) *opi.LRP {
 		SpaceName:       "space-foo",
 		TargetInstances: 1,
 		Image:           "alpine",
-		Metadata: map[string]string{
-			cf.ProcessGUID: name,
-			cf.VcapAppUris: string(routes),
-		},
-		LRPIdentifier: opi.LRPIdentifier{GUID: guid, Version: "version_" + guid},
-		LRP:           "metadata",
-		DiskMB:        2047,
+		AppURIs:         string(routes),
+		LRPIdentifier:   opi.LRPIdentifier{GUID: guid, Version: "version_" + guid},
+		LRP:             "metadata",
+		DiskMB:          2047,
 	}
 }

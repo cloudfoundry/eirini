@@ -105,15 +105,16 @@ var _ = Describe("Mapper", func() {
 		Expect(lrp.Ports).To(Equal([]int32{8888, 9999}))
 	})
 
-	It("should translate statefulset annotations to LRP metadata", func() {
-		Expect(lrp.Metadata).To(Equal(map[string]string{
-			cf.ProcessGUID: "Baldur-guid",
-			cf.LastUpdated: "last-updated-some-time-ago",
-			cf.VcapAppUris: "my.example.route",
-			cf.VcapAppID:   "guid_1234",
-			cf.VcapVersion: "version_1234",
-			cf.VcapAppName: "Baldur",
-		}))
+	It("should set the correct LRP LastUpdated", func() {
+		Expect(lrp.LastUpdated).To(Equal("last-updated-some-time-ago"))
+	})
+
+	It("should set the correct LRP AppURIs", func() {
+		Expect(lrp.AppURIs).To(Equal("my.example.route"))
+	})
+
+	It("should set the correct LRP AppGUID", func() {
+		Expect(lrp.AppGUID).To(Equal("guid_1234"))
 	})
 
 	It("should set the correct LRP disk and memory usage", func() {

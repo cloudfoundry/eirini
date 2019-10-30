@@ -122,18 +122,16 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(lrp.DiskMB).To(Equal(int64(256)))
 			})
 
-			It("should store the VCAP env variable as metadata", func() {
-				Expect(lrp.Metadata[cf.VcapAppName]).To(Equal("bumblebee"))
-				Expect(lrp.Metadata[cf.VcapAppID]).To(Equal("app-guid-69da097fc360"))
-				Expect(lrp.Metadata[cf.VcapVersion]).To(Equal("something-something-uuid"))
+			It("should set the app name", func() {
+				Expect(lrp.AppName).To(Equal("bumblebee"))
 			})
 
-			It("should store the process guid in metadata", func() {
-				Expect(lrp.Metadata[cf.ProcessGUID]).To(Equal("capi-process-guid-69da097fc360-capi-process-version-87d0124c433a"))
+			It("should set the app guid", func() {
+				Expect(lrp.AppGUID).To(Equal("app-guid-69da097fc360"))
 			})
 
 			It("should store the last updated timestamp in metadata", func() {
-				Expect(lrp.Metadata[cf.LastUpdated]).To(Equal("23534635232.3"))
+				Expect(lrp.LastUpdated).To(Equal("23534635232.3"))
 			})
 
 			It("should set the environment variables provided by cloud controller", func() {
@@ -151,7 +149,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			})
 
 			It("sets the app routes", func() {
-				Expect(lrp.Metadata[cf.VcapAppUris]).To(Equal(`[{"hostname":"bumblebee.example.com","port":8000},{"hostname":"transformers.example.com","port":7070}]`))
+				Expect(lrp.AppURIs).To(Equal(`[{"hostname":"bumblebee.example.com","port":8000},{"hostname":"transformers.example.com","port":7070}]`))
 			})
 
 			It("should set the ports", func() {

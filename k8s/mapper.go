@@ -36,16 +36,11 @@ func StatefulSetToLRP(s appsv1.StatefulSet) *opi.LRP {
 		Command:          container.Command,
 		RunningInstances: int(s.Status.ReadyReplicas),
 		Ports:            ports,
-		Metadata: map[string]string{
-			cf.ProcessGUID: s.Annotations[cf.ProcessGUID],
-			cf.LastUpdated: s.Annotations[cf.LastUpdated],
-			cf.VcapAppUris: s.Annotations[cf.VcapAppUris],
-			cf.VcapAppID:   s.Annotations[cf.VcapAppID],
-			cf.VcapVersion: s.Annotations[cf.VcapVersion],
-			cf.VcapAppName: s.Annotations[cf.VcapAppName],
-		},
-		MemoryMB:     memory,
-		DiskMB:       disk,
-		VolumeMounts: volMounts,
+		LastUpdated:      s.Annotations[cf.LastUpdated],
+		AppURIs:          s.Annotations[cf.VcapAppUris],
+		AppGUID:          s.Annotations[cf.VcapAppID],
+		MemoryMB:         memory,
+		DiskMB:           disk,
+		VolumeMounts:     volMounts,
 	}
 }

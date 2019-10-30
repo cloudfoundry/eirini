@@ -110,11 +110,11 @@ var _ = Describe("Statefulset Desirer", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 
 				expectedKeys := map[string]string{
-					cf.ProcessGUID: "Baldur-guid",
-					cf.LastUpdated: lrp.Metadata[cf.LastUpdated],
+					cf.ProcessGUID: "guid_1234-version_1234",
+					cf.LastUpdated: lrp.LastUpdated,
 					cf.VcapAppUris: "my.example.route",
 					cf.VcapAppName: "Baldur",
-					cf.VcapAppID:   "guid_1234",
+					cf.VcapAppID:   "premium_app_guid_1234",
 					cf.VcapVersion: "version_1234",
 				}
 
@@ -125,12 +125,12 @@ var _ = Describe("Statefulset Desirer", func() {
 
 			It("should provide the process-guid to the pod annotations", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(cf.ProcessGUID, "Baldur-guid"))
+				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(cf.ProcessGUID, "guid_1234-version_1234"))
 			})
 
 			It("should provide the VcapAppId to the pod annotations", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(cf.VcapAppID, "guid_1234"))
+				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(cf.VcapAppID, "premium_app_guid_1234"))
 			})
 
 			It("should set seccomp pod annotation", func() {
@@ -323,11 +323,8 @@ var _ = Describe("Statefulset Desirer", func() {
 			It("updates the statefulset", func() {
 				lrp := &opi.LRP{
 					TargetInstances: 5,
-					Metadata: map[string]string{
-						cf.LastUpdated: "now",
-						cf.VcapAppUris: "new-route.io",
-						"another":      "thing",
-					},
+					LastUpdated:     "now",
+					AppURIs:         "new-route.io",
 				}
 
 				Expect(statefulSetDesirer.Update(lrp)).To(Succeed())
@@ -722,14 +719,8 @@ func createLRP(name, routes string) *opi.LRP {
 		DiskMB:           2048,
 		Image:            "busybox",
 		Ports:            []int32{8888, 9999},
-		Metadata: map[string]string{
-			cf.ProcessGUID: name + "-guid",
-			cf.LastUpdated: lastUpdated,
-			cf.VcapAppUris: routes,
-			cf.VcapAppName: name,
-			cf.VcapAppID:   "guid_1234",
-			cf.VcapVersion: "version_1234",
-		},
+		LastUpdated:      lastUpdated,
+		AppURIs:          routes,
 		VolumeMounts: []opi.VolumeMount{
 			{
 				ClaimName: "some-claim",

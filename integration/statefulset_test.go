@@ -183,12 +183,9 @@ func createLRP(name string) *opi.LRP {
 		SpaceName:       "space-foo",
 		TargetInstances: 2,
 		Image:           "busybox",
-		Metadata: map[string]string{
-			cf.ProcessGUID: name,
-			cf.VcapAppUris: string(routes),
-		},
-		LRPIdentifier: opi.LRPIdentifier{GUID: guid, Version: "version_" + guid},
-		LRP:           "metadata",
-		DiskMB:        2047,
+		AppURIs:         string(routes),
+		LRPIdentifier:   opi.LRPIdentifier{GUID: guid, Version: "version_" + guid},
+		LRP:             "metadata",
+		DiskMB:          2047,
 	}
 }

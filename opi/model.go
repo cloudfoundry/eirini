@@ -37,12 +37,13 @@ type LRP struct {
 	Ports            []int32
 	TargetInstances  int
 	RunningInstances int
-	Metadata         map[string]string
 	MemoryMB         int64
 	DiskMB           int64
 	CPUWeight        uint8
 	VolumeMounts     []VolumeMount
 	LRP              string
+	AppURIs          string
+	LastUpdated      string
 }
 
 type VolumeMount struct {
