@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -27,18 +26,18 @@ func StatefulSetToLRP(s appsv1.StatefulSet) *opi.LRP {
 
 	return &opi.LRP{
 		LRPIdentifier: opi.LRPIdentifier{
-			GUID:    s.Annotations[cf.VcapAppID],
-			Version: s.Annotations[cf.VcapVersion],
+			GUID:    s.Annotations[VcapAppID],
+			Version: s.Annotations[VcapVersion],
 		},
-		AppName:          s.Annotations[cf.VcapAppName],
-		SpaceName:        s.Annotations[cf.VcapSpaceName],
+		AppName:          s.Annotations[VcapAppName],
+		SpaceName:        s.Annotations[VcapSpaceName],
 		Image:            container.Image,
 		Command:          container.Command,
 		RunningInstances: int(s.Status.ReadyReplicas),
 		Ports:            ports,
-		LastUpdated:      s.Annotations[cf.LastUpdated],
-		AppURIs:          s.Annotations[cf.VcapAppUris],
-		AppGUID:          s.Annotations[cf.VcapAppID],
+		LastUpdated:      s.Annotations[LastUpdated],
+		AppURIs:          s.Annotations[VcapAppUris],
+		AppGUID:          s.Annotations[VcapAppID],
 		MemoryMB:         memory,
 		DiskMB:           disk,
 		VolumeMounts:     volMounts,

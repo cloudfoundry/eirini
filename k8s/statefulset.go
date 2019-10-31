@@ -6,7 +6,6 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/utils"
-	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/eirini/util"
@@ -25,6 +24,19 @@ const (
 	eventKilling          = "Killing"
 	eventFailedScheduling = "FailedScheduling"
 	appSourceType         = "APP"
+
+	VcapAppName   = "cloudfoundry.org/application_name"
+	VcapVersion   = "cloudfoundry.org/version"
+	VcapAppUris   = "cloudfoundry.org/application_uris"
+	VcapAppID     = "cloudfoundry.org/application_id"
+	VcapSpaceName = "cloudfoundry.org/space_name"
+	LastUpdated   = "cloudfoundry.org/last_updated"
+	ProcessGUID   = "cloudfoundry.org/process_guid"
+
+	GUID        = "cloudfoundry.org/guid"
+	AppGUID     = "cloudfoundry.org/app_guid"
+	ProcessType = "cloudfoundry.org/process_type"
+	SourceType  = "cloudfoundry.org/source_type"
 )
 
 //go:generate counterfeiter . PodListerDeleter
@@ -106,7 +118,7 @@ func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
 }
 
 func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index uint) error {
-	selector := fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)
+	selector := getSelector(identifier.GUID, identifier.Version)
 	options := meta.ListOptions{LabelSelector: selector}
 	statefulsets, err := m.StatefulSets.List(options)
 	if err != nil {
@@ -129,7 +141,7 @@ func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
 
 	count := int32(lrp.TargetInstances)
 	statefulSet.Spec.Replicas = &count
-	statefulSet.Annotations[cf.LastUpdated] = lrp.LastUpdated
+	statefulSet.Annotations[LastUpdated] = lrp.LastUpdated
 	statefulSet.Annotations[eirini.RegisteredRoutes] = lrp.AppURIs
 
 	_, err = m.StatefulSets.Update(statefulSet)
@@ -145,7 +157,7 @@ func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 }
 
 func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error) {
-	options := meta.ListOptions{LabelSelector: fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)}
+	options := meta.ListOptions{LabelSelector: getSelector(identifier.GUID, identifier.Version)}
 	statefulSet, err := m.StatefulSets.List(options)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
@@ -162,7 +174,7 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 }
 
 func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
-	options := meta.ListOptions{LabelSelector: fmt.Sprintf("guid=%s,version=%s", identifier.GUID, identifier.Version)}
+	options := meta.ListOptions{LabelSelector: getSelector(identifier.GUID, identifier.Version)}
 	pods, err := m.Pods.List(options)
 	if err != nil {
 		return []*opi.Instance{}, errors.Wrap(err, "failed to list pods")
@@ -291,8 +303,8 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
 					Annotations: map[string]string{
-						cf.ProcessGUID:                 lrp.ProcessGUID(),
-						cf.VcapAppID:                   lrp.AppGUID,
+						ProcessGUID:                    lrp.ProcessGUID(),
+						VcapAppID:                      lrp.AppGUID,
 						corev1.SeccompPodAnnotationKey: corev1.SeccompProfileRuntimeDefault,
 					},
 				},
@@ -334,9 +346,9 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	}
 
 	selectorLabels := map[string]string{
-		"guid":        lrp.GUID,
-		"version":     lrp.Version,
-		"source_type": appSourceType,
+		GUID:        lrp.GUID,
+		VcapVersion: lrp.Version,
+		SourceType:  appSourceType,
 	}
 
 	statefulSet.Spec.Selector = &meta.LabelSelector{
@@ -344,11 +356,11 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	}
 
 	labels := map[string]string{
-		"guid":                           lrp.GUID,
-		"process_type":                   lrp.ProcessType,
-		"version":                        lrp.Version,
-		"app_guid":                       lrp.AppGUID,
-		"source_type":                    appSourceType,
+		GUID:                             lrp.GUID,
+		ProcessType:                      lrp.ProcessType,
+		VcapVersion:                      lrp.Version,
+		AppGUID:                          lrp.AppGUID,
+		SourceType:                       appSourceType,
 		rootfspatcher.RootfsVersionLabel: m.RootfsVersion,
 	}
 
@@ -356,15 +368,15 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	statefulSet.Labels = labels
 
 	statefulSet.Annotations = map[string]string{
-		cf.VcapSpaceName:        lrp.SpaceName,
+		VcapSpaceName:           lrp.SpaceName,
 		eirini.OriginalRequest:  lrp.LRP,
 		eirini.RegisteredRoutes: lrp.AppURIs,
-		cf.VcapAppID:            lrp.AppGUID,
-		cf.VcapVersion:          lrp.Version,
-		cf.LastUpdated:          lrp.LastUpdated,
-		cf.ProcessGUID:          lrp.ProcessGUID(),
-		cf.VcapAppUris:          lrp.AppURIs,
-		cf.VcapAppName:          lrp.AppName,
+		VcapAppID:               lrp.AppGUID,
+		VcapVersion:             lrp.Version,
+		LastUpdated:             lrp.LastUpdated,
+		ProcessGUID:             lrp.ProcessGUID(),
+		VcapAppUris:             lrp.AppURIs,
+		VcapAppName:             lrp.AppName,
 	}
 
 	return statefulSet
@@ -388,4 +400,12 @@ func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev
 		})
 	}
 	return volumes, volumeMounts
+}
+
+func getSelector(guid, version string) string {
+	return fmt.Sprintf(
+		"%s=%s,%s=%s",
+		GUID, guid,
+		VcapVersion, version,
+	)
 }

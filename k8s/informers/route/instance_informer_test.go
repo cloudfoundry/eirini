@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/k8s"
 	. "code.cloudfoundry.org/eirini/k8s/informers/route"
-	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
@@ -50,9 +50,9 @@ var _ = Describe("InstanceChangeInformer", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 				Labels: map[string]string{
-					"guid": name + "-guid",
+					k8s.GUID: name + "-guid",
 				},
-				Annotations: map[string]string{cf.ProcessGUID: name + "-anno"},
+				Annotations: map[string]string{k8s.ProcessGUID: name + "-anno"},
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind: "StatefulSet",

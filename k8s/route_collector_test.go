@@ -3,6 +3,7 @@ package k8s_test
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/lager"
@@ -42,7 +43,7 @@ var _ = Describe("RouteCollector", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 				Labels: map[string]string{
-					"guid": name + "-guid",
+					GUID: fmt.Sprintf("%s-guid", name),
 				},
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: "apps/v1",

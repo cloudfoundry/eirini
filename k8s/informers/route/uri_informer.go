@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
@@ -46,7 +47,7 @@ func NewRouteMessage(pod *corev1.Pod, port uint32, routes eiriniroute.Routes) (*
 		Routes: eiriniroute.Routes{
 			UnregisteredRoutes: routes.UnregisteredRoutes,
 		},
-		Name:       pod.Labels["guid"],
+		Name:       pod.Labels[k8s.GUID],
 		InstanceID: pod.Name,
 		Address:    pod.Status.PodIP,
 		Port:       port,
@@ -93,7 +94,7 @@ func (c *URIChangeInformer) onAnnotationUpdate(oldObj, updatedObj interface{}, w
 }
 
 func (c *URIChangeInformer) onUpdate(oldStatefulSet, updatedStatefulSet *appsv1.StatefulSet, work chan<- *eiriniroute.Message) {
-	loggerSession := c.Logger.Session("statefulset-update", lager.Data{"guid": updatedStatefulSet.Spec.Template.Annotations[cf.ProcessGUID]})
+	loggerSession := c.Logger.Session("statefulset-update", lager.Data{"guid": updatedStatefulSet.Spec.Template.Annotations[k8s.ProcessGUID]})
 
 	updatedSet, err := decodeRoutesAsSet(updatedStatefulSet)
 	if err != nil {
@@ -138,7 +139,7 @@ func groupRoutesByPort(remove, add set.Set) portGroup {
 
 func (c *URIChangeInformer) onDelete(obj interface{}, work chan<- *eiriniroute.Message) {
 	deletedStatefulSet := obj.(*appsv1.StatefulSet)
-	loggerSession := c.Logger.Session("statefulset-delete", lager.Data{"guid": deletedStatefulSet.Spec.Template.Annotations[cf.ProcessGUID]})
+	loggerSession := c.Logger.Session("statefulset-delete", lager.Data{"guid": deletedStatefulSet.Spec.Template.Annotations[k8s.ProcessGUID]})
 
 	routeSet, err := decodeRoutesAsSet(deletedStatefulSet)
 	if err != nil {

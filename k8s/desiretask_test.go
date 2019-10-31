@@ -32,8 +32,8 @@ var _ = Describe("Desiretask", func() {
 	assertGeneralSpec := func(job *batch.Job) {
 
 		labels := map[string]string{
-			"guid":        "env-app-id",
-			"source_type": "STG",
+			GUID:       "env-app-id",
+			SourceType: "STG",
 		}
 		automountServiceAccountToken := false
 		Expect(job.Name).To(Equal("the-stage-is-yours"))

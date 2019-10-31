@@ -9,7 +9,6 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 )
 
@@ -22,13 +21,13 @@ var _ = Describe("Mapper", func() {
 			ObjectMeta: meta.ObjectMeta{
 				Name: "baldur",
 				Annotations: map[string]string{
-					cf.ProcessGUID:   "Baldur-guid",
-					cf.LastUpdated:   "last-updated-some-time-ago",
-					cf.VcapAppUris:   "my.example.route",
-					cf.VcapAppID:     "guid_1234",
-					cf.VcapVersion:   "version_1234",
-					cf.VcapAppName:   "Baldur",
-					cf.VcapSpaceName: "space-foo",
+					ProcessGUID:   "Baldur-guid",
+					LastUpdated:   "last-updated-some-time-ago",
+					VcapAppUris:   "my.example.route",
+					VcapAppID:     "guid_1234",
+					VcapVersion:   "version_1234",
+					VcapAppName:   "Baldur",
+					VcapSpaceName: "space-foo",
 				},
 			},
 			Spec: appsv1.StatefulSetSpec{

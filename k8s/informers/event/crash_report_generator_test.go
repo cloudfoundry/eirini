@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"code.cloudfoundry.org/eirini/events"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/event"
-	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	v1 "k8s.io/api/core/v1"
@@ -255,7 +255,7 @@ func newPod(status v1.ContainerStatus) *v1.Pod {
 		ObjectMeta: meta.ObjectMeta{
 			Name: fmt.Sprintf("%s-%d", name, 0),
 			Annotations: map[string]string{
-				cf.ProcessGUID: fmt.Sprintf("%s-anno", name),
+				k8s.ProcessGUID: fmt.Sprintf("%s-anno", name),
 			},
 			OwnerReferences: []meta.OwnerReference{
 				{

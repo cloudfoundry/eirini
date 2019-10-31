@@ -3,7 +3,6 @@ package event
 import (
 	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
@@ -21,7 +20,7 @@ func (DefaultCrashReportGenerator) Generate(pod *v1.Pod, clientset kubernetes.In
 
 	_, err := util.ParseAppIndex(pod.Name)
 	if err != nil {
-		logger.Error("failed-to-parse-app-index", err, lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[cf.ProcessGUID]})
+		logger.Error("failed-to-parse-app-index", err, lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[k8s.ProcessGUID]})
 		return events.CrashReport{}, false
 	}
 
@@ -44,7 +43,7 @@ func (DefaultCrashReportGenerator) Generate(pod *v1.Pod, clientset kubernetes.In
 func generateReportForTerminatedPod(pod *v1.Pod, clientset kubernetes.Interface, logger lager.Logger) (events.CrashReport, bool) {
 	podEvents, err := k8s.GetEvents(clientset.CoreV1().Events(pod.Namespace), *pod)
 	if err != nil {
-		logger.Error("failed-to-get-k8s-events", err, lager.Data{"guid": pod.Annotations[cf.ProcessGUID]})
+		logger.Error("failed-to-get-k8s-events", err, lager.Data{"guid": pod.Annotations[k8s.ProcessGUID]})
 		return events.CrashReport{}, false
 	}
 	if k8s.IsStopped(podEvents) {
@@ -66,7 +65,7 @@ func generateReport(
 	container := pod.Status.ContainerStatuses[0]
 
 	return events.CrashReport{
-		ProcessGUID: pod.Annotations[cf.ProcessGUID],
+		ProcessGUID: pod.Annotations[k8s.ProcessGUID],
 		AppCrashedRequest: cc_messages.AppCrashedRequest{
 			Reason:          reason,
 			Instance:        pod.Name,

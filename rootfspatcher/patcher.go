@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const RootfsVersionLabel = "rootfs-version"
+const RootfsVersionLabel = "cloudfoundry.org/rootfs-version"
 
 //go:generate counterfeiter . StatefulSetUpdaterLister
 type StatefulSetUpdaterLister interface {

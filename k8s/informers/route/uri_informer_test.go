@@ -18,8 +18,8 @@ import (
 	testcore "k8s.io/client-go/testing"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/k8s"
 	. "code.cloudfoundry.org/eirini/k8s/informers/route"
-	"code.cloudfoundry.org/eirini/models/cf"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -55,8 +55,8 @@ var _ = Describe("URIChangeInformer", func() {
 					},
 				},
 				Labels: map[string]string{
-					"name": "the-app-name",
-					"guid": name + "-guid",
+					"name":   "the-app-name",
+					k8s.GUID: name + "-guid",
 				},
 			},
 			Spec: corev1.PodSpec{
@@ -128,7 +128,7 @@ var _ = Describe("URIChangeInformer", func() {
 				Template: corev1.PodTemplateSpec{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							cf.ProcessGUID: "myguid",
+							k8s.ProcessGUID: "myguid",
 						},
 					},
 				},

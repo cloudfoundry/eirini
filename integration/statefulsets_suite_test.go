@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -160,29 +161,32 @@ func statefulSets() types.StatefulSetInterface {
 }
 
 func getStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
-	ss, getErr := statefulSets().List(metav1.ListOptions{LabelSelector: labelSelector(lrp)})
+	ss, getErr := statefulSets().List(metav1.ListOptions{LabelSelector: labelSelector(lrp.LRPIdentifier)})
 	Expect(getErr).NotTo(HaveOccurred())
 	return &ss.Items[0]
 }
 
-func labelSelector(lrp *opi.LRP) string {
-	return fmt.Sprintf("guid=%s,version=%s", lrp.LRPIdentifier.GUID, lrp.LRPIdentifier.Version)
+func labelSelector(identifier opi.LRPIdentifier) string {
+	return fmt.Sprintf(
+		"%s=%s,%s=%s",
+		k8s.GUID, identifier.GUID,
+		k8s.VcapVersion, identifier.Version,
+	)
 }
 
 func cleanupStatefulSet(lrp *opi.LRP) {
 	backgroundPropagation := metav1.DeletePropagationBackground
 	deleteOptions := &metav1.DeleteOptions{PropagationPolicy: &backgroundPropagation}
-	listOptions := metav1.ListOptions{LabelSelector: labelSelector(lrp)}
+	listOptions := metav1.ListOptions{LabelSelector: labelSelector(lrp.LRPIdentifier)}
 	err := statefulSets().DeleteCollection(deleteOptions, listOptions)
 	Expect(err).ToNot(HaveOccurred())
 }
 
 func listAllStatefulSets(lrp1, lrp2 *opi.LRP) []appsv1.StatefulSet {
-	labels := fmt.Sprintf("guid in (%s, %s),version in (%s, %s)",
-		lrp1.LRPIdentifier.GUID,
-		lrp2.LRPIdentifier.GUID,
-		lrp1.LRPIdentifier.Version,
-		lrp2.LRPIdentifier.Version,
+	labels := fmt.Sprintf(
+		"%s in (%s, %s),%s in (%s, %s)",
+		k8s.GUID, lrp1.LRPIdentifier.GUID, lrp2.LRPIdentifier.GUID,
+		k8s.VcapVersion, lrp1.LRPIdentifier.Version, lrp2.LRPIdentifier.Version,
 	)
 
 	list, err := statefulSets().List(metav1.ListOptions{LabelSelector: labels})
@@ -204,8 +208,7 @@ func listPodsByLabel(labelSelector string) []corev1.Pod {
 }
 
 func listPods(lrpIdentifier opi.LRPIdentifier) []corev1.Pod {
-	labelSelector := fmt.Sprintf("guid=%s,version=%s", lrpIdentifier.GUID, lrpIdentifier.Version)
-	return listPodsByLabel(labelSelector)
+	return listPodsByLabel(labelSelector(lrpIdentifier))
 }
 
 func podNamesFromPods(pods []corev1.Pod) []string {

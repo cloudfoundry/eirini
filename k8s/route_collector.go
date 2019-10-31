@@ -50,7 +50,7 @@ func (c RouteCollector) Collect() ([]route.Message, error) {
 		for _, r := range routes {
 			routeMessage := route.Message{
 				InstanceID: p.Name,
-				Name:       p.Labels["guid"],
+				Name:       p.Labels[GUID],
 				Address:    p.Status.PodIP,
 				Port:       uint32(r.Port),
 				TLSPort:    0,

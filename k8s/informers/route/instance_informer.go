@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
@@ -53,7 +54,7 @@ func (c *InstanceChangeInformer) Start(work chan<- *eiriniroute.Message) {
 func (c *InstanceChangeInformer) onPodUpdate(oldObj, updatedObj interface{}, work chan<- *eiriniroute.Message) {
 	updatedPod := updatedObj.(*v1.Pod)
 	oldPod := oldObj.(*v1.Pod)
-	loggerSession := c.Logger.Session("pod-update", lager.Data{"pod-name": updatedPod.Name, "guid": updatedPod.Annotations[cf.ProcessGUID]})
+	loggerSession := c.Logger.Session("pod-update", lager.Data{"pod-name": updatedPod.Name, "guid": updatedPod.Annotations[k8s.ProcessGUID]})
 
 	userDefinedRoutes, err := c.getUserDefinedRoutes(updatedPod)
 	if err != nil {
@@ -82,7 +83,7 @@ func (c *InstanceChangeInformer) onPodUpdate(oldObj, updatedObj interface{}, wor
 }
 
 func (c *InstanceChangeInformer) unregisterPodRoutes(pod *v1.Pod, userDefinedRoutes []cf.Route, work chan<- *eiriniroute.Message) {
-	loggerSession := c.Logger.Session("pod-delete", lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[cf.ProcessGUID]})
+	loggerSession := c.Logger.Session("pod-delete", lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[k8s.ProcessGUID]})
 
 	for _, r := range userDefinedRoutes {
 		routes, err := NewRouteMessage(
