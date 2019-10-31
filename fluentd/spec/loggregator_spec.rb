@@ -39,7 +39,7 @@ RSpec.describe 'Loggregator Fluentd' do
                       'container_name' => 'test_container',
                       'host' => 'test_host',
                       'labels' => {
-                          'guid' => 'test_owner',
+                        'cloudfoundry.org/guid' => 'test_owner',
                       },
                     }
                   }]], '')
@@ -81,7 +81,7 @@ RSpec.describe 'Loggregator Fluentd' do
                         'container_name' => 'test_container',
                         'host' => 'test_host',
                         'labels' => {
-                            'guid' => 'test_owner',
+                          'cloudfoundry.org/guid' => 'test_owner',
                         },
                       }
                     }]], '')
@@ -122,7 +122,7 @@ RSpec.describe 'Loggregator Fluentd' do
                   'container_name' => 'test_container',
                   'host' => 'test_host',
                   'labels' => {
-                      'source_type' => 'STG',
+                    'cloudfoundry.org/source_type' => 'STG',
                   },
               }
           }]], '')

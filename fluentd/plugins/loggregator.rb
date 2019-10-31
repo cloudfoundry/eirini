@@ -6,6 +6,10 @@ require 'envelope_pb'
 
 module Fluent
   class LoggregatorOutput < Output
+
+    LABEL_GUID = 'cloudfoundry.org/guid'.freeze
+    LABEL_SOURCE_TYPE = 'cloudfoundry.org/source_type'.freeze
+
     Plugin.register_output('loggregator', self)
 
     def load_certs(conf)
@@ -38,12 +42,12 @@ module Fluent
 
         k8s_labels = record.fetch('kubernetes', {}).fetch('labels', {})
 
-        env.source_id = k8s_labels.fetch('guid', '')
+        env.source_id = k8s_labels.fetch(LABEL_GUID, '')
 
         env.instance_id = get_instance_id(record)
 
         # Use a default source type APP if there's no kubernetes label.
-        source_type = k8s_labels.fetch('source_type', 'APP')
+        source_type = k8s_labels.fetch(LABEL_SOURCE_TYPE, 'APP')
 
         source_type = source_type == 'APP' ? 'APP/PROC/WEB' : source_type
         env.tags['source_type'] = source_type
@@ -159,10 +163,6 @@ module Fluent
         ownerReferences[0]['kind'],
         ownerReferences[0]['name']
       )
-    end
-
-    def get_annotations_app_name(obj)
-      obj.fetch('metadata', {}).fetch('annotations', {}).fetch('application_name', '')
     end
 
     def source_id(namespace_name, resource_type, resource_name)
