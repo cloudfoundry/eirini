@@ -26,9 +26,6 @@ const (
 	EnvCFInstancePort       = "CF_INSTANCE_PORT"
 	EnvCFInstancePorts      = "CF_INSTANCE_PORTS"
 
-	RegisteredRoutes = "cloudfoundry.org/routes"
-	OriginalRequest  = "cloudfoundry.org/original_request"
-
 	RecipeBuildPacksDir    = "/var/lib/buildpacks"
 	RecipeBuildPacksName   = "recipe-buildpacks"
 	RecipeWorkspaceDir     = "/recipe_workspace"

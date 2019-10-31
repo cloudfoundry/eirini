@@ -87,7 +87,7 @@ func (c *metricsCollector) collectMetrics(pods []apiv1.Pod) []metrics.Message {
 		diskUsage := diskMetrics[pod.Name]
 
 		messages = append(messages, metrics.Message{
-			AppID:       pod.Labels[GUID],
+			AppID:       pod.Labels[LabelGUID],
 			IndexID:     strconv.Itoa(indexID),
 			CPU:         cpuPercentage,
 			Memory:      memoryValue,

@@ -21,13 +21,13 @@ var _ = Describe("Mapper", func() {
 			ObjectMeta: meta.ObjectMeta{
 				Name: "baldur",
 				Annotations: map[string]string{
-					ProcessGUID:   "Baldur-guid",
-					LastUpdated:   "last-updated-some-time-ago",
-					VcapAppUris:   "my.example.route",
-					VcapAppID:     "guid_1234",
-					VcapVersion:   "version_1234",
-					VcapAppName:   "Baldur",
-					VcapSpaceName: "space-foo",
+					AnnotationProcessGUID: "Baldur-guid",
+					AnnotationLastUpdated: "last-updated-some-time-ago",
+					AnnotationAppUris:     "my.example.route",
+					AnnotationAppID:       "guid_1234",
+					AnnotationVersion:     "version_1234",
+					AnnotationAppName:     "Baldur",
+					AnnotationSpaceName:   "space-foo",
 				},
 			},
 			Spec: appsv1.StatefulSetSpec{

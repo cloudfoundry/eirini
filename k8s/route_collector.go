@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
@@ -50,7 +49,7 @@ func (c RouteCollector) Collect() ([]route.Message, error) {
 		for _, r := range routes {
 			routeMessage := route.Message{
 				InstanceID: p.Name,
-				Name:       p.Labels[GUID],
+				Name:       p.Labels[LabelGUID],
 				Address:    p.Status.PodIP,
 				Port:       uint32(r.Port),
 				TLSPort:    0,
@@ -76,7 +75,7 @@ func (c RouteCollector) getRoutes(pod corev1.Pod, statefulsets map[string]appsv1
 	if !ok {
 		return nil, fmt.Errorf("statefulset for pod %s not found", pod.Name)
 	}
-	routeJSON, ok := s.Annotations[eirini.RegisteredRoutes]
+	routeJSON, ok := s.Annotations[AnnotationRegisteredRoutes]
 	if !ok {
 		return nil, fmt.Errorf("pod %s has no registered routes annotation", pod.Name)
 	}

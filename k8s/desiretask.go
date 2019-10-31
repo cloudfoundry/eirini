@@ -192,8 +192,8 @@ func toJob(task *opi.Task) *batch.Job {
 	job.Name = task.Env[eirini.EnvStagingGUID]
 
 	labels := map[string]string{
-		GUID:       task.Env[eirini.EnvAppID],
-		SourceType: stagingSourceType,
+		LabelGUID:       task.Env[eirini.EnvAppID],
+		LabelSourceType: stagingSourceType,
 	}
 
 	job.Spec.Template.Labels = labels

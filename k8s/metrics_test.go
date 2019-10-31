@@ -320,7 +320,7 @@ func createPod(podName string) *v1.Pod {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
 			Labels: map[string]string{
-				GUID: podName,
+				LabelGUID: podName,
 			},
 			UID: types.UID(podName + "-uid"),
 		},

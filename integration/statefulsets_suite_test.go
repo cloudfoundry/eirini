@@ -169,8 +169,8 @@ func getStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 func labelSelector(identifier opi.LRPIdentifier) string {
 	return fmt.Sprintf(
 		"%s=%s,%s=%s",
-		k8s.GUID, identifier.GUID,
-		k8s.VcapVersion, identifier.Version,
+		k8s.LabelGUID, identifier.GUID,
+		k8s.LabelVersion, identifier.Version,
 	)
 }
 
@@ -185,8 +185,8 @@ func cleanupStatefulSet(lrp *opi.LRP) {
 func listAllStatefulSets(lrp1, lrp2 *opi.LRP) []appsv1.StatefulSet {
 	labels := fmt.Sprintf(
 		"%s in (%s, %s),%s in (%s, %s)",
-		k8s.GUID, lrp1.LRPIdentifier.GUID, lrp2.LRPIdentifier.GUID,
-		k8s.VcapVersion, lrp1.LRPIdentifier.Version, lrp2.LRPIdentifier.Version,
+		k8s.LabelGUID, lrp1.LRPIdentifier.GUID, lrp2.LRPIdentifier.GUID,
+		k8s.LabelVersion, lrp1.LRPIdentifier.Version, lrp2.LRPIdentifier.Version,
 	)
 
 	list, err := statefulSets().List(metav1.ListOptions{LabelSelector: labels})

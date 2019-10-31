@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
@@ -43,7 +42,7 @@ var _ = Describe("RouteCollector", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 				Labels: map[string]string{
-					GUID: fmt.Sprintf("%s-guid", name),
+					LabelGUID: fmt.Sprintf("%s-guid", name),
 				},
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: "apps/v1",
@@ -67,7 +66,7 @@ var _ = Describe("RouteCollector", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 				Annotations: map[string]string{
-					eirini.RegisteredRoutes: routes,
+					AnnotationRegisteredRoutes: routes,
 				},
 			},
 		}
@@ -161,7 +160,7 @@ var _ = Describe("RouteCollector", func() {
 					{Hostname: "bar.example.com", Port: 443},
 				})
 				Expect(marshalErr).ToNot(HaveOccurred())
-				statefulsets[0].Annotations[eirini.RegisteredRoutes] = string(routes)
+				statefulsets[0].Annotations[AnnotationRegisteredRoutes] = string(routes)
 			})
 
 			It("should return a route message for each registered route", func() {
@@ -347,7 +346,7 @@ var _ = Describe("RouteCollector", func() {
 
 		Context("and a statefulset has invalid routes", func() {
 			BeforeEach(func() {
-				statefulsets[1].Annotations[eirini.RegisteredRoutes] = "{invalid json"
+				statefulsets[1].Annotations[AnnotationRegisteredRoutes] = "{invalid json"
 			})
 
 			It("should not return routes for that statefulset", func() {

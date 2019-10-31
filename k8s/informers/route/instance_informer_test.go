@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
 	. "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/route"
@@ -50,9 +49,9 @@ var _ = Describe("InstanceChangeInformer", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 				Labels: map[string]string{
-					k8s.GUID: name + "-guid",
+					k8s.LabelGUID: name + "-guid",
 				},
-				Annotations: map[string]string{k8s.ProcessGUID: name + "-anno"},
+				Annotations: map[string]string{k8s.AnnotationProcessGUID: name + "-anno"},
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind: "StatefulSet",
@@ -104,7 +103,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "mr-stateful",
 				Annotations: map[string]string{
-					eirini.RegisteredRoutes: `[
+					k8s.AnnotationRegisteredRoutes: `[
 						{
 							"hostname": "mr-stateful.50.60.70.80.nip.io",
 							"port": 8080

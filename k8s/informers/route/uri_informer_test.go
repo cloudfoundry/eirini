@@ -17,7 +17,6 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	testcore "k8s.io/client-go/testing"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
 	. "code.cloudfoundry.org/eirini/k8s/informers/route"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
@@ -55,8 +54,8 @@ var _ = Describe("URIChangeInformer", func() {
 					},
 				},
 				Labels: map[string]string{
-					"name":   "the-app-name",
-					k8s.GUID: name + "-guid",
+					"name":        "the-app-name",
+					k8s.LabelGUID: name + "-guid",
 				},
 			},
 			Spec: corev1.PodSpec{
@@ -86,7 +85,7 @@ var _ = Describe("URIChangeInformer", func() {
 		thecopy := *st
 
 		thecopy.Annotations = map[string]string{
-			eirini.RegisteredRoutes: routes,
+			k8s.AnnotationRegisteredRoutes: routes,
 		}
 		return &thecopy
 	}
@@ -107,7 +106,7 @@ var _ = Describe("URIChangeInformer", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "mr-stateful",
 				Annotations: map[string]string{
-					eirini.RegisteredRoutes: `[
+					k8s.AnnotationRegisteredRoutes: `[
 						{
 							"hostname": "mr-stateful.50.60.70.80.nip.io",
 							"port": 8080
@@ -128,7 +127,7 @@ var _ = Describe("URIChangeInformer", func() {
 				Template: corev1.PodTemplateSpec{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							k8s.ProcessGUID: "myguid",
+							k8s.AnnotationProcessGUID: "myguid",
 						},
 					},
 				},
@@ -484,7 +483,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 	Context("When decoding updated user defined routes fails", func() {
 		BeforeEach(func() {
-			statefulset.Annotations[eirini.RegisteredRoutes] = "[]"
+			statefulset.Annotations[k8s.AnnotationRegisteredRoutes] = "[]"
 		})
 
 		JustBeforeEach(func() {
@@ -511,7 +510,7 @@ var _ = Describe("URIChangeInformer", func() {
 
 	Context("When decoding old user defined routes fails", func() {
 		BeforeEach(func() {
-			statefulset.Annotations[eirini.RegisteredRoutes] = "["
+			statefulset.Annotations[k8s.AnnotationRegisteredRoutes] = "["
 		})
 
 		JustBeforeEach(func() {

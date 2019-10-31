@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 
-	"code.cloudfoundry.org/eirini"
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/opi"
@@ -92,29 +91,29 @@ var _ = Describe("Statefulset Desirer", func() {
 
 			It("should provide original request to the statefulset annotation", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Annotations).To(HaveKeyWithValue(eirini.OriginalRequest, "original request"))
+				Expect(statefulSet.Annotations).To(HaveKeyWithValue(AnnotationOriginalRequest, "original request"))
 			})
 
 			It("should provide registered routes to the statefulset annotation", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Annotations).To(HaveKeyWithValue(eirini.RegisteredRoutes, "my.example.route"))
+				Expect(statefulSet.Annotations).To(HaveKeyWithValue(AnnotationRegisteredRoutes, "my.example.route"))
 			})
 
 			It("should provide space name to the statefulset annotation", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Annotations).To(HaveKeyWithValue(VcapSpaceName, "space-foo"))
+				Expect(statefulSet.Annotations).To(HaveKeyWithValue(AnnotationSpaceName, "space-foo"))
 			})
 
 			It("should provide LRP metadata to the statefulset annotation", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 
 				expectedKeys := map[string]string{
-					ProcessGUID: "guid_1234-version_1234",
-					LastUpdated: lrp.LastUpdated,
-					VcapAppUris: "my.example.route",
-					VcapAppName: "Baldur",
-					VcapAppID:   "premium_app_guid_1234",
-					VcapVersion: "version_1234",
+					AnnotationProcessGUID: "guid_1234-version_1234",
+					AnnotationLastUpdated: lrp.LastUpdated,
+					AnnotationAppUris:     "my.example.route",
+					AnnotationAppName:     "Baldur",
+					AnnotationAppID:       "premium_app_guid_1234",
+					AnnotationVersion:     "version_1234",
 				}
 
 				for k, v := range expectedKeys {
@@ -124,12 +123,12 @@ var _ = Describe("Statefulset Desirer", func() {
 
 			It("should provide the process-guid to the pod annotations", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(ProcessGUID, "guid_1234-version_1234"))
+				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(AnnotationProcessGUID, "guid_1234-version_1234"))
 			})
 
 			It("should provide the VcapAppId to the pod annotations", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(VcapAppID, "premium_app_guid_1234"))
+				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(AnnotationAppID, "premium_app_guid_1234"))
 			})
 
 			It("should set seccomp pod annotation", func() {
@@ -173,47 +172,47 @@ var _ = Describe("Statefulset Desirer", func() {
 			It("should set app_guid as a label", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 
-				Expect(statefulSet.Labels).To(HaveKeyWithValue(AppGUID, "premium_app_guid_1234"))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(AppGUID, "premium_app_guid_1234"))
+				Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelAppGUID, "premium_app_guid_1234"))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelAppGUID, "premium_app_guid_1234"))
 			})
 
 			It("should set process_type as a label", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Labels).To(HaveKeyWithValue(ProcessType, "worker"))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(ProcessType, "worker"))
+				Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelProcessType, "worker"))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelProcessType, "worker"))
 			})
 
 			It("should set guid as a label", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Labels).To(HaveKeyWithValue(GUID, "guid_1234"))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(GUID, "guid_1234"))
+				Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelGUID, "guid_1234"))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelGUID, "guid_1234"))
 			})
 
 			It("should set version as a label", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Labels).To(HaveKeyWithValue(VcapVersion, "version_1234"))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(VcapVersion, "version_1234"))
+				Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelVersion, "version_1234"))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelVersion, "version_1234"))
 			})
 
 			It("should set source_type as a label", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Labels).To(HaveKeyWithValue(SourceType, "APP"))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(SourceType, "APP"))
+				Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelSourceType, "APP"))
+				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelSourceType, "APP"))
 			})
 
 			It("should set guid as a label selector", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(GUID, "guid_1234"))
+				Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelGUID, "guid_1234"))
 			})
 
 			It("should set version as a label selector", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(VcapVersion, "version_1234"))
+				Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelVersion, "version_1234"))
 			})
 
 			It("should set source_type as a label selector", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(SourceType, "APP"))
+				Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelSourceType, "APP"))
 			})
 
 			It("should set disk limit", func() {
@@ -295,9 +294,9 @@ var _ = Describe("Statefulset Desirer", func() {
 							ObjectMeta: meta.ObjectMeta{
 								Name: "baldur",
 								Annotations: map[string]string{
-									ProcessGUID:             "Baldur-guid",
-									LastUpdated:             "never",
-									eirini.RegisteredRoutes: "myroute.io",
+									AnnotationProcessGUID:      "Baldur-guid",
+									AnnotationLastUpdated:      "never",
+									AnnotationRegisteredRoutes: "myroute.io",
 								},
 							},
 							Spec: appsv1.StatefulSetSpec{
@@ -330,8 +329,8 @@ var _ = Describe("Statefulset Desirer", func() {
 				Expect(statefulSetClient.UpdateCallCount()).To(Equal(1))
 
 				st := statefulSetClient.UpdateArgsForCall(0)
-				Expect(st.GetAnnotations()).To(HaveKeyWithValue(LastUpdated, "now"))
-				Expect(st.GetAnnotations()).To(HaveKeyWithValue(eirini.RegisteredRoutes, "new-route.io"))
+				Expect(st.GetAnnotations()).To(HaveKeyWithValue(AnnotationLastUpdated, "now"))
+				Expect(st.GetAnnotations()).To(HaveKeyWithValue(AnnotationRegisteredRoutes, "new-route.io"))
 				Expect(st.GetAnnotations()).NotTo(HaveKey("another"))
 				Expect(*st.Spec.Replicas).To(Equal(int32(5)))
 			})

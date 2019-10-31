@@ -255,7 +255,7 @@ func newPod(status v1.ContainerStatus) *v1.Pod {
 		ObjectMeta: meta.ObjectMeta{
 			Name: fmt.Sprintf("%s-%d", name, 0),
 			Annotations: map[string]string{
-				k8s.ProcessGUID: fmt.Sprintf("%s-anno", name),
+				k8s.AnnotationProcessGUID: fmt.Sprintf("%s-anno", name),
 			},
 			OwnerReferences: []meta.OwnerReference{
 				{
