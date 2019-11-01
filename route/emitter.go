@@ -3,7 +3,6 @@ package route
 import (
 	"encoding/json"
 
-	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	nats "github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
@@ -26,35 +25,29 @@ func (p *NATSPublisher) Publish(subj string, data []byte) error {
 	return p.NatsClient.Publish(subj, data)
 }
 
-type Emitter struct {
+type MessageEmitter struct {
 	publisher Publisher
-	scheduler util.TaskScheduler
-	work      <-chan *Message
 	logger    lager.Logger
 }
 
-func NewEmitter(publisher Publisher, workChannel <-chan *Message, scheduler util.TaskScheduler, logger lager.Logger) *Emitter {
-	return &Emitter{
+func NewMessageEmitter(publisher Publisher, logger lager.Logger) MessageEmitter {
+	return MessageEmitter{
 		publisher: publisher,
-		scheduler: scheduler,
-		work:      workChannel,
 		logger:    logger,
 	}
 }
 
-func (e *Emitter) Start() {
-	e.scheduler.Schedule(func() error {
-		e.emit(<-e.work)
-		return nil
-	})
-}
+func (e MessageEmitter) Emit(route Message) {
+	if len(route.Address) == 0 {
+		e.logger.Debug("route-address-missing", lager.Data{"app-name": route.Name, "instance-id": route.InstanceID})
+		return
+	}
 
-func (e *Emitter) emit(route *Message) {
 	e.registerRoutes(route)
 	e.unregisterRoutes(route)
 }
 
-func (e *Emitter) registerRoutes(route *Message) {
+func (e MessageEmitter) registerRoutes(route Message) {
 	if len(route.RegisteredRoutes) == 0 {
 		return
 	}
@@ -65,7 +58,7 @@ func (e *Emitter) registerRoutes(route *Message) {
 	}
 }
 
-func (e *Emitter) unregisterRoutes(route *Message) {
+func (e MessageEmitter) unregisterRoutes(route Message) {
 	if len(route.UnregisteredRoutes) == 0 {
 		return
 	}
@@ -76,11 +69,7 @@ func (e *Emitter) unregisterRoutes(route *Message) {
 	}
 }
 
-func (e *Emitter) publish(subject string, route *Message) error {
-	if len(route.Address) == 0 {
-		panic(errors.New("route address missing"))
-	}
-
+func (e MessageEmitter) publish(subject string, route Message) error {
 	message := RegistryMessage{
 		Host:              route.Address,
 		Port:              route.Port,

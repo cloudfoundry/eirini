@@ -3,13 +3,14 @@ package statefulsets_test
 import (
 	"encoding/json"
 	"sync"
-	"time"
 
 	"code.cloudfoundry.org/eirini/k8s"
 	informerroute "code.cloudfoundry.org/eirini/k8s/informers/route"
+	"code.cloudfoundry.org/eirini/k8s/informers/route/event"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/route"
+	"code.cloudfoundry.org/eirini/route/routefakes"
 	"code.cloudfoundry.org/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
@@ -127,9 +128,9 @@ fi;`,
 
 	Context("InstanceInformer", func() {
 		var (
-			workChan   chan *route.Message
-			stopChan   chan struct{}
-			informerWG sync.WaitGroup
+			stopChan         chan struct{}
+			informerWG       sync.WaitGroup
+			fakeRouteEmitter *routefakes.FakeEmitter
 		)
 
 		BeforeEach(func() {
@@ -144,19 +145,31 @@ fi;`,
 			}, timeout).Should(BeTrue())
 
 			stopChan = make(chan struct{})
-			workChan = make(chan *route.Message, 10)
 			informerWG = sync.WaitGroup{}
 			informerWG.Add(1)
 
+			fakeRouteEmitter = new(routefakes.FakeEmitter)
 			logger := lagertest.NewTestLogger("instance-informer-test")
-			informer := &informerroute.URIChangeInformer{
-				Client:    clientset,
-				Cancel:    stopChan,
-				Namespace: namespace,
-				Logger:    logger,
+			updateEventHandler := event.URIAnnotationUpdateHandler{
+				Pods:         clientset.CoreV1().Pods(namespace),
+				Logger:       logger,
+				RouteEmitter: fakeRouteEmitter,
 			}
+			deleteEventHandler := event.StatefulSetDeleteHandler{
+				Pods:         clientset.CoreV1().Pods(namespace),
+				Logger:       logger,
+				RouteEmitter: fakeRouteEmitter,
+			}
+			informer := &informerroute.URIChangeInformer{
+				Client:        clientset,
+				Cancel:        stopChan,
+				Namespace:     namespace,
+				UpdateHandler: updateEventHandler,
+				DeleteHandler: deleteEventHandler,
+			}
+
 			go func() {
-				informer.Start(workChan)
+				informer.Start()
 				informerWG.Done()
 			}()
 		})
@@ -164,14 +177,20 @@ fi;`,
 		AfterEach(func() {
 			close(stopChan)
 			informerWG.Wait()
-			close(workChan)
 		})
 
-		When("ann app is stopped", func() {
+		When("an app is stopped", func() {
 			It("sends unregister routes message", func() {
 				Expect(desirer.Stop(odinLRP.LRPIdentifier)).To(Succeed())
 				pods := listPods(odinLRP.LRPIdentifier)
-				Eventually(workChan, timeout).Should(Receive(Equal(&route.Message{
+
+				Eventually(fakeRouteEmitter.EmitCallCount).Should(Equal(2))
+
+				allArgs := []route.Message{
+					fakeRouteEmitter.EmitArgsForCall(0),
+					fakeRouteEmitter.EmitArgsForCall(1),
+				}
+				Expect(allArgs).To(ContainElement(route.Message{
 					Routes: route.Routes{
 						UnregisteredRoutes: []string{"foo.example.com"},
 					},
@@ -180,12 +199,22 @@ fi;`,
 					Address:    pods[0].Status.PodIP,
 					Port:       8080,
 					TLSPort:    0,
-				})))
+				}))
+				Expect(allArgs).To(ContainElement(route.Message{
+					Routes: route.Routes{
+						UnregisteredRoutes: []string{"foo.example.com"},
+					},
+					InstanceID: pods[1].Name,
+					Name:       odinLRP.GUID,
+					Address:    pods[1].Status.PodIP,
+					Port:       8080,
+					TLSPort:    0,
+				}))
 			})
 		})
 
 		When("a new route is registered for an app", func() {
-			It("should send a regsiter route message with the new route", func() {
+			It("should send a register route message with the new route", func() {
 				routes, err := json.Marshal([]cf.Route{
 					{Hostname: "foo.example.com", Port: 8080},
 					{Hostname: "bar.example.com", Port: 9090},
@@ -194,7 +223,15 @@ fi;`,
 				odinLRP.AppURIs = string(routes)
 				Expect(desirer.Update(odinLRP)).To(Succeed())
 				pods := listPods(odinLRP.LRPIdentifier)
-				Eventually(workChan, 15*time.Second).Should(Receive(Equal(&route.Message{
+
+				Eventually(fakeRouteEmitter.EmitCallCount).Should(Equal(4))
+				allArgs := []route.Message{
+					fakeRouteEmitter.EmitArgsForCall(0),
+					fakeRouteEmitter.EmitArgsForCall(1),
+					fakeRouteEmitter.EmitArgsForCall(2),
+					fakeRouteEmitter.EmitArgsForCall(3),
+				}
+				Expect(allArgs).To(ContainElement(route.Message{
 					Routes: route.Routes{
 						RegisteredRoutes: []string{"bar.example.com"},
 					},
@@ -203,17 +240,16 @@ fi;`,
 					Address:    pods[0].Status.PodIP,
 					Port:       9090,
 					TLSPort:    0,
-				})))
-
+				}))
 			})
 		})
 	})
 
 	Context("URIChangeInformer", func() {
 		var (
-			workChan   chan *route.Message
-			stopChan   chan struct{}
-			informerWG sync.WaitGroup
+			stopChan         chan struct{}
+			informerWG       sync.WaitGroup
+			fakeRouteEmitter *routefakes.FakeEmitter
 		)
 
 		BeforeEach(func() {
@@ -228,19 +264,24 @@ fi;`,
 			}, timeout).Should(BeTrue())
 
 			stopChan = make(chan struct{})
-			workChan = make(chan *route.Message, 5)
 			informerWG = sync.WaitGroup{}
 			informerWG.Add(1)
 
 			logger := lagertest.NewTestLogger("instance-informer-test")
+			fakeRouteEmitter = new(routefakes.FakeEmitter)
+			updateEventHandler := event.PodUpdateHandler{
+				Client:       clientset.AppsV1().StatefulSets(namespace),
+				Logger:       logger,
+				RouteEmitter: fakeRouteEmitter,
+			}
 			informer := &informerroute.InstanceChangeInformer{
-				Client:    clientset,
-				Cancel:    stopChan,
-				Namespace: namespace,
-				Logger:    logger,
+				Client:        clientset,
+				Cancel:        stopChan,
+				Namespace:     namespace,
+				UpdateHandler: updateEventHandler,
 			}
 			go func() {
-				informer.Start(workChan)
+				informer.Start()
 				informerWG.Done()
 			}()
 		})
@@ -248,7 +289,6 @@ fi;`,
 		AfterEach(func() {
 			close(stopChan)
 			informerWG.Wait()
-			close(workChan)
 		})
 
 		When("the app is scaled down", func() {
@@ -257,7 +297,8 @@ fi;`,
 				odinLRP.TargetInstances = 1
 				Expect(desirer.Update(odinLRP)).To(Succeed())
 
-				Eventually(workChan, timeout).Should(Receive(Equal(&route.Message{
+				Eventually(fakeRouteEmitter.EmitCallCount, timeout).Should(Equal(1))
+				Expect(fakeRouteEmitter.EmitArgsForCall(0)).To(Equal(route.Message{
 					Routes: route.Routes{
 						UnregisteredRoutes: []string{"foo.example.com"},
 					},
@@ -266,7 +307,7 @@ fi;`,
 					Address:    pods[1].Status.PodIP,
 					Port:       8080,
 					TLSPort:    0,
-				})))
+				}))
 			})
 		})
 
@@ -275,7 +316,8 @@ fi;`,
 				pods := listPods(odinLRP.LRPIdentifier)
 				Expect(desirer.StopInstance(odinLRP.LRPIdentifier, 0)).To(Succeed())
 
-				Eventually(workChan, timeout).Should(Receive(Equal(&route.Message{
+				Eventually(fakeRouteEmitter.EmitCallCount, timeout).Should(Equal(1))
+				Expect(fakeRouteEmitter.EmitArgsForCall(0)).To(Equal(route.Message{
 					Routes: route.Routes{
 						UnregisteredRoutes: []string{"foo.example.com"},
 					},
@@ -284,7 +326,7 @@ fi;`,
 					Address:    pods[0].Status.PodIP,
 					Port:       8080,
 					TLSPort:    0,
-				})))
+				}))
 			})
 		})
 	})

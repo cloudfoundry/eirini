@@ -17,16 +17,13 @@ import (
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/k8s"
 	k8sevent "code.cloudfoundry.org/eirini/k8s/informers/event"
-	k8sroute "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/k8s/kubelet"
 	"code.cloudfoundry.org/eirini/metrics"
-	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/eirini/util"
 	loggregator "code.cloudfoundry.org/go-loggregator"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/tps/cc_client"
-	nats "github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
@@ -51,31 +48,11 @@ func connect(cmd *cobra.Command, args []string) {
 	}
 
 	cfg := setConfigFromFile(path)
-	envNATSPassword := os.Getenv("NATS_PASSWORD")
-	if envNATSPassword != "" {
-		cfg.Properties.NatsPassword = envNATSPassword
-	}
 
 	stager := initStager(cfg)
 	bifrost := initBifrost(cfg)
-	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
-	metricsClient := cmdcommons.CreateMetricsClient(cfg.Properties.KubeConfigPath)
-
-	routesChan := make(chan *route.Message)
-	launchRouteCollector(
-		clientset,
-		routesChan,
-		cfg.Properties.KubeNamespace,
-	)
-
-	launchRouteEmitter(
-		clientset,
-		routesChan,
-		cfg.Properties.KubeNamespace,
-		cfg.Properties.NatsPassword,
-		cfg.Properties.NatsIP,
-		cfg.Properties.NatsPort,
-	)
+	clientset := cmdcommons.CreateKubeClient(cfg.Properties.ConfigPath)
+	metricsClient := cmdcommons.CreateMetricsClient(cfg.Properties.ConfigPath)
 
 	tlsConfig, err := loggregator.NewIngressTLSConfig(
 		cfg.Properties.LoggregatorCAPath,
@@ -98,7 +75,7 @@ func connect(cmd *cobra.Command, args []string) {
 		clientset,
 		metricsClient,
 		loggregatorClient,
-		cfg.Properties.KubeNamespace,
+		cfg.Properties.Namespace,
 		cfg.Properties.AppMetricsEmissionIntervalInSecs,
 	)
 
@@ -108,7 +85,7 @@ func connect(cmd *cobra.Command, args []string) {
 		cfg.Properties.CCCAPath,
 		cfg.Properties.CCCertPath,
 		cfg.Properties.CCKeyPath,
-		cfg.Properties.KubeNamespace,
+		cfg.Properties.Namespace,
 	)
 
 	handlerLogger := lager.NewLogger("handler")
@@ -142,9 +119,9 @@ func serverTLSConfig(cfg *eirini.Config) *tls.Config {
 }
 
 func initStager(cfg *eirini.Config) eirini.Stager {
-	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
+	clientset := cmdcommons.CreateKubeClient(cfg.Properties.ConfigPath)
 	taskDesirer := &k8s.TaskDesirer{
-		Namespace:       cfg.Properties.KubeNamespace,
+		Namespace:       cfg.Properties.Namespace,
 		CertsSecretName: cfg.Properties.CCCertsSecretName,
 		Client:          clientset,
 	}
@@ -175,8 +152,8 @@ func initStager(cfg *eirini.Config) eirini.Stager {
 }
 
 func initBifrost(cfg *eirini.Config) eirini.Bifrost {
-	kubeNamespace := cfg.Properties.KubeNamespace
-	clientset := cmdcommons.CreateKubeClient(cfg.Properties.KubeConfigPath)
+	kubeNamespace := cfg.Properties.Namespace
+	clientset := cmdcommons.CreateKubeClient(cfg.Properties.ConfigPath)
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	desirer := k8s.NewStatefulSetDesirer(clientset, kubeNamespace, cfg.Properties.RegistrySecretName, cfg.Properties.RootfsVersion, desireLogger)
@@ -205,46 +182,6 @@ func setConfigFromFile(path string) *eirini.Config {
 
 func initConnect() {
 	connectCmd.Flags().StringP("config", "c", "", "Path to the Eirini config file")
-}
-
-func launchRouteCollector(clientset kubernetes.Interface, workChan chan *route.Message, namespace string) {
-	logger := lager.NewLogger("route-collector")
-	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	collector := k8s.NewRouteCollector(clientset, namespace, logger)
-	scheduler := route.CollectorScheduler{
-		Collector: collector,
-		Scheduler: &util.TickerTaskScheduler{
-			Ticker: time.NewTicker(30 * time.Second),
-			Logger: logger.Session("scheduler"),
-		},
-	}
-
-	go scheduler.Start(workChan)
-}
-
-func launchRouteEmitter(clientset kubernetes.Interface, workChan chan *route.Message, namespace, natsPassword, natsIP string, natsPort int) {
-	nc, err := nats.Connect(util.GenerateNatsURL(natsPassword, natsIP, natsPort), nats.MaxReconnects(-1))
-	cmdcommons.ExitWithError(err)
-
-	logger := lager.NewLogger("route")
-	logger.RegisterSink(lager.NewPrettySink(os.Stderr, lager.DEBUG))
-
-	instanceInformerLogger := logger.Session("instance-change-informer")
-	instanceInformer := k8sroute.NewInstanceChangeInformer(clientset, namespace, instanceInformerLogger)
-
-	uriInformerLogger := logger.Session("uri-change-informer")
-	uriInformer := k8sroute.NewURIChangeInformer(clientset, namespace, uriInformerLogger)
-
-	emitterLogger := logger.Session("emitter")
-	scheduler := &util.SimpleLoopScheduler{
-		CancelChan: make(chan struct{}, 1),
-		Logger:     emitterLogger.Session("scheduler"),
-	}
-	re := route.NewEmitter(&route.NATSPublisher{NatsClient: nc}, workChan, scheduler, emitterLogger)
-
-	go re.Start()
-	go instanceInformer.Start(workChan)
-	go uriInformer.Start(workChan)
 }
 
 func launchMetricsEmitter(

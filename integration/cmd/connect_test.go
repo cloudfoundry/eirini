@@ -8,8 +8,6 @@ import (
 	"os/exec"
 
 	"code.cloudfoundry.org/eirini"
-	natsserver "github.com/nats-io/nats-server/v2/server"
-	natstest "github.com/nats-io/nats-server/v2/test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -25,28 +23,16 @@ var _ = Describe("connect command", func() {
 		command    *exec.Cmd
 		config     *eirini.Config
 		configFile *os.File
-
-		natsPassword   string
-		natsServerOpts natsserver.Options
-		natsServer     *natsserver.Server
 	)
 
 	BeforeEach(func() {
 		httpClient = makeTestHTTPClient()
-
-		natsPassword = "password"
-		natsServerOpts = natstest.DefaultTestOptions
-		natsServerOpts.Username = "nats"
-		natsServerOpts.Password = natsPassword
-		natsServerOpts.Port = int(nextAvailPort())
-		natsServer = natstest.RunServer(&natsServerOpts)
 
 		cmdPath, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		natsServer.Shutdown()
 
 		if command != nil {
 			err = command.Process.Kill()
@@ -57,7 +43,7 @@ var _ = Describe("connect command", func() {
 	Context("when we invoke connect command with valid config", func() {
 
 		BeforeEach(func() {
-			config = defaultEiriniConfig(natsServerOpts)
+			config = defaultEiriniConfig()
 			config.Properties.ServerCertPath = pathToTestFixture("cert")
 			config.Properties.ServerKeyPath = pathToTestFixture("key")
 			config.Properties.TLSPort = int(nextAvailPort())

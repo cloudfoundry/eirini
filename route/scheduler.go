@@ -5,20 +5,25 @@ import (
 	"github.com/pkg/errors"
 )
 
+//go:generate counterfeiter . Emitter
+type Emitter interface {
+	Emit(Message)
+}
+
 type CollectorScheduler struct {
 	Collector Collector
 	Scheduler util.TaskScheduler
+	Emitter   Emitter
 }
 
-func (c CollectorScheduler) Start(work chan<- *Message) {
+func (c CollectorScheduler) Start() {
 	c.Scheduler.Schedule(func() error {
 		routes, err := c.Collector.Collect()
 		if err != nil {
 			return errors.Wrap(err, "failed to collect routes")
 		}
 		for _, r := range routes {
-			r := r
-			work <- &r
+			c.Emitter.Emit(r)
 		}
 		return nil
 	})

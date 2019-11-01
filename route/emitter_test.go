@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini/route/routefakes"
-	"code.cloudfoundry.org/eirini/util/utilfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,23 +14,21 @@ import (
 	. "code.cloudfoundry.org/eirini/route"
 )
 
-var _ = Describe("Emitter", func() {
+var _ = Describe("MessageEmitter", func() {
 
 	const timeout = 500 * time.Millisecond
 
 	var (
-		scheduler   *utilfakes.FakeTaskScheduler
-		publisher   *routefakes.FakePublisher
-		workChannel chan *Message
-		logger      *lagertest.TestLogger
+		publisher *routefakes.FakePublisher
+		logger    *lagertest.TestLogger
 
-		emitter      *Emitter
-		routes       *Message
-		publishCount int
+		messageEmitter Emitter
+		routes         Message
+		publishCount   int
 	)
 
 	assertPublishedRoutes := func(expectedSubject, route string, callIndex int) {
-		Eventually(publisher.PublishCallCount, timeout).Should(Equal(publishCount))
+		Expect(publisher.PublishCallCount()).To(Equal(publishCount))
 
 		actualSubject, routeJSON := publisher.PublishArgsForCall(callIndex)
 		Expect(expectedSubject).To(Equal(actualSubject))
@@ -48,12 +45,10 @@ var _ = Describe("Emitter", func() {
 	}
 
 	BeforeEach(func() {
-		scheduler = new(utilfakes.FakeTaskScheduler)
 		publisher = new(routefakes.FakePublisher)
-		workChannel = make(chan *Message, 1)
 		publishCount = 2
 
-		routes = &Message{
+		routes = Message{
 			Routes: Routes{
 				RegisteredRoutes:   []string{"route1.my.app.com"},
 				UnregisteredRoutes: []string{"removed.route1.my.app.com"},
@@ -66,29 +61,18 @@ var _ = Describe("Emitter", func() {
 		}
 
 		logger = lagertest.NewTestLogger("test-logger")
-		emitter = NewEmitter(publisher, workChannel, scheduler, logger)
-		emitter.Start()
+		messageEmitter = NewMessageEmitter(publisher, logger)
 	})
 
-	AfterEach(func() {
-		close(workChannel)
-	})
-
-	Context("When emitter is started", func() {
-
-		JustBeforeEach(func() {
-			task := scheduler.ScheduleArgsForCall(0)
-			workChannel <- routes
-
-			err := task()
-			Expect(err).ToNot(HaveOccurred())
-		})
+	Context("When MessageEmitter is started", func() {
 
 		It("should publish the registered routes", func() {
+			messageEmitter.Emit(routes)
 			assertPublishedRoutes("router.register", "route1.my.app.com", 0)
 		})
 
 		It("should publish the unregistered routes", func() {
+			messageEmitter.Emit(routes)
 			assertPublishedRoutes("router.unregister", "removed.route1.my.app.com", 1)
 		})
 
@@ -100,6 +84,7 @@ var _ = Describe("Emitter", func() {
 			})
 
 			It("should only publish the registered routes", func() {
+				messageEmitter.Emit(routes)
 				assertPublishedRoutes("router.register", "route1.my.app.com", 0)
 			})
 		})
@@ -112,6 +97,7 @@ var _ = Describe("Emitter", func() {
 			})
 
 			It("should only publish the unregistered routes", func() {
+				messageEmitter.Emit(routes)
 				assertPublishedRoutes("router.unregister", "removed.route1.my.app.com", 0)
 			})
 		})
@@ -123,37 +109,50 @@ var _ = Describe("Emitter", func() {
 			})
 
 			It("should publish the registered routes", func() {
+				messageEmitter.Emit(routes)
 				assertPublishedRoutes("router.register", "route1.my.app.com", 0)
 			})
 
 			It("prints an informative message that registration failed", func() {
-				Eventually(logger.Buffer(), timeout).Should(gbytes.Say(`"message":"test-logger.failed-to-publish-registered-route"`))
-				Eventually(logger.Buffer(), timeout).Should(gbytes.Say(`"error":"Failed to publish message"`))
+				messageEmitter.Emit(routes)
+				Expect(logger.Buffer()).To(gbytes.Say(`"message":"test-logger.failed-to-publish-registered-route"`))
+				Expect(logger.Buffer()).To(gbytes.Say(`"error":"Failed to publish message"`))
 			})
 
 			It("should publish the unregistered routes", func() {
+				messageEmitter.Emit(routes)
 				assertPublishedRoutes("router.unregister", "removed.route1.my.app.com", 1)
 			})
 
 			It("prints an informative message that unregistration failed", func() {
-				Eventually(logger.Buffer(), timeout).Should(gbytes.Say(`"message":"test-logger.failed-to-publish-unregistered-route"`))
-				Eventually(logger.Buffer(), timeout).Should(gbytes.Say(`"error":"Failed to publish message"`))
+				messageEmitter.Emit(routes)
+				Expect(logger.Buffer()).To(gbytes.Say(`"message":"test-logger.failed-to-publish-unregistered-route"`))
+				Expect(logger.Buffer()).To(gbytes.Say(`"error":"Failed to publish message"`))
 			})
 		})
 	})
 
-	Context("When the route message is invalid", func() {
+	Context("When the route message is missing an address", func() {
 
 		BeforeEach(func() {
 			routes.Address = ""
 		})
 
 		It("should not publish a route", func() {
-			task := scheduler.ScheduleArgsForCall(0)
-			workChannel <- routes
-
-			Expect(func() { _ = task() /*#nosec*/ }).To(Panic())
+			messageEmitter.Emit(routes)
 			Expect(publisher.PublishCallCount()).To(Equal(0))
 		})
+
+		It("should log the error", func() {
+			messageEmitter.Emit(routes)
+
+			logs := logger.Logs()
+			Expect(logs).To(HaveLen(1))
+			log := logs[0]
+			Expect(log.Message).To(Equal("test-logger.route-address-missing"))
+			Expect(log.Data).To(HaveKeyWithValue("app-name", "app1"))
+			Expect(log.Data).To(HaveKeyWithValue("instance-id", "instance-id"))
+		})
+
 	})
 })

@@ -44,16 +44,17 @@ type Config struct {
 	Properties Properties `yaml:"opi"`
 }
 
+type KubeConfig struct {
+	Namespace  string `yaml:"kube_namespace"`
+	ConfigPath string `yaml:"kube_config_path"`
+}
+
 type Properties struct {
 	ClientCAPath   string `yaml:"client_ca_path"`
 	ServerCertPath string `yaml:"server_cert_path"`
 	ServerKeyPath  string `yaml:"server_key_path"`
 	TLSPort        int    `yaml:"tls_port"`
 
-	KubeNamespace                    string `yaml:"kube_namespace"`
-	NatsPassword                     string `yaml:"nats_password"`
-	NatsIP                           string `yaml:"nats_ip"`
-	NatsPort                         int    `yaml:"nats_port"`
 	CcInternalAPI                    string `yaml:"cc_internal_api"`
 	CCCertsSecretName                string `yaml:"cc_certs_secret_name"`
 	RegistryAddress                  string `yaml:"registry_address"`
@@ -73,10 +74,16 @@ type Properties struct {
 	CCKeyPath  string `yaml:"cc_key_path"`
 	CCCAPath   string `yaml:"cc_ca_path"`
 
-	KubeConfigPath string `yaml:"kube_config_path"`
-
 	RootfsVersion string `yaml:"rootfs_version"`
 	DiskLimitMB   int64  `yaml:"disk_limit_mb"`
+	KubeConfig
+}
+
+type RouteEmitterConfig struct {
+	NatsPassword string `yaml:"nats_password"`
+	NatsIP       string `yaml:"nats_ip"`
+	NatsPort     int    `yaml:"nats_port"`
+	KubeConfig
 }
 
 //go:generate counterfeiter . Stager

@@ -36,16 +36,15 @@ func pathToTestFixture(relativePath string) string {
 	return cwd + "/fixtures/" + relativePath
 }
 
-func defaultEiriniConfig(natsServerOpts natsserver.Options) *eirini.Config {
+func defaultEiriniConfig() *eirini.Config {
 	config := &eirini.Config{
 		Properties: eirini.Properties{
-			KubeConfigPath:      pathToTestFixture("kube.conf"),
+			KubeConfig: eirini.KubeConfig{
+				ConfigPath: pathToTestFixture("kube.conf"),
+			},
 			CCCAPath:            pathToTestFixture("cert"),
 			CCCertPath:          pathToTestFixture("cert"),
 			CCKeyPath:           pathToTestFixture("key"),
-			NatsIP:              natsServerOpts.Host,
-			NatsPort:            natsServerOpts.Port,
-			NatsPassword:        natsServerOpts.Password,
 			LoggregatorCAPath:   pathToTestFixture("cert"),
 			LoggregatorCertPath: pathToTestFixture("cert"),
 			LoggregatorKeyPath:  pathToTestFixture("key"),
@@ -55,13 +54,38 @@ func defaultEiriniConfig(natsServerOpts natsserver.Options) *eirini.Config {
 	return config
 }
 
-func createOpiConfigFromFixtures(config *eirini.Config) (*os.File, error) {
-	configFile, err := ioutil.TempFile("", "opi-config.yml")
-	Expect(err).ToNot(HaveOccurred())
+func defaultRouteEmitterConfig(natsServerOpts natsserver.Options) *eirini.RouteEmitterConfig {
+	config := &eirini.RouteEmitterConfig{
+		KubeConfig: eirini.KubeConfig{
+			ConfigPath: pathToTestFixture("kube.conf"),
+		},
+		NatsIP:       natsServerOpts.Host,
+		NatsPort:     natsServerOpts.Port,
+		NatsPassword: natsServerOpts.Password,
+	}
 
+	return config
+}
+
+func createOpiConfigFromFixtures(config *eirini.Config) (*os.File, error) {
 	bs, err := yaml.Marshal(config)
 	Expect(err).ToNot(HaveOccurred())
-	err = ioutil.WriteFile(configFile.Name(), bs, os.ModePerm)
+
+	return createConfigFile(bs)
+}
+
+func createRouteEmitterConfig(config *eirini.RouteEmitterConfig) (*os.File, error) {
+	bs, err := yaml.Marshal(config)
+	Expect(err).ToNot(HaveOccurred())
+
+	return createConfigFile(bs)
+}
+
+func createConfigFile(yamlBytes []byte) (*os.File, error) {
+	configFile, err := ioutil.TempFile("", "config.yml")
+	Expect(err).ToNot(HaveOccurred())
+
+	err = ioutil.WriteFile(configFile.Name(), yamlBytes, os.ModePerm)
 	Expect(err).ToNot(HaveOccurred())
 
 	return configFile, err
