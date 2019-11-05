@@ -12,8 +12,6 @@
 * Ask a team member to add you to the GCP Project
 * Ask the anchor to be added to the [CF Eirini team](https://github.com/orgs/cloudfoundry-incubator/teams/eirini/members) and the [CI](https://github.com/orgs/cf-cube-ci/teams/cube/members) team
 * Ask @smoser-ibm to create a [SL](https://control.softlayer.com) account for you
-* Create a [new VPN password](https://control.softlayer.com/account/user/profile)
-* Set up the [VPN client](http://knowledgelayer.softlayer.com/procedure/ssl-vpn-mac-os-x-1010)
 * Setup [`pass` access](https://github.com/cloudfoundry/eirini-private-config/tree/master#sensitive-passwords)
 * Add yourself to the [pairing board](https://pairup-ng.mybluemix.net/#eirini)
 * Update [the onboarding document](https://github.com/cloudfoundry-incubator/eirini/blob/master/onboarding.markdown) if necessary
