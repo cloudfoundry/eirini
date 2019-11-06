@@ -36,7 +36,7 @@ func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []*models.DesiredLRPSchedulingI
 	infos := []*models.DesiredLRPSchedulingInfo{}
 	for _, l := range lrps {
 		info := &models.DesiredLRPSchedulingInfo{}
-		info.DesiredLRPKey.ProcessGuid = l.GUID
+		info.DesiredLRPKey.ProcessGuid = l.LRPIdentifier.ProcessGUID()
 		info.Annotation = l.LastUpdated
 		infos = append(infos, info)
 	}

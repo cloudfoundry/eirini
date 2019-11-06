@@ -107,9 +107,9 @@ var _ = Describe("Bifrost", func() {
 	})
 
 	Context("List", func() {
-		createLRP := func(processGUID, lastUpdated string) *opi.LRP {
+		createLRP := func(processGUID, version, lastUpdated string) *opi.LRP {
 			return &opi.LRP{
-				LRPIdentifier: opi.LRPIdentifier{GUID: processGUID},
+				LRPIdentifier: opi.LRPIdentifier{GUID: processGUID, Version: version},
 				LastUpdated:   lastUpdated,
 			}
 		}
@@ -123,9 +123,9 @@ var _ = Describe("Bifrost", func() {
 		Context("When listing running LRPs", func() {
 			BeforeEach(func() {
 				lrps := []*opi.LRP{
-					createLRP("abcd", "3464634.2"),
-					createLRP("efgh", "235.26535"),
-					createLRP("ijkl", "2342342.2"),
+					createLRP("abcd", "123", "3464634.2"),
+					createLRP("efgh", "234", "235.26535"),
+					createLRP("ijkl", "123", "2342342.2"),
 				}
 				desirer.ListReturns(lrps, nil)
 			})
@@ -138,9 +138,9 @@ var _ = Describe("Bifrost", func() {
 			It("should translate []LRPs to []DesiredLRPSchedulingInfo", func() {
 				desiredLRPSchedulingInfos, _ := bfrst.List(context.Background())
 				Expect(desiredLRPSchedulingInfos).To(HaveLen(3))
-				Expect(desiredLRPSchedulingInfos[0].ProcessGuid).To(Equal("abcd"))
-				Expect(desiredLRPSchedulingInfos[1].ProcessGuid).To(Equal("efgh"))
-				Expect(desiredLRPSchedulingInfos[2].ProcessGuid).To(Equal("ijkl"))
+				Expect(desiredLRPSchedulingInfos[0].ProcessGuid).To(Equal("abcd-123"))
+				Expect(desiredLRPSchedulingInfos[1].ProcessGuid).To(Equal("efgh-234"))
+				Expect(desiredLRPSchedulingInfos[2].ProcessGuid).To(Equal("ijkl-123"))
 
 				Expect(desiredLRPSchedulingInfos[0].Annotation).To(Equal("3464634.2"))
 				Expect(desiredLRPSchedulingInfos[1].Annotation).To(Equal("235.26535"))
