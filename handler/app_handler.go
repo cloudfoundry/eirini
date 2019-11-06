@@ -39,6 +39,7 @@ func (a *App) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	loggerSession.Debug("requested", lager.Data{"app_guid": request.AppGUID, "version": request.Version})
 
 	request.LRP = buf.String()
 
@@ -53,6 +54,7 @@ func (a *App) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 
 func (a *App) List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	loggerSession := a.logger.Session("list-apps")
+	loggerSession.Debug("requested")
 	desiredLRPSchedulingInfos, err := a.bifrost.List(r.Context())
 	if err != nil {
 		loggerSession.Error("bifrost-failed", err)
@@ -80,7 +82,8 @@ func (a *App) List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 }
 
 func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	loggerSession := a.logger.Session("get-app", lager.Data{"guid": ps.ByName("process_guid")})
+	loggerSession := a.logger.Session("get-app", lager.Data{"guid": ps.ByName("process_guid"), "version": ps.ByName("version_guid")})
+	loggerSession.Debug("requested")
 	identifier := opi.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
@@ -109,7 +112,8 @@ func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 }
 
 func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	loggerSession := a.logger.Session("get-app-instances", lager.Data{"guid": ps.ByName("process_guid")})
+	loggerSession := a.logger.Session("get-app-instances", lager.Data{"guid": ps.ByName("process_guid"), "version": ps.ByName("version_guid")})
+	loggerSession.Debug("requested")
 	identifier := opi.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
@@ -143,6 +147,8 @@ func (a *App) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 		return
 	}
 
+	loggerSession.Debug("requested", lager.Data{"version": request.Version})
+
 	if err := a.bifrost.Update(r.Context(), request); err != nil {
 		loggerSession.Error("bifrost-failed", err)
 		writeUpdateErrorResponse(w, err, http.StatusInternalServerError, loggerSession)
@@ -150,7 +156,8 @@ func (a *App) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 }
 
 func (a *App) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	loggerSession := a.logger.Session("stop-app", lager.Data{"guid": ps.ByName("process_guid")})
+	loggerSession := a.logger.Session("stop-app", lager.Data{"guid": ps.ByName("process_guid"), "version": ps.ByName("version")})
+	loggerSession.Debug("requested")
 	identifier := opi.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
@@ -163,7 +170,8 @@ func (a *App) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 }
 
 func (a *App) StopInstance(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	loggerSession := a.logger.Session("stop-app-instance", lager.Data{"guid": ps.ByName("process_guid")})
+	loggerSession := a.logger.Session("stop-app-instance", lager.Data{"guid": ps.ByName("process_guid"), "version": ps.ByName("version_guid")})
+	loggerSession.Debug("requested")
 	identifier := opi.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
