@@ -3,6 +3,7 @@ module code.cloudfoundry.org/eirini
 go 1.13
 
 require (
+	cloud.google.com/go v0.47.0 // indirect
 	code.cloudfoundry.org/bbs v0.0.0-20190927143358-c8e9aacab090
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
@@ -20,26 +21,41 @@ require (
 	code.cloudfoundry.org/tlsconfig v0.0.0-20190710180242-462f72de1106 // indirect
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
+	github.com/Azure/go-autorest/autorest v0.9.2 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.8.0 // indirect
 	github.com/deckarep/golang-set v1.7.1
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-test/deep v1.0.4 // indirect
 	github.com/gogo/protobuf v1.3.1
+	github.com/google/go-cmp v0.3.1 // indirect
+	github.com/googleapis/gnostic v0.3.1 // indirect
+	github.com/gophercloud/gophercloud v0.6.0 // indirect
 	github.com/hashicorp/consul/api v1.2.0 // indirect
-	github.com/julienschmidt/httprouter v1.2.0
+	github.com/hashicorp/golang-lru v0.5.3 // indirect
+	github.com/imdario/mergo v0.3.8 // indirect
+	github.com/json-iterator/go v1.1.8 // indirect
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/nats-io/nats-server/v2 v2.0.4
-	github.com/nats-io/nats.go v1.8.1
+	github.com/nats-io/nats.go v1.9.1
+	github.com/nats-io/nkeys v0.1.2 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.5
 	github.com/tedsuo/ifrit v0.0.0-20180802180643-bea94bb476cc // indirect
-	google.golang.org/grpc v1.23.1 // indirect
-	gopkg.in/yaml.v2 v2.2.2
-	k8s.io/api v0.0.0-20190430012547-97d6bb8ea5f4
-	k8s.io/apimachinery v0.0.0-20190425132440-17f84483f500
-	k8s.io/client-go v0.0.0-20190425172711-65184652c889
-	k8s.io/klog v0.3.0
-	k8s.io/metrics v0.0.0-20190430013349-275917611743
+	golang.org/x/crypto v0.0.0-20191106202628-ed6320f186d4 // indirect
+	golang.org/x/net v0.0.0-20191105084925-a882066a44e0 // indirect
+	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd // indirect
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
+	google.golang.org/appengine v1.6.5 // indirect
+	google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6 // indirect
+	google.golang.org/grpc v1.25.0 // indirect
+	gopkg.in/yaml.v2 v2.2.5
+	k8s.io/api v0.0.0-20191107030003-665c8a257c1a
+	k8s.io/apimachinery v0.0.0-20191107105744-2c7f8d2b0fd8
+	k8s.io/client-go v0.0.0-20191107030344-6f1579c35d23
+	k8s.io/klog v1.0.0
+	k8s.io/metrics v0.0.0-20191107033012-d3ccb962eb82
 )

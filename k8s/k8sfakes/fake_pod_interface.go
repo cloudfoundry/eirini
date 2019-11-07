@@ -87,6 +87,20 @@ type FakePodInterface struct {
 		result1 *v1a.Pod
 		result2 error
 	}
+	GetEphemeralContainersStub        func(string, v1b.GetOptions) (*v1a.EphemeralContainers, error)
+	getEphemeralContainersMutex       sync.RWMutex
+	getEphemeralContainersArgsForCall []struct {
+		arg1 string
+		arg2 v1b.GetOptions
+	}
+	getEphemeralContainersReturns struct {
+		result1 *v1a.EphemeralContainers
+		result2 error
+	}
+	getEphemeralContainersReturnsOnCall map[int]struct {
+		result1 *v1a.EphemeralContainers
+		result2 error
+	}
 	GetLogsStub        func(string, *v1a.PodLogOptions) *rest.Request
 	getLogsMutex       sync.RWMutex
 	getLogsArgsForCall []struct {
@@ -139,6 +153,20 @@ type FakePodInterface struct {
 	}
 	updateReturnsOnCall map[int]struct {
 		result1 *v1a.Pod
+		result2 error
+	}
+	UpdateEphemeralContainersStub        func(string, *v1a.EphemeralContainers) (*v1a.EphemeralContainers, error)
+	updateEphemeralContainersMutex       sync.RWMutex
+	updateEphemeralContainersArgsForCall []struct {
+		arg1 string
+		arg2 *v1a.EphemeralContainers
+	}
+	updateEphemeralContainersReturns struct {
+		result1 *v1a.EphemeralContainers
+		result2 error
+	}
+	updateEphemeralContainersReturnsOnCall map[int]struct {
+		result1 *v1a.EphemeralContainers
 		result2 error
 	}
 	UpdateStatusStub        func(*v1a.Pod) (*v1a.Pod, error)
@@ -540,6 +568,70 @@ func (fake *FakePodInterface) GetReturnsOnCall(i int, result1 *v1a.Pod, result2 
 	}{result1, result2}
 }
 
+func (fake *FakePodInterface) GetEphemeralContainers(arg1 string, arg2 v1b.GetOptions) (*v1a.EphemeralContainers, error) {
+	fake.getEphemeralContainersMutex.Lock()
+	ret, specificReturn := fake.getEphemeralContainersReturnsOnCall[len(fake.getEphemeralContainersArgsForCall)]
+	fake.getEphemeralContainersArgsForCall = append(fake.getEphemeralContainersArgsForCall, struct {
+		arg1 string
+		arg2 v1b.GetOptions
+	}{arg1, arg2})
+	fake.recordInvocation("GetEphemeralContainers", []interface{}{arg1, arg2})
+	fake.getEphemeralContainersMutex.Unlock()
+	if fake.GetEphemeralContainersStub != nil {
+		return fake.GetEphemeralContainersStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.getEphemeralContainersReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakePodInterface) GetEphemeralContainersCallCount() int {
+	fake.getEphemeralContainersMutex.RLock()
+	defer fake.getEphemeralContainersMutex.RUnlock()
+	return len(fake.getEphemeralContainersArgsForCall)
+}
+
+func (fake *FakePodInterface) GetEphemeralContainersCalls(stub func(string, v1b.GetOptions) (*v1a.EphemeralContainers, error)) {
+	fake.getEphemeralContainersMutex.Lock()
+	defer fake.getEphemeralContainersMutex.Unlock()
+	fake.GetEphemeralContainersStub = stub
+}
+
+func (fake *FakePodInterface) GetEphemeralContainersArgsForCall(i int) (string, v1b.GetOptions) {
+	fake.getEphemeralContainersMutex.RLock()
+	defer fake.getEphemeralContainersMutex.RUnlock()
+	argsForCall := fake.getEphemeralContainersArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakePodInterface) GetEphemeralContainersReturns(result1 *v1a.EphemeralContainers, result2 error) {
+	fake.getEphemeralContainersMutex.Lock()
+	defer fake.getEphemeralContainersMutex.Unlock()
+	fake.GetEphemeralContainersStub = nil
+	fake.getEphemeralContainersReturns = struct {
+		result1 *v1a.EphemeralContainers
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePodInterface) GetEphemeralContainersReturnsOnCall(i int, result1 *v1a.EphemeralContainers, result2 error) {
+	fake.getEphemeralContainersMutex.Lock()
+	defer fake.getEphemeralContainersMutex.Unlock()
+	fake.GetEphemeralContainersStub = nil
+	if fake.getEphemeralContainersReturnsOnCall == nil {
+		fake.getEphemeralContainersReturnsOnCall = make(map[int]struct {
+			result1 *v1a.EphemeralContainers
+			result2 error
+		})
+	}
+	fake.getEphemeralContainersReturnsOnCall[i] = struct {
+		result1 *v1a.EphemeralContainers
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakePodInterface) GetLogs(arg1 string, arg2 *v1a.PodLogOptions) *rest.Request {
 	fake.getLogsMutex.Lock()
 	ret, specificReturn := fake.getLogsReturnsOnCall[len(fake.getLogsArgsForCall)]
@@ -798,6 +890,70 @@ func (fake *FakePodInterface) UpdateReturnsOnCall(i int, result1 *v1a.Pod, resul
 	}{result1, result2}
 }
 
+func (fake *FakePodInterface) UpdateEphemeralContainers(arg1 string, arg2 *v1a.EphemeralContainers) (*v1a.EphemeralContainers, error) {
+	fake.updateEphemeralContainersMutex.Lock()
+	ret, specificReturn := fake.updateEphemeralContainersReturnsOnCall[len(fake.updateEphemeralContainersArgsForCall)]
+	fake.updateEphemeralContainersArgsForCall = append(fake.updateEphemeralContainersArgsForCall, struct {
+		arg1 string
+		arg2 *v1a.EphemeralContainers
+	}{arg1, arg2})
+	fake.recordInvocation("UpdateEphemeralContainers", []interface{}{arg1, arg2})
+	fake.updateEphemeralContainersMutex.Unlock()
+	if fake.UpdateEphemeralContainersStub != nil {
+		return fake.UpdateEphemeralContainersStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.updateEphemeralContainersReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakePodInterface) UpdateEphemeralContainersCallCount() int {
+	fake.updateEphemeralContainersMutex.RLock()
+	defer fake.updateEphemeralContainersMutex.RUnlock()
+	return len(fake.updateEphemeralContainersArgsForCall)
+}
+
+func (fake *FakePodInterface) UpdateEphemeralContainersCalls(stub func(string, *v1a.EphemeralContainers) (*v1a.EphemeralContainers, error)) {
+	fake.updateEphemeralContainersMutex.Lock()
+	defer fake.updateEphemeralContainersMutex.Unlock()
+	fake.UpdateEphemeralContainersStub = stub
+}
+
+func (fake *FakePodInterface) UpdateEphemeralContainersArgsForCall(i int) (string, *v1a.EphemeralContainers) {
+	fake.updateEphemeralContainersMutex.RLock()
+	defer fake.updateEphemeralContainersMutex.RUnlock()
+	argsForCall := fake.updateEphemeralContainersArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakePodInterface) UpdateEphemeralContainersReturns(result1 *v1a.EphemeralContainers, result2 error) {
+	fake.updateEphemeralContainersMutex.Lock()
+	defer fake.updateEphemeralContainersMutex.Unlock()
+	fake.UpdateEphemeralContainersStub = nil
+	fake.updateEphemeralContainersReturns = struct {
+		result1 *v1a.EphemeralContainers
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePodInterface) UpdateEphemeralContainersReturnsOnCall(i int, result1 *v1a.EphemeralContainers, result2 error) {
+	fake.updateEphemeralContainersMutex.Lock()
+	defer fake.updateEphemeralContainersMutex.Unlock()
+	fake.UpdateEphemeralContainersStub = nil
+	if fake.updateEphemeralContainersReturnsOnCall == nil {
+		fake.updateEphemeralContainersReturnsOnCall = make(map[int]struct {
+			result1 *v1a.EphemeralContainers
+			result2 error
+		})
+	}
+	fake.updateEphemeralContainersReturnsOnCall[i] = struct {
+		result1 *v1a.EphemeralContainers
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakePodInterface) UpdateStatus(arg1 *v1a.Pod) (*v1a.Pod, error) {
 	fake.updateStatusMutex.Lock()
 	ret, specificReturn := fake.updateStatusReturnsOnCall[len(fake.updateStatusArgsForCall)]
@@ -939,6 +1095,8 @@ func (fake *FakePodInterface) Invocations() map[string][][]interface{} {
 	defer fake.evictMutex.RUnlock()
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
+	fake.getEphemeralContainersMutex.RLock()
+	defer fake.getEphemeralContainersMutex.RUnlock()
 	fake.getLogsMutex.RLock()
 	defer fake.getLogsMutex.RUnlock()
 	fake.listMutex.RLock()
@@ -947,6 +1105,8 @@ func (fake *FakePodInterface) Invocations() map[string][][]interface{} {
 	defer fake.patchMutex.RUnlock()
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
+	fake.updateEphemeralContainersMutex.RLock()
+	defer fake.updateEphemeralContainersMutex.RUnlock()
 	fake.updateStatusMutex.RLock()
 	defer fake.updateStatusMutex.RUnlock()
 	fake.watchMutex.RLock()
