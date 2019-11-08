@@ -217,6 +217,13 @@ var _ = Describe("Stager", func() {
 				task.Result = "{not valid json"
 			})
 
+			It("should delete the task", func() {
+				Expect(taskDesirer.DeleteCallCount()).To(Equal(1))
+
+				taskName := taskDesirer.DeleteArgsForCall(0)
+				Expect(taskName).To(Equal(task.TaskGuid))
+			})
+
 			It("should return an error", func() {
 				Expect(err).To(HaveOccurred())
 			})
@@ -229,6 +236,13 @@ var _ = Describe("Stager", func() {
 		Context("and the annotation is not a valid json", func() {
 			BeforeEach(func() {
 				task.Annotation = "{ !(valid json)"
+			})
+
+			It("should delete the task", func() {
+				Expect(taskDesirer.DeleteCallCount()).To(Equal(1))
+
+				taskName := taskDesirer.DeleteArgsForCall(0)
+				Expect(taskName).To(Equal(task.TaskGuid))
 			})
 
 			It("should return an error", func() {
@@ -245,6 +259,13 @@ var _ = Describe("Stager", func() {
 				handlers = []http.HandlerFunc{
 					ghttp.RespondWith(http.StatusInternalServerError, ""),
 				}
+			})
+
+			It("should delete the task", func() {
+				Expect(taskDesirer.DeleteCallCount()).To(Equal(1))
+
+				taskName := taskDesirer.DeleteArgsForCall(0)
+				Expect(taskName).To(Equal(task.TaskGuid))
 			})
 
 			It("should return an error", func() {

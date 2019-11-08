@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
+	"go.uber.org/multierr"
 )
 
 type Stager struct {
@@ -71,8 +72,14 @@ func (s *Stager) createStagingTask(stagingGUID string, request cf.StagingRequest
 }
 
 func (s *Stager) CompleteStaging(task *models.TaskCallbackResponse) error {
-	l := s.Logger.Session("complete-staging", lager.Data{"task-guid": task.TaskGuid})
+	return multierr.Combine(
+		s.sendCompletionCallback(task),
+		s.Desirer.Delete(task.TaskGuid),
+	)
+}
 
+func (s *Stager) sendCompletionCallback(task *models.TaskCallbackResponse) error {
+	l := s.Logger.Session("complete-staging", lager.Data{"task-guid": task.TaskGuid})
 	callbackBody, err := s.constructStagingResponse(task)
 	if err != nil {
 		l.Error("failed-to-construct-staging-response", err)
@@ -88,15 +95,9 @@ func (s *Stager) CompleteStaging(task *models.TaskCallbackResponse) error {
 	request, err := http.NewRequest("POST", callbackURI, bytes.NewBuffer(callbackBody))
 	if err != nil {
 		l.Error("failed-to-create-callback-request", err)
-		return err
 	}
 	request.Header.Set("Content-Type", "application/json")
-
-	if err := s.executeRequest(request); err != nil {
-		return err
-	}
-
-	return s.Desirer.Delete(task.TaskGuid)
+	return s.executeRequest(request)
 }
 
 func (s *Stager) executeRequest(request *http.Request) error {
