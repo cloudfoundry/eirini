@@ -33,7 +33,6 @@ require (
 	github.com/hashicorp/consul/api v1.2.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
-	github.com/json-iterator/go v1.1.8 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/nats-io/nats-server/v2 v2.0.4
@@ -46,17 +45,18 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/tedsuo/ifrit v0.0.0-20180802180643-bea94bb476cc // indirect
 	go.uber.org/multierr v1.4.0
-	golang.org/x/crypto v0.0.0-20191106202628-ed6320f186d4 // indirect
-	golang.org/x/net v0.0.0-20191105084925-a882066a44e0 // indirect
+	golang.org/x/crypto v0.0.0-20191108234033-bd318be0434a // indirect
+	golang.org/x/net v0.0.0-20191109021931-daa7c04131f5 // indirect
 	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
+	golang.org/x/tools v0.0.0-20191109212701-97ad0ed33101 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
-	google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6 // indirect
-	google.golang.org/grpc v1.25.0 // indirect
+	google.golang.org/genproto v0.0.0-20191108220845-16a3f7862a1a // indirect
+	google.golang.org/grpc v1.25.1 // indirect
 	gopkg.in/yaml.v2 v2.2.5
-	k8s.io/api v0.0.0-20191107030003-665c8a257c1a
-	k8s.io/apimachinery v0.0.0-20191107105744-2c7f8d2b0fd8
-	k8s.io/client-go v0.0.0-20191107030344-6f1579c35d23
+	k8s.io/api v0.0.0-20191109101513-0171b7c15da1
+	k8s.io/apimachinery v0.0.0-20191109100838-fee41ff082ed
+	k8s.io/client-go v0.0.0-20191109102209-3c0d1af94be5
 	k8s.io/klog v1.0.0
-	k8s.io/metrics v0.0.0-20191107033012-d3ccb962eb82
+	k8s.io/metrics v0.0.0-20191109111301-80b462294217
 )
