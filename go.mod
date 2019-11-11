@@ -33,6 +33,7 @@ require (
 	github.com/hashicorp/consul/api v1.2.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
+	github.com/jessevdk/go-flags v1.4.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/nats-io/nats-server/v2 v2.0.4

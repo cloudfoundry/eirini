@@ -83,7 +83,7 @@ type RouteEmitterConfig struct {
 	NatsPassword string `yaml:"nats_password"`
 	NatsIP       string `yaml:"nats_ip"`
 	NatsPort     int    `yaml:"nats_port"`
-	KubeConfig
+	KubeConfig   `yaml:",inline"`
 }
 
 //go:generate counterfeiter . Stager
