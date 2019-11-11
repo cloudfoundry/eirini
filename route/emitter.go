@@ -3,6 +3,7 @@ package route
 import (
 	"encoding/json"
 
+	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	nats "github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
@@ -35,6 +36,17 @@ func NewMessageEmitter(publisher Publisher, logger lager.Logger) MessageEmitter 
 		publisher: publisher,
 		logger:    logger,
 	}
+}
+
+func NewEmitterFromConfig(natsIP string, natsPort int, natsPassword string, logger lager.Logger) (Emitter, error) {
+	nc, err := nats.Connect(util.GenerateNatsURL(natsPassword, natsIP, natsPort), nats.MaxReconnects(-1))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to connect to nats")
+	}
+
+	emitterLogger := logger.Session("emitter")
+
+	return NewMessageEmitter(&NATSPublisher{NatsClient: nc}, emitterLogger), nil
 }
 
 func (e MessageEmitter) Emit(route Message) {
