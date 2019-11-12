@@ -9,7 +9,7 @@ FROM scratch
 COPY --from=builder /eirini/route-pod-informer /usr/local/bin/route-pod-informer
 ENTRYPOINT [ "/usr/local/bin/route-pod-informer", \
 	"--config", \
-	"/etc/eirini/route-pod-informer.yml" \
+	"/etc/eirini/routing.yml" \
 ]
 ARG GIT_SHA
 LABEL org.opencontainers.image.revision=$GIT_SHA \
