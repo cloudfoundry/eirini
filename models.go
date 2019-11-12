@@ -76,14 +76,16 @@ type Properties struct {
 
 	RootfsVersion string `yaml:"rootfs_version"`
 	DiskLimitMB   int64  `yaml:"disk_limit_mb"`
-	KubeConfig
+
+	KubeConfig `yaml:",inline"`
 }
 
 type RouteEmitterConfig struct {
 	NatsPassword string `yaml:"nats_password"`
 	NatsIP       string `yaml:"nats_ip"`
 	NatsPort     int    `yaml:"nats_port"`
-	KubeConfig   `yaml:",inline"`
+
+	KubeConfig `yaml:",inline"`
 }
 
 //go:generate counterfeiter . Stager
