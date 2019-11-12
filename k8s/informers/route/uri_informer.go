@@ -24,8 +24,6 @@ type StatefulSetDeleteEventHandler interface {
 	Handle(obj *appsv1.StatefulSet)
 }
 
-type portGroup map[int32]eiriniroute.Routes
-
 type URIChangeInformer struct {
 	Cancel        <-chan struct{}
 	Client        kubernetes.Interface

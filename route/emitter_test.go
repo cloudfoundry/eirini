@@ -3,7 +3,6 @@ package route_test
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"code.cloudfoundry.org/eirini/route/routefakes"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -15,8 +14,6 @@ import (
 )
 
 var _ = Describe("MessageEmitter", func() {
-
-	const timeout = 500 * time.Millisecond
 
 	var (
 		publisher *routefakes.FakePublisher
