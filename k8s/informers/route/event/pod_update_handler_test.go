@@ -27,7 +27,7 @@ var _ = Describe("UpdateEventHandler", func() {
 		statefulSetClient *eventfakes.FakeStatefulSetInterface
 		logger            *lagertest.TestLogger
 		routeEmitter      *eiriniroutefakes.FakeEmitter
-		handler           route.UpdateEventHandler
+		handler           route.PodUpdateEventHandler
 		pod               *corev1.Pod
 		updatedPod        *corev1.Pod
 	)

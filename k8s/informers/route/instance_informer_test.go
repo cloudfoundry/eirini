@@ -25,7 +25,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 		informer      eiriniroute.Informer
 		client        kubernetes.Interface
 		podWatcher    *watch.FakeWatcher
-		updateHandler *routefakes.FakeUpdateEventHandler
+		updateHandler *routefakes.FakePodUpdateEventHandler
 		stopChan      chan struct{}
 	)
 
@@ -36,7 +36,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 	}
 
 	BeforeEach(func() {
-		updateHandler = new(routefakes.FakeUpdateEventHandler)
+		updateHandler = new(routefakes.FakePodUpdateEventHandler)
 		client = fake.NewSimpleClientset()
 		setWatcher(client)
 
@@ -73,9 +73,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 			podWatcher.Modify(pod1)
 
 			Eventually(updateHandler.HandleCallCount).Should(Equal(1))
-			oldObj, newObj := updateHandler.HandleArgsForCall(0)
-			oldPod := oldObj.(*corev1.Pod)
-			newPod := newObj.(*corev1.Pod)
+			oldPod, newPod := updateHandler.HandleArgsForCall(0)
 
 			Expect(oldPod.Name).To(Equal(newPod.Name))
 			Expect(oldPod.Status.PodIP).To(Equal(""))

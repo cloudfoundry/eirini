@@ -2,6 +2,7 @@ package route
 
 import (
 	"code.cloudfoundry.org/eirini/route"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -9,19 +10,19 @@ import (
 
 const NoResync = 0
 
-//go:generate counterfeiter . UpdateEventHandler
-type UpdateEventHandler interface {
-	Handle(oldObj, updatedObj interface{})
+//go:generate counterfeiter . PodUpdateEventHandler
+type PodUpdateEventHandler interface {
+	Handle(oldObj, updatedObj *v1.Pod)
 }
 
 type InstanceChangeInformer struct {
 	Cancel        <-chan struct{}
 	Client        kubernetes.Interface
 	Namespace     string
-	UpdateHandler UpdateEventHandler
+	UpdateHandler PodUpdateEventHandler
 }
 
-func NewInstanceChangeInformer(client kubernetes.Interface, namespace string, updateHandler UpdateEventHandler) route.Informer {
+func NewInstanceChangeInformer(client kubernetes.Interface, namespace string, updateHandler PodUpdateEventHandler) route.Informer {
 	return &InstanceChangeInformer{
 		Client:        client,
 		Namespace:     namespace,
@@ -37,7 +38,11 @@ func (c *InstanceChangeInformer) Start() {
 
 	podInformer := factory.Core().V1().Pods().Informer()
 	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		UpdateFunc: c.UpdateHandler.Handle,
+		UpdateFunc: func(oldObj, updatedObj interface{}) {
+			oldPod := oldObj.(*v1.Pod)
+			updatedPod := updatedObj.(*v1.Pod)
+			c.UpdateHandler.Handle(oldPod, updatedPod)
+		},
 	})
 
 	podInformer.Run(c.Cancel)

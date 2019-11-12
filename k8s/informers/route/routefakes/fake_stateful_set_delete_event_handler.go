@@ -5,22 +5,23 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/informers/route"
+	v1 "k8s.io/api/apps/v1"
 )
 
-type FakeDeleteEventHandler struct {
-	HandleStub        func(interface{})
+type FakeStatefulSetDeleteEventHandler struct {
+	HandleStub        func(*v1.StatefulSet)
 	handleMutex       sync.RWMutex
 	handleArgsForCall []struct {
-		arg1 interface{}
+		arg1 *v1.StatefulSet
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeDeleteEventHandler) Handle(arg1 interface{}) {
+func (fake *FakeStatefulSetDeleteEventHandler) Handle(arg1 *v1.StatefulSet) {
 	fake.handleMutex.Lock()
 	fake.handleArgsForCall = append(fake.handleArgsForCall, struct {
-		arg1 interface{}
+		arg1 *v1.StatefulSet
 	}{arg1})
 	fake.recordInvocation("Handle", []interface{}{arg1})
 	fake.handleMutex.Unlock()
@@ -29,26 +30,26 @@ func (fake *FakeDeleteEventHandler) Handle(arg1 interface{}) {
 	}
 }
 
-func (fake *FakeDeleteEventHandler) HandleCallCount() int {
+func (fake *FakeStatefulSetDeleteEventHandler) HandleCallCount() int {
 	fake.handleMutex.RLock()
 	defer fake.handleMutex.RUnlock()
 	return len(fake.handleArgsForCall)
 }
 
-func (fake *FakeDeleteEventHandler) HandleCalls(stub func(interface{})) {
+func (fake *FakeStatefulSetDeleteEventHandler) HandleCalls(stub func(*v1.StatefulSet)) {
 	fake.handleMutex.Lock()
 	defer fake.handleMutex.Unlock()
 	fake.HandleStub = stub
 }
 
-func (fake *FakeDeleteEventHandler) HandleArgsForCall(i int) interface{} {
+func (fake *FakeStatefulSetDeleteEventHandler) HandleArgsForCall(i int) *v1.StatefulSet {
 	fake.handleMutex.RLock()
 	defer fake.handleMutex.RUnlock()
 	argsForCall := fake.handleArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeDeleteEventHandler) Invocations() map[string][][]interface{} {
+func (fake *FakeStatefulSetDeleteEventHandler) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.handleMutex.RLock()
@@ -60,7 +61,7 @@ func (fake *FakeDeleteEventHandler) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeDeleteEventHandler) recordInvocation(key string, args []interface{}) {
+func (fake *FakeStatefulSetDeleteEventHandler) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -72,4 +73,4 @@ func (fake *FakeDeleteEventHandler) recordInvocation(key string, args []interfac
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ route.DeleteEventHandler = new(FakeDeleteEventHandler)
+var _ route.StatefulSetDeleteEventHandler = new(FakeStatefulSetDeleteEventHandler)

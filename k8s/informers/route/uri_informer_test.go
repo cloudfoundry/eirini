@@ -24,8 +24,8 @@ var _ = Describe("URIChangeInformer", func() {
 		informer      URIChangeInformer
 		client        kubernetes.Interface
 		watcher       *watch.FakeWatcher
-		updateHandler *routefakes.FakeUpdateEventHandler
-		deleteHandler *routefakes.FakeDeleteEventHandler
+		updateHandler *routefakes.FakeStatefulSetUpdateEventHandler
+		deleteHandler *routefakes.FakeStatefulSetDeleteEventHandler
 		stopChan      chan struct{}
 	)
 
@@ -36,8 +36,8 @@ var _ = Describe("URIChangeInformer", func() {
 	}
 
 	BeforeEach(func() {
-		updateHandler = new(routefakes.FakeUpdateEventHandler)
-		deleteHandler = new(routefakes.FakeDeleteEventHandler)
+		updateHandler = new(routefakes.FakeStatefulSetUpdateEventHandler)
+		deleteHandler = new(routefakes.FakeStatefulSetDeleteEventHandler)
 		client = fake.NewSimpleClientset()
 		setWatcher(client)
 
@@ -83,9 +83,7 @@ var _ = Describe("URIChangeInformer", func() {
 		It("should be handled by the update handler", func() {
 			Eventually(updateHandler.HandleCallCount).Should(Equal(1))
 
-			oldObj, newObj := updateHandler.HandleArgsForCall(0)
-			oldStatefulSet := oldObj.(*appsv1.StatefulSet)
-			updatedStatefulSet := newObj.(*appsv1.StatefulSet)
+			oldStatefulSet, updatedStatefulSet := updateHandler.HandleArgsForCall(0)
 
 			Expect(oldStatefulSet.Name).To(Equal(updatedStatefulSet.Name))
 			Expect(oldStatefulSet.Annotations).To(HaveKeyWithValue("somewhere", "over"))
@@ -111,8 +109,7 @@ var _ = Describe("URIChangeInformer", func() {
 		It("should be handled by the update handler", func() {
 			Eventually(deleteHandler.HandleCallCount).Should(Equal(1))
 
-			obj := deleteHandler.HandleArgsForCall(0)
-			deletedStatefulSet := obj.(*appsv1.StatefulSet)
+			deletedStatefulSet := deleteHandler.HandleArgsForCall(0)
 
 			Expect(deletedStatefulSet.Name).To(Equal("mr-stateful"))
 			Expect(deletedStatefulSet.Annotations).To(HaveKeyWithValue("somewhere", "over"))

@@ -24,10 +24,7 @@ type URIAnnotationUpdateHandler struct {
 	RouteEmitter eiriniroute.Emitter
 }
 
-func (h URIAnnotationUpdateHandler) Handle(oldObj, updatedObj interface{}) {
-	oldStatefulSet := oldObj.(*appsv1.StatefulSet)
-	updatedStatefulSet := updatedObj.(*appsv1.StatefulSet)
-
+func (h URIAnnotationUpdateHandler) Handle(oldStatefulSet, updatedStatefulSet *appsv1.StatefulSet) {
 	if reflect.DeepEqual(oldStatefulSet.Annotations, updatedStatefulSet.Annotations) {
 		return
 	}

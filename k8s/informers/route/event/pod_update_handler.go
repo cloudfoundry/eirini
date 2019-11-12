@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
@@ -24,9 +23,7 @@ type PodUpdateHandler struct {
 	RouteEmitter eiriniroute.Emitter
 }
 
-func (h PodUpdateHandler) Handle(oldObj, updatedObj interface{}) {
-	updatedPod := updatedObj.(*v1.Pod)
-	oldPod := oldObj.(*v1.Pod)
+func (h PodUpdateHandler) Handle(oldPod, updatedPod *corev1.Pod) {
 	loggerSession := h.Logger.Session("pod-update", lager.Data{"pod-name": updatedPod.Name, "guid": updatedPod.Annotations[k8s.AnnotationProcessGUID]})
 
 	userDefinedRoutes, err := h.getUserDefinedRoutes(updatedPod)
@@ -55,7 +52,7 @@ func (h PodUpdateHandler) Handle(oldObj, updatedObj interface{}) {
 	}
 }
 
-func (h PodUpdateHandler) unregisterPodRoutes(pod *v1.Pod, userDefinedRoutes []cf.Route) {
+func (h PodUpdateHandler) unregisterPodRoutes(pod *corev1.Pod, userDefinedRoutes []cf.Route) {
 	loggerSession := h.Logger.Session("pod-delete", lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[k8s.AnnotationProcessGUID]})
 
 	for _, r := range userDefinedRoutes {
@@ -72,7 +69,7 @@ func (h PodUpdateHandler) unregisterPodRoutes(pod *v1.Pod, userDefinedRoutes []c
 	}
 }
 
-func (h PodUpdateHandler) getUserDefinedRoutes(pod *v1.Pod) ([]cf.Route, error) {
+func (h PodUpdateHandler) getUserDefinedRoutes(pod *corev1.Pod) ([]cf.Route, error) {
 	owner, err := h.getOwner(pod)
 	if err != nil {
 		return []cf.Route{}, errors.Wrap(err, "failed to get owner")
@@ -81,7 +78,7 @@ func (h PodUpdateHandler) getUserDefinedRoutes(pod *v1.Pod) ([]cf.Route, error) 
 	return decodeRoutes(owner.Annotations[k8s.AnnotationRegisteredRoutes])
 }
 
-func (h PodUpdateHandler) getOwner(pod *v1.Pod) (*apps.StatefulSet, error) {
+func (h PodUpdateHandler) getOwner(pod *corev1.Pod) (*apps.StatefulSet, error) {
 	ownerReferences := pod.OwnerReferences
 
 	if len(ownerReferences) == 0 {
@@ -96,10 +93,10 @@ func (h PodUpdateHandler) getOwner(pod *v1.Pod) (*apps.StatefulSet, error) {
 	return nil, errors.New("there are no statefulset owners")
 }
 
-func isReady(conditions []v1.PodCondition) bool {
+func isReady(conditions []corev1.PodCondition) bool {
 	for _, c := range conditions {
-		if c.Type == v1.PodReady {
-			return c.Status == v1.ConditionTrue
+		if c.Type == corev1.PodReady {
+			return c.Status == corev1.ConditionTrue
 		}
 	}
 	return false

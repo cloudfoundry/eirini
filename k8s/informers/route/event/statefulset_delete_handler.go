@@ -19,8 +19,7 @@ type StatefulSetDeleteHandler struct {
 	RouteEmitter eiriniroute.Emitter
 }
 
-func (h StatefulSetDeleteHandler) Handle(obj interface{}) {
-	deletedStatefulSet := obj.(*appsv1.StatefulSet)
+func (h StatefulSetDeleteHandler) Handle(deletedStatefulSet *appsv1.StatefulSet) {
 	loggerSession := h.Logger.Session("statefulset-delete", lager.Data{"guid": deletedStatefulSet.Annotations[k8s.AnnotationProcessGUID]})
 
 	routeSet, err := decodeRoutesAsSet(deletedStatefulSet)

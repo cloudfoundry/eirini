@@ -21,7 +21,7 @@ import (
 var _ = Describe("StatefulsetDeleteHandler", func() {
 
 	var (
-		handler            route.DeleteEventHandler
+		handler            route.StatefulSetDeleteEventHandler
 		podClient          *eventfakes.FakePodInterface
 		routeEmitter       *eiriniroutefakes.FakeEmitter
 		logger             *lagertest.TestLogger

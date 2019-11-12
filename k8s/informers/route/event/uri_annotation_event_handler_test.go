@@ -25,7 +25,7 @@ import (
 var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 
 	var (
-		handler            route.UpdateEventHandler
+		handler            route.StatefulSetUpdateEventHandler
 		podClient          *eventfakes.FakePodInterface
 		routeEmitter       *eiriniroutefakes.FakeEmitter
 		logger             *lagertest.TestLogger

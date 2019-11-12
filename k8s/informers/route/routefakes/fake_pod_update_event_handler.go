@@ -5,24 +5,25 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/informers/route"
+	v1 "k8s.io/api/core/v1"
 )
 
-type FakeUpdateEventHandler struct {
-	HandleStub        func(interface{}, interface{})
+type FakePodUpdateEventHandler struct {
+	HandleStub        func(*v1.Pod, *v1.Pod)
 	handleMutex       sync.RWMutex
 	handleArgsForCall []struct {
-		arg1 interface{}
-		arg2 interface{}
+		arg1 *v1.Pod
+		arg2 *v1.Pod
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeUpdateEventHandler) Handle(arg1 interface{}, arg2 interface{}) {
+func (fake *FakePodUpdateEventHandler) Handle(arg1 *v1.Pod, arg2 *v1.Pod) {
 	fake.handleMutex.Lock()
 	fake.handleArgsForCall = append(fake.handleArgsForCall, struct {
-		arg1 interface{}
-		arg2 interface{}
+		arg1 *v1.Pod
+		arg2 *v1.Pod
 	}{arg1, arg2})
 	fake.recordInvocation("Handle", []interface{}{arg1, arg2})
 	fake.handleMutex.Unlock()
@@ -31,26 +32,26 @@ func (fake *FakeUpdateEventHandler) Handle(arg1 interface{}, arg2 interface{}) {
 	}
 }
 
-func (fake *FakeUpdateEventHandler) HandleCallCount() int {
+func (fake *FakePodUpdateEventHandler) HandleCallCount() int {
 	fake.handleMutex.RLock()
 	defer fake.handleMutex.RUnlock()
 	return len(fake.handleArgsForCall)
 }
 
-func (fake *FakeUpdateEventHandler) HandleCalls(stub func(interface{}, interface{})) {
+func (fake *FakePodUpdateEventHandler) HandleCalls(stub func(*v1.Pod, *v1.Pod)) {
 	fake.handleMutex.Lock()
 	defer fake.handleMutex.Unlock()
 	fake.HandleStub = stub
 }
 
-func (fake *FakeUpdateEventHandler) HandleArgsForCall(i int) (interface{}, interface{}) {
+func (fake *FakePodUpdateEventHandler) HandleArgsForCall(i int) (*v1.Pod, *v1.Pod) {
 	fake.handleMutex.RLock()
 	defer fake.handleMutex.RUnlock()
 	argsForCall := fake.handleArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeUpdateEventHandler) Invocations() map[string][][]interface{} {
+func (fake *FakePodUpdateEventHandler) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.handleMutex.RLock()
@@ -62,7 +63,7 @@ func (fake *FakeUpdateEventHandler) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeUpdateEventHandler) recordInvocation(key string, args []interface{}) {
+func (fake *FakePodUpdateEventHandler) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -74,4 +75,4 @@ func (fake *FakeUpdateEventHandler) recordInvocation(key string, args []interfac
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ route.UpdateEventHandler = new(FakeUpdateEventHandler)
+var _ route.PodUpdateEventHandler = new(FakePodUpdateEventHandler)

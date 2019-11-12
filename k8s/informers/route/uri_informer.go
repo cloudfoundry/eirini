@@ -6,6 +6,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/route"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
@@ -13,9 +14,14 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-//go:generate counterfeiter . DeleteEventHandler
-type DeleteEventHandler interface {
-	Handle(obj interface{})
+//go:generate counterfeiter . StatefulSetUpdateEventHandler
+type StatefulSetUpdateEventHandler interface {
+	Handle(oldObj, updatedObj *appsv1.StatefulSet)
+}
+
+//go:generate counterfeiter . StatefulSetDeleteEventHandler
+type StatefulSetDeleteEventHandler interface {
+	Handle(obj *appsv1.StatefulSet)
 }
 
 type portGroup map[int32]eiriniroute.Routes
@@ -23,12 +29,12 @@ type portGroup map[int32]eiriniroute.Routes
 type URIChangeInformer struct {
 	Cancel        <-chan struct{}
 	Client        kubernetes.Interface
-	UpdateHandler UpdateEventHandler
-	DeleteHandler DeleteEventHandler
+	UpdateHandler StatefulSetUpdateEventHandler
+	DeleteHandler StatefulSetDeleteEventHandler
 	Namespace     string
 }
 
-func NewURIChangeInformer(client kubernetes.Interface, namespace string, updateEventHandler UpdateEventHandler, deleteEventHandler DeleteEventHandler) route.Informer {
+func NewURIChangeInformer(client kubernetes.Interface, namespace string, updateEventHandler StatefulSetUpdateEventHandler, deleteEventHandler StatefulSetDeleteEventHandler) route.Informer {
 	return &URIChangeInformer{
 		Client:        client,
 		Namespace:     namespace,
@@ -45,8 +51,15 @@ func (i *URIChangeInformer) Start() {
 
 	informer := factory.Apps().V1().StatefulSets().Informer()
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		UpdateFunc: i.UpdateHandler.Handle,
-		DeleteFunc: i.DeleteHandler.Handle,
+		UpdateFunc: func(oldObj, updatedObj interface{}) {
+			oldStatefulSet := oldObj.(*appsv1.StatefulSet)
+			updatedStatefulSet := updatedObj.(*appsv1.StatefulSet)
+			i.UpdateHandler.Handle(oldStatefulSet, updatedStatefulSet)
+		},
+		DeleteFunc: func(obj interface{}) {
+			statefulSet := obj.(*appsv1.StatefulSet)
+			i.DeleteHandler.Handle(statefulSet)
+		},
 	})
 
 	informer.Run(i.Cancel)
