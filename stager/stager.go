@@ -25,11 +25,11 @@ type Stager struct {
 	Delay      time.Duration
 }
 
-func New(desirer opi.TaskDesirer, httpClient *http.Client, config eirini.StagerConfig) *Stager {
+func New(desirer opi.TaskDesirer, httpClient *http.Client, config eirini.StagerConfig, logger lager.Logger) *Stager {
 	return &Stager{
 		Desirer:    desirer,
 		Config:     &config,
-		Logger:     lager.NewLogger("stager"),
+		Logger:     logger,
 		HTTPClient: httpClient,
 		Retries:    10,
 		Delay:      2 * time.Second,
@@ -121,7 +121,7 @@ func (s *Stager) executeRequestWithRetries(request *http.Request) error {
 		if n == s.Retries {
 			break
 		}
-		l.Debug("Sending delete request again")
+		l.Error("Sending delete request again", err)
 
 		time.Sleep(s.Delay)
 	}

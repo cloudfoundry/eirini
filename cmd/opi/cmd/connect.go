@@ -169,7 +169,9 @@ func initStager(cfg *eirini.Config) eirini.Stager {
 		panic(errors.Wrap(err, "failed to create stager http client"))
 	}
 
-	return stager.New(taskDesirer, httpClient, stagerCfg)
+	stagerLogger := lager.NewLogger("stager")
+	stagerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+	return stager.New(taskDesirer, httpClient, stagerCfg, stagerLogger)
 }
 
 func initBifrost(cfg *eirini.Config) eirini.Bifrost {
