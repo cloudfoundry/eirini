@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
@@ -20,6 +21,8 @@ type Stager struct {
 	Config     *eirini.StagerConfig
 	Logger     lager.Logger
 	HTTPClient *http.Client
+	Retries    int
+	Delay      time.Duration
 }
 
 func New(desirer opi.TaskDesirer, httpClient *http.Client, config eirini.StagerConfig) *Stager {
@@ -28,6 +31,8 @@ func New(desirer opi.TaskDesirer, httpClient *http.Client, config eirini.StagerC
 		Config:     &config,
 		Logger:     lager.NewLogger("stager"),
 		HTTPClient: httpClient,
+		Retries:    10,
+		Delay:      2 * time.Second,
 	}
 }
 
@@ -72,6 +77,8 @@ func (s *Stager) createStagingTask(stagingGUID string, request cf.StagingRequest
 }
 
 func (s *Stager) CompleteStaging(task *models.TaskCallbackResponse) error {
+	l := s.Logger.Session("complete-staging", lager.Data{"task-guid": task.TaskGuid})
+	l.Debug("Complete staging")
 	return multierr.Combine(
 		s.sendCompletionCallback(task),
 		s.Desirer.Delete(task.TaskGuid),
@@ -97,7 +104,28 @@ func (s *Stager) sendCompletionCallback(task *models.TaskCallbackResponse) error
 		l.Error("failed-to-create-callback-request", err)
 	}
 	request.Header.Set("Content-Type", "application/json")
-	return s.executeRequest(request)
+	return s.executeRequestWithRetries(request)
+}
+
+func (s *Stager) executeRequestWithRetries(request *http.Request) error {
+	l := s.Logger.Session("execute-callback-request", lager.Data{"request-uri": request.URL})
+	n := 0
+	var err error
+	for {
+		err = s.executeRequest(request)
+		if err == nil {
+			break
+		}
+
+		n++
+		if n == s.Retries {
+			break
+		}
+		l.Debug("Sending delete request again")
+
+		time.Sleep(s.Delay)
+	}
+	return err
 }
 
 func (s *Stager) executeRequest(request *http.Request) error {

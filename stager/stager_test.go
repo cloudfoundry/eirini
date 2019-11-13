@@ -24,6 +24,7 @@ var _ = Describe("Stager", func() {
 		taskDesirer *opifakes.FakeTaskDesirer
 		err         error
 	)
+	const retries = 5
 
 	BeforeEach(func() {
 		taskDesirer = new(opifakes.FakeTaskDesirer)
@@ -41,6 +42,8 @@ var _ = Describe("Stager", func() {
 			Config:     config,
 			Logger:     logger,
 			HTTPClient: &http.Client{},
+			Retries:    retries,
+			Delay:      0,
 		}
 	})
 
@@ -272,8 +275,8 @@ var _ = Describe("Stager", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("should post the response", func() {
-				Expect(server.ReceivedRequests()).To(HaveLen(1))
+			It("should retry configured amount of times", func() {
+				Expect(server.ReceivedRequests()).To(HaveLen(retries))
 			})
 		})
 
