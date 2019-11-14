@@ -45,7 +45,7 @@ type Config struct {
 }
 
 type KubeConfig struct {
-	Namespace  string `yaml:"kube_namespace"`
+	Namespace  string `yaml:"app_namespace"`
 	ConfigPath string `yaml:"kube_config_path"`
 }
 
