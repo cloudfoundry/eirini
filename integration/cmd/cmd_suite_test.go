@@ -64,6 +64,19 @@ func defaultRouteEmitterConfig(natsServerOpts natsserver.Options) *eirini.RouteE
 	return config
 }
 
+func metricsCollectorConfig() *eirini.MetricsCollectorConfig {
+	config := &eirini.MetricsCollectorConfig{
+		KubeConfig: eirini.KubeConfig{
+			ConfigPath: pathToTestFixture("kube.conf"),
+		},
+		LoggregatorCAPath:   pathToTestFixture("cert"),
+		LoggregatorCertPath: pathToTestFixture("cert"),
+		LoggregatorKeyPath:  pathToTestFixture("key"),
+	}
+
+	return config
+}
+
 func createOpiConfigFromFixtures(config *eirini.Config) (*os.File, error) {
 	bs, err := yaml.Marshal(config)
 	Expect(err).ToNot(HaveOccurred())
@@ -72,6 +85,13 @@ func createOpiConfigFromFixtures(config *eirini.Config) (*os.File, error) {
 }
 
 func createRouteEmitterConfig(config *eirini.RouteEmitterConfig) (*os.File, error) {
+	bs, err := yaml.Marshal(config)
+	Expect(err).ToNot(HaveOccurred())
+
+	return createConfigFile(bs)
+}
+
+func createMetricsCollectorConfigFile(config *eirini.MetricsCollectorConfig) (*os.File, error) {
 	bs, err := yaml.Marshal(config)
 	Expect(err).ToNot(HaveOccurred())
 
