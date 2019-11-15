@@ -42,12 +42,9 @@ func defaultEiriniConfig() *eirini.Config {
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: pathToTestFixture("kube.conf"),
 			},
-			CCCAPath:            pathToTestFixture("cert"),
-			CCCertPath:          pathToTestFixture("cert"),
-			CCKeyPath:           pathToTestFixture("key"),
-			LoggregatorCAPath:   pathToTestFixture("cert"),
-			LoggregatorCertPath: pathToTestFixture("cert"),
-			LoggregatorKeyPath:  pathToTestFixture("key"),
+			CCCAPath:   pathToTestFixture("cert"),
+			CCCertPath: pathToTestFixture("cert"),
+			CCKeyPath:  pathToTestFixture("key"),
 		},
 	}
 
