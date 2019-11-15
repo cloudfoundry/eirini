@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/bifrost"
@@ -17,18 +16,14 @@ import (
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/k8s"
 	k8sevent "code.cloudfoundry.org/eirini/k8s/informers/event"
-	"code.cloudfoundry.org/eirini/k8s/kubelet"
-	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/eirini/util"
-	loggregator "code.cloudfoundry.org/go-loggregator"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/tps/cc_client"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
-	metricsclientset "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	// For gcp and oidc authentication
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -52,32 +47,6 @@ func connect(cmd *cobra.Command, args []string) {
 	stager := initStager(cfg)
 	bifrost := initBifrost(cfg)
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.ConfigPath)
-	metricsClient := cmdcommons.CreateMetricsClient(cfg.Properties.ConfigPath)
-
-	tlsConfig, err := loggregator.NewIngressTLSConfig(
-		cfg.Properties.LoggregatorCAPath,
-		cfg.Properties.LoggregatorCertPath,
-		cfg.Properties.LoggregatorKeyPath,
-	)
-	cmdcommons.ExitWithError(err)
-
-	loggregatorClient, err := loggregator.NewIngressClient(
-		tlsConfig,
-		loggregator.WithAddr(cfg.Properties.LoggregatorAddress),
-	)
-	cmdcommons.ExitWithError(err)
-	defer func() {
-		if err = loggregatorClient.CloseSend(); err != nil {
-			cmdcommons.ExitWithError(err)
-		}
-	}()
-	launchMetricsEmitter(
-		clientset,
-		metricsClient,
-		loggregatorClient,
-		cfg.Properties.Namespace,
-		cfg.Properties.AppMetricsEmissionIntervalInSecs,
-	)
 
 	launchEventReporter(
 		clientset,
@@ -182,51 +151,6 @@ func setConfigFromFile(path string) *eirini.Config {
 
 func initConnect() {
 	connectCmd.Flags().StringP("config", "c", "", "Path to the Eirini config file")
-}
-
-func launchMetricsEmitter(
-	clientset kubernetes.Interface,
-	metricsClient metricsclientset.Interface,
-	loggregatorClient metrics.LoggregatorClient,
-	namespace string,
-	metricsEmissionInterval int,
-) {
-	work := make(chan []metrics.Message, 20)
-	podClient := clientset.CoreV1().Pods(namespace)
-
-	podMetricsClient := metricsClient.MetricsV1beta1().PodMetricses(namespace)
-	metricsLogger := lager.NewLogger("metrics")
-	metricsLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-
-	tickerInterval := eirini.AppMetricsEmissionIntervalInSecs
-	if metricsEmissionInterval > 0 {
-		tickerInterval = metricsEmissionInterval
-	}
-	collectorScheduler := &util.TickerTaskScheduler{
-		Ticker: time.NewTicker(time.Duration(tickerInterval) * time.Second),
-		Logger: metricsLogger.Session("collector.scheduler"),
-	}
-
-	metricsCollectorLogger := metricsLogger.Session("metrics-collector", lager.Data{})
-	diskClientLogger := metricsCollectorLogger.Session("disk-metrics-client", lager.Data{})
-	kubeletClient := kubelet.NewClient(clientset.CoreV1().RESTClient())
-	diskClient := kubelet.NewDiskMetricsClient(clientset.CoreV1().Nodes(),
-		kubeletClient,
-		namespace,
-		diskClientLogger)
-	collector := k8s.NewMetricsCollector(podMetricsClient, podClient, diskClient, metricsCollectorLogger)
-
-	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
-	emitterScheduler := &util.SimpleLoopScheduler{
-		CancelChan: make(chan struct{}, 1),
-		Logger:     metricsLogger.Session("emitter.scheduler"),
-	}
-	emitter := metrics.NewEmitter(work, emitterScheduler, forwarder)
-
-	go collectorScheduler.Schedule(func() error {
-		return k8s.ForwardMetricsToChannel(collector, work)
-	})
-	go emitter.Start()
 }
 
 func launchEventReporter(clientset kubernetes.Interface, uri, ca, cert, key, namespace string) {

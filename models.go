@@ -65,11 +65,6 @@ type Properties struct {
 	ExecutorImage                    string `yaml:"executor_image"`
 	AppMetricsEmissionIntervalInSecs int    `yaml:"app_metrics_emission_interval_in_secs"`
 
-	LoggregatorAddress  string `yaml:"loggregator_address"`
-	LoggregatorCertPath string `yaml:"loggergator_cert_path"`
-	LoggregatorKeyPath  string `yaml:"loggregator_key_path"`
-	LoggregatorCAPath   string `yaml:"loggregator_ca_path"`
-
 	CCCertPath string `yaml:"cc_cert_path"`
 	CCKeyPath  string `yaml:"cc_key_path"`
 	CCCAPath   string `yaml:"cc_ca_path"`
@@ -84,6 +79,17 @@ type RouteEmitterConfig struct {
 	NatsPassword string `yaml:"nats_password"`
 	NatsIP       string `yaml:"nats_ip"`
 	NatsPort     int    `yaml:"nats_port"`
+
+	KubeConfig `yaml:",inline"`
+}
+
+type MetricsCollectorConfig struct {
+	LoggregatorAddress  string `yaml:"loggregator_address"`
+	LoggregatorCertPath string `yaml:"loggergator_cert_path"`
+	LoggregatorKeyPath  string `yaml:"loggregator_key_path"`
+	LoggregatorCAPath   string `yaml:"loggregator_ca_path"`
+
+	AppMetricsEmissionIntervalInSecs int `yaml:"app_metrics_emission_interval_in_secs"`
 
 	KubeConfig `yaml:",inline"`
 }
