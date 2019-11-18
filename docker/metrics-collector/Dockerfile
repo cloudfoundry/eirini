@@ -9,7 +9,7 @@ FROM scratch
 COPY --from=builder /eirini/metrics-collector /usr/local/bin/metrics-collector
 ENTRYPOINT [ "/usr/local/bin/metrics-collector", \
 	"--config", \
-	"/etc/eirini/metrics.yml" \
+	"/etc/eirini/config/metrics.yml" \
 ]
 ARG GIT_SHA
 LABEL org.opencontainers.image.revision=$GIT_SHA \
