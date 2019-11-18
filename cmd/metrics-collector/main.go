@@ -62,8 +62,6 @@ func main() {
 		cfg.Namespace,
 		cfg.AppMetricsEmissionIntervalInSecs,
 	)
-
-	select {}
 }
 
 func launchMetricsEmitter(
@@ -109,7 +107,7 @@ func launchMetricsEmitter(
 		return k8s.ForwardMetricsToChannel(collector, work)
 	})
 
-	go emitter.Start()
+	emitter.Start()
 }
 
 func readMetricsCollectorConfigFromFile(path string) (*eirini.MetricsCollectorConfig, error) {
