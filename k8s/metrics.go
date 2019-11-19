@@ -24,12 +24,19 @@ type DiskAPI interface {
 	GetPodMetrics() (map[string]float64, error)
 }
 
-func ForwardMetricsToChannel(collector MetricsCollector, work chan<- []metrics.Message) error {
+//go:generate counterfeiter . Emitter
+type Emitter interface {
+	Emit(metrics.Message)
+}
+
+func ForwardMetricsToEmitter(collector MetricsCollector, emitter Emitter) error {
 	messages, err := collector.Collect()
 	if err != nil {
 		return err
 	}
-	work <- messages
+	for _, m := range messages {
+		emitter.Emit(m)
+	}
 	return nil
 }
 

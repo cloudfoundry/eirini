@@ -277,27 +277,21 @@ var _ = Describe("Metrics", func() {
 
 })
 
-var _ = Describe("ForwardMetricsToChannel", func() {
+var _ = Describe("ForwardMetricsToEmitter", func() {
 	It("should forward the messages when collector returns them", func() {
+		emitter := new(k8sfakes.FakeEmitter)
 		collector := new(k8sfakes.FakeMetricsCollector)
 		collector.CollectReturns([]metrics.Message{{AppID: "metric"}}, nil)
-		work := make(chan []metrics.Message, 1)
-		defer close(work)
 
-		Expect(ForwardMetricsToChannel(collector, work)).To(Succeed())
-		Expect(work).To(Receive())
-		Expect(work).ToNot(BeClosed())
+		Expect(ForwardMetricsToEmitter(collector, emitter)).To(Succeed())
 	})
 
 	It("should return error if collector returns error", func() {
+		emitter := new(k8sfakes.FakeEmitter)
 		collector := new(k8sfakes.FakeMetricsCollector)
 		collector.CollectReturns(nil, errors.New("oopsie"))
-		work := make(chan []metrics.Message, 1)
-		defer close(work)
 
-		Expect(ForwardMetricsToChannel(collector, work)).To(MatchError("oopsie"))
-		Expect(work).ToNot(Receive())
-		Expect(work).ToNot(BeClosed())
+		Expect(ForwardMetricsToEmitter(collector, emitter)).To(MatchError("oopsie"))
 	})
 })
 
