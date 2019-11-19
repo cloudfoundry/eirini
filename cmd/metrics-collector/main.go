@@ -71,7 +71,6 @@ func launchMetricsEmitter(
 	namespace string,
 	metricsEmissionInterval int,
 ) {
-	work := make(chan []metrics.Message, 20)
 	podClient := clientset.CoreV1().Pods(namespace)
 
 	podMetricsClient := metricsClient.MetricsV1beta1().PodMetricses(namespace)
@@ -96,18 +95,11 @@ func launchMetricsEmitter(
 		diskClientLogger)
 	collector := k8s.NewMetricsCollector(podMetricsClient, podClient, diskClient, metricsCollectorLogger)
 
-	forwarder := metrics.NewLoggregatorForwarder(loggregatorClient)
-	emitterScheduler := &util.SimpleLoopScheduler{
-		CancelChan: make(chan struct{}, 1),
-		Logger:     metricsLogger.Session("emitter.scheduler"),
-	}
-	emitter := metrics.NewEmitter(work, emitterScheduler, forwarder)
+	emitter := metrics.NewLoggregatorEmitter(loggregatorClient)
 
-	go collectorScheduler.Schedule(func() error {
-		return k8s.ForwardMetricsToChannel(collector, work)
+	collectorScheduler.Schedule(func() error {
+		return k8s.ForwardMetricsToEmitter(collector, emitter)
 	})
-
-	emitter.Start()
 }
 
 func readMetricsCollectorConfigFromFile(path string) (*eirini.MetricsCollectorConfig, error) {

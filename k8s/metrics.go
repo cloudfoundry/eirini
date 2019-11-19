@@ -34,6 +34,7 @@ func ForwardMetricsToEmitter(collector MetricsCollector, emitter Emitter) error 
 	if err != nil {
 		return err
 	}
+
 	for _, m := range messages {
 		emitter.Emit(m)
 	}
