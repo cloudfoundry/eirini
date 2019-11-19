@@ -1,11 +1,22 @@
 package metrics
 
-import "code.cloudfoundry.org/eirini/util"
+import (
+	loggregator "code.cloudfoundry.org/go-loggregator"
+)
 
-type Emitter struct {
-	scheduler util.TaskScheduler
-	forwarder Forwarder
-	work      <-chan []Message
+const (
+	CPUUnit    = "percentage"
+	MemoryUnit = "bytes"
+	DiskUnit   = "bytes"
+)
+
+//go:generate counterfeiter . LoggregatorClient
+type LoggregatorClient interface {
+	EmitGauge(...loggregator.EmitGaugeOption)
+}
+
+type LoggregatorEmitter struct {
+	client LoggregatorClient
 }
 
 type Message struct {
@@ -24,25 +35,19 @@ type BetterMessage struct {
 	CPU     *float64
 }
 
-//go:generate counterfeiter . Forwarder
-type Forwarder interface {
-	Forward(Message)
-}
-
-func NewEmitter(work <-chan []Message, scheduler util.TaskScheduler, forwarder Forwarder) *Emitter {
-	return &Emitter{
-		scheduler: scheduler,
-		forwarder: forwarder,
-		work:      work,
+func NewLoggregatorEmitter(client LoggregatorClient) *LoggregatorEmitter {
+	return &LoggregatorEmitter{
+		client: client,
 	}
 }
 
-func (e *Emitter) Start() {
-	e.scheduler.Schedule(func() error {
-		messages := <-e.work
-		for _, m := range messages {
-			e.forwarder.Forward(m)
-		}
-		return nil
-	})
+func (e *LoggregatorEmitter) Emit(m Message) {
+	e.client.EmitGauge(
+		loggregator.WithGaugeSourceInfo(m.AppID, m.IndexID),
+		loggregator.WithGaugeValue("cpu", m.CPU, CPUUnit),
+		loggregator.WithGaugeValue("memory", m.Memory, MemoryUnit),
+		loggregator.WithGaugeValue("memory_quota", m.MemoryQuota, MemoryUnit),
+		loggregator.WithGaugeValue("disk", m.Disk, DiskUnit),
+		loggregator.WithGaugeValue("disk_quota", m.DiskQuota, DiskUnit),
+	)
 }

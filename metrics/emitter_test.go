@@ -1,96 +1,79 @@
 package metrics_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"code.cloudfoundry.org/eirini/metrics"
 	. "code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/metrics/metricsfakes"
-	"code.cloudfoundry.org/eirini/util/utilfakes"
+	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 )
 
 var _ = Describe("emitter", func() {
 
-	var (
-		emitter   *Emitter
-		work      chan []Message
-		scheduler *utilfakes.FakeTaskScheduler
-		forwarder *metricsfakes.FakeForwarder
-		err       error
-	)
+	It("should forward source info to loggregator", func() {
+		fakeClient := new(metricsfakes.FakeLoggregatorClient)
+		emitter := NewLoggregatorEmitter(fakeClient)
 
-	BeforeEach(func() {
-		work = make(chan []Message, 5)
-		scheduler = new(utilfakes.FakeTaskScheduler)
-		forwarder = new(metricsfakes.FakeForwarder)
-		emitter = NewEmitter(work, scheduler, forwarder)
-	})
+		envelope := newEnvelope()
 
-	Context("when metrics are send to the channel", func() {
+		msg := metrics.Message{
+			AppID:       "amazing-app-id",
+			IndexID:     "best-index-id",
+			CPU:         100,
+			Memory:      320,
+			MemoryQuota: 500,
+			Disk:        645,
+			DiskQuota:   1001,
+		}
+		emitter.Emit(msg)
+		Expect(fakeClient.EmitGaugeCallCount()).To(Equal(1))
 
-		BeforeEach(func() {
-			emitter.Start()
+		emitGaugeOpts := fakeClient.EmitGaugeArgsForCall(0)
+		for _, g := range emitGaugeOpts {
+			g(envelope)
+		}
 
-			work <- []Message{
-				{
-					AppID:       "appid",
-					IndexID:     "0",
-					CPU:         123.4,
-					Memory:      123.4,
-					MemoryQuota: 1000.4,
-					Disk:        10.1,
-					DiskQuota:   250.5,
-				},
-				{
-					AppID:       "appid",
-					IndexID:     "1",
-					CPU:         234.1,
-					Memory:      675.4,
-					MemoryQuota: 1000.4,
-					Disk:        10.1,
-					DiskQuota:   250.5,
-				},
-			}
-		})
+		Expect(envelope.SourceId).To(Equal(msg.AppID))
+		Expect(envelope.InstanceId).To(Equal(msg.IndexID))
+		expectedMetrics := map[string]*loggregator_v2.GaugeValue{
+			"cpu": {
+				Unit:  metrics.CPUUnit,
+				Value: 100,
+			},
+			"memory": {
+				Unit:  metrics.MemoryUnit,
+				Value: 320,
+			},
+			"memory_quota": {
+				Unit:  metrics.MemoryUnit,
+				Value: 500,
+			},
+			"disk": {
+				Unit:  metrics.DiskUnit,
+				Value: 645,
+			},
+			"disk_quota": {
+				Unit:  metrics.DiskUnit,
+				Value: 1001,
+			},
+		}
 
-		JustBeforeEach(func() {
-			task := scheduler.ScheduleArgsForCall(0)
-			err = task()
-		})
-
-		It("should not return an error", func() {
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should call the forwarder", func() {
-			callCount := forwarder.ForwardCallCount()
-			Expect(callCount).To(Equal(2))
-		})
-
-		It("should forward the first message", func() {
-			message := forwarder.ForwardArgsForCall(0)
-			Expect(message).To(Equal(Message{
-				AppID:       "appid",
-				IndexID:     "0",
-				CPU:         123.4,
-				Memory:      123.4,
-				MemoryQuota: 1000.4,
-				Disk:        10.1,
-				DiskQuota:   250.5,
-			}))
-		})
-
-		It("should forward the second message", func() {
-			message := forwarder.ForwardArgsForCall(1)
-			Expect(message).To(Equal(Message{
-				AppID:       "appid",
-				IndexID:     "1",
-				CPU:         234.1,
-				Memory:      675.4,
-				MemoryQuota: 1000.4,
-				Disk:        10.1,
-				DiskQuota:   250.5,
-			}))
-		})
+		Expect(envelope.GetGauge().Metrics).To(Equal(expectedMetrics))
 	})
 })
+
+func newEnvelope() *loggregator_v2.Envelope {
+	return &loggregator_v2.Envelope{
+		Timestamp: time.Now().UnixNano(),
+		Message: &loggregator_v2.Envelope_Gauge{
+			Gauge: &loggregator_v2.Gauge{
+				Metrics: make(map[string]*loggregator_v2.GaugeValue),
+			},
+		},
+		Tags: make(map[string]string),
+	}
+}
