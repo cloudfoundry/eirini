@@ -3,7 +3,7 @@ module code.cloudfoundry.org/eirini
 go 1.13
 
 require (
-	cloud.google.com/go v0.47.0 // indirect
+	cloud.google.com/go v0.48.0 // indirect
 	code.cloudfoundry.org/bbs v0.0.0-20190927143358-c8e9aacab090
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
@@ -36,9 +36,9 @@ require (
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.2.0 // indirect
+	github.com/nats-io/jwt v0.3.2 // indirect
 	github.com/nats-io/nats-server/v2 v2.0.4
 	github.com/nats-io/nats.go v1.9.1
-	github.com/nats-io/nkeys v0.1.2 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
@@ -46,18 +46,19 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/tedsuo/ifrit v0.0.0-20180802180643-bea94bb476cc // indirect
 	go.uber.org/multierr v1.4.0
-	golang.org/x/crypto v0.0.0-20191108234033-bd318be0434a // indirect
-	golang.org/x/net v0.0.0-20191109021931-daa7c04131f5 // indirect
-	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd // indirect
+	golang.org/x/crypto v0.0.0-20191117063200-497ca9f6d64f // indirect
+	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914 // indirect
+	golang.org/x/sys v0.0.0-20191119060738-e882bf8e40c2 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	golang.org/x/tools v0.0.0-20191109212701-97ad0ed33101 // indirect
+	golang.org/x/tools v0.0.0-20191118222007-07fc4c7f2b98 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
-	google.golang.org/genproto v0.0.0-20191108220845-16a3f7862a1a // indirect
+	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11 // indirect
 	google.golang.org/grpc v1.25.1 // indirect
-	gopkg.in/yaml.v2 v2.2.5
-	k8s.io/api v0.0.0-20191109101513-0171b7c15da1
-	k8s.io/apimachinery v0.0.0-20191109100838-fee41ff082ed
-	k8s.io/client-go v0.0.0-20191109102209-3c0d1af94be5
+	gopkg.in/yaml.v2 v2.2.6
+	k8s.io/api v0.0.0-20191115135540-bbc9463b57e5
+	k8s.io/apimachinery v0.0.0-20191116203941-08e4eafd6d11
+	k8s.io/client-go v0.0.0-20191115215802-0a8a1d7b7fae
 	k8s.io/klog v1.0.0
-	k8s.io/metrics v0.0.0-20191109111301-80b462294217
+	k8s.io/metrics v0.0.0-20191115221332-dea8d0e6b550
+	k8s.io/utils v0.0.0-20191114200735-6ca3b61696b6 // indirect
 )
