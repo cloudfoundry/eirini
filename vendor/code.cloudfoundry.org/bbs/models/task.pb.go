@@ -52,7 +52,7 @@ var Task_State_value = map[string]int32{
 }
 
 func (Task_State) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_task_2c4826894cca0a87, []int{1, 0}
+	return fileDescriptor_task_a6185195565eca49, []int{1, 0}
 }
 
 type TaskDefinition struct {
@@ -86,7 +86,7 @@ type TaskDefinition struct {
 func (m *TaskDefinition) Reset()      { *m = TaskDefinition{} }
 func (*TaskDefinition) ProtoMessage() {}
 func (*TaskDefinition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_2c4826894cca0a87, []int{0}
+	return fileDescriptor_task_a6185195565eca49, []int{0}
 }
 func (m *TaskDefinition) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -310,7 +310,7 @@ type Task struct {
 func (m *Task) Reset()      { *m = Task{} }
 func (*Task) ProtoMessage() {}
 func (*Task) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_2c4826894cca0a87, []int{1}
+	return fileDescriptor_task_a6185195565eca49, []int{1}
 }
 func (m *Task) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2523,9 +2523,9 @@ var (
 	ErrIntOverflowTask   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("task.proto", fileDescriptor_task_2c4826894cca0a87) }
+func init() { proto.RegisterFile("task.proto", fileDescriptor_task_a6185195565eca49) }
 
-var fileDescriptor_task_2c4826894cca0a87 = []byte{
+var fileDescriptor_task_a6185195565eca49 = []byte{
 	// 1239 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x56, 0xdd, 0x6e, 0xdb, 0x36,
 	0x14, 0x8e, 0x92, 0xfa, 0x8f, 0x8e, 0x1d, 0x97, 0xf9, 0xa9, 0xda, 0xae, 0x92, 0x91, 0xfd, 0x79,

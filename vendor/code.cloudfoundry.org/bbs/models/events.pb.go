@@ -32,7 +32,7 @@ type ActualLRPCreatedEvent struct {
 func (m *ActualLRPCreatedEvent) Reset()      { *m = ActualLRPCreatedEvent{} }
 func (*ActualLRPCreatedEvent) ProtoMessage() {}
 func (*ActualLRPCreatedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{0}
+	return fileDescriptor_events_293a018b375f0b5c, []int{0}
 }
 func (m *ActualLRPCreatedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -77,7 +77,7 @@ type ActualLRPChangedEvent struct {
 func (m *ActualLRPChangedEvent) Reset()      { *m = ActualLRPChangedEvent{} }
 func (*ActualLRPChangedEvent) ProtoMessage() {}
 func (*ActualLRPChangedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{1}
+	return fileDescriptor_events_293a018b375f0b5c, []int{1}
 }
 func (m *ActualLRPChangedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -128,7 +128,7 @@ type ActualLRPRemovedEvent struct {
 func (m *ActualLRPRemovedEvent) Reset()      { *m = ActualLRPRemovedEvent{} }
 func (*ActualLRPRemovedEvent) ProtoMessage() {}
 func (*ActualLRPRemovedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{2}
+	return fileDescriptor_events_293a018b375f0b5c, []int{2}
 }
 func (m *ActualLRPRemovedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -171,7 +171,7 @@ type ActualLRPInstanceCreatedEvent struct {
 func (m *ActualLRPInstanceCreatedEvent) Reset()      { *m = ActualLRPInstanceCreatedEvent{} }
 func (*ActualLRPInstanceCreatedEvent) ProtoMessage() {}
 func (*ActualLRPInstanceCreatedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{3}
+	return fileDescriptor_events_293a018b375f0b5c, []int{3}
 }
 func (m *ActualLRPInstanceCreatedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -221,7 +221,7 @@ type ActualLRPInfo struct {
 func (m *ActualLRPInfo) Reset()      { *m = ActualLRPInfo{} }
 func (*ActualLRPInfo) ProtoMessage() {}
 func (*ActualLRPInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{4}
+	return fileDescriptor_events_293a018b375f0b5c, []int{4}
 }
 func (m *ActualLRPInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -309,7 +309,7 @@ type ActualLRPInstanceChangedEvent struct {
 func (m *ActualLRPInstanceChangedEvent) Reset()      { *m = ActualLRPInstanceChangedEvent{} }
 func (*ActualLRPInstanceChangedEvent) ProtoMessage() {}
 func (*ActualLRPInstanceChangedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{5}
+	return fileDescriptor_events_293a018b375f0b5c, []int{5}
 }
 func (m *ActualLRPInstanceChangedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -359,7 +359,7 @@ type ActualLRPInstanceRemovedEvent struct {
 func (m *ActualLRPInstanceRemovedEvent) Reset()      { *m = ActualLRPInstanceRemovedEvent{} }
 func (*ActualLRPInstanceRemovedEvent) ProtoMessage() {}
 func (*ActualLRPInstanceRemovedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{6}
+	return fileDescriptor_events_293a018b375f0b5c, []int{6}
 }
 func (m *ActualLRPInstanceRemovedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -402,7 +402,7 @@ type DesiredLRPCreatedEvent struct {
 func (m *DesiredLRPCreatedEvent) Reset()      { *m = DesiredLRPCreatedEvent{} }
 func (*DesiredLRPCreatedEvent) ProtoMessage() {}
 func (*DesiredLRPCreatedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{7}
+	return fileDescriptor_events_293a018b375f0b5c, []int{7}
 }
 func (m *DesiredLRPCreatedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -446,7 +446,7 @@ type DesiredLRPChangedEvent struct {
 func (m *DesiredLRPChangedEvent) Reset()      { *m = DesiredLRPChangedEvent{} }
 func (*DesiredLRPChangedEvent) ProtoMessage() {}
 func (*DesiredLRPChangedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{8}
+	return fileDescriptor_events_293a018b375f0b5c, []int{8}
 }
 func (m *DesiredLRPChangedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -496,7 +496,7 @@ type DesiredLRPRemovedEvent struct {
 func (m *DesiredLRPRemovedEvent) Reset()      { *m = DesiredLRPRemovedEvent{} }
 func (*DesiredLRPRemovedEvent) ProtoMessage() {}
 func (*DesiredLRPRemovedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{9}
+	return fileDescriptor_events_293a018b375f0b5c, []int{9}
 }
 func (m *DesiredLRPRemovedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -543,7 +543,7 @@ type ActualLRPCrashedEvent struct {
 func (m *ActualLRPCrashedEvent) Reset()      { *m = ActualLRPCrashedEvent{} }
 func (*ActualLRPCrashedEvent) ProtoMessage() {}
 func (*ActualLRPCrashedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{10}
+	return fileDescriptor_events_293a018b375f0b5c, []int{10}
 }
 func (m *ActualLRPCrashedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -600,7 +600,7 @@ type EventsByCellId struct {
 func (m *EventsByCellId) Reset()      { *m = EventsByCellId{} }
 func (*EventsByCellId) ProtoMessage() {}
 func (*EventsByCellId) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{11}
+	return fileDescriptor_events_293a018b375f0b5c, []int{11}
 }
 func (m *EventsByCellId) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -643,7 +643,7 @@ type TaskCreatedEvent struct {
 func (m *TaskCreatedEvent) Reset()      { *m = TaskCreatedEvent{} }
 func (*TaskCreatedEvent) ProtoMessage() {}
 func (*TaskCreatedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{12}
+	return fileDescriptor_events_293a018b375f0b5c, []int{12}
 }
 func (m *TaskCreatedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -687,7 +687,7 @@ type TaskChangedEvent struct {
 func (m *TaskChangedEvent) Reset()      { *m = TaskChangedEvent{} }
 func (*TaskChangedEvent) ProtoMessage() {}
 func (*TaskChangedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{13}
+	return fileDescriptor_events_293a018b375f0b5c, []int{13}
 }
 func (m *TaskChangedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -737,7 +737,7 @@ type TaskRemovedEvent struct {
 func (m *TaskRemovedEvent) Reset()      { *m = TaskRemovedEvent{} }
 func (*TaskRemovedEvent) ProtoMessage() {}
 func (*TaskRemovedEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_events_74e52e686d835ff9, []int{14}
+	return fileDescriptor_events_293a018b375f0b5c, []int{14}
 }
 func (m *TaskRemovedEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -4187,9 +4187,9 @@ var (
 	ErrIntOverflowEvents   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("events.proto", fileDescriptor_events_74e52e686d835ff9) }
+func init() { proto.RegisterFile("events.proto", fileDescriptor_events_293a018b375f0b5c) }
 
-var fileDescriptor_events_74e52e686d835ff9 = []byte{
+var fileDescriptor_events_293a018b375f0b5c = []byte{
 	// 815 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x56, 0x4f, 0x4f, 0xdb, 0x48,
 	0x14, 0xb7, 0xf3, 0x0f, 0x32, 0xc9, 0x86, 0xe0, 0xe5, 0x8f, 0x85, 0x76, 0xed, 0xac, 0x85, 0xb4,

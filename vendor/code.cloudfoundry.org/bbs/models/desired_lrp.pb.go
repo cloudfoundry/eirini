@@ -41,7 +41,7 @@ type DesiredLRPSchedulingInfo struct {
 func (m *DesiredLRPSchedulingInfo) Reset()      { *m = DesiredLRPSchedulingInfo{} }
 func (*DesiredLRPSchedulingInfo) ProtoMessage() {}
 func (*DesiredLRPSchedulingInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_d18bf4f76d4e9a9a, []int{0}
+	return fileDescriptor_desired_lrp_ee10e579cf41e9cf, []int{0}
 }
 func (m *DesiredLRPSchedulingInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -130,7 +130,7 @@ type DesiredLRPRunInfo struct {
 func (m *DesiredLRPRunInfo) Reset()      { *m = DesiredLRPRunInfo{} }
 func (*DesiredLRPRunInfo) ProtoMessage() {}
 func (*DesiredLRPRunInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_d18bf4f76d4e9a9a, []int{1}
+	return fileDescriptor_desired_lrp_ee10e579cf41e9cf, []int{1}
 }
 func (m *DesiredLRPRunInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -345,7 +345,7 @@ type ProtoRoutes struct {
 func (m *ProtoRoutes) Reset()      { *m = ProtoRoutes{} }
 func (*ProtoRoutes) ProtoMessage() {}
 func (*ProtoRoutes) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_d18bf4f76d4e9a9a, []int{2}
+	return fileDescriptor_desired_lrp_ee10e579cf41e9cf, []int{2}
 }
 func (m *ProtoRoutes) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -394,7 +394,7 @@ type DesiredLRPUpdate struct {
 func (m *DesiredLRPUpdate) Reset()      { *m = DesiredLRPUpdate{} }
 func (*DesiredLRPUpdate) ProtoMessage() {}
 func (*DesiredLRPUpdate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_d18bf4f76d4e9a9a, []int{3}
+	return fileDescriptor_desired_lrp_ee10e579cf41e9cf, []int{3}
 }
 func (m *DesiredLRPUpdate) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -559,7 +559,7 @@ type DesiredLRPKey struct {
 func (m *DesiredLRPKey) Reset()      { *m = DesiredLRPKey{} }
 func (*DesiredLRPKey) ProtoMessage() {}
 func (*DesiredLRPKey) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_d18bf4f76d4e9a9a, []int{4}
+	return fileDescriptor_desired_lrp_ee10e579cf41e9cf, []int{4}
 }
 func (m *DesiredLRPKey) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -619,7 +619,7 @@ type DesiredLRPResource struct {
 func (m *DesiredLRPResource) Reset()      { *m = DesiredLRPResource{} }
 func (*DesiredLRPResource) ProtoMessage() {}
 func (*DesiredLRPResource) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_d18bf4f76d4e9a9a, []int{5}
+	return fileDescriptor_desired_lrp_ee10e579cf41e9cf, []int{5}
 }
 func (m *DesiredLRPResource) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -718,7 +718,7 @@ type DesiredLRP struct {
 func (m *DesiredLRP) Reset()      { *m = DesiredLRP{} }
 func (*DesiredLRP) ProtoMessage() {}
 func (*DesiredLRP) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_d18bf4f76d4e9a9a, []int{6}
+	return fileDescriptor_desired_lrp_ee10e579cf41e9cf, []int{6}
 }
 func (m *DesiredLRP) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -6484,9 +6484,9 @@ var (
 	ErrIntOverflowDesiredLrp   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("desired_lrp.proto", fileDescriptor_desired_lrp_d18bf4f76d4e9a9a) }
+func init() { proto.RegisterFile("desired_lrp.proto", fileDescriptor_desired_lrp_ee10e579cf41e9cf) }
 
-var fileDescriptor_desired_lrp_d18bf4f76d4e9a9a = []byte{
+var fileDescriptor_desired_lrp_ee10e579cf41e9cf = []byte{
 	// 1730 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x58, 0x4f, 0x6f, 0x1b, 0xc7,
 	0x15, 0xe7, 0x4a, 0x16, 0x29, 0x0e, 0x49, 0x89, 0x1a, 0x51, 0xd2, 0x98, 0xb6, 0xb9, 0x2c, 0xe3,

@@ -48,7 +48,7 @@ type Action struct {
 func (m *Action) Reset()      { *m = Action{} }
 func (*Action) ProtoMessage() {}
 func (*Action) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actions_25fbf9f8050b0401, []int{0}
+	return fileDescriptor_actions_4bb7c3894950aabd, []int{0}
 }
 func (m *Action) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -154,7 +154,7 @@ type DownloadAction struct {
 func (m *DownloadAction) Reset()      { *m = DownloadAction{} }
 func (*DownloadAction) ProtoMessage() {}
 func (*DownloadAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actions_25fbf9f8050b0401, []int{1}
+	return fileDescriptor_actions_4bb7c3894950aabd, []int{1}
 }
 func (m *DownloadAction) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -250,7 +250,7 @@ type UploadAction struct {
 func (m *UploadAction) Reset()      { *m = UploadAction{} }
 func (*UploadAction) ProtoMessage() {}
 func (*UploadAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actions_25fbf9f8050b0401, []int{2}
+	return fileDescriptor_actions_4bb7c3894950aabd, []int{2}
 }
 func (m *UploadAction) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -328,7 +328,7 @@ type RunAction struct {
 func (m *RunAction) Reset()      { *m = RunAction{} }
 func (*RunAction) ProtoMessage() {}
 func (*RunAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actions_25fbf9f8050b0401, []int{3}
+	return fileDescriptor_actions_4bb7c3894950aabd, []int{3}
 }
 func (m *RunAction) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -423,7 +423,7 @@ type TimeoutAction struct {
 func (m *TimeoutAction) Reset()      { *m = TimeoutAction{} }
 func (*TimeoutAction) ProtoMessage() {}
 func (*TimeoutAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actions_25fbf9f8050b0401, []int{4}
+	return fileDescriptor_actions_4bb7c3894950aabd, []int{4}
 }
 func (m *TimeoutAction) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -492,7 +492,7 @@ type EmitProgressAction struct {
 func (m *EmitProgressAction) Reset()      { *m = EmitProgressAction{} }
 func (*EmitProgressAction) ProtoMessage() {}
 func (*EmitProgressAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actions_25fbf9f8050b0401, []int{5}
+	return fileDescriptor_actions_4bb7c3894950aabd, []int{5}
 }
 func (m *EmitProgressAction) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -564,7 +564,7 @@ type TryAction struct {
 func (m *TryAction) Reset()      { *m = TryAction{} }
 func (*TryAction) ProtoMessage() {}
 func (*TryAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actions_25fbf9f8050b0401, []int{6}
+	return fileDescriptor_actions_4bb7c3894950aabd, []int{6}
 }
 func (m *TryAction) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -615,7 +615,7 @@ type ParallelAction struct {
 func (m *ParallelAction) Reset()      { *m = ParallelAction{} }
 func (*ParallelAction) ProtoMessage() {}
 func (*ParallelAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actions_25fbf9f8050b0401, []int{7}
+	return fileDescriptor_actions_4bb7c3894950aabd, []int{7}
 }
 func (m *ParallelAction) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -666,7 +666,7 @@ type SerialAction struct {
 func (m *SerialAction) Reset()      { *m = SerialAction{} }
 func (*SerialAction) ProtoMessage() {}
 func (*SerialAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actions_25fbf9f8050b0401, []int{8}
+	return fileDescriptor_actions_4bb7c3894950aabd, []int{8}
 }
 func (m *SerialAction) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -717,7 +717,7 @@ type CodependentAction struct {
 func (m *CodependentAction) Reset()      { *m = CodependentAction{} }
 func (*CodependentAction) ProtoMessage() {}
 func (*CodependentAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actions_25fbf9f8050b0401, []int{9}
+	return fileDescriptor_actions_4bb7c3894950aabd, []int{9}
 }
 func (m *CodependentAction) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -772,7 +772,7 @@ type ResourceLimits struct {
 func (m *ResourceLimits) Reset()      { *m = ResourceLimits{} }
 func (*ResourceLimits) ProtoMessage() {}
 func (*ResourceLimits) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actions_25fbf9f8050b0401, []int{10}
+	return fileDescriptor_actions_4bb7c3894950aabd, []int{10}
 }
 func (m *ResourceLimits) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -4814,9 +4814,9 @@ var (
 	ErrIntOverflowActions   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("actions.proto", fileDescriptor_actions_25fbf9f8050b0401) }
+func init() { proto.RegisterFile("actions.proto", fileDescriptor_actions_4bb7c3894950aabd) }
 
-var fileDescriptor_actions_25fbf9f8050b0401 = []byte{
+var fileDescriptor_actions_4bb7c3894950aabd = []byte{
 	// 1073 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x56, 0x4f, 0x6f, 0xdc, 0x44,
 	0x14, 0x5f, 0xef, 0x6e, 0x36, 0xf1, 0x6b, 0xd6, 0xc9, 0x4e, 0xfe, 0x74, 0xbb, 0x01, 0x3b, 0x5a,

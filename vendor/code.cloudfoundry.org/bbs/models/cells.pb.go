@@ -33,7 +33,7 @@ type CellCapacity struct {
 func (m *CellCapacity) Reset()      { *m = CellCapacity{} }
 func (*CellCapacity) ProtoMessage() {}
 func (*CellCapacity) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cells_b714ace6d9f28a2a, []int{0}
+	return fileDescriptor_cells_92c392031bec7a86, []int{0}
 }
 func (m *CellCapacity) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -97,7 +97,7 @@ type CellPresence struct {
 func (m *CellPresence) Reset()      { *m = CellPresence{} }
 func (*CellPresence) ProtoMessage() {}
 func (*CellPresence) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cells_b714ace6d9f28a2a, []int{1}
+	return fileDescriptor_cells_92c392031bec7a86, []int{1}
 }
 func (m *CellPresence) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -190,7 +190,7 @@ type Provider struct {
 func (m *Provider) Reset()      { *m = Provider{} }
 func (*Provider) ProtoMessage() {}
 func (*Provider) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cells_b714ace6d9f28a2a, []int{2}
+	return fileDescriptor_cells_92c392031bec7a86, []int{2}
 }
 func (m *Provider) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -241,7 +241,7 @@ type CellsResponse struct {
 func (m *CellsResponse) Reset()      { *m = CellsResponse{} }
 func (*CellsResponse) ProtoMessage() {}
 func (*CellsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cells_b714ace6d9f28a2a, []int{3}
+	return fileDescriptor_cells_92c392031bec7a86, []int{3}
 }
 func (m *CellsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1623,9 +1623,9 @@ var (
 	ErrIntOverflowCells   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("cells.proto", fileDescriptor_cells_b714ace6d9f28a2a) }
+func init() { proto.RegisterFile("cells.proto", fileDescriptor_cells_92c392031bec7a86) }
 
-var fileDescriptor_cells_b714ace6d9f28a2a = []byte{
+var fileDescriptor_cells_92c392031bec7a86 = []byte{
 	// 548 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x53, 0x4f, 0x6f, 0xd3, 0x30,
 	0x14, 0x4f, 0xe8, 0x9a, 0xb5, 0x0e, 0xdd, 0x26, 0x0b, 0x44, 0x35, 0x21, 0xa7, 0x2a, 0x43, 0xaa,

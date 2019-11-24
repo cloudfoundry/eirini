@@ -31,7 +31,7 @@ type DesiredLRPLifecycleResponse struct {
 func (m *DesiredLRPLifecycleResponse) Reset()      { *m = DesiredLRPLifecycleResponse{} }
 func (*DesiredLRPLifecycleResponse) ProtoMessage() {}
 func (*DesiredLRPLifecycleResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_requests_01e1643dae0fe19d, []int{0}
+	return fileDescriptor_desired_lrp_requests_80ba5198f7214838, []int{0}
 }
 func (m *DesiredLRPLifecycleResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -75,7 +75,7 @@ type DesiredLRPsResponse struct {
 func (m *DesiredLRPsResponse) Reset()      { *m = DesiredLRPsResponse{} }
 func (*DesiredLRPsResponse) ProtoMessage() {}
 func (*DesiredLRPsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_requests_01e1643dae0fe19d, []int{1}
+	return fileDescriptor_desired_lrp_requests_80ba5198f7214838, []int{1}
 }
 func (m *DesiredLRPsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -126,7 +126,7 @@ type DesiredLRPsRequest struct {
 func (m *DesiredLRPsRequest) Reset()      { *m = DesiredLRPsRequest{} }
 func (*DesiredLRPsRequest) ProtoMessage() {}
 func (*DesiredLRPsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_requests_01e1643dae0fe19d, []int{2}
+	return fileDescriptor_desired_lrp_requests_80ba5198f7214838, []int{2}
 }
 func (m *DesiredLRPsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -177,7 +177,7 @@ type DesiredLRPResponse struct {
 func (m *DesiredLRPResponse) Reset()      { *m = DesiredLRPResponse{} }
 func (*DesiredLRPResponse) ProtoMessage() {}
 func (*DesiredLRPResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_requests_01e1643dae0fe19d, []int{3}
+	return fileDescriptor_desired_lrp_requests_80ba5198f7214838, []int{3}
 }
 func (m *DesiredLRPResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -228,7 +228,7 @@ type DesiredLRPSchedulingInfosResponse struct {
 func (m *DesiredLRPSchedulingInfosResponse) Reset()      { *m = DesiredLRPSchedulingInfosResponse{} }
 func (*DesiredLRPSchedulingInfosResponse) ProtoMessage() {}
 func (*DesiredLRPSchedulingInfosResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_requests_01e1643dae0fe19d, []int{4}
+	return fileDescriptor_desired_lrp_requests_80ba5198f7214838, []int{4}
 }
 func (m *DesiredLRPSchedulingInfosResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -278,7 +278,7 @@ type DesiredLRPByProcessGuidRequest struct {
 func (m *DesiredLRPByProcessGuidRequest) Reset()      { *m = DesiredLRPByProcessGuidRequest{} }
 func (*DesiredLRPByProcessGuidRequest) ProtoMessage() {}
 func (*DesiredLRPByProcessGuidRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_requests_01e1643dae0fe19d, []int{5}
+	return fileDescriptor_desired_lrp_requests_80ba5198f7214838, []int{5}
 }
 func (m *DesiredLRPByProcessGuidRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -321,7 +321,7 @@ type DesireLRPRequest struct {
 func (m *DesireLRPRequest) Reset()      { *m = DesireLRPRequest{} }
 func (*DesireLRPRequest) ProtoMessage() {}
 func (*DesireLRPRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_requests_01e1643dae0fe19d, []int{6}
+	return fileDescriptor_desired_lrp_requests_80ba5198f7214838, []int{6}
 }
 func (m *DesireLRPRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -365,7 +365,7 @@ type UpdateDesiredLRPRequest struct {
 func (m *UpdateDesiredLRPRequest) Reset()      { *m = UpdateDesiredLRPRequest{} }
 func (*UpdateDesiredLRPRequest) ProtoMessage() {}
 func (*UpdateDesiredLRPRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_requests_01e1643dae0fe19d, []int{7}
+	return fileDescriptor_desired_lrp_requests_80ba5198f7214838, []int{7}
 }
 func (m *UpdateDesiredLRPRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -415,7 +415,7 @@ type RemoveDesiredLRPRequest struct {
 func (m *RemoveDesiredLRPRequest) Reset()      { *m = RemoveDesiredLRPRequest{} }
 func (*RemoveDesiredLRPRequest) ProtoMessage() {}
 func (*RemoveDesiredLRPRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_desired_lrp_requests_01e1643dae0fe19d, []int{8}
+	return fileDescriptor_desired_lrp_requests_80ba5198f7214838, []int{8}
 }
 func (m *RemoveDesiredLRPRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2386,10 +2386,10 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("desired_lrp_requests.proto", fileDescriptor_desired_lrp_requests_01e1643dae0fe19d)
+	proto.RegisterFile("desired_lrp_requests.proto", fileDescriptor_desired_lrp_requests_80ba5198f7214838)
 }
 
-var fileDescriptor_desired_lrp_requests_01e1643dae0fe19d = []byte{
+var fileDescriptor_desired_lrp_requests_80ba5198f7214838 = []byte{
 	// 467 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x53, 0xc1, 0x6e, 0xd3, 0x30,
 	0x18, 0x8e, 0x87, 0xa8, 0xb4, 0x3f, 0x9d, 0x34, 0xcc, 0x61, 0xa5, 0x20, 0xaf, 0x78, 0x97, 0x5d,

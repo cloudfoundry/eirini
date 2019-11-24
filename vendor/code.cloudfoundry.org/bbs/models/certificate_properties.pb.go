@@ -31,7 +31,7 @@ type CertificateProperties struct {
 func (m *CertificateProperties) Reset()      { *m = CertificateProperties{} }
 func (*CertificateProperties) ProtoMessage() {}
 func (*CertificateProperties) Descriptor() ([]byte, []int) {
-	return fileDescriptor_certificate_properties_f22f255872a4bf61, []int{0}
+	return fileDescriptor_certificate_properties_c79f593a68c3f281, []int{0}
 }
 func (m *CertificateProperties) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -390,10 +390,10 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("certificate_properties.proto", fileDescriptor_certificate_properties_f22f255872a4bf61)
+	proto.RegisterFile("certificate_properties.proto", fileDescriptor_certificate_properties_c79f593a68c3f281)
 }
 
-var fileDescriptor_certificate_properties_f22f255872a4bf61 = []byte{
+var fileDescriptor_certificate_properties_c79f593a68c3f281 = []byte{
 	// 200 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x49, 0x4e, 0x2d, 0x2a,
 	0xc9, 0x4c, 0xcb, 0x4c, 0x4e, 0x2c, 0x49, 0x8d, 0x2f, 0x28, 0xca, 0x2f, 0x00, 0x71, 0x53, 0x8b,

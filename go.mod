@@ -3,8 +3,8 @@ module code.cloudfoundry.org/eirini
 go 1.13
 
 require (
-	cloud.google.com/go v0.48.0 // indirect
-	code.cloudfoundry.org/bbs v0.0.0-20190927143358-c8e9aacab090
+	cloud.google.com/go v0.49.0 // indirect
+	code.cloudfoundry.org/bbs v0.0.0-20191121175517-0cb4cacff92f
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	code.cloudfoundry.org/consuladapter v0.0.0-20190222031846-a0ec466a22b6 // indirect
@@ -45,20 +45,22 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.5
 	github.com/tedsuo/ifrit v0.0.0-20180802180643-bea94bb476cc // indirect
+	go.uber.org/atomic v1.5.1 // indirect
 	go.uber.org/multierr v1.4.0
-	golang.org/x/crypto v0.0.0-20191117063200-497ca9f6d64f // indirect
+	golang.org/x/crypto v0.0.0-20191122220453-ac88ee75c92c // indirect
 	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914 // indirect
-	golang.org/x/sys v0.0.0-20191119060738-e882bf8e40c2 // indirect
+	golang.org/x/oauth2 v0.0.0-20191122200657-5d9234df094c // indirect
+	golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	golang.org/x/tools v0.0.0-20191118222007-07fc4c7f2b98 // indirect
+	golang.org/x/tools v0.0.0-20191122232904-2a6ccf25d769 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11 // indirect
 	google.golang.org/grpc v1.25.1 // indirect
-	gopkg.in/yaml.v2 v2.2.6
-	k8s.io/api v0.0.0-20191115135540-bbc9463b57e5
-	k8s.io/apimachinery v0.0.0-20191116203941-08e4eafd6d11
-	k8s.io/client-go v0.0.0-20191115215802-0a8a1d7b7fae
+	gopkg.in/yaml.v2 v2.2.7
+	k8s.io/api v0.0.0-20191121015604-11707872ac1c
+	k8s.io/apimachinery v0.0.0-20191123013113-aee2c0efe032
+	k8s.io/client-go v0.0.0-20191121015835-571c0ef67034
 	k8s.io/klog v1.0.0
-	k8s.io/metrics v0.0.0-20191115221332-dea8d0e6b550
+	k8s.io/metrics v0.0.0-20191121021546-b1134fd1210c
 	k8s.io/utils v0.0.0-20191114200735-6ca3b61696b6 // indirect
 )

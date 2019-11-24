@@ -32,7 +32,7 @@ type PortRange struct {
 func (m *PortRange) Reset()      { *m = PortRange{} }
 func (*PortRange) ProtoMessage() {}
 func (*PortRange) Descriptor() ([]byte, []int) {
-	return fileDescriptor_security_group_1f7597323faeda95, []int{0}
+	return fileDescriptor_security_group_e3cb89d3df908c0c, []int{0}
 }
 func (m *PortRange) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -83,7 +83,7 @@ type ICMPInfo struct {
 func (m *ICMPInfo) Reset()      { *m = ICMPInfo{} }
 func (*ICMPInfo) ProtoMessage() {}
 func (*ICMPInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_security_group_1f7597323faeda95, []int{1}
+	return fileDescriptor_security_group_e3cb89d3df908c0c, []int{1}
 }
 func (m *ICMPInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -139,7 +139,7 @@ type SecurityGroupRule struct {
 func (m *SecurityGroupRule) Reset()      { *m = SecurityGroupRule{} }
 func (*SecurityGroupRule) ProtoMessage() {}
 func (*SecurityGroupRule) Descriptor() ([]byte, []int) {
-	return fileDescriptor_security_group_1f7597323faeda95, []int{2}
+	return fileDescriptor_security_group_e3cb89d3df908c0c, []int{2}
 }
 func (m *SecurityGroupRule) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1247,10 +1247,10 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("security_group.proto", fileDescriptor_security_group_1f7597323faeda95)
+	proto.RegisterFile("security_group.proto", fileDescriptor_security_group_e3cb89d3df908c0c)
 }
 
-var fileDescriptor_security_group_1f7597323faeda95 = []byte{
+var fileDescriptor_security_group_e3cb89d3df908c0c = []byte{
 	// 402 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x90, 0xb1, 0x6e, 0xdb, 0x30,
 	0x10, 0x86, 0x45, 0x2b, 0x76, 0x24, 0xa6, 0x01, 0x12, 0xa2, 0x03, 0x13, 0x14, 0x94, 0xa0, 0x49,

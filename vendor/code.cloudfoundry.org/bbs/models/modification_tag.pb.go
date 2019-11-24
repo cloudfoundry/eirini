@@ -32,7 +32,7 @@ type ModificationTag struct {
 func (m *ModificationTag) Reset()      { *m = ModificationTag{} }
 func (*ModificationTag) ProtoMessage() {}
 func (*ModificationTag) Descriptor() ([]byte, []int) {
-	return fileDescriptor_modification_tag_5c29d057251fdfa3, []int{0}
+	return fileDescriptor_modification_tag_976ef51c66b50a40, []int{0}
 }
 func (m *ModificationTag) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -414,10 +414,10 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("modification_tag.proto", fileDescriptor_modification_tag_5c29d057251fdfa3)
+	proto.RegisterFile("modification_tag.proto", fileDescriptor_modification_tag_976ef51c66b50a40)
 }
 
-var fileDescriptor_modification_tag_5c29d057251fdfa3 = []byte{
+var fileDescriptor_modification_tag_976ef51c66b50a40 = []byte{
 	// 203 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0xcb, 0xcd, 0x4f, 0xc9,
 	0x4c, 0xcb, 0x4c, 0x4e, 0x2c, 0xc9, 0xcc, 0xcf, 0x8b, 0x2f, 0x49, 0x4c, 0xd7, 0x2b, 0x28, 0xca,

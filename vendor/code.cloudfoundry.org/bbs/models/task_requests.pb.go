@@ -31,7 +31,7 @@ type TaskLifecycleResponse struct {
 func (m *TaskLifecycleResponse) Reset()      { *m = TaskLifecycleResponse{} }
 func (*TaskLifecycleResponse) ProtoMessage() {}
 func (*TaskLifecycleResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{0}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{0}
 }
 func (m *TaskLifecycleResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -76,7 +76,7 @@ type DesireTaskRequest struct {
 func (m *DesireTaskRequest) Reset()      { *m = DesireTaskRequest{} }
 func (*DesireTaskRequest) ProtoMessage() {}
 func (*DesireTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{1}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{1}
 }
 func (m *DesireTaskRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -134,7 +134,7 @@ type StartTaskRequest struct {
 func (m *StartTaskRequest) Reset()      { *m = StartTaskRequest{} }
 func (*StartTaskRequest) ProtoMessage() {}
 func (*StartTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{2}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{2}
 }
 func (m *StartTaskRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -185,7 +185,7 @@ type StartTaskResponse struct {
 func (m *StartTaskResponse) Reset()      { *m = StartTaskResponse{} }
 func (*StartTaskResponse) ProtoMessage() {}
 func (*StartTaskResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{3}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{3}
 }
 func (m *StartTaskResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -237,7 +237,7 @@ type FailTaskRequest struct {
 func (m *FailTaskRequest) Reset()      { *m = FailTaskRequest{} }
 func (*FailTaskRequest) ProtoMessage() {}
 func (*FailTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{4}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{4}
 }
 func (m *FailTaskRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -288,7 +288,7 @@ type RejectTaskRequest struct {
 func (m *RejectTaskRequest) Reset()      { *m = RejectTaskRequest{} }
 func (*RejectTaskRequest) ProtoMessage() {}
 func (*RejectTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{5}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{5}
 }
 func (m *RejectTaskRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -338,7 +338,7 @@ type TaskGuidRequest struct {
 func (m *TaskGuidRequest) Reset()      { *m = TaskGuidRequest{} }
 func (*TaskGuidRequest) ProtoMessage() {}
 func (*TaskGuidRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{6}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{6}
 }
 func (m *TaskGuidRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -385,7 +385,7 @@ type CompleteTaskRequest struct {
 func (m *CompleteTaskRequest) Reset()      { *m = CompleteTaskRequest{} }
 func (*CompleteTaskRequest) ProtoMessage() {}
 func (*CompleteTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{7}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{7}
 }
 func (m *CompleteTaskRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -461,7 +461,7 @@ type TaskCallbackResponse struct {
 func (m *TaskCallbackResponse) Reset()      { *m = TaskCallbackResponse{} }
 func (*TaskCallbackResponse) ProtoMessage() {}
 func (*TaskCallbackResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{8}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{8}
 }
 func (m *TaskCallbackResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -540,7 +540,7 @@ type TasksRequest struct {
 func (m *TasksRequest) Reset()      { *m = TasksRequest{} }
 func (*TasksRequest) ProtoMessage() {}
 func (*TasksRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{9}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{9}
 }
 func (m *TasksRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -591,7 +591,7 @@ type TasksResponse struct {
 func (m *TasksResponse) Reset()      { *m = TasksResponse{} }
 func (*TasksResponse) ProtoMessage() {}
 func (*TasksResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{10}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{10}
 }
 func (m *TasksResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -641,7 +641,7 @@ type TaskByGuidRequest struct {
 func (m *TaskByGuidRequest) Reset()      { *m = TaskByGuidRequest{} }
 func (*TaskByGuidRequest) ProtoMessage() {}
 func (*TaskByGuidRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{11}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{11}
 }
 func (m *TaskByGuidRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -685,7 +685,7 @@ type TaskResponse struct {
 func (m *TaskResponse) Reset()      { *m = TaskResponse{} }
 func (*TaskResponse) ProtoMessage() {}
 func (*TaskResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_requests_bc45980c86c66702, []int{12}
+	return fileDescriptor_task_requests_7d35860f9655160c, []int{12}
 }
 func (m *TaskResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -3805,9 +3805,9 @@ var (
 	ErrIntOverflowTaskRequests   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("task_requests.proto", fileDescriptor_task_requests_bc45980c86c66702) }
+func init() { proto.RegisterFile("task_requests.proto", fileDescriptor_task_requests_7d35860f9655160c) }
 
-var fileDescriptor_task_requests_bc45980c86c66702 = []byte{
+var fileDescriptor_task_requests_7d35860f9655160c = []byte{
 	// 663 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x55, 0xcd, 0x6e, 0xd3, 0x40,
 	0x10, 0xce, 0x26, 0x6d, 0x68, 0x27, 0x4d, 0xd3, 0xb8, 0x05, 0x59, 0x3d, 0xac, 0x23, 0xc3, 0x21,

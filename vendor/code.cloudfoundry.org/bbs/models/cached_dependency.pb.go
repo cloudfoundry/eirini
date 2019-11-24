@@ -37,7 +37,7 @@ type CachedDependency struct {
 func (m *CachedDependency) Reset()      { *m = CachedDependency{} }
 func (*CachedDependency) ProtoMessage() {}
 func (*CachedDependency) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cached_dependency_f90c5dae79d7d1ab, []int{0}
+	return fileDescriptor_cached_dependency_82985bd53cc29e50, []int{0}
 }
 func (m *CachedDependency) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -686,10 +686,10 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("cached_dependency.proto", fileDescriptor_cached_dependency_f90c5dae79d7d1ab)
+	proto.RegisterFile("cached_dependency.proto", fileDescriptor_cached_dependency_82985bd53cc29e50)
 }
 
-var fileDescriptor_cached_dependency_f90c5dae79d7d1ab = []byte{
+var fileDescriptor_cached_dependency_82985bd53cc29e50 = []byte{
 	// 326 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x90, 0xc1, 0x4a, 0xeb, 0x40,
 	0x14, 0x86, 0x33, 0xb9, 0xbd, 0xb9, 0xed, 0x40, 0xcb, 0xbd, 0xb3, 0xb8, 0x0e, 0x22, 0x27, 0x22,

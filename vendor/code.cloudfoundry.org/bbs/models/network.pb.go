@@ -32,7 +32,7 @@ type Network struct {
 func (m *Network) Reset()      { *m = Network{} }
 func (*Network) ProtoMessage() {}
 func (*Network) Descriptor() ([]byte, []int) {
-	return fileDescriptor_network_3edb652a78922c20, []int{0}
+	return fileDescriptor_network_abc008140ec02369, []int{0}
 }
 func (m *Network) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -506,9 +506,9 @@ var (
 	ErrIntOverflowNetwork   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("network.proto", fileDescriptor_network_3edb652a78922c20) }
+func init() { proto.RegisterFile("network.proto", fileDescriptor_network_abc008140ec02369) }
 
-var fileDescriptor_network_3edb652a78922c20 = []byte{
+var fileDescriptor_network_abc008140ec02369 = []byte{
 	// 247 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xcd, 0x4b, 0x2d, 0x29,
 	0xcf, 0x2f, 0xca, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0xcb, 0xcd, 0x4f, 0x49, 0xcd,

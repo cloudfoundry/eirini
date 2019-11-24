@@ -32,7 +32,7 @@ type CheckDefinition struct {
 func (m *CheckDefinition) Reset()      { *m = CheckDefinition{} }
 func (*CheckDefinition) ProtoMessage() {}
 func (*CheckDefinition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_check_definition_52a81a15557c1d6c, []int{0}
+	return fileDescriptor_check_definition_413963d2463bfea4, []int{0}
 }
 func (m *CheckDefinition) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -85,7 +85,7 @@ type Check struct {
 func (m *Check) Reset()      { *m = Check{} }
 func (*Check) ProtoMessage() {}
 func (*Check) Descriptor() ([]byte, []int) {
-	return fileDescriptor_check_definition_52a81a15557c1d6c, []int{1}
+	return fileDescriptor_check_definition_413963d2463bfea4, []int{1}
 }
 func (m *Check) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -136,7 +136,7 @@ type TCPCheck struct {
 func (m *TCPCheck) Reset()      { *m = TCPCheck{} }
 func (*TCPCheck) ProtoMessage() {}
 func (*TCPCheck) Descriptor() ([]byte, []int) {
-	return fileDescriptor_check_definition_52a81a15557c1d6c, []int{2}
+	return fileDescriptor_check_definition_413963d2463bfea4, []int{2}
 }
 func (m *TCPCheck) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -188,7 +188,7 @@ type HTTPCheck struct {
 func (m *HTTPCheck) Reset()      { *m = HTTPCheck{} }
 func (*HTTPCheck) ProtoMessage() {}
 func (*HTTPCheck) Descriptor() ([]byte, []int) {
-	return fileDescriptor_check_definition_52a81a15557c1d6c, []int{3}
+	return fileDescriptor_check_definition_413963d2463bfea4, []int{3}
 }
 func (m *HTTPCheck) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1237,10 +1237,10 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("check_definition.proto", fileDescriptor_check_definition_52a81a15557c1d6c)
+	proto.RegisterFile("check_definition.proto", fileDescriptor_check_definition_413963d2463bfea4)
 }
 
-var fileDescriptor_check_definition_52a81a15557c1d6c = []byte{
+var fileDescriptor_check_definition_413963d2463bfea4 = []byte{
 	// 366 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x91, 0xc1, 0x6a, 0xea, 0x40,
 	0x14, 0x86, 0x33, 0xea, 0x15, 0x33, 0xe2, 0xbd, 0xde, 0x59, 0x94, 0x50, 0xca, 0x28, 0x81, 0x82,

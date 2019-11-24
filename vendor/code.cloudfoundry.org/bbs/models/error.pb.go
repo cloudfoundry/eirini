@@ -112,7 +112,7 @@ var Error_Type_value = map[string]int32{
 }
 
 func (Error_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_error_e9049d79b826b2db, []int{0, 0}
+	return fileDescriptor_error_10f950b40b22cf16, []int{0, 0}
 }
 
 type Error struct {
@@ -123,7 +123,7 @@ type Error struct {
 func (m *Error) Reset()      { *m = Error{} }
 func (*Error) ProtoMessage() {}
 func (*Error) Descriptor() ([]byte, []int) {
-	return fileDescriptor_error_e9049d79b826b2db, []int{0}
+	return fileDescriptor_error_10f950b40b22cf16, []int{0}
 }
 func (m *Error) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -485,9 +485,9 @@ var (
 	ErrIntOverflowError   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("error.proto", fileDescriptor_error_e9049d79b826b2db) }
+func init() { proto.RegisterFile("error.proto", fileDescriptor_error_10f950b40b22cf16) }
 
-var fileDescriptor_error_e9049d79b826b2db = []byte{
+var fileDescriptor_error_10f950b40b22cf16 = []byte{
 	// 585 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x53, 0xcd, 0x4e, 0xdb, 0x4c,
 	0x14, 0xb5, 0xf9, 0x0c, 0x98, 0x09, 0x3f, 0x97, 0x21, 0x1f, 0x84, 0x40, 0x07, 0x64, 0xa9, 0x12,

@@ -32,7 +32,7 @@ type EnvironmentVariable struct {
 func (m *EnvironmentVariable) Reset()      { *m = EnvironmentVariable{} }
 func (*EnvironmentVariable) ProtoMessage() {}
 func (*EnvironmentVariable) Descriptor() ([]byte, []int) {
-	return fileDescriptor_environment_variables_e800587434b51c77, []int{0}
+	return fileDescriptor_environment_variables_4a3d806310e973b1, []int{0}
 }
 func (m *EnvironmentVariable) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -426,10 +426,10 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("environment_variables.proto", fileDescriptor_environment_variables_e800587434b51c77)
+	proto.RegisterFile("environment_variables.proto", fileDescriptor_environment_variables_4a3d806310e973b1)
 }
 
-var fileDescriptor_environment_variables_e800587434b51c77 = []byte{
+var fileDescriptor_environment_variables_4a3d806310e973b1 = []byte{
 	// 209 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4e, 0xcd, 0x2b, 0xcb,
 	0x2c, 0xca, 0xcf, 0xcb, 0x4d, 0xcd, 0x2b, 0x89, 0x2f, 0x4b, 0x2c, 0xca, 0x4c, 0x4c, 0xca, 0x49,

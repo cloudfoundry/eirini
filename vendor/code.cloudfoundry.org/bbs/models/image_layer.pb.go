@@ -46,7 +46,7 @@ var ImageLayer_DigestAlgorithm_value = map[string]int32{
 }
 
 func (ImageLayer_DigestAlgorithm) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_image_layer_c207ac23d9dfa516, []int{0, 0}
+	return fileDescriptor_image_layer_99096812be1e9142, []int{0, 0}
 }
 
 type ImageLayer_MediaType int32
@@ -72,7 +72,7 @@ var ImageLayer_MediaType_value = map[string]int32{
 }
 
 func (ImageLayer_MediaType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_image_layer_c207ac23d9dfa516, []int{0, 1}
+	return fileDescriptor_image_layer_99096812be1e9142, []int{0, 1}
 }
 
 type ImageLayer_Type int32
@@ -95,7 +95,7 @@ var ImageLayer_Type_value = map[string]int32{
 }
 
 func (ImageLayer_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_image_layer_c207ac23d9dfa516, []int{0, 2}
+	return fileDescriptor_image_layer_99096812be1e9142, []int{0, 2}
 }
 
 type ImageLayer struct {
@@ -111,7 +111,7 @@ type ImageLayer struct {
 func (m *ImageLayer) Reset()      { *m = ImageLayer{} }
 func (*ImageLayer) ProtoMessage() {}
 func (*ImageLayer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_image_layer_c207ac23d9dfa516, []int{0}
+	return fileDescriptor_image_layer_99096812be1e9142, []int{0}
 }
 func (m *ImageLayer) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -747,9 +747,9 @@ var (
 	ErrIntOverflowImageLayer   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("image_layer.proto", fileDescriptor_image_layer_c207ac23d9dfa516) }
+func init() { proto.RegisterFile("image_layer.proto", fileDescriptor_image_layer_99096812be1e9142) }
 
-var fileDescriptor_image_layer_c207ac23d9dfa516 = []byte{
+var fileDescriptor_image_layer_99096812be1e9142 = []byte{
 	// 533 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x93, 0x41, 0x6f, 0x12, 0x41,
 	0x14, 0xc7, 0x77, 0xa0, 0xa5, 0xf2, 0x6c, 0xca, 0x38, 0xd6, 0xba, 0xac, 0x66, 0x58, 0x49, 0x1a,

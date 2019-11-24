@@ -32,7 +32,7 @@ type DomainsResponse struct {
 func (m *DomainsResponse) Reset()      { *m = DomainsResponse{} }
 func (*DomainsResponse) ProtoMessage() {}
 func (*DomainsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_domain_34540ce15b4259d3, []int{0}
+	return fileDescriptor_domain_ed643212f7378468, []int{0}
 }
 func (m *DomainsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -82,7 +82,7 @@ type UpsertDomainResponse struct {
 func (m *UpsertDomainResponse) Reset()      { *m = UpsertDomainResponse{} }
 func (*UpsertDomainResponse) ProtoMessage() {}
 func (*UpsertDomainResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_domain_34540ce15b4259d3, []int{1}
+	return fileDescriptor_domain_ed643212f7378468, []int{1}
 }
 func (m *UpsertDomainResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -126,7 +126,7 @@ type UpsertDomainRequest struct {
 func (m *UpsertDomainRequest) Reset()      { *m = UpsertDomainRequest{} }
 func (*UpsertDomainRequest) ProtoMessage() {}
 func (*UpsertDomainRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_domain_34540ce15b4259d3, []int{2}
+	return fileDescriptor_domain_ed643212f7378468, []int{2}
 }
 func (m *UpsertDomainRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -826,9 +826,9 @@ var (
 	ErrIntOverflowDomain   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("domain.proto", fileDescriptor_domain_34540ce15b4259d3) }
+func init() { proto.RegisterFile("domain.proto", fileDescriptor_domain_ed643212f7378468) }
 
-var fileDescriptor_domain_34540ce15b4259d3 = []byte{
+var fileDescriptor_domain_ed643212f7378468 = []byte{
 	// 271 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x49, 0xc9, 0xcf, 0x4d,
 	0xcc, 0xcc, 0xd3, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0xcb, 0xcd, 0x4f, 0x49, 0xcd, 0x29,

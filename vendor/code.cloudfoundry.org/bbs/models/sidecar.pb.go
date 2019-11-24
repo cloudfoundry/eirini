@@ -33,7 +33,7 @@ type Sidecar struct {
 func (m *Sidecar) Reset()      { *m = Sidecar{} }
 func (*Sidecar) ProtoMessage() {}
 func (*Sidecar) Descriptor() ([]byte, []int) {
-	return fileDescriptor_sidecar_bdd69fdfae9599ce, []int{0}
+	return fileDescriptor_sidecar_a4981af66f85770e, []int{0}
 }
 func (m *Sidecar) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -463,9 +463,9 @@ var (
 	ErrIntOverflowSidecar   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("sidecar.proto", fileDescriptor_sidecar_bdd69fdfae9599ce) }
+func init() { proto.RegisterFile("sidecar.proto", fileDescriptor_sidecar_a4981af66f85770e) }
 
-var fileDescriptor_sidecar_bdd69fdfae9599ce = []byte{
+var fileDescriptor_sidecar_a4981af66f85770e = []byte{
 	// 239 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2d, 0xce, 0x4c, 0x49,
 	0x4d, 0x4e, 0x2c, 0xd2, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0xcb, 0xcd, 0x4f, 0x49, 0xcd,

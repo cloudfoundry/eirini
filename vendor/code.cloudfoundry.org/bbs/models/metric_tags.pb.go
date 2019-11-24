@@ -46,7 +46,7 @@ var MetricTagValue_DynamicValue_value = map[string]int32{
 }
 
 func (MetricTagValue_DynamicValue) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_metric_tags_8feee8a1bd712d49, []int{0, 0}
+	return fileDescriptor_metric_tags_dd0f8b0400bb507b, []int{0, 0}
 }
 
 type MetricTagValue struct {
@@ -59,7 +59,7 @@ type MetricTagValue struct {
 func (m *MetricTagValue) Reset()      { *m = MetricTagValue{} }
 func (*MetricTagValue) ProtoMessage() {}
 func (*MetricTagValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_metric_tags_8feee8a1bd712d49, []int{0}
+	return fileDescriptor_metric_tags_dd0f8b0400bb507b, []int{0}
 }
 func (m *MetricTagValue) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -448,9 +448,9 @@ var (
 	ErrIntOverflowMetricTags   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("metric_tags.proto", fileDescriptor_metric_tags_8feee8a1bd712d49) }
+func init() { proto.RegisterFile("metric_tags.proto", fileDescriptor_metric_tags_dd0f8b0400bb507b) }
 
-var fileDescriptor_metric_tags_8feee8a1bd712d49 = []byte{
+var fileDescriptor_metric_tags_dd0f8b0400bb507b = []byte{
 	// 296 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0xcc, 0x4d, 0x2d, 0x29,
 	0xca, 0x4c, 0x8e, 0x2f, 0x49, 0x4c, 0x2f, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0xcb,

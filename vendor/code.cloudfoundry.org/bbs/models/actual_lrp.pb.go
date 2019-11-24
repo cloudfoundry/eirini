@@ -46,7 +46,7 @@ var ActualLRPNetInfo_PreferredAddress_value = map[string]int32{
 }
 
 func (ActualLRPNetInfo_PreferredAddress) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_10076a6de8d7517d, []int{4, 0}
+	return fileDescriptor_actual_lrp_10bbc9293257e61f, []int{4, 0}
 }
 
 type ActualLRP_Presence int32
@@ -69,7 +69,7 @@ var ActualLRP_Presence_value = map[string]int32{
 }
 
 func (ActualLRP_Presence) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_10076a6de8d7517d, []int{5, 0}
+	return fileDescriptor_actual_lrp_10bbc9293257e61f, []int{5, 0}
 }
 
 // Deprecated: Do not use.
@@ -81,7 +81,7 @@ type ActualLRPGroup struct {
 func (m *ActualLRPGroup) Reset()      { *m = ActualLRPGroup{} }
 func (*ActualLRPGroup) ProtoMessage() {}
 func (*ActualLRPGroup) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_10076a6de8d7517d, []int{0}
+	return fileDescriptor_actual_lrp_10bbc9293257e61f, []int{0}
 }
 func (m *ActualLRPGroup) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -134,7 +134,7 @@ type PortMapping struct {
 func (m *PortMapping) Reset()      { *m = PortMapping{} }
 func (*PortMapping) ProtoMessage() {}
 func (*PortMapping) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_10076a6de8d7517d, []int{1}
+	return fileDescriptor_actual_lrp_10bbc9293257e61f, []int{1}
 }
 func (m *PortMapping) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -200,7 +200,7 @@ type ActualLRPKey struct {
 func (m *ActualLRPKey) Reset()      { *m = ActualLRPKey{} }
 func (*ActualLRPKey) ProtoMessage() {}
 func (*ActualLRPKey) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_10076a6de8d7517d, []int{2}
+	return fileDescriptor_actual_lrp_10bbc9293257e61f, []int{2}
 }
 func (m *ActualLRPKey) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -258,7 +258,7 @@ type ActualLRPInstanceKey struct {
 func (m *ActualLRPInstanceKey) Reset()      { *m = ActualLRPInstanceKey{} }
 func (*ActualLRPInstanceKey) ProtoMessage() {}
 func (*ActualLRPInstanceKey) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_10076a6de8d7517d, []int{3}
+	return fileDescriptor_actual_lrp_10bbc9293257e61f, []int{3}
 }
 func (m *ActualLRPInstanceKey) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -311,7 +311,7 @@ type ActualLRPNetInfo struct {
 func (m *ActualLRPNetInfo) Reset()      { *m = ActualLRPNetInfo{} }
 func (*ActualLRPNetInfo) ProtoMessage() {}
 func (*ActualLRPNetInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_10076a6de8d7517d, []int{4}
+	return fileDescriptor_actual_lrp_10bbc9293257e61f, []int{4}
 }
 func (m *ActualLRPNetInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -384,7 +384,7 @@ type ActualLRP struct {
 func (m *ActualLRP) Reset()      { *m = ActualLRP{} }
 func (*ActualLRP) ProtoMessage() {}
 func (*ActualLRP) Descriptor() ([]byte, []int) {
-	return fileDescriptor_actual_lrp_10076a6de8d7517d, []int{5}
+	return fileDescriptor_actual_lrp_10bbc9293257e61f, []int{5}
 }
 func (m *ActualLRP) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2358,9 +2358,9 @@ var (
 	ErrIntOverflowActualLrp   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("actual_lrp.proto", fileDescriptor_actual_lrp_10076a6de8d7517d) }
+func init() { proto.RegisterFile("actual_lrp.proto", fileDescriptor_actual_lrp_10bbc9293257e61f) }
 
-var fileDescriptor_actual_lrp_10076a6de8d7517d = []byte{
+var fileDescriptor_actual_lrp_10bbc9293257e61f = []byte{
 	// 990 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x55, 0x4f, 0x6f, 0xdb, 0xc6,
 	0x13, 0x15, 0xed, 0xc8, 0x92, 0x46, 0xb2, 0x4c, 0xaf, 0x9d, 0x9f, 0x09, 0xfd, 0x02, 0x52, 0x15,

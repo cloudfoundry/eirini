@@ -32,7 +32,7 @@ type SharedDevice struct {
 func (m *SharedDevice) Reset()      { *m = SharedDevice{} }
 func (*SharedDevice) ProtoMessage() {}
 func (*SharedDevice) Descriptor() ([]byte, []int) {
-	return fileDescriptor_volume_mount_546c58603d714150, []int{0}
+	return fileDescriptor_volume_mount_13b32eee5c8c5956, []int{0}
 }
 func (m *SharedDevice) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -86,7 +86,7 @@ type VolumeMount struct {
 func (m *VolumeMount) Reset()      { *m = VolumeMount{} }
 func (*VolumeMount) ProtoMessage() {}
 func (*VolumeMount) Descriptor() ([]byte, []int) {
-	return fileDescriptor_volume_mount_546c58603d714150, []int{1}
+	return fileDescriptor_volume_mount_13b32eee5c8c5956, []int{1}
 }
 func (m *VolumeMount) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -150,7 +150,7 @@ type VolumePlacement struct {
 func (m *VolumePlacement) Reset()      { *m = VolumePlacement{} }
 func (*VolumePlacement) ProtoMessage() {}
 func (*VolumePlacement) Descriptor() ([]byte, []int) {
-	return fileDescriptor_volume_mount_546c58603d714150, []int{2}
+	return fileDescriptor_volume_mount_13b32eee5c8c5956, []int{2}
 }
 func (m *VolumePlacement) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1016,9 +1016,9 @@ var (
 	ErrIntOverflowVolumeMount   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("volume_mount.proto", fileDescriptor_volume_mount_546c58603d714150) }
+func init() { proto.RegisterFile("volume_mount.proto", fileDescriptor_volume_mount_13b32eee5c8c5956) }
 
-var fileDescriptor_volume_mount_546c58603d714150 = []byte{
+var fileDescriptor_volume_mount_13b32eee5c8c5956 = []byte{
 	// 381 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x91, 0xc1, 0x6a, 0xa3, 0x40,
 	0x18, 0xc7, 0x9d, 0xc4, 0xb8, 0x66, 0x4c, 0x58, 0x77, 0xd8, 0x83, 0x2c, 0xcb, 0x18, 0x3c, 0x85,
