@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -27,6 +25,8 @@ import (
 
 	// For gcp and oidc authentication
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	"code.cloudfoundry.org/tlsconfig"
 )
 
 var connectCmd = &cobra.Command{
@@ -63,28 +63,21 @@ func connect(cmd *cobra.Command, args []string) {
 
 	var server *http.Server
 	handlerLogger.Info("opi-connected")
+
+	tlsConfig, err := tlsconfig.Build(
+		tlsconfig.WithInternalServiceDefaults(),
+	).Server(
+		tlsconfig.WithClientAuthenticationFromFile(cfg.Properties.ClientCAPath),
+	)
+	cmdcommons.ExitWithError(err)
+
 	server = &http.Server{
 		Addr:      fmt.Sprintf("0.0.0.0:%d", cfg.Properties.TLSPort),
 		Handler:   handler,
-		TLSConfig: serverTLSConfig(cfg),
+		TLSConfig: tlsConfig,
 	}
 	handlerLogger.Fatal("opi-crashed",
 		server.ListenAndServeTLS(cfg.Properties.ServerCertPath, cfg.Properties.ServerKeyPath))
-}
-
-func serverTLSConfig(cfg *eirini.Config) *tls.Config {
-	bs, err := ioutil.ReadFile(cfg.Properties.ClientCAPath)
-	cmdcommons.ExitWithError(err)
-
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(bs) {
-		panic("invalid client CA cert data")
-	}
-
-	return &tls.Config{
-		ClientCAs:  certPool,
-		ClientAuth: tls.RequireAndVerifyClientCert,
-	}
 }
 
 func initStager(cfg *eirini.Config) eirini.Stager {
