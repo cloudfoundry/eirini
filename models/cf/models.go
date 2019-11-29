@@ -6,14 +6,6 @@ import (
 	"code.cloudfoundry.org/bbs/models"
 )
 
-type VcapApp struct {
-	AppName   string   `json:"application_name"`
-	AppID     string   `json:"application_id"`
-	Version   string   `json:"version"`
-	AppUris   []string `json:"application_uris"`
-	SpaceName string   `json:"space_name"`
-}
-
 type VolumeMount struct {
 	VolumeID string `json:"volume_id"`
 	MountDir string `json:"mount_dir"`

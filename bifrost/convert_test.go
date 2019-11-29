@@ -48,9 +48,11 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			MemoryMB:     456,
 			DiskMB:       256,
 			CPUWeight:    50,
+			AppGUID:      "app-guid-69da097fc360",
+			AppName:      "bumblebee",
+			SpaceName:    "transformers",
 			Environment: map[string]string{
-				"VCAP_APPLICATION": `{"application_name":"bumblebee", "space_name":"transformers", "application_id":"app-guid-69da097fc360", "version": "something-something-uuid", "application_uris":["bumblebee.example.com", "transformers.example.com"]}`,
-				"VAR_FROM_CC":      "val from cc",
+				"VAR_FROM_CC": "val from cc",
 			},
 			HealthCheckType:         "http",
 			HealthCheckHTTPEndpoint: "/heat",
@@ -77,14 +79,11 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 		regIP := "eirini-registry.service.cf.internal"
 		converter = bifrost.NewConverter(logger, regIP, defaultDiskQuota)
 		lrp, err = converter.Convert(desireLRPRequest)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Context("When request is converted successfully", func() {
 		verifyLRPConvertedSuccessfully := func() {
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
 			It("should set the app name", func() {
 				Expect(lrp.AppName).To(Equal("bumblebee"))
 			})
@@ -247,21 +246,6 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			})
 
 			verifyLRPConvertedSuccessfully()
-		})
-	})
-
-	Context("When the request fails to be converted", func() {
-		Context("When VCAP_APPLICATION env variable is invalid", func() {
-			BeforeEach(func() {
-				desireLRPRequest.Environment = map[string]string{
-					"VCAP_APPLICATION": `{something is wrong`,
-				}
-			})
-
-			It("should return a meaningful error", func() {
-				Expect(err).To(MatchError(ContainSubstring("failed to parse vcap app")))
-			})
-
 		})
 	})
 })

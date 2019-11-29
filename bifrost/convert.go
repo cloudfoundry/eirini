@@ -3,12 +3,15 @@ package bifrost
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 )
+
+//go:generate counterfeiter . Converter
+type Converter interface {
+	Convert(request cf.DesireLRPRequest) (opi.LRP, error)
+}
 
 type DropletToImageConverter struct {
 	logger      lager.Logger
@@ -25,12 +28,6 @@ func NewConverter(logger lager.Logger, registryIP string, diskLimitMB int64) *Dr
 }
 
 func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP, error) {
-	vcapJSON := request.Environment["VCAP_APPLICATION"]
-	vcap, err := parseVcapApplication(vcapJSON)
-	if err != nil {
-		return opi.LRP{}, errors.Wrap(err, "failed to parse vcap app")
-	}
-
 	var command []string
 	var env map[string]string
 	var image string
@@ -85,11 +82,11 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 	}
 
 	return opi.LRP{
-		AppName:         vcap.AppName,
-		AppGUID:         vcap.AppID,
+		AppName:         request.AppName,
+		AppGUID:         request.AppGUID,
 		AppURIs:         routesJSON,
 		LastUpdated:     request.LastUpdated,
-		SpaceName:       vcap.SpaceName,
+		SpaceName:       request.SpaceName,
 		LRPIdentifier:   identifier,
 		ProcessType:     request.ProcessType,
 		Image:           image,
