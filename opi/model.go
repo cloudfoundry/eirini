@@ -29,6 +29,7 @@ type LRP struct {
 	ProcessType      string
 	AppName          string
 	AppGUID          string
+	OrgName          string
 	SpaceName        string
 	Image            string
 	Command          []string

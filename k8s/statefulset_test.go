@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/eirini/util/utilfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	appsv1 "k8s.io/api/apps/v1"
@@ -89,46 +90,25 @@ var _ = Describe("Statefulset Desirer", func() {
 				Expect(readinessProbeCreator.CallCount()).To(Equal(1))
 			})
 
-			It("should provide original request to the statefulset annotation", func() {
+			DescribeTable("Annotations",
+				func(annotationName, expectedValue string) {
+					statefulSet := statefulSetClient.CreateArgsForCall(0)
+					Expect(statefulSet.Annotations).To(HaveKeyWithValue(annotationName, expectedValue))
+				},
+				Entry("ProcessGUID", AnnotationProcessGUID, "guid_1234-version_1234"),
+				Entry("AppUris", AnnotationAppUris, "my.example.route"),
+				Entry("AppName", AnnotationAppName, "Baldur"),
+				Entry("AppID", AnnotationAppID, "premium_app_guid_1234"),
+				Entry("Version", AnnotationVersion, "version_1234"),
+				Entry("OriginalRequest", AnnotationOriginalRequest, "original request"),
+				Entry("RegisteredRoutes", AnnotationRegisteredRoutes, "my.example.route"),
+				Entry("SpaceName", AnnotationSpaceName, "space-foo"),
+				Entry("OrgName", AnnotationOrgName, "org-foo"),
+			)
+
+			It("should provide last updated to the statefulset annotation", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Annotations).To(HaveKeyWithValue(AnnotationOriginalRequest, "original request"))
-			})
-
-			It("should provide registered routes to the statefulset annotation", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Annotations).To(HaveKeyWithValue(AnnotationRegisteredRoutes, "my.example.route"))
-			})
-
-			It("should provide space name to the statefulset annotation", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Annotations).To(HaveKeyWithValue(AnnotationSpaceName, "space-foo"))
-			})
-
-			It("should provide LRP metadata to the statefulset annotation", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-
-				expectedKeys := map[string]string{
-					AnnotationProcessGUID: "guid_1234-version_1234",
-					AnnotationLastUpdated: lrp.LastUpdated,
-					AnnotationAppUris:     "my.example.route",
-					AnnotationAppName:     "Baldur",
-					AnnotationAppID:       "premium_app_guid_1234",
-					AnnotationVersion:     "version_1234",
-				}
-
-				for k, v := range expectedKeys {
-					Expect(statefulSet.Annotations).To(HaveKeyWithValue(k, v))
-				}
-			})
-
-			It("should provide the process-guid to the pod annotations", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(AnnotationProcessGUID, "guid_1234-version_1234"))
-			})
-
-			It("should provide the VcapAppId to the pod annotations", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(AnnotationAppID, "premium_app_guid_1234"))
+				Expect(statefulSet.Annotations).To(HaveKeyWithValue(AnnotationLastUpdated, lrp.LastUpdated))
 			})
 
 			It("should set seccomp pod annotation", func() {
@@ -707,6 +687,7 @@ func createLRP(name, routes string) *opi.LRP {
 		AppName:     name,
 		AppGUID:     "premium_app_guid_1234",
 		SpaceName:   "space-foo",
+		OrgName:     "org-foo",
 		Command: []string{
 			"/bin/sh",
 			"-c",

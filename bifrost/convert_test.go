@@ -39,18 +39,19 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 		rawJSON := json.RawMessage(routesJSON)
 		desireLRPRequest = cf.DesireLRPRequest{
-			GUID:         "capi-process-guid-01cba02034f1",
-			Version:      "capi-process-version-87d0124c433a",
-			ProcessGUID:  "capi-process-guid-69da097fc360-capi-process-version-87d0124c433a",
-			ProcessType:  "web",
-			LastUpdated:  "23534635232.3",
-			NumInstances: 3,
-			MemoryMB:     456,
-			DiskMB:       256,
-			CPUWeight:    50,
-			AppGUID:      "app-guid-69da097fc360",
-			AppName:      "bumblebee",
-			SpaceName:    "transformers",
+			GUID:             "capi-process-guid-01cba02034f1",
+			Version:          "capi-process-version-87d0124c433a",
+			ProcessGUID:      "capi-process-guid-69da097fc360-capi-process-version-87d0124c433a",
+			ProcessType:      "web",
+			LastUpdated:      "23534635232.3",
+			NumInstances:     3,
+			MemoryMB:         456,
+			DiskMB:           256,
+			CPUWeight:        50,
+			AppGUID:          "app-guid-69da097fc360",
+			AppName:          "bumblebee",
+			SpaceName:        "transformers",
+			OrganizationName: "marvel",
 			Environment: map[string]string{
 				"VAR_FROM_CC": "val from cc",
 			},
@@ -94,6 +95,10 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 			It("should set the space name", func() {
 				Expect(lrp.SpaceName).To(Equal("transformers"))
+			})
+
+			It("should set the org name", func() {
+				Expect(lrp.OrgName).To(Equal("marvel"))
 			})
 
 			It("should set the correct TargetInstances", func() {

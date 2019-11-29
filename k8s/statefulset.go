@@ -30,6 +30,7 @@ const (
 	AnnotationAppUris          = "cloudfoundry.org/application_uris"
 	AnnotationAppID            = "cloudfoundry.org/application_id"
 	AnnotationSpaceName        = "cloudfoundry.org/space_name"
+	AnnotationOrgName          = "cloudfoundry.org/org_name"
 	AnnotationLastUpdated      = "cloudfoundry.org/last_updated"
 	AnnotationProcessGUID      = "cloudfoundry.org/process_guid"
 	AnnotationRegisteredRoutes = "cloudfoundry.org/routes"
@@ -380,6 +381,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 		AnnotationProcessGUID:      lrp.ProcessGUID(),
 		AnnotationAppUris:          lrp.AppURIs,
 		AnnotationAppName:          lrp.AppName,
+		AnnotationOrgName:          lrp.OrgName,
 	}
 
 	return statefulSet
