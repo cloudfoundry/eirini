@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	cloud.google.com/go v0.49.0 // indirect
-	code.cloudfoundry.org/bbs v0.0.0-20191121175517-0cb4cacff92f
+	code.cloudfoundry.org/bbs v0.0.0-20191127211754-4e363e2f6ed6
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	code.cloudfoundry.org/consuladapter v0.0.0-20190222031846-a0ec466a22b6 // indirect
@@ -18,7 +18,7 @@ require (
 	code.cloudfoundry.org/rep v0.0.0-20190916225859-5f1c360e9bc1 // indirect
 	code.cloudfoundry.org/rfc5424 v0.0.0-20180905210152-236a6d29298a // indirect
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
-	code.cloudfoundry.org/tlsconfig v0.0.0-20190710180242-462f72de1106
+	code.cloudfoundry.org/tlsconfig v0.0.0-20191126220907-6c65973656e3
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
 	github.com/Azure/go-autorest/autorest v0.9.2 // indirect
@@ -47,18 +47,19 @@ require (
 	github.com/tedsuo/ifrit v0.0.0-20180802180643-bea94bb476cc // indirect
 	go.uber.org/atomic v1.5.1 // indirect
 	go.uber.org/multierr v1.4.0
-	golang.org/x/crypto v0.0.0-20191122220453-ac88ee75c92c // indirect
-	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914 // indirect
+	golang.org/x/crypto v0.0.0-20191128160524-b544559bb6d1 // indirect
+	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
+	golang.org/x/net v0.0.0-20191126235420-ef20fe5d7933 // indirect
 	golang.org/x/oauth2 v0.0.0-20191122200657-5d9234df094c // indirect
-	golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e // indirect
+	golang.org/x/sys v0.0.0-20191128015809-6d18c012aee9 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	golang.org/x/tools v0.0.0-20191122232904-2a6ccf25d769 // indirect
+	golang.org/x/tools v0.0.0-20191130070609-6e064ea0cf2d // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11 // indirect
 	google.golang.org/grpc v1.25.1 // indirect
 	gopkg.in/yaml.v2 v2.2.7
 	k8s.io/api v0.0.0-20191121015604-11707872ac1c
-	k8s.io/apimachinery v0.0.0-20191123013113-aee2c0efe032
+	k8s.io/apimachinery v0.0.0-20191123233150-4c4803ed55e3
 	k8s.io/client-go v0.0.0-20191121015835-571c0ef67034
 	k8s.io/klog v1.0.0
 	k8s.io/metrics v0.0.0-20191121021546-b1134fd1210c
