@@ -62,9 +62,13 @@ type BuildpackLifecycle struct {
 
 type StagingRequest struct {
 	AppGUID            string                `json:"app_guid"`
+	AppName            string                `json:"app_name"`
 	CompletionCallback string                `json:"completion_callback"`
 	Environment        []EnvironmentVariable `json:"environment"`
 	LifecycleData      LifecycleData         `json:"lifecycle_data"`
+	MemoryMB           int64                 `json:"memory_mb"`
+	DiskMB             int64                 `json:"disk_mb"`
+	CPUWeight          uint8                 `json:"cpu_weight"`
 }
 
 type LifecycleData struct {

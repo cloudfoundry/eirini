@@ -81,6 +81,9 @@ var _ = Describe("Stager", func() {
 					},
 				},
 				CompletionCallback: "example.com/call/me/maybe",
+				MemoryMB:           1234,
+				DiskMB:             4567,
+				CPUWeight:          49,
 			}
 		})
 
@@ -110,6 +113,9 @@ var _ = Describe("Stager", func() {
 						eirini.EnvBuildpacks:         `[{"name":"go_buildpack","key":"1234eeff","url":"example.com/build/pack","skip_detect":true}]`,
 						eirini.EnvEiriniAddress:      "http://opi.cf.internal",
 					},
+					MemoryMB:  1234,
+					DiskMB:    4567,
+					CPUWeight: 49,
 				},
 			}))
 		})
