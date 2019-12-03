@@ -131,6 +131,22 @@ var _ = Describe("Stager", func() {
 			})
 
 		})
+
+		Context("and there are no resource limitations", func() {
+			BeforeEach(func() {
+				request.MemoryMB = 0
+				request.DiskMB = 0
+				request.CPUWeight = 0
+			})
+
+			It("should set default values", func() {
+				Expect(taskDesirer.DesireStagingCallCount()).To(Equal(1))
+				task := taskDesirer.DesireStagingArgsForCall(0)
+				Expect(task.MemoryMB).To(Equal(int64(200)))
+				Expect(task.DiskMB).To(Equal(int64(500)))
+				Expect(task.CPUWeight).To(Equal(uint8(50)))
+			})
+		})
 	})
 
 	Context("When completing staging", func() {

@@ -67,15 +67,30 @@ func (s *Stager) createStagingTask(stagingGUID string, request cf.StagingRequest
 
 	stagingEnv := mergeEnvVriables(eiriniEnv, request.Environment)
 
+	memMB := request.MemoryMB
+	if memMB == 0 {
+		memMB = 200
+	}
+
+	diskMB := request.DiskMB
+	if diskMB == 0 {
+		diskMB = 500
+	}
+
+	cpuWeight := request.CPUWeight
+	if cpuWeight == 0 {
+		cpuWeight = 50
+	}
+
 	stagingTask := &opi.StagingTask{
 		DownloaderImage: s.Config.DownloaderImage,
 		UploaderImage:   s.Config.UploaderImage,
 		ExecutorImage:   s.Config.ExecutorImage,
 		Task: &opi.Task{
 			Env:       stagingEnv,
-			MemoryMB:  request.MemoryMB,
-			DiskMB:    request.DiskMB,
-			CPUWeight: request.CPUWeight,
+			MemoryMB:  memMB,
+			DiskMB:    diskMB,
+			CPUWeight: cpuWeight,
 		},
 	}
 	return stagingTask, nil
