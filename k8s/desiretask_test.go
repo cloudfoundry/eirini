@@ -77,7 +77,7 @@ var _ = Describe("Desiretask", func() {
 
 	assertExecutorContainer := func(container v1.Container, cpu uint8, mem, disk int64) {
 		assertContainer(container, "opi-task-executor")
-		Expect(container.Resources.Requests.Memory()).To(Equal(resource.NewScaledQuantity(1, resource.Mega)))
+		Expect(container.Resources.Requests.Memory()).To(Equal(resource.NewScaledQuantity(mem, resource.Mega)))
 		Expect(container.Resources.Requests.Cpu()).To(Equal(resource.NewScaledQuantity(int64(cpu*10), resource.Milli)))
 		Expect(container.Resources.Requests.StorageEphemeral()).To(Equal(resource.NewScaledQuantity(disk, resource.Mega)))
 	}
