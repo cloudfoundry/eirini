@@ -6,6 +6,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	batch "k8s.io/api/batch/v1"
@@ -102,6 +103,13 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 			ImagePullPolicy: v1.PullAlways,
 			Env:             envs,
 			VolumeMounts:    executorVolumeMounts,
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceMemory:           *resource.NewScaledQuantity(task.MemoryMB, resource.Mega),
+					v1.ResourceCPU:              *resource.NewScaledQuantity(int64(task.CPUWeight)*10, resource.Milli),
+					v1.ResourceEphemeralStorage: *resource.NewScaledQuantity(task.DiskMB, resource.Mega),
+				},
+			},
 		},
 	}
 

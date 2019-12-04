@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -72,6 +73,13 @@ var _ = Describe("Desiretask", func() {
 			v1.EnvVar{Name: eirini.EnvCFInstancePort, Value: ""},
 			v1.EnvVar{Name: eirini.EnvCFInstancePorts, Value: "[]"},
 		))
+	}
+
+	assertExecutorContainer := func(container v1.Container, cpu uint8, mem, disk int64) {
+		assertContainer(container, "opi-task-executor")
+		Expect(container.Resources.Requests.Memory()).To(Equal(resource.NewScaledQuantity(1, resource.Mega)))
+		Expect(container.Resources.Requests.Cpu()).To(Equal(resource.NewScaledQuantity(int64(cpu*10), resource.Milli)))
+		Expect(container.Resources.Requests.StorageEphemeral()).To(Equal(resource.NewScaledQuantity(disk, resource.Mega)))
 	}
 
 	BeforeEach(func() {
@@ -207,6 +215,9 @@ var _ = Describe("Desiretask", func() {
 						eirini.EnvCompletionCallback: "example.com/call/me/maybe",
 						eirini.EnvEiriniAddress:      "http://opi.cf.internal",
 					},
+					MemoryMB:  1,
+					CPUWeight: 2,
+					DiskMB:    3,
 				},
 			}
 
@@ -226,7 +237,11 @@ var _ = Describe("Desiretask", func() {
 			Expect(containers).To(HaveLen(1))
 
 			assertContainer(initContainers[0], "opi-task-downloader")
-			assertContainer(initContainers[1], "opi-task-executor")
+			assertExecutorContainer(initContainers[1],
+				stagingTask.CPUWeight,
+				stagingTask.MemoryMB,
+				stagingTask.DiskMB,
+			)
 			assertContainer(containers[0], "opi-task-uploader")
 			assertStagingSpec(job)
 		})
