@@ -26,7 +26,6 @@ linters:
     - gochecknoinits
     - funlen
     - wsl
-    - gomnd
 
 issues:
   exclude-use-default: true
