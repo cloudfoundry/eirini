@@ -65,6 +65,20 @@ func metricsCollectorConfig() *eirini.MetricsCollectorConfig {
 	return config
 }
 
+func defaultEventReporterConfig() *eirini.EventReporterConfig {
+	config := &eirini.EventReporterConfig{
+		KubeConfig: eirini.KubeConfig{
+			ConfigPath: pathToTestFixture("kube.conf"),
+		},
+		CcInternalAPI: "doesitmatter.com",
+		CCCertPath:    pathToTestFixture("cert"),
+		CCCAPath:      pathToTestFixture("cert"),
+		CCKeyPath:     pathToTestFixture("key"),
+	}
+
+	return config
+}
+
 func createRouteEmitterConfig(config *eirini.RouteEmitterConfig) (*os.File, error) {
 	bs, err := yaml.Marshal(config)
 	Expect(err).ToNot(HaveOccurred())
@@ -73,6 +87,13 @@ func createRouteEmitterConfig(config *eirini.RouteEmitterConfig) (*os.File, erro
 }
 
 func createMetricsCollectorConfigFile(config *eirini.MetricsCollectorConfig) (*os.File, error) {
+	bs, err := yaml.Marshal(config)
+	Expect(err).ToNot(HaveOccurred())
+
+	return createConfigFile(bs)
+}
+
+func createEventReporterConfigFile(config *eirini.EventReporterConfig) (*os.File, error) {
 	bs, err := yaml.Marshal(config)
 	Expect(err).ToNot(HaveOccurred())
 

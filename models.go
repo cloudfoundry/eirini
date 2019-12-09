@@ -55,7 +55,6 @@ type Properties struct {
 	ServerKeyPath  string `yaml:"server_key_path"`
 	TLSPort        int    `yaml:"tls_port"`
 
-	CcInternalAPI                    string `yaml:"cc_internal_api"`
 	CCCertsSecretName                string `yaml:"cc_certs_secret_name"`
 	RegistryAddress                  string `yaml:"registry_address"`
 	RegistrySecretName               string `yaml:"registry_secret_name"`
@@ -71,6 +70,15 @@ type Properties struct {
 
 	RootfsVersion string `yaml:"rootfs_version"`
 	DiskLimitMB   int64  `yaml:"disk_limit_mb"`
+
+	KubeConfig `yaml:",inline"`
+}
+
+type EventReporterConfig struct {
+	CcInternalAPI string `yaml:"cc_internal_api"`
+	CCCertPath    string `yaml:"cc_cert_path"`
+	CCKeyPath     string `yaml:"cc_key_path"`
+	CCCAPath      string `yaml:"cc_ca_path"`
 
 	KubeConfig `yaml:",inline"`
 }
