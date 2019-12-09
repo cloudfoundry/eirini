@@ -23,6 +23,7 @@ import (
 const (
 	eventKilling          = "Killing"
 	eventFailedScheduling = "FailedScheduling"
+	eventFailedScaleUp    = "NotTriggerScaleUp"
 	appSourceType         = "APP"
 
 	AnnotationAppName          = "cloudfoundry.org/application_name"
@@ -232,7 +233,8 @@ func hasInsufficientMemory(eventList *corev1.EventList) bool {
 	}
 
 	event := events[len(events)-1]
-	return event.Reason == eventFailedScheduling && strings.Contains(event.Message, "Insufficient memory")
+	return (event.Reason == eventFailedScheduling || event.Reason == eventFailedScaleUp) &&
+		strings.Contains(event.Message, "Insufficient memory")
 }
 
 func (m *StatefulSetDesirer) statefulSetsToLRPs(statefulSets *appsv1.StatefulSetList) []*opi.LRP {

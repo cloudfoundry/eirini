@@ -624,6 +624,57 @@ var _ = Describe("Statefulset Desirer", func() {
 			})
 		})
 
+		Context("and pods needs too much resources", func() {
+			BeforeEach(func() {
+				pods := &corev1.PodList{
+					Items: []corev1.Pod{
+						{ObjectMeta: meta.ObjectMeta{Name: "odin-0"}},
+					},
+				}
+				podClient.ListReturns(pods, nil)
+			})
+
+			Context("and the cluster has autoscaler", func() {
+				BeforeEach(func() {
+					eventLister.ListReturns(&corev1.EventList{
+						Items: []corev1.Event{
+							{
+								Reason:  "NotTriggerScaleUp",
+								Message: "pod didn't trigger scale-up (it wouldn't fit if a new node is added): 1 Insufficient memory",
+							},
+						},
+					}, nil)
+				})
+
+				It("returns insufficient memory response", func() {
+					instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
+					Expect(err).ToNot(HaveOccurred())
+					Expect(instances).To(HaveLen(1))
+					Expect(instances[0].PlacementError).To(Equal(opi.InsufficientMemoryError))
+				})
+			})
+
+			Context("and the cluster does not have autoscaler", func() {
+				BeforeEach(func() {
+					eventLister.ListReturns(&corev1.EventList{
+						Items: []corev1.Event{
+							{
+								Reason:  "FailedScheduling",
+								Message: "0/3 nodes are available: 3 Insufficient memory.",
+							},
+						},
+					}, nil)
+				})
+
+				It("returns insufficient memory response", func() {
+					instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
+					Expect(err).ToNot(HaveOccurred())
+					Expect(instances).To(HaveLen(1))
+					Expect(instances[0].PlacementError).To(Equal(opi.InsufficientMemoryError))
+				})
+			})
+		})
+
 		Context("and the StatefulSet was deleted/stopped", func() {
 
 			It("should return a default value", func() {
