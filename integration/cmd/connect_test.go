@@ -16,10 +16,8 @@ import (
 
 var _ = Describe("connect command", func() {
 	var (
-		err        error
 		httpClient *http.Client
 
-		cmdPath    string
 		command    *exec.Cmd
 		config     *eirini.Config
 		configFile *os.File
@@ -28,14 +26,12 @@ var _ = Describe("connect command", func() {
 	BeforeEach(func() {
 		httpClient = makeTestHTTPClient()
 
-		cmdPath, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
 
 		if command != nil {
-			err = command.Process.Kill()
+			err := command.Process.Kill()
 			Expect(err).ToNot(HaveOccurred())
 		}
 	})
@@ -43,6 +39,7 @@ var _ = Describe("connect command", func() {
 	Context("when we invoke connect command with valid config", func() {
 
 		BeforeEach(func() {
+			var err error
 			config = defaultEiriniConfig()
 			config.Properties.ServerCertPath = pathToTestFixture("cert")
 			config.Properties.ServerKeyPath = pathToTestFixture("key")

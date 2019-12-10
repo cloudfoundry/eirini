@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	ginkgoconfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 	yaml "gopkg.in/yaml.v2"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
@@ -23,7 +24,18 @@ var (
 	lastPortUsed int
 	portLock     sync.Mutex
 	once         sync.Once
+	cmdPath      string
 )
+
+var _ = BeforeSuite(func() {
+	var err error
+	cmdPath, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
+	Expect(err).ToNot(HaveOccurred())
+})
+
+var _ = AfterSuite(func() {
+	gexec.CleanupBuildArtifacts()
+})
 
 func TestIntegration(t *testing.T) {
 	RegisterFailHandler(Fail)
