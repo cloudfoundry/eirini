@@ -13,38 +13,43 @@ import (
 
 const CrashLoopBackOff = "CrashLoopBackOff"
 
-type CrashInformer struct {
-	clientset       kubernetes.Interface
-	syncPeriod      time.Duration
-	namespace       string
-	reportChan      chan events.CrashReport
-	stopperChan     chan struct{}
-	logger          lager.Logger
-	reportGenerator CrashReportGenerator
+//go:generate counterfeiter . CrashEventGenerator
+type CrashEventGenerator interface {
+	Generate(*v1.Pod, kubernetes.Interface, lager.Logger) (events.CrashEvent, bool)
 }
 
-//go:generate counterfeiter . CrashReportGenerator
-type CrashReportGenerator interface {
-	Generate(*v1.Pod, kubernetes.Interface, lager.Logger) (events.CrashReport, bool)
+//go:generate counterfeiter . CrashEmitter
+type CrashEmitter interface {
+	Emit(events.CrashEvent) error
+}
+
+type CrashInformer struct {
+	clientset      kubernetes.Interface
+	syncPeriod     time.Duration
+	namespace      string
+	stopperChan    chan struct{}
+	logger         lager.Logger
+	eventGenerator CrashEventGenerator
+	crashEmitter   CrashEmitter
 }
 
 func NewCrashInformer(
 	client kubernetes.Interface,
 	syncPeriod time.Duration,
 	namespace string,
-	reportChan chan events.CrashReport,
 	stopperChan chan struct{},
 	logger lager.Logger,
-	reportGenerator CrashReportGenerator,
+	eventGenerator CrashEventGenerator,
+	crashEmitter CrashEmitter,
 ) *CrashInformer {
 	return &CrashInformer{
-		clientset:       client,
-		syncPeriod:      syncPeriod,
-		namespace:       namespace,
-		reportChan:      reportChan,
-		stopperChan:     stopperChan,
-		logger:          logger,
-		reportGenerator: reportGenerator,
+		clientset:      client,
+		syncPeriod:     syncPeriod,
+		namespace:      namespace,
+		stopperChan:    stopperChan,
+		logger:         logger,
+		eventGenerator: eventGenerator,
+		crashEmitter:   crashEmitter,
 	}
 }
 
@@ -65,8 +70,10 @@ func (c *CrashInformer) Start() {
 
 func (c *CrashInformer) updateFunc(_ interface{}, newObj interface{}) {
 	pod := newObj.(*v1.Pod)
-	report, send := c.reportGenerator.Generate(pod, c.clientset, c.logger)
+	event, send := c.eventGenerator.Generate(pod, c.clientset, c.logger)
 	if send {
-		c.reportChan <- report
+		if err := c.crashEmitter.Emit(event); err != nil {
+			c.logger.Error("Failed to emit crash event", err)
+		}
 	}
 }

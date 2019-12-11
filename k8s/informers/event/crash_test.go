@@ -2,7 +2,6 @@ package event_test
 
 import (
 	"fmt"
-	"sync"
 
 	"code.cloudfoundry.org/eirini/events"
 	. "code.cloudfoundry.org/eirini/k8s/informers/event"
@@ -21,18 +20,17 @@ var _ = Describe("Event", func() {
 
 	var (
 		client          *fake.Clientset
-		reportChan      chan events.CrashReport
 		informerStopper chan struct{}
 		watcher         *watch.FakeWatcher
 		logger          *lagertest.TestLogger
-		informerWG      sync.WaitGroup
 
-		reportGenerator *eventfakes.FakeCrashReportGenerator
+		eventGenerator *eventfakes.FakeCrashEventGenerator
+		crashEmitter   *eventfakes.FakeCrashEmitter
 	)
 
 	BeforeEach(func() {
-		reportGenerator = new(eventfakes.FakeCrashReportGenerator)
-		reportChan = make(chan events.CrashReport)
+		eventGenerator = new(eventfakes.FakeCrashEventGenerator)
+		crashEmitter = new(eventfakes.FakeCrashEmitter)
 		informerStopper = make(chan struct{})
 
 		logger = lagertest.NewTestLogger("crash-event-logger-test")
@@ -40,48 +38,51 @@ var _ = Describe("Event", func() {
 
 		watcher = watch.NewFake()
 		client.PrependWatchReactor("pods", testing.DefaultWatchReactor(watcher, nil))
-		informerWG = sync.WaitGroup{}
-		informerWG.Add(1)
-		crashInformer := NewCrashInformer(client, 0, "namespace", reportChan, informerStopper, logger, reportGenerator)
-		go func() {
-			crashInformer.Start()
-			informerWG.Done()
-		}()
+		crashInformer := NewCrashInformer(
+			client,
+			0,
+			"namespace",
+			informerStopper,
+			logger,
+			eventGenerator,
+			crashEmitter,
+		)
+
+		go crashInformer.Start()
 	})
 
 	AfterEach(func() {
 		close(informerStopper)
-		informerWG.Wait()
 	})
 
 	Context("When app does not have to be reported", func() {
-		var report events.CrashReport
+		var event events.CrashEvent
 		BeforeEach(func() {
-			report = events.CrashReport{
+			event = events.CrashEvent{
 				ProcessGUID: "blahblah",
 			}
-			reportGenerator.GenerateReturns(report, false)
+			eventGenerator.GenerateReturns(event, false)
 
 			loopy := &v1.Pod{}
 			watcher.Add(loopy)
 			watcher.Modify(loopy)
 		})
 
-		It("should receive a crashed report", func() {
-			Consistently(reportChan).ShouldNot(Receive())
+		It("should NOT send a crash event", func() {
+			Expect(crashEmitter.EmitCallCount()).To(Equal(0))
 		})
 	})
 
 	Context("When app has to be reported", func() {
 		var (
-			report events.CrashReport
-			pod    *v1.Pod
+			event events.CrashEvent
+			pod   *v1.Pod
 		)
 		BeforeEach(func() {
-			report = events.CrashReport{
+			event = events.CrashEvent{
 				ProcessGUID: "blahblah",
 			}
-			reportGenerator.GenerateReturns(report, true)
+			eventGenerator.GenerateReturns(event, true)
 
 			pod = &v1.Pod{
 				ObjectMeta: meta.ObjectMeta{
@@ -92,18 +93,20 @@ var _ = Describe("Event", func() {
 			watcher.Modify(pod)
 		})
 
-		It("sends correct args to the report generator", func() {
-			Eventually(reportChan).Should(Receive(Equal(report)))
-			Expect(reportGenerator.GenerateCallCount()).To(Equal(1))
-			inputPod, inputClient, inputLogger := reportGenerator.GenerateArgsForCall(0)
+		It("sends correct args to the event generator", func() {
+			Eventually(eventGenerator.GenerateCallCount).Should(Equal(1))
+			inputPod, inputClient, inputLogger := eventGenerator.GenerateArgsForCall(0)
 			Expect(inputPod).To(Equal(pod))
 			Expect(inputClient).To(Equal(client))
 			Expect(inputLogger).To(Equal(logger))
 
 		})
 
-		It("should receive a crashed report", func() {
-			Eventually(reportChan).Should(Receive(Equal(report)))
+		It("should send a crash event", func() {
+			Eventually(crashEmitter.EmitCallCount).Should(Equal(1))
+
+			actualevent := crashEmitter.EmitArgsForCall(0)
+			Expect(actualevent.ProcessGUID).To(Equal("blahblah"))
 		})
 	})
 })

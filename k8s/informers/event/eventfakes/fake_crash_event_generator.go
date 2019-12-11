@@ -11,8 +11,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type FakeCrashReportGenerator struct {
-	GenerateStub        func(*v1.Pod, kubernetes.Interface, lager.Logger) (events.CrashReport, bool)
+type FakeCrashEventGenerator struct {
+	GenerateStub        func(*v1.Pod, kubernetes.Interface, lager.Logger) (events.CrashEvent, bool)
 	generateMutex       sync.RWMutex
 	generateArgsForCall []struct {
 		arg1 *v1.Pod
@@ -20,18 +20,18 @@ type FakeCrashReportGenerator struct {
 		arg3 lager.Logger
 	}
 	generateReturns struct {
-		result1 events.CrashReport
+		result1 events.CrashEvent
 		result2 bool
 	}
 	generateReturnsOnCall map[int]struct {
-		result1 events.CrashReport
+		result1 events.CrashEvent
 		result2 bool
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCrashReportGenerator) Generate(arg1 *v1.Pod, arg2 kubernetes.Interface, arg3 lager.Logger) (events.CrashReport, bool) {
+func (fake *FakeCrashEventGenerator) Generate(arg1 *v1.Pod, arg2 kubernetes.Interface, arg3 lager.Logger) (events.CrashEvent, bool) {
 	fake.generateMutex.Lock()
 	ret, specificReturn := fake.generateReturnsOnCall[len(fake.generateArgsForCall)]
 	fake.generateArgsForCall = append(fake.generateArgsForCall, struct {
@@ -51,52 +51,52 @@ func (fake *FakeCrashReportGenerator) Generate(arg1 *v1.Pod, arg2 kubernetes.Int
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCrashReportGenerator) GenerateCallCount() int {
+func (fake *FakeCrashEventGenerator) GenerateCallCount() int {
 	fake.generateMutex.RLock()
 	defer fake.generateMutex.RUnlock()
 	return len(fake.generateArgsForCall)
 }
 
-func (fake *FakeCrashReportGenerator) GenerateCalls(stub func(*v1.Pod, kubernetes.Interface, lager.Logger) (events.CrashReport, bool)) {
+func (fake *FakeCrashEventGenerator) GenerateCalls(stub func(*v1.Pod, kubernetes.Interface, lager.Logger) (events.CrashEvent, bool)) {
 	fake.generateMutex.Lock()
 	defer fake.generateMutex.Unlock()
 	fake.GenerateStub = stub
 }
 
-func (fake *FakeCrashReportGenerator) GenerateArgsForCall(i int) (*v1.Pod, kubernetes.Interface, lager.Logger) {
+func (fake *FakeCrashEventGenerator) GenerateArgsForCall(i int) (*v1.Pod, kubernetes.Interface, lager.Logger) {
 	fake.generateMutex.RLock()
 	defer fake.generateMutex.RUnlock()
 	argsForCall := fake.generateArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeCrashReportGenerator) GenerateReturns(result1 events.CrashReport, result2 bool) {
+func (fake *FakeCrashEventGenerator) GenerateReturns(result1 events.CrashEvent, result2 bool) {
 	fake.generateMutex.Lock()
 	defer fake.generateMutex.Unlock()
 	fake.GenerateStub = nil
 	fake.generateReturns = struct {
-		result1 events.CrashReport
+		result1 events.CrashEvent
 		result2 bool
 	}{result1, result2}
 }
 
-func (fake *FakeCrashReportGenerator) GenerateReturnsOnCall(i int, result1 events.CrashReport, result2 bool) {
+func (fake *FakeCrashEventGenerator) GenerateReturnsOnCall(i int, result1 events.CrashEvent, result2 bool) {
 	fake.generateMutex.Lock()
 	defer fake.generateMutex.Unlock()
 	fake.GenerateStub = nil
 	if fake.generateReturnsOnCall == nil {
 		fake.generateReturnsOnCall = make(map[int]struct {
-			result1 events.CrashReport
+			result1 events.CrashEvent
 			result2 bool
 		})
 	}
 	fake.generateReturnsOnCall[i] = struct {
-		result1 events.CrashReport
+		result1 events.CrashEvent
 		result2 bool
 	}{result1, result2}
 }
 
-func (fake *FakeCrashReportGenerator) Invocations() map[string][][]interface{} {
+func (fake *FakeCrashEventGenerator) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.generateMutex.RLock()
@@ -108,7 +108,7 @@ func (fake *FakeCrashReportGenerator) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeCrashReportGenerator) recordInvocation(key string, args []interface{}) {
+func (fake *FakeCrashEventGenerator) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -120,4 +120,4 @@ func (fake *FakeCrashReportGenerator) recordInvocation(key string, args []interf
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ event.CrashReportGenerator = new(FakeCrashReportGenerator)
+var _ event.CrashEventGenerator = new(FakeCrashEventGenerator)

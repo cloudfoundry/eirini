@@ -9,7 +9,6 @@ import (
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/events"
 	k8sevent "code.cloudfoundry.org/eirini/k8s/informers/event"
-	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/tps/cc_client"
 	"github.com/jessevdk/go-flags"
@@ -43,7 +42,6 @@ func main() {
 }
 
 func launchEventReporter(clientset kubernetes.Interface, uri, ca, cert, key, namespace string) {
-	work := make(chan events.CrashReport, 1)
 	tlsConf, err := cc_client.NewTLSConfig(cert, key, ca)
 	cmdcommons.ExitWithError(err)
 
@@ -51,18 +49,13 @@ func launchEventReporter(clientset kubernetes.Interface, uri, ca, cert, key, nam
 	crashReporterLogger := lager.NewLogger("instance-crash-reporter")
 	crashReporterLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	scheduler := &util.SimpleLoopScheduler{
-		CancelChan: make(chan struct{}, 1),
-		Logger:     crashReporterLogger.Session("scheduler"),
-	}
-	reporter := events.NewCrashReporter(work, scheduler, client, crashReporterLogger)
+	emitter := events.NewCcCrashEmitter(crashReporterLogger, client)
 
 	crashLogger := lager.NewLogger("instance-crash-informer")
 	crashLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, work, make(chan struct{}), crashLogger, k8sevent.DefaultCrashReportGenerator{})
+	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, make(chan struct{}), crashLogger, k8sevent.DefaultCrashEventGenerator{}, emitter)
 
-	go crashInformer.Start()
-	reporter.Run()
+	crashInformer.Start()
 }
 
 func readConfigFile(path string) (*eirini.EventReporterConfig, error) {

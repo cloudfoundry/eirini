@@ -8,7 +8,6 @@ import (
 
 	. "code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/events/eventsfakes"
-	"code.cloudfoundry.org/eirini/util/utilfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
@@ -16,21 +15,17 @@ import (
 var _ = Describe("Crashreporter", func() {
 
 	var (
-		work          chan CrashReport
-		scheduler     *utilfakes.FakeTaskScheduler
-		crashReporter *CrashReporter
-		ccClient      *eventsfakes.FakeCcClient
-		crashReports  CrashReport
-		err           error
+		crashEmitter *CcCrashEmitter
+		ccClient     *eventsfakes.FakeCcClient
+		crashEvent   CrashEvent
+		err          error
 	)
 
 	BeforeEach(func() {
-		scheduler = new(utilfakes.FakeTaskScheduler)
-		work = make(chan CrashReport, 1)
 		ccClient = new(eventsfakes.FakeCcClient)
-		crashReporter = NewCrashReporter(work, scheduler, ccClient, lagertest.NewTestLogger("tester"))
+		crashEmitter = NewCcCrashEmitter(lagertest.NewTestLogger("tester"), ccClient)
 
-		crashReports = CrashReport{
+		crashEvent = CrashEvent{
 			ProcessGUID: "some-guid",
 			AppCrashedRequest: cc_messages.AppCrashedRequest{
 				Instance:        "0",
@@ -46,12 +41,7 @@ var _ = Describe("Crashreporter", func() {
 
 	Context("When an app crashes", func() {
 		JustBeforeEach(func() {
-			crashReporter.Run()
-
-			work <- crashReports
-
-			reportFunc := scheduler.ScheduleArgsForCall(0)
-			err = reportFunc()
+			err = crashEmitter.Emit(crashEvent)
 		})
 
 		It("should not fail", func() {

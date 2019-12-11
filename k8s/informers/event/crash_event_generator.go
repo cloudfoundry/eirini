@@ -10,18 +10,18 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type DefaultCrashReportGenerator struct{}
+type DefaultCrashEventGenerator struct{}
 
-func (DefaultCrashReportGenerator) Generate(pod *v1.Pod, clientset kubernetes.Interface, logger lager.Logger) (events.CrashReport, bool) {
+func (DefaultCrashEventGenerator) Generate(pod *v1.Pod, clientset kubernetes.Interface, logger lager.Logger) (events.CrashEvent, bool) {
 	statuses := pod.Status.ContainerStatuses
 	if len(statuses) == 0 {
-		return events.CrashReport{}, false
+		return events.CrashEvent{}, false
 	}
 
 	_, err := util.ParseAppIndex(pod.Name)
 	if err != nil {
 		logger.Error("failed-to-parse-app-index", err, lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[k8s.AnnotationProcessGUID]})
-		return events.CrashReport{}, false
+		return events.CrashEvent{}, false
 	}
 
 	if status := getTerminatedContainerStatusIfAny(pod.Status.ContainerStatuses); status != nil {
@@ -32,24 +32,24 @@ func (DefaultCrashReportGenerator) Generate(pod *v1.Pod, clientset kubernetes.In
 		exitStatus := int(container.LastTerminationState.Terminated.ExitCode)
 		exitDescription := container.LastTerminationState.Terminated.Reason
 		crashTimestamp := int64(container.LastTerminationState.Terminated.StartedAt.Second())
-		return generateReport(pod, container.State.Waiting.Reason, exitStatus, exitDescription, crashTimestamp, int(container.RestartCount))
+		return generateReport(pod, container.State.Waiting.Reason, exitStatus, exitDescription, crashTimestamp, int(container.RestartCount)), true
 	}
-	return events.CrashReport{}, false
+	return events.CrashEvent{}, false
 }
 
-func generateReportForTerminatedPod(pod *v1.Pod, status *v1.ContainerStatus, clientset kubernetes.Interface, logger lager.Logger) (events.CrashReport, bool) {
+func generateReportForTerminatedPod(pod *v1.Pod, status *v1.ContainerStatus, clientset kubernetes.Interface, logger lager.Logger) (events.CrashEvent, bool) {
 	podEvents, err := k8s.GetEvents(clientset.CoreV1().Events(pod.Namespace), *pod)
 	if err != nil {
 		logger.Error("failed-to-get-k8s-events", err, lager.Data{"guid": pod.Annotations[k8s.AnnotationProcessGUID]})
-		return events.CrashReport{}, false
+		return events.CrashEvent{}, false
 	}
 	if k8s.IsStopped(podEvents) {
-		return events.CrashReport{}, false
+		return events.CrashEvent{}, false
 	}
 
 	terminated := status.State.Terminated
 
-	return generateReport(pod, terminated.Reason, int(terminated.ExitCode), terminated.Reason, int64(terminated.StartedAt.Second()), int(status.RestartCount))
+	return generateReport(pod, terminated.Reason, int(terminated.ExitCode), terminated.Reason, int64(terminated.StartedAt.Second()), int(status.RestartCount)), true
 }
 
 func generateReport(
@@ -59,10 +59,10 @@ func generateReport(
 	exitDescription string,
 	crashTimestamp int64,
 	restartCount int,
-) (events.CrashReport, bool) {
+) events.CrashEvent {
 	index, _ := util.ParseAppIndex(pod.Name)
 
-	return events.CrashReport{
+	return events.CrashEvent{
 		ProcessGUID: pod.Annotations[k8s.AnnotationProcessGUID],
 		AppCrashedRequest: cc_messages.AppCrashedRequest{
 			Reason:          reason,
@@ -73,7 +73,7 @@ func generateReport(
 			CrashTimestamp:  crashTimestamp,
 			CrashCount:      restartCount,
 		},
-	}, true
+	}
 }
 
 func getTerminatedContainerStatusIfAny(statuses []v1.ContainerStatus) *v1.ContainerStatus {

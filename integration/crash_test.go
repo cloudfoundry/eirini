@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/events"
+	"code.cloudfoundry.org/eirini/events/eventsfakes"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -19,27 +20,31 @@ import (
 var _ = Describe("Crashes", func() {
 
 	var (
-		reportChan      chan events.CrashReport
+		reportChan      chan events.CrashEvent
 		informerStopper chan struct{}
 		logger          *lagertest.TestLogger
 		informerWG      sync.WaitGroup
 
-		reportGenerator event.DefaultCrashReportGenerator
+		ccClient       *eventsfakes.FakeCcClient
+		eventGenerator event.DefaultCrashEventGenerator
+		eventEmitter   event.CrashEmitter
 
 		desirer opi.Desirer
 		odinLRP *opi.LRP
 	)
 
 	BeforeEach(func() {
-		reportGenerator = event.DefaultCrashReportGenerator{}
-		reportChan = make(chan events.CrashReport, 10)
-		informerStopper = make(chan struct{})
-
 		logger = lagertest.NewTestLogger("crash-event-logger-test")
+
+		ccClient = new(eventsfakes.FakeCcClient)
+		eventGenerator = event.DefaultCrashEventGenerator{}
+		events.NewCcCrashEmitter(logger, ccClient)
+		reportChan = make(chan events.CrashEvent, 10)
+		informerStopper = make(chan struct{})
 
 		informerWG = sync.WaitGroup{}
 		informerWG.Add(1)
-		crashInformer := event.NewCrashInformer(clientset, 0, namespace, reportChan, informerStopper, logger, reportGenerator)
+		crashInformer := event.NewCrashInformer(clientset, 0, namespace, informerStopper, logger, eventGenerator, eventEmitter)
 		go func() {
 			crashInformer.Start()
 			informerWG.Done()
