@@ -46,6 +46,7 @@ var _ = Describe("connect command", func() {
 			config.Properties.TLSPort = int(nextAvailPort())
 			config.Properties.ClientCAPath = pathToTestFixture("cert")
 			configFile, err = createOpiConfigFromFixtures(config)
+			Expect(err).ToNot(HaveOccurred())
 
 			command = exec.Command(cmdPath, "connect", "-c", configFile.Name())
 			_, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
