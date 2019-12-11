@@ -48,7 +48,7 @@ var _ = Describe("connect command", func() {
 			configFile, err = createOpiConfigFromFixtures(config)
 			Expect(err).ToNot(HaveOccurred())
 
-			command = exec.Command(cmdPath, "connect", "-c", configFile.Name())
+			command = exec.Command(cmdPath, "connect", "-c", configFile.Name()) // #nosec G204
 			_, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
 		})
