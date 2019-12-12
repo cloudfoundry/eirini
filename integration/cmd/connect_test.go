@@ -25,7 +25,6 @@ var _ = Describe("connect command", func() {
 
 	BeforeEach(func() {
 		httpClient = makeTestHTTPClient()
-
 	})
 
 	AfterEach(func() {
@@ -37,7 +36,6 @@ var _ = Describe("connect command", func() {
 	})
 
 	Context("when we invoke connect command with valid config", func() {
-
 		BeforeEach(func() {
 			var err error
 			config = defaultEiriniConfig()
@@ -65,7 +63,8 @@ var _ = Describe("connect command", func() {
 				Eventually(func() error {
 					_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
 					return err
-				}, "5s").Should(MatchError("remote error: tls: bad certificate"))
+				}, "5s").Should(MatchError(ContainSubstring("remote error: tls: bad certificate")))
+
 			})
 		})
 
@@ -81,7 +80,7 @@ var _ = Describe("connect command", func() {
 				Eventually(func() error {
 					_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
 					return err
-				}, "5s").Should(MatchError("remote error: tls: bad certificate"))
+				}, "5s").Should(MatchError(ContainSubstring("remote error: tls: bad certificate")))
 			})
 		})
 
