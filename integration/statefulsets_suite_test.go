@@ -34,6 +34,9 @@ const (
 
 var _ = BeforeSuite(func() {
 	kubeConfigPath = os.Getenv("INTEGRATION_KUBECONFIG")
+	if kubeConfigPath == "" {
+		Fail("INTEGRATION_KUBECONFIG is not provided")
+	}
 	config, err := clientcmd.BuildConfigFromFlags("", os.Getenv("INTEGRATION_KUBECONFIG"))
 	Expect(err).ToNot(HaveOccurred())
 
