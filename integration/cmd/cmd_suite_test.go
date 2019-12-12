@@ -45,7 +45,7 @@ func TestIntegration(t *testing.T) {
 func pathToTestFixture(relativePath string) string {
 	cwd, err := os.Getwd()
 	Expect(err).ToNot(HaveOccurred())
-	return cwd + "/fixtures/" + relativePath
+	return cwd + "/../fixtures/" + relativePath
 }
 
 func defaultEiriniConfig() *eirini.Config {
