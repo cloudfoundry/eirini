@@ -1,6 +1,9 @@
 package opi_test
 
 import (
+	"bytes"
+	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 
@@ -11,14 +14,15 @@ import (
 
 var _ = Describe("Staging", func() {
 	var (
-		// httpClient *http.Client
+		httpClient *http.Client
 
 		configFile *os.File
 		session    *gexec.Session
+		url        string
 	)
 
 	BeforeEach(func() {
-		// httpClient = makeTestHTTPClient()
+		httpClient = makeTestHTTPClient()
 		config := defaultEiriniConfig()
 		configFile = createOpiConfigFromFixtures(config)
 
@@ -26,6 +30,11 @@ var _ = Describe("Staging", func() {
 		var err error
 		session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Expect(err).ToNot(HaveOccurred())
+		url = fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort)
+		Eventually(func() error {
+			_, err := httpClient.Get(url)
+			return err
+		}, "5s").Should(Succeed())
 	})
 
 	AfterEach(func() {
@@ -37,8 +46,20 @@ var _ = Describe("Staging", func() {
 		}
 	})
 
-	It("can start", func() {
-		Consistently(session).ShouldNot(gexec.Exit())
+	It("creates staging job", func() {
+		body := `{
+				"app_guid": "our-app-id",
+				"environment": [{"name": "HOWARD", "value": "the alien"}],
+				"lifecycle_data": {
+					"app_bits_download_uri": "example.com/download",
+					"droplet_upload_uri": "example.com/upload",
+					"buildpacks": []
+				},
+				"completion_callback": "example.com/call/me/maybe"
+			}`
+		resp, err := httpClient.Post(fmt.Sprintf("%s/%s", url, "stage/guid"), "json", bytes.NewReader([]byte(body)))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 	})
 
 })
