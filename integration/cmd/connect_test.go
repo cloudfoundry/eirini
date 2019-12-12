@@ -62,13 +62,10 @@ var _ = Describe("connect command", func() {
 
 		Context("when sending a request without a client certificate", func() {
 			It("we should receive a mTLS-related connection failure", func() {
-				Eventually(func() string {
+				Eventually(func() error {
 					_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
-					if err != nil {
-						return err.Error()
-					}
-					return ""
-				}, "5s").Should(ContainSubstring("remote error: tls: bad certificate"))
+					return err
+				}, "5s").Should(MatchError("remote error: tls: bad certificate"))
 			})
 		})
 
@@ -81,13 +78,10 @@ var _ = Describe("connect command", func() {
 			})
 
 			It("we should receive a mTLS-related connection failure", func() {
-				Eventually(func() string {
+				Eventually(func() error {
 					_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
-					if err != nil {
-						return err.Error()
-					}
-					return ""
-				}, "5s").Should(ContainSubstring("remote error: tls: bad certificate"))
+					return err
+				}, "5s").Should(MatchError("remote error: tls: bad certificate"))
 			})
 		})
 
