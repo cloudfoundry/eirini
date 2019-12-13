@@ -40,8 +40,8 @@ var _ = Describe("Staging", func() {
 
 		url = fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort)
 		Eventually(func() error {
-			_, err := httpClient.Get(url)
-			return err
+			_, getErr := httpClient.Get(url)
+			return getErr
 		}, "5s").Should(Succeed())
 
 		body := `{

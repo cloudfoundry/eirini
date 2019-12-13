@@ -1,19 +1,13 @@
 package cmd_test
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"io/ioutil"
-	"net/http"
 	"os"
-	"sync"
 	"testing"
 
-	cfhttp "code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/eirini"
 	natsserver "github.com/nats-io/nats-server/v2/server"
 	. "github.com/onsi/ginkgo"
-	ginkgoconfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	yaml "gopkg.in/yaml.v2"
@@ -21,10 +15,7 @@ import (
 )
 
 var (
-	lastPortUsed int
-	portLock     sync.Mutex
-	once         sync.Once
-	cmdPath      string
+	cmdPath string
 )
 
 var _ = BeforeSuite(func() {
@@ -46,21 +37,6 @@ func pathToTestFixture(relativePath string) string {
 	cwd, err := os.Getwd()
 	Expect(err).ToNot(HaveOccurred())
 	return cwd + "/../fixtures/" + relativePath
-}
-
-func defaultEiriniConfig() *eirini.Config {
-	config := &eirini.Config{
-		Properties: eirini.Properties{
-			KubeConfig: eirini.KubeConfig{
-				ConfigPath: pathToTestFixture("kube.conf"),
-			},
-			CCCAPath:   pathToTestFixture("cert"),
-			CCCertPath: pathToTestFixture("cert"),
-			CCKeyPath:  pathToTestFixture("key"),
-		},
-	}
-
-	return config
 }
 
 func defaultRouteEmitterConfig(natsServerOpts natsserver.Options) *eirini.RouteEmitterConfig {
@@ -89,13 +65,6 @@ func metricsCollectorConfig() *eirini.MetricsCollectorConfig {
 	return config
 }
 
-func createOpiConfigFromFixtures(config *eirini.Config) (*os.File, error) {
-	bs, err := yaml.Marshal(config)
-	Expect(err).ToNot(HaveOccurred())
-
-	return createConfigFile(bs)
-}
-
 func createRouteEmitterConfig(config *eirini.RouteEmitterConfig) (*os.File, error) {
 	bs, err := yaml.Marshal(config)
 	Expect(err).ToNot(HaveOccurred())
@@ -118,32 +87,4 @@ func createConfigFile(yamlBytes []byte) (*os.File, error) {
 	Expect(err).ToNot(HaveOccurred())
 
 	return configFile, err
-}
-
-func makeTestHTTPClient() *http.Client {
-	bs, err := ioutil.ReadFile(pathToTestFixture("cert"))
-	Expect(err).ToNot(HaveOccurred())
-
-	certPool := x509.NewCertPool()
-	Expect(certPool.AppendCertsFromPEM(bs)).To(BeTrue())
-	tlsConfig := &tls.Config{
-		RootCAs: certPool,
-	}
-	httpClient := cfhttp.NewClient(cfhttp.WithTLSConfig(tlsConfig))
-	return httpClient
-}
-
-func nextAvailPort() uint16 {
-	portLock.Lock()
-	defer portLock.Unlock()
-
-	if lastPortUsed == 0 {
-		once.Do(func() {
-			const portRangeStart = 61000
-			lastPortUsed = portRangeStart + ginkgoconfig.GinkgoConfig.ParallelNode
-		})
-	}
-
-	lastPortUsed += ginkgoconfig.GinkgoConfig.ParallelTotal
-	return uint16(lastPortUsed)
 }

@@ -51,22 +51,18 @@ var _ = Describe("connect command", func() {
 			command := exec.Command(cmdPath, "connect", "-c", configFilePath) // #nosec G204
 			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should not serve HTTP traffic", func() {
 			Eventually(func() error {
-				_, err := httpClient.Get("http://localhost:8085/")
+				_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
 				return err
-			}, "5s").Should(MatchError(ContainSubstring("connection refused")))
+			}, "10s").Should(Succeed())
+
 		})
 
 		Context("when sending a request without a client certificate", func() {
-			It("we should receive a mTLS-related connection failure", func() {
+			It("should receive a mTLS-related connection failure", func() {
 				httpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{}
-				Eventually(func() error {
-					_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
-					return err
-				}, "5s").Should(MatchError(ContainSubstring("remote error: tls: bad certificate")))
+				_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
+				Expect(err).To(MatchError(ContainSubstring("remote error: tls: bad certificate")))
 
 			})
 		})
@@ -80,18 +76,14 @@ var _ = Describe("connect command", func() {
 			})
 
 			It("we should receive a mTLS-related connection failure", func() {
-				Eventually(func() error {
-					_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
-					return err
-				}, "5s").Should(MatchError(ContainSubstring("remote error: tls: bad certificate")))
+				_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
+				Expect(err).To(MatchError(ContainSubstring("remote error: tls: bad certificate")))
 			})
 		})
 
 		Context("when sending a request with a valid client certificate", func() {
 			It("should successfully connect", func() {
-				Eventually(func() (*http.Response, error) {
-					return httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
-				}, "5s").Should(PointTo(MatchFields(IgnoreExtras, Fields{
+				Expect(httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))).To(PointTo(MatchFields(IgnoreExtras, Fields{
 					"TLS": PointTo(MatchFields(IgnoreExtras, Fields{
 						"HandshakeComplete": BeTrue(),
 					})),
@@ -107,10 +99,9 @@ var _ = Describe("connect command", func() {
 				command := exec.Command(cmdPath, "connect", "-c", "not-found.yml") // #nosec G204
 				session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session).Should(gexec.Exit())
+				Eventually(session, "5s").Should(gexec.Exit())
 				Expect(session.ExitCode()).NotTo(BeZero())
 			})
 		})
-
 	})
 })

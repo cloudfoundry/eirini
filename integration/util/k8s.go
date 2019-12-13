@@ -11,6 +11,7 @@ import (
 
 	"code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/eirini"
+	ginkgoconfig "github.com/onsi/ginkgo/config"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1beta1"
@@ -20,9 +21,9 @@ import (
 )
 
 func CreateRandomNamespace(clientset kubernetes.Interface) string {
-	namespace := fmt.Sprintf("opi-integration-test-%d", rand.Intn(100000000))
+	namespace := fmt.Sprintf("opi-integration-test-%d-%d", rand.Intn(100000000), ginkgoconfig.GinkgoConfig.ParallelNode)
 	for namespaceExists(namespace, clientset) {
-		namespace = fmt.Sprintf("opi-integration-test-%d", rand.Intn(100000000))
+		namespace = fmt.Sprintf("opi-integration-test-%d-%d", rand.Intn(100000000), ginkgoconfig.GinkgoConfig.ParallelNode)
 	}
 	createNamespace(namespace, clientset)
 	return namespace
@@ -172,7 +173,7 @@ func DefaultEiriniConfig(namespace, secretName string) *eirini.Config {
 			ServerCertPath:    pathToTestFixture("cert"),
 			ServerKeyPath:     pathToTestFixture("key"),
 			ClientCAPath:      pathToTestFixture("cert"),
-			TLSPort:           61001,
+			TLSPort:           61000 + rand.Intn(1000) + ginkgoconfig.GinkgoConfig.ParallelNode,
 			CCCertsSecretName: secretName,
 
 			DownloaderImage: "docker.io/eirini/integration_test_staging",
