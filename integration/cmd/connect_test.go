@@ -8,6 +8,7 @@ import (
 	"os/exec"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/integration/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -18,36 +19,37 @@ var _ = Describe("connect command", func() {
 	var (
 		httpClient *http.Client
 
-		command    *exec.Cmd
-		config     *eirini.Config
-		configFile *os.File
+		session        *gexec.Session
+		config         *eirini.Config
+		configFilePath string
 	)
 
 	BeforeEach(func() {
-		httpClient = makeTestHTTPClient()
+		var err error
+		httpClient, err = util.MakeTestHTTPClient()
+		Expect(err).ToNot(HaveOccurred())
+		configFilePath = ""
+		session = nil
 	})
 
 	AfterEach(func() {
-
-		if command != nil {
-			err := command.Process.Kill()
-			Expect(err).ToNot(HaveOccurred())
+		if configFilePath != "" {
+			Expect(os.Remove(configFilePath)).To(Succeed())
+		}
+		if session != nil {
+			Eventually(session.Kill()).Should(gexec.Exit())
 		}
 	})
 
 	Context("when we invoke connect command with valid config", func() {
 		BeforeEach(func() {
-			var err error
-			config = defaultEiriniConfig()
-			config.Properties.ServerCertPath = pathToTestFixture("cert")
-			config.Properties.ServerKeyPath = pathToTestFixture("key")
-			config.Properties.TLSPort = int(nextAvailPort())
-			config.Properties.ClientCAPath = pathToTestFixture("cert")
-			configFile, err = createOpiConfigFromFixtures(config)
+			config = util.DefaultEiriniConfig("test-ns", "secret-name")
+			configFile, err := util.CreateOpiConfigFromFixtures(config)
 			Expect(err).ToNot(HaveOccurred())
+			configFilePath = configFile.Name()
 
-			command = exec.Command(cmdPath, "connect", "-c", configFile.Name()) // #nosec G204
-			_, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			command := exec.Command(cmdPath, "connect", "-c", configFilePath) // #nosec G204
+			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -60,6 +62,7 @@ var _ = Describe("connect command", func() {
 
 		Context("when sending a request without a client certificate", func() {
 			It("we should receive a mTLS-related connection failure", func() {
+				httpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{}
 				Eventually(func() error {
 					_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
 					return err
@@ -85,14 +88,7 @@ var _ = Describe("connect command", func() {
 		})
 
 		Context("when sending a request with a valid client certificate", func() {
-			BeforeEach(func() {
-				clientCert, err := tls.LoadX509KeyPair(pathToTestFixture("cert"), pathToTestFixture("key"))
-				Expect(err).ToNot(HaveOccurred())
-
-				httpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{clientCert}
-			})
-
-			It("we should successfully connect", func() {
+			It("should successfully connect", func() {
 				Eventually(func() (*http.Response, error) {
 					return httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
 				}, "5s").Should(PointTo(MatchFields(IgnoreExtras, Fields{
@@ -102,5 +98,19 @@ var _ = Describe("connect command", func() {
 				})))
 			})
 		})
+	})
+
+	Context("when we invoke connect command with invalid config", func() {
+		Context("file is missing", func() {
+			It("should fail", func() {
+				var err error
+				command := exec.Command(cmdPath, "connect", "-c", "not-found.yml") // #nosec G204
+				session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session).Should(gexec.Exit())
+				Expect(session.ExitCode()).NotTo(BeZero())
+			})
+		})
+
 	})
 })
