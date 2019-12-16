@@ -71,7 +71,7 @@ var _ = Describe("Poll", func() {
 			defer mu.Unlock()
 			atomic.AddInt32(&funcCallCount, 1)
 			stop <- nil
-			return false
+			return atomic.LoadInt32(&funcCallCount) != int32(1)
 		}
 
 		stopped := make(chan interface{}, 1)
