@@ -1,6 +1,7 @@
 package util_test
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -63,8 +64,11 @@ var _ = Describe("Poll", func() {
 		defer close(stop)
 
 		var funcCallCount int32
+		var mu sync.Mutex
 		atomic.StoreInt32(&funcCallCount, 0)
 		f := func() bool {
+			mu.Lock()
+			defer mu.Unlock()
 			atomic.AddInt32(&funcCallCount, 1)
 			stop <- nil
 			return false
@@ -74,7 +78,7 @@ var _ = Describe("Poll", func() {
 		defer close(stopped)
 
 		go func() {
-			util.PollUntilTrue(f, 1*time.Millisecond, stop)
+			util.PollUntilTrue(f, 1*time.Microsecond, stop)
 			stopped <- nil
 		}()
 
