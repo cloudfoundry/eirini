@@ -143,9 +143,9 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			})
 
 			It("should set CF_INSTANCE_* env variables", func() {
-				Expect(lrp.Env).To(HaveKeyWithValue("CF_INSTANCE_ADDR", "0.0.0.0:8080"))
-				Expect(lrp.Env).To(HaveKeyWithValue("CF_INSTANCE_PORT", "8080"))
-				Expect(lrp.Env).To(HaveKeyWithValue("CF_INSTANCE_PORTS", MatchJSON(`[{"external": 8080, "internal": 8080}]`)))
+				Expect(lrp.Env).To(HaveKeyWithValue("CF_INSTANCE_ADDR", "0.0.0.0:8000"))
+				Expect(lrp.Env).To(HaveKeyWithValue("CF_INSTANCE_PORT", "8000"))
+				Expect(lrp.Env).To(HaveKeyWithValue("CF_INSTANCE_PORTS", MatchJSON(`[{"external": 8000, "internal": 8000}]`)))
 			})
 
 			It("should set LANG env variable", func() {
@@ -233,7 +233,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			It("sets the healthcheck information", func() {
 				health := lrp.Health
 				Expect(health.Type).To(Equal("http"))
-				Expect(health.Port).To(Equal(int32(8080)))
+				Expect(health.Port).To(Equal(int32(8000)))
 				Expect(health.Endpoint).To(Equal("/heat"))
 				Expect(health.TimeoutMs).To(Equal(uint(400)))
 			})

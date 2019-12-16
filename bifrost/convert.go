@@ -32,29 +32,30 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 	var env map[string]string
 	var image string
 
+	port := request.Ports[0]
 	env = map[string]string{
 		"LANG":              "en_US.UTF-8",
-		"CF_INSTANCE_ADDR":  "0.0.0.0:8080",
-		"CF_INSTANCE_PORT":  "8080",
-		"CF_INSTANCE_PORTS": `[{"external":8080,"internal":8080}]`,
+		"CF_INSTANCE_ADDR":  fmt.Sprintf("0.0.0.0:%d", port),
+		"CF_INSTANCE_PORT":  fmt.Sprintf("%d", port),
+		"CF_INSTANCE_PORTS": fmt.Sprintf(`[{"external":%d,"internal":%d}]`, port, port),
 	}
 
 	healthcheck := opi.Healtcheck{
 		Type:      request.HealthCheckType,
 		Endpoint:  request.HealthCheckHTTPEndpoint,
 		TimeoutMs: request.HealthCheckTimeoutMs,
+		Port:      port,
 	}
 
 	switch {
 	case request.Lifecycle.DockerLifecycle != nil:
 		image = request.Lifecycle.DockerLifecycle.Image
 		command = request.Lifecycle.DockerLifecycle.Command
-		healthcheck.Port = request.Ports[0]
 
 	case request.Lifecycle.BuildpackLifecycle != nil:
 		var buildpackEnv map[string]string
 		lifecycle := request.Lifecycle.BuildpackLifecycle
-		image, command, buildpackEnv, healthcheck.Port = c.buildpackProperties(lifecycle.DropletGUID, lifecycle.DropletHash, lifecycle.StartCommand)
+		image, command, buildpackEnv = c.buildpackProperties(lifecycle.DropletGUID, lifecycle.DropletHash, lifecycle.StartCommand)
 		env = mergeMaps(env, buildpackEnv)
 
 	default:
@@ -104,7 +105,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 	}, nil
 }
 
-func (c *DropletToImageConverter) buildpackProperties(dropletGUID, dropletHash, startCommand string) (string, []string, map[string]string, int32) {
+func (c *DropletToImageConverter) buildpackProperties(dropletGUID, dropletHash, startCommand string) (string, []string, map[string]string) {
 	image := c.imageURI(dropletGUID, dropletHash)
 	command := []string{"dumb-init", "--", "/lifecycle/launch"}
 	buildpackEnv := map[string]string{
@@ -115,7 +116,7 @@ func (c *DropletToImageConverter) buildpackProperties(dropletGUID, dropletHash, 
 		"START_COMMAND": startCommand,
 	}
 
-	return image, command, buildpackEnv, int32(8080)
+	return image, command, buildpackEnv
 }
 
 func getRequestedRoutes(request cf.DesireLRPRequest) string {
