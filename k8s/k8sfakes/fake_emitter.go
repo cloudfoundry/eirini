@@ -36,10 +36,17 @@ func (fake *FakeEmitter) EmitCallCount() int {
 	return len(fake.emitArgsForCall)
 }
 
+func (fake *FakeEmitter) EmitCalls(stub func(metrics.Message)) {
+	fake.emitMutex.Lock()
+	defer fake.emitMutex.Unlock()
+	fake.EmitStub = stub
+}
+
 func (fake *FakeEmitter) EmitArgsForCall(i int) metrics.Message {
 	fake.emitMutex.RLock()
 	defer fake.emitMutex.RUnlock()
-	return fake.emitArgsForCall[i].arg1
+	argsForCall := fake.emitArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeEmitter) Invocations() map[string][][]interface{} {
