@@ -1,8 +1,8 @@
-package cmd
+package main
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -12,16 +12,9 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
-	"github.com/spf13/cobra"
 )
 
-var simulatorCmd = &cobra.Command{
-	Use:   "simulator",
-	Short: "Simulate pre-defined state of the Kubernetes cluster.",
-	Run:   simulate,
-}
-
-func simulate(cmd *cobra.Command, args []string) {
+func main() {
 	handlerLogger := lager.NewLogger("handler-simulator-logger")
 	handlerLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 
@@ -36,7 +29,8 @@ func simulate(cmd *cobra.Command, args []string) {
 	stager := &StagerSimulator{}
 	handler := handler.New(bifrost, stager, handlerLogger)
 
-	log.Fatal(http.ListenAndServe("127.0.0.1:8085", handler))
+	fmt.Println("Starting to listen at 127.0.0.1:8085")
+	handlerLogger.Fatal("simulator-crahsed", http.ListenAndServe("127.0.0.1:8085", handler))
 }
 
 type DesirerSimulator struct{}
