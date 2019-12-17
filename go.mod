@@ -2,6 +2,8 @@ module code.cloudfoundry.org/eirini
 
 go 1.13
 
+replace k8s.io/client-go => k8s.io/client-go v0.17.0
+
 require (
 	code.cloudfoundry.org/bbs v0.0.0-20191127211754-4e363e2f6ed6
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
