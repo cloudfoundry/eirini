@@ -78,7 +78,7 @@ var _ = Describe("Poll", func() {
 		defer close(stopped)
 
 		go func() {
-			util.PollUntilTrue(f, 1*time.Microsecond, stop)
+			util.PollUntilTrue(f, 500*time.Microsecond, stop)
 			stopped <- nil
 		}()
 
