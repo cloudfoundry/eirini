@@ -26,25 +26,26 @@ func (i *LRPIdentifier) ProcessGUID() string {
 // killing and recreating as needed to maintain that guarantee
 type LRP struct {
 	LRPIdentifier
-	ProcessType      string
-	AppName          string
-	AppGUID          string
-	OrgName          string
-	SpaceName        string
-	Image            string
-	Command          []string
-	Env              map[string]string
-	Health           Healtcheck
-	Ports            []int32
-	TargetInstances  int
-	RunningInstances int
-	MemoryMB         int64
-	DiskMB           int64
-	CPUWeight        uint8
-	VolumeMounts     []VolumeMount
-	LRP              string
-	AppURIs          string
-	LastUpdated      string
+	ProcessType            string
+	AppName                string
+	AppGUID                string
+	OrgName                string
+	SpaceName              string
+	Image                  string
+	Command                []string
+	Env                    map[string]string
+	Health                 Healtcheck
+	Ports                  []int32
+	TargetInstances        int
+	RunningInstances       int
+	MemoryMB               int64
+	DiskMB                 int64
+	CPUWeight              uint8
+	VolumeMounts           []VolumeMount
+	LRP                    string
+	AppURIs                string
+	LastUpdated            string
+	UserDefinedAnnotations map[string]string
 }
 
 type VolumeMount struct {

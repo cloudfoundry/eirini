@@ -299,6 +299,15 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
 	namePrefix = utils.SanitizeName(namePrefix, lrp.GUID)
 
+	annotations := map[string]string{}
+	for k, v := range lrp.UserDefinedAnnotations {
+		annotations[k] = v
+	}
+
+	annotations[AnnotationProcessGUID] = lrp.ProcessGUID()
+	annotations[AnnotationAppID] = lrp.AppGUID
+	annotations[corev1.SeccompPodAnnotationKey] = corev1.SeccompProfileRuntimeDefault
+
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name: fmt.Sprintf("%s-%s", namePrefix, nameSuffix),
@@ -308,11 +317,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 			Replicas:            int32ptr(lrp.TargetInstances),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: meta.ObjectMeta{
-					Annotations: map[string]string{
-						AnnotationProcessGUID:          lrp.ProcessGUID(),
-						AnnotationAppID:                lrp.AppGUID,
-						corev1.SeccompPodAnnotationKey: corev1.SeccompProfileRuntimeDefault,
-					},
+					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken: &automountServiceAccountToken,

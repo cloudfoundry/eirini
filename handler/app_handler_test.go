@@ -92,7 +92,10 @@ var _ = Describe("AppHandler", func() {
 						"volume_id":"vol1"
 					}
 				],
-				"ports":[8080,7777]
+				"ports":[8080,7777],
+				"user_defined_annotations": {
+						"prometheus.io/scrape": "scrape"
+				}
 			}`
 		})
 
@@ -143,6 +146,9 @@ var _ = Describe("AppHandler", func() {
 					},
 				},
 				LRP: body,
+				UserDefinedAnnotations: map[string]string{
+					"prometheus.io/scrape": "scrape",
+				},
 			}
 
 			Expect(bifrost.TransferCallCount()).To(Equal(1))

@@ -73,6 +73,9 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				},
 			},
 			LRP: "full LRP request",
+			UserDefinedAnnotations: map[string]string{
+				"prometheus.io/scrape": "scrape",
+			},
 		}
 	})
 
@@ -175,6 +178,10 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 			It("should set the LRP request", func() {
 				Expect(lrp.LRP).To(Equal("full LRP request"))
+			})
+
+			It("should set user defined annotation", func() {
+				Expect(lrp.UserDefinedAnnotations["prometheus.io/scrape"]).To(Equal("scrape"))
 			})
 		}
 

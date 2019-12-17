@@ -202,6 +202,11 @@ var _ = Describe("Statefulset Desirer", func() {
 				actualLimit := statefulSet.Spec.Template.Spec.Containers[0].Resources.Limits.StorageEphemeral()
 				Expect(actualLimit).To(Equal(expectedLimit))
 			})
+
+			It("should set user defined annotations", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+				Expect(statefulSet.Spec.Template.Annotations["prometheus.io/scrape"]).To(Equal("secret-value"))
+			})
 		})
 
 		Context("When the app name contains unsupported characters", func() {
@@ -758,5 +763,8 @@ func createLRP(name, routes string) *opi.LRP {
 			},
 		},
 		LRP: "original request",
+		UserDefinedAnnotations: map[string]string{
+			"prometheus.io/scrape": "secret-value",
+		},
 	}
 }
