@@ -5,6 +5,7 @@ go 1.13
 replace k8s.io/client-go => k8s.io/client-go v0.17.0
 
 require (
+	cloud.google.com/go v0.49.0 // indirect
 	code.cloudfoundry.org/bbs v0.0.0-20191127211754-4e363e2f6ed6
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
@@ -22,11 +23,18 @@ require (
 	code.cloudfoundry.org/tlsconfig v0.0.0-20191126220907-6c65973656e3
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
+	github.com/Azure/go-autorest/autorest v0.9.3 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.8.1 // indirect
 	github.com/deckarep/golang-set v1.7.1
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-test/deep v1.0.4 // indirect
-	github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
+	github.com/gogo/protobuf v1.3.1
+	github.com/google/go-cmp v0.3.1 // indirect
+	github.com/googleapis/gnostic v0.3.1 // indirect
+	github.com/gophercloud/gophercloud v0.7.0 // indirect
 	github.com/hashicorp/consul/api v1.3.0 // indirect
+	github.com/hashicorp/golang-lru v0.5.3 // indirect
+	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.2.0 // indirect
@@ -38,11 +46,21 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.5
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
+	go.uber.org/atomic v1.5.1 // indirect
 	go.uber.org/multierr v1.4.0
-	gopkg.in/yaml.v2 v2.2.4
+	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
+	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
+	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6 // indirect
+	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
+	golang.org/x/tools v0.0.0-20191217144153-01c78d57fd55 // indirect
+	google.golang.org/appengine v1.6.5 // indirect
+	google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f // indirect
+	google.golang.org/grpc v1.25.1 // indirect
+	gopkg.in/yaml.v2 v2.2.7
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.0
-	k8s.io/client-go v0.17.0
+	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/klog v1.0.0
 	k8s.io/metrics v0.17.0
 	k8s.io/utils v0.0.0-20191217112158-dcd0c905194b // indirect
