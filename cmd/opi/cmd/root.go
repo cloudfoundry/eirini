@@ -15,7 +15,6 @@ var rootCmd = &cobra.Command{
 func init() {
 	initConnect()
 	rootCmd.AddCommand(connectCmd)
-	rootCmd.AddCommand(simulatorCmd)
 }
 
 func Execute() {
