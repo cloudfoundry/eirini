@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"code.cloudfoundry.org/bbs/models"
@@ -119,20 +120,31 @@ func (s *Stager) sendCompletionCallback(task *models.TaskCallbackResponse) error
 		return err
 	}
 
-	request, err := http.NewRequest("POST", callbackURI, bytes.NewBuffer(callbackBody))
+	_, err = url.Parse(callbackURI)
 	if err != nil {
-		l.Error("failed-to-create-callback-request", err)
+		l.Error("failed-to-parse-callback-request", err)
 	}
-	request.Header.Set("Content-Type", "application/json")
-	return s.executeRequestWithRetries(request)
+
+	makeRequest := func() *http.Request {
+		request, err := http.NewRequest("POST", callbackURI, bytes.NewBuffer(callbackBody))
+		if err != nil {
+			panic("Should not happen: The only reason for NewRequest to error " +
+				"should be a non-parsable URL, wihich is being checked for:" + err.Error())
+		}
+		request.Header.Set("Content-Type", "application/json")
+		return request
+	}
+
+	return s.executeRequestWithRetries(makeRequest)
 }
 
-func (s *Stager) executeRequestWithRetries(request *http.Request) error {
-	l := s.Logger.Session("execute-callback-request", lager.Data{"request-uri": request.URL})
+func (s *Stager) executeRequestWithRetries(makeRequest func() *http.Request) error {
+	l := s.Logger.Session("execute-callback-request")
 	n := 0
 	var err error
 	for {
-		err = s.executeRequest(request)
+		// Create a new request on each iteration to avoid race
+		err = s.executeRequest(makeRequest())
 		if err == nil {
 			break
 		}
