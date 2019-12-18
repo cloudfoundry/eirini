@@ -1,7 +1,6 @@
 package util_test
 
 import (
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -57,34 +56,6 @@ var _ = Describe("Poll", func() {
 		stop <- nil
 		Eventually(stopped).Should(Receive())
 		Expect(pollResult).To(BeFalse())
-	})
-
-	It("calls the functuion at least once before asked to stop", func() {
-		stop := make(chan interface{}, 1)
-		defer close(stop)
-
-		var funcCallCount int32
-		var mu sync.Mutex
-		atomic.StoreInt32(&funcCallCount, 0)
-		f := func() bool {
-			mu.Lock()
-			defer mu.Unlock()
-			atomic.AddInt32(&funcCallCount, 1)
-			stop <- nil
-			return atomic.LoadInt32(&funcCallCount) != int32(1)
-		}
-
-		stopped := make(chan interface{}, 1)
-		defer close(stopped)
-
-		go func() {
-			util.PollUntilTrue(f, 500*time.Microsecond, stop)
-			stopped <- nil
-		}()
-
-		funcCalledOnce := func() bool { return atomic.LoadInt32(&funcCallCount) == int32(1) }
-		Eventually(funcCalledOnce).Should(BeTrue())
-		Eventually(stopped).Should(Receive())
 	})
 
 	It("sleeps for given duration between polls", func() {
