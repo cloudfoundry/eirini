@@ -7,14 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	policyv1 "k8s.io/api/policy/v1beta1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	types "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -26,6 +25,7 @@ var (
 	namespace      string
 	clientset      kubernetes.Interface
 	kubeConfigPath string
+	pspName        string
 )
 
 const (
@@ -42,6 +42,9 @@ var _ = BeforeSuite(func() {
 
 	clientset, err = kubernetes.NewForConfig(config)
 	Expect(err).ToNot(HaveOccurred())
+})
+
+var _ = BeforeEach(func() {
 
 	namespace = fmt.Sprintf("opi-integration-test-%d", rand.Intn(100000000))
 
@@ -50,14 +53,14 @@ var _ = BeforeSuite(func() {
 	}
 
 	createNamespace(namespace)
-	allowPodCreation(namespace)
+
+	pspName = fmt.Sprintf("%s-psp", namespace)
+	Expect(util.CreatePodCreationPSP(namespace, pspName, clientset)).To(Succeed())
 })
 
-var _ = AfterSuite(func() {
+var _ = AfterEach(func() {
 	err := clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{})
 	Expect(err).ToNot(HaveOccurred())
-
-	pspName := fmt.Sprintf("%s-psp", namespace)
 	err = clientset.PolicyV1beta1().PodSecurityPolicies().Delete(pspName, &metav1.DeleteOptions{})
 	Expect(err).ToNot(HaveOccurred())
 })
@@ -76,85 +79,6 @@ func createNamespace(namespace string) {
 	namespaceSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
 
 	if _, err := clientset.CoreV1().Namespaces().Create(namespaceSpec); err != nil {
-		panic(err)
-	}
-}
-
-func allowPodCreation(namespace string) {
-	pspName := fmt.Sprintf("%s-psp", namespace)
-	roleName := "use-psp"
-
-	_, err := clientset.PolicyV1beta1().PodSecurityPolicies().Create(&policyv1.PodSecurityPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: pspName,
-			Annotations: map[string]string{
-				"seccomp.security.alpha.kubernetes.io/allowedProfileNames": "runtime/default",
-				"seccomp.security.alpha.kubernetes.io/defaultProfileName":  "runtime/default",
-			},
-		},
-		Spec: policyv1.PodSecurityPolicySpec{
-			Privileged: false,
-			RunAsUser: policyv1.RunAsUserStrategyOptions{
-				Rule: policyv1.RunAsUserStrategyRunAsAny,
-			},
-			SELinux: policyv1.SELinuxStrategyOptions{
-				Rule: policyv1.SELinuxStrategyRunAsAny,
-			},
-			SupplementalGroups: policyv1.SupplementalGroupsStrategyOptions{
-				Rule: policyv1.SupplementalGroupsStrategyMustRunAs,
-				Ranges: []policyv1.IDRange{{
-					Min: 1,
-					Max: 65535,
-				}},
-			},
-			FSGroup: policyv1.FSGroupStrategyOptions{
-				Rule: policyv1.FSGroupStrategyMustRunAs,
-				Ranges: []policyv1.IDRange{{
-					Min: 1,
-					Max: 65535,
-				}},
-			},
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = clientset.RbacV1().Roles(namespace).Create(&rbacv1.Role{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      roleName,
-			Namespace: namespace,
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups:     []string{"policy"},
-				Resources:     []string{"podsecuritypolicies"},
-				ResourceNames: []string{pspName},
-				Verbs:         []string{"use"},
-			},
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = clientset.RbacV1().RoleBindings(namespace).Create(&rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "default-account-psp",
-			Namespace: namespace,
-		},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "Role",
-			Name:     roleName,
-		},
-		Subjects: []rbacv1.Subject{{
-			Kind:      rbacv1.ServiceAccountKind,
-			Name:      "default",
-			Namespace: namespace,
-		}},
-	})
-	if err != nil {
 		panic(err)
 	}
 }
