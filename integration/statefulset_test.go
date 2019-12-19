@@ -3,7 +3,6 @@ package statefulsets_test
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -158,18 +157,8 @@ func int32ptr(i int) *int32 {
 	return &i32
 }
 
-const letters = "abcdefghijklmnopqrstuvwxyz1234567890"
-
-func randomString() string {
-	b := make([]byte, 10)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
-}
-
 func createLRP(name string) *opi.LRP {
-	guid := randomString()
+	guid := util.RandomString()
 	routes, err := json.Marshal([]cf.Route{{Hostname: "foo.example.com", Port: 8080}})
 	Expect(err).ToNot(HaveOccurred())
 	return &opi.LRP{
