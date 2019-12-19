@@ -9,5 +9,5 @@ import (
 
 func TestEvent(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Event Suite")
+	RunSpecs(t, "Informer Event Suite")
 }
