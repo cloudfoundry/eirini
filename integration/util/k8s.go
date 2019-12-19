@@ -137,12 +137,12 @@ func DeletePSP(name string, clientset kubernetes.Interface) error {
 }
 
 func MakeTestHTTPClient() (*http.Client, error) {
-	bs, err := ioutil.ReadFile(pathToTestFixture("cert"))
+	bs, err := ioutil.ReadFile(PathToTestFixture("cert"))
 	if err != nil {
 		return nil, err
 	}
 
-	clientCert, err := tls.LoadX509KeyPair(pathToTestFixture("cert"), pathToTestFixture("key"))
+	clientCert, err := tls.LoadX509KeyPair(PathToTestFixture("cert"), PathToTestFixture("key"))
 	if err != nil {
 		return nil, err
 	}
@@ -167,12 +167,12 @@ func DefaultEiriniConfig(namespace, secretName string) *eirini.Config {
 				ConfigPath: os.Getenv("INTEGRATION_KUBECONFIG"),
 				Namespace:  namespace,
 			},
-			CCCAPath:          pathToTestFixture("cert"),
-			CCCertPath:        pathToTestFixture("cert"),
-			CCKeyPath:         pathToTestFixture("key"),
-			ServerCertPath:    pathToTestFixture("cert"),
-			ServerKeyPath:     pathToTestFixture("key"),
-			ClientCAPath:      pathToTestFixture("cert"),
+			CCCAPath:          PathToTestFixture("cert"),
+			CCCertPath:        PathToTestFixture("cert"),
+			CCKeyPath:         PathToTestFixture("key"),
+			ServerCertPath:    PathToTestFixture("cert"),
+			ServerKeyPath:     PathToTestFixture("key"),
+			ClientCAPath:      PathToTestFixture("cert"),
 			TLSPort:           61000 + rand.Intn(1000) + ginkgoconfig.GinkgoConfig.ParallelNode,
 			CCCertsSecretName: secretName,
 
@@ -202,7 +202,7 @@ func createConfigFile(yamlBytes []byte) (*os.File, error) {
 	return configFile, err
 }
 
-func pathToTestFixture(relativePath string) string {
+func PathToTestFixture(relativePath string) string {
 	cwd, err := os.Getwd()
 	if err != nil {
 		panic(err)
