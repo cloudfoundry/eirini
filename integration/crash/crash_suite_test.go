@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-	"time"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/integration/util"
@@ -31,10 +30,6 @@ var (
 	kubeConfigPath     string
 	pspName            string
 	pathToCrashEmitter string
-)
-
-const (
-	timeout time.Duration = 60 * time.Second
 )
 
 var _ = BeforeSuite(func() {
