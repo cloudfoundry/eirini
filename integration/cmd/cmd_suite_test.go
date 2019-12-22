@@ -68,6 +68,7 @@ func metricsCollectorConfig() *eirini.MetricsCollectorConfig {
 func defaultEventReporterConfig() *eirini.EventReporterConfig {
 	config := &eirini.EventReporterConfig{
 		KubeConfig: eirini.KubeConfig{
+			Namespace:  "default",
 			ConfigPath: pathToTestFixture("kube.conf"),
 		},
 		CcInternalAPI: "doesitmatter.com",

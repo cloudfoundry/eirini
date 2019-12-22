@@ -66,6 +66,7 @@ var _ = AfterSuite(func() {
 func defaultEventReporterConfig() *eirini.EventReporterConfig {
 	config := &eirini.EventReporterConfig{
 		KubeConfig: eirini.KubeConfig{
+			Namespace:  namespace,
 			ConfigPath: os.Getenv("INTEGRATION_KUBECONFIG"),
 		},
 		CcInternalAPI: "doesitmatter.com",
