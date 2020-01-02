@@ -34,6 +34,13 @@ issues:
       linters:
       - goconst
       - dupl
+      - gomnd
+    - path: cmd/simulator/main\.go
+      linters:
+      - gomnd
+    - path: integration/util/k8s\.go
+      linters:
+      - gomnd
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 

@@ -106,7 +106,7 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
 					v1.ResourceMemory:           *resource.NewScaledQuantity(task.MemoryMB, resource.Mega),
-					v1.ResourceCPU:              *resource.NewScaledQuantity(int64(task.CPUWeight)*10, resource.Milli),
+					v1.ResourceCPU:              toCPUMillicores(task.CPUWeight),
 					v1.ResourceEphemeralStorage: *resource.NewScaledQuantity(task.DiskMB, resource.Mega),
 				},
 			},

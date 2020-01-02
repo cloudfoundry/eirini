@@ -20,10 +20,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+const randUpperBound = 100000000
+
 func CreateRandomNamespace(clientset kubernetes.Interface) string {
-	namespace := fmt.Sprintf("opi-integration-test-%d-%d", rand.Intn(100000000), ginkgoconfig.GinkgoConfig.ParallelNode)
+	namespace := fmt.Sprintf("opi-integration-test-%d-%d", rand.Intn(randUpperBound), ginkgoconfig.GinkgoConfig.ParallelNode)
 	for namespaceExists(namespace, clientset) {
-		namespace = fmt.Sprintf("opi-integration-test-%d-%d", rand.Intn(100000000), ginkgoconfig.GinkgoConfig.ParallelNode)
+		namespace = fmt.Sprintf("opi-integration-test-%d-%d", rand.Intn(randUpperBound), ginkgoconfig.GinkgoConfig.ParallelNode)
 	}
 	createNamespace(namespace, clientset)
 	return namespace

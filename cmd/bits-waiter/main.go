@@ -11,6 +11,8 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
+const pollInterval = 1 * time.Second
+
 func main() {
 	namespace := flag.String("namespace", "", "Namespace where eirini runs apps")
 	timeout := flag.Duration("timeout", -1, "Timeout for waiting for rootfs patching to be finished")
@@ -20,7 +22,7 @@ func main() {
 
 	if *namespace == "" {
 		flag.PrintDefaults()
-		os.Exit(1)
+		os.Exit(1) // nolint:gomnd
 	}
 
 	kubeClient := cmd.CreateKubeClient(*kubeConfigPath)
@@ -34,7 +36,7 @@ func main() {
 	}
 
 	pollUntilTrue := func(stop <-chan interface{}) {
-		util.PollUntilTrue(bitsIsReady, 1*time.Second, stop)
+		util.PollUntilTrue(bitsIsReady, pollInterval, stop)
 	}
 
 	cmd.ExitWithError(util.RunWithTimeout(pollUntilTrue, *timeout))

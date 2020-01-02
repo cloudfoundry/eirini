@@ -49,11 +49,6 @@ func createHTTPProbe(lrp *opi.LRP, initialDelay, failureThreshold int32) *v1.Pro
 	}
 }
 
-func toSeconds(millis uint) int32 {
-	seconds := millis / 1000
-	return int32(seconds)
-}
-
 func httpGetAction(lrp *opi.LRP) *v1.HTTPGetAction {
 	return &v1.HTTPGetAction{
 		Path: lrp.Health.Endpoint,

@@ -115,8 +115,7 @@ func parseMetrics(metric v1beta1.PodMetrics) (cpu float64, memory float64) {
 	container := metric.Containers[0]
 	usage := container.Usage
 	res := usage[apiv1.ResourceCPU]
-	cpuMillicores := res.MilliValue()
-	cpu = float64(cpuMillicores) / 10
+	cpu = toCPUPercentage(res.MilliValue())
 	res = usage[apiv1.ResourceMemory]
 	memory = float64(res.Value())
 	return

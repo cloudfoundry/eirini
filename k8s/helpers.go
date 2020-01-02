@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -44,4 +45,16 @@ func IsStopped(eventList *v1.EventList) bool {
 
 	event := events[len(events)-1]
 	return event.Reason == eventKilling
+}
+
+func toCPUMillicores(cpuPercentage uint8) resource.Quantity {
+	return *resource.NewScaledQuantity(int64(cpuPercentage)*10, resource.Milli) // nolint:gomnd
+}
+
+func toCPUPercentage(cpuMillicores int64) float64 {
+	return float64(cpuMillicores) / 10 // nolint:gomnd
+}
+
+func toSeconds(millis uint) int32 {
+	return int32(millis / 1000) // nolint:gomnd
 }

@@ -17,6 +17,11 @@ import (
 	"go.uber.org/multierr"
 )
 
+const (
+	numRetries = 10
+	delay      = 2 * time.Second
+)
+
 type Stager struct {
 	Desirer    opi.TaskDesirer
 	Config     *eirini.StagerConfig
@@ -32,8 +37,8 @@ func New(desirer opi.TaskDesirer, httpClient *http.Client, config eirini.StagerC
 		Config:     &config,
 		Logger:     logger,
 		HTTPClient: httpClient,
-		Retries:    10,
-		Delay:      2 * time.Second,
+		Retries:    numRetries,
+		Delay:      delay,
 	}
 }
 
@@ -169,7 +174,7 @@ func (s *Stager) executeRequest(request *http.Request) error {
 		return err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
+	if resp.StatusCode >= http.StatusMultipleChoices {
 		l.Error("cc-staging-complete-failed-status-code", nil, lager.Data{"status-code": resp.StatusCode})
 		return fmt.Errorf("callback-response-unsuccessful, code: %d", resp.StatusCode)
 	}

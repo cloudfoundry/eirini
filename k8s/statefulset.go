@@ -171,7 +171,7 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 	switch len(statefulsets) {
 	case 0:
 		return nil, ErrNotFound
-	case 1:
+	case 1: // nolint:gomnd
 		return &statefulsets[0], nil
 	default:
 		panic(fmt.Sprintf("more than one was identified as %+v", identifier))
@@ -285,7 +285,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	readinessProbe := m.ReadinessProbeCreator(lrp)
 
 	memory := *resource.NewScaledQuantity(lrp.MemoryMB, resource.Mega)
-	cpu := *resource.NewScaledQuantity(int64(lrp.CPUWeight*10), resource.Milli)
+	cpu := toCPUMillicores(lrp.CPUWeight)
 	ephemeralStorage := *resource.NewScaledQuantity(lrp.DiskMB, resource.Mega)
 
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)

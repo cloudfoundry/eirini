@@ -12,6 +12,8 @@ import (
 	"github.com/jessevdk/go-flags"
 )
 
+const tickerPeriod = 30 * time.Second
+
 type options struct {
 	ConfigFile string `short:"c" long:"config" description:"Config for running route-collector"`
 }
@@ -37,7 +39,7 @@ func main() {
 		Collector: collector,
 		Emitter:   routeEmitter,
 		Scheduler: &util.TickerTaskScheduler{
-			Ticker: time.NewTicker(30 * time.Second),
+			Ticker: time.NewTicker(tickerPeriod),
 			Logger: logger.Session("scheduler"),
 		},
 	}

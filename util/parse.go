@@ -11,7 +11,7 @@ import (
 func ParseAppIndex(podName string) (int, error) {
 	sl := strings.Split(podName, "-")
 
-	if len(sl) <= 1 {
+	if len(sl) <= 1 { // nolint:gomnd
 		return 0, fmt.Errorf("could not parse app name from %s", podName)
 	}
 	index, err := strconv.Atoi(sl[len(sl)-1])
