@@ -19,7 +19,7 @@ code.cloudfoundry.org/lager/lagertest
 code.cloudfoundry.org/rfc5424
 # code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
 code.cloudfoundry.org/runtimeschema/cc_messages
-# code.cloudfoundry.org/tlsconfig v0.0.0-20191220232943-2819aba30e10
+# code.cloudfoundry.org/tlsconfig v0.0.0-20200103214402-4ae6f49cdca0
 code.cloudfoundry.org/tlsconfig
 # code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 code.cloudfoundry.org/tps/cc_client
@@ -197,7 +197,7 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20200102141924-c96a22e43c9c
+# golang.org/x/sys v0.0.0-20200103143344-a1369afcdac7
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
@@ -227,7 +227,7 @@ golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 # golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200102200121-6de373a2766c
+# golang.org/x/tools v0.0.0-20200103221440-774c71fcf114
 golang.org/x/tools/go/analysis
 golang.org/x/tools/go/analysis/passes/inspect
 golang.org/x/tools/go/ast/astutil

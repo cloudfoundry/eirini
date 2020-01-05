@@ -20,7 +20,7 @@ require (
 	code.cloudfoundry.org/rep v0.0.0-20191210190026-b68fa6668abc // indirect
 	code.cloudfoundry.org/rfc5424 v0.0.0-20180905210152-236a6d29298a // indirect
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
-	code.cloudfoundry.org/tlsconfig v0.0.0-20191220232943-2819aba30e10
+	code.cloudfoundry.org/tlsconfig v0.0.0-20200103214402-4ae6f49cdca0
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
 	github.com/Azure/go-autorest/autorest v0.9.3 // indirect
@@ -52,9 +52,9 @@ require (
 	golang.org/x/crypto v0.0.0-20191227163750-53104e6ec876 // indirect
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6 // indirect
-	golang.org/x/sys v0.0.0-20200102141924-c96a22e43c9c // indirect
+	golang.org/x/sys v0.0.0-20200103143344-a1369afcdac7 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	golang.org/x/tools v0.0.0-20200102200121-6de373a2766c // indirect
+	golang.org/x/tools v0.0.0-20200103221440-774c71fcf114 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/genproto v0.0.0-20191230161307-f3c370f40bfb // indirect
 	google.golang.org/grpc v1.26.0 // indirect
