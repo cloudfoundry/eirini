@@ -4,46 +4,16 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"os"
-	"os/exec"
 
-	"code.cloudfoundry.org/eirini/integration/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Staging", func() {
-	var (
-		httpClient *http.Client
-
-		configFile *os.File
-		session    *gexec.Session
-		url        string
-	)
 
 	BeforeEach(func() {
-		var err error
-
-		httpClient, err = util.MakeTestHTTPClient()
-		Expect(err).ToNot(HaveOccurred())
-
-		config := util.DefaultEiriniConfig(namespace, secretName)
-		configFile, err = util.CreateOpiConfigFromFixtures(config)
-		Expect(err).ToNot(HaveOccurred())
-
-		command := exec.Command(pathToOpi, "connect", "-c", configFile.Name()) // #nosec G204
-		session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
-		Expect(err).ToNot(HaveOccurred())
-
-		url = fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort)
-		Eventually(func() error {
-			_, getErr := httpClient.Get(url)
-			return getErr
-		}, "5s").Should(Succeed())
-
 		body := `{
 				"memory_mb": 100,
 				"disk_mb": 200,
@@ -52,15 +22,6 @@ var _ = Describe("Staging", func() {
 		resp, err := httpClient.Post(fmt.Sprintf("%s/stage/the-staging-guid", url), "json", bytes.NewReader([]byte(body)))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
-	})
-
-	AfterEach(func() {
-		if configFile != nil {
-			os.Remove(configFile.Name())
-		}
-		if session != nil {
-			session.Kill()
-		}
 	})
 
 	It("should create a staging job", func() {
