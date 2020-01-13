@@ -32,5 +32,5 @@ func main() {
 		Logger:       logger,
 	}
 
-	cmd.ExitWithError(patcher.Patch())
+	cmd.ExitIfError(patcher.Patch())
 }

@@ -24,10 +24,10 @@ type options struct {
 func main() {
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
-	cmdcommons.ExitWithError(err)
+	cmdcommons.ExitIfError(err)
 
 	cfg, err := readConfigFile(opts.ConfigFile)
-	cmdcommons.ExitWithError(err)
+	cmdcommons.ExitIfError(err)
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
@@ -43,7 +43,7 @@ func main() {
 
 func launchEventReporter(clientset kubernetes.Interface, uri, ca, cert, key, namespace string) {
 	tlsConf, err := cc_client.NewTLSConfig(cert, key, ca)
-	cmdcommons.ExitWithError(err)
+	cmdcommons.ExitIfError(err)
 
 	client := cc_client.NewCcClient(uri, tlsConf)
 	crashReporterLogger := lager.NewLogger("instance-crash-reporter")

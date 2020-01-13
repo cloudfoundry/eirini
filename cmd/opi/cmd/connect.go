@@ -35,9 +35,9 @@ var connectCmd = &cobra.Command{
 
 func connect(cmd *cobra.Command, args []string) {
 	path, err := cmd.Flags().GetString("config")
-	cmdcommons.ExitWithError(err)
+	cmdcommons.ExitIfError(err)
 	if path == "" {
-		cmdcommons.ExitWithError(errors.New("--config is missing"))
+		cmdcommons.ExitIfError(errors.New("--config is missing"))
 	}
 
 	cfg := setConfigFromFile(path)
@@ -58,7 +58,7 @@ func connect(cmd *cobra.Command, args []string) {
 	).Server(
 		tlsconfig.WithClientAuthenticationFromFile(cfg.Properties.ClientCAPath),
 	)
-	cmdcommons.ExitWithError(err)
+	cmdcommons.ExitIfError(err)
 
 	server = &http.Server{
 		Addr:      fmt.Sprintf("0.0.0.0:%d", cfg.Properties.TLSPort),
@@ -119,12 +119,12 @@ func initBifrost(clientset kubernetes.Interface, cfg *eirini.Config) eirini.Bifr
 
 func setConfigFromFile(path string) *eirini.Config {
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
-	cmdcommons.ExitWithError(err)
+	cmdcommons.ExitIfError(err)
 
 	var conf eirini.Config
 	conf.Properties.DiskLimitMB = 2048
 	err = yaml.Unmarshal(fileBytes, &conf)
-	cmdcommons.ExitWithError(err)
+	cmdcommons.ExitIfError(err)
 
 	return &conf
 }

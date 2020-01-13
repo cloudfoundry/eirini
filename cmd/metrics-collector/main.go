@@ -29,10 +29,10 @@ type options struct {
 func main() {
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
-	cmdcommons.ExitWithError(err)
+	cmdcommons.ExitIfError(err)
 
 	cfg, err := readMetricsCollectorConfigFromFile(opts.ConfigFile)
-	cmdcommons.ExitWithError(err)
+	cmdcommons.ExitIfError(err)
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 	metricsClient := cmdcommons.CreateMetricsClient(cfg.ConfigPath)
@@ -42,17 +42,17 @@ func main() {
 		cfg.LoggregatorCertPath,
 		cfg.LoggregatorKeyPath,
 	)
+	cmdcommons.ExitIfError(err)
 
 	loggregatorClient, err := loggregator.NewIngressClient(
 		tlsConfig,
 		loggregator.WithAddr(cfg.LoggregatorAddress),
 	)
+	cmdcommons.ExitIfError(err)
 
-	cmdcommons.ExitWithError(err)
 	defer func() {
-		if err = loggregatorClient.CloseSend(); err != nil {
-			cmdcommons.ExitWithError(err)
-		}
+		err = loggregatorClient.CloseSend()
+		cmdcommons.ExitIfError(err)
 	}()
 
 	launchMetricsEmitter(

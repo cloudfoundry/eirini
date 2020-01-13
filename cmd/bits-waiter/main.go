@@ -39,5 +39,5 @@ func main() {
 		util.PollUntilTrue(bitsIsReady, pollInterval, stop)
 	}
 
-	cmd.ExitWithError(util.RunWithTimeout(pollUntilTrue, *timeout))
+	cmd.ExitIfError(util.RunWithTimeout(pollUntilTrue, *timeout))
 }

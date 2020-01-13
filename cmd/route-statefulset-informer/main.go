@@ -18,16 +18,16 @@ type options struct {
 func main() {
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
-	cmdcommons.ExitWithError(err)
+	cmdcommons.ExitIfError(err)
 
 	cfg, err := route.ReadConfig(opts.ConfigFile)
-	cmdcommons.ExitWithError(err)
+	cmdcommons.ExitIfError(err)
 
 	logger := lager.NewLogger("route-statefulset-informer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	routeEmitter, err := route.NewEmitterFromConfig(cfg.NatsIP, cfg.NatsPort, cfg.NatsPassword, logger)
-	cmdcommons.ExitWithError(err)
+	cmdcommons.ExitIfError(err)
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
