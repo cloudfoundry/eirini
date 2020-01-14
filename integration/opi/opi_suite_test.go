@@ -76,7 +76,7 @@ var _ = BeforeEach(func() {
 	Eventually(func() error {
 		_, getErr := httpClient.Get(url)
 		return getErr
-	}, "5s").Should(Succeed())
+	}, "10s").Should(Succeed())
 })
 
 var _ = AfterEach(func() {
