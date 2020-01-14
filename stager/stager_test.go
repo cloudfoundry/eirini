@@ -282,7 +282,7 @@ var _ = Describe("Stager", func() {
 		Context("and the callback response is an error", func() {
 			BeforeEach(func() {
 				handlers = []http.HandlerFunc{
-					ghttp.RespondWith(http.StatusInternalServerError, ""),
+					ghttp.RespondWith(http.StatusInternalServerError, nil),
 				}
 			})
 
