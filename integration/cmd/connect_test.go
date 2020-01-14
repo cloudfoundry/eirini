@@ -99,7 +99,7 @@ var _ = Describe("connect command", func() {
 				command := exec.Command(cmdPath, "connect", "-c", "not-found.yml") // #nosec G204
 				session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, "5s").Should(gexec.Exit())
+				Eventually(session, "10s").Should(gexec.Exit())
 				Expect(session.ExitCode()).NotTo(BeZero())
 			})
 		})
