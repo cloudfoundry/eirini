@@ -7,6 +7,7 @@ RUN if [ -z "$GIT_SHA" ]; then echo "GIT_SHA not set"; exit 1; else : ; fi
 
 FROM scratch
 COPY --from=builder /eirini/route-collector /usr/local/bin/route-collector
+USER 1001
 ENTRYPOINT [ "/usr/local/bin/route-collector", \
 	"--config", \
 	"/etc/eirini/routing.yml" \

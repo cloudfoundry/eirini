@@ -7,6 +7,7 @@ RUN if [ -z "$GIT_SHA" ]; then echo "GIT_SHA not set"; exit 1; else : ; fi
 
 FROM scratch
 COPY --from=builder /eirini/event-reporter /usr/local/bin/event-reporter
+USER 1001
 ENTRYPOINT [ "/usr/local/bin/event-reporter", \
 	"--config", \
 	"/etc/eirini/config/events.yml" \

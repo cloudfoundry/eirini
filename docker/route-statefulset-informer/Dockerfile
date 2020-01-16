@@ -7,6 +7,7 @@ RUN if [ -z "$GIT_SHA" ]; then echo "GIT_SHA not set"; exit 1; else : ; fi
 
 FROM scratch
 COPY --from=builder /eirini/route-statefulset-informer /usr/local/bin/route-statefulset-informer
+USER 1001
 ENTRYPOINT [ "/usr/local/bin/route-statefulset-informer", \
 	"--config", \
 	"/etc/eirini/routing.yml" \

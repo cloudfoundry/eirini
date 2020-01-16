@@ -8,6 +8,7 @@ RUN curl -o /usr/local/bin/kubectl -sSL https://storage.googleapis.com/kubernete
 
 COPY never-tell-me-the-odds.sh /
 RUN chmod +x never-tell-me-the-odds.sh
+USER 1001
 
 ENTRYPOINT [ "/never-tell-me-the-odds.sh" ]
 LABEL org.opencontainers.image.revision=$GIT_SHA \

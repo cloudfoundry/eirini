@@ -5,15 +5,15 @@ IFS=$'\n\t'
 
 readonly SECRET_REGEX="cc-certs-volume:|cc-server-crt:|cc-server-crt-key:|cc-uploader-crt:|cc-uploader-crt-key:|internal-ca-cert:|eirini-client-crt:|eirini-client-crt-key:"
 
-main(){
+main() {
   create-registry-secret
   create-image-pull-secret
 }
 
-create-image-pull-secret(){
+create-image-pull-secret() {
   local username password
-  username="$(grep -E "signing_users:.*" -A 2 /config/bits-config |  awk -F: '/username:/{print $2}' | awk '{$1=$1};1')"
-  password="$(grep -E "signing_users:.*" -A 2 /config/bits-config |  awk -F: '/password:/{print $2}' | awk '{$1=$1};1')"
+  username="$(grep -E "signing_users:.*" -A 2 /config/bits-config | awk -F: '/username:/{print $2}' | awk '{$1=$1};1')"
+  password="$(grep -E "signing_users:.*" -A 2 /config/bits-config | awk -F: '/password:/{print $2}' | awk '{$1=$1};1')"
   # https://stackoverflow.com/a/45881259
   # There is no better way to upgrade the secret
   kubectl create secret docker-registry "$REGISTRY_CREDS_SECRET_NAME" \
@@ -21,13 +21,15 @@ create-image-pull-secret(){
     --docker-username="$username" \
     --docker-password="$password" \
     -n "$OPI_NAMESPACE" --dry-run -o yaml |
-  kubectl apply -f -
+    kubectl apply -f -
 }
 
-create-registry-secret(){
+create-registry-secret() {
+  local scf_secrets secret_file_path
   scf_secrets="$(kubectl get secret "$SECRET_NAME" --namespace="$SCF_NAMESPACE" --export -o yaml | grep -E "$SECRET_REGEX")"
+  secret_file_path=/tmp/secret.yml
 
-  cat <<EOT >> secret.yml
+  cat <<EOT >>$secret_file_path
 ---
 apiVersion: v1
 kind: Secret
@@ -38,9 +40,9 @@ data:
 ${scf_secrets}
 EOT
 
-  cat secret.yml
+  cat $secret_file_path
 
-  kubectl apply -f secret.yml --namespace "$OPI_NAMESPACE"
+  kubectl apply -f $secret_file_path --namespace "$OPI_NAMESPACE"
 }
 
 main
