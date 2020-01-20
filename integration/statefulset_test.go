@@ -5,12 +5,13 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini/integration/util"
-	"code.cloudfoundry.org/eirini/k8s"
+	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -39,7 +40,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 	JustBeforeEach(func() {
 		logger := lagertest.NewTestLogger("test")
-		desirer = k8s.NewStatefulSetDesirer(
+		desirer = NewStatefulSetDesirer(
 			clientset,
 			namespace,
 			"registry-secret",
@@ -64,7 +65,7 @@ var _ = Describe("StatefulSet Manager", func() {
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Command).To(Equal(odinLRP.Command))
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Image).To(Equal(odinLRP.Image))
 			Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(odinLRP.TargetInstances)))
-			Expect(statefulset.Annotations[k8s.AnnotationOriginalRequest]).To(Equal(odinLRP.LRP))
+			Expect(statefulset.Annotations[AnnotationOriginalRequest]).To(Equal(odinLRP.LRP))
 		})
 
 		It("should create all associated pods", func() {
@@ -75,6 +76,25 @@ var _ = Describe("StatefulSet Manager", func() {
 			}, timeout).Should(HaveLen(2))
 			Expect(pods[0]).To(ContainSubstring(odinLRP.GUID))
 			Expect(pods[1]).To(ContainSubstring(odinLRP.GUID))
+		})
+
+		Context("when additional app info is provided", func() {
+			BeforeEach(func() {
+				odinLRP.OrgName = "odin-org"
+				odinLRP.OrgGUID = "odin-org-guid"
+				odinLRP.SpaceName = "odin-space"
+				odinLRP.SpaceGUID = "odin-space-guid"
+			})
+
+			DescribeTable("sets appropriate annotations to statefulset", func(key, value string) {
+				statefulset := getStatefulSet(odinLRP)
+				Expect(statefulset.Annotations).To(HaveKeyWithValue(key, value))
+			},
+				Entry("SpaceName", AnnotationSpaceName, "odin-space"),
+				Entry("SpaceGUID", AnnotationSpaceGUID, "odin-space-guid"),
+				Entry("OrgName", AnnotationOrgName, "odin-org"),
+				Entry("OrgGUID", AnnotationOrgGUID, "odin-org-guid"),
+			)
 		})
 
 		Context("when we create the same StatefulSet again", func() {

@@ -32,16 +32,22 @@ const (
 	AnnotationAppID            = "cloudfoundry.org/application_id"
 	AnnotationSpaceName        = "cloudfoundry.org/space_name"
 	AnnotationOrgName          = "cloudfoundry.org/org_name"
+	AnnotationOrgGUID          = "cloudfoundry.org/org_guid"
+	AnnotationSpaceGUID        = "cloudfoundry.org/space_guid"
 	AnnotationLastUpdated      = "cloudfoundry.org/last_updated"
 	AnnotationProcessGUID      = "cloudfoundry.org/process_guid"
 	AnnotationRegisteredRoutes = "cloudfoundry.org/routes"
 	AnnotationOriginalRequest  = "cloudfoundry.org/original_request"
+
+	AnnotationStagingGUID = "cloudfoundry.org/staging_guid"
 
 	LabelGUID        = "cloudfoundry.org/guid"
 	LabelVersion     = "cloudfoundry.org/version"
 	LabelAppGUID     = "cloudfoundry.org/app_guid"
 	LabelProcessType = "cloudfoundry.org/process_type"
 	LabelSourceType  = "cloudfoundry.org/source_type"
+
+	LabelStagingGUID = "cloudfoundry.org/staging_guid"
 )
 
 //go:generate counterfeiter . PodListerDeleter
@@ -384,6 +390,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 
 	statefulSet.Annotations = map[string]string{
 		AnnotationSpaceName:        lrp.SpaceName,
+		AnnotationSpaceGUID:        lrp.SpaceGUID,
 		AnnotationOriginalRequest:  lrp.LRP,
 		AnnotationRegisteredRoutes: lrp.AppURIs,
 		AnnotationAppID:            lrp.AppGUID,
@@ -393,6 +400,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 		AnnotationAppUris:          lrp.AppURIs,
 		AnnotationAppName:          lrp.AppName,
 		AnnotationOrgName:          lrp.OrgName,
+		AnnotationOrgGUID:          lrp.OrgGUID,
 	}
 
 	return statefulSet

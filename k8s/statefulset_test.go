@@ -103,7 +103,9 @@ var _ = Describe("Statefulset Desirer", func() {
 				Entry("OriginalRequest", AnnotationOriginalRequest, "original request"),
 				Entry("RegisteredRoutes", AnnotationRegisteredRoutes, "my.example.route"),
 				Entry("SpaceName", AnnotationSpaceName, "space-foo"),
+				Entry("SpaceGUID", AnnotationSpaceGUID, "space-guid"),
 				Entry("OrgName", AnnotationOrgName, "org-foo"),
+				Entry("OrgGUID", AnnotationOrgGUID, "org-guid"),
 			)
 
 			It("should provide last updated to the statefulset annotation", func() {
@@ -743,7 +745,9 @@ func createLRP(name, routes string) *opi.LRP {
 		AppName:     name,
 		AppGUID:     "premium_app_guid_1234",
 		SpaceName:   "space-foo",
+		SpaceGUID:   "space-guid",
 		OrgName:     "org-foo",
+		OrgGUID:     "org-guid",
 		Command: []string{
 			"/bin/sh",
 			"-c",

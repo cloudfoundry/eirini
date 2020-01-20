@@ -57,7 +57,12 @@ var _ = Describe("Stager", func() {
 			stagingGUID = "staging-id-123"
 
 			request = cf.StagingRequest{
-				AppGUID: "our-app-id",
+				AppGUID:   "our-app-id",
+				AppName:   "our-app",
+				OrgName:   "our-org",
+				SpaceName: "our-space",
+				OrgGUID:   "our-org-id",
+				SpaceGUID: "our-space-id",
 				Environment: []cf.EnvironmentVariable{
 					{Name: "HOWARD", Value: "the alien"},
 					{Name: eirini.EnvAppID, Value: "should be ignored"},
@@ -102,7 +107,14 @@ var _ = Describe("Stager", func() {
 				DownloaderImage: "eirini/recipe-downloader:tagged",
 				UploaderImage:   "eirini/recipe-uploader:tagged",
 				ExecutorImage:   "eirini/recipe-runner:tagged",
+				StagingGUID:     stagingGUID,
 				Task: &opi.Task{
+					AppName:   "our-app",
+					AppGUID:   "our-app-id",
+					OrgName:   "our-org",
+					SpaceName: "our-space",
+					OrgGUID:   "our-org-id",
+					SpaceGUID: "our-space-id",
 					Env: map[string]string{
 						"HOWARD":                     "the alien",
 						eirini.EnvDownloadURL:        "example.com/download",
