@@ -73,7 +73,7 @@ func initStager(clientset kubernetes.Interface, cfg *eirini.Config) eirini.Stage
 	taskDesirer := &k8s.TaskDesirer{
 		Namespace:       cfg.Properties.Namespace,
 		CertsSecretName: cfg.Properties.CCCertsSecretName,
-		Client:          clientset,
+		JobClient:       clientset.BatchV1().Jobs(cfg.Properties.Namespace),
 	}
 
 	stagerCfg := eirini.StagerConfig{

@@ -10,7 +10,6 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	batch "k8s.io/api/batch/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -20,10 +19,16 @@ const (
 	completions           = 1
 )
 
+//go:generate counterfeiter . JobClient
+type JobClient interface {
+	Create(*batch.Job) (*batch.Job, error)
+	Delete(name string, deleteOpts *meta_v1.DeleteOptions) error
+}
+
 type TaskDesirer struct {
 	Namespace       string
 	CertsSecretName string
-	Client          kubernetes.Interface
+	JobClient       JobClient
 	Logger          lager.Logger
 }
 
@@ -42,19 +47,19 @@ func (d *TaskDesirer) Desire(task *opi.Task) error {
 
 	job.Spec.Template.Spec.Containers = containers
 
-	_, err := d.Client.BatchV1().Jobs(d.Namespace).Create(job)
+	_, err := d.JobClient.Create(job)
 	return errors.Wrap(err, "job already exists")
 }
 
 func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 	job := d.toStagingJob(task)
-	_, err := d.Client.BatchV1().Jobs(d.Namespace).Create(job)
+	_, err := d.JobClient.Create(job)
 	return errors.Wrap(err, "job already exists")
 }
 
 func (d *TaskDesirer) Delete(name string) error {
 	backgroundPropagation := meta_v1.DeletePropagationBackground
-	err := d.Client.BatchV1().Jobs(d.Namespace).Delete(name, &meta_v1.DeleteOptions{
+	err := d.JobClient.Delete(name, &meta_v1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
 	return errors.Wrap(err, "job does not exist")

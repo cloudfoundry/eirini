@@ -3,17 +3,16 @@ package k8s_test
 import (
 	"code.cloudfoundry.org/eirini"
 	. "code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	"github.com/pkg/errors"
 	batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 var _ = Describe("Desiretask", func() {
@@ -26,12 +25,10 @@ var _ = Describe("Desiretask", func() {
 	)
 
 	var (
-		task       *opi.Task
-		desirer    opi.TaskDesirer
-		fakeClient kubernetes.Interface
-		job        *batch.Job
-		err        error
-		getErr     error
+		task          *opi.Task
+		desirer       opi.TaskDesirer
+		fakeJobClient *k8sfakes.FakeJobClient
+		job           *batch.Job
 	)
 
 	assertGeneralSpec := func(job *batch.Job) {
@@ -80,7 +77,7 @@ var _ = Describe("Desiretask", func() {
 	}
 
 	BeforeEach(func() {
-		fakeClient = fake.NewSimpleClientset()
+		fakeJobClient = new(k8sfakes.FakeJobClient)
 		task = &opi.Task{
 			Image:     Image,
 			AppName:   "my-app",
@@ -104,7 +101,7 @@ var _ = Describe("Desiretask", func() {
 		desirer = &TaskDesirer{
 			Namespace:       Namespace,
 			CertsSecretName: CertsSecretName,
-			Client:          fakeClient,
+			JobClient:       fakeJobClient,
 		}
 	})
 
@@ -113,9 +110,9 @@ var _ = Describe("Desiretask", func() {
 		BeforeEach(func() {
 			Expect(desirer.Desire(task)).To(Succeed())
 
-			job, getErr = fakeClient.BatchV1().Jobs(Namespace).Get("the-stage-is-yours", meta_v1.GetOptions{})
-			Expect(getErr).ToNot(HaveOccurred())
-
+			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
+			job = fakeJobClient.CreateArgsForCall(0)
+			Expect(job.Name).To(Equal("the-stage-is-yours"))
 		})
 
 		It("should desire the task", func() {
@@ -150,6 +147,9 @@ var _ = Describe("Desiretask", func() {
 		})
 
 		Context("and the job already exists", func() {
+			BeforeEach(func() {
+				fakeJobClient.CreateReturns(nil, errors.New("job already exists"))
+			})
 
 			It("should return an error", func() {
 				Expect(desirer.Desire(task)).To(MatchError(ContainSubstring("job already exists")))
@@ -246,8 +246,9 @@ var _ = Describe("Desiretask", func() {
 		})
 
 		JustBeforeEach(func() {
-			job, getErr = fakeClient.BatchV1().Jobs(Namespace).Get("the-stage-is-yours", meta_v1.GetOptions{})
-			Expect(getErr).ToNot(HaveOccurred())
+			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
+			job = fakeJobClient.CreateArgsForCall(0)
+			Expect(job.Name).To(Equal("the-stage-is-yours"))
 		})
 
 		It("should desire the staging task", func() {
@@ -281,6 +282,10 @@ var _ = Describe("Desiretask", func() {
 		)
 
 		Context("When the staging task already exists", func() {
+			BeforeEach(func() {
+				fakeJobClient.CreateReturns(nil, errors.New("job already exists"))
+			})
+
 			It("should return an error", func() {
 				Expect(desirer.DesireStaging(stagingTask)).To(MatchError(ContainSubstring("job already exists")))
 
@@ -290,19 +295,18 @@ var _ = Describe("Desiretask", func() {
 
 	Context("When deleting a task", func() {
 
-		Context("that already exists", func() {
-			BeforeEach(func() {
-				Expect(desirer.Desire(task)).To(Succeed())
-			})
+		It("should delete the job", func() {
+			Expect(desirer.Delete("the-stage-is-yours")).To(Succeed())
 
-			It("should delete the job", func() {
-				Expect(desirer.Delete("the-stage-is-yours")).To(Succeed())
-				_, err = fakeClient.BatchV1().Jobs(Namespace).Get("env-app-id", meta_v1.GetOptions{})
-				Expect(err).To(HaveOccurred())
-			})
+			Expect(fakeJobClient.DeleteCallCount()).To(Equal(1))
+			jobName, _ := fakeJobClient.DeleteArgsForCall(0)
+			Expect(jobName).To(Equal("the-stage-is-yours"))
 		})
 
 		Context("that does not exist", func() {
+			BeforeEach(func() {
+				fakeJobClient.DeleteReturns(errors.New("job does not exist"))
+			})
 
 			It("should return an error", func() {
 				Expect(desirer.Delete("the-stage-is-yours")).To(MatchError(ContainSubstring("job does not exist")))
