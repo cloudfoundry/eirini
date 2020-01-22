@@ -95,6 +95,14 @@ var _ = Describe("StatefulSet Manager", func() {
 				Entry("OrgName", AnnotationOrgName, "odin-org"),
 				Entry("OrgGUID", AnnotationOrgGUID, "odin-org-guid"),
 			)
+
+			It("sets appropriate labels to statefulset", func() {
+				statefulset := getStatefulSet(odinLRP)
+				Expect(statefulset.Labels).To(HaveKeyWithValue(LabelGUID, odinLRP.LRPIdentifier.GUID))
+				Expect(statefulset.Labels).To(HaveKeyWithValue(LabelVersion, odinLRP.LRPIdentifier.Version))
+				Expect(statefulset.Labels).To(HaveKeyWithValue(LabelSourceType, "APP"))
+			})
+
 		})
 
 		Context("when we create the same StatefulSet again", func() {
