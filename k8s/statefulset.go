@@ -297,7 +297,8 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
 	automountServiceAccountToken := false
 	allowPrivilegeEscalation := false
-	runAsNonRoot := false
+	runAsNonRoot := true
+	vcapUID := int64ptr(2000)
 
 	nameSuffix, err := m.Hasher.Hash(fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version))
 	if err != nil {
@@ -359,6 +360,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 					},
 					SecurityContext: &corev1.PodSecurityContext{
 						RunAsNonRoot: &runAsNonRoot,
+						RunAsUser:    vcapUID,
 					},
 					Volumes: volumes,
 				},
