@@ -48,6 +48,8 @@ const (
 	LabelSourceType  = "cloudfoundry.org/source_type"
 
 	LabelStagingGUID = "cloudfoundry.org/staging_guid"
+
+	VcapUID = 2000
 )
 
 //go:generate counterfeiter . PodListerDeleter
@@ -298,7 +300,6 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	automountServiceAccountToken := false
 	allowPrivilegeEscalation := false
 	runAsNonRoot := true
-	vcapUID := int64ptr(2000)
 
 	nameSuffix, err := m.Hasher.Hash(fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version))
 	if err != nil {
@@ -360,7 +361,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 					},
 					SecurityContext: &corev1.PodSecurityContext{
 						RunAsNonRoot: &runAsNonRoot,
-						RunAsUser:    vcapUID,
+						RunAsUser:    int64ptr(VcapUID),
 					},
 					Volumes: volumes,
 				},

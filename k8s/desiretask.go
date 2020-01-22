@@ -195,7 +195,6 @@ func getVolume(name, path string) (v1.Volume, v1.VolumeMount) {
 func toJob(task *opi.Task) *batch.Job {
 	automountServiceAccountToken := false
 	runAsNonRoot := true
-	vcapUID := int64ptr(2000)
 
 	job := &batch.Job{
 		Spec: batch.JobSpec{
@@ -208,7 +207,7 @@ func toJob(task *opi.Task) *batch.Job {
 					RestartPolicy:                v1.RestartPolicyNever,
 					SecurityContext: &v1.PodSecurityContext{
 						RunAsNonRoot: &runAsNonRoot,
-						RunAsUser:    vcapUID,
+						RunAsUser:    int64ptr(VcapUID),
 					},
 				},
 			},
