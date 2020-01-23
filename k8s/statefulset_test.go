@@ -18,7 +18,9 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -284,56 +286,66 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	Context("When updating an app", func() {
 
-		Context("when the app exists", func() {
-			BeforeEach(func() {
-				replicas := int32(3)
-				st := &appsv1.StatefulSetList{
-					Items: []appsv1.StatefulSet{
-						{
-							ObjectMeta: meta.ObjectMeta{
-								Name: "baldur",
-								Annotations: map[string]string{
-									AnnotationProcessGUID:      "Baldur-guid",
-									AnnotationLastUpdated:      "never",
-									AnnotationRegisteredRoutes: "myroute.io",
-								},
-							},
-							Spec: appsv1.StatefulSetSpec{
-								Replicas: &replicas,
+		BeforeEach(func() {
+			replicas := int32(3)
+			st := &appsv1.StatefulSetList{
+				Items: []appsv1.StatefulSet{
+					{
+						ObjectMeta: meta.ObjectMeta{
+							Name: "baldur",
+							Annotations: map[string]string{
+								AnnotationProcessGUID:      "Baldur-guid",
+								AnnotationLastUpdated:      "never",
+								AnnotationRegisteredRoutes: "myroute.io",
 							},
 						},
+						Spec: appsv1.StatefulSetSpec{
+							Replicas: &replicas,
+						},
 					},
-				}
+				},
+			}
 
-				statefulSetClient.ListReturns(st, nil)
+			statefulSetClient.ListReturns(st, nil)
+		})
+
+		It("updates the statefulset", func() {
+			lrp := &opi.LRP{
+				TargetInstances: 5,
+				LastUpdated:     "now",
+				AppURIs:         "new-route.io",
+			}
+
+			Expect(statefulSetDesirer.Update(lrp)).To(Succeed())
+			Expect(statefulSetClient.UpdateCallCount()).To(Equal(1))
+
+			st := statefulSetClient.UpdateArgsForCall(0)
+			Expect(st.GetAnnotations()).To(HaveKeyWithValue(AnnotationLastUpdated, "now"))
+			Expect(st.GetAnnotations()).To(HaveKeyWithValue(AnnotationRegisteredRoutes, "new-route.io"))
+			Expect(st.GetAnnotations()).NotTo(HaveKey("another"))
+			Expect(*st.Spec.Replicas).To(Equal(int32(5)))
+		})
+
+		Context("when update fails", func() {
+			BeforeEach(func() {
+				statefulSetClient.UpdateReturns(nil, errors.New("boom"))
 			})
 
-			Context("when update fails", func() {
-				It("should return a meaningful message", func() {
-					statefulSetClient.UpdateReturns(nil, errors.New("boom"))
-					lrp := &opi.LRP{}
-					Expect(statefulSetDesirer.Update(lrp)).To(MatchError(ContainSubstring("failed to update statefulset")))
-				})
+			It("should return a meaningful message", func() {
+				Expect(statefulSetDesirer.Update(&opi.LRP{})).To(MatchError(ContainSubstring("failed to update statefulset")))
+			})
+		})
 
+		Context("when update fails because of a conflict", func() {
+			BeforeEach(func() {
+				statefulSetClient.UpdateReturnsOnCall(0, nil, k8serrors.NewConflict(schema.GroupResource{}, "foo", errors.New("boom")))
+				statefulSetClient.UpdateReturnsOnCall(1, &appsv1.StatefulSet{}, nil)
 			})
 
-			It("updates the statefulset", func() {
-				lrp := &opi.LRP{
-					TargetInstances: 5,
-					LastUpdated:     "now",
-					AppURIs:         "new-route.io",
-				}
-
-				Expect(statefulSetDesirer.Update(lrp)).To(Succeed())
-				Expect(statefulSetClient.UpdateCallCount()).To(Equal(1))
-
-				st := statefulSetClient.UpdateArgsForCall(0)
-				Expect(st.GetAnnotations()).To(HaveKeyWithValue(AnnotationLastUpdated, "now"))
-				Expect(st.GetAnnotations()).To(HaveKeyWithValue(AnnotationRegisteredRoutes, "new-route.io"))
-				Expect(st.GetAnnotations()).NotTo(HaveKey("another"))
-				Expect(*st.Spec.Replicas).To(Equal(int32(5)))
+			It("should retry", func() {
+				Expect(statefulSetDesirer.Update(&opi.LRP{})).To(Succeed())
+				Expect(statefulSetClient.UpdateCallCount()).To(Equal(2))
 			})
-
 		})
 
 		Context("when the app does not exist", func() {
@@ -343,7 +355,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 			It("should return an error", func() {
 				Expect(statefulSetDesirer.Update(&opi.LRP{})).
-					To(MatchError(ContainSubstring("failed to get statefulset")))
+					To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
 
 			It("should not create the app", func() {
@@ -424,19 +436,27 @@ var _ = Describe("Statefulset Desirer", func() {
 		Context("when deletion of stateful set fails", func() {
 			It("should return a meaningful error", func() {
 				st := &appsv1.StatefulSetList{
-					Items: []appsv1.StatefulSet{
-						{
-							ObjectMeta: meta.ObjectMeta{
-								Name: "baldur",
-							},
-						},
-					},
+					Items: []appsv1.StatefulSet{{}},
 				}
 
 				statefulSetClient.ListReturns(st, nil)
 				statefulSetClient.DeleteReturns(errors.New("boom"))
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
 					To(MatchError(ContainSubstring("failed to delete statefulset")))
+			})
+		})
+
+		Context("when deletion of stateful set conflicts", func() {
+			It("should retry", func() {
+				st := &appsv1.StatefulSetList{
+					Items: []appsv1.StatefulSet{{}},
+				}
+
+				statefulSetClient.ListReturns(st, nil)
+				statefulSetClient.DeleteReturnsOnCall(0, k8serrors.NewConflict(schema.GroupResource{}, "foo", errors.New("boom")))
+				statefulSetClient.DeleteReturnsOnCall(1, nil)
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+				Expect(statefulSetClient.DeleteCallCount()).To(Equal(2))
 			})
 		})
 

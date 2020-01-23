@@ -18,6 +18,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
 )
 
 const (
@@ -117,6 +118,13 @@ func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 }
 
 func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		return m.stop(identifier)
+	})
+	return errors.Wrap(err, "failed to delete statefulset")
+}
+
+func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 	statefulSet, err := m.getStatefulSet(identifier)
 	if err != nil {
 		if err != ErrNotFound {
@@ -127,7 +135,7 @@ func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
 	}
 
 	backgroundPropagation := meta.DeletePropagationBackground
-	return errors.Wrap(m.StatefulSets.Delete(statefulSet.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation}), "failed to delete statefulset")
+	return m.StatefulSets.Delete(statefulSet.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
 }
 
 func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index uint) error {
@@ -147,9 +155,16 @@ func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index ui
 }
 
 func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		return m.update(lrp)
+	})
+	return errors.Wrap(err, "failed to update statefulset")
+}
+
+func (m *StatefulSetDesirer) update(lrp *opi.LRP) error {
 	statefulSet, err := m.getStatefulSet(opi.LRPIdentifier{GUID: lrp.GUID, Version: lrp.Version})
 	if err != nil {
-		return errors.Wrap(err, "failed to get statefulset")
+		return err
 	}
 
 	count := int32(lrp.TargetInstances)
@@ -158,7 +173,7 @@ func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
 	statefulSet.Annotations[AnnotationRegisteredRoutes] = lrp.AppURIs
 
 	_, err = m.StatefulSets.Update(statefulSet)
-	return errors.Wrap(err, "failed to update statefulset")
+	return err
 }
 
 func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error) {
