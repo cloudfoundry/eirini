@@ -19,6 +19,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -42,6 +43,7 @@ var _ = Describe("Statefulset Desirer", func() {
 		readinessProbeCreator *k8sfakes.FakeProbeCreator
 		logger                *lagertest.TestLogger
 		mapper                *k8sfakes.FakeLRPMapper
+		pdbClient             *k8sfakes.FakePodDisruptionBudgetClient
 	)
 
 	BeforeEach(func() {
@@ -53,11 +55,14 @@ var _ = Describe("Statefulset Desirer", func() {
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		mapper = new(k8sfakes.FakeLRPMapper)
 		hasher := new(utilfakes.FakeHasher)
+		pdbClient = new(k8sfakes.FakePodDisruptionBudgetClient)
+
 		hasher.HashReturns("random", nil)
 		logger = lagertest.NewTestLogger("handler-test")
 		statefulSetDesirer = &StatefulSetDesirer{
 			Pods:                   podClient,
 			StatefulSets:           statefulSetClient,
+			PodDisruptionBudets:    pdbClient,
 			RegistrySecretName:     registrySecretName,
 			RootfsVersion:          rootfsVersion,
 			LivenessProbeCreator:   livenessProbeCreator.Spy,
@@ -70,169 +75,212 @@ var _ = Describe("Statefulset Desirer", func() {
 	})
 
 	Context("When creating an LRP", func() {
-		Context("When app name only has [a-z0-9]", func() {
+		var (
+			lrp       *opi.LRP
+			desireErr error
+		)
 
-			var lrp *opi.LRP
+		BeforeEach(func() {
+			lrp = createLRP("Baldur", "my.example.route")
+		})
 
-			BeforeEach(func() {
-				livenessProbeCreator.Returns(&corev1.Probe{})
-				readinessProbeCreator.Returns(&corev1.Probe{})
-				lrp = createLRP("Baldur", "my.example.route")
-				Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
-			})
+		JustBeforeEach(func() {
+			livenessProbeCreator.Returns(&corev1.Probe{})
+			readinessProbeCreator.Returns(&corev1.Probe{})
+			desireErr = statefulSetDesirer.Desire(lrp)
+		})
 
-			It("should call the statefulset client", func() {
-				Expect(statefulSetClient.CreateCallCount()).To(Equal(1))
-			})
+		It("should succeed", func() {
+			Expect(desireErr).NotTo(HaveOccurred())
+		})
 
-			It("should create a healthcheck probe", func() {
-				Expect(livenessProbeCreator.CallCount()).To(Equal(1))
-			})
+		It("should call the statefulset client", func() {
+			Expect(statefulSetClient.CreateCallCount()).To(Equal(1))
+		})
 
-			It("should create a readiness probe", func() {
-				Expect(readinessProbeCreator.CallCount()).To(Equal(1))
-			})
+		It("should create a healthcheck probe", func() {
+			Expect(livenessProbeCreator.CallCount()).To(Equal(1))
+		})
 
-			DescribeTable("Annotations",
-				func(annotationName, expectedValue string) {
-					statefulSet := statefulSetClient.CreateArgsForCall(0)
-					Expect(statefulSet.Annotations).To(HaveKeyWithValue(annotationName, expectedValue))
-				},
-				Entry("ProcessGUID", AnnotationProcessGUID, "guid_1234-version_1234"),
-				Entry("AppUris", AnnotationAppUris, "my.example.route"),
-				Entry("AppName", AnnotationAppName, "Baldur"),
-				Entry("AppID", AnnotationAppID, "premium_app_guid_1234"),
-				Entry("Version", AnnotationVersion, "version_1234"),
-				Entry("OriginalRequest", AnnotationOriginalRequest, "original request"),
-				Entry("RegisteredRoutes", AnnotationRegisteredRoutes, "my.example.route"),
-				Entry("SpaceName", AnnotationSpaceName, "space-foo"),
-				Entry("SpaceGUID", AnnotationSpaceGUID, "space-guid"),
-				Entry("OrgName", AnnotationOrgName, "org-foo"),
-				Entry("OrgGUID", AnnotationOrgGUID, "org-guid"),
-			)
+		It("should create a readiness probe", func() {
+			Expect(readinessProbeCreator.CallCount()).To(Equal(1))
+		})
 
-			It("should provide last updated to the statefulset annotation", func() {
+		DescribeTable("Annotations",
+			func(annotationName, expectedValue string) {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Annotations).To(HaveKeyWithValue(AnnotationLastUpdated, lrp.LastUpdated))
-			})
+				Expect(statefulSet.Annotations).To(HaveKeyWithValue(annotationName, expectedValue))
+			},
+			Entry("ProcessGUID", AnnotationProcessGUID, "guid_1234-version_1234"),
+			Entry("AppUris", AnnotationAppUris, "my.example.route"),
+			Entry("AppName", AnnotationAppName, "Baldur"),
+			Entry("AppID", AnnotationAppID, "premium_app_guid_1234"),
+			Entry("Version", AnnotationVersion, "version_1234"),
+			Entry("OriginalRequest", AnnotationOriginalRequest, "original request"),
+			Entry("RegisteredRoutes", AnnotationRegisteredRoutes, "my.example.route"),
+			Entry("SpaceName", AnnotationSpaceName, "space-foo"),
+			Entry("SpaceGUID", AnnotationSpaceGUID, "space-guid"),
+			Entry("OrgName", AnnotationOrgName, "org-foo"),
+			Entry("OrgGUID", AnnotationOrgGUID, "org-guid"),
+		)
 
-			It("should set seccomp pod annotation", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Template.Annotations[corev1.SeccompPodAnnotationKey]).To(Equal(corev1.SeccompProfileRuntimeDefault))
-			})
+		It("should provide last updated to the statefulset annotation", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Annotations).To(HaveKeyWithValue(AnnotationLastUpdated, lrp.LastUpdated))
+		})
 
-			It("should set name for the stateful set", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Name).To(Equal("baldur-space-foo-random"))
-			})
+		It("should set seccomp pod annotation", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Spec.Template.Annotations[corev1.SeccompPodAnnotationKey]).To(Equal(corev1.SeccompProfileRuntimeDefault))
+		})
 
-			It("should set podManagementPolicy to parallel", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(string(statefulSet.Spec.PodManagementPolicy)).To(Equal("Parallel"))
-			})
+		It("should set name for the stateful set", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Name).To(Equal("baldur-space-foo-random"))
+		})
 
-			It("should set podImagePullSecret", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Template.Spec.ImagePullSecrets).To(HaveLen(1))
-				secret := statefulSet.Spec.Template.Spec.ImagePullSecrets[0]
-				Expect(secret.Name).To(Equal("secret-name"))
-			})
+		It("should set podManagementPolicy to parallel", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(string(statefulSet.Spec.PodManagementPolicy)).To(Equal("Parallel"))
+		})
 
-			It("should deny privilegeEscalation", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(*statefulSet.Spec.Template.Spec.Containers[0].SecurityContext.AllowPrivilegeEscalation).To(Equal(false))
-			})
+		It("should set podImagePullSecret", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Spec.Template.Spec.ImagePullSecrets).To(HaveLen(1))
+			secret := statefulSet.Spec.Template.Spec.ImagePullSecrets[0]
+			Expect(secret.Name).To(Equal("secret-name"))
+		})
 
-			It("should set imagePullPolicy to Always", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(string(statefulSet.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal("Always"))
-			})
+		It("should deny privilegeEscalation", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(*statefulSet.Spec.Template.Spec.Containers[0].SecurityContext.AllowPrivilegeEscalation).To(Equal(false))
+		})
 
-			It("should set rootfsVersion as a label", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
-			})
+		It("should set imagePullPolicy to Always", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(string(statefulSet.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal("Always"))
+		})
 
-			It("should set app_guid as a label", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
+		It("should set rootfsVersion as a label", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
+			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
+		})
 
-				Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelAppGUID, "premium_app_guid_1234"))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelAppGUID, "premium_app_guid_1234"))
-			})
+		It("should set app_guid as a label", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
 
-			It("should set process_type as a label", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelProcessType, "worker"))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelProcessType, "worker"))
-			})
+			Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelAppGUID, "premium_app_guid_1234"))
+			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelAppGUID, "premium_app_guid_1234"))
+		})
 
-			It("should set guid as a label", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelGUID, "guid_1234"))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelGUID, "guid_1234"))
-			})
+		It("should set process_type as a label", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelProcessType, "worker"))
+			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelProcessType, "worker"))
+		})
 
-			It("should set version as a label", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelVersion, "version_1234"))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelVersion, "version_1234"))
-			})
+		It("should set guid as a label", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelGUID, "guid_1234"))
+			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelGUID, "guid_1234"))
+		})
 
-			It("should set source_type as a label", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelSourceType, "APP"))
-				Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelSourceType, "APP"))
-			})
+		It("should set version as a label", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelVersion, "version_1234"))
+			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelVersion, "version_1234"))
+		})
 
-			It("should set guid as a label selector", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelGUID, "guid_1234"))
-			})
+		It("should set source_type as a label", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelSourceType, "APP"))
+			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelSourceType, "APP"))
+		})
 
-			It("should set version as a label selector", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelVersion, "version_1234"))
-			})
+		It("should set guid as a label selector", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelGUID, "guid_1234"))
+		})
 
-			It("should set source_type as a label selector", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelSourceType, "APP"))
-			})
+		It("should set version as a label selector", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelVersion, "version_1234"))
+		})
 
-			It("should set disk limit", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
+		It("should set source_type as a label selector", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelSourceType, "APP"))
+		})
 
-				expectedLimit := resource.NewScaledQuantity(2048, resource.Mega)
-				actualLimit := statefulSet.Spec.Template.Spec.Containers[0].Resources.Limits.StorageEphemeral()
-				Expect(actualLimit).To(Equal(expectedLimit))
-			})
+		It("should set disk limit", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
 
-			It("should set user defined annotations", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Template.Annotations["prometheus.io/scrape"]).To(Equal("secret-value"))
-			})
+			expectedLimit := resource.NewScaledQuantity(2048, resource.Mega)
+			actualLimit := statefulSet.Spec.Template.Spec.Containers[0].Resources.Limits.StorageEphemeral()
+			Expect(actualLimit).To(Equal(expectedLimit))
+		})
 
-			It("should run it with non-root user", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(Equal(true)))
+		It("should set user defined annotations", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Spec.Template.Annotations["prometheus.io/scrape"]).To(Equal("secret-value"))
+		})
 
-			})
+		It("should run it with non-root user", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(Equal(true)))
 
-			It("should run it as vcap user with numerical ID 2000", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Template.Spec.SecurityContext.RunAsUser).To(PointTo(Equal(int64(2000))))
-			})
+		})
+
+		It("should run it as vcap user with numerical ID 2000", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Spec.Template.Spec.SecurityContext.RunAsUser).To(PointTo(Equal(int64(2000))))
+		})
+
+		It("should not create a pod disruption budget", func() {
+			Expect(pdbClient.CreateCallCount()).To(BeZero())
 		})
 
 		Context("When the app name contains unsupported characters", func() {
-			It("should use the guid as a name", func() {
-				lrp := createLRP("Балдър", "my.example.route")
-				Expect(statefulSetDesirer.Desire(lrp)).To(Succeed())
+			BeforeEach(func() {
+				lrp = createLRP("Балдър", "my.example.route")
+			})
 
+			It("should use the guid as a name", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 				Expect(statefulSet.Name).To(Equal("guid_1234-random"))
 			})
+		})
+
+		Context("When the app has at least 2 instances", func() {
+			BeforeEach(func() {
+				lrp.TargetInstances = 2
+			})
+
+			It("should create a pod disruption budget for it", func() {
+				Expect(pdbClient.CreateCallCount()).To(Equal(1))
+
+				pdb := pdbClient.CreateArgsForCall(0)
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+				Expect(pdb.Name).To(Equal(statefulSet.Name))
+				Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromInt(1))))
+				Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelGUID, lrp.GUID))
+				Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelVersion, lrp.Version))
+				Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelSourceType, "APP"))
+			})
+
+			Context("when pod disruption budget creation fails", func() {
+
+				BeforeEach(func() {
+					pdbClient.CreateReturns(nil, errors.New("boom"))
+				})
+
+				It("should propagate the error", func() {
+					Expect(desireErr).To(MatchError(ContainSubstring("boom")))
+				})
+
+			})
+
 		})
 	})
 
@@ -326,6 +374,97 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(*st.Spec.Replicas).To(Equal(int32(5)))
 		})
 
+		/*
+			1)
+				updated count = 1
+				pdb delete - success
+				(scale down)
+
+			2) updated count = 1
+				pdb delete - fail (does not exist)
+				(scale from 0 to 1)
+
+			3) updated count = 2+
+				pdb create - success
+				(scale up)
+
+			4) updated count = 2+
+				pdb create - fail (already exists)
+
+		*/
+		Context("when lrp is scaled down to 1 instance", func() {
+
+			It("should delete the pod disruption budget for the lrp", func() {
+				Expect(statefulSetDesirer.Update(&opi.LRP{TargetInstances: 1})).To(Succeed())
+				Expect(pdbClient.DeleteCallCount()).To(Equal(1))
+				pdbName, _ := pdbClient.DeleteArgsForCall(0)
+				Expect(pdbName).To(Equal("baldur"))
+			})
+
+			Context("when the pod disruption budget does not exist", func() {
+				BeforeEach(func() {
+					pdbClient.DeleteReturns(k8serrors.NewNotFound(schema.GroupResource{
+						Group:    "policy/v1beta1",
+						Resource: "PodDisruptionBudget",
+					}, "baldur"))
+				})
+
+				It("should ignore the error", func() {
+					Expect(statefulSetDesirer.Update(&opi.LRP{TargetInstances: 1})).To(Succeed())
+				})
+			})
+
+			Context("when the pod disruption budget deletion errors", func() {
+				BeforeEach(func() {
+					pdbClient.DeleteReturns(errors.New("pow"))
+				})
+
+				It("should propagate the error", func() {
+					Expect(statefulSetDesirer.Update(&opi.LRP{TargetInstances: 1})).To(MatchError(ContainSubstring("pow")))
+				})
+			})
+		})
+
+		Context("when lrp is scaled up to more than 1 instance", func() {
+
+			It("should create a pod disruption budget for the lrp", func() {
+				lrp := opi.LRP{
+					AppName:         "baldur",
+					SpaceName:       "space",
+					TargetInstances: 2,
+				}
+				Expect(statefulSetDesirer.Update(&lrp)).To(Succeed())
+				Expect(pdbClient.CreateCallCount()).To(Equal(1))
+				pdb := pdbClient.CreateArgsForCall(0)
+
+				Expect(pdb.Name).To(Equal("baldur-space-random"))
+			})
+
+			Context("when the pod disruption budget already exists", func() {
+				BeforeEach(func() {
+					pdbClient.CreateReturns(nil, k8serrors.NewAlreadyExists(schema.GroupResource{
+						Group:    "policy/v1beta1",
+						Resource: "PodDisruptionBudget",
+					}, "baldur"))
+				})
+
+				It("should ignore the error", func() {
+					Expect(statefulSetDesirer.Update(&opi.LRP{TargetInstances: 2})).To(Succeed())
+				})
+			})
+
+			Context("when the pod disruption budget creation errors", func() {
+				BeforeEach(func() {
+					pdbClient.CreateReturns(nil, errors.New("boom"))
+				})
+
+				It("should propagate the error", func() {
+					Expect(statefulSetDesirer.Update(&opi.LRP{TargetInstances: 2})).To(MatchError(ContainSubstring("boom")))
+				})
+			})
+
+		})
+
 		Context("when update fails", func() {
 			BeforeEach(func() {
 				statefulSetClient.UpdateReturns(nil, errors.New("boom"))
@@ -415,22 +554,34 @@ var _ = Describe("Statefulset Desirer", func() {
 	})
 
 	Context("Stop an LRP", func() {
-		Context("Successful stop", func() {
-			It("deletes the statefulSet", func() {
-				st := &appsv1.StatefulSetList{
-					Items: []appsv1.StatefulSet{
-						{
-							ObjectMeta: meta.ObjectMeta{
-								Name: "baldur",
-							},
+		BeforeEach(func() {
+			st := &appsv1.StatefulSetList{
+				Items: []appsv1.StatefulSet{
+					{
+						ObjectMeta: meta.ObjectMeta{
+							Name: "baldur",
 						},
 					},
-				}
+				},
+			}
 
-				statefulSetClient.ListReturns(st, nil)
-				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
-				Expect(statefulSetClient.DeleteCallCount()).To(Equal(1))
-			})
+			statefulSetClient.ListReturns(st, nil)
+			pdbClient.DeleteReturns(k8serrors.NewNotFound(schema.GroupResource{
+				Group:    "policy/v1beta1",
+				Resource: "PodDisruptionBudet"},
+				"foo"))
+		})
+
+		It("deletes the statefulSet", func() {
+			Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+			Expect(statefulSetClient.DeleteCallCount()).To(Equal(1))
+		})
+
+		It("should delete any corresponding pod disruption budgets", func() {
+			Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+			Expect(pdbClient.DeleteCallCount()).To(Equal(1))
+			pdbName, _ := pdbClient.DeleteArgsForCall(0)
+			Expect(pdbName).To(Equal("baldur"))
 		})
 
 		Context("when deletion of stateful set fails", func() {
@@ -457,6 +608,14 @@ var _ = Describe("Statefulset Desirer", func() {
 				statefulSetClient.DeleteReturnsOnCall(1, nil)
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 				Expect(statefulSetClient.DeleteCallCount()).To(Equal(2))
+			})
+		})
+
+		Context("when pdb deletion fails", func() {
+			It("returns an error", func() {
+				pdbClient.DeleteReturns(errors.New("boom"))
+
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(MatchError(ContainSubstring("boom")))
 			})
 		})
 
@@ -773,13 +932,14 @@ func createLRP(name, routes string) *opi.LRP {
 			GUID:    "guid_1234",
 			Version: "version_1234",
 		},
-		ProcessType: "worker",
-		AppName:     name,
-		AppGUID:     "premium_app_guid_1234",
-		SpaceName:   "space-foo",
-		SpaceGUID:   "space-guid",
-		OrgName:     "org-foo",
-		OrgGUID:     "org-guid",
+		ProcessType:     "worker",
+		AppName:         name,
+		AppGUID:         "premium_app_guid_1234",
+		SpaceName:       "space-foo",
+		SpaceGUID:       "space-guid",
+		TargetInstances: 1,
+		OrgName:         "org-foo",
+		OrgGUID:         "org-guid",
 		Command: []string{
 			"/bin/sh",
 			"-c",

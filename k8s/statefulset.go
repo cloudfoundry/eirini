@@ -14,9 +14,12 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/policy/v1beta1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 )
@@ -59,6 +62,12 @@ type PodListerDeleter interface {
 	Delete(name string, options *metav1.DeleteOptions) error
 }
 
+//go:generate counterfeiter . PodDisruptionBudgetClient
+type PodDisruptionBudgetClient interface {
+	Create(*v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)
+	Delete(name string, options *metav1.DeleteOptions) error
+}
+
 //go:generate counterfeiter . StatefulSetClient
 type StatefulSetClient interface {
 	Create(*appsv1.StatefulSet) (*appsv1.StatefulSet, error)
@@ -73,6 +82,7 @@ type LRPMapper func(s appsv1.StatefulSet) *opi.LRP
 type StatefulSetDesirer struct {
 	Pods                   PodListerDeleter
 	StatefulSets           StatefulSetClient
+	PodDisruptionBudets    PodDisruptionBudgetClient
 	Events                 EventLister
 	StatefulSetToLRPMapper LRPMapper
 	RegistrySecretName     string
@@ -92,6 +102,7 @@ func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecre
 	return &StatefulSetDesirer{
 		Pods:                   client.CoreV1().Pods(namespace),
 		StatefulSets:           client.AppsV1().StatefulSets(namespace),
+		PodDisruptionBudets:    client.PolicyV1beta1().PodDisruptionBudgets(namespace),
 		Events:                 client.CoreV1().Events(namespace),
 		RegistrySecretName:     registrySecretName,
 		StatefulSetToLRPMapper: StatefulSetToLRP,
@@ -104,8 +115,11 @@ func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecre
 }
 
 func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
-	_, err := m.StatefulSets.Create(m.toStatefulSet(lrp))
-	return errors.Wrap(err, "failed to create statefulset")
+	if _, err := m.StatefulSets.Create(m.toStatefulSet(lrp)); err != nil {
+		return errors.Wrap(err, "failed to create statefulset")
+	}
+
+	return m.createPodDisruptionBudget(lrp)
 }
 
 func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
@@ -132,6 +146,11 @@ func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 		}
 		m.Logger.Info("stateful set not found", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
 		return nil
+	}
+
+	err = m.PodDisruptionBudets.Delete(statefulSet.Name, &metav1.DeleteOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return err
 	}
 
 	backgroundPropagation := meta.DeletePropagationBackground
@@ -173,7 +192,22 @@ func (m *StatefulSetDesirer) update(lrp *opi.LRP) error {
 	statefulSet.Annotations[AnnotationRegisteredRoutes] = lrp.AppURIs
 
 	_, err = m.StatefulSets.Update(statefulSet)
-	return err
+	if err != nil {
+		return err
+	}
+
+	if lrp.TargetInstances <= 1 {
+		err = m.PodDisruptionBudets.Delete(statefulSet.Name, &metav1.DeleteOptions{})
+		if err != nil && !k8serrors.IsNotFound(err) {
+			return err
+		}
+		return nil
+	}
+	err = m.createPodDisruptionBudget(lrp)
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
 }
 
 func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error) {
@@ -248,6 +282,24 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	return instances, nil
 }
 
+func (m *StatefulSetDesirer) createPodDisruptionBudget(lrp *opi.LRP) error {
+	if lrp.TargetInstances > 1 {
+		one := intstr.FromInt(1)
+		_, err := m.PodDisruptionBudets.Create(&v1beta1.PodDisruptionBudget{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: m.getAppName(lrp),
+			},
+			Spec: v1beta1.PodDisruptionBudgetSpec{
+				MinAvailable: &one,
+				Selector:     m.getAppLabelSelector(lrp),
+			},
+		})
+		return err
+	}
+
+	return nil
+}
+
 func hasInsufficientMemory(eventList *corev1.EventList) bool {
 	events := eventList.Items
 
@@ -316,13 +368,6 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	allowPrivilegeEscalation := false
 	runAsNonRoot := true
 
-	nameSuffix, err := m.Hasher.Hash(fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version))
-	if err != nil {
-		panic(err)
-	}
-	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
-	namePrefix = utils.SanitizeName(namePrefix, lrp.GUID)
-
 	annotations := map[string]string{}
 	for k, v := range lrp.UserDefinedAnnotations {
 		annotations[k] = v
@@ -334,7 +379,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
-			Name: fmt.Sprintf("%s-%s", namePrefix, nameSuffix),
+			Name: m.getAppName(lrp),
 		},
 		Spec: appsv1.StatefulSetSpec{
 			PodManagementPolicy: "Parallel",
@@ -384,15 +429,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 		},
 	}
 
-	selectorLabels := map[string]string{
-		LabelGUID:       lrp.GUID,
-		LabelVersion:    lrp.Version,
-		LabelSourceType: appSourceType,
-	}
-
-	statefulSet.Spec.Selector = &meta.LabelSelector{
-		MatchLabels: selectorLabels,
-	}
+	statefulSet.Spec.Selector = m.getAppLabelSelector(lrp)
 
 	labels := map[string]string{
 		LabelGUID:                        lrp.GUID,
@@ -422,6 +459,27 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	}
 
 	return statefulSet
+}
+
+func (m *StatefulSetDesirer) getAppLabelSelector(lrp *opi.LRP) *metav1.LabelSelector {
+	return &metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			LabelGUID:       lrp.GUID,
+			LabelVersion:    lrp.Version,
+			LabelSourceType: appSourceType,
+		},
+	}
+}
+
+func (m *StatefulSetDesirer) getAppName(lrp *opi.LRP) string {
+	nameSuffix, err := m.Hasher.Hash(fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version))
+	if err != nil {
+		panic(err)
+	}
+
+	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
+	namePrefix = utils.SanitizeName(namePrefix, lrp.GUID)
+	return fmt.Sprintf("%s-%s", namePrefix, nameSuffix)
 }
 
 func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount) {
