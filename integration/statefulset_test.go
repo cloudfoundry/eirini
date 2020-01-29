@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("StatefulSet Manager", func() {
@@ -78,6 +79,24 @@ var _ = Describe("StatefulSet Manager", func() {
 			Expect(pods[1]).To(ContainSubstring(odinLRP.GUID))
 		})
 
+		It("should create a pod disruption budget for the lrp", func() {
+			statefulset := getStatefulSet(odinLRP)
+			pdb, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pdb).NotTo(BeNil())
+		})
+
+		Context("when the lrp has 1 instance", func() {
+			BeforeEach(func() {
+				odinLRP.TargetInstances = 1
+			})
+			It("should not create a pod disruption budget for the lrp", func() {
+				statefulset := getStatefulSet(odinLRP)
+				_, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
+				Expect(err).To(MatchError(ContainSubstring("not found")))
+			})
+		})
+
 		Context("when additional app info is provided", func() {
 			BeforeEach(func() {
 				odinLRP.OrgName = "odin-org"
@@ -114,10 +133,14 @@ var _ = Describe("StatefulSet Manager", func() {
 	})
 
 	Context("When deleting a LRP", func() {
+		var statefulsetName string
 
 		JustBeforeEach(func() {
 			err := desirer.Desire(odinLRP)
 			Expect(err).ToNot(HaveOccurred())
+
+			statefulsetName = getStatefulSet(odinLRP).Name
+
 			err = desirer.Stop(odinLRP.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -132,6 +155,95 @@ var _ = Describe("StatefulSet Manager", func() {
 			Eventually(func() []corev1.Pod {
 				return listPods(odinLRP.LRPIdentifier)
 			}, timeout).Should(BeEmpty())
+		})
+
+		It("should delete the pod disruption budget for the lrp", func() {
+			Eventually(func() error {
+				_, err := podDisruptionBudgets().Get(statefulsetName, v1.GetOptions{})
+				return err
+			}, timeout).Should(MatchError(ContainSubstring("not found")))
+		})
+
+		Context("when the lrp has only 1 instance", func() {
+			BeforeEach(func() {
+				odinLRP.TargetInstances = 1
+			})
+
+			It("should delete the pod disruption budget for the lrp", func() {
+				Eventually(func() error {
+					_, err := podDisruptionBudgets().Get(statefulsetName, v1.GetOptions{})
+					return err
+				}, timeout).Should(MatchError(ContainSubstring("not found")))
+			})
+		})
+	})
+
+	Context("When updating a LRP", func() {
+		var (
+			instancesBefore int
+			instancesAfter  int
+		)
+
+		JustBeforeEach(func() {
+			odinLRP.TargetInstances = instancesBefore
+			Expect(desirer.Desire(odinLRP)).To(Succeed())
+
+			odinLRP.TargetInstances = instancesAfter
+			Expect(desirer.Update(odinLRP)).To(Succeed())
+		})
+
+		Context("when scaling up from 1 to 2 instances", func() {
+			BeforeEach(func() {
+				instancesBefore = 1
+				instancesAfter = 2
+			})
+
+			It("should create a pod disruption budget for the lrp", func() {
+				statefulset := getStatefulSet(odinLRP)
+				pdb, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(pdb).NotTo(BeNil())
+			})
+		})
+
+		Context("when scaling up from 2 to 3 instances", func() {
+			BeforeEach(func() {
+				instancesBefore = 2
+				instancesAfter = 3
+			})
+
+			It("should keep the existing pod disruption budget for the lrp", func() {
+				statefulset := getStatefulSet(odinLRP)
+				pdb, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(pdb).NotTo(BeNil())
+			})
+		})
+
+		Context("when scaling down from 2 to 1 instances", func() {
+			BeforeEach(func() {
+				instancesBefore = 2
+				instancesAfter = 1
+			})
+
+			It("should delete the pod disruption budget for the lrp", func() {
+				statefulset := getStatefulSet(odinLRP)
+				_, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
+				Expect(err).To(MatchError(ContainSubstring("not found")))
+			})
+		})
+
+		Context("when scaling down from 1 to 0 instances", func() {
+			BeforeEach(func() {
+				instancesBefore = 1
+				instancesAfter = 0
+			})
+
+			It("should keep the lrp without a pod disruption budget", func() {
+				statefulset := getStatefulSet(odinLRP)
+				_, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
+				Expect(err).To(MatchError(ContainSubstring("not found")))
+			})
 		})
 	})
 

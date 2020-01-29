@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	types "k8s.io/client-go/kubernetes/typed/apps/v1"
+	"k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -99,6 +100,10 @@ func labelSelector(identifier opi.LRPIdentifier) string {
 		k8s.LabelGUID, identifier.GUID,
 		k8s.LabelVersion, identifier.Version,
 	)
+}
+
+func podDisruptionBudgets() v1beta1.PodDisruptionBudgetInterface {
+	return clientset.PolicyV1beta1().PodDisruptionBudgets(namespace)
 }
 
 func cleanupStatefulSet(lrp *opi.LRP) {
