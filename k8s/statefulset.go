@@ -6,6 +6,7 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/utils"
+	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/eirini/util"
@@ -77,11 +78,18 @@ type StatefulSetClient interface {
 	List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error)
 }
 
+//go:generate counterfeiter . SecretsClient
+type SecretsClient interface {
+	Create(*v1.Secret) (*v1.Secret, error)
+	Delete(name string, options *metav1.DeleteOptions) error
+}
+
 //go:generate counterfeiter . LRPMapper
 type LRPMapper func(s appsv1.StatefulSet) *opi.LRP
 
 type StatefulSetDesirer struct {
 	Pods                   PodListerDeleter
+	Secrets                SecretsClient
 	StatefulSets           StatefulSetClient
 	PodDisruptionBudets    PodDisruptionBudgetClient
 	Events                 EventLister
@@ -102,6 +110,7 @@ type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion string, logger lager.Logger) opi.Desirer {
 	return &StatefulSetDesirer{
 		Pods:                   client.CoreV1().Pods(namespace),
+		Secrets:                client.CoreV1().Secrets(namespace),
 		StatefulSets:           client.AppsV1().StatefulSets(namespace),
 		PodDisruptionBudets:    client.PolicyV1beta1().PodDisruptionBudgets(namespace),
 		Events:                 client.CoreV1().Events(namespace),
@@ -116,6 +125,16 @@ func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecre
 }
 
 func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
+	if lrp.PrivateRegistry != nil {
+		secret, err := m.generateRegistryCredsSecret(lrp)
+		if err != nil {
+			return errors.Wrap(err, "failed to generate private registry secret for statefulset")
+		}
+		if _, err := m.Secrets.Create(secret); err != nil {
+			return errors.Wrap(err, "failed to create private registry secret for statefulset")
+		}
+	}
+
 	if _, err := m.StatefulSets.Create(m.toStatefulSet(lrp)); err != nil {
 		return errors.Wrap(err, "failed to create statefulset")
 	}
@@ -154,14 +173,31 @@ func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 		return err
 	}
 
+	if err := m.deletePrivateRegistrySecret(statefulSet); err != nil {
+		return err
+	}
+
 	backgroundPropagation := meta.DeletePropagationBackground
-	return m.StatefulSets.Delete(statefulSet.Name, &meta.DeleteOptions{PropagationPolicy: &backgroundPropagation})
+	deleteOptions := &metav1.DeleteOptions{
+		PropagationPolicy: &backgroundPropagation,
+	}
+	return m.StatefulSets.Delete(statefulSet.Name, deleteOptions)
+}
+
+func (m *StatefulSetDesirer) deletePrivateRegistrySecret(statefulSet *appsv1.StatefulSet) error {
+	for _, secret := range statefulSet.Spec.Template.Spec.ImagePullSecrets {
+		if secret.Name == m.privateRegistrySecretName(statefulSet.Name) {
+			return m.Secrets.Delete(secret.Name, &metav1.DeleteOptions{})
+		}
+	}
+
+	return nil
 }
 
 func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index uint) error {
-	selector := getSelector(identifier.GUID, identifier.Version)
-	options := meta.ListOptions{LabelSelector: selector}
-	statefulsets, err := m.StatefulSets.List(options)
+	statefulsets, err := m.StatefulSets.List(meta.ListOptions{
+		LabelSelector: labelSelectorString(identifier),
+	})
 	if err != nil {
 		return errors.Wrap(err, "failed to get statefulset")
 	}
@@ -220,8 +256,9 @@ func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 }
 
 func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error) {
-	options := meta.ListOptions{LabelSelector: getSelector(identifier.GUID, identifier.Version)}
-	statefulSet, err := m.StatefulSets.List(options)
+	statefulSet, err := m.StatefulSets.List(meta.ListOptions{
+		LabelSelector: labelSelectorString(identifier),
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}
@@ -237,8 +274,9 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 }
 
 func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
-	options := meta.ListOptions{LabelSelector: getSelector(identifier.GUID, identifier.Version)}
-	pods, err := m.Pods.List(options)
+	pods, err := m.Pods.List(meta.ListOptions{
+		LabelSelector: labelSelectorString(identifier),
+	})
 	if err != nil {
 		return []*opi.Instance{}, errors.Wrap(err, "failed to list pods")
 	}
@@ -288,11 +326,11 @@ func (m *StatefulSetDesirer) createPodDisruptionBudget(lrp *opi.LRP) error {
 		minAvailable := intstr.FromInt(PdbMinAvailableInstances)
 		_, err := m.PodDisruptionBudets.Create(&v1beta1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: m.getAppName(lrp),
+				Name: m.statefulSetName(lrp),
 			},
 			Spec: v1beta1.PodDisruptionBudgetSpec{
 				MinAvailable: &minAvailable,
-				Selector:     m.getAppLabelSelector(lrp),
+				Selector:     m.labelSelector(lrp),
 			},
 		})
 		return err
@@ -320,6 +358,57 @@ func (m *StatefulSetDesirer) statefulSetsToLRPs(statefulSets *appsv1.StatefulSet
 		lrps = append(lrps, lrp)
 	}
 	return lrps
+}
+
+func (m *StatefulSetDesirer) statefulSetName(lrp *opi.LRP) string {
+	nameSuffix, err := m.Hasher.Hash(fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version))
+	if err != nil {
+		panic(err)
+	}
+	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
+	namePrefix = utils.SanitizeName(namePrefix, lrp.GUID)
+
+	return fmt.Sprintf("%s-%s", namePrefix, nameSuffix)
+}
+
+func (m *StatefulSetDesirer) privateRegistrySecretName(statefulSetName string) string {
+	return fmt.Sprintf("%s-registry-credentials", statefulSetName)
+}
+
+func (m *StatefulSetDesirer) generateRegistryCredsSecret(lrp *opi.LRP) (*corev1.Secret, error) {
+	dockerConfig := dockerutils.NewDockerConfig(
+		lrp.PrivateRegistry.Server,
+		lrp.PrivateRegistry.Username,
+		lrp.PrivateRegistry.Password,
+	)
+
+	dockerConfigJSON, err := dockerConfig.JSON()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate privete registry config")
+	}
+
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: m.privateRegistrySecretName(m.statefulSetName(lrp)),
+		},
+		Type: corev1.SecretTypeDockerConfigJson,
+		StringData: map[string]string{
+			dockerutils.DockerConfigKey: dockerConfigJSON,
+		},
+	}, nil
+}
+
+func (m *StatefulSetDesirer) calculateImagePullSecrets(lrp *opi.LRP) []corev1.LocalObjectReference {
+	imagePullSecrets := []corev1.LocalObjectReference{
+		{Name: m.RegistrySecretName},
+	}
+
+	if lrp.PrivateRegistry != nil {
+		imagePullSecrets = append(imagePullSecrets, corev1.LocalObjectReference{
+			Name: m.privateRegistrySecretName(m.statefulSetName(lrp)),
+		})
+	}
+	return imagePullSecrets
 }
 
 func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
@@ -380,7 +469,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
-			Name: m.getAppName(lrp),
+			Name: m.statefulSetName(lrp),
 		},
 		Spec: appsv1.StatefulSetSpec{
 			PodManagementPolicy: "Parallel",
@@ -391,9 +480,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 				},
 				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken: &automountServiceAccountToken,
-					ImagePullSecrets: []corev1.LocalObjectReference{
-						{Name: m.RegistrySecretName},
-					},
+					ImagePullSecrets:             m.calculateImagePullSecrets(lrp),
 					Containers: []corev1.Container{
 						{
 							Name:            "opi",
@@ -430,7 +517,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 		},
 	}
 
-	statefulSet.Spec.Selector = m.getAppLabelSelector(lrp)
+	statefulSet.Spec.Selector = m.labelSelector(lrp)
 
 	labels := map[string]string{
 		LabelGUID:                        lrp.GUID,
@@ -462,27 +549,6 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	return statefulSet
 }
 
-func (m *StatefulSetDesirer) getAppLabelSelector(lrp *opi.LRP) *metav1.LabelSelector {
-	return &metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			LabelGUID:       lrp.GUID,
-			LabelVersion:    lrp.Version,
-			LabelSourceType: appSourceType,
-		},
-	}
-}
-
-func (m *StatefulSetDesirer) getAppName(lrp *opi.LRP) string {
-	nameSuffix, err := m.Hasher.Hash(fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version))
-	if err != nil {
-		panic(err)
-	}
-
-	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
-	namePrefix = utils.SanitizeName(namePrefix, lrp.GUID)
-	return fmt.Sprintf("%s-%s", namePrefix, nameSuffix)
-}
-
 func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount) {
 	volumes := []corev1.Volume{}
 	volumeMounts := []corev1.VolumeMount{}
@@ -503,10 +569,20 @@ func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev
 	return volumes, volumeMounts
 }
 
-func getSelector(guid, version string) string {
+func (m *StatefulSetDesirer) labelSelector(lrp *opi.LRP) *metav1.LabelSelector {
+	return &metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			LabelGUID:       lrp.GUID,
+			LabelVersion:    lrp.Version,
+			LabelSourceType: appSourceType,
+		},
+	}
+}
+
+func labelSelectorString(id opi.LRPIdentifier) string {
 	return fmt.Sprintf(
 		"%s=%s,%s=%s",
-		LabelGUID, guid,
-		LabelVersion, version,
+		LabelGUID, id.GUID,
+		LabelVersion, id.Version,
 	)
 }

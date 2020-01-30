@@ -1,6 +1,7 @@
 package k8s_test
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -37,6 +38,7 @@ var _ = Describe("Statefulset Desirer", func() {
 	var (
 		podClient             *k8sfakes.FakePodListerDeleter
 		eventLister           *k8sfakes.FakeEventLister
+		secretsClient         *k8sfakes.FakeSecretsClient
 		statefulSetClient     *k8sfakes.FakeStatefulSetClient
 		statefulSetDesirer    opi.Desirer
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
@@ -49,6 +51,7 @@ var _ = Describe("Statefulset Desirer", func() {
 	BeforeEach(func() {
 		podClient = new(k8sfakes.FakePodListerDeleter)
 		statefulSetClient = new(k8sfakes.FakeStatefulSetClient)
+		secretsClient = new(k8sfakes.FakeSecretsClient)
 		eventLister = new(k8sfakes.FakeEventLister)
 
 		livenessProbeCreator = new(k8sfakes.FakeProbeCreator)
@@ -61,6 +64,7 @@ var _ = Describe("Statefulset Desirer", func() {
 		logger = lagertest.NewTestLogger("handler-test")
 		statefulSetDesirer = &StatefulSetDesirer{
 			Pods:                   podClient,
+			Secrets:                secretsClient,
 			StatefulSets:           statefulSetClient,
 			PodDisruptionBudets:    pdbClient,
 			RegistrySecretName:     registrySecretName,
@@ -82,11 +86,11 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		BeforeEach(func() {
 			lrp = createLRP("Baldur", "my.example.route")
+			livenessProbeCreator.Returns(&corev1.Probe{})
+			readinessProbeCreator.Returns(&corev1.Probe{})
 		})
 
 		JustBeforeEach(func() {
-			livenessProbeCreator.Returns(&corev1.Probe{})
-			readinessProbeCreator.Returns(&corev1.Probe{})
 			desireErr = statefulSetDesirer.Desire(lrp)
 		})
 
@@ -282,6 +286,41 @@ var _ = Describe("Statefulset Desirer", func() {
 			})
 
 		})
+
+		Context("When the app references a private docker image", func() {
+			BeforeEach(func() {
+				lrp.PrivateRegistry = &opi.PrivateRegistry{
+					Server:   "host",
+					Username: "user",
+					Password: "password",
+				}
+			})
+
+			It("should create a private repo secret containing the private repo credentials", func() {
+				Expect(secretsClient.CreateCallCount()).To(Equal(1))
+				actualSecret := secretsClient.CreateArgsForCall(0)
+				Expect(actualSecret.Name).To(Equal("baldur-space-foo-random-registry-credentials"))
+				Expect(actualSecret.Type).To(Equal(corev1.SecretTypeDockerConfigJson))
+				Expect(actualSecret.StringData).To(
+					HaveKeyWithValue(
+						".dockerconfigjson",
+						fmt.Sprintf(
+							`{"auths":{"host":{"username":"user","password":"password","auth":"%s"}}}`,
+							base64.StdEncoding.EncodeToString([]byte("user:password")),
+						),
+					),
+				)
+			})
+
+			It("should add the private repo secret to podImagePullSecret", func() {
+				Expect(statefulSetClient.CreateCallCount()).To(Equal(1))
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+				Expect(statefulSet.Spec.Template.Spec.ImagePullSecrets).To(HaveLen(2))
+				secret := statefulSet.Spec.Template.Spec.ImagePullSecrets[1]
+				Expect(secret.Name).To(Equal("baldur-space-foo-random-registry-credentials"))
+			})
+
+		})
 	})
 
 	Context("When getting an app", func() {
@@ -374,24 +413,6 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(*st.Spec.Replicas).To(Equal(int32(5)))
 		})
 
-		/*
-			1)
-				updated count = 1
-				pdb delete - success
-				(scale down)
-
-			2) updated count = 1
-				pdb delete - fail (does not exist)
-				(scale from 0 to 1)
-
-			3) updated count = 2+
-				pdb create - success
-				(scale up)
-
-			4) updated count = 2+
-				pdb create - fail (already exists)
-
-		*/
 		Context("when lrp is scaled down to 1 instance", func() {
 
 			It("should delete the pod disruption budget for the lrp", func() {
@@ -554,8 +575,10 @@ var _ = Describe("Statefulset Desirer", func() {
 	})
 
 	Context("Stop an LRP", func() {
+		var statefulSets *appsv1.StatefulSetList
+
 		BeforeEach(func() {
-			st := &appsv1.StatefulSetList{
+			statefulSets = &appsv1.StatefulSetList{
 				Items: []appsv1.StatefulSet{
 					{
 						ObjectMeta: meta.ObjectMeta{
@@ -564,8 +587,7 @@ var _ = Describe("Statefulset Desirer", func() {
 					},
 				},
 			}
-
-			statefulSetClient.ListReturns(st, nil)
+			statefulSetClient.ListReturns(statefulSets, nil)
 			pdbClient.DeleteReturns(k8serrors.NewNotFound(schema.GroupResource{
 				Group:    "policy/v1beta1",
 				Resource: "PodDisruptionBudet"},
@@ -584,14 +606,48 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(pdbName).To(Equal("baldur"))
 		})
 
-		Context("when deletion of stateful set fails", func() {
-			It("should return a meaningful error", func() {
-				st := &appsv1.StatefulSetList{
-					Items: []appsv1.StatefulSet{{}},
-				}
+		It("deletes the statefulSet", func() {
+			Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+			Expect(statefulSetClient.DeleteCallCount()).To(Equal(1))
+		})
 
-				statefulSetClient.ListReturns(st, nil)
+		Context("when the stateful set runs an image from a private registry", func() {
+			BeforeEach(func() {
+				statefulSets.Items[0].Spec = appsv1.StatefulSetSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							ImagePullSecrets: []corev1.LocalObjectReference{
+								{Name: "baldur-registry-credentials"},
+							},
+						},
+					},
+				}
+			})
+
+			It("deletes the secret holding the creds of the private registry", func() {
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+				Expect(secretsClient.DeleteCallCount()).To(Equal(1))
+				secretName, _ := secretsClient.DeleteArgsForCall(0)
+				Expect(secretName).To(Equal("baldur-registry-credentials"))
+			})
+
+			Context("when deleting the private registry secret fails", func() {
+				BeforeEach(func() {
+					secretsClient.DeleteReturns(errors.New("boom"))
+				})
+
+				It("deletes the secret holding the creds of the private registry", func() {
+					Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(MatchError(ContainSubstring("boom")))
+				})
+			})
+		})
+
+		Context("when deletion of stateful set fails", func() {
+			BeforeEach(func() {
 				statefulSetClient.DeleteReturns(errors.New("boom"))
+			})
+
+			It("should return a meaningful error", func() {
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
 					To(MatchError(ContainSubstring("failed to delete statefulset")))
 			})
@@ -620,12 +676,14 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		Context("when kubernetes fails to list statefulsets", func() {
-			It("should return a meaningful error", func() {
+			BeforeEach(func() {
 				statefulSetClient.ListReturns(nil, errors.New("who is this?"))
+			})
+
+			It("should return a meaningful error", func() {
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{})).
 					To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
-
 		})
 
 		Context("when the statefulSet does not exist", func() {

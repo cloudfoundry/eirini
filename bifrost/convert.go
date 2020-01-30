@@ -3,10 +3,16 @@ package bifrost
 import (
 	"fmt"
 
+	"regexp"
+
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 )
+
+const DockerHubHost = "index.docker.io/v1/"
+
+var dockerRX = regexp.MustCompile(`([a-zA-Z0-9.-]+)(:([0-9]+))?/(\S+/\S+)`)
 
 //go:generate counterfeiter . Converter
 type Converter interface {
@@ -31,6 +37,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 	var command []string
 	var env map[string]string
 	var image string
+	var privateRegistry *opi.PrivateRegistry
 
 	port := request.Ports[0]
 	env = map[string]string{
@@ -51,6 +58,16 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 	case request.Lifecycle.DockerLifecycle != nil:
 		image = request.Lifecycle.DockerLifecycle.Image
 		command = request.Lifecycle.DockerLifecycle.Command
+		registryUsername := request.Lifecycle.DockerLifecycle.RegistryUsername
+		registryPassword := request.Lifecycle.DockerLifecycle.RegistryPassword
+
+		if registryUsername != "" || registryPassword != "" {
+			privateRegistry = &opi.PrivateRegistry{
+				Server:   parseRegistryHost(image),
+				Username: registryUsername,
+				Password: registryPassword,
+			}
+		}
 
 	case request.Lifecycle.BuildpackLifecycle != nil:
 		var buildpackEnv map[string]string
@@ -105,6 +122,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		VolumeMounts:           volumeMounts,
 		LRP:                    request.LRP,
 		UserDefinedAnnotations: request.UserDefinedAnnotations,
+		PrivateRegistry:        privateRegistry,
 	}, nil
 }
 
@@ -152,4 +170,13 @@ func mergeMaps(maps ...map[string]string) map[string]string {
 		}
 	}
 	return result
+}
+
+func parseRegistryHost(imageURL string) string {
+	if !dockerRX.MatchString(imageURL) {
+		return DockerHubHost
+	}
+
+	matches := dockerRX.FindStringSubmatch(imageURL)
+	return matches[1]
 }

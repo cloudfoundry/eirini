@@ -1,6 +1,7 @@
 package statefulsets_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,7 +18,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	types "k8s.io/client-go/kubernetes/typed/apps/v1"
+	appsv1_types "k8s.io/client-go/kubernetes/typed/apps/v1"
+	corev1_types "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
@@ -84,7 +87,15 @@ func createNamespace(namespace string) {
 	}
 }
 
-func statefulSets() types.StatefulSetInterface {
+func secrets() corev1_types.SecretInterface {
+	return clientset.CoreV1().Secrets(namespace)
+}
+
+func getSecret(name string) (*corev1.Secret, error) {
+	return secrets().Get(name, metav1.GetOptions{})
+}
+
+func statefulSets() appsv1_types.StatefulSetInterface {
 	return clientset.AppsV1().StatefulSets(namespace)
 }
 
@@ -167,4 +178,33 @@ func podReady(pod corev1.Pod) bool {
 		}
 	}
 	return false
+}
+
+func getEiriniUserPassword() string {
+	password := os.Getenv("EIRINIUSER_PASSWORD")
+	if password == "" {
+		Skip("eiriniuser password not provided. Please expoert EIRINIUSER_PASSWORD")
+	}
+	return password
+}
+
+func createLRP(name string) *opi.LRP {
+	guid := util.RandomString()
+	routes, err := json.Marshal([]cf.Route{{Hostname: "foo.example.com", Port: 8080}})
+	Expect(err).ToNot(HaveOccurred())
+	return &opi.LRP{
+		Command: []string{
+			"/bin/sh",
+			"-c",
+			"while true; do echo hello; sleep 10;done",
+		},
+		AppName:         name,
+		SpaceName:       "space-foo",
+		TargetInstances: 2,
+		Image:           "busybox",
+		AppURIs:         string(routes),
+		LRPIdentifier:   opi.LRPIdentifier{GUID: guid, Version: "version_" + guid},
+		LRP:             "metadata",
+		DiskMB:          2047,
+	}
 }

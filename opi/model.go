@@ -35,6 +35,7 @@ type LRP struct {
 	SpaceGUID              string
 	Image                  string
 	Command                []string
+	PrivateRegistry        *PrivateRegistry
 	Env                    map[string]string
 	Health                 Healtcheck
 	Ports                  []int32
@@ -48,6 +49,12 @@ type LRP struct {
 	AppURIs                string
 	LastUpdated            string
 	UserDefinedAnnotations map[string]string
+}
+
+type PrivateRegistry struct {
+	Server   string
+	Username string
+	Password string
 }
 
 type VolumeMount struct {

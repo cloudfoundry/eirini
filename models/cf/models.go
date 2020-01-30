@@ -51,8 +51,10 @@ type Lifecycle struct {
 }
 
 type DockerLifecycle struct {
-	Image   string   `json:"image"`
-	Command []string `json:"command"`
+	Image            string   `json:"image"`
+	Command          []string `json:"command"`
+	RegistryUsername string   `json:"registry_username"`
+	RegistryPassword string   `json:"registry_password"`
 }
 
 type BuildpackLifecycle struct {

@@ -208,6 +208,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 					},
 				}
 			})
+
 			It("should directly convert DockerImageURL", func() {
 				Expect(lrp.Image).To(Equal("the-image-url"))
 			})
@@ -224,7 +225,55 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(health.TimeoutMs).To(Equal(uint(400)))
 			})
 
+			It("shouldn't set privateRegistry information", func() {
+				Expect(lrp.PrivateRegistry).To(BeNil())
+			})
+
 			verifyLRPConvertedSuccessfully()
+
+			Context("when the image lives in a private registry", func() {
+				BeforeEach(func() {
+					desireLRPRequest.Lifecycle = cf.Lifecycle{
+						DockerLifecycle: &cf.DockerLifecycle{
+							Image:            "my-secret-docker-registry.docker.io:5000/repo/the-mighty-image:not-latest",
+							Command:          []string{"command-in-docker"},
+							RegistryUsername: "super-user",
+							RegistryPassword: "super-password",
+						},
+					}
+				})
+
+				It("should set the docker image url", func() {
+					Expect(lrp.Image).To(Equal("my-secret-docker-registry.docker.io:5000/repo/the-mighty-image:not-latest"))
+				})
+
+				It("should provide information about the private regisry", func() {
+					Expect(lrp.PrivateRegistry).ToNot(BeNil())
+					Expect(lrp.PrivateRegistry.Username).To(Equal("super-user"))
+					Expect(lrp.PrivateRegistry.Password).To(Equal("super-password"))
+					Expect(lrp.PrivateRegistry.Server).To(Equal("my-secret-docker-registry.docker.io"))
+				})
+
+				Context("and the registry URL does not contain a host", func() {
+					BeforeEach(func() {
+						desireLRPRequest.Lifecycle = cf.Lifecycle{
+							DockerLifecycle: &cf.DockerLifecycle{
+								Image:            "repo/the-mighty-image:not-latest",
+								Command:          []string{"command-in-docker"},
+								RegistryUsername: "super-user",
+								RegistryPassword: "super-password",
+							},
+						}
+					})
+
+					It("should default to the docker hub", func() {
+						Expect(lrp.PrivateRegistry.Server).To(Equal("index.docker.io/v1/"))
+					})
+				})
+
+				verifyLRPConvertedSuccessfully()
+
+			})
 		})
 
 		Context("When the app is using buildpack lifecycle", func() {

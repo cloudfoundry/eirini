@@ -1,12 +1,9 @@
 package statefulsets_test
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"code.cloudfoundry.org/eirini/integration/util"
 	. "code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
 
@@ -50,7 +47,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		)
 	})
 
-	Context("When creating a StatefulSet", func() {
+	Context("When creating a LRP", func() {
 
 		JustBeforeEach(func() {
 			err := desirer.Desire(odinLRP)
@@ -70,13 +67,20 @@ var _ = Describe("StatefulSet Manager", func() {
 		})
 
 		It("should create all associated pods", func() {
-			var pods []string
+			var podNames []string
 			Eventually(func() []string {
-				pods = podNamesFromPods(listPods(odinLRP.LRPIdentifier))
-				return pods
-			}, timeout).Should(HaveLen(2))
-			Expect(pods[0]).To(ContainSubstring(odinLRP.GUID))
-			Expect(pods[1]).To(ContainSubstring(odinLRP.GUID))
+				podNames = podNamesFromPods(listPods(odinLRP.LRPIdentifier))
+				return podNames
+			}, timeout).Should(HaveLen(odinLRP.TargetInstances))
+
+			for i := 0; i < odinLRP.TargetInstances; i++ {
+				podIndex := i
+				Expect(podNames[podIndex]).To(ContainSubstring(odinLRP.GUID))
+
+				Eventually(func() corev1.PodPhase {
+					return getPodPhase(podIndex, odinLRP.LRPIdentifier)
+				}, timeout).Should(Equal(corev1.PodRunning))
+			}
 		})
 
 		It("should create a pod disruption budget for the lrp", func() {
@@ -124,6 +128,37 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		})
 
+		Context("When private docker registry credentials are provided", func() {
+			BeforeEach(func() {
+				odinLRP.Image = "eiriniuser/notdora:latest"
+				odinLRP.PrivateRegistry = &opi.PrivateRegistry{
+					Server:   "index.docker.io/v1/",
+					Username: "eiriniuser",
+					Password: getEiriniUserPassword(),
+				}
+			})
+
+			It("creates a private registry secret", func() {
+				statefulset := getStatefulSet(odinLRP)
+				secret, err := getSecret(privateRegistrySecretName(statefulset.Name))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(secret).NotTo(BeNil())
+			})
+
+			It("sets the ImagePullSecret correctly in the pod template", func() {
+				Eventually(func() []corev1.Pod {
+					return listPods(odinLRP.LRPIdentifier)
+				}, timeout).Should(HaveLen(odinLRP.TargetInstances))
+
+				for i := 0; i < odinLRP.TargetInstances; i++ {
+					podIndex := i
+					Eventually(func() corev1.PodPhase {
+						return getPodPhase(podIndex, odinLRP.LRPIdentifier)
+					}, timeout).Should(Equal(corev1.PodRunning))
+				}
+			})
+		})
+
 		Context("when we create the same StatefulSet again", func() {
 			It("should error", func() {
 				err := desirer.Desire(odinLRP)
@@ -132,12 +167,16 @@ var _ = Describe("StatefulSet Manager", func() {
 		})
 	})
 
-	Context("When deleting a LRP", func() {
+	Context("When stopping a LRP", func() {
 		var statefulsetName string
 
 		JustBeforeEach(func() {
 			err := desirer.Desire(odinLRP)
 			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func() []corev1.Pod {
+				return listPods(odinLRP.LRPIdentifier)
+			}, timeout).Should(HaveLen(odinLRP.TargetInstances))
 
 			statefulsetName = getStatefulSet(odinLRP).Name
 
@@ -169,11 +208,33 @@ var _ = Describe("StatefulSet Manager", func() {
 				odinLRP.TargetInstances = 1
 			})
 
-			It("should delete the pod disruption budget for the lrp", func() {
+			It("keep the lrp without a pod disruption budget", func() {
 				Eventually(func() error {
 					_, err := podDisruptionBudgets().Get(statefulsetName, v1.GetOptions{})
 					return err
 				}, timeout).Should(MatchError(ContainSubstring("not found")))
+			})
+		})
+
+		Context("When private docker registry credentials are provided", func() {
+			BeforeEach(func() {
+				odinLRP.Image = "eiriniuser/notdora:latest"
+				odinLRP.PrivateRegistry = &opi.PrivateRegistry{
+					Server:   "index.docker.io/v1/",
+					Username: "eiriniuser",
+					Password: getEiriniUserPassword(),
+				}
+			})
+
+			It("should delete the StatefulSet object", func() {
+				Eventually(func() []appsv1.StatefulSet {
+					return listStatefulSets("odin")
+				}, timeout).Should(BeEmpty())
+			})
+
+			It("should delete the private registry secret", func() {
+				_, err := getSecret(privateRegistrySecretName(statefulsetName))
+				Expect(err).To(MatchError(ContainSubstring("not found")))
 			})
 		})
 	})
@@ -245,9 +306,10 @@ var _ = Describe("StatefulSet Manager", func() {
 				Expect(err).To(MatchError(ContainSubstring("not found")))
 			})
 		})
+
 	})
 
-	Context("When getting an app", func() {
+	Context("When getting a LRP", func() {
 		numberOfInstancesFn := func() int {
 			lrp, err := desirer.Get(odinLRP.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
@@ -260,8 +322,8 @@ var _ = Describe("StatefulSet Manager", func() {
 		})
 
 		It("correctly reports the running instances", func() {
-			Eventually(numberOfInstancesFn, timeout).Should(Equal(2))
-			Consistently(numberOfInstancesFn, "10s").Should(Equal(2))
+			Eventually(numberOfInstancesFn, timeout).Should(Equal(odinLRP.TargetInstances))
+			Consistently(numberOfInstancesFn, "10s").Should(Equal(odinLRP.TargetInstances))
 		})
 
 		Context("When one of the instances if failing", func() {
@@ -298,23 +360,11 @@ func int32ptr(i int) *int32 {
 	return &i32
 }
 
-func createLRP(name string) *opi.LRP {
-	guid := util.RandomString()
-	routes, err := json.Marshal([]cf.Route{{Hostname: "foo.example.com", Port: 8080}})
-	Expect(err).ToNot(HaveOccurred())
-	return &opi.LRP{
-		Command: []string{
-			"/bin/sh",
-			"-c",
-			"while true; do echo hello; sleep 10;done",
-		},
-		AppName:         name,
-		SpaceName:       "space-foo",
-		TargetInstances: 2,
-		Image:           "busybox",
-		AppURIs:         string(routes),
-		LRPIdentifier:   opi.LRPIdentifier{GUID: guid, Version: "version_" + guid},
-		LRP:             "metadata",
-		DiskMB:          2047,
-	}
+func getPodPhase(index int, id opi.LRPIdentifier) corev1.PodPhase {
+	pods := listPods(id)
+	return pods[index].Status.Phase
+}
+
+func privateRegistrySecretName(statefulsetName string) string {
+	return fmt.Sprintf("%s-registry-credentials", statefulsetName)
 }
