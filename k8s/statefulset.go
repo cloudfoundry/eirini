@@ -53,7 +53,8 @@ const (
 
 	LabelStagingGUID = "cloudfoundry.org/staging_guid"
 
-	VcapUID = 2000
+	VcapUID                  = 2000
+	PdbMinAvailableInstances = 1
 )
 
 //go:generate counterfeiter . PodListerDeleter
@@ -196,7 +197,7 @@ func (m *StatefulSetDesirer) update(lrp *opi.LRP) error {
 		return err
 	}
 
-	if lrp.TargetInstances <= 1 {
+	if lrp.TargetInstances <= 1 { //nolint:gomnd
 		err = m.PodDisruptionBudets.Delete(statefulSet.Name, &metav1.DeleteOptions{})
 		if err != nil && !k8serrors.IsNotFound(err) {
 			return err
@@ -283,14 +284,14 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 }
 
 func (m *StatefulSetDesirer) createPodDisruptionBudget(lrp *opi.LRP) error {
-	if lrp.TargetInstances > 1 {
-		one := intstr.FromInt(1)
+	if lrp.TargetInstances > 1 { //nolint:gomnd
+		minAvailable := intstr.FromInt(PdbMinAvailableInstances)
 		_, err := m.PodDisruptionBudets.Create(&v1beta1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: m.getAppName(lrp),
 			},
 			Spec: v1beta1.PodDisruptionBudgetSpec{
-				MinAvailable: &one,
+				MinAvailable: &minAvailable,
 				Selector:     m.getAppLabelSelector(lrp),
 			},
 		})
