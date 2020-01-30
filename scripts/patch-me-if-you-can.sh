@@ -1,50 +1,44 @@
 #!/bin/bash
 
-set -xeuo pipefail
+set -euo pipefail
 
 IFS=$'\n\t'
 
-readonly USAGE="Usage: patch-me-if-you-can.sh --cluster <cluster-name> [ <component-name> ... ]"
+readonly USAGE="Usage: patch-me-if-you-can.sh -c <cluster-name> [ -s ] [ <component-name> ... ]"
 readonly SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 readonly EIRINI_BASEDIR=$(realpath "$SCRIPT_DIR/..")
 readonly EIRINI_RELEASE_BASEDIR=$(realpath "$SCRIPT_DIR/../../eirini-release")
 
 
 main() {
-  check_flags "$@"
-  shift 2
-
   if [ "$#" == "0" ]; then
-    echo "No components specified. Nothing to do."
-    exit 0
+    echo "$USAGE"
+    exit 1
   fi
 
-  local component
-  for component in "$@"; do
-    echo "--- Patching component $component ---"
-    docker_build "$component"
-    docker_push "$component"
-    update_image_in_helm_chart "$component"
+  local cluster_name skip_docker_build
+  while getopts ":c:s" opt; do
+    case ${opt} in
+      c )
+        cluster_name=$OPTARG
+        ;;
+      s )
+        skip_docker_build="true"
+        ;;
+      \? )
+        echo "Invalid option: $OPTARG" 1>&2
+        echo "$USAGE"
+        ;;
+      : )
+        echo "Invalid option: $OPTARG requires an argument" 1>&2
+        echo "$USAGE"
+        ;;
+    esac
   done
-
-  helm_upgrade
-}
-
-check_flags() {
-  if [ "$#" == "0" ]; then
-    echo "$USAGE"
-    exit 1
-  fi
-
-  if [ "$1" != "--cluster" ] && [ "$1" != "-c" ]; then
-    echo "$USAGE"
-    exit 1
-  fi
-
-  local cluster_name
-  cluster_name=$2
+  shift $((OPTIND -1))
 
   if [ -z "$cluster_name" ]; then
+    echo "Cluster name not provided"
     echo "$USAGE"
     exit 1
   fi
@@ -54,6 +48,30 @@ check_flags() {
     echo eval "\$(ibmcloud ks cluster config --export $cluster_name)"
     exit 1
   fi
+
+  if [ "$skip_docker_build" != "true" ]; then
+    if [ "$#" == "0" ]; then
+      echo "No components specified. Nothing to do."
+      echo "If you want to helm upgrade without building containers, please pass the '-s' flag"
+      exit 0
+    fi
+    local component
+    for component in "$@"; do
+      update_component "$component"
+    done
+  fi
+
+  helm_upgrade
+}
+
+update_component() {
+  local component
+  component=$1
+
+  echo "--- Patching component $component ---"
+  docker_build "$component"
+  docker_push "$component"
+  update_image_in_helm_chart "$component"
 }
 
 docker_build() {
