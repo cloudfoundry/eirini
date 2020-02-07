@@ -162,6 +162,20 @@ func podNamesFromPods(pods []corev1.Pod) []string {
 	return names
 }
 
+func nodeNamesFromPods(pods []corev1.Pod) []string {
+	names := []string{}
+	for _, p := range pods {
+		names = append(names, p.Spec.NodeName)
+	}
+	return names
+}
+
+func getNodeCount() int {
+	nodeList, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+	Expect(err).ToNot(HaveOccurred())
+	return len(nodeList.Items)
+}
+
 func podCrashed(pod corev1.Pod) bool {
 	if len(pod.Status.ContainerStatuses) == 0 {
 		return false

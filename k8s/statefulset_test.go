@@ -25,6 +25,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -243,6 +244,34 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		It("should not create a pod disruption budget", func() {
 			Expect(pdbClient.CreateCallCount()).To(BeZero())
+		})
+
+		It("should set soft inter-pod anti-affinity", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			podAntiAffinity := statefulSet.Spec.Template.Spec.Affinity.PodAntiAffinity
+			Expect(podAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution).To(BeEmpty())
+			Expect(podAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution).To(HaveLen(1))
+
+			weightedTerm := podAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution[0]
+			Expect(weightedTerm.Weight).To(Equal(int32(100)))
+			Expect(weightedTerm.PodAffinityTerm.TopologyKey).To(Equal("kubernetes.io/hostname"))
+			Expect(weightedTerm.PodAffinityTerm.LabelSelector.MatchExpressions).To(ConsistOf(
+				metav1.LabelSelectorRequirement{
+					Key:      LabelGUID,
+					Operator: meta.LabelSelectorOpIn,
+					Values:   []string{"guid_1234"},
+				},
+				metav1.LabelSelectorRequirement{
+					Key:      LabelVersion,
+					Operator: meta.LabelSelectorOpIn,
+					Values:   []string{"version_1234"},
+				},
+				metav1.LabelSelectorRequirement{
+					Key:      LabelSourceType,
+					Operator: meta.LabelSelectorOpIn,
+					Values:   []string{"APP"},
+				},
+			))
 		})
 
 		Context("When the app name contains unsupported characters", func() {
