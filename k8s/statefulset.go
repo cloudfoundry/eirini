@@ -56,6 +56,7 @@ const (
 
 	VcapUID                  = 2000
 	PdbMinAvailableInstances = 1
+	PodAffinityTermWeight    = 100
 )
 
 //go:generate counterfeiter . PodListerDeleter
@@ -519,6 +520,22 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 
 	statefulSet.Spec.Selector = m.labelSelector(lrp)
 
+	statefulSet.Spec.Template.Spec.Affinity = &v1.Affinity{
+		PodAntiAffinity: &v1.PodAntiAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
+				{
+					Weight: PodAffinityTermWeight,
+					PodAffinityTerm: v1.PodAffinityTerm{
+						TopologyKey: v1.LabelHostname,
+						LabelSelector: &metav1.LabelSelector{
+							MatchExpressions: toLabelSelectorRequirements(statefulSet.Spec.Selector),
+						},
+					},
+				},
+			},
+		},
+	}
+
 	labels := map[string]string{
 		LabelGUID:                        lrp.GUID,
 		LabelProcessType:                 lrp.ProcessType,
@@ -547,6 +564,21 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	}
 
 	return statefulSet
+}
+
+func toLabelSelectorRequirements(selector *metav1.LabelSelector) []metav1.LabelSelectorRequirement {
+	labels := selector.MatchLabels
+	reqs := make([]metav1.LabelSelectorRequirement, 0, len(labels))
+
+	for label, value := range labels {
+		reqs = append(reqs, metav1.LabelSelectorRequirement{
+			Key:      label,
+			Operator: metav1.LabelSelectorOpIn,
+			Values:   []string{value},
+		})
+	}
+
+	return reqs
 }
 
 func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount) {

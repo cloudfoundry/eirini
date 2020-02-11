@@ -125,7 +125,27 @@ var _ = Describe("StatefulSet Manager", func() {
 				Expect(statefulset.Labels).To(HaveKeyWithValue(LabelVersion, odinLRP.LRPIdentifier.Version))
 				Expect(statefulset.Labels).To(HaveKeyWithValue(LabelSourceType, "APP"))
 			})
+		})
 
+		Context("when the app has more than one instances", func() {
+			BeforeEach(func() {
+				odinLRP.TargetInstances = 2
+			})
+
+			It("should schedule app pods on different nodes", func() {
+				if getNodeCount() == 1 {
+					Skip("target cluster has only one node")
+				}
+
+				Eventually(func() []corev1.Pod {
+					return listPods(odinLRP.LRPIdentifier)
+				}, timeout).Should(HaveLen(2))
+
+				nodeNames := nodeNamesFromPods(listPods(odinLRP.LRPIdentifier))
+
+				Expect(nodeNames).To(HaveLen(2))
+				Expect(nodeNames[0]).ToNot(Equal(nodeNames[1]))
+			})
 		})
 
 		Context("When private docker registry credentials are provided", func() {
