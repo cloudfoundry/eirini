@@ -51,17 +51,18 @@ var _ = Describe("StageHandler", func() {
 	})
 
 	Context("When an app is submitted for staging", func() {
-
 		BeforeEach(func() {
 			method = "POST"
 			path = "/stage/guid_1234"
 			body = `{
 				"app_guid": "our-app-id",
 				"environment": [{"name": "HOWARD", "value": "the alien"}],
-				"lifecycle_data": {
-					"app_bits_download_uri": "example.com/download",
-					"droplet_upload_uri": "example.com/upload",
-					"buildpacks": []
+				"lifecycle": {
+					"buildpack_lifecycle": {
+						"app_bits_download_uri": "example.com/download",
+						"droplet_upload_uri": "example.com/upload",
+						"buildpacks": []
+					}
 				},
 				"completion_callback": "example.com/call/me/maybe"
 			}`
@@ -81,13 +82,73 @@ var _ = Describe("StageHandler", func() {
 				Environment: []cf.EnvironmentVariable{
 					{Name: "HOWARD", Value: "the alien"},
 				},
-				LifecycleData: cf.LifecycleData{
-					AppBitsDownloadURI: "example.com/download",
-					DropletUploadURI:   "example.com/upload",
-					Buildpacks:         []cf.Buildpack{},
+				Lifecycle: cf.StagingLifecycle{
+					BuildpackLifecycle: &cf.StagingBuildpackLifecycle{
+						AppBitsDownloadURI: "example.com/download",
+						DropletUploadURI:   "example.com/upload",
+						Buildpacks:         []cf.Buildpack{},
+					},
 				},
 				CompletionCallback: "example.com/call/me/maybe",
 			}))
+		})
+
+		Context("using old lifecycle format", func() {
+			BeforeEach(func() {
+				method = "POST"
+				path = "/stage/guid_1234"
+				body = `{
+				"app_guid": "our-app-id",
+				"environment": [{"name": "HOWARD", "value": "the alien"}],
+				"lifecycle_data": {
+					"app_bits_download_uri": "example.com/download",
+					"droplet_upload_uri": "example.com/upload",
+					"buildpacks": []
+				},
+				"completion_callback": "example.com/call/me/maybe"
+			}`
+			})
+
+			It("should return 202 Accepted code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+			})
+
+			It("should stage using the staging client", func() {
+				Expect(stagingClient.StageCallCount()).To(Equal(1))
+				stagingGUID, stagingRequest := stagingClient.StageArgsForCall(0)
+
+				Expect(stagingGUID).To(Equal("guid_1234"))
+				Expect(stagingRequest).To(Equal(cf.StagingRequest{
+					AppGUID: "our-app-id",
+					Environment: []cf.EnvironmentVariable{
+						{Name: "HOWARD", Value: "the alien"},
+					},
+					LifecycleData: &cf.StagingBuildpackLifecycle{
+						AppBitsDownloadURI: "example.com/download",
+						DropletUploadURI:   "example.com/upload",
+						Buildpacks:         []cf.Buildpack{},
+					},
+					CompletionCallback: "example.com/call/me/maybe",
+				}))
+			})
+		})
+
+		Context("and the staging client fails", func() {
+			BeforeEach(func() {
+				stagingClient.StageReturns(errors.New("pow"))
+			})
+
+			It("should return a 500 Internal Server Error", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+			})
+
+			It("should return the error in the response body", func() {
+				bytes, _ := ioutil.ReadAll(response.Body)
+				stagingError := cf.StagingError{}
+				err := json.Unmarshal(bytes, &stagingError)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(stagingError.Message).To(Equal("pow"))
+			})
 		})
 
 		Context("and the body is invalid", func() {
@@ -109,24 +170,6 @@ var _ = Describe("StageHandler", func() {
 
 			It("should not desire a task", func() {
 				Expect(stagingClient.StageCallCount()).To(Equal(0))
-			})
-		})
-
-		Context("and the staging client fails", func() {
-			BeforeEach(func() {
-				stagingClient.StageReturns(errors.New("pow"))
-			})
-
-			It("should return a 500 Internal Server Error", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
-			})
-
-			It("should return the error in the response body", func() {
-				bytes, _ := ioutil.ReadAll(response.Body)
-				stagingError := cf.StagingError{}
-				err := json.Unmarshal(bytes, &stagingError)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(stagingError.Message).To(Equal("pow"))
 			})
 		})
 	})

@@ -56,6 +56,9 @@ func (s *Stager) createStagingTask(stagingGUID string, request cf.StagingRequest
 	s.Logger.Debug("create-staging-task", lager.Data{"app-id": request.AppGUID, "staging-guid": stagingGUID})
 
 	lifecycleData := request.LifecycleData
+	if lifecycleData == nil {
+		lifecycleData = request.Lifecycle.BuildpackLifecycle
+	}
 	buildpacksJSON, err := json.Marshal(lifecycleData.Buildpacks)
 	if err != nil {
 		return nil, err

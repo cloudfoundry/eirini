@@ -22,7 +22,11 @@ var _ = Describe("Staging", func() {
 	)
 
 	BeforeEach(func() {
-		body = "{}"
+		body = `{
+				"lifecycle": {
+					"buildpack_lifecycle": {}
+				}
+			}`
 	})
 
 	JustBeforeEach(func() {
@@ -58,7 +62,10 @@ var _ = Describe("Staging", func() {
 			body = `{
 				"memory_mb": 100,
 				"disk_mb": 200,
-				"cpu_weight": 50
+				"cpu_weight": 50,
+				"lifecycle": {
+					"buildpack_lifecycle": {}
+				}
 			}`
 		})
 
@@ -83,7 +90,10 @@ var _ = Describe("Staging", func() {
 				"org_name": "my-org",
 				"org_guid": "org-id",
 				"space_name": "my-space",
-				"space_guid": "space-id"
+				"space_guid": "space-id",
+				"lifecycle": {
+					"buildpack_lifecycle": {}
+				}
 			}`
 
 		})

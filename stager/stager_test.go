@@ -73,7 +73,7 @@ var _ = Describe("Stager", func() {
 					{Name: eirini.EnvCompletionCallback, Value: "should be ignored"},
 					{Name: eirini.EnvDropletUploadURL, Value: "should be ignored"},
 				},
-				LifecycleData: cf.LifecycleData{
+				LifecycleData: &cf.StagingBuildpackLifecycle{
 					AppBitsDownloadURI: "example.com/download",
 					DropletUploadURI:   "example.com/upload",
 					Buildpacks: []cf.Buildpack{
