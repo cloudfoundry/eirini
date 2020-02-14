@@ -27,13 +27,22 @@ require (
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
 	github.com/Azure/go-autorest/autorest v0.9.5 // indirect
+	github.com/containers/image v3.0.2+incompatible
+	github.com/containers/storage v1.16.0 // indirect
 	github.com/deckarep/golang-set v1.7.1
+	github.com/docker/distribution v2.7.1+incompatible
+	github.com/docker/docker v1.13.1 // indirect
+	github.com/docker/docker-credential-helpers v0.6.3 // indirect
+	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/go-metrics v0.0.1 // indirect
+	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-test/deep v1.0.4 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.4.1 // indirect
-	github.com/gophercloud/gophercloud v0.8.0 // indirect
+	github.com/gophercloud/gophercloud v0.7.0 // indirect
+	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/hashicorp/consul/api v1.3.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
@@ -46,6 +55,7 @@ require (
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.7.1
+	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v0.0.5
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect

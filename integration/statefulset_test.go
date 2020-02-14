@@ -3,6 +3,7 @@ package statefulsets_test
 import (
 	"fmt"
 
+	"code.cloudfoundry.org/eirini/integration/util"
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -154,7 +155,7 @@ var _ = Describe("StatefulSet Manager", func() {
 				odinLRP.PrivateRegistry = &opi.PrivateRegistry{
 					Server:   "index.docker.io/v1/",
 					Username: "eiriniuser",
-					Password: getEiriniUserPassword(),
+					Password: util.GetEiriniDockerHubPassword(),
 				}
 			})
 
@@ -242,7 +243,7 @@ var _ = Describe("StatefulSet Manager", func() {
 				odinLRP.PrivateRegistry = &opi.PrivateRegistry{
 					Server:   "index.docker.io/v1/",
 					Username: "eiriniuser",
-					Password: getEiriniUserPassword(),
+					Password: util.GetEiriniDockerHubPassword(),
 				}
 			})
 

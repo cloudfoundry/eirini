@@ -8,11 +8,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func New(bifrost eirini.Bifrost, stager eirini.Stager, lager lager.Logger) http.Handler {
+func New(bifrost eirini.Bifrost, buildpackStager, dockerStager eirini.Stager, lager lager.Logger) http.Handler {
 	handler := httprouter.New()
 
 	appHandler := NewAppHandler(bifrost, lager)
-	stageHandler := NewStageHandler(stager, lager)
+	stageHandler := NewStageHandler(buildpackStager, dockerStager, lager)
 
 	registerAppsEndpoints(handler, appHandler)
 	registerStageEndpoints(handler, stageHandler)

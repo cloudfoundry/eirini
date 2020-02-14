@@ -29,7 +29,7 @@ var _ = Describe("Handler", func() {
 		bifrost = new(eirinifakes.FakeBifrost)
 		stager = new(eirinifakes.FakeStager)
 		lager := lagertest.NewTestLogger("handler-test")
-		handlerClient = New(bifrost, stager, lager)
+		handlerClient = New(bifrost, stager, stager, lager)
 	})
 
 	JustBeforeEach(func() {

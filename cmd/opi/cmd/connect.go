@@ -13,6 +13,7 @@ import (
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/stager"
+	"code.cloudfoundry.org/eirini/stager/docker"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
@@ -42,13 +43,19 @@ func connect(cmd *cobra.Command, args []string) {
 
 	cfg := setConfigFromFile(path)
 
+	stagerLogger := lager.NewLogger("stager")
+	stagerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+
+	stagingCompleter := initStagingCompleter(cfg, stagerLogger)
+
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.ConfigPath)
-	stager := initStager(clientset, cfg)
+	buildpackStager := initBuildpackStager(clientset, cfg, stagingCompleter, stagerLogger)
+	dockerStager := initDockerStager(stagingCompleter, stagerLogger)
 	bifrost := initBifrost(clientset, cfg)
 
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	handler := handler.New(bifrost, stager, handlerLogger)
+	handler := handler.New(bifrost, buildpackStager, dockerStager, handlerLogger)
 
 	var server *http.Server
 	handlerLogger.Info("opi-connected")
@@ -69,20 +76,7 @@ func connect(cmd *cobra.Command, args []string) {
 		server.ListenAndServeTLS(cfg.Properties.ServerCertPath, cfg.Properties.ServerKeyPath))
 }
 
-func initStager(clientset kubernetes.Interface, cfg *eirini.Config) eirini.Stager {
-	taskDesirer := &k8s.TaskDesirer{
-		Namespace:       cfg.Properties.Namespace,
-		CertsSecretName: cfg.Properties.CCCertsSecretName,
-		JobClient:       clientset.BatchV1().Jobs(cfg.Properties.Namespace),
-	}
-
-	stagerCfg := eirini.StagerConfig{
-		EiriniAddress:   cfg.Properties.EiriniAddress,
-		DownloaderImage: cfg.Properties.DownloaderImage,
-		UploaderImage:   cfg.Properties.UploaderImage,
-		ExecutorImage:   cfg.Properties.ExecutorImage,
-	}
-
+func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) stager.StagingCompleter {
 	httpClient, err := util.CreateTLSHTTPClient(
 		[]util.CertPaths{
 			{
@@ -96,9 +90,32 @@ func initStager(clientset kubernetes.Interface, cfg *eirini.Config) eirini.Stage
 		panic(errors.Wrap(err, "failed to create stager http client"))
 	}
 
-	stagerLogger := lager.NewLogger("stager")
-	stagerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	return stager.New(taskDesirer, httpClient, stagerCfg, stagerLogger)
+	return stager.NewCallbackStagingCompleter(logger, httpClient)
+}
+
+func initBuildpackStager(clientset kubernetes.Interface, cfg *eirini.Config, stagingCompleter stager.StagingCompleter, logger lager.Logger) eirini.Stager {
+	taskDesirer := &k8s.TaskDesirer{
+		Namespace:       cfg.Properties.Namespace,
+		CertsSecretName: cfg.Properties.CCCertsSecretName,
+		JobClient:       clientset.BatchV1().Jobs(cfg.Properties.Namespace),
+	}
+
+	stagerCfg := eirini.StagerConfig{
+		EiriniAddress:   cfg.Properties.EiriniAddress,
+		DownloaderImage: cfg.Properties.DownloaderImage,
+		UploaderImage:   cfg.Properties.UploaderImage,
+		ExecutorImage:   cfg.Properties.ExecutorImage,
+	}
+
+	return stager.New(taskDesirer, stagingCompleter, stagerCfg, logger)
+}
+
+func initDockerStager(stagingCompleter stager.StagingCompleter, logger lager.Logger) eirini.Stager {
+	return docker.Stager{
+		Logger:               logger,
+		ImageMetadataFetcher: docker.Fetch,
+		StagingCompleter:     stagingCompleter,
+	}
 }
 
 func initBifrost(clientset kubernetes.Interface, cfg *eirini.Config) eirini.Bifrost {

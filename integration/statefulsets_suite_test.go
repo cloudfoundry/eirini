@@ -194,14 +194,6 @@ func podReady(pod corev1.Pod) bool {
 	return false
 }
 
-func getEiriniUserPassword() string {
-	password := os.Getenv("EIRINIUSER_PASSWORD")
-	if password == "" {
-		Skip("eiriniuser password not provided. Please expoert EIRINIUSER_PASSWORD")
-	}
-	return password
-}
-
 func createLRP(name string) *opi.LRP {
 	guid := util.RandomString()
 	routes, err := json.Marshal([]cf.Route{{Hostname: "foo.example.com", Port: 8080}})

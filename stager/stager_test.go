@@ -2,8 +2,6 @@ package stager_test
 
 import (
 	"errors"
-	"fmt"
-	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
@@ -11,20 +9,20 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/opi/opifakes"
 	. "code.cloudfoundry.org/eirini/stager"
+	"code.cloudfoundry.org/eirini/stager/stagerfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/ghttp"
 )
 
 var _ = Describe("Stager", func() {
 
 	var (
-		stager      eirini.Stager
-		taskDesirer *opifakes.FakeTaskDesirer
-		err         error
+		stager           eirini.Stager
+		taskDesirer      *opifakes.FakeTaskDesirer
+		stagingCompleter *stagerfakes.FakeStagingCompleter
+		err              error
 	)
-	const retries = 5
 
 	BeforeEach(func() {
 		taskDesirer = new(opifakes.FakeTaskDesirer)
@@ -37,13 +35,13 @@ var _ = Describe("Stager", func() {
 			ExecutorImage:   "eirini/recipe-runner:tagged",
 		}
 
+		stagingCompleter = new(stagerfakes.FakeStagingCompleter)
+
 		stager = &Stager{
-			Desirer:    taskDesirer,
-			Config:     config,
-			Logger:     logger,
-			HTTPClient: &http.Client{},
-			Retries:    retries,
-			Delay:      0,
+			Desirer:          taskDesirer,
+			StagingCompleter: stagingCompleter,
+			Config:           config,
+			Logger:           logger,
 		}
 	})
 
@@ -164,14 +162,11 @@ var _ = Describe("Stager", func() {
 	Context("When completing staging", func() {
 
 		var (
-			server   *ghttp.Server
-			task     *models.TaskCallbackResponse
-			handlers []http.HandlerFunc
+			task *models.TaskCallbackResponse
 		)
 
 		BeforeEach(func() {
-			server = ghttp.NewServer()
-			annotation := fmt.Sprintf(`{"completion_callback": "%s/call/me/maybe"}`, server.URL())
+			annotation := `{"completion_callback": "some-cc-endpoint.io/call/me/maybe"}`
 
 			task = &models.TaskCallbackResponse{
 				TaskGuid:      "our-task-guid",
@@ -181,33 +176,19 @@ var _ = Describe("Stager", func() {
 				Annotation:    annotation,
 				CreatedAt:     123456123,
 			}
-
-			handlers = []http.HandlerFunc{
-				ghttp.VerifyJSON(`{
-					"result": {
-						"very": "good"
-					}
-				}`),
-			}
 		})
 
 		JustBeforeEach(func() {
-			server.RouteToHandler("POST", "/call/me/maybe",
-				ghttp.CombineHandlers(handlers...),
-			)
 			err = stager.CompleteStaging(task)
-		})
-
-		AfterEach(func() {
-			server.Close()
 		})
 
 		It("should not return an error", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should post the response", func() {
-			Expect(server.ReceivedRequests()).To(HaveLen(1))
+		It("should complete staging", func() {
+			Expect(stagingCompleter.CompleteStagingCallCount()).To(Equal(1))
+			Expect(stagingCompleter.CompleteStagingArgsForCall(0)).To(Equal(task))
 		})
 
 		It("should delete the task", func() {
@@ -217,62 +198,13 @@ var _ = Describe("Stager", func() {
 			Expect(taskName).To(Equal(task.TaskGuid))
 		})
 
-		Context("and the staging failed", func() {
+		Context("and the staging completer fails", func() {
 			BeforeEach(func() {
-				task.Failed = true
-				task.FailureReason = "u broke my boy"
-				task.Result = ""
-
-				handlers = []http.HandlerFunc{
-					ghttp.VerifyJSON(`{
-						"error": {
-							"id": "StagingError",
-							"message": "u broke my boy"
-						}
-					}`),
-				}
-			})
-
-			It("should not return an error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should post the response", func() {
-				Expect(server.ReceivedRequests()).To(HaveLen(1))
-			})
-
-			It("should delete the task", func() {
-				Expect(taskDesirer.DeleteCallCount()).To(Equal(1))
-
-				taskName := taskDesirer.DeleteArgsForCall(0)
-				Expect(taskName).To(Equal(task.TaskGuid))
-			})
-		})
-
-		Context("and the staging result is not a valid json", func() {
-			BeforeEach(func() {
-				task.Result = "{not valid json"
-			})
-
-			It("should delete the task", func() {
-				Expect(taskDesirer.DeleteCallCount()).To(Equal(1))
-
-				taskName := taskDesirer.DeleteArgsForCall(0)
-				Expect(taskName).To(Equal(task.TaskGuid))
+				stagingCompleter.CompleteStagingReturns(errors.New("complete boom"))
 			})
 
 			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should not post the response", func() {
-				Expect(server.ReceivedRequests()).To(HaveLen(0))
-			})
-		})
-
-		Context("and the annotation is not a valid json", func() {
-			BeforeEach(func() {
-				task.Annotation = "{ !(valid json)"
+				Expect(err).To(MatchError("complete boom"))
 			})
 
 			It("should delete the task", func() {
@@ -281,38 +213,16 @@ var _ = Describe("Stager", func() {
 				taskName := taskDesirer.DeleteArgsForCall(0)
 				Expect(taskName).To(Equal(task.TaskGuid))
 			})
-
-			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should not post the response", func() {
-				Expect(server.ReceivedRequests()).To(HaveLen(0))
-			})
 		})
 
-		Context("and the callback response is an error", func() {
+		Context("and the task deletion fails", func() {
 			BeforeEach(func() {
-				handlers = []http.HandlerFunc{
-					ghttp.RespondWith(http.StatusInternalServerError, nil),
-				}
-			})
-
-			It("should delete the task", func() {
-				Expect(taskDesirer.DeleteCallCount()).To(Equal(1))
-
-				taskName := taskDesirer.DeleteArgsForCall(0)
-				Expect(taskName).To(Equal(task.TaskGuid))
+				taskDesirer.DeleteReturns(errors.New("delete boom"))
 			})
 
 			It("should return an error", func() {
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should retry configured amount of times", func() {
-				Expect(server.ReceivedRequests()).To(HaveLen(retries))
+				Expect(err).To(MatchError("delete boom"))
 			})
 		})
-
 	})
 })

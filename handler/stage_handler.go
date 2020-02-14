@@ -12,16 +12,18 @@ import (
 )
 
 type Stage struct {
-	stager eirini.Stager
-	logger lager.Logger
+	buildpackStager eirini.Stager
+	dockerStager    eirini.Stager
+	logger          lager.Logger
 }
 
-func NewStageHandler(stager eirini.Stager, logger lager.Logger) *Stage {
+func NewStageHandler(buildpackStager, dockerStager eirini.Stager, logger lager.Logger) *Stage {
 	logger = logger.Session("staging-handler")
 
 	return &Stage{
-		stager: stager,
-		logger: logger,
+		buildpackStager: buildpackStager,
+		dockerStager:    dockerStager,
+		logger:          logger,
 	}
 }
 
@@ -36,13 +38,20 @@ func (s *Stage) Stage(resp http.ResponseWriter, req *http.Request, ps httprouter
 		return
 	}
 
-	if err := s.stager.Stage(stagingGUID, stagingRequest); err != nil {
+	if err := s.stage(stagingGUID, stagingRequest); err != nil {
 		logger.Error("stage-app-failed", err)
 		writeErrorResponse(resp, http.StatusInternalServerError, err)
 		return
 	}
 
 	resp.WriteHeader(http.StatusAccepted)
+}
+
+func (s *Stage) stage(stagingGUID string, stagingRequest cf.StagingRequest) error {
+	if stagingRequest.Lifecycle.DockerLifecycle != nil {
+		return s.dockerStager.Stage(stagingGUID, stagingRequest)
+	}
+	return s.buildpackStager.Stage(stagingGUID, stagingRequest)
 }
 
 func (s *Stage) StagingComplete(res http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -57,7 +66,7 @@ func (s *Stage) StagingComplete(res http.ResponseWriter, req *http.Request, ps h
 		return
 	}
 
-	if err = s.stager.CompleteStaging(task); err != nil {
+	if err = s.buildpackStager.CompleteStaging(task); err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		logger.Error("staging-completion-failed", err)
 		return
