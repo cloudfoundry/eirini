@@ -5,7 +5,7 @@ RUN  CGO_ENABLED=0 GOOS=linux go build -mod vendor -trimpath -a -installsuffix c
 ARG GIT_SHA
 RUN if [ -z "$GIT_SHA" ]; then echo "GIT_SHA not set"; exit 1; else : ; fi
 
-FROM scratch
+FROM cloudfoundry/run:tiny
 COPY --from=builder /eirini/eirini /workspace/jobs/opi/bin/opi
 USER 1001
 ENTRYPOINT [ "/workspace/jobs/opi/bin/opi", \
