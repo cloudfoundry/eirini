@@ -143,6 +143,24 @@ var _ = Describe("Desiretask", func() {
 			Entry("LabelGUID", LabelGUID, "env-app-id"),
 		)
 
+		DescribeTable("the pod associated with the task should have the expected annotations", func(key, value string) {
+			Expect(job.Spec.Template.Annotations).To(HaveKeyWithValue(key, value))
+		},
+			Entry("AppName", AnnotationAppName, "my-app"),
+			Entry("AppGUID", AnnotationAppID, "my-app-guid"),
+			Entry("OrgName", AnnotationOrgName, "my-org"),
+			Entry("OrgName", AnnotationOrgGUID, "org-id"),
+			Entry("SpaceName", AnnotationSpaceName, "my-space"),
+			Entry("SpaceGUID", AnnotationSpaceGUID, "space-id"),
+		)
+
+		DescribeTable("the pod associated with the task should have the expected labels", func(key, value string) {
+			Expect(job.Spec.Template.Labels).To(HaveKeyWithValue(key, value))
+		},
+			Entry("AppGUID", LabelAppGUID, "my-app-guid"),
+			Entry("LabelGUID", LabelGUID, "env-app-id"),
+		)
+
 		It("should not have staging specific labels", func() {
 			Expect(job.Labels[LabelSourceType]).NotTo(Equal("STG"))
 			Expect(job.Labels).NotTo(HaveKey(LabelStagingGUID))

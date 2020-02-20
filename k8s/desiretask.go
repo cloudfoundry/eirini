@@ -216,13 +216,11 @@ func toJob(task *opi.Task) *batch.Job {
 
 	job.Name = task.Env[eirini.EnvStagingGUID]
 
-	labels := map[string]string{
+	job.Labels = map[string]string{
 		LabelAppGUID: task.AppGUID,
 		LabelGUID:    task.Env[eirini.EnvAppID],
 	}
 
-	job.Spec.Template.Labels = labels
-	job.Labels = labels
 	job.Annotations = map[string]string{
 		AnnotationAppName:   task.AppName,
 		AnnotationAppID:     task.AppGUID,
@@ -231,6 +229,9 @@ func toJob(task *opi.Task) *batch.Job {
 		AnnotationSpaceName: task.SpaceName,
 		AnnotationSpaceGUID: task.SpaceGUID,
 	}
+
+	job.Spec.Template.Labels = job.Labels
+	job.Spec.Template.Annotations = job.Annotations
 
 	return job
 }
