@@ -459,15 +459,6 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	allowPrivilegeEscalation := false
 	runAsNonRoot := true
 
-	annotations := map[string]string{}
-	for k, v := range lrp.UserDefinedAnnotations {
-		annotations[k] = v
-	}
-
-	annotations[AnnotationProcessGUID] = lrp.ProcessGUID()
-	annotations[AnnotationAppID] = lrp.AppGUID
-	annotations[corev1.SeccompPodAnnotationKey] = corev1.SeccompProfileRuntimeDefault
-
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
 			Name: m.statefulSetName(lrp),
@@ -476,9 +467,6 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 			PodManagementPolicy: "Parallel",
 			Replicas:            int32ptr(lrp.TargetInstances),
 			Template: corev1.PodTemplateSpec{
-				ObjectMeta: meta.ObjectMeta{
-					Annotations: annotations,
-				},
 				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken: &automountServiceAccountToken,
 					ImagePullSecrets:             m.calculateImagePullSecrets(lrp),
@@ -548,7 +536,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	statefulSet.Spec.Template.Labels = labels
 	statefulSet.Labels = labels
 
-	statefulSet.Annotations = map[string]string{
+	annotations := map[string]string{
 		AnnotationSpaceName:        lrp.SpaceName,
 		AnnotationSpaceGUID:        lrp.SpaceGUID,
 		AnnotationOriginalRequest:  lrp.LRP,
@@ -562,6 +550,14 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 		AnnotationOrgName:          lrp.OrgName,
 		AnnotationOrgGUID:          lrp.OrgGUID,
 	}
+
+	for k, v := range lrp.UserDefinedAnnotations {
+		annotations[k] = v
+	}
+
+	statefulSet.Annotations = annotations
+	statefulSet.Spec.Template.Annotations = annotations
+	statefulSet.Spec.Template.Annotations[corev1.SeccompPodAnnotationKey] = corev1.SeccompProfileRuntimeDefault
 
 	return statefulSet
 }

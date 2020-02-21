@@ -111,10 +111,28 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(readinessProbeCreator.CallCount()).To(Equal(1))
 		})
 
-		DescribeTable("Annotations",
+		DescribeTable("Statefulset Annotations",
 			func(annotationName, expectedValue string) {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 				Expect(statefulSet.Annotations).To(HaveKeyWithValue(annotationName, expectedValue))
+			},
+			Entry("ProcessGUID", AnnotationProcessGUID, "guid_1234-version_1234"),
+			Entry("AppUris", AnnotationAppUris, "my.example.route"),
+			Entry("AppName", AnnotationAppName, "Baldur"),
+			Entry("AppID", AnnotationAppID, "premium_app_guid_1234"),
+			Entry("Version", AnnotationVersion, "version_1234"),
+			Entry("OriginalRequest", AnnotationOriginalRequest, "original request"),
+			Entry("RegisteredRoutes", AnnotationRegisteredRoutes, "my.example.route"),
+			Entry("SpaceName", AnnotationSpaceName, "space-foo"),
+			Entry("SpaceGUID", AnnotationSpaceGUID, "space-guid"),
+			Entry("OrgName", AnnotationOrgName, "org-foo"),
+			Entry("OrgGUID", AnnotationOrgGUID, "org-guid"),
+		)
+
+		FDescribeTable("Statefulset Template Annotations",
+			func(annotationName, expectedValue string) {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(annotationName, expectedValue))
 			},
 			Entry("ProcessGUID", AnnotationProcessGUID, "guid_1234-version_1234"),
 			Entry("AppUris", AnnotationAppUris, "my.example.route"),
