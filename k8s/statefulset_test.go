@@ -129,7 +129,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			Entry("OrgGUID", AnnotationOrgGUID, "org-guid"),
 		)
 
-		FDescribeTable("Statefulset Template Annotations",
+		DescribeTable("Statefulset Template Annotations",
 			func(annotationName, expectedValue string) {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(annotationName, expectedValue))
