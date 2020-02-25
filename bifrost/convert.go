@@ -38,6 +38,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 	var env map[string]string
 	var image string
 	var privateRegistry *opi.PrivateRegistry
+	var runsAsRoot bool
 
 	port := request.Ports[0]
 	env = map[string]string{
@@ -60,6 +61,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		command = request.Lifecycle.DockerLifecycle.Command
 		registryUsername := request.Lifecycle.DockerLifecycle.RegistryUsername
 		registryPassword := request.Lifecycle.DockerLifecycle.RegistryPassword
+		runsAsRoot = true
 
 		if registryUsername != "" || registryPassword != "" {
 			privateRegistry = &opi.PrivateRegistry{
@@ -74,6 +76,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		lifecycle := request.Lifecycle.BuildpackLifecycle
 		image, command, buildpackEnv = c.buildpackProperties(lifecycle.DropletGUID, lifecycle.DropletHash, lifecycle.StartCommand)
 		env = mergeMaps(env, buildpackEnv)
+		runsAsRoot = false
 
 	default:
 		return opi.LRP{}, fmt.Errorf("missing lifecycle data")
@@ -123,6 +126,7 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		LRP:                    request.LRP,
 		UserDefinedAnnotations: request.UserDefinedAnnotations,
 		PrivateRegistry:        privateRegistry,
+		RunsAsRoot:             runsAsRoot,
 	}, nil
 }
 

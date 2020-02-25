@@ -88,6 +88,9 @@ type Properties struct {
 	DiskLimitMB   int64  `yaml:"disk_limit_mb"`
 
 	KubeConfig `yaml:",inline"`
+
+	ApplicationServiceAccount           string `yaml:"application_service_account"`
+	ApplicationPrivilegedServiceAccount string `yaml:"application_privileged_service_account"`
 }
 
 type EventReporterConfig struct {

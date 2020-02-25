@@ -64,18 +64,20 @@ var _ = Describe("Statefulset Desirer", func() {
 		hasher.HashReturns("random", nil)
 		logger = lagertest.NewTestLogger("handler-test")
 		statefulSetDesirer = &StatefulSetDesirer{
-			Pods:                   podClient,
-			Secrets:                secretsClient,
-			StatefulSets:           statefulSetClient,
-			PodDisruptionBudets:    pdbClient,
-			RegistrySecretName:     registrySecretName,
-			RootfsVersion:          rootfsVersion,
-			LivenessProbeCreator:   livenessProbeCreator.Spy,
-			ReadinessProbeCreator:  readinessProbeCreator.Spy,
-			Hasher:                 hasher,
-			Logger:                 logger,
-			StatefulSetToLRPMapper: mapper.Spy,
-			Events:                 eventLister,
+			Pods:                      podClient,
+			Secrets:                   secretsClient,
+			StatefulSets:              statefulSetClient,
+			PodDisruptionBudets:       pdbClient,
+			RegistrySecretName:        registrySecretName,
+			RootfsVersion:             rootfsVersion,
+			LivenessProbeCreator:      livenessProbeCreator.Spy,
+			ReadinessProbeCreator:     readinessProbeCreator.Spy,
+			Hasher:                    hasher,
+			Logger:                    logger,
+			StatefulSetToLRPMapper:    mapper.Spy,
+			Events:                    eventLister,
+			ApplicationServiceAccount: "eirini",
+			PrivilegedAppAccount:      "supeirini",
 		}
 	})
 
@@ -290,6 +292,27 @@ var _ = Describe("Statefulset Desirer", func() {
 					Values:   []string{"APP"},
 				},
 			))
+		})
+
+		It("should set proper service account", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Spec.Template.Spec.ServiceAccountName).To(Equal("eirini"))
+		})
+
+		Context("when application should run as root", func() {
+			BeforeEach(func() {
+				lrp.RunsAsRoot = true
+			})
+
+			It("does not set privileged context", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+				Expect(statefulSet.Spec.Template.Spec.SecurityContext).To(BeNil())
+			})
+
+			It("sets privileged service account", func() {
+				statefulSet := statefulSetClient.CreateArgsForCall(0)
+				Expect(statefulSet.Spec.Template.Spec.ServiceAccountName).To(Equal("supeirini"))
+			})
 		})
 
 		Context("When the app name contains unsupported characters", func() {

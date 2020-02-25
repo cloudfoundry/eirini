@@ -89,18 +89,20 @@ type SecretsClient interface {
 type LRPMapper func(s appsv1.StatefulSet) *opi.LRP
 
 type StatefulSetDesirer struct {
-	Pods                   PodListerDeleter
-	Secrets                SecretsClient
-	StatefulSets           StatefulSetClient
-	PodDisruptionBudets    PodDisruptionBudgetClient
-	Events                 EventLister
-	StatefulSetToLRPMapper LRPMapper
-	RegistrySecretName     string
-	RootfsVersion          string
-	LivenessProbeCreator   ProbeCreator
-	ReadinessProbeCreator  ProbeCreator
-	Hasher                 util.Hasher
-	Logger                 lager.Logger
+	Pods                      PodListerDeleter
+	Secrets                   SecretsClient
+	StatefulSets              StatefulSetClient
+	PodDisruptionBudets       PodDisruptionBudgetClient
+	Events                    EventLister
+	StatefulSetToLRPMapper    LRPMapper
+	RegistrySecretName        string
+	RootfsVersion             string
+	LivenessProbeCreator      ProbeCreator
+	ReadinessProbeCreator     ProbeCreator
+	Hasher                    util.Hasher
+	Logger                    lager.Logger
+	ApplicationServiceAccount string
+	PrivilegedAppAccount      string
 }
 
 var ErrNotFound = errors.New("statefulset not found")
@@ -108,20 +110,22 @@ var ErrNotFound = errors.New("statefulset not found")
 //go:generate counterfeiter . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion string, logger lager.Logger) opi.Desirer {
+func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion, appServiceAccount, privAppServiceAccount string, logger lager.Logger) opi.Desirer {
 	return &StatefulSetDesirer{
-		Pods:                   client.CoreV1().Pods(namespace),
-		Secrets:                client.CoreV1().Secrets(namespace),
-		StatefulSets:           client.AppsV1().StatefulSets(namespace),
-		PodDisruptionBudets:    client.PolicyV1beta1().PodDisruptionBudgets(namespace),
-		Events:                 client.CoreV1().Events(namespace),
-		RegistrySecretName:     registrySecretName,
-		StatefulSetToLRPMapper: StatefulSetToLRP,
-		RootfsVersion:          rootfsVersion,
-		LivenessProbeCreator:   CreateLivenessProbe,
-		ReadinessProbeCreator:  CreateReadinessProbe,
-		Hasher:                 util.TruncatedSHA256Hasher{},
-		Logger:                 logger,
+		Pods:                      client.CoreV1().Pods(namespace),
+		Secrets:                   client.CoreV1().Secrets(namespace),
+		StatefulSets:              client.AppsV1().StatefulSets(namespace),
+		PodDisruptionBudets:       client.PolicyV1beta1().PodDisruptionBudgets(namespace),
+		Events:                    client.CoreV1().Events(namespace),
+		RegistrySecretName:        registrySecretName,
+		StatefulSetToLRPMapper:    StatefulSetToLRP,
+		RootfsVersion:             rootfsVersion,
+		LivenessProbeCreator:      CreateLivenessProbe,
+		ReadinessProbeCreator:     CreateReadinessProbe,
+		Hasher:                    util.TruncatedSHA256Hasher{},
+		Logger:                    logger,
+		ApplicationServiceAccount: appServiceAccount,
+		PrivilegedAppAccount:      privAppServiceAccount,
 	}
 }
 
@@ -457,7 +461,6 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
 	automountServiceAccountToken := false
 	allowPrivilegeEscalation := false
-	runAsNonRoot := true
 
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: meta.ObjectMeta{
@@ -496,11 +499,9 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 							VolumeMounts:   volumeMounts,
 						},
 					},
-					SecurityContext: &corev1.PodSecurityContext{
-						RunAsNonRoot: &runAsNonRoot,
-						RunAsUser:    int64ptr(VcapUID),
-					},
-					Volumes: volumes,
+					SecurityContext:    m.getGetSecurityContext(lrp),
+					ServiceAccountName: m.getAppServiceAccount(lrp),
+					Volumes:            volumes,
 				},
 			},
 		},
@@ -605,6 +606,25 @@ func (m *StatefulSetDesirer) labelSelector(lrp *opi.LRP) *metav1.LabelSelector {
 			LabelSourceType: appSourceType,
 		},
 	}
+}
+
+func (m *StatefulSetDesirer) getGetSecurityContext(lrp *opi.LRP) *corev1.PodSecurityContext {
+	if lrp.RunsAsRoot {
+		return nil
+	}
+	runAsNonRoot := true
+	return &corev1.PodSecurityContext{
+		RunAsNonRoot: &runAsNonRoot,
+		RunAsUser:    int64ptr(VcapUID),
+	}
+}
+
+func (m *StatefulSetDesirer) getAppServiceAccount(lrp *opi.LRP) string {
+	if lrp.RunsAsRoot {
+		return m.PrivilegedAppAccount
+	}
+
+	return m.ApplicationServiceAccount
 }
 
 func labelSelectorString(id opi.LRPIdentifier) string {

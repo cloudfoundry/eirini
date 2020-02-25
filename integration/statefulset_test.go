@@ -44,6 +44,8 @@ var _ = Describe("StatefulSet Manager", func() {
 			namespace,
 			"registry-secret",
 			"rootfsversion",
+			"default",
+			"default",
 			logger,
 		)
 	})
@@ -69,6 +71,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		It("should create all associated pods", func() {
 			var podNames []string
+
 			Eventually(func() []string {
 				podNames = podNamesFromPods(listPods(odinLRP.LRPIdentifier))
 				return podNames
@@ -78,10 +81,13 @@ var _ = Describe("StatefulSet Manager", func() {
 				podIndex := i
 				Expect(podNames[podIndex]).To(ContainSubstring(odinLRP.GUID))
 
-				Eventually(func() corev1.PodPhase {
+				Eventually(func() string {
 					return getPodPhase(podIndex, odinLRP.LRPIdentifier)
-				}, timeout).Should(Equal(corev1.PodRunning))
+				}, timeout).Should(Equal("Ready"))
 			}
+
+			statefulset := getStatefulSet(odinLRP)
+			Expect(statefulset.Status.ReadyReplicas).To(Equal(statefulset.Status.Replicas))
 		})
 
 		It("should create a pod disruption budget for the lrp", func() {
@@ -95,6 +101,7 @@ var _ = Describe("StatefulSet Manager", func() {
 			BeforeEach(func() {
 				odinLRP.TargetInstances = 1
 			})
+
 			It("should not create a pod disruption budget for the lrp", func() {
 				statefulset := getStatefulSet(odinLRP)
 				_, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
@@ -152,6 +159,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		Context("When private docker registry credentials are provided", func() {
 			BeforeEach(func() {
 				odinLRP.Image = "eiriniuser/notdora:latest"
+				odinLRP.Command = nil
 				odinLRP.PrivateRegistry = &opi.PrivateRegistry{
 					Server:   "index.docker.io/v1/",
 					Username: "eiriniuser",
@@ -173,9 +181,9 @@ var _ = Describe("StatefulSet Manager", func() {
 
 				for i := 0; i < odinLRP.TargetInstances; i++ {
 					podIndex := i
-					Eventually(func() corev1.PodPhase {
+					Eventually(func() string {
 						return getPodPhase(podIndex, odinLRP.LRPIdentifier)
-					}, timeout).Should(Equal(corev1.PodRunning))
+					}, timeout).Should(Equal("Ready"))
 				}
 			})
 		})
@@ -184,6 +192,35 @@ var _ = Describe("StatefulSet Manager", func() {
 			It("should error", func() {
 				err := desirer.Desire(odinLRP)
 				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("When using a docker image that needs root access", func() {
+			BeforeEach(func() {
+				odinLRP.Image = "eirini/nginx-integration"
+				odinLRP.Command = nil
+				odinLRP.RunsAsRoot = true
+				odinLRP.Health.Type = "http"
+				odinLRP.Health.Port = 8080
+			})
+
+			It("should start all the pods", func() {
+				var podNames []string
+
+				Eventually(func() []string {
+					podNames = podNamesFromPods(listPods(odinLRP.LRPIdentifier))
+					return podNames
+				}, timeout).Should(HaveLen(odinLRP.TargetInstances))
+
+				for i := 0; i < odinLRP.TargetInstances; i++ {
+					podIndex := i
+					Eventually(func() string {
+						return getPodPhase(podIndex, odinLRP.LRPIdentifier)
+					}, timeout).Should(Equal("Ready"))
+				}
+				statefulset := getStatefulSet(odinLRP)
+
+				Expect(statefulset.Status.ReadyReplicas).To(Equal(statefulset.Status.Replicas))
 			})
 		})
 	})
@@ -381,9 +418,27 @@ func int32ptr(i int) *int32 {
 	return &i32
 }
 
-func getPodPhase(index int, id opi.LRPIdentifier) corev1.PodPhase {
-	pods := listPods(id)
-	return pods[index].Status.Phase
+func getPodPhase(index int, id opi.LRPIdentifier) string {
+	pod := listPods(id)[index]
+	status := pod.Status
+	if status.Phase != corev1.PodRunning {
+		return fmt.Sprintf("Pod - %s", status.Phase)
+	}
+
+	if len(status.ContainerStatuses) == 0 {
+		return "Containers status unknown"
+	}
+
+	for _, containerStatus := range status.ContainerStatuses {
+		if containerStatus.State.Running == nil {
+			return fmt.Sprintf("Container %s - %v", containerStatus.Name, containerStatus.State)
+		}
+		if !containerStatus.Ready {
+			return fmt.Sprintf("Container %s is not Ready", containerStatus.Name)
+		}
+	}
+
+	return "Ready"
 }
 
 func privateRegistrySecretName(statefulsetName string) string {

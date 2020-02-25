@@ -29,6 +29,8 @@ var _ = Describe("RootfsPatcher", func() {
 			namespace,
 			"registry-credentials",
 			"old_rootfsversion",
+			"default",
+			"default",
 			logger,
 		)
 		odinLRP = createLRP("ödin")

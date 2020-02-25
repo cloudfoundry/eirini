@@ -229,6 +229,10 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(lrp.PrivateRegistry).To(BeNil())
 			})
 
+			It("assumes that the pod should run as root", func() {
+				Expect(lrp.RunsAsRoot).To(BeTrue())
+			})
+
 			verifyLRPConvertedSuccessfully()
 
 			Context("when the image lives in a private registry", func() {
@@ -304,6 +308,10 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				Expect(lrp.Env).To(HaveKeyWithValue("USER", "vcap"))
 				Expect(lrp.Env).To(HaveKeyWithValue("TMPDIR", "/home/vcap/tmp"))
 				Expect(lrp.Env).To(HaveKeyWithValue("START_COMMAND", "start me"))
+			})
+
+			It("assumes that the pod should not run as root", func() {
+				Expect(lrp.RunsAsRoot).To(BeFalse())
 			})
 
 			verifyLRPConvertedSuccessfully()
