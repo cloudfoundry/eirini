@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
@@ -9,6 +10,7 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
 	"github.com/julienschmidt/httprouter"
+	"github.com/pkg/errors"
 )
 
 type Stage struct {
@@ -39,8 +41,9 @@ func (s *Stage) Stage(resp http.ResponseWriter, req *http.Request, ps httprouter
 	}
 
 	if err := s.stage(stagingGUID, stagingRequest); err != nil {
-		logger.Error("stage-app-failed", err)
-		writeErrorResponse(resp, http.StatusInternalServerError, err)
+		reason := fmt.Sprintf("staging task with guid %s failed to start", stagingGUID)
+		logger.Error("staging-failed", errors.Wrap(err, reason))
+		writeErrorResponse(resp, http.StatusInternalServerError, errors.New(reason))
 		return
 	}
 

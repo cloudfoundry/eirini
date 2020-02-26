@@ -4,7 +4,6 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,13 +47,13 @@ func (d *TaskDesirer) Desire(task *opi.Task) error {
 	job.Spec.Template.Spec.Containers = containers
 
 	_, err := d.JobClient.Create(job)
-	return errors.Wrap(err, "job already exists")
+	return err
 }
 
 func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 	job := d.toStagingJob(task)
 	_, err := d.JobClient.Create(job)
-	return errors.Wrap(err, "job already exists")
+	return err
 }
 
 func (d *TaskDesirer) Delete(name string) error {
@@ -62,7 +61,7 @@ func (d *TaskDesirer) Delete(name string) error {
 	err := d.JobClient.Delete(name, &meta_v1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
-	return errors.Wrap(err, "job does not exist")
+	return err
 }
 
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {

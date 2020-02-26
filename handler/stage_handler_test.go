@@ -15,7 +15,6 @@ import (
 	"code.cloudfoundry.org/eirini/eirinifakes"
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 )
 
@@ -23,7 +22,7 @@ var _ = Describe("StageHandler", func() {
 
 	var (
 		ts     *httptest.Server
-		logger lager.Logger
+		logger *lagertest.TestLogger
 
 		buildpackStagingClient *eirinifakes.FakeStager
 		dockerStagingClient    *eirinifakes.FakeStager
@@ -181,19 +180,25 @@ var _ = Describe("StageHandler", func() {
 
 		Context("and the staging client fails", func() {
 			BeforeEach(func() {
-				buildpackStagingClient.StageReturns(errors.New("pow"))
+				buildpackStagingClient.StageReturns(errors.New("underlying-err"))
 			})
 
 			It("should return a 500 Internal Server Error", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
 			})
 
-			It("should return the error in the response body", func() {
+			It("should return a high level error in the response body", func() {
 				bytes, _ := ioutil.ReadAll(response.Body)
 				stagingError := cf.StagingError{}
 				err := json.Unmarshal(bytes, &stagingError)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(stagingError.Message).To(Equal("pow"))
+				Expect(stagingError.Message).To(Equal("staging task with guid guid_1234 failed to start"))
+			})
+
+			It("should log the underlying error", func() {
+				Expect(logger.Logs()).NotTo(BeEmpty())
+				Expect(logger.Logs()[0].Data).To(HaveKeyWithValue("error",
+					"staging task with guid guid_1234 failed to start: underlying-err"))
 			})
 		})
 
