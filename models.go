@@ -102,6 +102,14 @@ type MetricsCollectorConfig struct {
 	KubeConfig `yaml:",inline"`
 }
 
+type StagingReporterConfig struct {
+	EiriniCertPath string `yaml:"eirini_cert_path"`
+	EiriniKeyPath  string `yaml:"eirini_key_path"`
+	CAPath         string `yaml:"ca_path"`
+
+	KubeConfig `yaml:",inline"`
+}
+
 //go:generate counterfeiter . Stager
 type Stager interface {
 	Stage(string, cf.StagingRequest) error
