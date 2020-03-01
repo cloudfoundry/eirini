@@ -26,7 +26,7 @@ require (
 	code.cloudfoundry.org/tlsconfig v0.0.0-20200131000646-bbe0f8da39b3
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
-	github.com/Azure/go-autorest/autorest v0.9.6 // indirect
+	github.com/Azure/go-autorest/autorest v0.10.0 // indirect
 	github.com/containers/image v3.0.2+incompatible
 	github.com/containers/storage v1.16.0 // indirect
 	github.com/deckarep/golang-set v1.7.1
@@ -39,6 +39,7 @@ require (
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-test/deep v1.0.4 // indirect
 	github.com/gogo/protobuf v1.3.1
+	github.com/golang/protobuf v1.3.4 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.4.1 // indirect
 	github.com/gophercloud/gophercloud v0.8.0 // indirect
@@ -61,14 +62,13 @@ require (
 	github.com/prometheus/procfs v0.0.10 // indirect
 	github.com/spf13/cobra v0.0.6
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
-	go.uber.org/atomic v1.5.1 // indirect
-	go.uber.org/multierr v1.4.0
+	go.uber.org/multierr v1.5.0
 	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d // indirect
-	golang.org/x/net v0.0.0-20200222125558-5a598a2470a0 // indirect
-	golang.org/x/sys v0.0.0-20200219091948-cb0a6d8edb6c // indirect
+	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
+	golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	golang.org/x/tools v0.0.0-20200221224223-e1da425f72fd // indirect
-	google.golang.org/genproto v0.0.0-20200218151345-dad8c97a84f5 // indirect
+	golang.org/x/tools v0.0.0-20200228224639-71482053b885 // indirect
+	google.golang.org/genproto v0.0.0-20200228133532-8c2c7df3a383 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
 	k8s.io/api v0.17.3
@@ -76,6 +76,6 @@ require (
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/klog v1.0.0
 	k8s.io/metrics v0.17.3
-	k8s.io/utils v0.0.0-20200124190032-861946025e34 // indirect
+	k8s.io/utils v0.0.0-20200229041039-0a110f9eb7ab // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
