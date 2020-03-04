@@ -80,6 +80,19 @@ func defaultEventReporterConfig() *eirini.EventReporterConfig {
 	return config
 }
 
+func defaultStagingReporterConfig() *eirini.StagingReporterConfig {
+	config := &eirini.StagingReporterConfig{
+		KubeConfig: eirini.KubeConfig{
+			ConfigPath: pathToTestFixture("kube.conf"),
+		},
+		EiriniCertPath: pathToTestFixture("cert"),
+		EiriniKeyPath:  pathToTestFixture("key"),
+		CAPath:         pathToTestFixture("cert"),
+	}
+
+	return config
+}
+
 func createRouteEmitterConfig(config *eirini.RouteEmitterConfig) (*os.File, error) {
 	bs, err := yaml.Marshal(config)
 	Expect(err).ToNot(HaveOccurred())
@@ -95,6 +108,13 @@ func createMetricsCollectorConfigFile(config *eirini.MetricsCollectorConfig) (*o
 }
 
 func createEventReporterConfigFile(config *eirini.EventReporterConfig) (*os.File, error) {
+	bs, err := yaml.Marshal(config)
+	Expect(err).ToNot(HaveOccurred())
+
+	return createConfigFile(bs)
+}
+
+func createStagingReporterConfigFile(config *eirini.StagingReporterConfig) (*os.File, error) {
 	bs, err := yaml.Marshal(config)
 	Expect(err).ToNot(HaveOccurred())
 
