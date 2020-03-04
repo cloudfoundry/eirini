@@ -62,7 +62,6 @@ func (c *StagingInformer) Start() {
 
 func (c *StagingInformer) updateFunc(_ interface{}, newObj interface{}) {
 	pod := newObj.(*v1.Pod)
-	fmt.Println("Pod name is:", pod.Name)
 	c.reporter.Report(pod)
 }
 
