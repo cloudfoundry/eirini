@@ -13,15 +13,15 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type StagingReporter interface {
+type Reporter interface {
 	Report(*v1.Pod)
 }
 
-type StagingInformer struct {
+type Informer struct {
 	clientset   kubernetes.Interface
 	syncPeriod  time.Duration
 	namespace   string
-	reporter    StagingReporter
+	reporter    Reporter
 	stopperChan chan struct{}
 	logger      lager.Logger
 }
@@ -30,11 +30,11 @@ func NewInformer(
 	client kubernetes.Interface,
 	syncPeriod time.Duration,
 	namespace string,
-	reporter StagingReporter,
+	reporter Reporter,
 	stopperChan chan struct{},
 	logger lager.Logger,
-) *StagingInformer {
-	return &StagingInformer{
+) *Informer {
+	return &Informer{
 		clientset:   client,
 		syncPeriod:  syncPeriod,
 		namespace:   namespace,
@@ -44,7 +44,7 @@ func NewInformer(
 	}
 }
 
-func (c *StagingInformer) Start() {
+func (c *Informer) Start() {
 	factory := informers.NewSharedInformerFactoryWithOptions(
 		c.clientset,
 		c.syncPeriod,
@@ -60,7 +60,7 @@ func (c *StagingInformer) Start() {
 	informer.Run(c.stopperChan)
 }
 
-func (c *StagingInformer) updateFunc(_ interface{}, newObj interface{}) {
+func (c *Informer) updateFunc(_ interface{}, newObj interface{}) {
 	pod := newObj.(*v1.Pod)
 	c.reporter.Report(pod)
 }

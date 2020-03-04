@@ -11,14 +11,13 @@ import (
 
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/staging"
-	. "code.cloudfoundry.org/eirini/k8s/informers/staging"
 	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("FailedStagingReporter", func() {
 
 	var (
-		reporter FailedStagingReporter
+		reporter staging.FailedStagingReporter
 		server   *ghttp.Server
 		logger   *lagertest.TestLogger
 	)

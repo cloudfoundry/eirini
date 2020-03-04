@@ -42,9 +42,11 @@ func (r FailedStagingReporter) Report(pod *v1.Pod) {
 	r.Logger.Error("staging pod failed", errors.New(reason))
 	response := r.createFailureResponse(reason, stagingGUID, completionCallback)
 	if response != nil {
-		r.sendResponse(eiriniAddr, response)
+		err := r.sendResponse(eiriniAddr, response)
+		if err != nil {
+			r.Logger.Error("cannot send failed staging response", err)
+		}
 	}
-	return
 }
 
 func getEnvVarValue(key string, vars []v1.EnvVar) (string, error) {
@@ -88,8 +90,7 @@ func (r FailedStagingReporter) createFailureResponse(failure string, stagingGUID
 func (r FailedStagingReporter) sendResponse(eiriniAddr string, response *models.TaskCallbackResponse) error {
 	responseJSON, err := json.Marshal(response)
 	if err != nil {
-		r.Logger.Error("cannot create failed staging response", err)
-		return nil
+		return errors.Wrap(err, "cannot marshal staging callback response")
 	}
 
 	uri := fmt.Sprintf("%s/stage/%s/completed", eiriniAddr, response.TaskGuid)

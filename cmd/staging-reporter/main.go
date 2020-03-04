@@ -40,7 +40,6 @@ func main() {
 }
 
 func launchStagingReporter(clientset kubernetes.Interface, ca, eiriniCert, eiriniKey, namespace string) {
-
 	httpClient, err := util.CreateTLSHTTPClient(
 		[]util.CertPaths{
 			{
