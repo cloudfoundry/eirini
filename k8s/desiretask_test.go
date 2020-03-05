@@ -100,10 +100,34 @@ var _ = Describe("Desiretask", func() {
 			CPUWeight: 2,
 			DiskMB:    3,
 		}
+
+		tlsStagingConfigs := []StagingConfigTLS{
+			{
+				SecretName: "cc-uploader-certs",
+				KeyPaths: []KeyPath{
+					{Key: "key-to-cc-uploader-cert", Path: "cc-uploader-cert"},
+					{Key: "key-to-cc-uploader-priv-key", Path: "cc-uploader-key"},
+				},
+			},
+			{
+				SecretName: "eirini-certs",
+				KeyPaths: []KeyPath{
+					{Key: "key-to-eirini-cert", Path: "eirini-cert"},
+					{Key: "key-to-eirini-priv-key", Path: "eirini-key"},
+				},
+			},
+			{
+				SecretName: "global-ca",
+				KeyPaths: []KeyPath{
+					{Key: "key-to-ca", Path: "ca"},
+				},
+			},
+		}
+
 		desirer = &TaskDesirer{
-			Namespace:       Namespace,
-			CertsSecretName: CertsSecretName,
-			JobClient:       fakeJobClient,
+			Namespace: Namespace,
+			TLSConfig: tlsStagingConfigs,
+			JobClient: fakeJobClient,
 		}
 	})
 
@@ -189,7 +213,57 @@ var _ = Describe("Desiretask", func() {
 				MatchFields(IgnoreExtras, Fields{
 					"Name": Equal(eirini.CertsVolumeName),
 					"VolumeSource": Equal(v1.VolumeSource{
-						Secret: &v1.SecretVolumeSource{SecretName: "secret-certs"},
+						Projected: &v1.ProjectedVolumeSource{
+							Sources: []v1.VolumeProjection{
+								{
+									Secret: &v1.SecretProjection{
+										LocalObjectReference: v1.LocalObjectReference{
+											Name: "cc-uploader-certs",
+										},
+										Items: []v1.KeyToPath{
+											{
+												Key:  "key-to-cc-uploader-cert",
+												Path: "cc-uploader-cert",
+											},
+											{
+												Key:  "key-to-cc-uploader-priv-key",
+												Path: "cc-uploader-key",
+											},
+										},
+									},
+								},
+								{
+									Secret: &v1.SecretProjection{
+										LocalObjectReference: v1.LocalObjectReference{
+											Name: "eirini-certs",
+										},
+										Items: []v1.KeyToPath{
+											{
+												Key:  "key-to-eirini-cert",
+												Path: "eirini-cert",
+											},
+											{
+												Key:  "key-to-eirini-priv-key",
+												Path: "eirini-key",
+											},
+										},
+									},
+								},
+								{
+									Secret: &v1.SecretProjection{
+										LocalObjectReference: v1.LocalObjectReference{
+											Name: "global-ca",
+										},
+										Items: []v1.KeyToPath{
+											{
+												Key:  "key-to-ca",
+												Path: "ca",
+											},
+										},
+									},
+								},
+							},
+						},
 					}),
 				}),
 				MatchFields(IgnoreExtras, Fields{

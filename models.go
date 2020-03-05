@@ -36,8 +36,14 @@ const (
 
 	AppMetricsEmissionIntervalInSecs = 15
 
-	CertsMountPath  = "/etc/config/certs"
-	CertsVolumeName = "certs-volume"
+	//Staging TLS:
+	CertsMountPath   = "/etc/config/certs"
+	CertsVolumeName  = "certs-volume"
+	CACertName       = "internal-ca-cert"
+	CCAPICertName    = "cc-server-crt"
+	CCAPIKeyName     = "cc-server-crt-key"
+	EiriniClientCert = "eirini-client-crt"
+	EiriniClientKey  = "eirini-client-crt-key"
 )
 
 type Config struct {
@@ -55,7 +61,17 @@ type Properties struct {
 	ServerKeyPath  string `yaml:"server_key_path"`
 	TLSPort        int    `yaml:"tls_port"`
 
-	CCCertsSecretName                string `yaml:"cc_certs_secret_name"`
+	CCUploaderSecretName string `yaml:"cc_uploader_secret_name"`
+	CCUploaderCertPath   string `yaml:"cc_uploader_cert_path"`
+	CCUploaderKeyPath    string `yaml:"cc_uploader_key_path"`
+
+	ClientCertsSecretName string `yaml:"client_certs_secret_name"`
+	ClientCertPath        string `yaml:"client_cert_path"`
+	ClientKeyPath         string `yaml:"client_key_path"`
+
+	CACertSecretName string `yaml:"ca_cert_secret_name"`
+	CACertPath       string `yaml:"ca_cert_path"`
+
 	RegistryAddress                  string `yaml:"registry_address"`
 	RegistrySecretName               string `yaml:"registry_secret_name"`
 	EiriniAddress                    string `yaml:"eirini_address"`

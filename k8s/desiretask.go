@@ -24,9 +24,19 @@ type JobClient interface {
 	Delete(name string, deleteOpts *meta_v1.DeleteOptions) error
 }
 
+type KeyPath struct {
+	Key  string
+	Path string
+}
+type StagingConfigTLS struct {
+	SecretName string
+	KeyPaths   []KeyPath
+}
+
 type TaskDesirer struct {
 	Namespace       string
 	CertsSecretName string
+	TLSConfig       []StagingConfigTLS
 	JobClient       JobClient
 	Logger          lager.Logger
 }
@@ -70,8 +80,8 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	secretsVolume := v1.Volume{
 		Name: eirini.CertsVolumeName,
 		VolumeSource: v1.VolumeSource{
-			Secret: &v1.SecretVolumeSource{
-				SecretName: d.CertsSecretName,
+			Projected: &v1.ProjectedVolumeSource{
+				Sources: d.getVolumeSources(),
 			},
 		},
 	}
@@ -140,6 +150,26 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	job.Spec.Template.Labels[LabelStagingGUID] = task.StagingGUID
 
 	return job
+}
+
+func (d *TaskDesirer) getVolumeSources() []v1.VolumeProjection {
+	volumeSources := []v1.VolumeProjection{}
+	for _, conf := range d.TLSConfig {
+		keyToPaths := []v1.KeyToPath{}
+		for _, keyPath := range conf.KeyPaths {
+			keyToPaths = append(keyToPaths, v1.KeyToPath{Key: keyPath.Key, Path: keyPath.Path})
+		}
+		volumeSources = append(volumeSources, v1.VolumeProjection{
+			Secret: &v1.SecretProjection{
+				LocalObjectReference: v1.LocalObjectReference{
+					Name: conf.SecretName,
+				},
+				Items: keyToPaths,
+			},
+		})
+	}
+
+	return volumeSources
 }
 
 func getEnvs(task *opi.Task) []v1.EnvVar {

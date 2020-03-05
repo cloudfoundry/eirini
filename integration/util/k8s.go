@@ -162,21 +162,30 @@ func MakeTestHTTPClient() (*http.Client, error) {
 	return httpClient, nil
 }
 
-func DefaultEiriniConfig(namespace, secretName string) *eirini.Config {
+func DefaultEiriniConfig(namespace string) *eirini.Config {
 	return &eirini.Config{
 		Properties: eirini.Properties{
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: os.Getenv("INTEGRATION_KUBECONFIG"),
 				Namespace:  namespace,
 			},
-			CCCAPath:          PathToTestFixture("cert"),
-			CCCertPath:        PathToTestFixture("cert"),
-			CCKeyPath:         PathToTestFixture("key"),
-			ServerCertPath:    PathToTestFixture("cert"),
-			ServerKeyPath:     PathToTestFixture("key"),
-			ClientCAPath:      PathToTestFixture("cert"),
-			TLSPort:           61000 + rand.Intn(1000) + ginkgoconfig.GinkgoConfig.ParallelNode,
-			CCCertsSecretName: secretName,
+			CCCAPath:             PathToTestFixture("cert"),
+			CCCertPath:           PathToTestFixture("cert"),
+			CCKeyPath:            PathToTestFixture("key"),
+			ServerCertPath:       PathToTestFixture("cert"),
+			ServerKeyPath:        PathToTestFixture("key"),
+			ClientCAPath:         PathToTestFixture("cert"),
+			TLSPort:              61000 + rand.Intn(1000) + ginkgoconfig.GinkgoConfig.ParallelNode,
+			CCUploaderSecretName: "cc-uploader-secret",
+			CCUploaderCertPath:   "path-to-crt",
+			CCUploaderKeyPath:    "path-to-key",
+
+			ClientCertsSecretName: "eirini-client-secret",
+			ClientKeyPath:         "path-to-key",
+			ClientCertPath:        "path-to-crt",
+
+			CACertSecretName: "global-ca-secret",
+			CACertPath:       "path-to-ca",
 
 			DownloaderImage: "docker.io/eirini/integration_test_staging",
 			ExecutorImage:   "docker.io/eirini/integration_test_staging",

@@ -64,7 +64,7 @@ var _ = BeforeEach(func() {
 	httpClient, err = util.MakeTestHTTPClient()
 	Expect(err).ToNot(HaveOccurred())
 
-	eiriniConfig := util.DefaultEiriniConfig(namespace, secretName)
+	eiriniConfig := util.DefaultEiriniConfig(namespace)
 	eiriniConfigFile, err = util.CreateOpiConfigFromFixtures(eiriniConfig)
 	Expect(err).ToNot(HaveOccurred())
 
