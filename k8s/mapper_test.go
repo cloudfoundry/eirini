@@ -20,6 +20,9 @@ var _ = Describe("Mapper", func() {
 		statefulset := appsv1.StatefulSet{
 			ObjectMeta: meta.ObjectMeta{
 				Name: "baldur",
+				Labels: map[string]string{
+					LabelGUID: "Bald-guid",
+				},
 				Annotations: map[string]string{
 					AnnotationProcessGUID: "Baldur-guid",
 					AnnotationLastUpdated: "last-updated-some-time-ago",
@@ -76,7 +79,7 @@ var _ = Describe("Mapper", func() {
 	})
 
 	It("should set the correct LRP identifier", func() {
-		Expect(lrp.LRPIdentifier.GUID).To(Equal("guid_1234"))
+		Expect(lrp.LRPIdentifier.GUID).To(Equal("Bald-guid"))
 		Expect(lrp.LRPIdentifier.Version).To(Equal("version_1234"))
 	})
 
