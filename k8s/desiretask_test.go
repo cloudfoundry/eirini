@@ -39,6 +39,7 @@ var _ = Describe("Desiretask", func() {
 		Expect(job.Spec.Template.Spec.AutomountServiceAccountToken).To(Equal(&automountServiceAccountToken))
 		Expect(job.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(Equal(true)))
 		Expect(job.Spec.Template.Spec.SecurityContext.RunAsUser).To(PointTo(Equal(int64(2000))))
+		Expect(job.Spec.Template.Spec.ServiceAccountName).To(Equal("staging-serivce-account"))
 	}
 
 	assertContainer := func(container v1.Container, name string) {
@@ -125,9 +126,10 @@ var _ = Describe("Desiretask", func() {
 		}
 
 		desirer = &TaskDesirer{
-			Namespace: Namespace,
-			TLSConfig: tlsStagingConfigs,
-			JobClient: fakeJobClient,
+			Namespace:          Namespace,
+			TLSConfig:          tlsStagingConfigs,
+			JobClient:          fakeJobClient,
+			ServiceAccountName: "staging-serivce-account",
 		}
 	})
 

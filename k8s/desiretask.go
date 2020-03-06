@@ -34,15 +34,16 @@ type StagingConfigTLS struct {
 }
 
 type TaskDesirer struct {
-	Namespace       string
-	CertsSecretName string
-	TLSConfig       []StagingConfigTLS
-	JobClient       JobClient
-	Logger          lager.Logger
+	Namespace          string
+	CertsSecretName    string
+	TLSConfig          []StagingConfigTLS
+	ServiceAccountName string
+	JobClient          JobClient
+	Logger             lager.Logger
 }
 
 func (d *TaskDesirer) Desire(task *opi.Task) error {
-	job := toJob(task)
+	job := d.toJob(task)
 
 	envs := getEnvs(task)
 	containers := []v1.Container{
@@ -75,7 +76,7 @@ func (d *TaskDesirer) Delete(name string) error {
 }
 
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
-	job := toJob(task.Task)
+	job := d.toJob(task.Task)
 
 	secretsVolume := v1.Volume{
 		Name: eirini.CertsVolumeName,
@@ -221,7 +222,7 @@ func getVolume(name, path string) (v1.Volume, v1.VolumeMount) {
 	return vol, mount
 }
 
-func toJob(task *opi.Task) *batch.Job {
+func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 	automountServiceAccountToken := false
 	runAsNonRoot := true
 
@@ -261,6 +262,7 @@ func toJob(task *opi.Task) *batch.Job {
 
 	job.Spec.Template.Labels = job.Labels
 	job.Spec.Template.Annotations = job.Annotations
+	job.Spec.Template.Spec.ServiceAccountName = d.ServiceAccountName
 
 	return job
 }

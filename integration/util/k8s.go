@@ -182,6 +182,9 @@ func DefaultEiriniConfig(namespace string) *eirini.Config {
 			DownloaderImage: "docker.io/eirini/integration_test_staging",
 			ExecutorImage:   "docker.io/eirini/integration_test_staging",
 			UploaderImage:   "docker.io/eirini/integration_test_staging",
+
+			ApplicationPrivilegedServiceAccount: "default",
+			ApplicationServiceAccount:           "default",
 		},
 	}
 }

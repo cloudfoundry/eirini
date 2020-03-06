@@ -118,9 +118,10 @@ func initBuildpackStager(clientset kubernetes.Interface, cfg *eirini.Config, sta
 	}
 
 	taskDesirer := &k8s.TaskDesirer{
-		Namespace: cfg.Properties.Namespace,
-		TLSConfig: tlsConfigs,
-		JobClient: clientset.BatchV1().Jobs(cfg.Properties.Namespace),
+		Namespace:          cfg.Properties.Namespace,
+		TLSConfig:          tlsConfigs,
+		ServiceAccountName: cfg.Properties.ApplicationServiceAccount,
+		JobClient:          clientset.BatchV1().Jobs(cfg.Properties.Namespace),
 	}
 
 	stagerCfg := eirini.StagerConfig{
