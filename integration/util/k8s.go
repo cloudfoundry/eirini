@@ -64,18 +64,10 @@ func CreatePodCreationPSP(namespace, pspName string, clientset kubernetes.Interf
 				Rule: policyv1.SELinuxStrategyRunAsAny,
 			},
 			SupplementalGroups: policyv1.SupplementalGroupsStrategyOptions{
-				Rule: policyv1.SupplementalGroupsStrategyMustRunAs,
-				Ranges: []policyv1.IDRange{{
-					Min: 1,
-					Max: 65535,
-				}},
+				Rule: policyv1.SupplementalGroupsStrategyRunAsAny,
 			},
 			FSGroup: policyv1.FSGroupStrategyOptions{
-				Rule: policyv1.FSGroupStrategyMustRunAs,
-				Ranges: []policyv1.IDRange{{
-					Min: 1,
-					Max: 65535,
-				}},
+				Rule: policyv1.FSGroupStrategyRunAsAny,
 			},
 		},
 	})

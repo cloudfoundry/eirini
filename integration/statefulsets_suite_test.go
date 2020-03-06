@@ -58,7 +58,7 @@ var _ = BeforeEach(func() {
 
 	createNamespace(namespace)
 
-	pspName = fmt.Sprintf("%s-psp", namespace)
+	pspName = fmt.Sprintf("aaaaaaaaaaaaaaaaa-%s-psp", namespace) // it should be first alphabetically
 	Expect(util.CreatePodCreationPSP(namespace, pspName, clientset)).To(Succeed())
 })
 
