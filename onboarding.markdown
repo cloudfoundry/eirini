@@ -15,7 +15,6 @@
   * [CI](https://github.com/orgs/cf-cube-ci/teams/cube/members)
   * [Eirininauts team](https://github.com/orgs/eirini-forks/teams/eirininauts/members)
 * Clone the [eirini-home](https://github.com/eirini-forks/eirini-home) repository and run `./setup` in order to install all eirini-related tools on your mac
-* Ask @smoser-ibm to create a [SL](https://control.softlayer.com) account for you
 * Setup [`pass` access](https://github.com/cloudfoundry/eirini-private-config/tree/master#sensitive-passwords)
 * Add yourself to the [pairing board](https://pairup-ng.mybluemix.net/#eirini)
 * Update [the onboarding document](https://github.com/cloudfoundry-incubator/eirini/blob/master/onboarding.markdown) if necessary
