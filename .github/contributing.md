@@ -3,7 +3,7 @@
 Thank you for taking the time to contribute to Eirini. You can find more information about the project at:
 1. [#eirini-dev](https://cloudfoundry.slack.com/messages/eirini-dev) slack channel.
 1. [PivotalTracker](https://www.pivotaltracker.com/n/projects/2172361) show our current backlog and what we have planned for the near future.
-1. [CI pipeline](https://ci.flintstone.cf.cloud.ibm.com/teams/eirini/pipelines/ci)
+1. [CI pipeline](https://jetson.eirini.cf-app.com/teams/main/pipelines/ci)
 1. [Project page](https://www.cloudfoundry.org/project-eirini/)
 
 # How to contribute
