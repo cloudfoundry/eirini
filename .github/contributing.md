@@ -8,7 +8,7 @@ Thank you for taking the time to contribute to Eirini. You can find more informa
 
 # How to contribute
 
-### Subbmitting a bug report
+### Submitting a bug report
 
 We use PivotalTracker to track bugs and a story is automatically created when you submit an issue on GitHub. To create the issue please use the following [template](ISSUE_TEMPLATE.md).
 
