@@ -22,20 +22,20 @@ Pull requests are the best way to propose changes to the codebase. When a Pull r
 1. Make sure you are up-to-date with the upstream `master` branch
 1. Create your feature branch
 1. Commit your changes on your feature branch
-1. [Run unit tests and static checks](#unit-tests--static-checks)
+1. [Run tests and static checks](#tests--static-checks)
 1. Push your feature branch to your fork
 1. Issue a Pull request
 
-# Unit tests & static checks
+# Tests & static checks
 
 Before you submit a Pull request, you must make sure that your contribution meets the following requirements:
 * Your change has been well covered by unit tests (if applicable)
-* All unit tests are passing
+* All tests are passing
 * All static code checks are passing. We enforce that by using [golangci-lint](https://github.com/golangci/golangci-lint#install)
 
 You can check all that by executing the following script:
 
-`$ ./scripts/check-everything.sh`
+`$ INTEGRATION_KUBECONFIG=<path-to-your-kubeconfig> ./scripts/check-everything.sh`
 
 Thanks,<br/>
 The Eirini team :heart:
