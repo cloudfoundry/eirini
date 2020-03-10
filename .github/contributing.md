@@ -23,6 +23,7 @@ Pull requests are the best way to propose changes to the codebase. When a Pull r
 1. Create your feature branch
 1. Commit your changes on your feature branch
 1. [Run tests and static checks](#tests--static-checks)
+1. [Deploy your patched version of Eirini in your cluster](#deploy-your-patched-version-of-eirini) if needed
 1. Push your feature branch to your fork
 1. Issue a Pull request
 
@@ -36,6 +37,30 @@ Before you submit a Pull request, you must make sure that your contribution meet
 You can check all that by executing the following script:
 
 `$ INTEGRATION_KUBECONFIG=<path-to-your-kubeconfig> ./scripts/check-everything.sh`
+
+# Deploy your patched version of Eirini
+
+1. Build image:
+
+  ```
+  docker build . -f "docker/opi/Dockerfile" \
+    --build-arg GIT_SHA=doesnt-matter-for-testing
+  ```
+
+1. Push the image
+1. Set the deployment image to the new one:
+
+  ```
+  kubectl set image -n $namespace deployment/eirini opi=<your image>
+  ```
+
+1. Wait for the deployment to finish:
+
+  ```
+  kubectl rollout status -n $namespace deployment eirini
+  ```
+
+1. PROFIT
 
 Thanks,<br/>
 The Eirini team :heart:
