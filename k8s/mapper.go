@@ -26,7 +26,7 @@ func StatefulSetToLRP(s appsv1.StatefulSet) *opi.LRP {
 
 	return &opi.LRP{
 		LRPIdentifier: opi.LRPIdentifier{
-			GUID:    s.Annotations[AnnotationAppID],
+			GUID:    s.Labels[LabelGUID],
 			Version: s.Annotations[AnnotationVersion],
 		},
 		AppName:          s.Annotations[AnnotationAppName],
