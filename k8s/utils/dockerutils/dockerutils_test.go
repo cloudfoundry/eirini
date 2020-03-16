@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
-	. "code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 )
 
 var _ = Describe("Docker Config", func() {
@@ -16,7 +15,7 @@ var _ = Describe("Docker Config", func() {
 	var config *dockerutils.Config
 
 	BeforeEach(func() {
-		config = NewDockerConfig("host", "user", "pass")
+		config = dockerutils.NewDockerConfig("host", "user", "pass")
 	})
 
 	It("Generates a valid docker config json", func() {

@@ -1,8 +1,6 @@
 package event_test
 
 import (
-	"fmt"
-
 	"code.cloudfoundry.org/eirini/events"
 	. "code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/k8s/informers/event/eventfakes"
@@ -86,7 +84,7 @@ var _ = Describe("Event", func() {
 
 			pod = &v1.Pod{
 				ObjectMeta: meta.ObjectMeta{
-					Name: fmt.Sprintf("i-am-test-pod"),
+					Name: "i-am-test-pod",
 				},
 			}
 			watcher.Add(pod)

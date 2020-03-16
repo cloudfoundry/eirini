@@ -14,11 +14,9 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/policy/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
@@ -61,7 +59,7 @@ const (
 
 //go:generate counterfeiter . PodListerDeleter
 type PodListerDeleter interface {
-	List(opts metav1.ListOptions) (*v1.PodList, error)
+	List(opts metav1.ListOptions) (*corev1.PodList, error)
 	Delete(name string, options *metav1.DeleteOptions) error
 }
 
@@ -81,7 +79,7 @@ type StatefulSetClient interface {
 
 //go:generate counterfeiter . SecretsClient
 type SecretsClient interface {
-	Create(*v1.Secret) (*v1.Secret, error)
+	Create(*corev1.Secret) (*corev1.Secret, error)
 	Delete(name string, options *metav1.DeleteOptions) error
 }
 
@@ -148,7 +146,7 @@ func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
 }
 
 func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
-	statefulsets, err := m.StatefulSets.List(meta.ListOptions{})
+	statefulsets, err := m.StatefulSets.List(metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}
@@ -182,7 +180,7 @@ func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 		return err
 	}
 
-	backgroundPropagation := meta.DeletePropagationBackground
+	backgroundPropagation := metav1.DeletePropagationBackground
 	deleteOptions := &metav1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	}
@@ -200,7 +198,7 @@ func (m *StatefulSetDesirer) deletePrivateRegistrySecret(statefulSet *appsv1.Sta
 }
 
 func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index uint) error {
-	statefulsets, err := m.StatefulSets.List(meta.ListOptions{
+	statefulsets, err := m.StatefulSets.List(metav1.ListOptions{
 		LabelSelector: labelSelectorString(identifier),
 	})
 	if err != nil {
@@ -261,7 +259,7 @@ func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 }
 
 func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error) {
-	statefulSet, err := m.StatefulSets.List(meta.ListOptions{
+	statefulSet, err := m.StatefulSets.List(metav1.ListOptions{
 		LabelSelector: labelSelectorString(identifier),
 	})
 	if err != nil {
@@ -279,7 +277,7 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 }
 
 func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
-	pods, err := m.Pods.List(meta.ListOptions{
+	pods, err := m.Pods.List(metav1.ListOptions{
 		LabelSelector: labelSelectorString(identifier),
 	})
 	if err != nil {
@@ -463,7 +461,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	allowPrivilegeEscalation := false
 
 	statefulSet := &appsv1.StatefulSet{
-		ObjectMeta: meta.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: m.statefulSetName(lrp),
 		},
 		Spec: appsv1.StatefulSetSpec{
@@ -509,13 +507,13 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 
 	statefulSet.Spec.Selector = m.labelSelector(lrp)
 
-	statefulSet.Spec.Template.Spec.Affinity = &v1.Affinity{
-		PodAntiAffinity: &v1.PodAntiAffinity{
-			PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
+	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
 				{
 					Weight: PodAffinityTermWeight,
-					PodAffinityTerm: v1.PodAffinityTerm{
-						TopologyKey: v1.LabelHostname,
+					PodAffinityTerm: corev1.PodAffinityTerm{
+						TopologyKey: corev1.LabelHostname,
 						LabelSelector: &metav1.LabelSelector{
 							MatchExpressions: toLabelSelectorRequirements(statefulSet.Spec.Selector),
 						},

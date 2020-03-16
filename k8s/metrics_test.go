@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	"code.cloudfoundry.org/eirini/k8s"
-	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -40,7 +39,7 @@ var _ = Describe("Metrics", func() {
 			podMetricsClient = new(k8sfakes.FakePodMetricsInterface)
 			diskClient = new(k8sfakes.FakeDiskAPI)
 			logger = lagertest.NewTestLogger("metrics-test")
-			collector = NewMetricsCollector(podMetricsClient, podClient, diskClient, logger)
+			collector = k8s.NewMetricsCollector(podMetricsClient, podClient, diskClient, logger)
 		})
 
 		When("all metrics are valid", func() {
@@ -283,7 +282,7 @@ var _ = Describe("ForwardMetricsToEmitter", func() {
 		collector := new(k8sfakes.FakeMetricsCollector)
 		collector.CollectReturns([]metrics.Message{{AppID: "metric"}}, nil)
 
-		Expect(ForwardMetricsToEmitter(collector, emitter)).To(Succeed())
+		Expect(k8s.ForwardMetricsToEmitter(collector, emitter)).To(Succeed())
 	})
 
 	It("should return error if collector returns error", func() {
@@ -291,7 +290,7 @@ var _ = Describe("ForwardMetricsToEmitter", func() {
 		collector := new(k8sfakes.FakeMetricsCollector)
 		collector.CollectReturns(nil, errors.New("oopsie"))
 
-		Expect(ForwardMetricsToEmitter(collector, emitter)).To(MatchError("oopsie"))
+		Expect(k8s.ForwardMetricsToEmitter(collector, emitter)).To(MatchError("oopsie"))
 	})
 })
 
@@ -314,7 +313,7 @@ func createPod(podName string) *v1.Pod {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
 			Labels: map[string]string{
-				LabelGUID: podName,
+				k8s.LabelGUID: podName,
 			},
 			UID: types.UID(podName + "-uid"),
 		},

@@ -2,7 +2,6 @@ package event
 
 import (
 	"code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/route"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 	set "github.com/deckarep/golang-set"
@@ -39,14 +38,14 @@ func (h StatefulSetDeleteHandler) Handle(deletedStatefulSet *appsv1.StatefulSet)
 	}
 }
 
-func (h StatefulSetDeleteHandler) createRoutesOnDelete(loggerSession lager.Logger, statefulset *appsv1.StatefulSet, grouped portGroup) []*route.Message {
+func (h StatefulSetDeleteHandler) createRoutesOnDelete(loggerSession lager.Logger, statefulset *appsv1.StatefulSet, grouped portGroup) []*eiriniroute.Message {
 	pods, err := getChildrenPods(h.Pods, statefulset)
 	if err != nil {
 		loggerSession.Error("failed-to-get-child-pods", err)
-		return []*route.Message{}
+		return []*eiriniroute.Message{}
 	}
 
-	resultRoutes := []*route.Message{}
+	resultRoutes := []*eiriniroute.Message{}
 	for _, pod := range pods {
 		resultRoutes = append(resultRoutes, createRouteMessages(loggerSession, pod, grouped)...)
 	}

@@ -24,7 +24,6 @@ import (
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -278,17 +277,17 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(weightedTerm.PodAffinityTerm.LabelSelector.MatchExpressions).To(ConsistOf(
 				metav1.LabelSelectorRequirement{
 					Key:      LabelGUID,
-					Operator: meta.LabelSelectorOpIn,
+					Operator: metav1.LabelSelectorOpIn,
 					Values:   []string{"guid_1234"},
 				},
 				metav1.LabelSelectorRequirement{
 					Key:      LabelVersion,
-					Operator: meta.LabelSelectorOpIn,
+					Operator: metav1.LabelSelectorOpIn,
 					Values:   []string{"version_1234"},
 				},
 				metav1.LabelSelectorRequirement{
 					Key:      LabelSourceType,
-					Operator: meta.LabelSelectorOpIn,
+					Operator: metav1.LabelSelectorOpIn,
 					Values:   []string{"APP"},
 				},
 			))
@@ -403,7 +402,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			st := &appsv1.StatefulSetList{
 				Items: []appsv1.StatefulSet{
 					{
-						ObjectMeta: meta.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "baldur",
 						},
 					},
@@ -448,7 +447,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			st := &appsv1.StatefulSetList{
 				Items: []appsv1.StatefulSet{
 					{
-						ObjectMeta: meta.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "baldur",
 							Annotations: map[string]string{
 								AnnotationProcessGUID:      "Baldur-guid",
@@ -602,17 +601,17 @@ var _ = Describe("Statefulset Desirer", func() {
 			st := &appsv1.StatefulSetList{
 				Items: []appsv1.StatefulSet{
 					{
-						ObjectMeta: meta.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "odin",
 						},
 					},
 					{
-						ObjectMeta: meta.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "thor",
 						},
 					},
 					{
-						ObjectMeta: meta.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "baldur",
 						},
 					},
@@ -651,7 +650,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			statefulSets = &appsv1.StatefulSetList{
 				Items: []appsv1.StatefulSet{
 					{
-						ObjectMeta: meta.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "baldur",
 						},
 					},
@@ -778,7 +777,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			st := &appsv1.StatefulSetList{
 				Items: []appsv1.StatefulSet{
 					{
-						ObjectMeta: meta.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "baldur-space-foo-random",
 						},
 					},
@@ -820,7 +819,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				st := &appsv1.StatefulSetList{
 					Items: []appsv1.StatefulSet{
 						{
-							ObjectMeta: meta.ObjectMeta{
+							ObjectMeta: metav1.ObjectMeta{
 								Name: "baldur",
 							},
 						},
@@ -840,9 +839,9 @@ var _ = Describe("Statefulset Desirer", func() {
 		It("should list the correct pods", func() {
 			pods := &corev1.PodList{
 				Items: []corev1.Pod{
-					{ObjectMeta: meta.ObjectMeta{Name: "whatever-0"}},
-					{ObjectMeta: meta.ObjectMeta{Name: "whatever-1"}},
-					{ObjectMeta: meta.ObjectMeta{Name: "whatever-2"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "whatever-0"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "whatever-1"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "whatever-2"}},
 				},
 			}
 			podClient.ListReturns(pods, nil)
@@ -858,9 +857,9 @@ var _ = Describe("Statefulset Desirer", func() {
 		It("should return the correct number of instances", func() {
 			pods := &corev1.PodList{
 				Items: []corev1.Pod{
-					{ObjectMeta: meta.ObjectMeta{Name: "whatever-0"}},
-					{ObjectMeta: meta.ObjectMeta{Name: "whatever-1"}},
-					{ObjectMeta: meta.ObjectMeta{Name: "whatever-2"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "whatever-0"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "whatever-1"}},
+					{ObjectMeta: metav1.ObjectMeta{Name: "whatever-2"}},
 				},
 			}
 			podClient.ListReturns(pods, nil)
@@ -871,11 +870,11 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		It("should return the correct instances information", func() {
-			m := meta.Unix(123, 0)
+			m := metav1.Unix(123, 0)
 			pods := &corev1.PodList{
 				Items: []corev1.Pod{
 					{
-						ObjectMeta: meta.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name: "whatever-1",
 						},
 						Status: corev1.PodStatus{
@@ -919,7 +918,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			It("should return a meaningful error", func() {
 				pods := &corev1.PodList{
 					Items: []corev1.Pod{
-						{ObjectMeta: meta.ObjectMeta{Name: "odin-0"}},
+						{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
 					},
 				}
 				podClient.ListReturns(pods, nil)
@@ -937,7 +936,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			It("should return a default value", func() {
 				pods := &corev1.PodList{
 					Items: []corev1.Pod{
-						{ObjectMeta: meta.ObjectMeta{Name: "odin-0"}},
+						{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
 					},
 				}
 				podClient.ListReturns(pods, nil)
@@ -954,7 +953,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			BeforeEach(func() {
 				pods := &corev1.PodList{
 					Items: []corev1.Pod{
-						{ObjectMeta: meta.ObjectMeta{Name: "odin-0"}},
+						{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
 					},
 				}
 				podClient.ListReturns(pods, nil)
@@ -1029,7 +1028,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 				pods := &corev1.PodList{
 					Items: []corev1.Pod{
-						{ObjectMeta: meta.ObjectMeta{Name: "odin-0"}},
+						{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
 					},
 				}
 				podClient.ListReturns(pods, nil)

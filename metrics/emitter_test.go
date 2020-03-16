@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"code.cloudfoundry.org/eirini/metrics"
-	. "code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/metrics/metricsfakes"
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 )
@@ -16,7 +15,7 @@ var _ = Describe("emitter", func() {
 
 	It("should forward source info to loggregator", func() {
 		fakeClient := new(metricsfakes.FakeLoggregatorClient)
-		emitter := NewLoggregatorEmitter(fakeClient)
+		emitter := metrics.NewLoggregatorEmitter(fakeClient)
 
 		envelope := newEnvelope()
 

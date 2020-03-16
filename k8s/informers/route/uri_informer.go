@@ -4,11 +4,9 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/route"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -32,7 +30,7 @@ type URIChangeInformer struct {
 	Namespace     string
 }
 
-func NewURIChangeInformer(client kubernetes.Interface, namespace string, updateEventHandler StatefulSetUpdateEventHandler, deleteEventHandler StatefulSetDeleteEventHandler) route.Informer {
+func NewURIChangeInformer(client kubernetes.Interface, namespace string, updateEventHandler StatefulSetUpdateEventHandler, deleteEventHandler StatefulSetDeleteEventHandler) eiriniroute.Informer {
 	return &URIChangeInformer{
 		Client:        client,
 		Namespace:     namespace,
@@ -89,10 +87,10 @@ func NewRouteMessage(pod *corev1.Pod, port uint32, routes eiriniroute.Routes) (*
 	return message, nil
 }
 
-func isReady(conditions []v1.PodCondition) bool {
+func isReady(conditions []corev1.PodCondition) bool {
 	for _, c := range conditions {
-		if c.Type == v1.PodReady {
-			return c.Status == v1.ConditionTrue
+		if c.Type == corev1.PodReady {
+			return c.Status == corev1.ConditionTrue
 		}
 	}
 	return false
