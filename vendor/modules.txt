@@ -101,7 +101,7 @@ github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 github.com/gogo/protobuf/sortkeys
 github.com/gogo/protobuf/types
-# github.com/golang/protobuf v1.3.4
+# github.com/golang/protobuf v1.3.5
 github.com/golang/protobuf/jsonpb
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
@@ -121,7 +121,7 @@ github.com/google/gofuzz
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
-# github.com/gophercloud/gophercloud v0.8.0
+# github.com/gophercloud/gophercloud v0.9.0
 github.com/gophercloud/gophercloud
 github.com/gophercloud/gophercloud/openstack
 github.com/gophercloud/gophercloud/openstack/identity/v2/tenants
@@ -221,7 +221,7 @@ github.com/opencontainers/image-spec/specs-go/v1
 github.com/opencontainers/runc/libcontainer/user
 # github.com/pkg/errors v0.9.1
 github.com/pkg/errors
-# github.com/prometheus/client_golang v1.5.0
+# github.com/prometheus/client_golang v1.5.1
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promhttp
@@ -245,7 +245,7 @@ github.com/spf13/pflag
 go.uber.org/atomic
 # go.uber.org/multierr v1.5.0
 go.uber.org/multierr
-# golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
+# golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/ed25519
@@ -312,9 +312,9 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20200309141739-5b75447e413d
+# google.golang.org/genproto v0.0.0-20200313141609-30c55424f95d
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.27.1
+# google.golang.org/grpc v1.28.0
 google.golang.org/grpc
 google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
@@ -336,8 +336,10 @@ google.golang.org/grpc/internal/binarylog
 google.golang.org/grpc/internal/buffer
 google.golang.org/grpc/internal/channelz
 google.golang.org/grpc/internal/envconfig
+google.golang.org/grpc/internal/grpclog
 google.golang.org/grpc/internal/grpcrand
 google.golang.org/grpc/internal/grpcsync
+google.golang.org/grpc/internal/grpcutil
 google.golang.org/grpc/internal/resolver/dns
 google.golang.org/grpc/internal/resolver/passthrough
 google.golang.org/grpc/internal/syscall
@@ -359,7 +361,7 @@ gopkg.in/inf.v0
 gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
-# k8s.io/api v0.17.3
+# k8s.io/api v0.17.4
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1
@@ -400,7 +402,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apimachinery v0.17.3
+# k8s.io/apimachinery v0.17.4
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
 k8s.io/apimachinery/pkg/api/resource
@@ -657,7 +659,7 @@ k8s.io/client-go/util/retry
 k8s.io/klog
 # k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 k8s.io/kube-openapi/pkg/util/proto
-# k8s.io/metrics v0.17.3
+# k8s.io/metrics v0.17.4
 k8s.io/metrics/pkg/apis/metrics
 k8s.io/metrics/pkg/apis/metrics/v1alpha1
 k8s.io/metrics/pkg/apis/metrics/v1beta1
