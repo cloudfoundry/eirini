@@ -1,23 +1,8 @@
 # Onboarding a new Team Member
 
 ## Checklist
-
-* Copy this section as tasks into a new chore
-* Get access to [cloudfoundry.slack.com](https://slack.cloudfoundry.org/)
-* Get access to the [tracker](https://www.pivotaltracker.com/n/projects/2172361) (ask the anchor)
-* [Add public SSH key to github.com](https://help.github.com/articles/connecting-to-github-with-ssh/) and verify
-* Ask the anchor to be invited to the retro
-* Ask the PM to be invited to the IPM
-* Ask the anchor to be [added to the eirini@cloudfoundry.org](https://groups.google.com/a/cloudfoundry.org/forum/#!managemembers/eirini/members) mailing list
-* Ask a team member to add you to the GCP Project
-* Ask the anchor to be added to the following teams:
-  * [CF Eirini team](https://github.com/orgs/cloudfoundry-incubator/teams/eirini/members)
-  * [CI](https://github.com/orgs/cf-cube-ci/teams/cube/members)
-  * [Eirininauts team](https://github.com/orgs/eirini-forks/teams/eirininauts/members)
-* Clone the [eirini-home](https://github.com/eirini-forks/eirini-home) repository and run `./setup` in order to install all eirini-related tools on your mac
-* Setup [`pass` access](https://github.com/cloudfoundry/eirini-private-config/tree/master#sensitive-passwords)
-* Add yourself to the [pairing board](https://pairup-ng.mybluemix.net/#eirini)
-* Update [the onboarding document](https://github.com/cloudfoundry-incubator/eirini/blob/master/onboarding.markdown) if necessary
+* Clone the [template chore](https://www.pivotaltracker.com/story/show/171856898) in Tracker and follow the task list
+* Update the template if necessary
 
 ## Project Overview
 
