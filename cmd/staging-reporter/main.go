@@ -28,14 +28,14 @@ func main() {
 	cfg, err := readConfigFile(opts.ConfigFile)
 	cmdcommons.ExitIfError(err)
 
-	clientset := cmdcommons.CreateKubeClient("")
+	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
 	launchStagingReporter(
 		clientset,
 		cfg.CAPath,
 		cfg.EiriniCertPath,
 		cfg.EiriniKeyPath,
-		"eirini",
+		cfg.Namespace,
 	)
 }
 

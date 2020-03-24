@@ -41,9 +41,20 @@ var _ = Describe("FailedStagingReporter", func() {
 		var (
 			thePod                               *v1.Pod
 			containerStatus, initContainerStatus v1.ContainerStatus
+			env                                  []v1.EnvVar
 		)
 
 		BeforeEach(func() {
+			env = []v1.EnvVar{
+				{
+					Name:  "COMPLETION_CALLBACK",
+					Value: "internal_cc_staging_endpoint.io/stage/build_completed",
+				},
+				{
+					Name:  "EIRINI_ADDRESS",
+					Value: server.URL(),
+				},
+			}
 			thePod = &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "not-feeling-well",
@@ -53,23 +64,12 @@ var _ = Describe("FailedStagingReporter", func() {
 					},
 				},
 				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{
-							Env: []v1.EnvVar{
-								{
-									Name:  "COMPLETION_CALLBACK",
-									Value: "internal_cc_staging_endpoint.io/stage/build_completed",
-								},
-								{
-									Name:  "EIRINI_ADDRESS",
-									Value: server.URL(),
-								},
-							},
-						},
-					},
+					Containers:     []v1.Container{{}},
 					InitContainers: []v1.Container{},
 				},
 			}
+			containerStatus = statusFailed()
+			initContainerStatus = statusOK()
 
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
@@ -86,6 +86,7 @@ var _ = Describe("FailedStagingReporter", func() {
 		})
 
 		JustBeforeEach(func() {
+			thePod.Spec.Containers[0].Env = env
 			thePod.Status = v1.PodStatus{
 				ContainerStatuses: []v1.ContainerStatus{
 					containerStatus,
@@ -99,10 +100,6 @@ var _ = Describe("FailedStagingReporter", func() {
 		})
 
 		Context("When a container is failing", func() {
-			BeforeEach(func() {
-				containerStatus = statusFailed()
-				initContainerStatus = statusOK()
-			})
 
 			It("should report the correct container failure reason to Eirini", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
@@ -147,6 +144,54 @@ var _ = Describe("FailedStagingReporter", func() {
 			})
 
 			It("should silently ignore happy containers", func() {
+				Expect(server.ReceivedRequests()).To(HaveLen(0))
+			})
+		})
+
+		Context("when the COMPLETION_CALLBACK env variable is missing", func() {
+			BeforeEach(func() {
+				env = []v1.EnvVar{
+					{
+						Name:  "EIRINI_ADDRESS",
+						Value: server.URL(),
+					},
+				}
+			})
+
+			It("logs the error", func() {
+				Expect(logger.Logs()).To(HaveLen(1))
+
+				logs := logger.Logs()
+				Expect(logs).To(HaveLen(1))
+				log := logs[0]
+				Expect(log.Message).To(Equal("staging-reporter-test.getting env variable 'COMPLETION_CALLBACK' failed"))
+			})
+
+			It("should not talk to Eirini", func() {
+				Expect(server.ReceivedRequests()).To(HaveLen(0))
+			})
+		})
+
+		Context("when the EIRINI_ADDRESS env variable is missing", func() {
+			BeforeEach(func() {
+				env = []v1.EnvVar{
+					{
+						Name:  "COMPLETION_CALLBACK",
+						Value: "internal_cc_staging_endpoint.io/stage/build_completed",
+					},
+				}
+			})
+
+			It("logs the error", func() {
+				Expect(logger.Logs()).To(HaveLen(1))
+
+				logs := logger.Logs()
+				Expect(logs).To(HaveLen(1))
+				log := logs[0]
+				Expect(log.Message).To(Equal("staging-reporter-test.getting env variable 'EIRINI_ADDRESS' failed"))
+			})
+
+			It("should not talk to Eirini", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(0))
 			})
 		})

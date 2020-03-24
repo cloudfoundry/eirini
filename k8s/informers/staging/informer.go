@@ -67,7 +67,7 @@ func (c *Informer) updateFunc(_ interface{}, newObj interface{}) {
 
 func tweakListOpts(opts *metav1.ListOptions) {
 	opts.LabelSelector = fmt.Sprintf(
-		"%s in (%s)",
+		"%s=%s",
 		k8s.LabelSourceType, "STG",
 	)
 }

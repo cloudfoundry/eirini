@@ -31,8 +31,17 @@ func (r FailedStagingReporter) Report(pod *v1.Pod) {
 	if status == nil {
 		return
 	}
-	completionCallback, _ := getEnvVarValue("COMPLETION_CALLBACK", pod.Spec.Containers[0].Env)
-	eiriniAddr, _ := getEnvVarValue("EIRINI_ADDRESS", pod.Spec.Containers[0].Env)
+
+	completionCallback, err := getEnvVarValue("COMPLETION_CALLBACK", pod.Spec.Containers[0].Env)
+	if err != nil {
+		r.Logger.Error("getting env variable 'COMPLETION_CALLBACK' failed", err)
+		return
+	}
+	eiriniAddr, err := getEnvVarValue("EIRINI_ADDRESS", pod.Spec.Containers[0].Env)
+	if err != nil {
+		r.Logger.Error("getting env variable 'EIRINI_ADDRESS' failed", err)
+		return
+	}
 
 	reason := fmt.Sprintf("Container '%s' in Pod '%s' failed: %s",
 		status.Name,
@@ -40,12 +49,15 @@ func (r FailedStagingReporter) Report(pod *v1.Pod) {
 		status.State.Waiting.Reason,
 	)
 	r.Logger.Error("staging pod failed", errors.New(reason))
-	response := r.createFailureResponse(reason, stagingGUID, completionCallback)
-	if response != nil {
-		err := r.sendResponse(eiriniAddr, response)
-		if err != nil {
-			r.Logger.Error("cannot send failed staging response", err)
-		}
+
+	response, err := r.createFailureResponse(reason, stagingGUID, completionCallback)
+	if err != nil {
+		r.Logger.Error("cannot send failed staging response", err)
+		return
+	}
+
+	if err := r.sendResponse(eiriniAddr, response); err != nil {
+		r.Logger.Error("cannot send failed staging response", err)
 	}
 }
 
@@ -68,15 +80,14 @@ func getFailedContainerStatusIfAny(statuses []v1.ContainerStatus) *v1.ContainerS
 	return nil
 }
 
-func (r FailedStagingReporter) createFailureResponse(failure string, stagingGUID, completionCallback string) *models.TaskCallbackResponse {
+func (r FailedStagingReporter) createFailureResponse(failure string, stagingGUID, completionCallback string) (*models.TaskCallbackResponse, error) {
 	annotation := cc_messages.StagingTaskAnnotation{
 		CompletionCallback: completionCallback,
 	}
 
 	annotationJSON, err := json.Marshal(annotation)
 	if err != nil {
-		r.Logger.Error("cannot create callback annotation", err)
-		return nil
+		return nil, errors.Wrap(err, "cannot create callback annotation")
 	}
 
 	return &models.TaskCallbackResponse{
@@ -84,7 +95,7 @@ func (r FailedStagingReporter) createFailureResponse(failure string, stagingGUID
 		Failed:        true,
 		FailureReason: failure,
 		Annotation:    string(annotationJSON),
-	}
+	}, nil
 }
 
 func (r FailedStagingReporter) sendResponse(eiriniAddr string, response *models.TaskCallbackResponse) error {
