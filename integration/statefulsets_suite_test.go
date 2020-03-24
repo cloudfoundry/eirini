@@ -3,8 +3,6 @@ package statefulsets_test
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
-	"os"
 	"testing"
 	"time"
 
@@ -17,19 +15,14 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	appsv1_types "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1_types "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
-	namespace      string
-	clientset      kubernetes.Interface
-	kubeConfigPath string
-	pspName        string
+	fixture util.Fixture
 )
 
 const (
@@ -37,36 +30,19 @@ const (
 )
 
 var _ = BeforeSuite(func() {
-	kubeConfigPath = os.Getenv("INTEGRATION_KUBECONFIG")
-	if kubeConfigPath == "" {
-		Fail("INTEGRATION_KUBECONFIG is not provided")
-	}
-	config, err := clientcmd.BuildConfigFromFlags("", os.Getenv("INTEGRATION_KUBECONFIG"))
-	Expect(err).ToNot(HaveOccurred())
-
-	clientset, err = kubernetes.NewForConfig(config)
-	Expect(err).ToNot(HaveOccurred())
+	var err error
+	fixture, err = util.NewFixture()
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = BeforeEach(func() {
-
-	namespace = fmt.Sprintf("opi-integration-test-%d", rand.Intn(100000000))
-
-	for namespaceExists(namespace) {
-		namespace = fmt.Sprintf("opi-integration-test-%d", rand.Intn(100000000))
-	}
-
-	createNamespace(namespace)
-
-	pspName = fmt.Sprintf("aaaaaaaaaaaaaaaaa-%s-psp", namespace) // it should be first alphabetically
-	Expect(util.CreatePodCreationPSP(namespace, pspName, clientset)).To(Succeed())
+	var err error
+	fixture, err = fixture.SetUp()
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterEach(func() {
-	err := clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{})
-	Expect(err).ToNot(HaveOccurred())
-	err = clientset.PolicyV1beta1().PodSecurityPolicies().Delete(pspName, &metav1.DeleteOptions{})
-	Expect(err).ToNot(HaveOccurred())
+	Expect(fixture.TearDown()).To(Succeed())
 })
 
 func TestIntegration(t *testing.T) {
@@ -74,21 +50,8 @@ func TestIntegration(t *testing.T) {
 	RunSpecs(t, "Integration Suite")
 }
 
-func namespaceExists(namespace string) bool {
-	_, err := clientset.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
-	return err == nil
-}
-
-func createNamespace(namespace string) {
-	namespaceSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-
-	if _, err := clientset.CoreV1().Namespaces().Create(namespaceSpec); err != nil {
-		panic(err)
-	}
-}
-
 func secrets() corev1_types.SecretInterface {
-	return clientset.CoreV1().Secrets(namespace)
+	return fixture.Clientset.CoreV1().Secrets(fixture.Namespace)
 }
 
 func getSecret(name string) (*corev1.Secret, error) {
@@ -96,7 +59,7 @@ func getSecret(name string) (*corev1.Secret, error) {
 }
 
 func statefulSets() appsv1_types.StatefulSetInterface {
-	return clientset.AppsV1().StatefulSets(namespace)
+	return fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace)
 }
 
 func getStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
@@ -114,7 +77,7 @@ func labelSelector(identifier opi.LRPIdentifier) string {
 }
 
 func podDisruptionBudgets() v1beta1.PodDisruptionBudgetInterface {
-	return clientset.PolicyV1beta1().PodDisruptionBudgets(namespace)
+	return fixture.Clientset.PolicyV1beta1().PodDisruptionBudgets(fixture.Namespace)
 }
 
 func cleanupStatefulSet(lrp *opi.LRP) {
@@ -145,7 +108,7 @@ func listStatefulSets(appName string) []appsv1.StatefulSet {
 }
 
 func listPodsByLabel(labelSelector string) []corev1.Pod {
-	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+	pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
 	Expect(err).NotTo(HaveOccurred())
 	return pods.Items
 }
@@ -171,7 +134,7 @@ func nodeNamesFromPods(pods []corev1.Pod) []string {
 }
 
 func getNodeCount() int {
-	nodeList, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodeList, err := fixture.Clientset.CoreV1().Nodes().List(metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred())
 	return len(nodeList.Items)
 }

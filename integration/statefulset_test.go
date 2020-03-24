@@ -40,8 +40,8 @@ var _ = Describe("StatefulSet Manager", func() {
 	JustBeforeEach(func() {
 		logger := lagertest.NewTestLogger("test")
 		desirer = NewStatefulSetDesirer(
-			clientset,
-			namespace,
+			fixture.Clientset,
+			fixture.Namespace,
 			"registry-secret",
 			"rootfsversion",
 			"default",

@@ -25,8 +25,8 @@ var _ = Describe("RootfsPatcher", func() {
 	BeforeEach(func() {
 		logger := lagertest.NewTestLogger("test")
 		desirer = k8s.NewStatefulSetDesirer(
-			clientset,
-			namespace,
+			fixture.Clientset,
+			fixture.Namespace,
 			"registry-credentials",
 			"old_rootfsversion",
 			"default",
@@ -58,8 +58,8 @@ var _ = Describe("RootfsPatcher", func() {
 		newVersion := "new-rootfsversion"
 
 		command := exec.Command(patcherPath,
-			"--kubeconfig", kubeConfigPath,
-			"--namespace", namespace,
+			"--kubeconfig", fixture.KubeConfigPath,
+			"--namespace", fixture.Namespace,
 			"--rootfs-version", newVersion)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Expect(err).ToNot(HaveOccurred())

@@ -11,11 +11,11 @@ var _ = Describe("Kubelet Client", func() {
 	var client kubelet.Client
 
 	BeforeEach(func() {
-		client = kubelet.NewClient(clientset.CoreV1().RESTClient())
+		client = kubelet.NewClient(fixture.Clientset.CoreV1().RESTClient())
 	})
 
 	It("should return the stats summary for a node", func() {
-		nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+		nodes, err := fixture.Clientset.CoreV1().Nodes().List(metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(nodes.Items).ToNot(BeEmpty())
 

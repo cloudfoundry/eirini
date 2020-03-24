@@ -44,7 +44,7 @@ var _ = Describe("connect command", func() {
 	Context("when we invoke connect command with valid config", func() {
 		BeforeEach(func() {
 			config = util.DefaultEiriniConfig("test-ns")
-			configFile, err := util.CreateOpiConfigFromFixtures(config)
+			configFile, err := util.CreateConfigFile(config)
 			Expect(err).ToNot(HaveOccurred())
 			configFilePath = configFile.Name()
 

@@ -34,14 +34,14 @@ var _ = Describe("Staging", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 
-		jobs, err := clientset.BatchV1().Jobs(namespace).List(metav1.ListOptions{})
+		jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred())
 
 		job = jobs.Items[0]
 	})
 
 	It("should create a staging job", func() {
-		jobs, err := clientset.BatchV1().Jobs(namespace).List(metav1.ListOptions{})
+		jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(jobs.Items).Should(HaveLen(1))
 		Expect(jobs.Items[0].Name).Should(Equal("the-staging-guid"))

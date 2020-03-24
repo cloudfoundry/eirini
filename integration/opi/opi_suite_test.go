@@ -12,9 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
-	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 func TestOpi(t *testing.T) {
@@ -25,10 +23,8 @@ func TestOpi(t *testing.T) {
 const secretName = "certs-secret"
 
 var (
+	fixture          util.Fixture
 	pathToOpi        string
-	namespace        string
-	clientset        kubernetes.Interface
-	pspName          string
 	httpClient       *http.Client
 	eiriniConfigFile *os.File
 	session          *gexec.Session
@@ -39,6 +35,9 @@ var _ = BeforeSuite(func() {
 	var err error
 	pathToOpi, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
 	Expect(err).NotTo(HaveOccurred())
+
+	fixture, err = util.NewFixture()
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
@@ -46,26 +45,17 @@ var _ = AfterSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	kubeConfigPath := os.Getenv("INTEGRATION_KUBECONFIG")
-	if kubeConfigPath == "" {
-		Fail("INTEGRATION_KUBECONFIG is not provided")
-	}
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-	Expect(err).ToNot(HaveOccurred())
+	var err error
+	fixture, err = fixture.SetUp()
+	Expect(err).NotTo(HaveOccurred())
 
-	clientset, err = kubernetes.NewForConfig(kubeConfig)
-	Expect(err).ToNot(HaveOccurred())
-
-	namespace = util.CreateRandomNamespace(clientset)
-	pspName = fmt.Sprintf("%s-psp", namespace)
-	Expect(util.CreatePodCreationPSP(namespace, pspName, clientset)).To(Succeed())
-	Expect(util.CreateEmptySecret(namespace, secretName, clientset)).To(Succeed())
+	Expect(util.CreateEmptySecret(fixture.Namespace, secretName, fixture.Clientset)).To(Succeed())
 
 	httpClient, err = util.MakeTestHTTPClient()
 	Expect(err).ToNot(HaveOccurred())
 
-	eiriniConfig := util.DefaultEiriniConfig(namespace)
-	eiriniConfigFile, err = util.CreateOpiConfigFromFixtures(eiriniConfig)
+	eiriniConfig := util.DefaultEiriniConfig(fixture.Namespace)
+	eiriniConfigFile, err = util.CreateConfigFile(eiriniConfig)
 	Expect(err).ToNot(HaveOccurred())
 
 	command := exec.Command(pathToOpi, "connect", "-c", eiriniConfigFile.Name()) // #nosec G204
@@ -87,6 +77,5 @@ var _ = AfterEach(func() {
 		session.Kill()
 	}
 
-	Expect(util.DeleteNamespace(namespace, clientset)).To(Succeed())
-	Expect(util.DeletePSP(pspName, clientset)).To(Succeed())
+	Expect(fixture.TearDown()).To(Succeed())
 })

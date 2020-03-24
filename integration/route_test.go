@@ -36,8 +36,8 @@ var _ = Describe("Routes", func() {
 		odinLRP = createLRP("ödin")
 		logger := lagertest.NewTestLogger("test")
 		desirer = k8s.NewStatefulSetDesirer(
-			clientset,
-			namespace,
+			fixture.Clientset,
+			fixture.Namespace,
 			"registry-secret",
 			"rootfsversion",
 			"default",
@@ -51,7 +51,7 @@ var _ = Describe("Routes", func() {
 
 		BeforeEach(func() {
 			logger := lagertest.NewTestLogger("test")
-			collector = k8s.NewRouteCollector(clientset, namespace, logger)
+			collector = k8s.NewRouteCollector(fixture.Clientset, fixture.Namespace, logger)
 		})
 
 		When("an LRP is desired", func() {
@@ -153,19 +153,19 @@ fi;`,
 			fakeRouteEmitter = new(routefakes.FakeEmitter)
 			logger := lagertest.NewTestLogger("instance-informer-test")
 			updateEventHandler := event.URIAnnotationUpdateHandler{
-				Pods:         clientset.CoreV1().Pods(namespace),
+				Pods:         fixture.Clientset.CoreV1().Pods(fixture.Namespace),
 				Logger:       logger,
 				RouteEmitter: fakeRouteEmitter,
 			}
 			deleteEventHandler := event.StatefulSetDeleteHandler{
-				Pods:         clientset.CoreV1().Pods(namespace),
+				Pods:         fixture.Clientset.CoreV1().Pods(fixture.Namespace),
 				Logger:       logger,
 				RouteEmitter: fakeRouteEmitter,
 			}
 			informer := &informerroute.URIChangeInformer{
-				Client:        clientset,
+				Client:        fixture.Clientset,
 				Cancel:        stopChan,
-				Namespace:     namespace,
+				Namespace:     fixture.Namespace,
 				UpdateHandler: updateEventHandler,
 				DeleteHandler: deleteEventHandler,
 			}
@@ -272,14 +272,14 @@ fi;`,
 			logger := lagertest.NewTestLogger("instance-informer-test")
 			fakeRouteEmitter = new(routefakes.FakeEmitter)
 			updateEventHandler := event.PodUpdateHandler{
-				Client:       clientset.AppsV1().StatefulSets(namespace),
+				Client:       fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace),
 				Logger:       logger,
 				RouteEmitter: fakeRouteEmitter,
 			}
 			informer := &informerroute.InstanceChangeInformer{
-				Client:        clientset,
+				Client:        fixture.Clientset,
 				Cancel:        stopChan,
-				Namespace:     namespace,
+				Namespace:     fixture.Namespace,
 				UpdateHandler: updateEventHandler,
 			}
 			go func() {

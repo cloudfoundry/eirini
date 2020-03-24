@@ -13,7 +13,6 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
-	"code.cloudfoundry.org/tlsconfig"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -32,18 +31,20 @@ var _ = Describe("Crashes", func() {
 	)
 
 	BeforeEach(func() {
-		capiServer = createTestServer(
+		var err error
+
+		capiServer, err = util.CreateTestServer(
 			util.PathToTestFixture("cert"),
 			util.PathToTestFixture("key"),
 			util.PathToTestFixture("cert"),
 		)
+		Expect(err).ToNot(HaveOccurred())
 		capiServer.Start()
 
 		config := defaultEventReporterConfig()
 		config.CcInternalAPI = capiServer.URL()
 
-		var err error
-		configFile, err = createEventReporterConfigFile(config)
+		configFile, err = util.CreateConfigFile(config)
 		Expect(err).NotTo(HaveOccurred())
 
 		command := exec.Command(pathToCrashEmitter, "-c", configFile.Name()) // #nosec G204
@@ -52,8 +53,8 @@ var _ = Describe("Crashes", func() {
 
 		logger := lagertest.NewTestLogger("crash-event-logger-test")
 		desirer = k8s.NewStatefulSetDesirer(
-			clientset,
-			namespace,
+			fixture.Clientset,
+			fixture.Namespace,
 			"registry-secret",
 			"rootfsversion",
 			"default",
@@ -113,19 +114,4 @@ func createCrashingLRP(name string) *opi.LRP {
 		LRP:             "metadata",
 		DiskMB:          2047,
 	}
-}
-
-func createTestServer(certPath, keyPath, caCertPath string) *ghttp.Server {
-	tlsConf, tlsErr := tlsconfig.Build(
-		tlsconfig.WithInternalServiceDefaults(),
-		tlsconfig.WithIdentityFromFile(certPath, keyPath),
-	).Server(
-		tlsconfig.WithClientAuthenticationFromFile(caCertPath),
-	)
-	Expect(tlsErr).NotTo(HaveOccurred())
-
-	testServer := ghttp.NewUnstartedServer()
-	testServer.HTTPTestServer.TLS = tlsConf
-
-	return testServer
 }

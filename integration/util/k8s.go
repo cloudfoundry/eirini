@@ -11,7 +11,9 @@ import (
 
 	"code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/tlsconfig"
 	ginkgoconfig "github.com/onsi/ginkgo/config"
+	"github.com/onsi/gomega/ghttp"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1beta1"
@@ -122,6 +124,17 @@ func CreateEmptySecret(namespace, secretName string, clientset kubernetes.Interf
 	return err
 }
 
+func CreateSecretWithStringData(namespace, secretName string, clientset kubernetes.Interface, stringData map[string]string) error {
+	_, err := clientset.CoreV1().Secrets(namespace).Create(&corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		StringData: stringData,
+	})
+	return err
+}
+
 func DeleteNamespace(namespace string, clientset kubernetes.Interface) error {
 	return clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{})
 }
@@ -189,16 +202,12 @@ func DefaultEiriniConfig(namespace string) *eirini.Config {
 	}
 }
 
-func CreateOpiConfigFromFixtures(config *eirini.Config) (*os.File, error) {
-	bs, err := yaml.Marshal(config)
+func CreateConfigFile(config interface{}) (*os.File, error) {
+	yamlBytes, err := yaml.Marshal(config)
 	if err != nil {
 		return nil, err
 	}
 
-	return createConfigFile(bs)
-}
-
-func createConfigFile(yamlBytes []byte) (*os.File, error) {
 	configFile, err := ioutil.TempFile("", "config.yml")
 	if err != nil {
 		return nil, err
@@ -214,4 +223,22 @@ func PathToTestFixture(relativePath string) string {
 		panic(err)
 	}
 	return fmt.Sprintf("%s/../fixtures/%s", cwd, relativePath)
+}
+
+func CreateTestServer(certPath, keyPath, caCertPath string) (*ghttp.Server, error) {
+	tlsConf, err := tlsconfig.Build(
+		tlsconfig.WithInternalServiceDefaults(),
+		tlsconfig.WithIdentityFromFile(certPath, keyPath),
+	).Server(
+		tlsconfig.WithClientAuthenticationFromFile(caCertPath),
+	)
+	if err != nil {
+		return nil, err
+
+	}
+
+	testServer := ghttp.NewUnstartedServer()
+	testServer.HTTPTestServer.TLS = tlsConf
+
+	return testServer, nil
 }

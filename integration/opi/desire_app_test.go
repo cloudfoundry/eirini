@@ -36,7 +36,7 @@ var _ = Describe("Desire App", func() {
 	})
 
 	It("should create a stateful set for the app", func() {
-		statefulsets, err := clientset.AppsV1().StatefulSets(namespace).List(metav1.ListOptions{})
+		statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(statefulsets.Items).To(HaveLen(1))
@@ -62,7 +62,7 @@ var _ = Describe("Desire App", func() {
 		})
 
 		It("should set the annotations to the pod template", func() {
-			statefulsets, err := clientset.AppsV1().StatefulSets(namespace).List(metav1.ListOptions{})
+			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(metav1.ListOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(statefulsets.Items[0].Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "yes, please"))
 		})
