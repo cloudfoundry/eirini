@@ -56,8 +56,8 @@ func (f Fixture) SetUp() (Fixture, error) {
 
 func (f Fixture) TearDown() error {
 	var errs *multierror.Error
-	multierror.Append(errs, DeleteNamespace(f.Namespace, f.Clientset))
-	multierror.Append(errs, DeletePSP(f.PspName, f.Clientset))
+	errs = multierror.Append(errs, DeleteNamespace(f.Namespace, f.Clientset))
+	errs = multierror.Append(errs, DeletePSP(f.PspName, f.Clientset))
 
 	return errs.ErrorOrNil()
 }

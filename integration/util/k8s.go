@@ -234,7 +234,6 @@ func CreateTestServer(certPath, keyPath, caCertPath string) (*ghttp.Server, erro
 	)
 	if err != nil {
 		return nil, err
-
 	}
 
 	testServer := ghttp.NewUnstartedServer()
