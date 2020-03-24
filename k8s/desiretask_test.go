@@ -33,7 +33,6 @@ var _ = Describe("Desiretask", func() {
 
 	assertGeneralSpec := func(job *batch.Job) {
 		automountServiceAccountToken := false
-		Expect(job.Name).To(Equal("the-stage-is-yours"))
 		Expect(job.Spec.ActiveDeadlineSeconds).To(Equal(int64ptr(900)))
 		Expect(job.Spec.Template.Spec.RestartPolicy).To(Equal(v1.RestartPolicyNever))
 		Expect(job.Spec.Template.Spec.AutomountServiceAccountToken).To(Equal(&automountServiceAccountToken))
@@ -136,14 +135,16 @@ var _ = Describe("Desiretask", func() {
 	Context("When desiring a task", func() {
 
 		BeforeEach(func() {
+			task.TaskGUID = "the-task-guid"
 			Expect(desirer.Desire(task)).To(Succeed())
 
 			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
 			job = fakeJobClient.CreateArgsForCall(0)
-			Expect(job.Name).To(Equal("the-stage-is-yours"))
+			Expect(job.Name).To(Equal("the-task-guid"))
 		})
 
 		It("should desire the task", func() {
+			Expect(job.Name).To(Equal("the-task-guid"))
 			assertGeneralSpec(job)
 
 			containers := job.Spec.Template.Spec.Containers
@@ -348,7 +349,7 @@ var _ = Describe("Desiretask", func() {
 		})
 
 		It("should desire the staging task", func() {
-
+			Expect(job.Name).To(Equal("the-stage-is-yours"))
 			assertGeneralSpec(job)
 
 			initContainers := job.Spec.Template.Spec.InitContainers

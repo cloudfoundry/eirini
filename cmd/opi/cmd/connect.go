@@ -12,6 +12,7 @@ import (
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/eirini/stager/docker"
 	"code.cloudfoundry.org/eirini/util"
@@ -46,16 +47,16 @@ func connect(cmd *cobra.Command, args []string) {
 	stagerLogger := lager.NewLogger("stager")
 	stagerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	stagingCompleter := initStagingCompleter(cfg, stagerLogger)
-
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.ConfigPath)
-	buildpackStager := initBuildpackStager(clientset, cfg, stagingCompleter, stagerLogger)
+	stagingCompleter := initStagingCompleter(cfg, stagerLogger)
+	taskDesirer := initTaskDesirer(cfg, clientset)
+	buildpackStager := initBuildpackStager(cfg, taskDesirer, stagingCompleter, stagerLogger)
 	dockerStager := initDockerStager(stagingCompleter, stagerLogger)
 	bifrost := initBifrost(clientset, cfg)
 
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	handler := handler.New(bifrost, buildpackStager, dockerStager, nil, handlerLogger)
+	handler := handler.New(bifrost, buildpackStager, dockerStager, taskDesirer, cfg.Properties.RegistryAddress, handlerLogger)
 
 	var server *http.Server
 	handlerLogger.Info("opi-connected")
@@ -93,7 +94,7 @@ func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) stager.Stagin
 	return stager.NewCallbackStagingCompleter(logger, httpClient)
 }
 
-func initBuildpackStager(clientset kubernetes.Interface, cfg *eirini.Config, stagingCompleter stager.StagingCompleter, logger lager.Logger) eirini.Stager {
+func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) opi.TaskDesirer {
 	tlsConfigs := []k8s.StagingConfigTLS{
 		{
 			SecretName: cfg.Properties.CCUploaderSecretName,
@@ -117,13 +118,15 @@ func initBuildpackStager(clientset kubernetes.Interface, cfg *eirini.Config, sta
 		},
 	}
 
-	taskDesirer := &k8s.TaskDesirer{
+	return &k8s.TaskDesirer{
 		Namespace:          cfg.Properties.Namespace,
 		TLSConfig:          tlsConfigs,
 		ServiceAccountName: cfg.Properties.ApplicationServiceAccount,
 		JobClient:          clientset.BatchV1().Jobs(cfg.Properties.Namespace),
 	}
+}
 
+func initBuildpackStager(cfg *eirini.Config, taskDesirer opi.TaskDesirer, stagingCompleter stager.StagingCompleter, logger lager.Logger) eirini.Stager {
 	stagerCfg := eirini.StagerConfig{
 		EiriniAddress:   cfg.Properties.EiriniAddress,
 		DownloaderImage: cfg.Properties.DownloaderImage,

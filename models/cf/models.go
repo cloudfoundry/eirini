@@ -63,6 +63,19 @@ type BuildpackLifecycle struct {
 	StartCommand string `json:"start_command"`
 }
 
+type TaskRequest struct {
+	AppGUID            string                `json:"app_guid"`
+	AppName            string                `json:"app_name"`
+	OrgName            string                `json:"org_name"`
+	OrgGUID            string                `json:"org_guid"`
+	SpaceName          string                `json:"space_name"`
+	SpaceGUID          string                `json:"space_guid"`
+	CompletionCallback string                `json:"completion_callback"`
+	Environment        []EnvironmentVariable `json:"environment"`
+	Lifecycle          Lifecycle             `json:"lifecycle"`
+	Command            []string              `json:"command"`
+}
+
 type StagingRequest struct {
 	AppGUID            string                     `json:"app_guid"`
 	AppName            string                     `json:"app_name"`

@@ -31,7 +31,7 @@ var _ = Describe("AppHandler", func() {
 	BeforeEach(func() {
 		bifrost = new(eirinifakes.FakeBifrost)
 		lager = lagertest.NewTestLogger("app-handler-test")
-		ts = httptest.NewServer(New(bifrost, nil, nil, nil, lager))
+		ts = httptest.NewServer(New(bifrost, nil, nil, nil, "", lager))
 	})
 
 	AfterEach(func() {

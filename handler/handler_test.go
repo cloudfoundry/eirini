@@ -31,7 +31,7 @@ var _ = Describe("Handler", func() {
 		stager = new(eirinifakes.FakeStager)
 		taskDesirer = new(eirinifakes.FakeTaskDesirer)
 		lager := lagertest.NewTestLogger("handler-test")
-		handlerClient = New(bifrost, stager, stager, taskDesirer, lager)
+		handlerClient = New(bifrost, stager, stager, taskDesirer, "", lager)
 	})
 
 	JustBeforeEach(func() {
@@ -44,15 +44,20 @@ var _ = Describe("Handler", func() {
 			method         string
 			path           string
 			expectedStatus int
+			body           string
 		)
 
 		assertEndpoint := func() {
-			req, err := http.NewRequest(method, ts.URL+path, bytes.NewReader([]byte("{}")))
+			req, err := http.NewRequest(method, ts.URL+path, bytes.NewReader([]byte(body)))
 			Expect(err).ToNot(HaveOccurred())
 			res, err := client.Do(req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.StatusCode).To(Equal(expectedStatus))
 		}
+
+		BeforeEach(func() {
+			body = "{}"
+		})
 
 		Context("PUT /apps/:process_guid", func() {
 
@@ -179,6 +184,12 @@ var _ = Describe("Handler", func() {
 				method = "POST"
 				path = "/tasks/stage_123"
 				expectedStatus = http.StatusAccepted
+				body = `{"lifecycle" : {
+          "buildpack_lifecycle": {
+					  "start_command": "cmd"
+					}
+				}}`
+
 			})
 
 			It("serves the endpoint", func() {

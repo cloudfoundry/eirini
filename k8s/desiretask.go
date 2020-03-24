@@ -43,27 +43,12 @@ type TaskDesirer struct {
 }
 
 func (d *TaskDesirer) Desire(task *opi.Task) error {
-	job := d.toJob(task)
-
-	envs := getEnvs(task)
-	containers := []v1.Container{
-		{
-			Name:            "opi-task",
-			Image:           task.Image,
-			ImagePullPolicy: v1.PullAlways,
-			Env:             envs,
-		},
-	}
-
-	job.Spec.Template.Spec.Containers = containers
-
-	_, err := d.JobClient.Create(job)
+	_, err := d.JobClient.Create(d.toTaskJob(task))
 	return err
 }
 
 func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
-	job := d.toStagingJob(task)
-	_, err := d.JobClient.Create(job)
+	_, err := d.JobClient.Create(d.toStagingJob(task))
 	return err
 }
 
@@ -75,8 +60,29 @@ func (d *TaskDesirer) Delete(name string) error {
 	return err
 }
 
+func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
+	job := d.toJob(task)
+	job.Name = task.TaskGUID
+
+	envs := getEnvs(task)
+	containers := []v1.Container{
+		{
+			Name:            "opi-task",
+			Image:           task.Image,
+			ImagePullPolicy: v1.PullAlways,
+			Env:             envs,
+			Command:         task.Command,
+		},
+	}
+
+	job.Spec.Template.Spec.Containers = containers
+
+	return job
+}
+
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	job := d.toJob(task.Task)
+	job.Name = task.Env[eirini.EnvStagingGUID]
 
 	secretsVolume := v1.Volume{
 		Name: eirini.CertsVolumeName,
@@ -243,8 +249,6 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 			},
 		},
 	}
-
-	job.Name = task.Env[eirini.EnvStagingGUID]
 
 	job.Labels = map[string]string{
 		LabelAppGUID: task.AppGUID,
