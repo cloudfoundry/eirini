@@ -21,6 +21,7 @@ var _ = Describe("Handler", func() {
 		client        *http.Client
 		bifrost       *eirinifakes.FakeBifrost
 		stager        *eirinifakes.FakeStager
+		taskDesirer   *eirinifakes.FakeTaskDesirer
 		handlerClient http.Handler
 	)
 
@@ -28,8 +29,9 @@ var _ = Describe("Handler", func() {
 		client = &http.Client{}
 		bifrost = new(eirinifakes.FakeBifrost)
 		stager = new(eirinifakes.FakeStager)
+		taskDesirer = new(eirinifakes.FakeTaskDesirer)
 		lager := lagertest.NewTestLogger("handler-test")
-		handlerClient = New(bifrost, stager, stager, lager)
+		handlerClient = New(bifrost, stager, stager, taskDesirer, lager)
 	})
 
 	JustBeforeEach(func() {
@@ -41,12 +43,11 @@ var _ = Describe("Handler", func() {
 		var (
 			method         string
 			path           string
-			body           string
 			expectedStatus int
 		)
 
 		assertEndpoint := func() {
-			req, err := http.NewRequest(method, ts.URL+path, bytes.NewReader([]byte(body)))
+			req, err := http.NewRequest(method, ts.URL+path, bytes.NewReader([]byte("{}")))
 			Expect(err).ToNot(HaveOccurred())
 			res, err := client.Do(req)
 			Expect(err).ToNot(HaveOccurred())
@@ -58,7 +59,6 @@ var _ = Describe("Handler", func() {
 			BeforeEach(func() {
 				method = "PUT"
 				path = "/apps/myguid"
-				body = `{"process_guid": "myguid", "num_instances": 5}`
 				expectedStatus = http.StatusAccepted
 			})
 
@@ -85,7 +85,6 @@ var _ = Describe("Handler", func() {
 			BeforeEach(func() {
 				method = "POST"
 				path = "/apps/myguid"
-				body = `{"process_guid": "myguid", "update": {"instances": 5}}`
 				expectedStatus = http.StatusOK
 			})
 
@@ -154,7 +153,6 @@ var _ = Describe("Handler", func() {
 				method = "POST"
 				path = "/stage/stage_123"
 				expectedStatus = http.StatusAccepted
-				body = `{}`
 			})
 
 			It("serves the endpoint", func() {
@@ -167,7 +165,6 @@ var _ = Describe("Handler", func() {
 			BeforeEach(func() {
 				method = "PUT"
 				path = "/stage/stage_123/completed"
-				body = `{"task_guid": "aa129-s90as09-d9kjnz-xo1829-hjsk"}`
 				expectedStatus = http.StatusOK
 			})
 
@@ -175,6 +172,20 @@ var _ = Describe("Handler", func() {
 				assertEndpoint()
 			})
 		})
+
+		Context("POST /tasks/:id", func() {
+
+			BeforeEach(func() {
+				method = "POST"
+				path = "/tasks/stage_123"
+				expectedStatus = http.StatusAccepted
+			})
+
+			It("serves the endpoint", func() {
+				assertEndpoint()
+			})
+		})
+
 	})
 
 })

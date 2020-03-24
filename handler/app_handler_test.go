@@ -25,11 +25,17 @@ var _ = Describe("AppHandler", func() {
 	var (
 		bifrost *eirinifakes.FakeBifrost
 		lager   *lagertest.TestLogger
+		ts      *httptest.Server
 	)
 
 	BeforeEach(func() {
 		bifrost = new(eirinifakes.FakeBifrost)
 		lager = lagertest.NewTestLogger("app-handler-test")
+		ts = httptest.NewServer(New(bifrost, nil, nil, nil, lager))
+	})
+
+	AfterEach(func() {
+		ts.Close()
 	})
 
 	findLog := func(message, guid string) func() {
@@ -98,7 +104,6 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, nil, nil, lager))
 			req, err := http.NewRequest("PUT", ts.URL+path, bytes.NewReader([]byte(body)))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -275,7 +280,6 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, nil, nil, lager))
 			req, err := http.NewRequest("GET", ts.URL+path, nil)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -346,7 +350,6 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, nil, nil, lager))
 			req, err := http.NewRequest("GET", ts.URL+path, nil)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -433,7 +436,6 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, nil, nil, lager))
 			req, err := http.NewRequest("POST", ts.URL+path, bytes.NewReader([]byte(body)))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -508,7 +510,6 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, nil, nil, lager))
 			req, err := http.NewRequest("PUT", ts.URL+path, nil)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -556,7 +557,6 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			ts := httptest.NewServer(New(bifrost, nil, nil, lager))
 			req, err := http.NewRequest("PUT", ts.URL+path, nil)
 			Expect(err).NotTo(HaveOccurred())
 

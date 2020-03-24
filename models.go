@@ -135,6 +135,11 @@ type Stager interface {
 	CompleteStaging(*models.TaskCallbackResponse) error
 }
 
+//go:generate counterfeiter . TaskDesirer
+type TaskDesirer interface {
+	Desire(*opi.Task) error
+}
+
 type StagerConfig struct {
 	EiriniAddress   string
 	DownloaderImage string

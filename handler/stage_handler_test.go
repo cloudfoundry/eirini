@@ -41,7 +41,7 @@ var _ = Describe("StageHandler", func() {
 	})
 
 	JustBeforeEach(func() {
-		handler := New(bifrost, buildpackStagingClient, dockerStagingClient, logger)
+		handler := New(bifrost, buildpackStagingClient, dockerStagingClient, nil, logger)
 		ts = httptest.NewServer(handler)
 		req, err := http.NewRequest(method, ts.URL+path, bytes.NewReader([]byte(body)))
 		Expect(err).NotTo(HaveOccurred())

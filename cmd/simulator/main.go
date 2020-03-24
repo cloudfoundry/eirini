@@ -27,7 +27,7 @@ func main() {
 	}
 
 	stager := &StagerSimulator{}
-	handler := handler.New(bifrost, stager, stager, handlerLogger)
+	handler := handler.New(bifrost, stager, stager, nil, handlerLogger)
 
 	fmt.Println("Starting to listen at 127.0.0.1:8085")
 	handlerLogger.Fatal("simulator-crahsed", http.ListenAndServe("127.0.0.1:8085", handler))

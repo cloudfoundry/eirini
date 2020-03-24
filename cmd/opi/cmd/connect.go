@@ -55,7 +55,7 @@ func connect(cmd *cobra.Command, args []string) {
 
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	handler := handler.New(bifrost, buildpackStager, dockerStager, handlerLogger)
+	handler := handler.New(bifrost, buildpackStager, dockerStager, nil, handlerLogger)
 
 	var server *http.Server
 	handlerLogger.Info("opi-connected")
