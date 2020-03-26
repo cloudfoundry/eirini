@@ -19,6 +19,7 @@ var _ = Describe("DockerStager", func() {
 	var (
 		stager           docker.Stager
 		fetcher          *dockerfakes.FakeImageMetadataFetcher
+		parser           *dockerfakes.FakeImageRefParser
 		stagingCompleter *stagerfakes.FakeStagingCompleter
 	)
 
@@ -31,6 +32,7 @@ var _ = Describe("DockerStager", func() {
 
 		BeforeEach(func() {
 			fetcher = new(dockerfakes.FakeImageMetadataFetcher)
+			parser = new(dockerfakes.FakeImageRefParser)
 			stagingCompleter = new(stagerfakes.FakeStagingCompleter)
 			stagingRequest = cf.StagingRequest{
 				CompletionCallback: "the-completion-callback/call/me",
@@ -46,12 +48,15 @@ var _ = Describe("DockerStager", func() {
 					"8888/tcp": {},
 				},
 			}, nil)
+
+			parser.Returns("//some-valid-docker-ref", nil)
 		})
 
 		JustBeforeEach(func() {
 			stager = docker.Stager{
 				Logger:               lagertest.NewTestLogger(""),
 				ImageMetadataFetcher: fetcher.Spy,
+				ImageRefParser:       parser.Spy,
 				StagingCompleter:     stagingCompleter,
 			}
 
@@ -62,10 +67,16 @@ var _ = Describe("DockerStager", func() {
 			Expect(stagingErr).ToNot(HaveOccurred())
 		})
 
-		It("should create the correct docker image ref", func() {
+		It("should parse the docker image ref", func() {
+			Expect(parser.CallCount()).To(Equal(1))
+			img := parser.ArgsForCall(0)
+			Expect(img).To(Equal("eirini/some-app:some-tag"))
+		})
+
+		It("should use the parsed docker image ref", func() {
 			Expect(fetcher.CallCount()).To(Equal(1))
 			ref, _ := fetcher.ArgsForCall(0)
-			Expect(ref).To(Equal("//docker.io/eirini/some-app:some-tag"))
+			Expect(ref).To(Equal("//some-valid-docker-ref"))
 		})
 
 		It("should complete staging with correct parameters", func() {
@@ -86,22 +97,6 @@ var _ = Describe("DockerStager", func() {
 
 		})
 
-		Context("when the image is from the standard library", func() {
-			BeforeEach(func() {
-				stagingRequest.Lifecycle.DockerLifecycle.Image = "ubuntu"
-			})
-
-			It("should succeed", func() {
-				Expect(stagingErr).ToNot(HaveOccurred())
-			})
-
-			It("should create the correct docker image ref", func() {
-				Expect(fetcher.CallCount()).To(Equal(1))
-				ref, _ := fetcher.ArgsForCall(0)
-				Expect(ref).To(Equal("//docker.io/library/ubuntu"))
-			})
-		})
-
 		Context("when the image is from a private registry", func() {
 			BeforeEach(func() {
 				stagingRequest.Lifecycle.DockerLifecycle.Image = "private-registry.io/user/repo"
@@ -112,12 +107,6 @@ var _ = Describe("DockerStager", func() {
 
 			It("should succeed", func() {
 				Expect(stagingErr).ToNot(HaveOccurred())
-			})
-
-			It("should create the correct docker image ref", func() {
-				Expect(fetcher.CallCount()).To(Equal(1))
-				ref, _ := fetcher.ArgsForCall(0)
-				Expect(ref).To(Equal("//private-registry.io/user/repo"))
 			})
 
 			It("should provide the correct credentials", func() {
@@ -138,9 +127,9 @@ var _ = Describe("DockerStager", func() {
 			})
 		})
 
-		Context("when the image ref is invalid", func() {
+		Context("when the image is invalid", func() {
 			BeforeEach(func() {
-				stagingRequest.Lifecycle.DockerLifecycle.Image = "this is invalid"
+				parser.Returns("", errors.New("failed to create an image ref because of reasons"))
 			})
 
 			It("should fail with the right error", func() {
@@ -149,7 +138,7 @@ var _ = Describe("DockerStager", func() {
 
 				taskCallbackResponse := stagingCompleter.CompleteStagingArgsForCall(0)
 				Expect(taskCallbackResponse.Failed).To(BeTrue())
-				Expect(taskCallbackResponse.FailureReason).To(ContainSubstring("failed to parse image ref"))
+				Expect(taskCallbackResponse.FailureReason).To(ContainSubstring("failed to create an image ref because of reasons"))
 			})
 
 			Context("when the staging completion callback fails", func() {

@@ -9,7 +9,6 @@ import (
 	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/lager"
 	"github.com/containers/image/types"
-	"github.com/docker/distribution/reference"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 )
@@ -21,9 +20,17 @@ func (f ImageMetadataFetcher) Fetch(dockerRef string, sysCtx types.SystemContext
 	return f(dockerRef, sysCtx)
 }
 
+//go:generate counterfeiter . ImageRefParser
+type ImageRefParser func(string) (string, error)
+
+func (f ImageRefParser) Parse(img string) (string, error) {
+	return f(img)
+}
+
 type Stager struct {
 	Logger               lager.Logger
 	ImageMetadataFetcher ImageMetadataFetcher
+	ImageRefParser       ImageRefParser
 	StagingCompleter     stager.StagingCompleter
 }
 
@@ -91,11 +98,11 @@ func (s Stager) CompleteStaging(task *models.TaskCallbackResponse) error {
 }
 
 func (s Stager) getImageConfig(lifecycle *cf.StagingDockerLifecycle) (*v1.ImageConfig, error) {
-	named, err := reference.ParseNormalizedNamed(lifecycle.Image)
+	dockerRef, err := s.ImageRefParser.Parse(lifecycle.Image)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse image ref")
 	}
-	dockerRef := fmt.Sprintf("//%s", named.String())
+
 	imgMetadata, err := s.ImageMetadataFetcher.Fetch(dockerRef, types.SystemContext{
 		DockerAuthConfig: &types.DockerAuthConfig{
 			Username: lifecycle.RegistryUsername,
