@@ -2,23 +2,29 @@ package bifrost_test
 
 import (
 	"encoding/json"
+	"errors"
 
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/stager/docker/dockerfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 	const defaultDiskQuota = int64(2058)
 	var (
-		logger           *lagertest.TestLogger
-		lrp              opi.LRP
-		err              error
-		desireLRPRequest cf.DesireLRPRequest
-		converter        bifrost.Converter
+		logger              *lagertest.TestLogger
+		lrp                 opi.LRP
+		err                 error
+		desireLRPRequest    cf.DesireLRPRequest
+		converter           bifrost.Converter
+		imgMetadataFetcher  *dockerfakes.FakeImageMetadataFetcher
+		imgRefParser        *dockerfakes.FakeImageRefParser
+		allowRunImageAsRoot bool
 	)
 
 	BeforeEach(func() {
@@ -33,6 +39,10 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				"port":     7070,
 			},
 		}
+
+		imgMetadataFetcher = new(dockerfakes.FakeImageMetadataFetcher)
+		imgRefParser = new(dockerfakes.FakeImageRefParser)
+		allowRunImageAsRoot = false
 
 		routesJSON, marshalErr := json.Marshal(updatedRoutes)
 		Expect(marshalErr).ToNot(HaveOccurred())
@@ -81,9 +91,15 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 
 	JustBeforeEach(func() {
 		regIP := "eirini-registry.service.cf.internal"
-		converter = bifrost.NewConverter(logger, regIP, defaultDiskQuota)
+		converter = bifrost.NewConverter(
+			logger,
+			regIP,
+			defaultDiskQuota,
+			imgMetadataFetcher.Spy,
+			imgRefParser.Spy,
+			allowRunImageAsRoot)
+
 		lrp, err = converter.Convert(desireLRPRequest)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	Context("When request is converted successfully", func() {
@@ -183,6 +199,11 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			It("should set user defined annotation", func() {
 				Expect(lrp.UserDefinedAnnotations["prometheus.io/scrape"]).To(Equal("scrape"))
 			})
+
+			It("should not error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
 		}
 
 		Context("when the disk quota is not provided", func() {
@@ -230,7 +251,7 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 			})
 
 			It("assumes that the pod should run as root", func() {
-				Expect(lrp.RunsAsRoot).To(BeTrue())
+				Expect(lrp.RunsAsRoot).To(BeFalse())
 			})
 
 			verifyLRPConvertedSuccessfully()
@@ -276,7 +297,121 @@ var _ = Describe("Convert CC DesiredApp into an opi LRP", func() {
 				})
 
 				verifyLRPConvertedSuccessfully()
+			})
 
+			Context("when running docker images with root user is allowed", func() {
+				BeforeEach(func() {
+					allowRunImageAsRoot = true
+					imgMetadataFetcher.Returns(&v1.ImageConfig{}, nil)
+					imgRefParser.Returns("//some-docker-image-ref", nil)
+				})
+
+				It("should parse the docker image ref", func() {
+					Expect(imgRefParser.CallCount()).To(Equal(1))
+					Expect(imgRefParser.ArgsForCall(0)).To(Equal(lrp.Image))
+				})
+
+				It("should fetch the image metadata", func() {
+					Expect(imgMetadataFetcher.CallCount()).To(Equal(1))
+					dockerRef, sysCtx := imgMetadataFetcher.ArgsForCall(0)
+
+					Expect(dockerRef).To(Equal("//some-docker-image-ref"))
+					Expect(sysCtx.DockerAuthConfig.Username).To(BeEmpty())
+					Expect(sysCtx.DockerAuthConfig.Password).To(BeEmpty())
+				})
+
+				Context("and the image user is root", func() {
+					BeforeEach(func() {
+						imgMetadataFetcher.Returns(&v1.ImageConfig{
+							User: "root",
+						}, nil)
+					})
+
+					It("should be allowed to run as root", func() {
+						Expect(lrp.RunsAsRoot).To(BeTrue())
+					})
+				})
+
+				Context("and the image user is empty", func() {
+
+					BeforeEach(func() {
+						imgMetadataFetcher.Returns(&v1.ImageConfig{
+							User: "",
+						}, nil)
+					})
+
+					It("should be allowed to run as root", func() {
+						Expect(lrp.RunsAsRoot).To(BeTrue())
+					})
+				})
+
+				Context("and the image user is UID 0", func() {
+
+					BeforeEach(func() {
+						imgMetadataFetcher.Returns(&v1.ImageConfig{
+							User: "0",
+						}, nil)
+					})
+
+					It("should be allowed to run as root", func() {
+						Expect(lrp.RunsAsRoot).To(BeTrue())
+					})
+				})
+
+				Context("and the image user is not root", func() {
+
+					BeforeEach(func() {
+						imgMetadataFetcher.Returns(&v1.ImageConfig{
+							User: "vcap",
+						}, nil)
+					})
+
+					It("should not be allowed to run as root", func() {
+						Expect(lrp.RunsAsRoot).To(BeFalse())
+					})
+				})
+
+				Context("when the image lives in a private registry", func() {
+
+					BeforeEach(func() {
+						desireLRPRequest.Lifecycle = cf.Lifecycle{
+							DockerLifecycle: &cf.DockerLifecycle{
+								Image:            "my-secret-docker-registry.docker.io:5000/repo/the-mighty-image:not-latest",
+								Command:          []string{"command-in-docker"},
+								RegistryUsername: "super-user",
+								RegistryPassword: "super-password",
+							},
+						}
+					})
+
+					It("should provide username & password", func() {
+						Expect(imgMetadataFetcher.CallCount()).To(Equal(1))
+						_, sysCtx := imgMetadataFetcher.ArgsForCall(0)
+
+						Expect(sysCtx.DockerAuthConfig.Username).To(Equal("super-user"))
+						Expect(sysCtx.DockerAuthConfig.Password).To(Equal("super-password"))
+					})
+				})
+
+				Context("when image ref parsing fails", func() {
+					BeforeEach(func() {
+						imgRefParser.Returns("", errors.New("uh-oh-parsing-failed"))
+					})
+
+					It("should propagate the error", func() {
+						Expect(err).To(MatchError(ContainSubstring("uh-oh-parsing-failed")))
+					})
+				})
+
+				Context("when metadata fetching fails", func() {
+					BeforeEach(func() {
+						imgMetadataFetcher.Returns(nil, errors.New("uh-oh-fetching-failed"))
+					})
+
+					It("should propagate the error", func() {
+						Expect(err).To(MatchError(ContainSubstring("uh-oh-fetching-failed")))
+					})
+				})
 			})
 		})
 

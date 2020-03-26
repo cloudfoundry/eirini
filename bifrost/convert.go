@@ -7,7 +7,10 @@ import (
 
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/stager/docker"
 	"code.cloudfoundry.org/lager"
+	"github.com/containers/image/types"
+	"github.com/pkg/errors"
 )
 
 const DockerHubHost = "index.docker.io/v1/"
@@ -20,16 +23,22 @@ type Converter interface {
 }
 
 type DropletToImageConverter struct {
-	logger      lager.Logger
-	registryIP  string
-	diskLimitMB int64
+	logger               lager.Logger
+	registryIP           string
+	diskLimitMB          int64
+	imageMetadataFetcher docker.ImageMetadataFetcher
+	imageRefParser       docker.ImageRefParser
+	allowRunImageAsRoot  bool
 }
 
-func NewConverter(logger lager.Logger, registryIP string, diskLimitMB int64) *DropletToImageConverter {
+func NewConverter(logger lager.Logger, registryIP string, diskLimitMB int64, imageMetadataFetcher docker.ImageMetadataFetcher, imageRefParser docker.ImageRefParser, allowRunImageAsRoot bool) *DropletToImageConverter {
 	return &DropletToImageConverter{
-		logger:      logger,
-		registryIP:  registryIP,
-		diskLimitMB: diskLimitMB,
+		logger:               logger,
+		registryIP:           registryIP,
+		diskLimitMB:          diskLimitMB,
+		imageMetadataFetcher: imageMetadataFetcher,
+		imageRefParser:       imageRefParser,
+		allowRunImageAsRoot:  allowRunImageAsRoot,
 	}
 }
 
@@ -57,11 +66,16 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 
 	switch {
 	case request.Lifecycle.DockerLifecycle != nil:
-		image = request.Lifecycle.DockerLifecycle.Image
-		command = request.Lifecycle.DockerLifecycle.Command
-		registryUsername := request.Lifecycle.DockerLifecycle.RegistryUsername
-		registryPassword := request.Lifecycle.DockerLifecycle.RegistryPassword
-		runsAsRoot = true
+		var err error
+		lifecycle := request.Lifecycle.DockerLifecycle
+		image = lifecycle.Image
+		command = lifecycle.Command
+		registryUsername := lifecycle.RegistryUsername
+		registryPassword := lifecycle.RegistryPassword
+		runsAsRoot, err = c.isAllowedToRunAsRoot(lifecycle)
+		if err != nil {
+			return opi.LRP{}, errors.Wrap(err, "failed to verify if docker image needs root user")
+		}
 
 		if registryUsername != "" || registryPassword != "" {
 			privateRegistry = &opi.PrivateRegistry{
@@ -128,6 +142,37 @@ func (c *DropletToImageConverter) Convert(request cf.DesireLRPRequest) (opi.LRP,
 		PrivateRegistry:        privateRegistry,
 		RunsAsRoot:             runsAsRoot,
 	}, nil
+}
+
+func (c *DropletToImageConverter) isAllowedToRunAsRoot(lifecycle *cf.DockerLifecycle) (bool, error) {
+	if !c.allowRunImageAsRoot {
+		return false, nil
+	}
+
+	user, err := c.getImageUser(lifecycle)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get the user of the image")
+	}
+
+	return user == "" || user == "root" || user == "0", nil
+}
+
+func (c *DropletToImageConverter) getImageUser(lifecycle *cf.DockerLifecycle) (string, error) {
+	dockerRef, err := c.imageRefParser.Parse(lifecycle.Image)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to parse image ref")
+	}
+	imgMetadata, err := c.imageMetadataFetcher.Fetch(dockerRef, types.SystemContext{
+		DockerAuthConfig: &types.DockerAuthConfig{
+			Username: lifecycle.RegistryUsername,
+			Password: lifecycle.RegistryPassword,
+		},
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "failed to fetch image metadata")
+	}
+
+	return imgMetadata.User, nil
 }
 
 func (c *DropletToImageConverter) buildpackProperties(dropletGUID, dropletHash, startCommand string) (string, []string, map[string]string) {
