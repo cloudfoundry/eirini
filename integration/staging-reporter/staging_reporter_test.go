@@ -97,32 +97,6 @@ var _ = Describe("StagingReporter", func() {
 	})
 
 	Context("When a staging job crashes", func() {
-		BeforeEach(func() {
-			stagingTask := opi.StagingTask{
-				Task: &opi.Task{
-					Env: map[string]string{
-						eirini.EnvStagingGUID: "the-staging-guid",
-						"EIRINI_ADDRESS":      eiriniServer.URL(),
-						"COMPLETION_CALLBACK": "the-cloud-controller-address/staging/complete",
-					},
-					AppName:   "test-staging-reporter-app",
-					AppGUID:   "app-guid",
-					OrgName:   "org-name",
-					OrgGUID:   "org-guid",
-					SpaceName: "space-name",
-					SpaceGUID: "space-guid",
-					MemoryMB:  200,
-					DiskMB:    200,
-					CPUWeight: 200,
-				},
-				StagingGUID:     "the-staging-guid",
-				DownloaderImage: "eirini/invalid-recipe-downloader",
-				UploaderImage:   "eirini/recipe-uploader",
-				ExecutorImage:   "eirini/recipe-executor",
-			}
-
-			Expect(taskDesirer.DesireStaging(&stagingTask)).To(Succeed())
-		})
 
 		It("notifies eirini of a staging failure", func() {
 			eiriniServer.RouteToHandler(
@@ -140,6 +114,31 @@ var _ = Describe("StagingReporter", func() {
 					Expect(callbackResponse.Annotation).To(ContainSubstring(`"completion_callback":"the-cloud-controller-address/staging/complete"`))
 				},
 			)
+
+			stagingTask := opi.StagingTask{
+				Task: &opi.Task{
+					Env: map[string]string{
+						eirini.EnvStagingGUID: "the-staging-guid",
+						"EIRINI_ADDRESS":      eiriniServer.URL(),
+						"COMPLETION_CALLBACK": "the-cloud-controller-address/staging/complete",
+					},
+					AppName:   "test-staging-reporter-app",
+					AppGUID:   "app-guid",
+					OrgName:   "org-name",
+					OrgGUID:   "org-guid",
+					SpaceName: "space-name",
+					SpaceGUID: "space-guid",
+					MemoryMB:  200,
+					DiskMB:    200,
+					CPUWeight: 1,
+				},
+				StagingGUID:     "the-staging-guid",
+				DownloaderImage: "eirini/invalid-recipe-downloader",
+				UploaderImage:   "eirini/recipe-uploader",
+				ExecutorImage:   "eirini/recipe-executor",
+			}
+
+			Expect(taskDesirer.DesireStaging(&stagingTask)).To(Succeed())
 			Eventually(eiriniServer.ReceivedRequests, "10s").Should(HaveLen(1))
 		})
 	})
