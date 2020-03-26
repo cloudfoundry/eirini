@@ -63,34 +63,55 @@ func (f Fixture) SetUp() (Fixture, error) {
 
 func (f Fixture) TearDown() error {
 	var errs *multierror.Error
-	f.Writer.Write([]byte("Jobs:"))
-	jobs, _ := f.Clientset.BatchV1().Jobs(f.Namespace).List(v1.ListOptions{})
-	for _, job := range jobs.Items {
-		fmt.Fprintf(f.Writer, "Job: %s status is: %#v\n", job.Name, job.Status)
-		f.Writer.Write([]byte("-----------\n"))
-	}
-
-	statefulsets, _ := f.Clientset.AppsV1().StatefulSets(f.Namespace).List(v1.ListOptions{})
-	f.Writer.Write([]byte("StatefulSets:"))
-	for _, s := range statefulsets.Items {
-		fmt.Fprintf(f.Writer, "StatefulSet: %s status is: %#v\n", s.Name, s.Status)
-		f.Writer.Write([]byte("-----------\n"))
-	}
-
-	pods, _ := f.Clientset.CoreV1().Pods(f.Namespace).List(v1.ListOptions{})
-	f.Writer.Write([]byte("Pods:"))
-	for _, p := range pods.Items {
-		fmt.Fprintf(f.Writer, "Pod: %s status is: %#v\n", p.Name, p.Status)
-		f.Writer.Write([]byte("-----------\n"))
-		logsReq := f.Clientset.CoreV1().Pods(f.Namespace).GetLogs(p.Name, nil)
-		fmt.Fprintf(f.Writer, "Pod: %s logs are: \n", p.Name)
-		consumeRequest(logsReq, f.Writer)
-	}
+	errs = multierror.Append(errs, f.printDebugInfo())
 
 	errs = multierror.Append(errs, DeleteNamespace(f.Namespace, f.Clientset))
 	errs = multierror.Append(errs, DeletePSP(f.PspName, f.Clientset))
 
 	return errs.ErrorOrNil()
+}
+
+//nolint:gocyclo
+func (f Fixture) printDebugInfo() error {
+	if _, err := f.Writer.Write([]byte("Jobs:\n")); err != nil {
+		return err
+	}
+	jobs, _ := f.Clientset.BatchV1().Jobs(f.Namespace).List(v1.ListOptions{})
+	for _, job := range jobs.Items {
+		fmt.Fprintf(f.Writer, "Job: %s status is: %#v\n", job.Name, job.Status)
+		if _, err := f.Writer.Write([]byte("-----------\n")); err != nil {
+			return err
+		}
+	}
+
+	statefulsets, _ := f.Clientset.AppsV1().StatefulSets(f.Namespace).List(v1.ListOptions{})
+	if _, err := f.Writer.Write([]byte("StatefulSets:\n")); err != nil {
+		return err
+	}
+	for _, s := range statefulsets.Items {
+		fmt.Fprintf(f.Writer, "StatefulSet: %s status is: %#v\n", s.Name, s.Status)
+		if _, err := f.Writer.Write([]byte("-----------\n")); err != nil {
+			return err
+		}
+	}
+
+	pods, _ := f.Clientset.CoreV1().Pods(f.Namespace).List(v1.ListOptions{})
+	if _, err := f.Writer.Write([]byte("Pods:\n")); err != nil {
+		return err
+	}
+	for _, p := range pods.Items {
+		fmt.Fprintf(f.Writer, "Pod: %s status is: %#v\n", p.Name, p.Status)
+		if _, err := f.Writer.Write([]byte("-----------\n")); err != nil {
+			return err
+		}
+		fmt.Fprintf(f.Writer, "Pod: %s logs are: \n", p.Name)
+		logsReq := f.Clientset.CoreV1().Pods(f.Namespace).GetLogs(p.Name, nil)
+		if err := consumeRequest(logsReq, f.Writer); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func consumeRequest(request rest.ResponseWrapper, out io.Writer) error {
@@ -103,8 +124,8 @@ func consumeRequest(request rest.ResponseWrapper, out io.Writer) error {
 	r := bufio.NewReader(readCloser)
 	for {
 		bytes, err := r.ReadBytes('\n')
-		if _, err := out.Write(bytes); err != nil {
-			return err
+		if _, writeErr := out.Write(bytes); writeErr != nil {
+			return writeErr
 		}
 
 		if err != nil {
