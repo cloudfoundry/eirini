@@ -47,8 +47,6 @@ func createNamespace(namespace string, clientset kubernetes.Interface) {
 }
 
 func CreatePodCreationPSP(namespace, pspName string, clientset kubernetes.Interface) error {
-	roleName := "use-psp"
-
 	_, err := clientset.PolicyV1beta1().PodSecurityPolicies().Create(&policyv1.PodSecurityPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pspName,
@@ -71,12 +69,16 @@ func CreatePodCreationPSP(namespace, pspName string, clientset kubernetes.Interf
 			FSGroup: policyv1.FSGroupStrategyOptions{
 				Rule: policyv1.FSGroupStrategyRunAsAny,
 			},
+			Volumes: []policyv1.FSType{
+				policyv1.EmptyDir, policyv1.Projected, policyv1.Secret,
+			},
 		},
 	})
 	if err != nil {
 		return err
 	}
 
+	roleName := "use-psp"
 	_, err = clientset.RbacV1().Roles(namespace).Create(&rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      roleName,
@@ -86,8 +88,8 @@ func CreatePodCreationPSP(namespace, pspName string, clientset kubernetes.Interf
 			{
 				APIGroups:     []string{"policy"},
 				Resources:     []string{"podsecuritypolicies"},
-				ResourceNames: []string{pspName},
 				Verbs:         []string{"use"},
+				ResourceNames: []string{pspName},
 			},
 		},
 	})
@@ -196,8 +198,7 @@ func DefaultEiriniConfig(namespace string) *eirini.Config {
 			ExecutorImage:   "docker.io/eirini/integration_test_staging",
 			UploaderImage:   "docker.io/eirini/integration_test_staging",
 
-			ApplicationPrivilegedServiceAccount: "default",
-			ApplicationServiceAccount:           "default",
+			ApplicationServiceAccount: "default",
 		},
 	}
 }

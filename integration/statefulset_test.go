@@ -45,7 +45,6 @@ var _ = Describe("StatefulSet Manager", func() {
 			"registry-secret",
 			"rootfsversion",
 			"default",
-			"default",
 			logger,
 		)
 	})

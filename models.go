@@ -89,8 +89,9 @@ type Properties struct {
 
 	KubeConfig `yaml:",inline"`
 
-	ApplicationServiceAccount           string `yaml:"application_service_account"`
-	ApplicationPrivilegedServiceAccount string `yaml:"application_privileged_service_account"`
+	ApplicationServiceAccount string `yaml:"application_service_account"`
+
+	AllowRunImageAsRoot bool `yaml:"allow_run_image_as_root"`
 }
 
 type EventReporterConfig struct {

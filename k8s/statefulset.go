@@ -100,7 +100,6 @@ type StatefulSetDesirer struct {
 	Hasher                    util.Hasher
 	Logger                    lager.Logger
 	ApplicationServiceAccount string
-	PrivilegedAppAccount      string
 }
 
 var ErrNotFound = errors.New("statefulset not found")
@@ -108,7 +107,7 @@ var ErrNotFound = errors.New("statefulset not found")
 //go:generate counterfeiter . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion, appServiceAccount, privAppServiceAccount string, logger lager.Logger) opi.Desirer {
+func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion, appServiceAccount string, logger lager.Logger) opi.Desirer {
 	return &StatefulSetDesirer{
 		Pods:                      client.CoreV1().Pods(namespace),
 		Secrets:                   client.CoreV1().Secrets(namespace),
@@ -123,7 +122,6 @@ func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecre
 		Hasher:                    util.TruncatedSHA256Hasher{},
 		Logger:                    logger,
 		ApplicationServiceAccount: appServiceAccount,
-		PrivilegedAppAccount:      privAppServiceAccount,
 	}
 }
 
@@ -498,7 +496,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 						},
 					},
 					SecurityContext:    m.getGetSecurityContext(lrp),
-					ServiceAccountName: m.getAppServiceAccount(lrp),
+					ServiceAccountName: m.ApplicationServiceAccount,
 					Volumes:            volumes,
 				},
 			},
@@ -615,14 +613,6 @@ func (m *StatefulSetDesirer) getGetSecurityContext(lrp *opi.LRP) *corev1.PodSecu
 		RunAsNonRoot: &runAsNonRoot,
 		RunAsUser:    int64ptr(VcapUID),
 	}
-}
-
-func (m *StatefulSetDesirer) getAppServiceAccount(lrp *opi.LRP) string {
-	if lrp.RunsAsRoot {
-		return m.PrivilegedAppAccount
-	}
-
-	return m.ApplicationServiceAccount
 }
 
 func labelSelectorString(id opi.LRPIdentifier) string {

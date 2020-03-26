@@ -58,7 +58,6 @@ var _ = Describe("Crashes", func() {
 			"registry-secret",
 			"rootfsversion",
 			"default",
-			"default",
 			logger,
 		)
 	})

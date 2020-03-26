@@ -76,7 +76,6 @@ var _ = Describe("Statefulset Desirer", func() {
 			StatefulSetToLRPMapper:    mapper.Spy,
 			Events:                    eventLister,
 			ApplicationServiceAccount: "eirini",
-			PrivilegedAppAccount:      "supeirini",
 		}
 	})
 
@@ -293,7 +292,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			))
 		})
 
-		It("should set proper service account", func() {
+		It("should set application service account", func() {
 			statefulSet := statefulSetClient.CreateArgsForCall(0)
 			Expect(statefulSet.Spec.Template.Spec.ServiceAccountName).To(Equal("eirini"))
 		})
@@ -308,10 +307,6 @@ var _ = Describe("Statefulset Desirer", func() {
 				Expect(statefulSet.Spec.Template.Spec.SecurityContext).To(BeNil())
 			})
 
-			It("sets privileged service account", func() {
-				statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Spec.Template.Spec.ServiceAccountName).To(Equal("supeirini"))
-			})
 		})
 
 		Context("When the app name contains unsupported characters", func() {

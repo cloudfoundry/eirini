@@ -138,6 +138,7 @@ func initDockerStager(stagingCompleter stager.StagingCompleter, logger lager.Log
 	return docker.Stager{
 		Logger:               logger,
 		ImageMetadataFetcher: docker.Fetch,
+		ImageRefParser:       docker.Parse,
 		StagingCompleter:     stagingCompleter,
 	}
 }
@@ -146,11 +147,25 @@ func initBifrost(clientset kubernetes.Interface, cfg *eirini.Config) eirini.Bifr
 	kubeNamespace := cfg.Properties.Namespace
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	desirer := k8s.NewStatefulSetDesirer(clientset, kubeNamespace, cfg.Properties.RegistrySecretName, cfg.Properties.RootfsVersion, cfg.Properties.ApplicationServiceAccount, cfg.Properties.ApplicationPrivilegedServiceAccount, desireLogger)
+	desirer := k8s.NewStatefulSetDesirer(
+		clientset,
+		kubeNamespace,
+		cfg.Properties.RegistrySecretName,
+		cfg.Properties.RootfsVersion,
+		cfg.Properties.ApplicationServiceAccount,
+		desireLogger,
+	)
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	registryIP := cfg.Properties.RegistryAddress
-	converter := bifrost.NewConverter(convertLogger, registryIP, cfg.Properties.DiskLimitMB)
+
+	converter := bifrost.NewConverter(
+		convertLogger,
+		cfg.Properties.RegistryAddress,
+		cfg.Properties.DiskLimitMB,
+		docker.Fetch,
+		docker.Parse,
+		cfg.Properties.AllowRunImageAsRoot,
+	)
 
 	return &bifrost.Bifrost{
 		Converter: converter,

@@ -41,7 +41,6 @@ var _ = Describe("Routes", func() {
 			"registry-secret",
 			"rootfsversion",
 			"default",
-			"default",
 			logger,
 		)
 	})
