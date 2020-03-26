@@ -29,7 +29,7 @@ var _ = BeforeSuite(func() {
 	pathToCrashEmitter, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/event-reporter")
 	Expect(err).NotTo(HaveOccurred())
 
-	fixture, err = util.NewFixture()
+	fixture, err = util.NewFixture(GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 })
 

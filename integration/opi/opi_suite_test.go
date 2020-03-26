@@ -36,7 +36,7 @@ var _ = BeforeSuite(func() {
 	pathToOpi, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
 	Expect(err).NotTo(HaveOccurred())
 
-	fixture, err = util.NewFixture()
+	fixture, err = util.NewFixture(GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 })
 

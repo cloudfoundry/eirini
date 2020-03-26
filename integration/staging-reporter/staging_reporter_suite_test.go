@@ -27,7 +27,7 @@ var _ = BeforeSuite(func() {
 	pathToStagingReporter, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/staging-reporter")
 	Expect(err).NotTo(HaveOccurred())
 
-	fixture, err = util.NewFixture()
+	fixture, err = util.NewFixture(GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 })
 

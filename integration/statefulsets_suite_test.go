@@ -31,7 +31,7 @@ const (
 
 var _ = BeforeSuite(func() {
 	var err error
-	fixture, err = util.NewFixture()
+	fixture, err = util.NewFixture(GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 })
 
