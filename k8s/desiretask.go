@@ -82,7 +82,7 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	job := d.toJob(task.Task)
-	job.Name = task.Env[eirini.EnvStagingGUID]
+	job.Name = task.StagingGUID
 
 	secretsVolume := v1.Volume{
 		Name: eirini.CertsVolumeName,

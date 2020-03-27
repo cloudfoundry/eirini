@@ -59,7 +59,7 @@ var _ = Describe("Desiretask", func() {
 			v1.EnvVar{Name: eirini.EnvDownloadURL, Value: "example.com/download"},
 			v1.EnvVar{Name: eirini.EnvDropletUploadURL, Value: "example.com/upload"},
 			v1.EnvVar{Name: eirini.EnvAppID, Value: "env-app-id"},
-			v1.EnvVar{Name: eirini.EnvStagingGUID, Value: "the-stage-is-yours"},
+			v1.EnvVar{Name: eirini.EnvStagingGUID, Value: stagingGUID},
 			v1.EnvVar{Name: eirini.EnvCompletionCallback, Value: "example.com/call/me/maybe"},
 			v1.EnvVar{Name: eirini.EnvEiriniAddress, Value: "http://opi.cf.internal"},
 			v1.EnvVar{Name: eirini.EnvCFInstanceInternalIP, ValueFrom: expectedValFrom("status.podIP")},
@@ -92,7 +92,7 @@ var _ = Describe("Desiretask", func() {
 				eirini.EnvDownloadURL:        "example.com/download",
 				eirini.EnvDropletUploadURL:   "example.com/upload",
 				eirini.EnvAppID:              "env-app-id",
-				eirini.EnvStagingGUID:        "the-stage-is-yours",
+				eirini.EnvStagingGUID:        stagingGUID,
 				eirini.EnvCompletionCallback: "example.com/call/me/maybe",
 				eirini.EnvEiriniAddress:      "http://opi.cf.internal",
 			},
@@ -345,11 +345,11 @@ var _ = Describe("Desiretask", func() {
 		JustBeforeEach(func() {
 			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
 			job = fakeJobClient.CreateArgsForCall(0)
-			Expect(job.Name).To(Equal("the-stage-is-yours"))
+			Expect(job.Name).To(Equal(stagingGUID))
 		})
 
 		It("should desire the staging task", func() {
-			Expect(job.Name).To(Equal("the-stage-is-yours"))
+			Expect(job.Name).To(Equal(stagingGUID))
 			assertGeneralSpec(job)
 
 			initContainers := job.Spec.Template.Spec.InitContainers
@@ -393,11 +393,11 @@ var _ = Describe("Desiretask", func() {
 	Context("When deleting a task", func() {
 
 		It("should delete the job", func() {
-			Expect(desirer.Delete("the-stage-is-yours")).To(Succeed())
+			Expect(desirer.Delete(stagingGUID)).To(Succeed())
 
 			Expect(fakeJobClient.DeleteCallCount()).To(Equal(1))
 			jobName, _ := fakeJobClient.DeleteArgsForCall(0)
-			Expect(jobName).To(Equal("the-stage-is-yours"))
+			Expect(jobName).To(Equal(stagingGUID))
 		})
 
 		Context("that does not exist", func() {
@@ -406,7 +406,7 @@ var _ = Describe("Desiretask", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(desirer.Delete("the-stage-is-yours")).To(MatchError(ContainSubstring("job does not exist")))
+				Expect(desirer.Delete(stagingGUID)).To(MatchError(ContainSubstring("job does not exist")))
 			})
 		})
 

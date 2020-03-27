@@ -17,8 +17,6 @@ var _ = Describe("Desire Task", func() {
 	BeforeEach(func() {
 		body = `{
 			"guid": "the-task-guid",
-			"version": "0.0.0",
-			"ports" : [8080],
 			"command" : ["echo", "hi"],
 			"environment": [
 			   {
