@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -105,9 +106,9 @@ func (f Fixture) printDebugInfo() error {
 			return err
 		}
 		fmt.Fprintf(f.Writer, "Pod: %s logs are: \n", p.Name)
-		logsReq := f.Clientset.CoreV1().Pods(f.Namespace).GetLogs(p.Name, nil)
+		logsReq := f.Clientset.CoreV1().Pods(f.Namespace).GetLogs(p.Name, &corev1.PodLogOptions{})
 		if err := consumeRequest(logsReq, f.Writer); err != nil {
-			return err
+			fmt.Fprintf(f.Writer, "Failed to get logs for Pod: %s becase: %v \n", p.Name, err)
 		}
 	}
 
