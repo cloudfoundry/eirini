@@ -219,11 +219,41 @@ var _ = Describe("CrashEventGenerator", func() {
 		})
 	})
 
-	Context("When app is waiting, but NOT because of CrashLoopBackOff", func() {
+	Context("When app is in CreateContainerConfigError", func() {
+		BeforeEach(func() {
+			pod = newPod([]v1.ContainerStatus{
+				{
+					RestartCount: 0,
+					State: v1.ContainerState{
+						Waiting: &v1.ContainerStateWaiting{
+							Reason:  event.CreateContainerConfigError,
+							Message: "not configured properly",
+						},
+					},
+				},
+			})
+		})
+
+		It("should return a crashed report", func() {
+			generator := event.DefaultCrashEventGenerator{}
+			report, returned := generator.Generate(pod, client, logger)
+			Expect(returned).To(BeTrue())
+			Expect(report).To(Equal(events.CrashEvent{
+				ProcessGUID: "test-pod-anno",
+				AppCrashedRequest: cc_messages.AppCrashedRequest{
+					Reason:          event.CreateContainerConfigError,
+					Instance:        "test-pod-0",
+					ExitDescription: "not configured properly",
+				},
+			}))
+		})
+	})
+
+	Context("When app is waiting for any insignificant reason", func() {
 
 		BeforeEach(func() {
 			pod = newCrashedPod()
-			pod.Status.ContainerStatuses[0].State.Waiting.Reason = "Friday"
+			pod.Status.ContainerStatuses[0].State.Waiting.Reason = "Monday"
 		})
 
 		It("should not send reports", func() {

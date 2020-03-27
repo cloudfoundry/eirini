@@ -28,6 +28,11 @@ func (DefaultCrashEventGenerator) Generate(pod *v1.Pod, clientset kubernetes.Int
 		return generateReportForTerminatedPod(pod, status, clientset, logger)
 	}
 
+	if container := getMisconfiguredContainerStatusIfAny(pod.Status.ContainerStatuses); container != nil {
+		exitDescription := container.State.Waiting.Message
+		return generateReport(pod, container.State.Waiting.Reason, 0, exitDescription, 0, int(container.RestartCount)), true
+	}
+
 	if container := getCrashedContainerStatusIfAny(pod.Status.ContainerStatuses); container != nil {
 		exitStatus := int(container.LastTerminationState.Terminated.ExitCode)
 		exitDescription := container.LastTerminationState.Terminated.Reason
@@ -80,6 +85,17 @@ func getTerminatedContainerStatusIfAny(statuses []v1.ContainerStatus) *v1.Contai
 	for _, status := range statuses {
 		terminated := status.State.Terminated
 		if terminated != nil && terminated.ExitCode != 0 {
+			return &status
+		}
+	}
+
+	return nil
+}
+
+func getMisconfiguredContainerStatusIfAny(statuses []v1.ContainerStatus) *v1.ContainerStatus {
+	for _, status := range statuses {
+		waiting := status.State.Waiting
+		if waiting != nil && waiting.Reason == CreateContainerConfigError {
 			return &status
 		}
 	}

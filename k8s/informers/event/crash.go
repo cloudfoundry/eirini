@@ -12,6 +12,7 @@ import (
 )
 
 const CrashLoopBackOff = "CrashLoopBackOff"
+const CreateContainerConfigError = "CreateContainerConfigError"
 
 //go:generate counterfeiter . CrashEventGenerator
 type CrashEventGenerator interface {
