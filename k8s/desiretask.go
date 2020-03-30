@@ -71,7 +71,6 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 			Image:           task.Image,
 			ImagePullPolicy: v1.PullAlways,
 			Env:             envs,
-			Command:         task.Command,
 		},
 	}
 

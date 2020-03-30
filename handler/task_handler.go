@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/eirini"
@@ -79,14 +78,9 @@ func (t *Task) createTask(taskGUID string, request cf.TaskRequest) (*opi.Task, e
 		OrgGUID:   request.OrgGUID,
 		SpaceGUID: request.SpaceGUID,
 		Env:       mergeEnvs(request.Environment, buildpackEnv),
-		Image:     t.imageURI(lifecycle.DropletGUID, lifecycle.DropletHash),
-		Command:   request.Command,
+		Image:     lifecycle.DropletURI,
 	}
 	return task, nil
-}
-
-func (t *Task) imageURI(dropletGUID, dropletHash string) string {
-	return fmt.Sprintf("%s/cloudfoundry/%s:%s", t.registryIP, dropletGUID, dropletHash)
 }
 
 func mergeEnvs(env1 []cf.EnvironmentVariable, env2 map[string]string) map[string]string {

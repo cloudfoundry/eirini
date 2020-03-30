@@ -82,7 +82,6 @@ type Healtcheck struct {
 type Task struct {
 	TaskGUID  string
 	Image     string
-	Command   []string
 	Env       map[string]string
 	AppName   string
 	AppGUID   string

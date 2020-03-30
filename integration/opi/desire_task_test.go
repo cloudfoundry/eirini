@@ -17,21 +17,19 @@ var _ = Describe("Desire Task", func() {
 	BeforeEach(func() {
 		body = `{
 			"guid": "the-task-guid",
-			"command" : ["echo", "hi"],
 			"environment": [
 			   {
 				   "name": "my-env",
 					 "value": "my-value"
 				 }
 			],
-		  "lifecycle": {
+			"lifecycle": {
 				"buildpack_lifecycle": {
-					"droplet_guid": "dropla",
-					"droplet_hash": "mash",
-					"start_command": "cmd"
+						"droplet_uri": "foo://bar",
+						"start_command": "some command"
+					}
 				}
-			}
-		}`
+		  }`
 	})
 
 	JustBeforeEach(func() {
@@ -51,7 +49,8 @@ var _ = Describe("Desire Task", func() {
 
 		jobContainers := jobs.Items[0].Spec.Template.Spec.Containers
 		Expect(jobContainers).To(HaveLen(1))
-		Expect(jobContainers[0].Command).To(ConsistOf("echo", "hi"))
 		Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
+		Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "START_COMMAND", Value: "some command"}))
+		Expect(jobContainers[0].Image).To(Equal("foo://bar"))
 	})
 })

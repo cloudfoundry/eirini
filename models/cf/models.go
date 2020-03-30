@@ -58,6 +58,7 @@ type DockerLifecycle struct {
 }
 
 type BuildpackLifecycle struct {
+	DropletURI   string `json:"droplet_uri"`
 	DropletHash  string `json:"droplet_hash"`
 	DropletGUID  string `json:"droplet_guid"`
 	StartCommand string `json:"start_command"`
@@ -73,7 +74,6 @@ type TaskRequest struct {
 	CompletionCallback string                `json:"completion_callback"`
 	Environment        []EnvironmentVariable `json:"environment"`
 	Lifecycle          Lifecycle             `json:"lifecycle"`
-	Command            []string              `json:"command"`
 }
 
 type StagingRequest struct {

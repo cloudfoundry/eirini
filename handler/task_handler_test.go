@@ -37,15 +37,13 @@ var _ = Describe("TaskHandler", func() {
 		body = `{
 				"app_guid": "our-app-id",
 				"environment": [{"name": "HOWARD", "value": "the alien"}],
+				"completion_callback": "example.com/call/me/maybe",
 				"lifecycle": {
           "buildpack_lifecycle": {
-						"droplet_guid": "dropla",
-						"droplet_hash": "mash",
-					  "start_command": "cmd"
+						"droplet_uri": "foo://some-uri",
+					  "start_command": "some command"
 					}
-				},
-				"completion_callback": "example.com/call/me/maybe",
-				"command": ["echo", "hi"]
+				}
 			}`
 	})
 
@@ -74,15 +72,14 @@ var _ = Describe("TaskHandler", func() {
 			TaskGUID: "guid_1234",
 			AppGUID:  "our-app-id",
 			Env: map[string]string{
+				"HOWARD":        "the alien",
+				"HOME":          "/home/vcap/app",
 				"PATH":          "/usr/local/bin:/usr/bin:/bin",
 				"USER":          "vcap",
 				"TMPDIR":        "/home/vcap/tmp",
-				"START_COMMAND": "cmd",
-				"HOWARD":        "the alien",
-				"HOME":          "/home/vcap/app",
+				"START_COMMAND": "some command",
 			},
-			Command: []string{"echo", "hi"},
-			Image:   "foo://registry/cloudfoundry/dropla:mash",
+			Image: "foo://some-uri",
 		}))
 	})
 
