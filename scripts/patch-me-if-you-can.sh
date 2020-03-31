@@ -117,7 +117,7 @@ helm_upgrade() {
   pushd "$EIRINI_RELEASE_BASEDIR/helm"
     helm upgrade --install scf ./cf \
       --namespace scf \
-      --values "$HOME/workspace/eirini-private-config/environments/kube-clusters/$(current_cluster_name)/scf-config-values.yaml" \
+      --values "$HOME/workspace/eirini-private-config/environments/kube-clusters/$(current_cluster_name)/values.yaml" \
       --set "secrets.UAA_CA_CERT=${ca_cert}" \
       --set "bits.secrets.BITS_TLS_KEY=${bits_tls_key}" \
       --set "bits.secrets.BITS_TLS_CRT=${bits_tls_crt}"
