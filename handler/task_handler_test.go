@@ -40,7 +40,8 @@ var _ = Describe("TaskHandler", func() {
 				"completion_callback": "example.com/call/me/maybe",
 				"lifecycle": {
           "buildpack_lifecycle": {
-						"droplet_uri": "foo://some-uri",
+						"droplet_guid": "some-guid",
+						"droplet_hash": "some-hash",
 					  "start_command": "some command"
 					}
 				}
@@ -79,7 +80,7 @@ var _ = Describe("TaskHandler", func() {
 				"TMPDIR":        "/home/vcap/tmp",
 				"START_COMMAND": "some command",
 			},
-			Image: "foo://some-uri",
+			Image: "foo://registry/cloudfoundry/some-guid:some-hash",
 		}))
 	})
 

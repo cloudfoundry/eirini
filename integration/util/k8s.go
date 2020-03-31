@@ -199,6 +199,7 @@ func DefaultEiriniConfig(namespace string) *eirini.Config {
 			UploaderImage:   "docker.io/eirini/integration_test_staging",
 
 			ApplicationServiceAccount: "default",
+			RegistryAddress:           "registry",
 		},
 	}
 }

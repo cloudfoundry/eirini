@@ -25,7 +25,8 @@ var _ = Describe("Desire Task", func() {
 			],
 			"lifecycle": {
 				"buildpack_lifecycle": {
-						"droplet_uri": "foo://bar",
+						"droplet_guid": "foo",
+						"droplet_hash": "bar",
 						"start_command": "some command"
 					}
 				}
@@ -51,6 +52,6 @@ var _ = Describe("Desire Task", func() {
 		Expect(jobContainers).To(HaveLen(1))
 		Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
 		Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "START_COMMAND", Value: "some command"}))
-		Expect(jobContainers[0].Image).To(Equal("foo://bar"))
+		Expect(jobContainers[0].Image).To(Equal("registry/cloudfoundry/foo:bar"))
 	})
 })
