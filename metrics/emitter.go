@@ -29,12 +29,6 @@ type Message struct {
 	DiskQuota   float64
 }
 
-type BetterMessage struct {
-	AppID   string
-	IndexID string
-	CPU     *float64
-}
-
 func NewLoggregatorEmitter(client LoggregatorClient) *LoggregatorEmitter {
 	return &LoggregatorEmitter{
 		client: client,
