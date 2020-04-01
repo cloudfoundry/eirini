@@ -79,7 +79,8 @@ func (t *Task) createTask(taskGUID string, request cf.TaskRequest) (*opi.Task, e
 		OrgGUID:   request.OrgGUID,
 		SpaceGUID: request.SpaceGUID,
 		Env:       mergeEnvs(request.Environment, buildpackEnv),
-		Image:     lifecycle.DropletURI,
+		Command:   []string{"/lifecycle/launch"},
+		Image:     t.imageURI(lifecycle.DropletGUID, lifecycle.DropletHash),
 	}
 	return task, nil
 }

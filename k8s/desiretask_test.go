@@ -136,6 +136,7 @@ var _ = Describe("Desiretask", func() {
 
 		BeforeEach(func() {
 			task.TaskGUID = "the-task-guid"
+			task.Command = []string{"/lifecycle/launch"}
 			Expect(desirer.Desire(task)).To(Succeed())
 
 			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
@@ -150,6 +151,7 @@ var _ = Describe("Desiretask", func() {
 			containers := job.Spec.Template.Spec.Containers
 			Expect(containers).To(HaveLen(1))
 			assertContainer(containers[0], "opi-task")
+			Expect(containers[0].Command).To(ConsistOf("/lifecycle/launch"))
 		})
 
 		DescribeTable("the task should have the expected annotations", func(key, value string) {

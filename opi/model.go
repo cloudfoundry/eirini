@@ -83,6 +83,7 @@ type Task struct {
 	TaskGUID  string
 	Image     string
 	Env       map[string]string
+	Command   []string
 	AppName   string
 	AppGUID   string
 	OrgName   string

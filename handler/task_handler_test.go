@@ -80,7 +80,8 @@ var _ = Describe("TaskHandler", func() {
 				"TMPDIR":        "/home/vcap/tmp",
 				"START_COMMAND": "some command",
 			},
-			Image: "foo://registry/cloudfoundry/some-guid:some-hash",
+			Command: []string{"/lifecycle/launch"},
+			Image:   "foo://registry/cloudfoundry/some-guid:some-hash",
 		}))
 	})
 

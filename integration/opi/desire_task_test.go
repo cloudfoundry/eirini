@@ -53,5 +53,6 @@ var _ = Describe("Desire Task", func() {
 		Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
 		Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "START_COMMAND", Value: "some command"}))
 		Expect(jobContainers[0].Image).To(Equal("registry/cloudfoundry/foo:bar"))
+		Expect(jobContainers[0].Command).To(ConsistOf("/lifecycle/launch"))
 	})
 })
