@@ -96,8 +96,7 @@ update_image_in_helm_chart() {
     local file new_image_ref
     file=$(rg -l "image: eirini/${1}")
     new_image_ref="$(docker inspect --format='{{index .RepoDigests 0}}' "eirini/${1}:patch-me-if-you-can")"
-    #sed -i '' "s|image: eirini/${1}.*$|image: ${new_image_ref}|g" "$file"
-    sed -i -e "s|image: eirini/${1}.*$|image: ${new_image_ref}|g" "$file"
+    sed -i '' "s|image: eirini/${1}.*$|image: ${new_image_ref}|g" "$file"
   popd
 }
 
