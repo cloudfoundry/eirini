@@ -129,6 +129,7 @@ var _ = Describe("Desiretask", func() {
 			TLSConfig:          tlsStagingConfigs,
 			JobClient:          fakeJobClient,
 			ServiceAccountName: "staging-serivce-account",
+			RegistrySecretName: "registry-secret",
 		}
 	})
 
@@ -148,6 +149,7 @@ var _ = Describe("Desiretask", func() {
 			Expect(job.Name).To(Equal("the-task-guid"))
 			assertGeneralSpec(job)
 
+			Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(v1.LocalObjectReference{Name: "registry-secret"}))
 			containers := job.Spec.Template.Spec.Containers
 			Expect(containers).To(HaveLen(1))
 			assertContainer(containers[0], "opi-task")

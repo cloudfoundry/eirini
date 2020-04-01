@@ -200,6 +200,7 @@ func DefaultEiriniConfig(namespace string) *eirini.Config {
 
 			ApplicationServiceAccount: "default",
 			RegistryAddress:           "registry",
+			RegistrySecretName:        "registry-secret",
 		},
 	}
 }

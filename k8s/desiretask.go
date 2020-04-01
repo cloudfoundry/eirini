@@ -38,6 +38,7 @@ type TaskDesirer struct {
 	CertsSecretName    string
 	TLSConfig          []StagingConfigTLS
 	ServiceAccountName string
+	RegistrySecretName string
 	JobClient          JobClient
 	Logger             lager.Logger
 }
@@ -72,6 +73,12 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 			ImagePullPolicy: v1.PullAlways,
 			Env:             envs,
 			Command:         task.Command,
+		},
+	}
+
+	job.Spec.Template.Spec.ImagePullSecrets = []v1.LocalObjectReference{
+		{
+			Name: d.RegistrySecretName,
 		},
 	}
 

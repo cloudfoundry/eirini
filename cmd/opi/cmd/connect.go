@@ -122,6 +122,7 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) opi.Tas
 		Namespace:          cfg.Properties.Namespace,
 		TLSConfig:          tlsConfigs,
 		ServiceAccountName: cfg.Properties.ApplicationServiceAccount,
+		RegistrySecretName: cfg.Properties.RegistrySecretName,
 		JobClient:          clientset.BatchV1().Jobs(cfg.Properties.Namespace),
 	}
 }
