@@ -1,7 +1,6 @@
 package staging_reporter_test
 
 import (
-	"os"
 	"testing"
 
 	"code.cloudfoundry.org/eirini"
@@ -18,7 +17,7 @@ func TestStagingReporter(t *testing.T) {
 }
 
 var (
-	fixture               util.Fixture
+	fixture               *util.Fixture
 	pathToStagingReporter string
 )
 
@@ -27,14 +26,11 @@ var _ = BeforeSuite(func() {
 	pathToStagingReporter, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/staging-reporter")
 	Expect(err).NotTo(HaveOccurred())
 
-	fixture, err = util.NewFixture(GinkgoWriter)
-	Expect(err).NotTo(HaveOccurred())
+	fixture = util.NewFixture(GinkgoWriter)
 })
 
 var _ = BeforeEach(func() {
-	var err error
-	fixture, err = fixture.SetUp()
-	Expect(err).NotTo(HaveOccurred())
+	fixture.SetUp()
 
 	Expect(util.CreateSecretWithStringData(fixture.Namespace, "cc-uploader-secret", fixture.Clientset, map[string]string{"foo1": "val1", "bar1": "val2"})).To(Succeed())
 	Expect(util.CreateSecretWithStringData(fixture.Namespace, "eirini-client-secret", fixture.Clientset, map[string]string{"foo2": "val1", "bar2": "val2"})).To(Succeed())
@@ -42,7 +38,7 @@ var _ = BeforeEach(func() {
 })
 
 var _ = AfterEach(func() {
-	Expect(fixture.TearDown()).To(Succeed())
+	fixture.TearDown()
 })
 
 var _ = AfterSuite(func() {
@@ -53,7 +49,7 @@ func defaultStagingReporterConfig() *eirini.StagingReporterConfig {
 	config := &eirini.StagingReporterConfig{
 		KubeConfig: eirini.KubeConfig{
 			Namespace:  fixture.Namespace,
-			ConfigPath: os.Getenv("INTEGRATION_KUBECONFIG"),
+			ConfigPath: fixture.KubeConfigPath,
 		},
 		EiriniCertPath: util.PathToTestFixture("cert"),
 		CAPath:         util.PathToTestFixture("cert"),

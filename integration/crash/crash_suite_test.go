@@ -1,7 +1,6 @@
 package crash_test
 
 import (
-	"os"
 	"testing"
 
 	"code.cloudfoundry.org/eirini"
@@ -20,7 +19,7 @@ func TestCrash(t *testing.T) {
 }
 
 var (
-	fixture            util.Fixture
+	fixture            *util.Fixture
 	pathToCrashEmitter string
 )
 
@@ -29,18 +28,15 @@ var _ = BeforeSuite(func() {
 	pathToCrashEmitter, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/event-reporter")
 	Expect(err).NotTo(HaveOccurred())
 
-	fixture, err = util.NewFixture(GinkgoWriter)
-	Expect(err).NotTo(HaveOccurred())
+	fixture = util.NewFixture(GinkgoWriter)
 })
 
 var _ = BeforeEach(func() {
-	var err error
-	fixture, err = fixture.SetUp()
-	Expect(err).NotTo(HaveOccurred())
+	fixture.SetUp()
 })
 
 var _ = AfterEach(func() {
-	Expect(fixture.TearDown()).To(Succeed())
+	fixture.TearDown()
 })
 
 var _ = AfterSuite(func() {
@@ -51,7 +47,7 @@ func defaultEventReporterConfig() *eirini.EventReporterConfig {
 	config := &eirini.EventReporterConfig{
 		KubeConfig: eirini.KubeConfig{
 			Namespace:  fixture.Namespace,
-			ConfigPath: os.Getenv("INTEGRATION_KUBECONFIG"),
+			ConfigPath: fixture.KubeConfigPath,
 		},
 		CcInternalAPI: "doesitmatter.com",
 		CCCertPath:    util.PathToTestFixture("cert"),

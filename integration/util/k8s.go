@@ -145,8 +145,8 @@ func DeletePSP(name string, clientset kubernetes.Interface) error {
 	return clientset.PolicyV1beta1().PodSecurityPolicies().Delete(name, &metav1.DeleteOptions{})
 }
 
-func MakeTestHTTPClient() (*http.Client, error) { // {
-	bs, err := ioutil.ReadFile(PathToTestFixture("cert")) // }
+func MakeTestHTTPClient() (*http.Client, error) {
+	bs, err := ioutil.ReadFile(PathToTestFixture("cert"))
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func DefaultEiriniConfig(namespace string) *eirini.Config {
 	return &eirini.Config{
 		Properties: eirini.Properties{
 			KubeConfig: eirini.KubeConfig{
-				ConfigPath: os.Getenv("INTEGRATION_KUBECONFIG"),
+				ConfigPath: GetKubeconfig(),
 				Namespace:  namespace,
 			},
 			CCCAPath:             PathToTestFixture("cert"),

@@ -11,16 +11,22 @@ code.cloudfoundry.org/go-diodes
 # code.cloudfoundry.org/go-loggregator v7.4.0+incompatible
 code.cloudfoundry.org/go-loggregator
 code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2
+# code.cloudfoundry.org/grpc-throughputlb v0.0.0-20180905204614-e98a1ee09867
+code.cloudfoundry.org/grpc-throughputlb
 # code.cloudfoundry.org/lager v2.0.0+incompatible
 code.cloudfoundry.org/lager
 code.cloudfoundry.org/lager/lagerctx
 code.cloudfoundry.org/lager/lagertest
+# code.cloudfoundry.org/loggregator v0.0.0-20190918193452-3ce1eab57797
+code.cloudfoundry.org/loggregator/metricemitter
+code.cloudfoundry.org/loggregator/plumbing
 # code.cloudfoundry.org/rfc5424 v0.0.0-20180905210152-236a6d29298a
 code.cloudfoundry.org/rfc5424
 # code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
 code.cloudfoundry.org/runtimeschema/cc_messages
 # code.cloudfoundry.org/tlsconfig v0.0.0-20200131000646-bbe0f8da39b3
 code.cloudfoundry.org/tlsconfig
+code.cloudfoundry.org/tlsconfig/certtest
 # code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 code.cloudfoundry.org/tps/cc_client
 # code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50
@@ -245,6 +251,8 @@ github.com/sirupsen/logrus
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
+# github.com/square/certstrap v1.2.0
+github.com/square/certstrap/pkix
 # go.uber.org/atomic v1.6.0
 go.uber.org/atomic
 # go.uber.org/multierr v1.5.0

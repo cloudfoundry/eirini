@@ -23,7 +23,7 @@ func TestOpi(t *testing.T) {
 const secretName = "certs-secret"
 
 var (
-	fixture          util.Fixture
+	fixture          *util.Fixture
 	pathToOpi        string
 	httpClient       *http.Client
 	eiriniConfigFile *os.File
@@ -36,8 +36,7 @@ var _ = BeforeSuite(func() {
 	pathToOpi, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
 	Expect(err).NotTo(HaveOccurred())
 
-	fixture, err = util.NewFixture(GinkgoWriter)
-	Expect(err).NotTo(HaveOccurred())
+	fixture = util.NewFixture(GinkgoWriter)
 })
 
 var _ = AfterSuite(func() {
@@ -45,12 +44,11 @@ var _ = AfterSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	var err error
-	fixture, err = fixture.SetUp()
-	Expect(err).NotTo(HaveOccurred())
+	fixture.SetUp()
 
 	Expect(util.CreateEmptySecret(fixture.Namespace, secretName, fixture.Clientset)).To(Succeed())
 
+	var err error
 	httpClient, err = util.MakeTestHTTPClient()
 	Expect(err).ToNot(HaveOccurred())
 
@@ -77,5 +75,5 @@ var _ = AfterEach(func() {
 		session.Kill()
 	}
 
-	Expect(fixture.TearDown()).To(Succeed())
+	fixture.TearDown()
 })

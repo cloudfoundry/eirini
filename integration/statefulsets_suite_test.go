@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	fixture util.Fixture
+	fixture *util.Fixture
 )
 
 const (
@@ -30,19 +30,15 @@ const (
 )
 
 var _ = BeforeSuite(func() {
-	var err error
-	fixture, err = util.NewFixture(GinkgoWriter)
-	Expect(err).NotTo(HaveOccurred())
+	fixture = util.NewFixture(GinkgoWriter)
 })
 
 var _ = BeforeEach(func() {
-	var err error
-	fixture, err = fixture.SetUp()
-	Expect(err).NotTo(HaveOccurred())
+	fixture.SetUp()
 })
 
 var _ = AfterEach(func() {
-	Expect(fixture.TearDown()).To(Succeed())
+	fixture.TearDown()
 })
 
 func TestIntegration(t *testing.T) {

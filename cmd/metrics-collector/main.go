@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -47,6 +48,7 @@ func main() {
 	loggregatorClient, err := loggregator.NewIngressClient(
 		tlsConfig,
 		loggregator.WithAddr(cfg.LoggregatorAddress),
+		loggregator.WithLogger(log.New(os.Stdout, "loggregator-ingress-client", log.LstdFlags)),
 	)
 	cmdcommons.ExitIfError(err)
 

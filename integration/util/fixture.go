@@ -4,16 +4,16 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	. "github.com/onsi/gomega" //nolint:golint,stylecheck
 )
 
 type Fixture struct {
@@ -24,56 +24,40 @@ type Fixture struct {
 	Writer         io.Writer
 }
 
-func NewFixture(writer io.Writer) (Fixture, error) {
-	kubeConfigPath := os.Getenv("INTEGRATION_KUBECONFIG")
-	if kubeConfigPath == "" {
-		return Fixture{}, errors.New("INTEGRATION_KUBECONFIG is not provided")
-	}
+func NewFixture(writer io.Writer) *Fixture {
+	kubeConfigPath := GetKubeconfig()
 
 	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-	if err != nil {
-		return Fixture{}, errors.Wrap(err, "failed to build config from flags")
-	}
+	Expect(err).NotTo(HaveOccurred(), "failed to build config from flags")
 
 	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return Fixture{}, errors.Wrap(err, "failed to create clientset")
-	}
+	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
 
-	return Fixture{
+	return &Fixture{
 		KubeConfigPath: kubeConfigPath,
 		Clientset:      clientset,
 		Writer:         writer,
-	}, nil
-}
-
-func (f Fixture) SetUp() (Fixture, error) {
-	namespace := CreateRandomNamespace(f.Clientset)
-	pspName := fmt.Sprintf("%s-psp", namespace)
-	if err := CreatePodCreationPSP(namespace, pspName, f.Clientset); err != nil {
-		return Fixture{}, errors.Wrap(err, "failed to create pod creation PSP")
 	}
-	return Fixture{
-		KubeConfigPath: f.KubeConfigPath,
-		Clientset:      f.Clientset,
-		Namespace:      namespace,
-		Writer:         f.Writer,
-		PspName:        pspName,
-	}, nil
 }
 
-func (f Fixture) TearDown() error {
+func (f *Fixture) SetUp() {
+	f.Namespace = CreateRandomNamespace(f.Clientset)
+	f.PspName = fmt.Sprintf("%s-psp", f.Namespace)
+	Expect(CreatePodCreationPSP(f.Namespace, f.PspName, f.Clientset)).To(Succeed(), "failed to create pod creation PSP")
+}
+
+func (f *Fixture) TearDown() {
 	var errs *multierror.Error
 	errs = multierror.Append(errs, f.printDebugInfo())
 
 	errs = multierror.Append(errs, DeleteNamespace(f.Namespace, f.Clientset))
 	errs = multierror.Append(errs, DeletePSP(f.PspName, f.Clientset))
 
-	return errs.ErrorOrNil()
+	Expect(errs.ErrorOrNil()).NotTo(HaveOccurred())
 }
 
 //nolint:gocyclo
-func (f Fixture) printDebugInfo() error {
+func (f *Fixture) printDebugInfo() error {
 	if _, err := f.Writer.Write([]byte("Jobs:\n")); err != nil {
 		return err
 	}
