@@ -21,7 +21,6 @@ var _ = Describe("Handler", func() {
 		client        *http.Client
 		bifrost       *eirinifakes.FakeBifrost
 		stager        *eirinifakes.FakeStager
-		taskDesirer   *eirinifakes.FakeTaskDesirer
 		handlerClient http.Handler
 	)
 
@@ -29,9 +28,8 @@ var _ = Describe("Handler", func() {
 		client = &http.Client{}
 		bifrost = new(eirinifakes.FakeBifrost)
 		stager = new(eirinifakes.FakeStager)
-		taskDesirer = new(eirinifakes.FakeTaskDesirer)
 		lager := lagertest.NewTestLogger("handler-test")
-		handlerClient = New(bifrost, stager, stager, taskDesirer, "", lager)
+		handlerClient = New(bifrost, stager, stager, lager)
 	})
 
 	JustBeforeEach(func() {

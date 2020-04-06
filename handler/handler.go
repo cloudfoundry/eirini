@@ -11,14 +11,12 @@ import (
 func New(bifrost eirini.Bifrost,
 	buildpackStager eirini.Stager,
 	dockerStager eirini.Stager,
-	taskDesirer eirini.TaskDesirer,
-	registryIP string,
 	lager lager.Logger) http.Handler {
 	handler := httprouter.New()
 
 	appHandler := NewAppHandler(bifrost, lager)
 	stageHandler := NewStageHandler(buildpackStager, dockerStager, lager)
-	taskHandler := NewTaskHandler(lager, taskDesirer, registryIP)
+	taskHandler := NewTaskHandler(lager, bifrost)
 
 	registerAppsEndpoints(handler, appHandler)
 	registerStageEndpoints(handler, stageHandler)

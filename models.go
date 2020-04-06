@@ -156,6 +156,7 @@ type Extractor interface {
 //go:generate counterfeiter . Bifrost
 type Bifrost interface {
 	Transfer(ctx context.Context, request cf.DesireLRPRequest) error
+	TransferTask(ctx context.Context, taskGUID string, request cf.TaskRequest) error
 	List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error)
 	Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error
 	Stop(ctx context.Context, identifier opi.LRPIdentifier) error

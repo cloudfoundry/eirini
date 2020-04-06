@@ -19,26 +19,29 @@ import (
 var _ = Describe("Bifrost", func() {
 
 	var (
-		err       error
-		bfrst     eirini.Bifrost
-		request   cf.DesireLRPRequest
-		converter *bifrostfakes.FakeConverter
-		desirer   *opifakes.FakeDesirer
+		err         error
+		bfrst       eirini.Bifrost
+		request     cf.DesireLRPRequest
+		converter   *bifrostfakes.FakeConverter
+		desirer     *opifakes.FakeDesirer
+		taskDesirer *opifakes.FakeTaskDesirer
 	)
 
 	BeforeEach(func() {
 		converter = new(bifrostfakes.FakeConverter)
 		desirer = new(opifakes.FakeDesirer)
+		taskDesirer = new(opifakes.FakeTaskDesirer)
 	})
 
 	JustBeforeEach(func() {
 		bfrst = &bifrost.Bifrost{
-			Converter: converter,
-			Desirer:   desirer,
+			Converter:   converter,
+			Desirer:     desirer,
+			TaskDesirer: taskDesirer,
 		}
 	})
 
-	Context("Transfer", func() {
+	Describe("Transfer LRP", func() {
 
 		Context("When lrp is transferred successfully", func() {
 			var lrp opi.LRP
@@ -50,7 +53,7 @@ var _ = Describe("Bifrost", func() {
 				lrp = opi.LRP{
 					Image: "docker.png",
 				}
-				converter.ConvertReturns(lrp, nil)
+				converter.ConvertLRPReturns(lrp, nil)
 			})
 
 			It("should not return an error", func() {
@@ -58,8 +61,8 @@ var _ = Describe("Bifrost", func() {
 			})
 
 			It("should use Converter", func() {
-				Expect(converter.ConvertCallCount()).To(Equal(1))
-				Expect(converter.ConvertArgsForCall(0)).To(Equal(request))
+				Expect(converter.ConvertLRPCallCount()).To(Equal(1))
+				Expect(converter.ConvertLRPArgsForCall(0)).To(Equal(request))
 			})
 
 			It("should use Desirer with the converted LRP", func() {
@@ -73,7 +76,7 @@ var _ = Describe("Bifrost", func() {
 			Context("when Converter fails", func() {
 				BeforeEach(func() {
 					request = cf.DesireLRPRequest{GUID: "my-guid"}
-					converter.ConvertReturns(opi.LRP{}, errors.New("failed-to-convert"))
+					converter.ConvertLRPReturns(opi.LRP{}, errors.New("failed-to-convert"))
 				})
 
 				It("should return an error", func() {
@@ -82,8 +85,8 @@ var _ = Describe("Bifrost", func() {
 
 				It("should use Converter", func() {
 					Expect(bfrst.Transfer(context.Background(), request)).ToNot(Succeed())
-					Expect(converter.ConvertCallCount()).To(Equal(1))
-					Expect(converter.ConvertArgsForCall(0)).To(Equal(request))
+					Expect(converter.ConvertLRPCallCount()).To(Equal(1))
+					Expect(converter.ConvertLRPArgsForCall(0)).To(Equal(request))
 				})
 
 				It("should not use Desirer", func() {
@@ -106,7 +109,7 @@ var _ = Describe("Bifrost", func() {
 
 	})
 
-	Context("List", func() {
+	Describe("List LRP", func() {
 		createLRP := func(processGUID, version, lastUpdated string) *opi.LRP {
 			return &opi.LRP{
 				LRPIdentifier: opi.LRPIdentifier{GUID: processGUID, Version: version},
@@ -160,7 +163,7 @@ var _ = Describe("Bifrost", func() {
 		})
 	})
 
-	Context("Update an app", func() {
+	Describe("Update an app", func() {
 
 		var (
 			updateRequest cf.UpdateDesiredLRPRequest
@@ -315,7 +318,7 @@ var _ = Describe("Bifrost", func() {
 		})
 	})
 
-	Context("Get an App", func() {
+	Describe("Get an App", func() {
 		var (
 			lrp        *opi.LRP
 			identifier opi.LRPIdentifier
@@ -366,7 +369,7 @@ var _ = Describe("Bifrost", func() {
 		})
 	})
 
-	Context("Stop an app", func() {
+	Describe("Stop an app", func() {
 
 		JustBeforeEach(func() {
 			err = bfrst.Stop(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
@@ -394,7 +397,7 @@ var _ = Describe("Bifrost", func() {
 		})
 	})
 
-	Context("Stop an app instance", func() {
+	Describe("Stop an app instance", func() {
 
 		JustBeforeEach(func() {
 			err = bfrst.StopInstance(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
@@ -422,7 +425,7 @@ var _ = Describe("Bifrost", func() {
 		})
 	})
 
-	Context("Get all instances of an app", func() {
+	Describe("Get all instances of an app", func() {
 		var (
 			instances    []*cf.Instance
 			opiInstances []*opi.Instance
@@ -471,5 +474,60 @@ var _ = Describe("Bifrost", func() {
 			})
 		})
 
+	})
+
+	Describe("Transfer Task", func() {
+		var (
+			taskGUID    string
+			taskRequest cf.TaskRequest
+			task        opi.Task
+		)
+
+		BeforeEach(func() {
+			taskGUID = "task-guid"
+			converter.ConvertTaskReturns(task, nil)
+			taskRequest = cf.TaskRequest{AppGUID: "app-guid"}
+		})
+
+		JustBeforeEach(func() {
+			err = bfrst.TransferTask(context.Background(), taskGUID, taskRequest)
+		})
+
+		It("transfers the task", func() {
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(converter.ConvertTaskCallCount()).To(Equal(1))
+			actualTaskGUID, actualTaskRequest := converter.ConvertTaskArgsForCall(0)
+			Expect(actualTaskGUID).To(Equal(taskGUID))
+			Expect(actualTaskRequest).To(Equal(taskRequest))
+
+			Expect(taskDesirer.DesireCallCount()).To(Equal(1))
+			desiredTask := taskDesirer.DesireArgsForCall(0)
+			Expect(*desiredTask).To(Equal(task))
+		})
+
+		When("converting the task fails", func() {
+			BeforeEach(func() {
+				converter.ConvertTaskReturns(opi.Task{}, errors.New("task-conv-err"))
+			})
+
+			It("returns the error", func() {
+				Expect(err).To(MatchError(ContainSubstring("task-conv-err")))
+			})
+
+			It("does not desire the task", func() {
+				Expect(taskDesirer.DesireCallCount()).To(Equal(0))
+			})
+		})
+
+		When("desiring the task fails", func() {
+			BeforeEach(func() {
+				taskDesirer.DesireReturns(errors.New("desire-task-err"))
+			})
+
+			It("returns the error", func() {
+				Expect(err).To(MatchError(ContainSubstring("desire-task-err")))
+			})
+		})
 	})
 })

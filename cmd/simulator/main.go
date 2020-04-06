@@ -28,7 +28,7 @@ func main() {
 
 	stager := &StagerSimulator{}
 
-	handler := handler.New(bifrost, stager, stager, nil, "", handlerLogger)
+	handler := handler.New(bifrost, stager, stager, handlerLogger)
 
 	fmt.Println("Starting to listen at 127.0.0.1:8085")
 	handlerLogger.Fatal("simulator-crahsed", http.ListenAndServe("127.0.0.1:8085", handler))
@@ -76,8 +76,12 @@ func (d *DesirerSimulator) StopInstance(identifier opi.LRPIdentifier, index uint
 
 type ConverterSimulator struct{}
 
-func (c *ConverterSimulator) Convert(request cf.DesireLRPRequest) (opi.LRP, error) {
+func (c *ConverterSimulator) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) {
 	return opi.LRP{}, nil
+}
+
+func (c *ConverterSimulator) ConvertTask(taskGUID string, taskRequest cf.TaskRequest) (opi.Task, error) {
+	return opi.Task{}, nil
 }
 
 type StagerSimulator struct{}

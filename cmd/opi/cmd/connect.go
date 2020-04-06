@@ -52,11 +52,11 @@ func connect(cmd *cobra.Command, args []string) {
 	taskDesirer := initTaskDesirer(cfg, clientset)
 	buildpackStager := initBuildpackStager(cfg, taskDesirer, stagingCompleter, stagerLogger)
 	dockerStager := initDockerStager(stagingCompleter, stagerLogger)
-	bifrost := initBifrost(clientset, cfg)
+	bifrost := initBifrost(clientset, cfg, taskDesirer)
 
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	handler := handler.New(bifrost, buildpackStager, dockerStager, taskDesirer, cfg.Properties.RegistryAddress, handlerLogger)
+	handler := handler.New(bifrost, buildpackStager, dockerStager, handlerLogger)
 
 	var server *http.Server
 	handlerLogger.Info("opi-connected")
@@ -147,7 +147,7 @@ func initDockerStager(stagingCompleter stager.StagingCompleter, logger lager.Log
 	}
 }
 
-func initBifrost(clientset kubernetes.Interface, cfg *eirini.Config) eirini.Bifrost {
+func initBifrost(clientset kubernetes.Interface, cfg *eirini.Config, taskDesirer opi.TaskDesirer) eirini.Bifrost {
 	kubeNamespace := cfg.Properties.Namespace
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
@@ -172,8 +172,9 @@ func initBifrost(clientset kubernetes.Interface, cfg *eirini.Config) eirini.Bifr
 	)
 
 	return &bifrost.Bifrost{
-		Converter: converter,
-		Desirer:   desirer,
+		Converter:   converter,
+		Desirer:     desirer,
+		TaskDesirer: taskDesirer,
 	}
 }
 

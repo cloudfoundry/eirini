@@ -2,28 +2,23 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"github.com/julienschmidt/httprouter"
-	"github.com/pkg/errors"
 )
 
 type Task struct {
-	logger     lager.Logger
-	desirer    eirini.TaskDesirer
-	registryIP string
+	logger  lager.Logger
+	bifrost eirini.Bifrost
 }
 
-func NewTaskHandler(logger lager.Logger, desirer eirini.TaskDesirer, registryIP string) *Task {
+func NewTaskHandler(logger lager.Logger, bifrost eirini.Bifrost) *Task {
 	return &Task{
-		logger:     logger,
-		desirer:    desirer,
-		registryIP: registryIP,
+		logger:  logger,
+		bifrost: bifrost,
 	}
 }
 
@@ -38,65 +33,11 @@ func (t *Task) Run(resp http.ResponseWriter, req *http.Request, ps httprouter.Pa
 		return
 	}
 
-	task, err := t.createTask(taskGUID, taskRequest)
-	if err != nil {
+	if err := t.bifrost.TransferTask(req.Context(), taskGUID, taskRequest); err != nil {
 		logger.Error("task-request-task-create-failed", err)
-		writeErrorResponse(resp, http.StatusBadRequest, err)
-		return
-	}
-
-	if err := t.desirer.Desire(task); err != nil {
-		logger.Error("task-request-task-desire-failed", err)
 		writeErrorResponse(resp, http.StatusInternalServerError, err)
 		return
 	}
 
 	resp.WriteHeader(http.StatusAccepted)
-}
-
-func (t *Task) createTask(taskGUID string, request cf.TaskRequest) (*opi.Task, error) {
-	t.logger.Debug("create-task", lager.Data{"app-id": request.AppGUID, "staging-guid": taskGUID})
-
-	if request.Lifecycle.BuildpackLifecycle == nil {
-		return nil, errors.New("unsupported lifecycle, only buildpack lifecycle is supported")
-	}
-
-	lifecycle := request.Lifecycle.BuildpackLifecycle
-	buildpackEnv := map[string]string{
-		"HOME":          "/home/vcap/app",
-		"PATH":          "/usr/local/bin:/usr/bin:/bin",
-		"USER":          "vcap",
-		"TMPDIR":        "/home/vcap/tmp",
-		"START_COMMAND": lifecycle.StartCommand,
-	}
-
-	task := &opi.Task{
-		GUID:      taskGUID,
-		AppName:   request.AppName,
-		AppGUID:   request.AppGUID,
-		OrgName:   request.OrgName,
-		SpaceName: request.SpaceName,
-		OrgGUID:   request.OrgGUID,
-		SpaceGUID: request.SpaceGUID,
-		Env:       mergeEnvs(request.Environment, buildpackEnv),
-		Command:   []string{"/lifecycle/launch"},
-		Image:     t.imageURI(lifecycle.DropletGUID, lifecycle.DropletHash),
-	}
-	return task, nil
-}
-
-func (t *Task) imageURI(dropletGUID, dropletHash string) string {
-	return fmt.Sprintf("%s/cloudfoundry/%s:%s", t.registryIP, dropletGUID, dropletHash)
-}
-
-func mergeEnvs(env1 []cf.EnvironmentVariable, env2 map[string]string) map[string]string {
-	result := make(map[string]string)
-	for _, v := range env1 {
-		result[v.Name] = v.Value
-	}
-
-	for k, v := range env2 {
-		result[k] = v
-	}
-	return result
 }

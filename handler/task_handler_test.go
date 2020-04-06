@@ -8,29 +8,29 @@ import (
 
 	"code.cloudfoundry.org/eirini/eirinifakes"
 	. "code.cloudfoundry.org/eirini/handler"
+	"code.cloudfoundry.org/eirini/models/cf"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("TaskHandler", func() {
 
 	var (
-		ts     *httptest.Server
-		logger *lagertest.TestLogger
+		ts      *httptest.Server
+		logger  *lagertest.TestLogger
+		bifrost *eirinifakes.FakeBifrost
 
-		taskDesirer *eirinifakes.FakeTaskDesirer
-		response    *http.Response
-		body        string
-		path        string
-		method      string
+		response *http.Response
+		body     string
+		path     string
+		method   string
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test")
-		taskDesirer = new(eirinifakes.FakeTaskDesirer)
+		bifrost = new(eirinifakes.FakeBifrost)
 
 		method = "POST"
 		path = "/tasks/guid_1234"
@@ -49,7 +49,7 @@ var _ = Describe("TaskHandler", func() {
 	})
 
 	JustBeforeEach(func() {
-		handler := New(nil, nil, nil, taskDesirer, "foo://registry", logger)
+		handler := New(bifrost, nil, nil, logger)
 		ts = httptest.NewServer(handler)
 		req, err := http.NewRequest(method, ts.URL+path, bytes.NewReader([]byte(body)))
 		Expect(err).NotTo(HaveOccurred())
@@ -67,22 +67,32 @@ var _ = Describe("TaskHandler", func() {
 		Expect(response.StatusCode).To(Equal(http.StatusAccepted))
 	})
 
-	It("should desire the task", func() {
-		Expect(taskDesirer.DesireCallCount()).To(Equal(1))
-		Expect(*taskDesirer.DesireArgsForCall(0)).To(Equal(opi.Task{
-			GUID:    "guid_1234",
-			AppGUID: "our-app-id",
-			Env: map[string]string{
-				"HOWARD":        "the alien",
-				"HOME":          "/home/vcap/app",
-				"PATH":          "/usr/local/bin:/usr/bin:/bin",
-				"USER":          "vcap",
-				"TMPDIR":        "/home/vcap/tmp",
-				"START_COMMAND": "some command",
+	It("should transfer the task", func() {
+		Expect(bifrost.TransferTaskCallCount()).To(Equal(1))
+		_, actualTaskGUID, actualTaskRequest := bifrost.TransferTaskArgsForCall(0)
+		Expect(actualTaskGUID).To(Equal("guid_1234"))
+		Expect(actualTaskRequest).To(Equal(cf.TaskRequest{
+			AppGUID:            "our-app-id",
+			Environment:        []cf.EnvironmentVariable{{Name: "HOWARD", Value: "the alien"}},
+			CompletionCallback: "example.com/call/me/maybe",
+			Lifecycle: cf.Lifecycle{
+				BuildpackLifecycle: &cf.BuildpackLifecycle{
+					DropletGUID:  "some-guid",
+					DropletHash:  "some-hash",
+					StartCommand: "some command",
+				},
 			},
-			Command: []string{"/lifecycle/launch"},
-			Image:   "foo://registry/cloudfoundry/some-guid:some-hash",
 		}))
+	})
+
+	When("transferring the task fails", func() {
+		BeforeEach(func() {
+			bifrost.TransferTaskReturns(errors.New("transfer-task-err"))
+		})
+
+		It("should return 500 Internal Server Error code", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+		})
 	})
 
 	Context("when the request body cannot be unmarshalled", func() {
@@ -94,37 +104,8 @@ var _ = Describe("TaskHandler", func() {
 			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
 		})
 
-		It("should not desire tasks", func() {
-			Expect(taskDesirer.DesireCallCount()).To(Equal(0))
-		})
-	})
-
-	Context("when the lifecycle is uknown", func() {
-		BeforeEach(func() {
-			body = `{
-				"lifecycle": {
-          "amazing_lifecycle": {
-					}
-				}
-			}`
-		})
-
-		It("should return 400 Bad Request code", func() {
-			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
-		})
-
-		It("should not desire tasks", func() {
-			Expect(taskDesirer.DesireCallCount()).To(Equal(0))
-		})
-	})
-
-	Context("when the task desirer fails", func() {
-		BeforeEach(func() {
-			taskDesirer.DesireReturns(errors.New("undesired-error"))
-		})
-
-		It("should return 500 Internal Server Error code", func() {
-			Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+		It("should not transfer the task", func() {
+			Expect(bifrost.TransferTaskCallCount()).To(Equal(0))
 		})
 	})
 })

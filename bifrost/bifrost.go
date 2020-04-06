@@ -11,16 +11,26 @@ import (
 )
 
 type Bifrost struct {
-	Converter Converter
-	Desirer   opi.Desirer
+	Converter   Converter
+	Desirer     opi.Desirer
+	TaskDesirer opi.TaskDesirer
 }
 
 func (b *Bifrost) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
-	desiredLRP, err := b.Converter.Convert(request)
+	desiredLRP, err := b.Converter.ConvertLRP(request)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert request")
 	}
 	return errors.Wrap(b.Desirer.Desire(&desiredLRP), "failed to desire")
+}
+
+func (b *Bifrost) TransferTask(ctx context.Context, taskGUID string, taskRequest cf.TaskRequest) error {
+	desiredTask, err := b.Converter.ConvertTask(taskGUID, taskRequest)
+	if err != nil {
+		return errors.Wrap(err, "failed to convert task")
+	}
+
+	return errors.Wrap(b.TaskDesirer.Desire(&desiredTask), "failed to desire")
 }
 
 func (b *Bifrost) List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error) {
