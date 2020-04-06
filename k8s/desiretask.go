@@ -63,7 +63,6 @@ func (d *TaskDesirer) Delete(name string) error {
 
 func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 	job := d.toJob(task)
-	job.Name = task.TaskGUID
 
 	envs := getEnvs(task)
 	containers := []v1.Container{
@@ -89,7 +88,6 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	job := d.toJob(task.Task)
-	job.Name = task.StagingGUID
 
 	secretsVolume := v1.Volume{
 		Name: eirini.CertsVolumeName,
@@ -157,11 +155,11 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	volumes := []v1.Volume{secretsVolume, outputVolume, buildpacksVolume, workspaceVolume}
 	job.Spec.Template.Spec.Volumes = volumes
 
-	job.Annotations[AnnotationStagingGUID] = task.StagingGUID
+	job.Annotations[AnnotationStagingGUID] = task.GUID
 
 	job.Labels[LabelSourceType] = stagingSourceType
-	job.Labels[LabelStagingGUID] = task.StagingGUID
-	job.Spec.Template.Labels[LabelStagingGUID] = task.StagingGUID
+	job.Labels[LabelStagingGUID] = task.GUID
+	job.Spec.Template.Labels[LabelStagingGUID] = task.GUID
 
 	return job
 }
@@ -257,6 +255,7 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 		},
 	}
 
+	job.Name = task.GUID
 	job.Labels = map[string]string{
 		LabelAppGUID: task.AppGUID,
 		LabelGUID:    task.Env[eirini.EnvAppID],

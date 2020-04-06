@@ -71,7 +71,7 @@ func (t *Task) createTask(taskGUID string, request cf.TaskRequest) (*opi.Task, e
 	}
 
 	task := &opi.Task{
-		TaskGUID:  taskGUID,
+		GUID:      taskGUID,
 		AppName:   request.AppName,
 		AppGUID:   request.AppGUID,
 		OrgName:   request.OrgName,

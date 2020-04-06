@@ -85,8 +85,8 @@ func (s *Stager) createStagingTask(stagingGUID string, request cf.StagingRequest
 		DownloaderImage: s.Config.DownloaderImage,
 		UploaderImage:   s.Config.UploaderImage,
 		ExecutorImage:   s.Config.ExecutorImage,
-		StagingGUID:     stagingGUID,
 		Task: &opi.Task{
+			GUID:      stagingGUID,
 			AppName:   request.AppName,
 			AppGUID:   request.AppGUID,
 			OrgName:   request.OrgName,

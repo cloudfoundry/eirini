@@ -21,7 +21,7 @@ var _ = Describe("Desiretask", func() {
 		Namespace       = "tests"
 		Image           = "docker.png"
 		CertsSecretName = "secret-certs"
-		stagingGUID     = "staging-123"
+		taskGUID        = "task-123"
 	)
 
 	var (
@@ -59,7 +59,7 @@ var _ = Describe("Desiretask", func() {
 			v1.EnvVar{Name: eirini.EnvDownloadURL, Value: "example.com/download"},
 			v1.EnvVar{Name: eirini.EnvDropletUploadURL, Value: "example.com/upload"},
 			v1.EnvVar{Name: eirini.EnvAppID, Value: "env-app-id"},
-			v1.EnvVar{Name: eirini.EnvStagingGUID, Value: stagingGUID},
+			v1.EnvVar{Name: eirini.EnvStagingGUID, Value: taskGUID},
 			v1.EnvVar{Name: eirini.EnvCompletionCallback, Value: "example.com/call/me/maybe"},
 			v1.EnvVar{Name: eirini.EnvEiriniAddress, Value: "http://opi.cf.internal"},
 			v1.EnvVar{Name: eirini.EnvCFInstanceInternalIP, ValueFrom: expectedValFrom("status.podIP")},
@@ -88,11 +88,12 @@ var _ = Describe("Desiretask", func() {
 			SpaceName: "my-space",
 			SpaceGUID: "space-id",
 			OrgGUID:   "org-id",
+			GUID:      taskGUID,
 			Env: map[string]string{
 				eirini.EnvDownloadURL:        "example.com/download",
 				eirini.EnvDropletUploadURL:   "example.com/upload",
 				eirini.EnvAppID:              "env-app-id",
-				eirini.EnvStagingGUID:        stagingGUID,
+				eirini.EnvStagingGUID:        taskGUID,
 				eirini.EnvCompletionCallback: "example.com/call/me/maybe",
 				eirini.EnvEiriniAddress:      "http://opi.cf.internal",
 			},
@@ -136,17 +137,15 @@ var _ = Describe("Desiretask", func() {
 	Context("When desiring a task", func() {
 
 		BeforeEach(func() {
-			task.TaskGUID = "the-task-guid"
 			task.Command = []string{"/lifecycle/launch"}
 			Expect(desirer.Desire(task)).To(Succeed())
 
 			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
 			job = fakeJobClient.CreateArgsForCall(0)
-			Expect(job.Name).To(Equal("the-task-guid"))
 		})
 
 		It("should desire the task", func() {
-			Expect(job.Name).To(Equal("the-task-guid"))
+			Expect(job.Name).To(Equal(taskGUID))
 			assertGeneralSpec(job)
 
 			Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(v1.LocalObjectReference{Name: "registry-secret"}))
@@ -339,7 +338,6 @@ var _ = Describe("Desiretask", func() {
 				DownloaderImage: Image,
 				ExecutorImage:   Image,
 				UploaderImage:   Image,
-				StagingGUID:     stagingGUID,
 				Task:            task,
 			}
 
@@ -349,11 +347,11 @@ var _ = Describe("Desiretask", func() {
 		JustBeforeEach(func() {
 			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
 			job = fakeJobClient.CreateArgsForCall(0)
-			Expect(job.Name).To(Equal(stagingGUID))
+			Expect(job.Name).To(Equal(taskGUID))
 		})
 
 		It("should desire the staging task", func() {
-			Expect(job.Name).To(Equal(stagingGUID))
+			Expect(job.Name).To(Equal(taskGUID))
 			assertGeneralSpec(job)
 
 			initContainers := job.Spec.Template.Spec.InitContainers
@@ -379,7 +377,7 @@ var _ = Describe("Desiretask", func() {
 			Entry("AppGUID", LabelAppGUID, "my-app-guid"),
 			Entry("LabelGUID", LabelGUID, "env-app-id"),
 			Entry("LabelSourceType", LabelSourceType, "STG"),
-			Entry("LabelStagingGUID", LabelStagingGUID, stagingGUID),
+			Entry("LabelStagingGUID", LabelStagingGUID, taskGUID),
 		)
 
 		Context("When the staging task already exists", func() {
@@ -397,11 +395,11 @@ var _ = Describe("Desiretask", func() {
 	Context("When deleting a task", func() {
 
 		It("should delete the job", func() {
-			Expect(desirer.Delete(stagingGUID)).To(Succeed())
+			Expect(desirer.Delete(taskGUID)).To(Succeed())
 
 			Expect(fakeJobClient.DeleteCallCount()).To(Equal(1))
 			jobName, _ := fakeJobClient.DeleteArgsForCall(0)
-			Expect(jobName).To(Equal(stagingGUID))
+			Expect(jobName).To(Equal(taskGUID))
 		})
 
 		Context("that does not exist", func() {
@@ -410,7 +408,7 @@ var _ = Describe("Desiretask", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(desirer.Delete(stagingGUID)).To(MatchError(ContainSubstring("job does not exist")))
+				Expect(desirer.Delete(taskGUID)).To(MatchError(ContainSubstring("job does not exist")))
 			})
 		})
 

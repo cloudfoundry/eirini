@@ -80,7 +80,7 @@ type Healtcheck struct {
 // A Task is a one-off process that is run exactly once and returns a
 // result
 type Task struct {
-	TaskGUID  string
+	GUID      string
 	Image     string
 	Env       map[string]string
 	Command   []string
@@ -97,8 +97,6 @@ type Task struct {
 
 type StagingTask struct {
 	*Task
-	// consider using TaskGUID instead of StagingGUID
-	StagingGUID     string
 	DownloaderImage string
 	UploaderImage   string
 	ExecutorImage   string

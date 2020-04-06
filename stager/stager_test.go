@@ -105,8 +105,8 @@ var _ = Describe("Stager", func() {
 				DownloaderImage: "eirini/recipe-downloader:tagged",
 				UploaderImage:   "eirini/recipe-uploader:tagged",
 				ExecutorImage:   "eirini/recipe-runner:tagged",
-				StagingGUID:     stagingGUID,
 				Task: &opi.Task{
+					GUID:      stagingGUID,
 					AppName:   "our-app",
 					AppGUID:   "our-app-id",
 					OrgName:   "our-org",

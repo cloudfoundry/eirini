@@ -117,6 +117,7 @@ var _ = Describe("StagingReporter", func() {
 
 			stagingTask := opi.StagingTask{
 				Task: &opi.Task{
+					GUID: "the-staging-guid",
 					Env: map[string]string{
 						eirini.EnvStagingGUID: "the-staging-guid",
 						"EIRINI_ADDRESS":      eiriniServer.URL(),
@@ -132,7 +133,6 @@ var _ = Describe("StagingReporter", func() {
 					DiskMB:    200,
 					CPUWeight: 1,
 				},
-				StagingGUID:     "the-staging-guid",
 				DownloaderImage: "eirini/invalid-recipe-downloader",
 				UploaderImage:   "eirini/recipe-uploader",
 				ExecutorImage:   "eirini/recipe-executor",

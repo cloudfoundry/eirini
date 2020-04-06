@@ -70,8 +70,8 @@ var _ = Describe("TaskHandler", func() {
 	It("should desire the task", func() {
 		Expect(taskDesirer.DesireCallCount()).To(Equal(1))
 		Expect(*taskDesirer.DesireArgsForCall(0)).To(Equal(opi.Task{
-			TaskGUID: "guid_1234",
-			AppGUID:  "our-app-id",
+			GUID:    "guid_1234",
+			AppGUID: "our-app-id",
 			Env: map[string]string{
 				"HOWARD":        "the alien",
 				"HOME":          "/home/vcap/app",
