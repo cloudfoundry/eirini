@@ -114,9 +114,11 @@ var _ = Describe("Metrics", func() {
 			})
 
 			It("reports metrics for each instance", func() {
-				var instanceIds []string
+				var (
+					instanceIds []string
+					envelope    *loggregator_v2.Envelope
+				)
 				for i := 0; i < lrp.NumInstances; i++ {
-					var envelope *loggregator_v2.Envelope
 					Eventually(envelopes).Should(Receive(&envelope))
 
 					Expect(envelope.SourceId).To(Equal("the-app-guid"))
