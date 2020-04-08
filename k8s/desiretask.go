@@ -1,7 +1,10 @@
 package k8s
 
 import (
+	"fmt"
+
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	v1 "k8s.io/api/core/v1"
@@ -255,7 +258,10 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 		},
 	}
 
-	job.Name = task.GUID
+	namePrefix := fmt.Sprintf("%s-%s", task.AppName, task.SpaceName)
+	namePrefix = fmt.Sprintf("%s-", utils.SanitizeName(namePrefix, task.GUID))
+	job.GenerateName = namePrefix
+
 	job.Labels = map[string]string{
 		LabelAppGUID: task.AppGUID,
 		LabelGUID:    task.Env[eirini.EnvAppID],

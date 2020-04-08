@@ -208,9 +208,9 @@ var _ = Describe("Desiretask", func() {
 	})
 
 	Context("When desiring a staging task", func() {
-
 		var (
 			stagingTask *opi.StagingTask
+			err         error
 		)
 
 		assertVolumes := func(job *batch.Job) {
@@ -340,18 +340,18 @@ var _ = Describe("Desiretask", func() {
 				UploaderImage:   Image,
 				Task:            task,
 			}
-
-			Expect(desirer.DesireStaging(stagingTask)).To(Succeed())
 		})
 
 		JustBeforeEach(func() {
+			err = desirer.DesireStaging(stagingTask)
 			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
 			job = fakeJobClient.CreateArgsForCall(0)
-			Expect(job.Name).To(Equal(taskGUID))
 		})
 
 		It("should desire the staging task", func() {
-			Expect(job.Name).To(Equal(taskGUID))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(job.GenerateName).To(Equal("my-app-my-space-"))
+
 			assertGeneralSpec(job)
 
 			initContainers := job.Spec.Template.Spec.InitContainers
@@ -368,7 +368,17 @@ var _ = Describe("Desiretask", func() {
 			)
 			assertContainer(containers[0], "opi-task-uploader")
 			assertStagingSpec(job)
+		})
 
+		When("the prefix would be invalid", func() {
+			BeforeEach(func() {
+				task.AppName = ""
+				task.SpaceName = ""
+			})
+
+			It("should use the guid as the prefix instead", func() {
+				Expect(job.GenerateName).To(Equal(taskGUID + "-"))
+			})
 		})
 
 		DescribeTable("the task should have the expected labels", func(key, value string) {
@@ -386,8 +396,7 @@ var _ = Describe("Desiretask", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(desirer.DesireStaging(stagingTask)).To(MatchError(ContainSubstring("job already exists")))
-
+				Expect(err).To(MatchError(ContainSubstring("job already exists")))
 			})
 		})
 	})

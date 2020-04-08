@@ -23,6 +23,8 @@ var _ = Describe("Staging", func() {
 
 	BeforeEach(func() {
 		body = `{
+				"app_name": "my_app",
+				"space_name": "my_space",
 				"lifecycle": {
 					"buildpack_lifecycle": {}
 				}
@@ -44,7 +46,7 @@ var _ = Describe("Staging", func() {
 		jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(jobs.Items).Should(HaveLen(1))
-		Expect(jobs.Items[0].Name).Should(Equal("the-staging-guid"))
+		Expect(jobs.Items[0].Name).Should(HavePrefix("my-app-my-space-"))
 	})
 
 	It("should create the correct containers for the job", func() {
