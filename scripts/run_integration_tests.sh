@@ -3,7 +3,7 @@
 set -euo pipefail
 
 readonly BASEDIR="$(cd "$(dirname "$0")"/.. && pwd)"
-INTEGRATION_KUBECONFIG=${INTEGRATION_KUBECONFIG:?must be a path to a valid kubeconfig}
+export INTEGRATION_KUBECONFIG=${INTEGRATION_KUBECONFIG:-"$HOME/.kube/config"}
 export GO111MODULE=on
 
 main(){
