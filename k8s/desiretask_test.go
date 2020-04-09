@@ -135,17 +135,22 @@ var _ = Describe("Desiretask", func() {
 	})
 
 	Context("When desiring a task", func() {
+		var err error
 
 		BeforeEach(func() {
 			task.Command = []string{"/lifecycle/launch"}
-			Expect(desirer.Desire(task)).To(Succeed())
+		})
 
+		JustBeforeEach(func() {
+			err = desirer.Desire(task)
 			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
 			job = fakeJobClient.CreateArgsForCall(0)
 		})
 
 		It("should desire the task", func() {
-			Expect(job.Name).To(Equal(taskGUID))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(job.GenerateName).To(HavePrefix("my-app-my-space-"))
+
 			assertGeneralSpec(job)
 
 			Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(v1.LocalObjectReference{Name: "registry-secret"}))
@@ -153,6 +158,17 @@ var _ = Describe("Desiretask", func() {
 			Expect(containers).To(HaveLen(1))
 			assertContainer(containers[0], "opi-task")
 			Expect(containers[0].Command).To(ConsistOf("/lifecycle/launch"))
+		})
+
+		When("the prefix would be invalid", func() {
+			BeforeEach(func() {
+				task.AppName = ""
+				task.SpaceName = ""
+			})
+
+			It("should use the guid as the prefix instead", func() {
+				Expect(job.GenerateName).To(Equal(taskGUID + "-"))
+			})
 		})
 
 		DescribeTable("the task should have the expected annotations", func(key, value string) {
@@ -202,7 +218,7 @@ var _ = Describe("Desiretask", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(desirer.Desire(task)).To(MatchError(ContainSubstring("job already exists")))
+				Expect(err).To(MatchError(ContainSubstring("job already exists")))
 			})
 		})
 	})

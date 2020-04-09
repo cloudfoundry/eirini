@@ -21,6 +21,8 @@ var _ = Describe("Desire Task", func() {
 	BeforeEach(func() {
 		body = `{
 			"guid": "the-task-guid",
+			"app_name": "my_app",
+			"space_name": "my_space",
 			"environment": [
 			   {
 				   "name": "my-env",
@@ -50,7 +52,7 @@ var _ = Describe("Desire Task", func() {
 
 	It("should create a job for the task", func() {
 		Expect(jobs.Items).To(HaveLen(1))
-		Expect(jobs.Items[0].Name).To(Equal("the-task-guid"))
+		Expect(jobs.Items[0].Name).To(HavePrefix("my-app-my-space-"))
 	})
 
 	It("should set the registry secret name", func() {
