@@ -26,7 +26,7 @@ const (
 type JobClient interface {
 	Create(*batch.Job) (*batch.Job, error)
 	Delete(guid string, deleteOpts *meta_v1.DeleteOptions) error
-	List(opts *meta_v1.ListOptions) (*batch.JobList, error)
+	List(opts meta_v1.ListOptions) (*batch.JobList, error)
 }
 
 type KeyPath struct {
@@ -60,7 +60,7 @@ func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 
 func (d *TaskDesirer) Delete(guid string) error {
 	logger := d.Logger.Session("delete", lager.Data{"guid": guid})
-	jobs, err := d.JobClient.List(&metav1.ListOptions{
+	jobs, err := d.JobClient.List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", LabelStagingGUID, guid),
 	})
 	if err != nil {
