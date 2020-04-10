@@ -10,7 +10,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	batch "k8s.io/api/batch/v1"
 )
@@ -60,7 +59,7 @@ func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 
 func (d *TaskDesirer) Delete(guid string) error {
 	logger := d.Logger.Session("delete", lager.Data{"guid": guid})
-	jobs, err := d.JobClient.List(metav1.ListOptions{
+	jobs, err := d.JobClient.List(meta_v1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", LabelStagingGUID, guid),
 	})
 	if err != nil {
