@@ -1,10 +1,13 @@
 package k8s_test
 
 import (
+	"fmt"
+
 	"code.cloudfoundry.org/eirini"
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -13,6 +16,7 @@ import (
 	batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Desiretask", func() {
@@ -131,6 +135,7 @@ var _ = Describe("Desiretask", func() {
 			JobClient:          fakeJobClient,
 			ServiceAccountName: "staging-serivce-account",
 			RegistrySecretName: "registry-secret",
+			Logger:             lagertest.NewTestLogger("desiretask"),
 		}
 	})
 
@@ -419,21 +424,76 @@ var _ = Describe("Desiretask", func() {
 
 	Context("When deleting a task", func() {
 
+		BeforeEach(func() {
+			jobs := &batch.JobList{
+				Items: []batch.Job{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "staging-job",
+						}},
+				},
+			}
+			fakeJobClient.ListReturns(jobs, nil)
+		})
+
 		It("should delete the job", func() {
 			Expect(desirer.Delete(taskGUID)).To(Succeed())
 
+			Expect(fakeJobClient.ListCallCount()).To(Equal(1))
+			Expect(fakeJobClient.ListArgsForCall(0).LabelSelector).To(Equal(fmt.Sprintf("%s=%s", LabelStagingGUID, taskGUID)))
+
 			Expect(fakeJobClient.DeleteCallCount()).To(Equal(1))
 			jobName, _ := fakeJobClient.DeleteArgsForCall(0)
-			Expect(jobName).To(Equal(taskGUID))
+			Expect(jobName).To(Equal("staging-job"))
 		})
 
-		Context("that does not exist", func() {
+		Context("when the job does not exist", func() {
 			BeforeEach(func() {
-				fakeJobClient.DeleteReturns(errors.New("job does not exist"))
+				fakeJobClient.ListReturns(&batch.JobList{}, nil)
 			})
 
 			It("should return an error", func() {
-				Expect(desirer.Delete(taskGUID)).To(MatchError(ContainSubstring("job does not exist")))
+				Expect(desirer.Delete(taskGUID)).To(MatchError(fmt.Sprintf("job with guid %s should have 1 instance, but it has: %d", taskGUID, 0)))
+				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
+				Expect(fakeJobClient.DeleteCallCount()).To(BeZero())
+			})
+		})
+
+		Context("when there are multiple jobs with the same guid", func() {
+			BeforeEach(func() {
+				fakeJobClient.ListReturns(&batch.JobList{
+					Items: []batch.Job{{}, {}},
+				}, nil)
+			})
+
+			It("should return an error", func() {
+				Expect(desirer.Delete(taskGUID)).To(MatchError(fmt.Sprintf("job with guid %s should have 1 instance, but it has: %d", taskGUID, 2)))
+				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
+				Expect(fakeJobClient.DeleteCallCount()).To(BeZero())
+			})
+		})
+
+		Context("when listing the jobs by label fails", func() {
+
+			BeforeEach(func() {
+				fakeJobClient.ListReturns(nil, errors.New("failed to list jobs"))
+			})
+
+			It("should return an error", func() {
+				Expect(desirer.Delete(taskGUID)).To(MatchError("failed to list jobs"))
+				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
+				Expect(fakeJobClient.DeleteCallCount()).To(BeZero())
+			})
+
+		})
+
+		Context("when the delete fails", func() {
+			BeforeEach(func() {
+				fakeJobClient.DeleteReturns(errors.New("failed to delete"))
+			})
+
+			It("should return an error", func() {
+				Expect(desirer.Delete(taskGUID)).To(MatchError(ContainSubstring("failed to delete")))
 			})
 		})
 

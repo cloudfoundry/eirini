@@ -10,6 +10,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	batch "k8s.io/api/batch/v1"
 )
@@ -24,7 +25,8 @@ const (
 //go:generate counterfeiter . JobClient
 type JobClient interface {
 	Create(*batch.Job) (*batch.Job, error)
-	Delete(name string, deleteOpts *meta_v1.DeleteOptions) error
+	Delete(guid string, deleteOpts *meta_v1.DeleteOptions) error
+	List(opts *meta_v1.ListOptions) (*batch.JobList, error)
 }
 
 type KeyPath struct {
@@ -56,12 +58,24 @@ func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 	return err
 }
 
-func (d *TaskDesirer) Delete(name string) error {
+func (d *TaskDesirer) Delete(guid string) error {
+	logger := d.Logger.Session("delete", lager.Data{"guid": guid})
+	jobs, err := d.JobClient.List(&metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", LabelStagingGUID, guid),
+	})
+	if err != nil {
+		logger.Error("failed to list jobs", err)
+		return err
+	}
+	if len(jobs.Items) != 1 {
+		logger.Error("job with guid does not have 1 instance", nil, lager.Data{"instances": len(jobs.Items)})
+		return fmt.Errorf("job with guid %s should have 1 instance, but it has: %d", guid, len(jobs.Items))
+	}
+
 	backgroundPropagation := meta_v1.DeletePropagationBackground
-	err := d.JobClient.Delete(name, &meta_v1.DeleteOptions{
+	return d.JobClient.Delete(jobs.Items[0].Name, &meta_v1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
-	return err
 }
 
 func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
