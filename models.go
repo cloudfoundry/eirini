@@ -104,9 +104,10 @@ type EventReporterConfig struct {
 }
 
 type RouteEmitterConfig struct {
-	NatsPassword string `yaml:"nats_password"`
-	NatsIP       string `yaml:"nats_ip"`
-	NatsPort     int    `yaml:"nats_port"`
+	NatsPassword        string `yaml:"nats_password"`
+	NatsIP              string `yaml:"nats_ip"`
+	NatsPort            int    `yaml:"nats_port"`
+	EmitPeriodInSeconds uint   `yaml:"emit_period_in_seconds"`
 
 	KubeConfig `yaml:",inline"`
 }

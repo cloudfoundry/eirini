@@ -12,7 +12,7 @@ import (
 	"github.com/jessevdk/go-flags"
 )
 
-const tickerPeriod = 30 * time.Second
+const tickerPeriod uint = 30
 
 type options struct {
 	ConfigFile string `short:"c" long:"config" description:"Config for running route-collector"`
@@ -25,6 +25,10 @@ func main() {
 
 	cfg, err := route.ReadConfig(opts.ConfigFile)
 	cmdcommons.ExitIfError(err)
+
+	if cfg.EmitPeriodInSeconds == 0 {
+		cfg.EmitPeriodInSeconds = tickerPeriod
+	}
 
 	logger := lager.NewLogger("route-collector")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
@@ -39,7 +43,7 @@ func main() {
 		Collector: collector,
 		Emitter:   routeEmitter,
 		Scheduler: &util.TickerTaskScheduler{
-			Ticker: time.NewTicker(tickerPeriod),
+			Ticker: time.NewTicker(time.Duration(cfg.EmitPeriodInSeconds) * time.Second),
 			Logger: logger.Session("scheduler"),
 		},
 	}
