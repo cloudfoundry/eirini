@@ -118,12 +118,16 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) opi.Tas
 		},
 	}
 
+	logger := lager.NewLogger("task-desirer")
+	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+
 	return &k8s.TaskDesirer{
 		Namespace:          cfg.Properties.Namespace,
 		TLSConfig:          tlsConfigs,
 		ServiceAccountName: cfg.Properties.ApplicationServiceAccount,
 		RegistrySecretName: cfg.Properties.RegistrySecretName,
 		JobClient:          clientset.BatchV1().Jobs(cfg.Properties.Namespace),
+		Logger:             logger,
 	}
 }
 
