@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	ginkgoconfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/rest"
 )
 
@@ -33,6 +35,12 @@ func TestEats(t *testing.T) {
 
 var (
 	fixture *util.Fixture
+
+	localhostCertPath, localhostKeyPath string
+	opiConfig                           string
+	opiSession                          *gexec.Session
+	httpClient                          *http.Client
+	opiURL                              string
 )
 
 var _ = BeforeSuite(func() {
@@ -43,10 +51,24 @@ var _ = BeforeSuite(func() {
 
 var _ = BeforeEach(func() {
 	fixture.SetUp()
+
+	localhostCertPath, localhostKeyPath = generateKeyPair("localhost")
+
+	var err error
+	httpClient, err = makeTestHTTPClient(localhostCertPath, localhostKeyPath)
+	Expect(err).ToNot(HaveOccurred())
+
+	opiSession, opiConfig, opiURL = runOpi(localhostCertPath, localhostKeyPath)
+	waitOpiReady(httpClient, opiURL)
 })
 
 var _ = AfterEach(func() {
 	fixture.TearDown()
+
+	if opiSession != nil {
+		opiSession.Kill()
+	}
+	Expect(os.Remove(opiConfig)).To(Succeed())
 })
 
 func generateKeyPair(name string) (string, string) {
@@ -70,7 +92,7 @@ func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
 	eiriniConfig := &eirini.Config{
 		Properties: eirini.Properties{
 			KubeConfig: eirini.KubeConfig{
-				ConfigPath: os.Getenv("INTEGRATION_KUBECONFIG"),
+				ConfigPath: fixture.KubeConfigPath,
 				Namespace:  fixture.Namespace,
 			},
 			CCCAPath:             certPath,
@@ -79,6 +101,7 @@ func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
 			ServerCertPath:       certPath,
 			ServerKeyPath:        keyPath,
 			ClientCAPath:         certPath,
+			DiskLimitMB:          500,
 			TLSPort:              61000 + rand.Intn(1000) + ginkgoconfig.GinkgoConfig.ParallelNode,
 			CCUploaderSecretName: "cc-uploader-secret",
 			CCUploaderCertPath:   "path-to-crt",
@@ -105,9 +128,9 @@ func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
 	eiriniSession, err := gexec.Start(eiriniCommand, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 
-	opiURL := fmt.Sprintf("https://localhost:%d", eiriniConfig.Properties.TLSPort)
+	url := fmt.Sprintf("https://localhost:%d", eiriniConfig.Properties.TLSPort)
 
-	return eiriniSession, eiriniConfigFile.Name(), opiURL
+	return eiriniSession, eiriniConfigFile.Name(), url
 }
 
 func makeTestHTTPClient(certPath, keyPath string) (*http.Client, error) {
@@ -129,9 +152,9 @@ func makeTestHTTPClient(certPath, keyPath string) (*http.Client, error) {
 		RootCAs:      certPool,
 		Certificates: []tls.Certificate{clientCert},
 	}
-	httpClient := cfhttp.NewClient(cfhttp.WithTLSConfig(tlsConfig))
+	client := cfhttp.NewClient(cfhttp.WithTLSConfig(tlsConfig))
 
-	return httpClient, nil
+	return client, nil
 }
 
 func waitOpiReady(httpClient rest.HTTPClient, opiURL string) {
@@ -148,11 +171,23 @@ func desireLRP(httpClient rest.HTTPClient, opiURL string, lrpRequest cf.DesireLR
 	if err != nil {
 		return nil, err
 	}
-	desireLrpReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/the-app-guid", opiURL), bytes.NewReader(body))
+	desireLrpReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s", opiURL, lrpRequest.GUID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
 	return httpClient.Do(desireLrpReq)
+}
+
+func updateLRP(httpClient rest.HTTPClient, opiURL string, updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error) {
+	body, err := json.Marshal(updateRequest)
+	if err != nil {
+		return nil, err
+	}
+	updateLrpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/apps/%s", opiURL, updateRequest.GUID), bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	return httpClient.Do(updateLrpReq)
 }
 
 func writeTempFile(content []byte, fileName string) string {
@@ -163,4 +198,19 @@ func writeTempFile(content []byte, fileName string) string {
 	err = ioutil.WriteFile(configFile.Name(), content, os.ModePerm)
 	Expect(err).ToNot(HaveOccurred())
 	return configFile.Name()
+}
+
+func runBinary(binPath string, config interface{}) (*gexec.Session, string) {
+	binaryPath, err := gexec.Build(binPath)
+	Expect(err).NotTo(HaveOccurred())
+
+	configBytes, err := yaml.Marshal(config)
+	Expect(err).NotTo(HaveOccurred())
+
+	configFile := writeTempFile(configBytes, filepath.Base(binaryPath)+"-config.yaml")
+	command := exec.Command(binaryPath, "-c", configFile) // #nosec G204
+	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+	Expect(err).ToNot(HaveOccurred())
+
+	return session, configFile
 }
