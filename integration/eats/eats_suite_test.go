@@ -38,7 +38,7 @@ var (
 var _ = BeforeSuite(func() {
 	fixture = util.NewFixture(GinkgoWriter)
 
-	SetDefaultEventuallyTimeout(5 * time.Second)
+	SetDefaultEventuallyTimeout(10 * time.Second)
 })
 
 var _ = BeforeEach(func() {
