@@ -11,7 +11,7 @@ import (
 
 const RootfsVersionLabel = "cloudfoundry.org/rootfs-version"
 
-//go:generate counterfeiter . StatefulSetUpdaterLister
+//counterfeiter:generate . StatefulSetUpdaterLister
 type StatefulSetUpdaterLister interface {
 	Update(*apps.StatefulSet) (*apps.StatefulSet, error)
 	List(metav1.ListOptions) (*apps.StatefulSetList, error)

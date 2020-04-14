@@ -10,7 +10,7 @@ import (
 
 const NoResync = 0
 
-//go:generate counterfeiter . PodUpdateEventHandler
+//counterfeiter:generate . PodUpdateEventHandler
 type PodUpdateEventHandler interface {
 	Handle(oldObj, updatedObj *v1.Pod)
 }

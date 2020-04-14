@@ -5,7 +5,7 @@ import (
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
-//go:generate counterfeiter . CcClient
+//counterfeiter:generate . CcClient
 type CcClient interface {
 	AppCrashed(proccessGUID string, crashedRequest cc_messages.AppCrashedRequest, logger lager.Logger) error
 }

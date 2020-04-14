@@ -57,19 +57,19 @@ const (
 	PodAffinityTermWeight    = 100
 )
 
-//go:generate counterfeiter . PodListerDeleter
+//counterfeiter:generate . PodListerDeleter
 type PodListerDeleter interface {
 	List(opts metav1.ListOptions) (*corev1.PodList, error)
 	Delete(name string, options *metav1.DeleteOptions) error
 }
 
-//go:generate counterfeiter . PodDisruptionBudgetClient
+//counterfeiter:generate . PodDisruptionBudgetClient
 type PodDisruptionBudgetClient interface {
 	Create(*v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)
 	Delete(name string, options *metav1.DeleteOptions) error
 }
 
-//go:generate counterfeiter . StatefulSetClient
+//counterfeiter:generate . StatefulSetClient
 type StatefulSetClient interface {
 	Create(*appsv1.StatefulSet) (*appsv1.StatefulSet, error)
 	Update(*appsv1.StatefulSet) (*appsv1.StatefulSet, error)
@@ -77,13 +77,13 @@ type StatefulSetClient interface {
 	List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error)
 }
 
-//go:generate counterfeiter . SecretsClient
+//counterfeiter:generate . SecretsClient
 type SecretsClient interface {
 	Create(*corev1.Secret) (*corev1.Secret, error)
 	Delete(name string, options *metav1.DeleteOptions) error
 }
 
-//go:generate counterfeiter . LRPMapper
+//counterfeiter:generate . LRPMapper
 type LRPMapper func(s appsv1.StatefulSet) *opi.LRP
 
 type StatefulSetDesirer struct {
@@ -104,7 +104,7 @@ type StatefulSetDesirer struct {
 
 var ErrNotFound = errors.New("statefulset not found")
 
-//go:generate counterfeiter . ProbeCreator
+//counterfeiter:generate . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
 func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion, appServiceAccount string, logger lager.Logger) opi.Desirer {

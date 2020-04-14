@@ -21,7 +21,7 @@ const (
 	completions           = 1
 )
 
-//go:generate counterfeiter . JobClient
+//counterfeiter:generate . JobClient
 type JobClient interface {
 	Create(*batch.Job) (*batch.Job, error)
 	Delete(guid string, deleteOpts *meta_v1.DeleteOptions) error

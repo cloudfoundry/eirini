@@ -6,7 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//go:generate counterfeiter . DeploymentClient
+//counterfeiter:generate . DeploymentClient
 type DeploymentClient interface {
 	Get(name string, options metav1.GetOptions) (*appsv1.Deployment, error)
 }

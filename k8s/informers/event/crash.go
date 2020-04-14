@@ -14,12 +14,12 @@ import (
 const CrashLoopBackOff = "CrashLoopBackOff"
 const CreateContainerConfigError = "CreateContainerConfigError"
 
-//go:generate counterfeiter . CrashEventGenerator
+//counterfeiter:generate . CrashEventGenerator
 type CrashEventGenerator interface {
 	Generate(*v1.Pod, kubernetes.Interface, lager.Logger) (events.CrashEvent, bool)
 }
 
-//go:generate counterfeiter . CrashEmitter
+//counterfeiter:generate . CrashEmitter
 type CrashEmitter interface {
 	Emit(events.CrashEvent) error
 }

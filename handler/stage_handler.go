@@ -1,12 +1,12 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
 	"github.com/julienschmidt/httprouter"
@@ -14,12 +14,12 @@ import (
 )
 
 type Stage struct {
-	buildpackStager eirini.Stager
-	dockerStager    eirini.Stager
+	buildpackStager StagingBifrost
+	dockerStager    StagingBifrost
 	logger          lager.Logger
 }
 
-func NewStageHandler(buildpackStager, dockerStager eirini.Stager, logger lager.Logger) *Stage {
+func NewStageHandler(buildpackStager, dockerStager StagingBifrost, logger lager.Logger) *Stage {
 	logger = logger.Session("staging-handler")
 
 	return &Stage{
@@ -52,9 +52,9 @@ func (s *Stage) Stage(resp http.ResponseWriter, req *http.Request, ps httprouter
 
 func (s *Stage) stage(stagingGUID string, stagingRequest cf.StagingRequest) error {
 	if stagingRequest.Lifecycle.DockerLifecycle != nil {
-		return s.dockerStager.Stage(stagingGUID, stagingRequest)
+		return s.dockerStager.TransferStaging(context.Background(), stagingGUID, stagingRequest)
 	}
-	return s.buildpackStager.Stage(stagingGUID, stagingRequest)
+	return s.buildpackStager.TransferStaging(context.Background(), stagingGUID, stagingRequest)
 }
 
 func (s *Stage) StagingComplete(res http.ResponseWriter, req *http.Request, ps httprouter.Params) {

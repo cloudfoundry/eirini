@@ -5,12 +5,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//go:generate counterfeiter . API
+//counterfeiter:generate . API
 type API interface {
 	StatsSummary(nodename string) (StatsSummary, error)
 }
 
-//go:generate counterfeiter . NodeAPI
+//counterfeiter:generate . NodeAPI
 type NodeAPI interface {
 	List(opts metav1.ListOptions) (*corev1.NodeList, error)
 }

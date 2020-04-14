@@ -12,12 +12,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-//go:generate counterfeiter . StatefulSetUpdateEventHandler
+//counterfeiter:generate . StatefulSetUpdateEventHandler
 type StatefulSetUpdateEventHandler interface {
 	Handle(oldObj, updatedObj *appsv1.StatefulSet)
 }
 
-//go:generate counterfeiter . StatefulSetDeleteEventHandler
+//counterfeiter:generate . StatefulSetDeleteEventHandler
 type StatefulSetDeleteEventHandler interface {
 	Handle(obj *appsv1.StatefulSet)
 }

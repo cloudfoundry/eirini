@@ -20,7 +20,7 @@ var _ = Describe("StagingCompleter", func() {
 		server           *ghttp.Server
 		task             *models.TaskCallbackResponse
 		handlers         []http.HandlerFunc
-		stagingCompleter stager.StagingCompleter
+		stagingCompleter *stager.CallbackStagingCompleter
 		err              error
 	)
 

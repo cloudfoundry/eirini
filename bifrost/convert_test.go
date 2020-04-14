@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/bifrost"
+	"code.cloudfoundry.org/eirini/bifrost/bifrostfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/stager/docker/dockerfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,16 +26,23 @@ var _ = Describe("OPI Converter", func() {
 		logger              *lagertest.TestLogger
 		err                 error
 		converter           bifrost.Converter
-		imgMetadataFetcher  *dockerfakes.FakeImageMetadataFetcher
-		imgRefParser        *dockerfakes.FakeImageRefParser
+		imgMetadataFetcher  *bifrostfakes.FakeImageMetadataFetcher
+		imgRefParser        *bifrostfakes.FakeImageRefParser
 		allowRunImageAsRoot bool
+		stagerConfig        eirini.StagerConfig
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("converter-test")
-		imgMetadataFetcher = new(dockerfakes.FakeImageMetadataFetcher)
-		imgRefParser = new(dockerfakes.FakeImageRefParser)
+		imgMetadataFetcher = new(bifrostfakes.FakeImageMetadataFetcher)
+		imgRefParser = new(bifrostfakes.FakeImageRefParser)
 		allowRunImageAsRoot = false
+		stagerConfig = eirini.StagerConfig{
+			EiriniAddress:   "http://opi.cf.internal",
+			DownloaderImage: "eirini/recipe-downloader:tagged",
+			UploaderImage:   "eirini/recipe-uploader:tagged",
+			ExecutorImage:   "eirini/recipe-runner:tagged",
+		}
 	})
 
 	JustBeforeEach(func() {
@@ -44,7 +52,9 @@ var _ = Describe("OPI Converter", func() {
 			defaultDiskQuota,
 			imgMetadataFetcher.Spy,
 			imgRefParser.Spy,
-			allowRunImageAsRoot)
+			allowRunImageAsRoot,
+			stagerConfig,
+		)
 	})
 
 	Describe("Convert CC DesiredApp into an opi LRP", func() {
@@ -518,6 +528,110 @@ var _ = Describe("OPI Converter", func() {
 
 			It("should return an error", func() {
 				Expect(err).To(MatchError(ContainSubstring("unsupported lifecycle")))
+			})
+		})
+	})
+
+	Describe("Convert Staging", func() {
+		var (
+			stagingRequest cf.StagingRequest
+			stagingGUID    string
+			stagingTask    opi.StagingTask
+		)
+
+		BeforeEach(func() {
+			stagingGUID = "guid_2468"
+			stagingRequest = cf.StagingRequest{
+				AppGUID:   "our-app-id",
+				AppName:   "our-app",
+				OrgName:   "our-org",
+				SpaceName: "our-space",
+				OrgGUID:   "our-org-id",
+				SpaceGUID: "our-space-id",
+				Environment: []cf.EnvironmentVariable{
+					{Name: "HOWARD", Value: "the alien"},
+					{Name: eirini.EnvAppID, Value: "should be ignored"},
+					{Name: eirini.EnvBuildpacks, Value: "should be ignored"},
+					{Name: eirini.EnvDownloadURL, Value: "should be ignored"},
+					{Name: eirini.EnvStagingGUID, Value: "should be ignored"},
+					{Name: eirini.EnvEiriniAddress, Value: "should be ignored"},
+					{Name: eirini.EnvCompletionCallback, Value: "should be ignored"},
+					{Name: eirini.EnvDropletUploadURL, Value: "should be ignored"},
+				},
+				LifecycleData: &cf.StagingBuildpackLifecycle{
+					AppBitsDownloadURI: "example.com/download",
+					DropletUploadURI:   "example.com/upload",
+					Buildpacks: []cf.Buildpack{
+						{
+							Name:       "go_buildpack",
+							Key:        "1234eeff",
+							URL:        "example.com/build/pack",
+							SkipDetect: true,
+						},
+					},
+					BuildpackCacheDownloadURI:       "buildpack-cache-download-uri",
+					BuildpackCacheUploadURI:         "buildpack-cache-upload-uri",
+					BuildpackCacheChecksum:          "sumcheck",
+					BuildpackCacheChecksumAlgorithm: "sha256",
+				},
+				CompletionCallback: "example.com/call/me/maybe",
+				MemoryMB:           1234,
+				DiskMB:             4567,
+				CPUWeight:          49,
+			}
+		})
+
+		JustBeforeEach(func() {
+			stagingTask, err = converter.ConvertStaging(stagingGUID, stagingRequest)
+		})
+
+		It("converts the staging task request", func() {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(stagingTask).To(Equal(opi.StagingTask{
+				DownloaderImage: "eirini/recipe-downloader:tagged",
+				UploaderImage:   "eirini/recipe-uploader:tagged",
+				ExecutorImage:   "eirini/recipe-runner:tagged",
+				Task: &opi.Task{
+					GUID:      stagingGUID,
+					AppName:   "our-app",
+					AppGUID:   "our-app-id",
+					OrgName:   "our-org",
+					SpaceName: "our-space",
+					OrgGUID:   "our-org-id",
+					SpaceGUID: "our-space-id",
+					Env: map[string]string{
+						"HOWARD":                                  "the alien",
+						eirini.EnvDownloadURL:                     "example.com/download",
+						eirini.EnvDropletUploadURL:                "example.com/upload",
+						eirini.EnvAppID:                           stagingRequest.AppGUID,
+						eirini.EnvStagingGUID:                     stagingGUID,
+						eirini.EnvCompletionCallback:              stagingRequest.CompletionCallback,
+						eirini.EnvBuildpacks:                      `[{"name":"go_buildpack","key":"1234eeff","url":"example.com/build/pack","skip_detect":true}]`,
+						eirini.EnvEiriniAddress:                   "http://opi.cf.internal",
+						eirini.EnvBuildpackCacheDownloadURI:       "buildpack-cache-download-uri",
+						eirini.EnvBuildpackCacheUploadURI:         "buildpack-cache-upload-uri",
+						eirini.EnvBuildpackCacheChecksum:          "sumcheck",
+						eirini.EnvBuildpackCacheChecksumAlgorithm: "sha256",
+						"TMPDIR": "/buildpack-cache/tmp",
+					},
+					MemoryMB:  1234,
+					DiskMB:    4567,
+					CPUWeight: 49,
+				},
+			}))
+		})
+
+		When("there are no resource limitations", func() {
+			BeforeEach(func() {
+				stagingRequest.MemoryMB = 0
+				stagingRequest.DiskMB = 0
+				stagingRequest.CPUWeight = 0
+			})
+
+			It("should set default values", func() {
+				Expect(stagingTask.MemoryMB).To(Equal(int64(200)))
+				Expect(stagingTask.DiskMB).To(Equal(int64(500)))
+				Expect(stagingTask.CPUWeight).To(Equal(uint8(50)))
 			})
 		})
 	})

@@ -9,7 +9,7 @@ import (
 
 const MaxHashLength = 10
 
-//go:generate counterfeiter . Hasher
+//counterfeiter:generate . Hasher
 type Hasher interface {
 	Hash(s string) (string, error)
 }

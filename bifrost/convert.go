@@ -1,13 +1,14 @@
 package bifrost
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"regexp"
 
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/stager/docker"
 	"code.cloudfoundry.org/lager"
 	"github.com/containers/image/types"
 	"github.com/pkg/errors"
@@ -17,22 +18,24 @@ const DockerHubHost = "index.docker.io/v1/"
 
 var dockerRX = regexp.MustCompile(`([a-zA-Z0-9.-]+)(:([0-9]+))?/(\S+/\S+)`)
 
-//go:generate counterfeiter . Converter
+//counterfeiter:generate . Converter
 type Converter interface {
 	ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error)
 	ConvertTask(taskGUID string, request cf.TaskRequest) (opi.Task, error)
+	ConvertStaging(stagingGUID string, request cf.StagingRequest) (opi.StagingTask, error)
 }
 
 type OPIConverter struct {
 	logger               lager.Logger
 	registryIP           string
 	diskLimitMB          int64
-	imageMetadataFetcher docker.ImageMetadataFetcher
-	imageRefParser       docker.ImageRefParser
+	imageMetadataFetcher ImageMetadataFetcher
+	imageRefParser       ImageRefParser
 	allowRunImageAsRoot  bool
+	stagerConfig         eirini.StagerConfig
 }
 
-func NewConverter(logger lager.Logger, registryIP string, diskLimitMB int64, imageMetadataFetcher docker.ImageMetadataFetcher, imageRefParser docker.ImageRefParser, allowRunImageAsRoot bool) *OPIConverter {
+func NewConverter(logger lager.Logger, registryIP string, diskLimitMB int64, imageMetadataFetcher ImageMetadataFetcher, imageRefParser ImageRefParser, allowRunImageAsRoot bool, stagerConfig eirini.StagerConfig) *OPIConverter {
 	return &OPIConverter{
 		logger:               logger,
 		registryIP:           registryIP,
@@ -40,6 +43,7 @@ func NewConverter(logger lager.Logger, registryIP string, diskLimitMB int64, ima
 		imageMetadataFetcher: imageMetadataFetcher,
 		imageRefParser:       imageRefParser,
 		allowRunImageAsRoot:  allowRunImageAsRoot,
+		stagerConfig:         stagerConfig,
 	}
 }
 
@@ -146,7 +150,7 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 }
 
 func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi.Task, error) {
-	c.logger.Debug("create-task", lager.Data{"app-id": request.AppGUID, "staging-guid": taskGUID})
+	c.logger.Debug("convert-task", lager.Data{"app-id": request.AppGUID, "staging-guid": taskGUID})
 
 	if request.Lifecycle.BuildpackLifecycle == nil {
 		return opi.Task{}, errors.New("unsupported lifecycle, only buildpack lifecycle is supported")
@@ -174,6 +178,71 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 		Image:     c.imageURI(lifecycle.DropletGUID, lifecycle.DropletHash),
 	}
 	return task, nil
+}
+
+func (c *OPIConverter) ConvertStaging(stagingGUID string, request cf.StagingRequest) (opi.StagingTask, error) {
+	c.logger.Debug("convert-staging", lager.Data{"app-id": request.AppGUID, "staging-guid": stagingGUID})
+
+	lifecycleData := request.LifecycleData
+	if lifecycleData == nil {
+		lifecycleData = request.Lifecycle.BuildpackLifecycle
+	}
+	buildpacksJSON, err := json.Marshal(lifecycleData.Buildpacks)
+	if err != nil {
+		return opi.StagingTask{}, err
+	}
+
+	eiriniEnv := map[string]string{
+		eirini.EnvDownloadURL:                     lifecycleData.AppBitsDownloadURI,
+		eirini.EnvDropletUploadURL:                lifecycleData.DropletUploadURI,
+		eirini.EnvBuildpacks:                      string(buildpacksJSON),
+		eirini.EnvAppID:                           request.AppGUID,
+		eirini.EnvStagingGUID:                     stagingGUID,
+		eirini.EnvCompletionCallback:              request.CompletionCallback,
+		eirini.EnvEiriniAddress:                   c.stagerConfig.EiriniAddress,
+		eirini.EnvBuildpackCacheDownloadURI:       lifecycleData.BuildpackCacheDownloadURI,
+		eirini.EnvBuildpackCacheUploadURI:         lifecycleData.BuildpackCacheUploadURI,
+		eirini.EnvBuildpackCacheChecksum:          lifecycleData.BuildpackCacheChecksum,
+		eirini.EnvBuildpackCacheChecksumAlgorithm: lifecycleData.BuildpackCacheChecksumAlgorithm,
+		"TMPDIR": fmt.Sprintf("%s/tmp", eirini.BuildpackCacheDir),
+	}
+
+	stagingEnv := mergeEnvs(request.Environment, eiriniEnv)
+
+	memMB := request.MemoryMB
+	if memMB == 0 {
+		memMB = 200
+	}
+
+	diskMB := request.DiskMB
+	if diskMB == 0 {
+		diskMB = 500
+	}
+
+	cpuWeight := request.CPUWeight
+	if cpuWeight == 0 {
+		cpuWeight = 50
+	}
+
+	stagingTask := opi.StagingTask{
+		DownloaderImage: c.stagerConfig.DownloaderImage,
+		UploaderImage:   c.stagerConfig.UploaderImage,
+		ExecutorImage:   c.stagerConfig.ExecutorImage,
+		Task: &opi.Task{
+			GUID:      stagingGUID,
+			AppName:   request.AppName,
+			AppGUID:   request.AppGUID,
+			OrgName:   request.OrgName,
+			SpaceName: request.SpaceName,
+			OrgGUID:   request.OrgGUID,
+			SpaceGUID: request.SpaceGUID,
+			Env:       stagingEnv,
+			MemoryMB:  memMB,
+			DiskMB:    diskMB,
+			CPUWeight: cpuWeight,
+		},
+	}
+	return stagingTask, nil
 }
 
 func (c *OPIConverter) isAllowedToRunAsRoot(lifecycle *cf.DockerLifecycle) (bool, error) {
@@ -262,14 +331,15 @@ func parseRegistryHost(imageURL string) string {
 	return matches[1]
 }
 
-func mergeEnvs(env1 []cf.EnvironmentVariable, env2 map[string]string) map[string]string {
+func mergeEnvs(requestEnv []cf.EnvironmentVariable, appliedEnv map[string]string) map[string]string {
 	result := make(map[string]string)
-	for _, v := range env1 {
+	for _, v := range requestEnv {
 		result[v.Name] = v.Value
 	}
 
-	for k, v := range env2 {
+	for k, v := range appliedEnv {
 		result[k] = v
 	}
+
 	return result
 }

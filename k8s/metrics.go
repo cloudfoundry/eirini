@@ -14,17 +14,17 @@ import (
 	metricsv1beta1 "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
 )
 
-//go:generate counterfeiter . MetricsCollector
+//counterfeiter:generate . MetricsCollector
 type MetricsCollector interface {
 	Collect() ([]metrics.Message, error)
 }
 
-//go:generate counterfeiter . DiskAPI
+//counterfeiter:generate . DiskAPI
 type DiskAPI interface {
 	GetPodMetrics() (map[string]float64, error)
 }
 
-//go:generate counterfeiter . Emitter
+//counterfeiter:generate . Emitter
 type Emitter interface {
 	Emit(metrics.Message)
 }
@@ -41,8 +41,8 @@ func ForwardMetricsToEmitter(collector MetricsCollector, emitter Emitter) error 
 	return nil
 }
 
-//go:generate counterfeiter -o k8sfakes/fake_pod_interface.go ../vendor/k8s.io/client-go/kubernetes/typed/core/v1 PodInterface
-//go:generate counterfeiter -o k8sfakes/fake_pod_metrics_interface.go ../vendor/k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1 PodMetricsInterface
+//counterfeiter:generate -o k8sfakes/fake_pod_interface.go ../vendor/k8s.io/client-go/kubernetes/typed/core/v1 PodInterface
+//counterfeiter:generate -o k8sfakes/fake_pod_metrics_interface.go ../vendor/k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1 PodMetricsInterface
 type metricsCollector struct {
 	metricsClient metricsv1beta1.PodMetricsInterface
 	podClient     typedv1.PodInterface

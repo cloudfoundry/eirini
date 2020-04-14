@@ -6,7 +6,6 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/bifrost/bifrostfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -19,25 +18,22 @@ import (
 var _ = Describe("Bifrost", func() {
 
 	var (
-		err         error
-		bfrst       eirini.Bifrost
-		request     cf.DesireLRPRequest
-		converter   *bifrostfakes.FakeConverter
-		desirer     *opifakes.FakeDesirer
-		taskDesirer *opifakes.FakeTaskDesirer
+		err       error
+		bfrst     *bifrost.Bifrost
+		request   cf.DesireLRPRequest
+		converter *bifrostfakes.FakeConverter
+		desirer   *opifakes.FakeDesirer
 	)
 
 	BeforeEach(func() {
 		converter = new(bifrostfakes.FakeConverter)
 		desirer = new(opifakes.FakeDesirer)
-		taskDesirer = new(opifakes.FakeTaskDesirer)
 	})
 
 	JustBeforeEach(func() {
 		bfrst = &bifrost.Bifrost{
-			Converter:   converter,
-			Desirer:     desirer,
-			TaskDesirer: taskDesirer,
+			Converter: converter,
+			Desirer:   desirer,
 		}
 	})
 
@@ -476,58 +472,4 @@ var _ = Describe("Bifrost", func() {
 
 	})
 
-	Describe("Transfer Task", func() {
-		var (
-			taskGUID    string
-			taskRequest cf.TaskRequest
-			task        opi.Task
-		)
-
-		BeforeEach(func() {
-			taskGUID = "task-guid"
-			converter.ConvertTaskReturns(task, nil)
-			taskRequest = cf.TaskRequest{AppGUID: "app-guid"}
-		})
-
-		JustBeforeEach(func() {
-			err = bfrst.TransferTask(context.Background(), taskGUID, taskRequest)
-		})
-
-		It("transfers the task", func() {
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(converter.ConvertTaskCallCount()).To(Equal(1))
-			actualTaskGUID, actualTaskRequest := converter.ConvertTaskArgsForCall(0)
-			Expect(actualTaskGUID).To(Equal(taskGUID))
-			Expect(actualTaskRequest).To(Equal(taskRequest))
-
-			Expect(taskDesirer.DesireCallCount()).To(Equal(1))
-			desiredTask := taskDesirer.DesireArgsForCall(0)
-			Expect(*desiredTask).To(Equal(task))
-		})
-
-		When("converting the task fails", func() {
-			BeforeEach(func() {
-				converter.ConvertTaskReturns(opi.Task{}, errors.New("task-conv-err"))
-			})
-
-			It("returns the error", func() {
-				Expect(err).To(MatchError(ContainSubstring("task-conv-err")))
-			})
-
-			It("does not desire the task", func() {
-				Expect(taskDesirer.DesireCallCount()).To(Equal(0))
-			})
-		})
-
-		When("desiring the task fails", func() {
-			BeforeEach(func() {
-				taskDesirer.DesireReturns(errors.New("desire-task-err"))
-			})
-
-			It("returns the error", func() {
-				Expect(err).To(MatchError(ContainSubstring("desire-task-err")))
-			})
-		})
-	})
 })

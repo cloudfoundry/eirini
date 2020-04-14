@@ -14,7 +14,7 @@ import (
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-//go:generate counterfeiter -o eventfakes/fake_pod_interface.go ../../../../vendor/k8s.io/client-go/kubernetes/typed/core/v1/pod.go PodInterface
+//counterfeiter:generate -o eventfakes/fake_pod_interface.go ../../../../vendor/k8s.io/client-go/kubernetes/typed/core/v1/pod.go PodInterface
 
 type portGroup map[int32]eiriniroute.Routes
 

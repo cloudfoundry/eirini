@@ -102,7 +102,7 @@ type StagingTask struct {
 	ExecutorImage   string
 }
 
-//go:generate counterfeiter . Desirer
+//counterfeiter:generate . Desirer
 type Desirer interface {
 	Desire(lrp *LRP) error
 	List() ([]*LRP, error)
@@ -113,7 +113,7 @@ type Desirer interface {
 	StopInstance(identifier LRPIdentifier, index uint) error
 }
 
-//go:generate counterfeiter . TaskDesirer
+//counterfeiter:generate . TaskDesirer
 type TaskDesirer interface {
 	Desire(task *Task) error
 	DesireStaging(task *StagingTask) error

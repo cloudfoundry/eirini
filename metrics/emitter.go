@@ -10,7 +10,7 @@ const (
 	DiskUnit   = "bytes"
 )
 
-//go:generate counterfeiter . LoggregatorClient
+//counterfeiter:generate . LoggregatorClient
 type LoggregatorClient interface {
 	EmitGauge(...loggregator.EmitGaugeOption)
 }

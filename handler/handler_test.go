@@ -9,27 +9,32 @@ import (
 	. "github.com/onsi/gomega"
 
 	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/eirini/eirinifakes"
 	. "code.cloudfoundry.org/eirini/handler"
+	"code.cloudfoundry.org/eirini/handler/handlerfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("Handler", func() {
 
 	var (
-		ts            *httptest.Server
-		client        *http.Client
-		bifrost       *eirinifakes.FakeBifrost
-		stager        *eirinifakes.FakeStager
-		handlerClient http.Handler
+		ts               *httptest.Server
+		client           *http.Client
+		bifrost          *handlerfakes.FakeAppBifrost
+		buildpackStaging *handlerfakes.FakeStagingBifrost
+		dockerStaging    *handlerfakes.FakeStagingBifrost
+		buildpackTask    *handlerfakes.FakeTaskBifrost
+		handlerClient    http.Handler
 	)
 
 	BeforeEach(func() {
 		client = &http.Client{}
-		bifrost = new(eirinifakes.FakeBifrost)
-		stager = new(eirinifakes.FakeStager)
+		bifrost = new(handlerfakes.FakeAppBifrost)
+		buildpackStaging = new(handlerfakes.FakeStagingBifrost)
+		dockerStaging = new(handlerfakes.FakeStagingBifrost)
+		buildpackTask = new(handlerfakes.FakeTaskBifrost)
+
 		lager := lagertest.NewTestLogger("handler-test")
-		handlerClient = New(bifrost, stager, stager, lager)
+		handlerClient = New(bifrost, buildpackStaging, dockerStaging, buildpackTask, lager)
 	})
 
 	JustBeforeEach(func() {

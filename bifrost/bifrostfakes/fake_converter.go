@@ -23,6 +23,20 @@ type FakeConverter struct {
 		result1 opi.LRP
 		result2 error
 	}
+	ConvertStagingStub        func(string, cf.StagingRequest) (opi.StagingTask, error)
+	convertStagingMutex       sync.RWMutex
+	convertStagingArgsForCall []struct {
+		arg1 string
+		arg2 cf.StagingRequest
+	}
+	convertStagingReturns struct {
+		result1 opi.StagingTask
+		result2 error
+	}
+	convertStagingReturnsOnCall map[int]struct {
+		result1 opi.StagingTask
+		result2 error
+	}
 	ConvertTaskStub        func(string, cf.TaskRequest) (opi.Task, error)
 	convertTaskMutex       sync.RWMutex
 	convertTaskArgsForCall []struct {
@@ -104,6 +118,70 @@ func (fake *FakeConverter) ConvertLRPReturnsOnCall(i int, result1 opi.LRP, resul
 	}{result1, result2}
 }
 
+func (fake *FakeConverter) ConvertStaging(arg1 string, arg2 cf.StagingRequest) (opi.StagingTask, error) {
+	fake.convertStagingMutex.Lock()
+	ret, specificReturn := fake.convertStagingReturnsOnCall[len(fake.convertStagingArgsForCall)]
+	fake.convertStagingArgsForCall = append(fake.convertStagingArgsForCall, struct {
+		arg1 string
+		arg2 cf.StagingRequest
+	}{arg1, arg2})
+	fake.recordInvocation("ConvertStaging", []interface{}{arg1, arg2})
+	fake.convertStagingMutex.Unlock()
+	if fake.ConvertStagingStub != nil {
+		return fake.ConvertStagingStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.convertStagingReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeConverter) ConvertStagingCallCount() int {
+	fake.convertStagingMutex.RLock()
+	defer fake.convertStagingMutex.RUnlock()
+	return len(fake.convertStagingArgsForCall)
+}
+
+func (fake *FakeConverter) ConvertStagingCalls(stub func(string, cf.StagingRequest) (opi.StagingTask, error)) {
+	fake.convertStagingMutex.Lock()
+	defer fake.convertStagingMutex.Unlock()
+	fake.ConvertStagingStub = stub
+}
+
+func (fake *FakeConverter) ConvertStagingArgsForCall(i int) (string, cf.StagingRequest) {
+	fake.convertStagingMutex.RLock()
+	defer fake.convertStagingMutex.RUnlock()
+	argsForCall := fake.convertStagingArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeConverter) ConvertStagingReturns(result1 opi.StagingTask, result2 error) {
+	fake.convertStagingMutex.Lock()
+	defer fake.convertStagingMutex.Unlock()
+	fake.ConvertStagingStub = nil
+	fake.convertStagingReturns = struct {
+		result1 opi.StagingTask
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeConverter) ConvertStagingReturnsOnCall(i int, result1 opi.StagingTask, result2 error) {
+	fake.convertStagingMutex.Lock()
+	defer fake.convertStagingMutex.Unlock()
+	fake.ConvertStagingStub = nil
+	if fake.convertStagingReturnsOnCall == nil {
+		fake.convertStagingReturnsOnCall = make(map[int]struct {
+			result1 opi.StagingTask
+			result2 error
+		})
+	}
+	fake.convertStagingReturnsOnCall[i] = struct {
+		result1 opi.StagingTask
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeConverter) ConvertTask(arg1 string, arg2 cf.TaskRequest) (opi.Task, error) {
 	fake.convertTaskMutex.Lock()
 	ret, specificReturn := fake.convertTaskReturnsOnCall[len(fake.convertTaskArgsForCall)]
@@ -173,6 +251,8 @@ func (fake *FakeConverter) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.convertLRPMutex.RLock()
 	defer fake.convertLRPMutex.RUnlock()
+	fake.convertStagingMutex.RLock()
+	defer fake.convertStagingMutex.RUnlock()
 	fake.convertTaskMutex.RLock()
 	defer fake.convertTaskMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

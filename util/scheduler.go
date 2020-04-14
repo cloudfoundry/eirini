@@ -8,7 +8,7 @@ import (
 
 type Task func() error
 
-//go:generate counterfeiter . TaskScheduler
+//counterfeiter:generate . TaskScheduler
 type TaskScheduler interface {
 	Schedule(task Task)
 }

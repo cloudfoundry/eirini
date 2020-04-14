@@ -8,7 +8,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//go:generate counterfeiter . EventLister
+//counterfeiter:generate . EventLister
 type EventLister interface {
 	List(opts meta.ListOptions) (*v1.EventList, error)
 }

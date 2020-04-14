@@ -5,7 +5,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate counterfeiter . Emitter
+//counterfeiter:generate . Emitter
 type Emitter interface {
 	Emit(Message)
 }

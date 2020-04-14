@@ -18,7 +18,7 @@ type Informer interface {
 	Start()
 }
 
-//go:generate counterfeiter . Collector
+//counterfeiter:generate . Collector
 type Collector interface {
 	Collect() ([]Message, error)
 }

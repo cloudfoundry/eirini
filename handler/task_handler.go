@@ -4,21 +4,20 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
 	"github.com/julienschmidt/httprouter"
 )
 
 type Task struct {
-	logger  lager.Logger
-	bifrost eirini.Bifrost
+	logger      lager.Logger
+	bifrostTask TaskBifrost
 }
 
-func NewTaskHandler(logger lager.Logger, bifrost eirini.Bifrost) *Task {
+func NewTaskHandler(logger lager.Logger, bifrostTask TaskBifrost) *Task {
 	return &Task{
-		logger:  logger,
-		bifrost: bifrost,
+		logger:      logger,
+		bifrostTask: bifrostTask,
 	}
 }
 
@@ -33,7 +32,7 @@ func (t *Task) Run(resp http.ResponseWriter, req *http.Request, ps httprouter.Pa
 		return
 	}
 
-	if err := t.bifrost.TransferTask(req.Context(), taskGUID, taskRequest); err != nil {
+	if err := t.bifrostTask.TransferTask(req.Context(), taskGUID, taskRequest); err != nil {
 		logger.Error("task-request-task-create-failed", err)
 		writeErrorResponse(resp, http.StatusInternalServerError, err)
 		return

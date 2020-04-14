@@ -1,7 +1,6 @@
 package eirini
 
 import (
-	"context"
 	"fmt"
 
 	"code.cloudfoundry.org/bbs/models"
@@ -137,13 +136,13 @@ type StagingReporterConfig struct {
 	KubeConfig `yaml:",inline"`
 }
 
-//go:generate counterfeiter . Stager
+//counterfeiter:generate . Stager
 type Stager interface {
 	Stage(string, cf.StagingRequest) error
 	CompleteStaging(*models.TaskCallbackResponse) error
 }
 
-//go:generate counterfeiter . TaskDesirer
+//counterfeiter:generate . TaskDesirer
 type TaskDesirer interface {
 	Desire(*opi.Task) error
 }
@@ -155,21 +154,9 @@ type StagerConfig struct {
 	ExecutorImage   string
 }
 
-//go:generate counterfeiter . Extractor
+//counterfeiter:generate  . Extractor
 type Extractor interface {
 	Extract(src, targetDir string) error
-}
-
-//go:generate counterfeiter . Bifrost
-type Bifrost interface {
-	Transfer(ctx context.Context, request cf.DesireLRPRequest) error
-	TransferTask(ctx context.Context, taskGUID string, request cf.TaskRequest) error
-	List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error)
-	Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error
-	Stop(ctx context.Context, identifier opi.LRPIdentifier) error
-	StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error
-	GetApp(ctx context.Context, identifier opi.LRPIdentifier) (*models.DesiredLRP, error)
-	GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error)
 }
 
 func GetInternalServiceName(appName string) string {

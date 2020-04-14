@@ -43,20 +43,16 @@ func connect(cmd *cobra.Command, args []string) {
 	}
 
 	cfg := setConfigFromFile(path)
-
-	stagerLogger := lager.NewLogger("stager")
-	stagerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.ConfigPath)
-	stagingCompleter := initStagingCompleter(cfg, stagerLogger)
-	taskDesirer := initTaskDesirer(cfg, clientset)
-	buildpackStager := initBuildpackStager(cfg, taskDesirer, stagingCompleter, stagerLogger)
-	dockerStager := initDockerStager(stagingCompleter, stagerLogger)
-	bifrost := initBifrost(clientset, cfg, taskDesirer)
+
+	buildpackStagingBifrost := initBuildpackStagingBifrost(cfg, clientset)
+	dockerStagingBifrost := initDockerStagingBifrost(cfg)
+	buildpackTaskBifrost := initBuildpackTaskBifrost(cfg, clientset)
+	bifrost := initBifrost(clientset, cfg)
 
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	handler := handler.New(bifrost, buildpackStager, dockerStager, handlerLogger)
+	handler := handler.New(bifrost, buildpackStagingBifrost, dockerStagingBifrost, buildpackTaskBifrost, handlerLogger)
 
 	var server *http.Server
 	handlerLogger.Info("opi-connected")
@@ -77,7 +73,7 @@ func connect(cmd *cobra.Command, args []string) {
 		server.ListenAndServeTLS(cfg.Properties.ServerCertPath, cfg.Properties.ServerKeyPath))
 }
 
-func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) stager.StagingCompleter {
+func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) *stager.CallbackStagingCompleter {
 	httpClient, err := util.CreateTLSHTTPClient(
 		[]util.CertPaths{
 			{
@@ -131,19 +127,26 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) opi.Tas
 	}
 }
 
-func initBuildpackStager(cfg *eirini.Config, taskDesirer opi.TaskDesirer, stagingCompleter stager.StagingCompleter, logger lager.Logger) eirini.Stager {
-	stagerCfg := eirini.StagerConfig{
-		EiriniAddress:   cfg.Properties.EiriniAddress,
-		DownloaderImage: cfg.Properties.DownloaderImage,
-		UploaderImage:   cfg.Properties.UploaderImage,
-		ExecutorImage:   cfg.Properties.ExecutorImage,
-	}
+func initBuildpackStagingBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.BuildpackStaging {
+	logger := lager.NewLogger("buildpack-staging-bifrost")
+	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+	converter := initConverter(cfg)
+	taskDesirer := initTaskDesirer(cfg, clientset)
+	stagingCompleter := initStagingCompleter(cfg, logger)
 
-	return stager.New(taskDesirer, stagingCompleter, stagerCfg, logger)
+	return &bifrost.BuildpackStaging{
+		Converter:        converter,
+		TaskDesirer:      taskDesirer,
+		StagingCompleter: stagingCompleter,
+		Logger:           logger,
+	}
 }
 
-func initDockerStager(stagingCompleter stager.StagingCompleter, logger lager.Logger) eirini.Stager {
-	return docker.Stager{
+func initDockerStagingBifrost(cfg *eirini.Config) *bifrost.DockerStaging {
+	logger := lager.NewLogger("docker-staging-bifrost")
+	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+	stagingCompleter := initStagingCompleter(cfg, logger)
+	return &bifrost.DockerStaging{
 		Logger:               logger,
 		ImageMetadataFetcher: docker.Fetch,
 		ImageRefParser:       docker.Parse,
@@ -151,7 +154,16 @@ func initDockerStager(stagingCompleter stager.StagingCompleter, logger lager.Log
 	}
 }
 
-func initBifrost(clientset kubernetes.Interface, cfg *eirini.Config, taskDesirer opi.TaskDesirer) eirini.Bifrost {
+func initBuildpackTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.BuildpackTask {
+	converter := initConverter(cfg)
+	taskDesirer := initTaskDesirer(cfg, clientset)
+	return &bifrost.BuildpackTask{
+		Converter:   converter,
+		TaskDesirer: taskDesirer,
+	}
+}
+
+func initBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost.Bifrost {
 	kubeNamespace := cfg.Properties.Namespace
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
@@ -163,23 +175,33 @@ func initBifrost(clientset kubernetes.Interface, cfg *eirini.Config, taskDesirer
 		cfg.Properties.ApplicationServiceAccount,
 		desireLogger,
 	)
+	converter := initConverter(cfg)
+
+	return &bifrost.Bifrost{
+		Converter: converter,
+		Desirer:   desirer,
+	}
+}
+
+func initConverter(cfg *eirini.Config) bifrost.Converter {
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	converter := bifrost.NewConverter(
+	stagerCfg := eirini.StagerConfig{
+		EiriniAddress:   cfg.Properties.EiriniAddress,
+		DownloaderImage: cfg.Properties.DownloaderImage,
+		UploaderImage:   cfg.Properties.UploaderImage,
+		ExecutorImage:   cfg.Properties.ExecutorImage,
+	}
+	return bifrost.NewConverter(
 		convertLogger,
 		cfg.Properties.RegistryAddress,
 		cfg.Properties.DiskLimitMB,
 		docker.Fetch,
 		docker.Parse,
 		cfg.Properties.AllowRunImageAsRoot,
+		stagerCfg,
 	)
-
-	return &bifrost.Bifrost{
-		Converter:   converter,
-		Desirer:     desirer,
-		TaskDesirer: taskDesirer,
-	}
 }
 
 func setConfigFromFile(path string) *eirini.Config {

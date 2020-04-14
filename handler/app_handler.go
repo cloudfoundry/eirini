@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
@@ -15,12 +14,12 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func NewAppHandler(bifrost eirini.Bifrost, logger lager.Logger) *App {
+func NewAppHandler(bifrost AppBifrost, logger lager.Logger) *App {
 	return &App{bifrost: bifrost, logger: logger}
 }
 
 type App struct {
-	bifrost eirini.Bifrost
+	bifrost AppBifrost
 	logger  lager.Logger
 }
 
