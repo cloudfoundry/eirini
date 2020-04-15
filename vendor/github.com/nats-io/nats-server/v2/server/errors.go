@@ -1,4 +1,4 @@
-// Copyright 2012-2019 The NATS Authors
+// Copyright 2012-2020 The NATS Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -66,6 +66,10 @@ var (
 	// attempted to connect to the leaf node listen port.
 	ErrClientConnectedToLeafNodePort = errors.New("attempted to connect to leaf node port")
 
+	// ErrConnectedToWrongPort represents an error condition when a connection is attempted
+	// to the wrong listen port (for instance a LeafNode to a client port, etc...)
+	ErrConnectedToWrongPort = errors.New("attempted to connect to wrong port")
+
 	// ErrAccountExists is returned when an account is attempted to be registered
 	// but already exists.
 	ErrAccountExists = errors.New("account exists")
@@ -108,6 +112,9 @@ var (
 
 	// ErrStreamImportBadPrefix is returned when a stream import prefix contains wildcards.
 	ErrStreamImportBadPrefix = errors.New("stream import prefix can not contain wildcard tokens")
+
+	// ErrStreamImportDuplicate is returned when a stream import is a duplicate of one that already exists.
+	ErrStreamImportDuplicate = errors.New("stream import already exists")
 
 	// ErrServiceImportAuthorization is returned when a service import is not authorized.
 	ErrServiceImportAuthorization = errors.New("service import not authorized")
@@ -200,4 +207,79 @@ func (e *processConfigErr) Warnings() []error {
 // Errors returns the list of errors.
 func (e *processConfigErr) Errors() []error {
 	return e.errors
+}
+
+// errCtx wraps an error and stores additional ctx information for tracing.
+// Does not print or return it unless explicitly requested.
+type errCtx struct {
+	error
+	ctx string
+}
+
+func NewErrorCtx(err error, format string, args ...interface{}) error {
+	return &errCtx{err, fmt.Sprintf(format, args...)}
+}
+
+// implement to work with errors.Is and errors.As
+func (e *errCtx) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.error
+}
+
+// Context for error
+func (e *errCtx) Context() string {
+	if e == nil {
+		return ""
+	}
+	return e.ctx
+}
+
+// Return Error or, if type is right error and context
+func UnpackIfErrorCtx(err error) string {
+	if e, ok := err.(*errCtx); ok {
+		if _, ok := e.error.(*errCtx); ok {
+			return fmt.Sprint(UnpackIfErrorCtx(e.error), ": ", e.Context())
+		}
+		return fmt.Sprint(e.Error(), ": ", e.Context())
+	}
+	return err.Error()
+}
+
+// implements: go 1.13 errors.Unwrap(err error) error
+// TODO replace with native code once we no longer support go1.12
+func errorsUnwrap(err error) error {
+	u, ok := err.(interface {
+		Unwrap() error
+	})
+	if !ok {
+		return nil
+	}
+	return u.Unwrap()
+}
+
+// implements: go 1.13 errors.Is(err, target error) bool
+// TODO replace with native code once we no longer support go1.12
+func ErrorIs(err, target error) bool {
+	// this is an outright copy of go 1.13 errors.Is(err, target error) bool
+	// removed isComparable
+	if err == nil || target == nil {
+		return err == target
+	}
+
+	for {
+		if err == target {
+			return true
+		}
+		if x, ok := err.(interface{ Is(error) bool }); ok && x.Is(target) {
+			return true
+		}
+		// TODO: consider supporing target.Is(err). This would allow
+		// user-definable predicates, but also may allow for coping with sloppy
+		// APIs, thereby making it easier to get away with them.
+		if err = errorsUnwrap(err); err == nil {
+			return false
+		}
+	}
 }

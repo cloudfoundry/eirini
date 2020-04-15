@@ -1,4 +1,48 @@
-## 0.10.0 (Unreleased)
+## 0.11.0 (Unreleased)
+
+## 0.10.0 (April 12, 2020)
+
+UPGRADE NOTES
+
+* The various `IDFromName` convenience functions have been moved to https://github.com/gophercloud/utils [GH-1897](https://github.com/gophercloud/gophercloud/pull/1897)
+* `sharedfilesystems/v2/shares.GetExportLocations` was renamed to `sharedfilesystems/v2/shares.ListExportLocations` [GH-1932](https://github.com/gophercloud/gophercloud/pull/1932)
+
+IMPROVEMENTS 
+
+* Added `blockstorage/extensions/volumeactions.SetBootable` [GH-1891](https://github.com/gophercloud/gophercloud/pull/1891)
+* Added `blockstorage/extensions/backups.Export` [GH-1894](https://github.com/gophercloud/gophercloud/pull/1894)
+* Added `blockstorage/extensions/backups.Import` [GH-1894](https://github.com/gophercloud/gophercloud/pull/1894)
+* Added `placement/v1/resourceproviders.GetTraits` [GH-1899](https://github.com/gophercloud/gophercloud/pull/1899)
+* Added the ability to authenticate with Amazon EC2 Credentials [GH-1900](https://github.com/gophercloud/gophercloud/pull/1900)
+* Added ability to list Nova services by binary and host [GH-1904](https://github.com/gophercloud/gophercloud/pull/1904)
+* Added `compute/v2/extensions/services.Update` [GH-1902](https://github.com/gophercloud/gophercloud/pull/1902)
+* Added system scope to v3 authentication [GH-1908](https://github.com/gophercloud/gophercloud/pull/1908)
+* Added `identity/v3/extensions/ec2tokens.ValidateS3Token` [GH-1906](https://github.com/gophercloud/gophercloud/pull/1906)
+* Added `containerinfra/v1/clusters.Cluster.HealthStatus` [GH-1910](https://github.com/gophercloud/gophercloud/pull/1910)
+* Added `containerinfra/v1/clusters.Cluster.HealthStatusReason` [GH-1910](https://github.com/gophercloud/gophercloud/pull/1910)
+* Added `loadbalancer/v2/amphorae.Failover` [GH-1912](https://github.com/gophercloud/gophercloud/pull/1912)
+* Added `identity/v3/extensions/ec2credentials.List` [GH-1916](https://github.com/gophercloud/gophercloud/pull/1916)
+* Added `identity/v3/extensions/ec2credentials.Get` [GH-1916](https://github.com/gophercloud/gophercloud/pull/1916)
+* Added `identity/v3/extensions/ec2credentials.Create` [GH-1916](https://github.com/gophercloud/gophercloud/pull/1916)
+* Added `identity/v3/extensions/ec2credentials.Delete` [GH-1916](https://github.com/gophercloud/gophercloud/pull/1916)
+* Added `ErrUnexpectedResponseCode.ResponseHeader` [GH-1919](https://github.com/gophercloud/gophercloud/pull/1919)
+* Added support for TOTP authentication [GH-1922](https://github.com/gophercloud/gophercloud/pull/1922)
+* `sharedfilesystems/v2/shares.GetExportLocations` was renamed to `sharedfilesystems/v2/shares.ListExportLocations` [GH-1932](https://github.com/gophercloud/gophercloud/pull/1932)
+* Added `sharedfilesystems/v2/shares.GetExportLocation` [GH-1932](https://github.com/gophercloud/gophercloud/pull/1932)
+* Added `sharedfilesystems/v2/shares.Revert` [GH-1931](https://github.com/gophercloud/gophercloud/pull/1931)
+* Added `sharedfilesystems/v2/shares.ResetStatus` [GH-1931](https://github.com/gophercloud/gophercloud/pull/1931)
+* Added `sharedfilesystems/v2/shares.ForceDelete` [GH-1931](https://github.com/gophercloud/gophercloud/pull/1931)
+* Added `sharedfilesystems/v2/shares.Unmanage` [GH-1931](https://github.com/gophercloud/gophercloud/pull/1931)
+* Added `blockstorage/v3/attachments.Create` [GH-1934](https://github.com/gophercloud/gophercloud/pull/1934)
+* Added `blockstorage/v3/attachments.List` [GH-1934](https://github.com/gophercloud/gophercloud/pull/1934)
+* Added `blockstorage/v3/attachments.Get` [GH-1934](https://github.com/gophercloud/gophercloud/pull/1934)
+* Added `blockstorage/v3/attachments.Update` [GH-1934](https://github.com/gophercloud/gophercloud/pull/1934)
+* Added `blockstorage/v3/attachments.Delete` [GH-1934](https://github.com/gophercloud/gophercloud/pull/1934)
+* Added `blockstorage/v3/attachments.Complete` [GH-1934](https://github.com/gophercloud/gophercloud/pull/1934)
+
+BUG FIXES
+
+* Fixed issue with Orchestration `get_file` only being able to read JSON and YAML files [GH-1915](https://github.com/gophercloud/gophercloud/pull/1915)
 
 ## 0.9.0 (March 10, 2020)
 

@@ -40,6 +40,10 @@ type option interface {
 	// IsLoggingChange indicates if this option requires reloading the logger.
 	IsLoggingChange() bool
 
+	// IsTraceLevelChange indicates if this option requires reloading cached trace level.
+	// Clients store trace level separately.
+	IsTraceLevelChange() bool
+
 	// IsAuthChange indicates if this option requires reloading authorization.
 	IsAuthChange() bool
 
@@ -52,6 +56,10 @@ type option interface {
 type noopOption struct{}
 
 func (n noopOption) IsLoggingChange() bool {
+	return false
+}
+
+func (n noopOption) IsTraceLevelChange() bool {
 	return false
 }
 
@@ -73,15 +81,36 @@ func (l loggingOption) IsLoggingChange() bool {
 	return true
 }
 
+// traceLevelOption is a base struct that provides default option behaviors for
+// tracelevel-related options.
+type traceLevelOption struct {
+	loggingOption
+}
+
+func (l traceLevelOption) IsTraceLevelChange() bool {
+	return true
+}
+
 // traceOption implements the option interface for the `trace` setting.
 type traceOption struct {
-	loggingOption
+	traceLevelOption
 	newValue bool
 }
 
 // Apply is a no-op because logging will be reloaded after options are applied.
 func (t *traceOption) Apply(server *Server) {
 	server.Noticef("Reloaded: trace = %v", t.newValue)
+}
+
+// traceOption implements the option interface for the `trace` setting.
+type traceVerboseOption struct {
+	traceLevelOption
+	newValue bool
+}
+
+// Apply is a no-op because logging will be reloaded after options are applied.
+func (t *traceVerboseOption) Apply(server *Server) {
+	server.Noticef("Reloaded: trace_verbose = %v", t.newValue)
 }
 
 // debugOption implements the option interface for the `debug` setting.
@@ -676,6 +705,8 @@ func (s *Server) diffOptions(newOpts *Options) ([]option, error) {
 			continue
 		}
 		switch strings.ToLower(field.Name) {
+		case "traceverbose":
+			diffOpts = append(diffOpts, &traceVerboseOption{newValue: newValue.(bool)})
 		case "trace":
 			diffOpts = append(diffOpts, &traceOption{newValue: newValue.(bool)})
 		case "debug":
@@ -742,12 +773,14 @@ func (s *Server) diffOptions(newOpts *Options) ([]option, error) {
 			diffOpts = append(diffOpts, &clientAdvertiseOption{newValue: cliAdv})
 		case "accounts":
 			diffOpts = append(diffOpts, &accountsOption{})
-		case "accountresolver":
+		case "resolver", "accountresolver", "accountsresolver":
 			// We can't move from no resolver to one. So check for that.
 			if (oldValue == nil && newValue != nil) ||
 				(oldValue != nil && newValue == nil) {
 				return nil, fmt.Errorf("config reload does not support moving to or from an account resolver")
 			}
+			diffOpts = append(diffOpts, &accountsOption{})
+		case "accountresolvertlsconfig":
 			diffOpts = append(diffOpts, &accountsOption{})
 		case "gateway":
 			// Not supported for now, but report warning if configuration of gateway
@@ -817,11 +850,15 @@ func (s *Server) applyOptions(ctx *reloadContext, opts []option) {
 		reloadLogging      = false
 		reloadAuth         = false
 		reloadClusterPerms = false
+		reloadClientTrcLvl = false
 	)
 	for _, opt := range opts {
 		opt.Apply(s)
 		if opt.IsLoggingChange() {
 			reloadLogging = true
+		}
+		if opt.IsTraceLevelChange() {
+			reloadClientTrcLvl = true
 		}
 		if opt.IsAuthChange() {
 			reloadAuth = true
@@ -834,6 +871,9 @@ func (s *Server) applyOptions(ctx *reloadContext, opts []option) {
 	if reloadLogging {
 		s.ConfigureLogger()
 	}
+	if reloadClientTrcLvl {
+		s.reloadClientTraceLevel()
+	}
 	if reloadAuth {
 		s.reloadAuthorization()
 	}
@@ -842,6 +882,55 @@ func (s *Server) applyOptions(ctx *reloadContext, opts []option) {
 	}
 
 	s.Noticef("Reloaded server configuration")
+}
+
+// Update all cached debug and trace settings for every client
+func (s *Server) reloadClientTraceLevel() {
+	opts := s.getOpts()
+
+	if opts.NoLog {
+		return
+	}
+
+	// Create a list of all clients.
+	// Update their trace level when not holding server or gateway lock
+
+	s.mu.Lock()
+	clientCnt := 1 + len(s.clients) + len(s.grTmpClients) + len(s.routes) + len(s.leafs)
+	s.mu.Unlock()
+
+	s.gateway.RLock()
+	clientCnt += len(s.gateway.in) + len(s.gateway.outo)
+	s.gateway.RUnlock()
+
+	clients := make([]*client, 0, clientCnt)
+
+	s.mu.Lock()
+	if s.eventsEnabled() {
+		clients = append(clients, s.sys.client)
+	}
+
+	cMaps := []map[uint64]*client{s.clients, s.grTmpClients, s.routes, s.leafs}
+	for _, m := range cMaps {
+		for _, c := range m {
+			clients = append(clients, c)
+		}
+	}
+	s.mu.Unlock()
+
+	s.gateway.RLock()
+	for _, c := range s.gateway.in {
+		clients = append(clients, c)
+	}
+	clients = append(clients, s.gateway.outo...)
+	s.gateway.RUnlock()
+
+	for _, c := range clients {
+		// client.trace is commonly read while holding the lock
+		c.mu.Lock()
+		c.setTraceLevel()
+		c.mu.Unlock()
+	}
 }
 
 // reloadAuthorization reconfigures the server authorization settings,
@@ -1054,6 +1143,7 @@ func (s *Server) reloadClusterPermissions(oldPerms *RoutePermissions) {
 	// Regenerate route INFO
 	s.generateRouteInfoJSON()
 	infoJSON = s.routeInfoJSON
+	gacc := s.gacc
 	s.mu.Unlock()
 
 	// If there were no route, we are done
@@ -1084,7 +1174,7 @@ func (s *Server) reloadClusterPermissions(oldPerms *RoutePermissions) {
 		deleteRoutedSubs []*subscription
 	)
 	// FIXME(dlc) - Change for accounts.
-	s.gacc.sl.localSubs(&localSubs)
+	gacc.sl.localSubs(&localSubs)
 
 	// Go through all local subscriptions
 	for _, sub := range localSubs {
@@ -1125,17 +1215,15 @@ func (s *Server) reloadClusterPermissions(oldPerms *RoutePermissions) {
 		// Send an update INFO, which will allow remote server to show
 		// our current route config in monitoring and resend subscriptions
 		// that we now possibly allow with a change of Export permissions.
-		route.sendInfo(infoJSON)
+		route.enqueueProto(infoJSON)
 		// Now send SUB and UNSUB protocols as needed.
-		closed := route.sendRouteSubProtos(subsNeedSUB, false, nil)
-		if !closed {
-			route.sendRouteUnSubProtos(subsNeedUNSUB, false, nil)
-		}
+		route.sendRouteSubProtos(subsNeedSUB, false, nil)
+		route.sendRouteUnSubProtos(subsNeedUNSUB, false, nil)
 		route.mu.Unlock()
 	}
 	// Remove as a batch all the subs that we have removed from each route.
 	// FIXME(dlc) - Change for accounts.
-	s.gacc.sl.RemoveBatch(deleteRoutedSubs)
+	gacc.sl.RemoveBatch(deleteRoutedSubs)
 }
 
 // validateClusterOpts ensures the new ClusterOpts does not change host or

@@ -72,6 +72,7 @@ type Info struct {
 	MaxPayload        int32    `json:"max_payload"`
 	IP                string   `json:"ip,omitempty"`
 	CID               uint64   `json:"client_id,omitempty"`
+	ClientIP          string   `json:"client_ip,omitempty"`
 	Nonce             string   `json:"nonce,omitempty"`
 	Cluster           string   `json:"cluster,omitempty"`
 	ClientConnectURLs []string `json:"connect_urls,omitempty"` // Contains URLs a client can connect to.
@@ -139,7 +140,8 @@ type Server struct {
 		dialTimeout time.Duration
 	}
 
-	quitCh chan struct{}
+	quitCh           chan struct{}
+	shutdownComplete chan struct{}
 
 	// Tracking Go routines
 	grMu         sync.Mutex
@@ -152,9 +154,10 @@ type Server struct {
 
 	logging struct {
 		sync.RWMutex
-		logger Logger
-		trace  int32
-		debug  int32
+		logger      Logger
+		trace       int32
+		debug       int32
+		traceSysAcc int32
 	}
 
 	clientConnectURLs []string
@@ -323,10 +326,24 @@ func NewServer(opts *Options) (*Server, error) {
 	// Used to kick out all go routines possibly waiting on server
 	// to shutdown.
 	s.quitCh = make(chan struct{})
+	// Closed when Shutdown() is complete. Allows WaitForShutdown() to block
+	// waiting for complete shutdown.
+	s.shutdownComplete = make(chan struct{})
 
 	// For tracking accounts
 	if err := s.configureAccounts(); err != nil {
 		return nil, err
+	}
+
+	// If there is an URL account resolver, do basic test to see if anyone is home.
+	// Do this after configureAccounts() which calls configureResolver(), which will
+	// set TLSConfig if specified.
+	if ar := opts.AccountResolver; ar != nil {
+		if ur, ok := ar.(*URLAccResolver); ok {
+			if _, err := ur.Fetch(""); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	// In local config mode, check that leafnode configuration
@@ -496,21 +513,32 @@ func (s *Server) configureAccounts() error {
 	return nil
 }
 
-// Setup the memory resolver, make sure the JWTs are properly formed but do not
-// enforce expiration etc.
+// Setup the account resolver. For memory resolver, make sure the JWTs are
+// properly formed but do not enforce expiration etc.
 func (s *Server) configureResolver() error {
-	opts := s.opts
+	opts := s.getOpts()
 	s.accResolver = opts.AccountResolver
-	if opts.AccountResolver != nil && len(opts.resolverPreloads) > 0 {
-		if _, ok := s.accResolver.(*MemAccResolver); !ok {
-			return fmt.Errorf("resolver preloads only available for resolver type MEM")
-		}
-		for k, v := range opts.resolverPreloads {
-			_, err := jwt.DecodeAccountClaims(v)
-			if err != nil {
-				return fmt.Errorf("preload account error for %q: %v", k, err)
+	if opts.AccountResolver != nil {
+		// For URL resolver, set the TLSConfig if specified.
+		if opts.AccountResolverTLSConfig != nil {
+			if ar, ok := opts.AccountResolver.(*URLAccResolver); ok {
+				if t, ok := ar.c.Transport.(*http.Transport); ok {
+					t.CloseIdleConnections()
+					t.TLSClientConfig = opts.AccountResolverTLSConfig.Clone()
+				}
 			}
-			s.accResolver.Store(k, v)
+		}
+		if len(opts.resolverPreloads) > 0 {
+			if _, ok := s.accResolver.(*MemAccResolver); !ok {
+				return fmt.Errorf("resolver preloads only available for resolver type MEM")
+			}
+			for k, v := range opts.resolverPreloads {
+				_, err := jwt.DecodeAccountClaims(v)
+				if err != nil {
+					return fmt.Errorf("preload account error for %q: %v", k, err)
+				}
+				s.accResolver.Store(k, v)
+			}
 		}
 	}
 	return nil
@@ -1312,6 +1340,13 @@ func (s *Server) Shutdown() {
 			l.Close()
 		}
 	}
+	// Notify that the shutdown is complete
+	close(s.shutdownComplete)
+}
+
+// WaitForShutdown will block until the server has been fully shutdown.
+func (s *Server) WaitForShutdown() {
+	<-s.shutdownComplete
 }
 
 // AcceptLoop is exported for easier testing.
@@ -1464,6 +1499,7 @@ func (s *Server) StartProfiler() {
 				s.Fatalf("error starting profiler: %s", err)
 			}
 		}
+		srv.Close()
 		s.done <- true
 	}()
 }
@@ -1608,6 +1644,7 @@ func (s *Server) startMonitoring(secure bool) error {
 				s.Fatalf("Error starting monitor on %q: %v", hp, err)
 			}
 		}
+		srv.Close()
 		srv.Handler = nil
 		s.mu.Lock()
 		s.httpHandler = nil
@@ -1671,6 +1708,9 @@ func (s *Server) createClient(conn net.Conn) *client {
 
 	// Grab lock
 	c.mu.Lock()
+	if info.AuthRequired {
+		c.flags.set(expectConnect)
+	}
 
 	// Initialize
 	c.initClient()
@@ -1678,7 +1718,9 @@ func (s *Server) createClient(conn net.Conn) *client {
 	c.Debugf("Client connection created")
 
 	// Send our information.
-	c.sendInfo(c.generateClientInfoJSON(info))
+	// Need to be sent in place since writeLoop cannot be started until
+	// TLS handshake is done (if applicable).
+	c.sendProtoNow(c.generateClientInfoJSON(info))
 
 	// Unlock to register
 	c.mu.Unlock()
@@ -1736,7 +1778,7 @@ func (s *Server) createClient(conn net.Conn) *client {
 	}
 
 	// The connection may have been closed
-	if c.nc == nil {
+	if c.isClosed() {
 		c.mu.Unlock()
 		return c
 	}
@@ -1750,8 +1792,8 @@ func (s *Server) createClient(conn net.Conn) *client {
 
 	// Do final client initialization
 
-	// Set the First Ping timer.
-	s.setFirstPingTimer(c)
+	// Set the Ping timer. Will be reset once connect was received.
+	c.setPingTimer()
 
 	// Spin up the read loop.
 	s.startGoRoutine(func() { c.readLoop() })
@@ -1786,9 +1828,9 @@ func (s *Server) saveClosedClient(c *client, nc net.Conn, reason ClosedState) {
 
 	// Do subs, do not place by default in main ConnInfo
 	if len(c.subs) > 0 {
-		cc.subs = make([]string, 0, len(c.subs))
+		cc.subs = make([]SubDetail, 0, len(c.subs))
 		for _, sub := range c.subs {
-			cc.subs = append(cc.subs, string(sub.subject))
+			cc.subs = append(cc.subs, newSubDetail(sub))
 		}
 	}
 	// Hold user as well.
@@ -1864,10 +1906,10 @@ func (s *Server) updateServerINFOAndSendINFOToClients(urls []string, add bool) {
 // Handle closing down a connection when the handshake has timedout.
 func tlsTimeout(c *client, conn *tls.Conn) {
 	c.mu.Lock()
-	nc := c.nc
+	closed := c.isClosed()
 	c.mu.Unlock()
 	// Check if already closed
-	if nc == nil {
+	if closed {
 		return
 	}
 	cs := conn.ConnectionState()
@@ -1887,8 +1929,10 @@ func tlsVersion(ver uint16) string {
 		return "1.1"
 	case tls.VersionTLS12:
 		return "1.2"
+	case tls.VersionTLS13:
+		return "1.3"
 	}
-	return fmt.Sprintf("Unknown [%x]", ver)
+	return fmt.Sprintf("Unknown [0x%x]", ver)
 }
 
 // We use hex here so we don't need multiple versions
@@ -1897,7 +1941,7 @@ func tlsCipher(cs uint16) string {
 	if present {
 		return name
 	}
-	return fmt.Sprintf("Unknown [%x]", cs)
+	return fmt.Sprintf("Unknown [0x%x]", cs)
 }
 
 // Remove a client or route from our internal accounting.

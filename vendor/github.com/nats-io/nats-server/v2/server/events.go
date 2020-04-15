@@ -265,14 +265,27 @@ func (s *Server) internalSendLoop(wg *sync.WaitGroup) {
 			c.pa.size = len(b)
 			c.pa.szb = []byte(strconv.FormatInt(int64(len(b)), 10))
 			c.pa.reply = []byte(pm.rply)
+			trace := c.trace
 			c.mu.Unlock()
 
 			// Add in NL
 			b = append(b, _CRLF_...)
+
+			if trace {
+				c.traceInOp(fmt.Sprintf("PUB %s %s %d",
+					c.pa.subject, c.pa.reply, c.pa.size), nil)
+				c.traceMsg(b)
+			}
+
 			c.processInboundClientMsg(b)
-			c.flushClients(0) // Never spend time in place.
 			// See if we are doing graceful shutdown.
-			if pm.last {
+			if !pm.last {
+				c.flushClients(0) // Never spend time in place.
+			} else {
+				// For the Shutdown event, we need to send in place otherwise
+				// there is a chance that the process will exit before the
+				// writeLoop has a chance to send it.
+				c.flushClients(time.Second)
 				return
 			}
 		case <-s.quitCh:
@@ -1010,10 +1023,16 @@ func (s *Server) systemSubscribe(subject string, internalOnly bool, cb msgHandle
 	s.sys.subs[sid] = cb
 	s.sys.sid++
 	c := s.sys.client
+	trace := c.trace
 	s.mu.Unlock()
 
+	arg := []byte(subject + " " + sid)
+	if trace {
+		c.traceInOp("SUB", arg)
+	}
+
 	// Now create the subscription
-	return c.processSub([]byte(subject+" "+sid), internalOnly)
+	return c.processSub(arg, internalOnly)
 }
 
 func (s *Server) sysUnsubscribe(sub *subscription) {
