@@ -33,6 +33,14 @@ func TestEats(t *testing.T) {
 	RunSpecs(t, "Eats Suite")
 }
 
+type BinPaths struct {
+	OPI                      string `json:"opi"`
+	RouteCollector           string `json:"route_collector"`
+	MetricsCollector         string `json:"metrics_collector"`
+	RouteStatefulsetInformer string `json:"route_stateful_set_informer"`
+	RoutePodInformer         string `json:"route_pod_informer"`
+}
+
 var (
 	fixture *util.Fixture
 
@@ -41,11 +49,37 @@ var (
 	opiSession                          *gexec.Session
 	httpClient                          *http.Client
 	opiURL                              string
+	binPaths                            BinPaths
 )
 
-var _ = BeforeSuite(func() {
-	fixture = util.NewFixture(GinkgoWriter)
+var _ = SynchronizedBeforeSuite(func() []byte {
+	paths := BinPaths{}
 
+	var err error
+	paths.OPI, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
+	Expect(err).NotTo(HaveOccurred())
+
+	paths.RouteCollector, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/route-collector")
+	Expect(err).NotTo(HaveOccurred())
+
+	paths.MetricsCollector, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/metrics-collector")
+	Expect(err).NotTo(HaveOccurred())
+
+	paths.RouteStatefulsetInformer, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/route-statefulset-informer")
+	Expect(err).NotTo(HaveOccurred())
+
+	paths.RoutePodInformer, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/route-pod-informer")
+	Expect(err).NotTo(HaveOccurred())
+
+	data, err := json.Marshal(paths)
+	Expect(err).NotTo(HaveOccurred())
+
+	return data
+}, func(data []byte) {
+	err := json.Unmarshal(data, &binPaths)
+	Expect(err).NotTo(HaveOccurred())
+
+	fixture = util.NewFixture(GinkgoWriter)
 	SetDefaultEventuallyTimeout(10 * time.Second)
 })
 
@@ -86,9 +120,6 @@ func generateKeyPair(name string) (string, string) {
 }
 
 func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
-	pathToOpi, err := gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
-	Expect(err).NotTo(HaveOccurred())
-
 	eiriniConfig := &eirini.Config{
 		Properties: eirini.Properties{
 			KubeConfig: eirini.KubeConfig{
@@ -124,7 +155,7 @@ func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
 	eiriniConfigFile, err := util.CreateConfigFile(eiriniConfig)
 	Expect(err).ToNot(HaveOccurred())
 
-	eiriniCommand := exec.Command(pathToOpi, "connect", "-c", eiriniConfigFile.Name()) // #nosec G204
+	eiriniCommand := exec.Command(binPaths.OPI, "connect", "-c", eiriniConfigFile.Name()) // #nosec G204
 	eiriniSession, err := gexec.Start(eiriniCommand, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -216,10 +247,7 @@ func writeTempFile(content []byte, fileName string) string {
 	return configFile.Name()
 }
 
-func runBinary(binPath string, config interface{}) (*gexec.Session, string) {
-	binaryPath, err := gexec.Build(binPath)
-	Expect(err).NotTo(HaveOccurred())
-
+func runBinary(binaryPath string, config interface{}) (*gexec.Session, string) {
 	configBytes, err := yaml.Marshal(config)
 	Expect(err).NotTo(HaveOccurred())
 

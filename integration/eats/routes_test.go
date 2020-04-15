@@ -65,9 +65,9 @@ var _ = Describe("Routes", func() {
 				Namespace:  fixture.Namespace,
 			},
 		}
-		collectorSession, collectorConfig = runBinary("code.cloudfoundry.org/eirini/cmd/route-collector", eiriniRouteConfig)
-		uriInformerSession, uriInformerConfig = runBinary("code.cloudfoundry.org/eirini/cmd/route-statefulset-informer", eiriniRouteConfig)
-		instanceInformerSession, instanceInformerConfig = runBinary("code.cloudfoundry.org/eirini/cmd/route-pod-informer", eiriniRouteConfig)
+		collectorSession, collectorConfig = runBinary(binPaths.RouteCollector, eiriniRouteConfig)
+		uriInformerSession, uriInformerConfig = runBinary(binPaths.RouteStatefulsetInformer, eiriniRouteConfig)
+		instanceInformerSession, instanceInformerConfig = runBinary(binPaths.RoutePodInformer, eiriniRouteConfig)
 
 		lrp = cf.DesireLRPRequest{
 			GUID:         "the-app-guid",

@@ -53,7 +53,7 @@ var _ = Describe("Metrics", func() {
 			LoggregatorKeyPath:               metricsKeyPath,
 			AppMetricsEmissionIntervalInSecs: 1,
 		}
-		metricsSession, metricsConfigFile = runBinary("code.cloudfoundry.org/eirini/cmd/metrics-collector", config)
+		metricsSession, metricsConfigFile = runBinary(binPaths.MetricsCollector, config)
 	})
 
 	AfterEach(func() {
