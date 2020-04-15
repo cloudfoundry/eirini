@@ -178,6 +178,22 @@ func desireLRP(httpClient rest.HTTPClient, opiURL string, lrpRequest cf.DesireLR
 	return httpClient.Do(desireLrpReq)
 }
 
+func stopLRP(httpClient rest.HTTPClient, opiURL, processGUID, versionGUID string) (*http.Response, error) {
+	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop", opiURL, processGUID, versionGUID), nil)
+	if err != nil {
+		return nil, err
+	}
+	return httpClient.Do(request)
+}
+
+func stopLRPInstance(httpClient rest.HTTPClient, opiURL, processGUID, versionGUID string, instance int) (*http.Response, error) {
+	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop/%d", opiURL, processGUID, versionGUID, instance), nil)
+	if err != nil {
+		return nil, err
+	}
+	return httpClient.Do(request)
+}
+
 func updateLRP(httpClient rest.HTTPClient, opiURL string, updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error) {
 	body, err := json.Marshal(updateRequest)
 	if err != nil {

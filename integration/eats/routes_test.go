@@ -19,6 +19,7 @@ import (
 	ginkgoconfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	. "github.com/onsi/gomega/gstruct"
 )
 
 type routeInfo struct {
@@ -144,6 +145,7 @@ var _ = Describe("Routes", func() {
 		var (
 			desiredRoutes []routeInfo
 			emittedRoutes []string
+			instances     int32
 		)
 
 		appRoutes := func() []string {
@@ -162,6 +164,7 @@ var _ = Describe("Routes", func() {
 			resp, err := desireLRP(httpClient, opiURL, lrp)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			Eventually(registerChan).Should(Receive())
 
 			resp, err = updateLRP(httpClient, opiURL, cf.UpdateDesiredLRPRequest{
 				GUID:    lrp.GUID,
@@ -169,7 +172,7 @@ var _ = Describe("Routes", func() {
 				UpdateDesiredLRPRequest: models.UpdateDesiredLRPRequest{
 					Update: &models.DesiredLRPUpdate{
 						OptionalInstances: &models.DesiredLRPUpdate_Instances{
-							Instances: int32(lrp.NumInstances),
+							Instances: instances,
 						},
 						Routes: &models.Routes{
 							"cf-router": marshalRoutes(desiredRoutes),
@@ -183,6 +186,7 @@ var _ = Describe("Routes", func() {
 
 		When("a new route is added to the app", func() {
 			BeforeEach(func() {
+				instances = int32(lrp.NumInstances)
 				desiredRoutes = []routeInfo{
 					{Hostname: "app-hostname-1", Port: 8080},
 					{Hostname: "app-hostname-2", Port: 8080},
@@ -190,11 +194,134 @@ var _ = Describe("Routes", func() {
 			})
 
 			It("registers the new route", func() {
-				Eventually(appRoutes).Should(ConsistOf("app-hostname-1", "app-hostname-2"))
+				Eventually(appRoutes).Should(ContainElements("app-hostname-1", "app-hostname-2"))
+			})
+		})
+
+		When("a route is removed from the app", func() {
+			BeforeEach(func() {
+				instances = int32(lrp.NumInstances)
+				desiredRoutes = []routeInfo{}
+			})
+
+			It("unregisters the route", func() {
+				Eventually(func() []string {
+					var (
+						msg           *nats.Msg
+						actualMessage route.RegistryMessage
+					)
+
+					Eventually(unregisterChan).Should(Receive(&msg))
+					Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
+					return actualMessage.URIs
+				}).Should(ConsistOf("app-hostname-1"))
+			})
+		})
+
+		When("an app is scaled up", func() {
+
+			BeforeEach(func() {
+				instances = int32(lrp.NumInstances) + 1
+				desiredRoutes = []routeInfo{
+					{Hostname: "app-hostname-1", Port: 8080},
+				}
+			})
+
+			It("registers the route for new instance", func() {
+				Eventually(func() route.RegistryMessage {
+					return receivedMessage(registerChan)
+				}).Should(MatchFields(IgnoreExtras, Fields{
+					"URIs":              ConsistOf("app-hostname-1"),
+					"PrivateInstanceID": SatisfyAll(ContainSubstring("the-app-guid"), MatchRegexp("-1$")),
+				}))
+
+			})
+		})
+
+		When("an app is scaled down", func() {
+
+			BeforeEach(func() {
+				instances = 0
+				desiredRoutes = []routeInfo{
+					{Hostname: "app-hostname-1", Port: 8080},
+				}
+			})
+
+			It("registers the route for new instance", func() {
+				Eventually(func() route.RegistryMessage {
+					return receivedMessage(unregisterChan)
+				}).Should(MatchFields(IgnoreExtras, Fields{
+					"URIs":              ConsistOf("app-hostname-1"),
+					"PrivateInstanceID": SatisfyAll(ContainSubstring("the-app-guid"), MatchRegexp("-0$")),
+				}))
+
 			})
 		})
 	})
+
+	Describe("Stopping an app", func() {
+
+		JustBeforeEach(func() {
+			resp, err := desireLRP(httpClient, opiURL, lrp)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			Eventually(registerChan).Should(Receive())
+
+			resp, err = stopLRP(httpClient, opiURL, lrp.GUID, lrp.Version)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		})
+
+		It("unregisteres the app route", func() {
+			var msg *nats.Msg
+			Eventually(unregisterChan, "15s").Should(Receive(&msg))
+			var actualMessage route.RegistryMessage
+			Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
+			Expect(actualMessage.URIs).To(ConsistOf("app-hostname-1"))
+		})
+	})
+
+	Describe("Stopping an app instance", func() {
+
+		JustBeforeEach(func() {
+			resp, err := desireLRP(httpClient, opiURL, lrp)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			Eventually(registerChan).Should(Receive())
+
+			resp, err = stopLRPInstance(httpClient, opiURL, lrp.GUID, lrp.Version, 0)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		})
+
+		It("unregisteres the app route", func() {
+			Eventually(func() route.RegistryMessage {
+				return receivedMessage(unregisterChan)
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"URIs":              ConsistOf("app-hostname-1"),
+				"PrivateInstanceID": SatisfyAll(ContainSubstring("the-app-guid"), MatchRegexp("-0$")),
+			}))
+			Eventually(func() route.RegistryMessage {
+				return receivedMessage(registerChan)
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"URIs":              ConsistOf("app-hostname-1"),
+				"PrivateInstanceID": SatisfyAll(ContainSubstring("the-app-guid"), MatchRegexp("-0$")),
+			}))
+		})
+	})
+
 })
+
+func receivedMessage(channel <-chan *nats.Msg) route.RegistryMessage {
+	var (
+		msg           *nats.Msg
+		actualMessage route.RegistryMessage
+	)
+
+	Eventually(channel).Should(Receive(&msg))
+	Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
+	return actualMessage
+}
 
 func getNatsServerConfig() *server.Options {
 	return &server.Options{
