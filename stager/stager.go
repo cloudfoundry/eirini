@@ -2,6 +2,7 @@ package stager
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
@@ -55,13 +56,18 @@ func (s *Stager) createStagingTask(stagingGUID string, request cf.StagingRequest
 	}
 
 	eiriniEnv := map[string]string{
-		eirini.EnvDownloadURL:        lifecycleData.AppBitsDownloadURI,
-		eirini.EnvDropletUploadURL:   lifecycleData.DropletUploadURI,
-		eirini.EnvBuildpacks:         string(buildpacksJSON),
-		eirini.EnvAppID:              request.AppGUID,
-		eirini.EnvStagingGUID:        stagingGUID,
-		eirini.EnvCompletionCallback: request.CompletionCallback,
-		eirini.EnvEiriniAddress:      s.Config.EiriniAddress,
+		eirini.EnvDownloadURL:                     lifecycleData.AppBitsDownloadURI,
+		eirini.EnvDropletUploadURL:                lifecycleData.DropletUploadURI,
+		eirini.EnvBuildpacks:                      string(buildpacksJSON),
+		eirini.EnvAppID:                           request.AppGUID,
+		eirini.EnvStagingGUID:                     stagingGUID,
+		eirini.EnvCompletionCallback:              request.CompletionCallback,
+		eirini.EnvEiriniAddress:                   s.Config.EiriniAddress,
+		eirini.EnvBuildpackCacheDownloadURI:       lifecycleData.BuildpackCacheDownloadURI,
+		eirini.EnvBuildpackCacheUploadURI:         lifecycleData.BuildpackCacheUploadURI,
+		eirini.EnvBuildpackCacheChecksum:          lifecycleData.BuildpackCacheChecksum,
+		eirini.EnvBuildpackCacheChecksumAlgorithm: lifecycleData.BuildpackCacheChecksumAlgorithm,
+		"TMPDIR": fmt.Sprintf("%s/tmp", eirini.BuildpackCacheDir),
 	}
 
 	stagingEnv := mergeEnvVriables(eiriniEnv, request.Environment)

@@ -103,9 +103,13 @@ type StagingDockerLifecycle struct {
 }
 
 type StagingBuildpackLifecycle struct {
-	AppBitsDownloadURI string      `json:"app_bits_download_uri"`
-	DropletUploadURI   string      `json:"droplet_upload_uri"`
-	Buildpacks         []Buildpack `json:"buildpacks"`
+	AppBitsDownloadURI              string      `json:"app_bits_download_uri"`
+	DropletUploadURI                string      `json:"droplet_upload_uri"`
+	Buildpacks                      []Buildpack `json:"buildpacks"`
+	BuildpackCacheDownloadURI       string      `json:"buildpack_cache_download_uri"`
+	BuildpackCacheUploadURI         string      `json:"buildpack_cache_upload_uri"`
+	BuildpackCacheChecksum          string      `json:"buildpack_cache_checksum"`
+	BuildpackCacheChecksumAlgorithm string      `json:"buildpack_cache_checksum_algorithm"`
 }
 
 type Buildpack struct {

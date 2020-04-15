@@ -11,13 +11,17 @@ import (
 
 const (
 	//Environment Variable Names
-	EnvDownloadURL        = "DOWNLOAD_URL"
-	EnvBuildpacks         = "BUILDPACKS"
-	EnvDropletUploadURL   = "DROPLET_UPLOAD_URL"
-	EnvAppID              = "APP_ID"
-	EnvStagingGUID        = "STAGING_GUID"
-	EnvCompletionCallback = "COMPLETION_CALLBACK"
-	EnvEiriniAddress      = "EIRINI_ADDRESS"
+	EnvDownloadURL                     = "DOWNLOAD_URL"
+	EnvBuildpacks                      = "BUILDPACKS"
+	EnvDropletUploadURL                = "DROPLET_UPLOAD_URL"
+	EnvAppID                           = "APP_ID"
+	EnvStagingGUID                     = "STAGING_GUID"
+	EnvCompletionCallback              = "COMPLETION_CALLBACK"
+	EnvEiriniAddress                   = "EIRINI_ADDRESS"
+	EnvBuildpackCacheUploadURI         = "BUILDPACK_CACHE_UPLOAD_URI"
+	EnvBuildpackCacheDownloadURI       = "BUILDPACK_CACHE_DOWNLOAD_URI"
+	EnvBuildpackCacheChecksum          = "BUILDPACK_CACHE_CHECKSUM"
+	EnvBuildpackCacheChecksumAlgorithm = "BUILDPACK_CACHE_CHECKSUM_ALGORITHM"
 
 	EnvPodName              = "POD_NAME"
 	EnvCFInstanceIP         = "CF_INSTANCE_IP"
@@ -33,6 +37,8 @@ const (
 	RecipeOutputName       = "staging-output"
 	RecipeOutputLocation   = "/out"
 	RecipePacksBuilderPath = "/packs/builder"
+	BuildpackCacheDir      = "/buildpack-cache"
+	BuildpackCacheName     = "buildpack-cache"
 
 	AppMetricsEmissionIntervalInSecs = 15
 

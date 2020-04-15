@@ -235,7 +235,7 @@ var _ = Describe("Desiretask", func() {
 		)
 
 		assertVolumes := func(job *batch.Job) {
-			Expect(job.Spec.Template.Spec.Volumes).To(HaveLen(4))
+			Expect(job.Spec.Template.Spec.Volumes).To(HaveLen(5))
 			Expect(job.Spec.Template.Spec.Volumes).To(ConsistOf(
 				MatchFields(IgnoreExtras, Fields{
 					"Name": Equal(eirini.CertsVolumeName),
@@ -302,6 +302,9 @@ var _ = Describe("Desiretask", func() {
 				MatchFields(IgnoreExtras, Fields{
 					"Name": Equal(eirini.RecipeWorkspaceName),
 				}),
+				MatchFields(IgnoreExtras, Fields{
+					"Name": Equal(eirini.BuildpackCacheName),
+				}),
 			))
 		}
 
@@ -326,12 +329,18 @@ var _ = Describe("Desiretask", func() {
 				"ReadOnly":  Equal(false),
 				"MountPath": Equal(eirini.RecipeOutputLocation),
 			})
+			buildpackCacheVolumeMatcher := MatchFields(IgnoreExtras, Fields{
+				"Name":      Equal(eirini.BuildpackCacheName),
+				"ReadOnly":  Equal(false),
+				"MountPath": Equal(eirini.BuildpackCacheDir),
+			})
 
 			downloaderVolumeMounts := job.Spec.Template.Spec.InitContainers[0].VolumeMounts
 			Expect(downloaderVolumeMounts).To(ConsistOf(
 				buildpackVolumeMatcher,
 				certsVolumeMatcher,
 				workspaceVolumeMatcher,
+				buildpackCacheVolumeMatcher,
 			))
 
 			executorVolumeMounts := job.Spec.Template.Spec.InitContainers[1].VolumeMounts
@@ -340,12 +349,14 @@ var _ = Describe("Desiretask", func() {
 				certsVolumeMatcher,
 				workspaceVolumeMatcher,
 				outputVolumeMatcher,
+				buildpackCacheVolumeMatcher,
 			))
 
 			uploaderVolumeMounts := job.Spec.Template.Spec.Containers[0].VolumeMounts
 			Expect(uploaderVolumeMounts).To(ConsistOf(
 				certsVolumeMatcher,
 				outputVolumeMatcher,
+				buildpackCacheVolumeMatcher,
 			))
 		}
 

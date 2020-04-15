@@ -123,12 +123,13 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	outputVolume, outputVolumeMount := getVolume(eirini.RecipeOutputName, eirini.RecipeOutputLocation)
 	buildpacksVolume, buildpacksVolumeMount := getVolume(eirini.RecipeBuildPacksName, eirini.RecipeBuildPacksDir)
 	workspaceVolume, workspaceVolumeMount := getVolume(eirini.RecipeWorkspaceName, eirini.RecipeWorkspaceDir)
+	buildpackCacheVolume, buildpackCacheVolumeMount := getVolume(eirini.BuildpackCacheName, eirini.BuildpackCacheDir)
 
 	var downloaderVolumeMounts, executorVolumeMounts, uploaderVolumeMounts []v1.VolumeMount
 
-	downloaderVolumeMounts = append(downloaderVolumeMounts, secretsVolumeMount, buildpacksVolumeMount, workspaceVolumeMount)
-	executorVolumeMounts = append(executorVolumeMounts, secretsVolumeMount, buildpacksVolumeMount, workspaceVolumeMount, outputVolumeMount)
-	uploaderVolumeMounts = append(uploaderVolumeMounts, secretsVolumeMount, outputVolumeMount)
+	downloaderVolumeMounts = append(downloaderVolumeMounts, secretsVolumeMount, buildpacksVolumeMount, workspaceVolumeMount, buildpackCacheVolumeMount)
+	executorVolumeMounts = append(executorVolumeMounts, secretsVolumeMount, buildpacksVolumeMount, workspaceVolumeMount, outputVolumeMount, buildpackCacheVolumeMount)
+	uploaderVolumeMounts = append(uploaderVolumeMounts, secretsVolumeMount, outputVolumeMount, buildpackCacheVolumeMount)
 
 	envs := getEnvs(task.Task)
 	initContainers := []v1.Container{
@@ -168,7 +169,7 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	job.Spec.Template.Spec.Containers = containers
 	job.Spec.Template.Spec.InitContainers = initContainers
 
-	volumes := []v1.Volume{secretsVolume, outputVolume, buildpacksVolume, workspaceVolume}
+	volumes := []v1.Volume{secretsVolume, outputVolume, buildpacksVolume, workspaceVolume, buildpackCacheVolume}
 	job.Spec.Template.Spec.Volumes = volumes
 
 	job.Annotations[AnnotationStagingGUID] = task.GUID
