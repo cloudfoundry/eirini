@@ -9,7 +9,7 @@ import (
 func GetKubeconfig() string {
 	kubeconf := os.Getenv("INTEGRATION_KUBECONFIG")
 	if kubeconf == "" {
-		ginkgo.Fail("Integration kubeconfig unot provided. Please export INTEGRATION_KUBECONFIG")
+		ginkgo.Fail("Integration kubeconfig not provided. Please export INTEGRATION_KUBECONFIG")
 	}
 	return kubeconf
 }
