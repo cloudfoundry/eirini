@@ -15,14 +15,14 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Bifrost", func() {
+var _ = Describe("Bifrost LRP", func() {
 
 	var (
-		err       error
-		bfrst     *bifrost.Bifrost
-		request   cf.DesireLRPRequest
-		converter *bifrostfakes.FakeConverter
-		desirer   *opifakes.FakeDesirer
+		err        error
+		lrpBifrost *bifrost.LRP
+		request    cf.DesireLRPRequest
+		converter  *bifrostfakes.FakeConverter
+		desirer    *opifakes.FakeDesirer
 	)
 
 	BeforeEach(func() {
@@ -31,7 +31,7 @@ var _ = Describe("Bifrost", func() {
 	})
 
 	JustBeforeEach(func() {
-		bfrst = &bifrost.Bifrost{
+		lrpBifrost = &bifrost.LRP{
 			Converter: converter,
 			Desirer:   desirer,
 		}
@@ -42,7 +42,7 @@ var _ = Describe("Bifrost", func() {
 		Context("When lrp is transferred successfully", func() {
 			var lrp opi.LRP
 			JustBeforeEach(func() {
-				err = bfrst.Transfer(context.Background(), request)
+				err = lrpBifrost.Transfer(context.Background(), request)
 			})
 
 			BeforeEach(func() {
@@ -76,17 +76,17 @@ var _ = Describe("Bifrost", func() {
 				})
 
 				It("should return an error", func() {
-					Expect(bfrst.Transfer(context.Background(), request)).To(MatchError(ContainSubstring("failed to convert request")))
+					Expect(lrpBifrost.Transfer(context.Background(), request)).To(MatchError(ContainSubstring("failed to convert request")))
 				})
 
 				It("should use Converter", func() {
-					Expect(bfrst.Transfer(context.Background(), request)).ToNot(Succeed())
+					Expect(lrpBifrost.Transfer(context.Background(), request)).ToNot(Succeed())
 					Expect(converter.ConvertLRPCallCount()).To(Equal(1))
 					Expect(converter.ConvertLRPArgsForCall(0)).To(Equal(request))
 				})
 
 				It("should not use Desirer", func() {
-					Expect(bfrst.Transfer(context.Background(), request)).ToNot(Succeed())
+					Expect(lrpBifrost.Transfer(context.Background(), request)).ToNot(Succeed())
 					Expect(desirer.DesireCallCount()).To(Equal(0))
 				})
 
@@ -98,7 +98,7 @@ var _ = Describe("Bifrost", func() {
 				})
 
 				It("shoud return an error", func() {
-					Expect(bfrst.Transfer(context.Background(), request)).To(MatchError(ContainSubstring("failed to desire")))
+					Expect(lrpBifrost.Transfer(context.Background(), request)).To(MatchError(ContainSubstring("failed to desire")))
 				})
 			})
 		})
@@ -115,7 +115,7 @@ var _ = Describe("Bifrost", func() {
 
 		Context("When no running LRPs exist", func() {
 			It("should return an empty list of DesiredLRPSchedulingInfo", func() {
-				Expect(bfrst.List(context.Background())).To(HaveLen(0))
+				Expect(lrpBifrost.List(context.Background())).To(HaveLen(0))
 			})
 		})
 
@@ -130,12 +130,12 @@ var _ = Describe("Bifrost", func() {
 			})
 
 			It("should succeed", func() {
-				_, listErr := bfrst.List(context.Background())
+				_, listErr := lrpBifrost.List(context.Background())
 				Expect(listErr).ToNot(HaveOccurred())
 			})
 
 			It("should translate []LRPs to []DesiredLRPSchedulingInfo", func() {
-				desiredLRPSchedulingInfos, _ := bfrst.List(context.Background())
+				desiredLRPSchedulingInfos, _ := lrpBifrost.List(context.Background())
 				Expect(desiredLRPSchedulingInfos).To(HaveLen(3))
 				Expect(desiredLRPSchedulingInfos[0].ProcessGuid).To(Equal("abcd-123"))
 				Expect(desiredLRPSchedulingInfos[1].ProcessGuid).To(Equal("efgh-234"))
@@ -153,7 +153,7 @@ var _ = Describe("Bifrost", func() {
 			})
 
 			It("should return a meaningful errormessage", func() {
-				_, listErr := bfrst.List(context.Background())
+				_, listErr := lrpBifrost.List(context.Background())
 				Expect(listErr).To(MatchError(ContainSubstring("failed to list desired LRPs")))
 			})
 		})
@@ -173,7 +173,7 @@ var _ = Describe("Bifrost", func() {
 		})
 
 		JustBeforeEach(func() {
-			err = bfrst.Update(context.Background(), updateRequest)
+			err = lrpBifrost.Update(context.Background(), updateRequest)
 		})
 
 		Context("when the app exists", func() {
@@ -338,14 +338,14 @@ var _ = Describe("Bifrost", func() {
 			})
 
 			It("should use the desirer to get the lrp", func() {
-				_, err = bfrst.GetApp(context.Background(), identifier)
+				_, err = lrpBifrost.GetApp(context.Background(), identifier)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(desirer.GetCallCount()).To(Equal(1))
 				Expect(desirer.GetArgsForCall(0)).To(Equal(identifier))
 			})
 
 			It("should return a DesiredLRP", func() {
-				desiredLRP, _ := bfrst.GetApp(context.Background(), identifier)
+				desiredLRP, _ := lrpBifrost.GetApp(context.Background(), identifier)
 				Expect(desiredLRP).ToNot(BeNil())
 				Expect(desiredLRP.ProcessGuid).To(Equal("guid_1234-version_1234"))
 				Expect(desiredLRP.Instances).To(Equal(int32(5)))
@@ -359,7 +359,7 @@ var _ = Describe("Bifrost", func() {
 			})
 
 			It("should return an error", func() {
-				_, getAppErr := bfrst.GetApp(context.Background(), identifier)
+				_, getAppErr := lrpBifrost.GetApp(context.Background(), identifier)
 				Expect(getAppErr).To(MatchError(ContainSubstring("failed to get app")))
 			})
 		})
@@ -368,7 +368,7 @@ var _ = Describe("Bifrost", func() {
 	Describe("Stop an app", func() {
 
 		JustBeforeEach(func() {
-			err = bfrst.Stop(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+			err = lrpBifrost.Stop(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 		})
 
 		It("should not return an error", func() {
@@ -396,7 +396,7 @@ var _ = Describe("Bifrost", func() {
 	Describe("Stop an app instance", func() {
 
 		JustBeforeEach(func() {
-			err = bfrst.StopInstance(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
+			err = lrpBifrost.StopInstance(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
 		})
 
 		It("should not return an error", func() {
@@ -438,7 +438,7 @@ var _ = Describe("Bifrost", func() {
 		})
 
 		JustBeforeEach(func() {
-			instances, err = bfrst.GetInstances(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+			instances, err = lrpBifrost.GetInstances(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 		})
 
 		It("should get the app instances from Desirer", func() {

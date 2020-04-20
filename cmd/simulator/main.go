@@ -22,7 +22,7 @@ func main() {
 	syncLogger := lager.NewLogger("sync-simulator-logger")
 	syncLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 
-	bifrost := &bifrost.Bifrost{
+	lrpBifrost := &bifrost.LRP{
 		Converter: &ConverterSimulator{},
 		Desirer:   &DesirerSimulator{},
 	}
@@ -30,7 +30,7 @@ func main() {
 	stager := &StagerSimulator{}
 	task := &TaskSimulator{}
 
-	handler := handler.New(bifrost, stager, stager, task, handlerLogger)
+	handler := handler.New(lrpBifrost, stager, stager, task, handlerLogger)
 
 	fmt.Println("Starting to listen at 127.0.0.1:8085")
 	handlerLogger.Fatal("simulator-crahsed", http.ListenAndServe("127.0.0.1:8085", handler))

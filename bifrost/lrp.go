@@ -10,21 +10,21 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 )
 
-type Bifrost struct {
+type LRP struct {
 	Converter Converter
 	Desirer   opi.Desirer
 }
 
-func (b *Bifrost) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
-	desiredLRP, err := b.Converter.ConvertLRP(request)
+func (l *LRP) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
+	desiredLRP, err := l.Converter.ConvertLRP(request)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert request")
 	}
-	return errors.Wrap(b.Desirer.Desire(&desiredLRP), "failed to desire")
+	return errors.Wrap(l.Desirer.Desire(&desiredLRP), "failed to desire")
 }
 
-func (b *Bifrost) List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error) {
-	lrps, err := b.Desirer.List()
+func (l *LRP) List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error) {
+	lrps, err := l.Desirer.List()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list desired LRPs")
 	}
@@ -43,13 +43,13 @@ func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []*models.DesiredLRPSchedulingI
 	return infos
 }
 
-func (b *Bifrost) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error {
+func (l *LRP) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error {
 	identifier := opi.LRPIdentifier{
 		GUID:    update.GUID,
 		Version: update.Version,
 	}
 
-	lrp, err := b.Desirer.Get(identifier)
+	lrp, err := l.Desirer.Get(identifier)
 	if err != nil {
 		return errors.Wrap(err, "failed to get app")
 	}
@@ -60,11 +60,11 @@ func (b *Bifrost) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest)
 	lrp.LastUpdated = u.GetAnnotation()
 
 	lrp.AppURIs = getURIs(update)
-	return errors.Wrap(b.Desirer.Update(lrp), "failed to update")
+	return errors.Wrap(l.Desirer.Update(lrp), "failed to update")
 }
 
-func (b *Bifrost) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (*models.DesiredLRP, error) {
-	lrp, err := b.Desirer.Get(identifier)
+func (l *LRP) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (*models.DesiredLRP, error) {
+	lrp, err := l.Desirer.Get(identifier)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get app")
 	}
@@ -77,19 +77,19 @@ func (b *Bifrost) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (*mo
 	return desiredLRP, nil
 }
 
-func (b *Bifrost) Stop(ctx context.Context, identifier opi.LRPIdentifier) error {
-	return errors.Wrap(b.Desirer.Stop(identifier), "failed to stop app")
+func (l *LRP) Stop(ctx context.Context, identifier opi.LRPIdentifier) error {
+	return errors.Wrap(l.Desirer.Stop(identifier), "failed to stop app")
 }
 
-func (b *Bifrost) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error {
-	if err := b.Desirer.StopInstance(identifier, index); err != nil {
+func (l *LRP) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error {
+	if err := l.Desirer.StopInstance(identifier, index); err != nil {
 		return errors.Wrap(err, "failed to stop instance")
 	}
 	return nil
 }
 
-func (b *Bifrost) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error) {
-	opiInstances, err := b.Desirer.GetInstances(identifier)
+func (l *LRP) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error) {
+	opiInstances, err := l.Desirer.GetInstances(identifier)
 	if err != nil {
 		return []*cf.Instance{}, errors.Wrap(err, "failed to get instances for app")
 	}

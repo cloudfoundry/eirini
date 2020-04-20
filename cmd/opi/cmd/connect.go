@@ -48,7 +48,7 @@ func connect(cmd *cobra.Command, args []string) {
 	buildpackStagingBifrost := initBuildpackStagingBifrost(cfg, clientset)
 	dockerStagingBifrost := initDockerStagingBifrost(cfg)
 	buildpackTaskBifrost := initBuildpackTaskBifrost(cfg, clientset)
-	bifrost := initBifrost(clientset, cfg)
+	bifrost := initLRPBifrost(clientset, cfg)
 
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
@@ -163,7 +163,7 @@ func initBuildpackTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface
 	}
 }
 
-func initBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost.Bifrost {
+func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost.LRP {
 	kubeNamespace := cfg.Properties.Namespace
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
@@ -177,7 +177,7 @@ func initBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost.Bi
 	)
 	converter := initConverter(cfg)
 
-	return &bifrost.Bifrost{
+	return &bifrost.LRP{
 		Converter: converter,
 		Desirer:   desirer,
 	}
