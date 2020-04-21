@@ -14,13 +14,13 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func NewAppHandler(bifrost AppBifrost, logger lager.Logger) *App {
-	return &App{bifrost: bifrost, logger: logger}
+func NewAppHandler(lrpBifrost LRPBifrost, logger lager.Logger) *App {
+	return &App{lrpBifrost: lrpBifrost, logger: logger}
 }
 
 type App struct {
-	bifrost AppBifrost
-	logger  lager.Logger
+	lrpBifrost LRPBifrost
+	logger     lager.Logger
 }
 
 func (a *App) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -42,7 +42,7 @@ func (a *App) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 
 	request.LRP = buf.String()
 
-	if err := a.bifrost.Transfer(r.Context(), request); err != nil {
+	if err := a.lrpBifrost.Transfer(r.Context(), request); err != nil {
 		loggerSession.Error("bifrost-failed", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -54,7 +54,7 @@ func (a *App) Desire(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 func (a *App) List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	loggerSession := a.logger.Session("list-apps")
 	loggerSession.Debug("requested")
-	desiredLRPSchedulingInfos, err := a.bifrost.List(r.Context())
+	desiredLRPSchedulingInfos, err := a.lrpBifrost.List(r.Context())
 	if err != nil {
 		loggerSession.Error("bifrost-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -87,7 +87,7 @@ func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
 	}
-	desiredLRP, err := a.bifrost.GetApp(r.Context(), identifier)
+	desiredLRP, err := a.lrpBifrost.GetApp(r.Context(), identifier)
 	if err != nil {
 		loggerSession.Error("failed-to-get-lrp", err, lager.Data{"guid": identifier.GUID})
 		w.WriteHeader(http.StatusNotFound)
@@ -119,7 +119,7 @@ func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter
 	}
 	response := cf.GetInstancesResponse{ProcessGUID: identifier.ProcessGUID()}
 
-	instances, err := a.bifrost.GetInstances(r.Context(), identifier)
+	instances, err := a.lrpBifrost.GetInstances(r.Context(), identifier)
 	if err != nil {
 		loggerSession.Error("bifrost-failed", err)
 		response.Error = err.Error()
@@ -148,7 +148,7 @@ func (a *App) Update(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 
 	loggerSession.Debug("requested", lager.Data{"version": request.Version})
 
-	if err := a.bifrost.Update(r.Context(), request); err != nil {
+	if err := a.lrpBifrost.Update(r.Context(), request); err != nil {
 		loggerSession.Error("bifrost-failed", err)
 		writeUpdateErrorResponse(w, err, http.StatusInternalServerError, loggerSession)
 	}
@@ -161,7 +161,7 @@ func (a *App) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
 	}
-	err := a.bifrost.Stop(r.Context(), identifier)
+	err := a.lrpBifrost.Stop(r.Context(), identifier)
 	if err != nil {
 		loggerSession.Error("bifrost-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -182,7 +182,7 @@ func (a *App) StopInstance(w http.ResponseWriter, r *http.Request, ps httprouter
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
-	err = a.bifrost.StopInstance(r.Context(), identifier, uint(index))
+	err = a.lrpBifrost.StopInstance(r.Context(), identifier, uint(index))
 	if err != nil {
 		loggerSession.Error("bifrost-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)

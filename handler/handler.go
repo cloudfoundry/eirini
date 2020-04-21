@@ -11,8 +11,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-//counterfeiter:generate . AppBifrost
-type AppBifrost interface {
+//counterfeiter:generate . LRPBifrost
+type LRPBifrost interface {
 	Transfer(ctx context.Context, request cf.DesireLRPRequest) error
 	List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error)
 	Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error
@@ -33,16 +33,16 @@ type StagingBifrost interface {
 	CompleteStaging(*models.TaskCallbackResponse) error
 }
 
-func New(bifrost AppBifrost,
-	buildpackStaging StagingBifrost,
-	dockerStaging StagingBifrost,
-	buildpackTask TaskBifrost,
+func New(lrpBifrost LRPBifrost,
+	buildpackStagingBifrost StagingBifrost,
+	dockerStagingBifrost StagingBifrost,
+	buildpackTaskBifrost TaskBifrost,
 	lager lager.Logger) http.Handler {
 	handler := httprouter.New()
 
-	appHandler := NewAppHandler(bifrost, lager)
-	stageHandler := NewStageHandler(buildpackStaging, dockerStaging, lager)
-	taskHandler := NewTaskHandler(lager, buildpackTask)
+	appHandler := NewAppHandler(lrpBifrost, lager)
+	stageHandler := NewStageHandler(buildpackStagingBifrost, dockerStagingBifrost, lager)
+	taskHandler := NewTaskHandler(lager, buildpackTaskBifrost)
 
 	registerAppsEndpoints(handler, appHandler)
 	registerStageEndpoints(handler, stageHandler)

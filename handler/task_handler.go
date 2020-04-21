@@ -11,13 +11,13 @@ import (
 
 type Task struct {
 	logger      lager.Logger
-	bifrostTask TaskBifrost
+	taskBifrost TaskBifrost
 }
 
-func NewTaskHandler(logger lager.Logger, bifrostTask TaskBifrost) *Task {
+func NewTaskHandler(logger lager.Logger, taskBifrost TaskBifrost) *Task {
 	return &Task{
 		logger:      logger,
-		bifrostTask: bifrostTask,
+		taskBifrost: taskBifrost,
 	}
 }
 
@@ -32,7 +32,7 @@ func (t *Task) Run(resp http.ResponseWriter, req *http.Request, ps httprouter.Pa
 		return
 	}
 
-	if err := t.bifrostTask.TransferTask(req.Context(), taskGUID, taskRequest); err != nil {
+	if err := t.taskBifrost.TransferTask(req.Context(), taskGUID, taskRequest); err != nil {
 		logger.Error("task-request-task-create-failed", err)
 		writeErrorResponse(resp, http.StatusInternalServerError, err)
 		return

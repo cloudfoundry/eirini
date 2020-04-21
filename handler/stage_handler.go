@@ -14,18 +14,18 @@ import (
 )
 
 type Stage struct {
-	buildpackStager StagingBifrost
-	dockerStager    StagingBifrost
-	logger          lager.Logger
+	buildpackStagingBifrost StagingBifrost
+	dockerStagingBifrost    StagingBifrost
+	logger                  lager.Logger
 }
 
-func NewStageHandler(buildpackStager, dockerStager StagingBifrost, logger lager.Logger) *Stage {
+func NewStageHandler(buildpackStagingBifrost, dockerStagingBifrost StagingBifrost, logger lager.Logger) *Stage {
 	logger = logger.Session("staging-handler")
 
 	return &Stage{
-		buildpackStager: buildpackStager,
-		dockerStager:    dockerStager,
-		logger:          logger,
+		buildpackStagingBifrost: buildpackStagingBifrost,
+		dockerStagingBifrost:    dockerStagingBifrost,
+		logger:                  logger,
 	}
 }
 
@@ -52,9 +52,9 @@ func (s *Stage) Stage(resp http.ResponseWriter, req *http.Request, ps httprouter
 
 func (s *Stage) stage(stagingGUID string, stagingRequest cf.StagingRequest) error {
 	if stagingRequest.Lifecycle.DockerLifecycle != nil {
-		return s.dockerStager.TransferStaging(context.Background(), stagingGUID, stagingRequest)
+		return s.dockerStagingBifrost.TransferStaging(context.Background(), stagingGUID, stagingRequest)
 	}
-	return s.buildpackStager.TransferStaging(context.Background(), stagingGUID, stagingRequest)
+	return s.buildpackStagingBifrost.TransferStaging(context.Background(), stagingGUID, stagingRequest)
 }
 
 func (s *Stage) StagingComplete(res http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -69,7 +69,7 @@ func (s *Stage) StagingComplete(res http.ResponseWriter, req *http.Request, ps h
 		return
 	}
 
-	if err = s.buildpackStager.CompleteStaging(task); err != nil {
+	if err = s.buildpackStagingBifrost.CompleteStaging(task); err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		logger.Error("staging-completion-failed", err)
 		return
