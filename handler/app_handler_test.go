@@ -23,17 +23,17 @@ import (
 
 var _ = Describe("AppHandler", func() {
 	var (
-		bifrost        *handlerfakes.FakeAppBifrost
-		bifrostStaging *handlerfakes.FakeStagingBifrost
+		lrpBifrost     *handlerfakes.FakeLRPBifrost
+		stagingBifrost *handlerfakes.FakeStagingBifrost
 		lager          *lagertest.TestLogger
 		ts             *httptest.Server
 	)
 
 	BeforeEach(func() {
-		bifrost = new(handlerfakes.FakeAppBifrost)
-		bifrostStaging = new(handlerfakes.FakeStagingBifrost)
+		lrpBifrost = new(handlerfakes.FakeLRPBifrost)
+		stagingBifrost = new(handlerfakes.FakeStagingBifrost)
 		lager = lagertest.NewTestLogger("app-handler-test")
-		ts = httptest.NewServer(New(bifrost, bifrostStaging, nil, nil, lager))
+		ts = httptest.NewServer(New(lrpBifrost, stagingBifrost, nil, nil, lager))
 	})
 
 	AfterEach(func() {
@@ -156,15 +156,15 @@ var _ = Describe("AppHandler", func() {
 				},
 			}
 
-			Expect(bifrost.TransferCallCount()).To(Equal(1))
-			_, request := bifrost.TransferArgsForCall(0)
+			Expect(lrpBifrost.TransferCallCount()).To(Equal(1))
+			_, request := lrpBifrost.TransferArgsForCall(0)
 			Expect(request).To(Equal(expectedRequest))
 		})
 
 		Context("When Bifrost fails to handle desire request", func() {
 
 			BeforeEach(func() {
-				bifrost.TransferReturns(errors.New("aaargh"))
+				lrpBifrost.TransferReturns(errors.New("aaargh"))
 			})
 
 			It("should return BadRequest status", func() {
@@ -186,7 +186,7 @@ var _ = Describe("AppHandler", func() {
 			It("should provide a helpful log message", findLog("app-handler-test.desire-app.request-body-decoding-failed", "myguid"))
 
 			It("should not update the app", func() {
-				Expect(bifrost.TransferCallCount()).To(Equal(0))
+				Expect(lrpBifrost.TransferCallCount()).To(Equal(0))
 			})
 		})
 
@@ -202,14 +202,14 @@ var _ = Describe("AppHandler", func() {
 
 		BeforeEach(func() {
 			schedInfos = createSchedulingInfos()
-			bifrost.ListReturns(schedInfos, nil)
+			lrpBifrost.ListReturns(schedInfos, nil)
 		})
 
 		JustBeforeEach(func() {
 			req, err := http.NewRequest("", "/apps", nil)
 			Expect(err).ToNot(HaveOccurred())
 			responseRecorder = httptest.NewRecorder()
-			appHandler = NewAppHandler(bifrost, lager)
+			appHandler = NewAppHandler(lrpBifrost, lager)
 			appHandler.List(responseRecorder, req, httprouter.Params{})
 			expectedResponse := models.DesiredLRPSchedulingInfosResponse{
 				DesiredLrpSchedulingInfos: schedInfos,
@@ -233,7 +233,7 @@ var _ = Describe("AppHandler", func() {
 		Context("When there are no existing apps", func() {
 			BeforeEach(func() {
 				schedInfos = []*models.DesiredLRPSchedulingInfo{}
-				bifrost.ListReturns(schedInfos, nil)
+				lrpBifrost.ListReturns(schedInfos, nil)
 			})
 
 			It("should return an empty list of DesiredLRPSchedulingInfo", func() {
@@ -249,7 +249,7 @@ var _ = Describe("AppHandler", func() {
 
 		Context("When bifrost returns an error", func() {
 			BeforeEach(func() {
-				bifrost.ListReturns(nil, errors.New("something-went-wrong"))
+				lrpBifrost.ListReturns(nil, errors.New("something-went-wrong"))
 			})
 
 			It("should return BadRequest status", func() {
@@ -292,8 +292,8 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		It("should use the bifrost to get the app", func() {
-			Expect(bifrost.GetAppCallCount()).To(Equal(1))
-			_, identifier := bifrost.GetAppArgsForCall(0)
+			Expect(lrpBifrost.GetAppCallCount()).To(Equal(1))
+			_, identifier := lrpBifrost.GetAppArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("guid_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 		})
@@ -304,7 +304,7 @@ var _ = Describe("AppHandler", func() {
 					ProcessGuid: "guid_1234-version_1234",
 					Instances:   5,
 				}
-				bifrost.GetAppReturns(desiredLRP, nil)
+				lrpBifrost.GetAppReturns(desiredLRP, nil)
 			})
 
 			It("should return a 200 HTTP status code", func() {
@@ -325,7 +325,7 @@ var _ = Describe("AppHandler", func() {
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				bifrost.GetAppReturns(nil, errors.New("boom"))
+				lrpBifrost.GetAppReturns(nil, errors.New("boom"))
 			})
 
 			It("should return a 404 HTTP status code", func() {
@@ -348,7 +348,7 @@ var _ = Describe("AppHandler", func() {
 				{Index: 1, Since: 456, State: "RUNNING"},
 				{Index: 2, Since: 789, State: "UNCLAIMED", PlacementError: "this is not the place"},
 			}
-			bifrost.GetInstancesReturns(instances, nil)
+			lrpBifrost.GetInstancesReturns(instances, nil)
 		})
 
 		JustBeforeEach(func() {
@@ -361,8 +361,8 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		It("should use bifrost to get all instances", func() {
-			Expect(bifrost.GetInstancesCallCount()).To(Equal(1))
-			_, identifier := bifrost.GetInstancesArgsForCall(0)
+			Expect(lrpBifrost.GetInstancesCallCount()).To(Equal(1))
+			_, identifier := lrpBifrost.GetInstancesArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("guid_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 		})
@@ -397,7 +397,7 @@ var _ = Describe("AppHandler", func() {
 
 		Context("when Bifrost returns an error", func() {
 			BeforeEach(func() {
-				bifrost.GetInstancesReturns([]*cf.Instance{}, errors.New("not found"))
+				lrpBifrost.GetInstancesReturns([]*cf.Instance{}, errors.New("not found"))
 			})
 
 			It("returns the error in the response", func() {
@@ -448,7 +448,7 @@ var _ = Describe("AppHandler", func() {
 
 		Context("when the update is successful", func() {
 			BeforeEach(func() {
-				bifrost.UpdateReturns(nil)
+				lrpBifrost.UpdateReturns(nil)
 			})
 
 			It("should return a 200 HTTP stauts code", func() {
@@ -456,8 +456,8 @@ var _ = Describe("AppHandler", func() {
 			})
 
 			It("should translate the request", func() {
-				Expect(bifrost.UpdateCallCount()).To(Equal(1))
-				_, request := bifrost.UpdateArgsForCall(0)
+				Expect(lrpBifrost.UpdateCallCount()).To(Equal(1))
+				_, request := lrpBifrost.UpdateArgsForCall(0)
 				Expect(request.GUID).To(Equal("app-id"))
 				Expect(request.Version).To(Equal("version-id"))
 				Expect(request.Update.GetInstances()).To(Equal(int32(5)))
@@ -474,7 +474,7 @@ var _ = Describe("AppHandler", func() {
 			})
 
 			It("should not update the app", func() {
-				Expect(bifrost.UpdateCallCount()).To(Equal(0))
+				Expect(lrpBifrost.UpdateCallCount()).To(Equal(0))
 			})
 
 			It("should return a response object containing the error", func() {
@@ -486,7 +486,7 @@ var _ = Describe("AppHandler", func() {
 
 		Context("when update fails", func() {
 			BeforeEach(func() {
-				bifrost.UpdateReturns(errors.New("Failed to update"))
+				lrpBifrost.UpdateReturns(errors.New("Failed to update"))
 			})
 
 			It("should return a 500 HTTP status code", func() {
@@ -525,18 +525,18 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		It("should stop the app", func() {
-			Expect(bifrost.StopCallCount()).To(Equal(1))
+			Expect(lrpBifrost.StopCallCount()).To(Equal(1))
 		})
 
 		It("should target the right app", func() {
-			_, identifier := bifrost.StopArgsForCall(0)
+			_, identifier := lrpBifrost.StopArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("app_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 		})
 
 		Context("when app stop is not successful", func() {
 			BeforeEach(func() {
-				bifrost.StopReturns(errors.New("someting-bad-happened"))
+				lrpBifrost.StopReturns(errors.New("someting-bad-happened"))
 			})
 
 			It("should return a 500 HTTP status code", func() {
@@ -572,11 +572,11 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		It("should stop the app instance", func() {
-			Expect(bifrost.StopInstanceCallCount()).To(Equal(1))
+			Expect(lrpBifrost.StopInstanceCallCount()).To(Equal(1))
 		})
 
 		It("should target the right app and the right instance index", func() {
-			_, identifier, index := bifrost.StopInstanceArgsForCall(0)
+			_, identifier, index := lrpBifrost.StopInstanceArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("app_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 			Expect(index).To(Equal(uint(1)))
@@ -585,7 +585,7 @@ var _ = Describe("AppHandler", func() {
 		Context("when app stop is not successful", func() {
 			Context("because of some internal error", func() {
 				BeforeEach(func() {
-					bifrost.StopInstanceReturns(errors.New("something-bad-happened"))
+					lrpBifrost.StopInstanceReturns(errors.New("something-bad-happened"))
 				})
 
 				It("should return a 500 HTTP status code", func() {

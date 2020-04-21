@@ -11,7 +11,7 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 )
 
-type FakeAppBifrost struct {
+type FakeLRPBifrost struct {
 	GetAppStub        func(context.Context, opi.LRPIdentifier) (*models.DesiredLRP, error)
 	getAppMutex       sync.RWMutex
 	getAppArgsForCall []struct {
@@ -106,7 +106,7 @@ type FakeAppBifrost struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeAppBifrost) GetApp(arg1 context.Context, arg2 opi.LRPIdentifier) (*models.DesiredLRP, error) {
+func (fake *FakeLRPBifrost) GetApp(arg1 context.Context, arg2 opi.LRPIdentifier) (*models.DesiredLRP, error) {
 	fake.getAppMutex.Lock()
 	ret, specificReturn := fake.getAppReturnsOnCall[len(fake.getAppArgsForCall)]
 	fake.getAppArgsForCall = append(fake.getAppArgsForCall, struct {
@@ -125,26 +125,26 @@ func (fake *FakeAppBifrost) GetApp(arg1 context.Context, arg2 opi.LRPIdentifier)
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeAppBifrost) GetAppCallCount() int {
+func (fake *FakeLRPBifrost) GetAppCallCount() int {
 	fake.getAppMutex.RLock()
 	defer fake.getAppMutex.RUnlock()
 	return len(fake.getAppArgsForCall)
 }
 
-func (fake *FakeAppBifrost) GetAppCalls(stub func(context.Context, opi.LRPIdentifier) (*models.DesiredLRP, error)) {
+func (fake *FakeLRPBifrost) GetAppCalls(stub func(context.Context, opi.LRPIdentifier) (*models.DesiredLRP, error)) {
 	fake.getAppMutex.Lock()
 	defer fake.getAppMutex.Unlock()
 	fake.GetAppStub = stub
 }
 
-func (fake *FakeAppBifrost) GetAppArgsForCall(i int) (context.Context, opi.LRPIdentifier) {
+func (fake *FakeLRPBifrost) GetAppArgsForCall(i int) (context.Context, opi.LRPIdentifier) {
 	fake.getAppMutex.RLock()
 	defer fake.getAppMutex.RUnlock()
 	argsForCall := fake.getAppArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeAppBifrost) GetAppReturns(result1 *models.DesiredLRP, result2 error) {
+func (fake *FakeLRPBifrost) GetAppReturns(result1 *models.DesiredLRP, result2 error) {
 	fake.getAppMutex.Lock()
 	defer fake.getAppMutex.Unlock()
 	fake.GetAppStub = nil
@@ -154,7 +154,7 @@ func (fake *FakeAppBifrost) GetAppReturns(result1 *models.DesiredLRP, result2 er
 	}{result1, result2}
 }
 
-func (fake *FakeAppBifrost) GetAppReturnsOnCall(i int, result1 *models.DesiredLRP, result2 error) {
+func (fake *FakeLRPBifrost) GetAppReturnsOnCall(i int, result1 *models.DesiredLRP, result2 error) {
 	fake.getAppMutex.Lock()
 	defer fake.getAppMutex.Unlock()
 	fake.GetAppStub = nil
@@ -170,7 +170,7 @@ func (fake *FakeAppBifrost) GetAppReturnsOnCall(i int, result1 *models.DesiredLR
 	}{result1, result2}
 }
 
-func (fake *FakeAppBifrost) GetInstances(arg1 context.Context, arg2 opi.LRPIdentifier) ([]*cf.Instance, error) {
+func (fake *FakeLRPBifrost) GetInstances(arg1 context.Context, arg2 opi.LRPIdentifier) ([]*cf.Instance, error) {
 	fake.getInstancesMutex.Lock()
 	ret, specificReturn := fake.getInstancesReturnsOnCall[len(fake.getInstancesArgsForCall)]
 	fake.getInstancesArgsForCall = append(fake.getInstancesArgsForCall, struct {
@@ -189,26 +189,26 @@ func (fake *FakeAppBifrost) GetInstances(arg1 context.Context, arg2 opi.LRPIdent
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeAppBifrost) GetInstancesCallCount() int {
+func (fake *FakeLRPBifrost) GetInstancesCallCount() int {
 	fake.getInstancesMutex.RLock()
 	defer fake.getInstancesMutex.RUnlock()
 	return len(fake.getInstancesArgsForCall)
 }
 
-func (fake *FakeAppBifrost) GetInstancesCalls(stub func(context.Context, opi.LRPIdentifier) ([]*cf.Instance, error)) {
+func (fake *FakeLRPBifrost) GetInstancesCalls(stub func(context.Context, opi.LRPIdentifier) ([]*cf.Instance, error)) {
 	fake.getInstancesMutex.Lock()
 	defer fake.getInstancesMutex.Unlock()
 	fake.GetInstancesStub = stub
 }
 
-func (fake *FakeAppBifrost) GetInstancesArgsForCall(i int) (context.Context, opi.LRPIdentifier) {
+func (fake *FakeLRPBifrost) GetInstancesArgsForCall(i int) (context.Context, opi.LRPIdentifier) {
 	fake.getInstancesMutex.RLock()
 	defer fake.getInstancesMutex.RUnlock()
 	argsForCall := fake.getInstancesArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeAppBifrost) GetInstancesReturns(result1 []*cf.Instance, result2 error) {
+func (fake *FakeLRPBifrost) GetInstancesReturns(result1 []*cf.Instance, result2 error) {
 	fake.getInstancesMutex.Lock()
 	defer fake.getInstancesMutex.Unlock()
 	fake.GetInstancesStub = nil
@@ -218,7 +218,7 @@ func (fake *FakeAppBifrost) GetInstancesReturns(result1 []*cf.Instance, result2 
 	}{result1, result2}
 }
 
-func (fake *FakeAppBifrost) GetInstancesReturnsOnCall(i int, result1 []*cf.Instance, result2 error) {
+func (fake *FakeLRPBifrost) GetInstancesReturnsOnCall(i int, result1 []*cf.Instance, result2 error) {
 	fake.getInstancesMutex.Lock()
 	defer fake.getInstancesMutex.Unlock()
 	fake.GetInstancesStub = nil
@@ -234,7 +234,7 @@ func (fake *FakeAppBifrost) GetInstancesReturnsOnCall(i int, result1 []*cf.Insta
 	}{result1, result2}
 }
 
-func (fake *FakeAppBifrost) List(arg1 context.Context) ([]*models.DesiredLRPSchedulingInfo, error) {
+func (fake *FakeLRPBifrost) List(arg1 context.Context) ([]*models.DesiredLRPSchedulingInfo, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
@@ -252,26 +252,26 @@ func (fake *FakeAppBifrost) List(arg1 context.Context) ([]*models.DesiredLRPSche
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeAppBifrost) ListCallCount() int {
+func (fake *FakeLRPBifrost) ListCallCount() int {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakeAppBifrost) ListCalls(stub func(context.Context) ([]*models.DesiredLRPSchedulingInfo, error)) {
+func (fake *FakeLRPBifrost) ListCalls(stub func(context.Context) ([]*models.DesiredLRPSchedulingInfo, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
 }
 
-func (fake *FakeAppBifrost) ListArgsForCall(i int) context.Context {
+func (fake *FakeLRPBifrost) ListArgsForCall(i int) context.Context {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	argsForCall := fake.listArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeAppBifrost) ListReturns(result1 []*models.DesiredLRPSchedulingInfo, result2 error) {
+func (fake *FakeLRPBifrost) ListReturns(result1 []*models.DesiredLRPSchedulingInfo, result2 error) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
@@ -281,7 +281,7 @@ func (fake *FakeAppBifrost) ListReturns(result1 []*models.DesiredLRPSchedulingIn
 	}{result1, result2}
 }
 
-func (fake *FakeAppBifrost) ListReturnsOnCall(i int, result1 []*models.DesiredLRPSchedulingInfo, result2 error) {
+func (fake *FakeLRPBifrost) ListReturnsOnCall(i int, result1 []*models.DesiredLRPSchedulingInfo, result2 error) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
@@ -297,7 +297,7 @@ func (fake *FakeAppBifrost) ListReturnsOnCall(i int, result1 []*models.DesiredLR
 	}{result1, result2}
 }
 
-func (fake *FakeAppBifrost) Stop(arg1 context.Context, arg2 opi.LRPIdentifier) error {
+func (fake *FakeLRPBifrost) Stop(arg1 context.Context, arg2 opi.LRPIdentifier) error {
 	fake.stopMutex.Lock()
 	ret, specificReturn := fake.stopReturnsOnCall[len(fake.stopArgsForCall)]
 	fake.stopArgsForCall = append(fake.stopArgsForCall, struct {
@@ -316,26 +316,26 @@ func (fake *FakeAppBifrost) Stop(arg1 context.Context, arg2 opi.LRPIdentifier) e
 	return fakeReturns.result1
 }
 
-func (fake *FakeAppBifrost) StopCallCount() int {
+func (fake *FakeLRPBifrost) StopCallCount() int {
 	fake.stopMutex.RLock()
 	defer fake.stopMutex.RUnlock()
 	return len(fake.stopArgsForCall)
 }
 
-func (fake *FakeAppBifrost) StopCalls(stub func(context.Context, opi.LRPIdentifier) error) {
+func (fake *FakeLRPBifrost) StopCalls(stub func(context.Context, opi.LRPIdentifier) error) {
 	fake.stopMutex.Lock()
 	defer fake.stopMutex.Unlock()
 	fake.StopStub = stub
 }
 
-func (fake *FakeAppBifrost) StopArgsForCall(i int) (context.Context, opi.LRPIdentifier) {
+func (fake *FakeLRPBifrost) StopArgsForCall(i int) (context.Context, opi.LRPIdentifier) {
 	fake.stopMutex.RLock()
 	defer fake.stopMutex.RUnlock()
 	argsForCall := fake.stopArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeAppBifrost) StopReturns(result1 error) {
+func (fake *FakeLRPBifrost) StopReturns(result1 error) {
 	fake.stopMutex.Lock()
 	defer fake.stopMutex.Unlock()
 	fake.StopStub = nil
@@ -344,7 +344,7 @@ func (fake *FakeAppBifrost) StopReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeAppBifrost) StopReturnsOnCall(i int, result1 error) {
+func (fake *FakeLRPBifrost) StopReturnsOnCall(i int, result1 error) {
 	fake.stopMutex.Lock()
 	defer fake.stopMutex.Unlock()
 	fake.StopStub = nil
@@ -358,7 +358,7 @@ func (fake *FakeAppBifrost) StopReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeAppBifrost) StopInstance(arg1 context.Context, arg2 opi.LRPIdentifier, arg3 uint) error {
+func (fake *FakeLRPBifrost) StopInstance(arg1 context.Context, arg2 opi.LRPIdentifier, arg3 uint) error {
 	fake.stopInstanceMutex.Lock()
 	ret, specificReturn := fake.stopInstanceReturnsOnCall[len(fake.stopInstanceArgsForCall)]
 	fake.stopInstanceArgsForCall = append(fake.stopInstanceArgsForCall, struct {
@@ -378,26 +378,26 @@ func (fake *FakeAppBifrost) StopInstance(arg1 context.Context, arg2 opi.LRPIdent
 	return fakeReturns.result1
 }
 
-func (fake *FakeAppBifrost) StopInstanceCallCount() int {
+func (fake *FakeLRPBifrost) StopInstanceCallCount() int {
 	fake.stopInstanceMutex.RLock()
 	defer fake.stopInstanceMutex.RUnlock()
 	return len(fake.stopInstanceArgsForCall)
 }
 
-func (fake *FakeAppBifrost) StopInstanceCalls(stub func(context.Context, opi.LRPIdentifier, uint) error) {
+func (fake *FakeLRPBifrost) StopInstanceCalls(stub func(context.Context, opi.LRPIdentifier, uint) error) {
 	fake.stopInstanceMutex.Lock()
 	defer fake.stopInstanceMutex.Unlock()
 	fake.StopInstanceStub = stub
 }
 
-func (fake *FakeAppBifrost) StopInstanceArgsForCall(i int) (context.Context, opi.LRPIdentifier, uint) {
+func (fake *FakeLRPBifrost) StopInstanceArgsForCall(i int) (context.Context, opi.LRPIdentifier, uint) {
 	fake.stopInstanceMutex.RLock()
 	defer fake.stopInstanceMutex.RUnlock()
 	argsForCall := fake.stopInstanceArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeAppBifrost) StopInstanceReturns(result1 error) {
+func (fake *FakeLRPBifrost) StopInstanceReturns(result1 error) {
 	fake.stopInstanceMutex.Lock()
 	defer fake.stopInstanceMutex.Unlock()
 	fake.StopInstanceStub = nil
@@ -406,7 +406,7 @@ func (fake *FakeAppBifrost) StopInstanceReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeAppBifrost) StopInstanceReturnsOnCall(i int, result1 error) {
+func (fake *FakeLRPBifrost) StopInstanceReturnsOnCall(i int, result1 error) {
 	fake.stopInstanceMutex.Lock()
 	defer fake.stopInstanceMutex.Unlock()
 	fake.StopInstanceStub = nil
@@ -420,7 +420,7 @@ func (fake *FakeAppBifrost) StopInstanceReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeAppBifrost) Transfer(arg1 context.Context, arg2 cf.DesireLRPRequest) error {
+func (fake *FakeLRPBifrost) Transfer(arg1 context.Context, arg2 cf.DesireLRPRequest) error {
 	fake.transferMutex.Lock()
 	ret, specificReturn := fake.transferReturnsOnCall[len(fake.transferArgsForCall)]
 	fake.transferArgsForCall = append(fake.transferArgsForCall, struct {
@@ -439,26 +439,26 @@ func (fake *FakeAppBifrost) Transfer(arg1 context.Context, arg2 cf.DesireLRPRequ
 	return fakeReturns.result1
 }
 
-func (fake *FakeAppBifrost) TransferCallCount() int {
+func (fake *FakeLRPBifrost) TransferCallCount() int {
 	fake.transferMutex.RLock()
 	defer fake.transferMutex.RUnlock()
 	return len(fake.transferArgsForCall)
 }
 
-func (fake *FakeAppBifrost) TransferCalls(stub func(context.Context, cf.DesireLRPRequest) error) {
+func (fake *FakeLRPBifrost) TransferCalls(stub func(context.Context, cf.DesireLRPRequest) error) {
 	fake.transferMutex.Lock()
 	defer fake.transferMutex.Unlock()
 	fake.TransferStub = stub
 }
 
-func (fake *FakeAppBifrost) TransferArgsForCall(i int) (context.Context, cf.DesireLRPRequest) {
+func (fake *FakeLRPBifrost) TransferArgsForCall(i int) (context.Context, cf.DesireLRPRequest) {
 	fake.transferMutex.RLock()
 	defer fake.transferMutex.RUnlock()
 	argsForCall := fake.transferArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeAppBifrost) TransferReturns(result1 error) {
+func (fake *FakeLRPBifrost) TransferReturns(result1 error) {
 	fake.transferMutex.Lock()
 	defer fake.transferMutex.Unlock()
 	fake.TransferStub = nil
@@ -467,7 +467,7 @@ func (fake *FakeAppBifrost) TransferReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeAppBifrost) TransferReturnsOnCall(i int, result1 error) {
+func (fake *FakeLRPBifrost) TransferReturnsOnCall(i int, result1 error) {
 	fake.transferMutex.Lock()
 	defer fake.transferMutex.Unlock()
 	fake.TransferStub = nil
@@ -481,7 +481,7 @@ func (fake *FakeAppBifrost) TransferReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeAppBifrost) Update(arg1 context.Context, arg2 cf.UpdateDesiredLRPRequest) error {
+func (fake *FakeLRPBifrost) Update(arg1 context.Context, arg2 cf.UpdateDesiredLRPRequest) error {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
@@ -500,26 +500,26 @@ func (fake *FakeAppBifrost) Update(arg1 context.Context, arg2 cf.UpdateDesiredLR
 	return fakeReturns.result1
 }
 
-func (fake *FakeAppBifrost) UpdateCallCount() int {
+func (fake *FakeLRPBifrost) UpdateCallCount() int {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeAppBifrost) UpdateCalls(stub func(context.Context, cf.UpdateDesiredLRPRequest) error) {
+func (fake *FakeLRPBifrost) UpdateCalls(stub func(context.Context, cf.UpdateDesiredLRPRequest) error) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakeAppBifrost) UpdateArgsForCall(i int) (context.Context, cf.UpdateDesiredLRPRequest) {
+func (fake *FakeLRPBifrost) UpdateArgsForCall(i int) (context.Context, cf.UpdateDesiredLRPRequest) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeAppBifrost) UpdateReturns(result1 error) {
+func (fake *FakeLRPBifrost) UpdateReturns(result1 error) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = nil
@@ -528,7 +528,7 @@ func (fake *FakeAppBifrost) UpdateReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeAppBifrost) UpdateReturnsOnCall(i int, result1 error) {
+func (fake *FakeLRPBifrost) UpdateReturnsOnCall(i int, result1 error) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = nil
@@ -542,7 +542,7 @@ func (fake *FakeAppBifrost) UpdateReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeAppBifrost) Invocations() map[string][][]interface{} {
+func (fake *FakeLRPBifrost) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.getAppMutex.RLock()
@@ -566,7 +566,7 @@ func (fake *FakeAppBifrost) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeAppBifrost) recordInvocation(key string, args []interface{}) {
+func (fake *FakeLRPBifrost) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -578,4 +578,4 @@ func (fake *FakeAppBifrost) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ handler.LRPBifrost = new(FakeAppBifrost)
+var _ handler.LRPBifrost = new(FakeLRPBifrost)

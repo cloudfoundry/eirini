@@ -30,7 +30,7 @@ var _ = Describe("Desiretask", func() {
 
 	var (
 		task          *opi.Task
-		desirer       opi.TaskDesirer
+		desirer       *TaskDesirer
 		fakeJobClient *k8sfakes.FakeJobClient
 		job           *batch.Job
 	)

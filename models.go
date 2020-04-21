@@ -1,13 +1,5 @@
 package eirini
 
-import (
-	"fmt"
-
-	"code.cloudfoundry.org/bbs/models"
-	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
-)
-
 const (
 	//Environment Variable Names
 	EnvDownloadURL                     = "DOWNLOAD_URL"
@@ -136,35 +128,9 @@ type StagingReporterConfig struct {
 	KubeConfig `yaml:",inline"`
 }
 
-//counterfeiter:generate . Stager
-type Stager interface {
-	Stage(string, cf.StagingRequest) error
-	CompleteStaging(*models.TaskCallbackResponse) error
-}
-
-//counterfeiter:generate . TaskDesirer
-type TaskDesirer interface {
-	Desire(*opi.Task) error
-}
-
 type StagerConfig struct {
 	EiriniAddress   string
 	DownloaderImage string
 	UploaderImage   string
 	ExecutorImage   string
-}
-
-//counterfeiter:generate  . Extractor
-type Extractor interface {
-	Extract(src, targetDir string) error
-}
-
-func GetInternalServiceName(appName string) string {
-	//Prefix service as the appName could start with numerical characters, which is not allowed
-	return fmt.Sprintf("cf-%s", appName)
-}
-
-func GetInternalHeadlessServiceName(appName string) string {
-	//Prefix service as the appName could start with numerical characters, which is not allowed
-	return fmt.Sprintf("cf-%s-headless", appName)
 }

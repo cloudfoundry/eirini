@@ -8,11 +8,11 @@ import (
 )
 
 type FakePublisher struct {
-	PublishStub        func(subj string, data []byte) error
+	PublishStub        func(string, []byte) error
 	publishMutex       sync.RWMutex
 	publishArgsForCall []struct {
-		subj string
-		data []byte
+		arg1 string
+		arg2 []byte
 	}
 	publishReturns struct {
 		result1 error
@@ -24,27 +24,28 @@ type FakePublisher struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePublisher) Publish(subj string, data []byte) error {
-	var dataCopy []byte
-	if data != nil {
-		dataCopy = make([]byte, len(data))
-		copy(dataCopy, data)
+func (fake *FakePublisher) Publish(arg1 string, arg2 []byte) error {
+	var arg2Copy []byte
+	if arg2 != nil {
+		arg2Copy = make([]byte, len(arg2))
+		copy(arg2Copy, arg2)
 	}
 	fake.publishMutex.Lock()
 	ret, specificReturn := fake.publishReturnsOnCall[len(fake.publishArgsForCall)]
 	fake.publishArgsForCall = append(fake.publishArgsForCall, struct {
-		subj string
-		data []byte
-	}{subj, dataCopy})
-	fake.recordInvocation("Publish", []interface{}{subj, dataCopy})
+		arg1 string
+		arg2 []byte
+	}{arg1, arg2Copy})
+	fake.recordInvocation("Publish", []interface{}{arg1, arg2Copy})
 	fake.publishMutex.Unlock()
 	if fake.PublishStub != nil {
-		return fake.PublishStub(subj, data)
+		return fake.PublishStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.publishReturns.result1
+	fakeReturns := fake.publishReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakePublisher) PublishCallCount() int {
@@ -53,13 +54,22 @@ func (fake *FakePublisher) PublishCallCount() int {
 	return len(fake.publishArgsForCall)
 }
 
+func (fake *FakePublisher) PublishCalls(stub func(string, []byte) error) {
+	fake.publishMutex.Lock()
+	defer fake.publishMutex.Unlock()
+	fake.PublishStub = stub
+}
+
 func (fake *FakePublisher) PublishArgsForCall(i int) (string, []byte) {
 	fake.publishMutex.RLock()
 	defer fake.publishMutex.RUnlock()
-	return fake.publishArgsForCall[i].subj, fake.publishArgsForCall[i].data
+	argsForCall := fake.publishArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakePublisher) PublishReturns(result1 error) {
+	fake.publishMutex.Lock()
+	defer fake.publishMutex.Unlock()
 	fake.PublishStub = nil
 	fake.publishReturns = struct {
 		result1 error
@@ -67,6 +77,8 @@ func (fake *FakePublisher) PublishReturns(result1 error) {
 }
 
 func (fake *FakePublisher) PublishReturnsOnCall(i int, result1 error) {
+	fake.publishMutex.Lock()
+	defer fake.publishMutex.Unlock()
 	fake.PublishStub = nil
 	if fake.publishReturnsOnCall == nil {
 		fake.publishReturnsOnCall = make(map[int]struct {

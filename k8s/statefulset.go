@@ -107,7 +107,7 @@ var ErrNotFound = errors.New("statefulset not found")
 //counterfeiter:generate . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion, appServiceAccount string, logger lager.Logger) opi.Desirer {
+func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion, appServiceAccount string, logger lager.Logger) *StatefulSetDesirer {
 	return &StatefulSetDesirer{
 		Pods:                      client.CoreV1().Pods(namespace),
 		Secrets:                   client.CoreV1().Secrets(namespace),

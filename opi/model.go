@@ -101,21 +101,3 @@ type StagingTask struct {
 	UploaderImage   string
 	ExecutorImage   string
 }
-
-//counterfeiter:generate . Desirer
-type Desirer interface {
-	Desire(lrp *LRP) error
-	List() ([]*LRP, error)
-	Get(identifier LRPIdentifier) (*LRP, error)
-	GetInstances(identifier LRPIdentifier) ([]*Instance, error)
-	Update(lrp *LRP) error
-	Stop(identifier LRPIdentifier) error
-	StopInstance(identifier LRPIdentifier, index uint) error
-}
-
-//counterfeiter:generate . TaskDesirer
-type TaskDesirer interface {
-	Desire(task *Task) error
-	DesireStaging(task *StagingTask) error
-	Delete(name string) error
-}

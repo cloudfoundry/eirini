@@ -12,31 +12,30 @@ import (
 	"code.cloudfoundry.org/eirini/bifrost/bifrostfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/opi/opifakes"
 	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("Staging", func() {
 
 	var (
-		err              error
-		bfrstStaging     *bifrost.BuildpackStaging
-		converter        *bifrostfakes.FakeConverter
-		taskDesirer      *opifakes.FakeTaskDesirer
-		stagingCompleter *bifrostfakes.FakeStagingCompleter
+		err                     error
+		buildpackStagingBifrost *bifrost.BuildpackStaging
+		stagingConverter        *bifrostfakes.FakeStagingConverter
+		stagingDesirer          *bifrostfakes.FakeStagingDesirer
+		stagingCompleter        *bifrostfakes.FakeStagingCompleter
 	)
 
 	BeforeEach(func() {
-		converter = new(bifrostfakes.FakeConverter)
-		taskDesirer = new(opifakes.FakeTaskDesirer)
+		stagingConverter = new(bifrostfakes.FakeStagingConverter)
+		stagingDesirer = new(bifrostfakes.FakeStagingDesirer)
 		stagingCompleter = new(bifrostfakes.FakeStagingCompleter)
 	})
 
 	JustBeforeEach(func() {
 		logger := lagertest.NewTestLogger("test")
-		bfrstStaging = &bifrost.BuildpackStaging{
-			Converter:        converter,
-			TaskDesirer:      taskDesirer,
+		buildpackStagingBifrost = &bifrost.BuildpackStaging{
+			Converter:        stagingConverter,
+			StagingDesirer:   stagingDesirer,
 			StagingCompleter: stagingCompleter,
 			Logger:           logger,
 		}
@@ -54,30 +53,30 @@ var _ = Describe("Staging", func() {
 			stagingTask = opi.StagingTask{
 				Task: &opi.Task{GUID: "some-guid"},
 			}
-			converter.ConvertStagingReturns(stagingTask, nil)
+			stagingConverter.ConvertStagingReturns(stagingTask, nil)
 			stagingRequest = cf.StagingRequest{AppGUID: "app-guid"}
 		})
 
 		JustBeforeEach(func() {
-			err = bfrstStaging.TransferStaging(context.Background(), stagingGUID, stagingRequest)
+			err = buildpackStagingBifrost.TransferStaging(context.Background(), stagingGUID, stagingRequest)
 		})
 
 		It("transfers the task", func() {
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(converter.ConvertStagingCallCount()).To(Equal(1))
-			actualStagingGUID, actualStagingRequest := converter.ConvertStagingArgsForCall(0)
+			Expect(stagingConverter.ConvertStagingCallCount()).To(Equal(1))
+			actualStagingGUID, actualStagingRequest := stagingConverter.ConvertStagingArgsForCall(0)
 			Expect(actualStagingGUID).To(Equal(stagingGUID))
 			Expect(actualStagingRequest).To(Equal(stagingRequest))
 
-			Expect(taskDesirer.DesireStagingCallCount()).To(Equal(1))
-			desiredStaging := taskDesirer.DesireStagingArgsForCall(0)
+			Expect(stagingDesirer.DesireStagingCallCount()).To(Equal(1))
+			desiredStaging := stagingDesirer.DesireStagingArgsForCall(0)
 			Expect(desiredStaging.GUID).To(Equal("some-guid"))
 		})
 
 		When("converting the task fails", func() {
 			BeforeEach(func() {
-				converter.ConvertStagingReturns(opi.StagingTask{}, errors.New("staging-conv-err"))
+				stagingConverter.ConvertStagingReturns(opi.StagingTask{}, errors.New("staging-conv-err"))
 			})
 
 			It("returns the error", func() {
@@ -85,13 +84,13 @@ var _ = Describe("Staging", func() {
 			})
 
 			It("does not desire the staging task", func() {
-				Expect(taskDesirer.DesireStagingCallCount()).To(Equal(0))
+				Expect(stagingDesirer.DesireStagingCallCount()).To(Equal(0))
 			})
 		})
 
 		When("desiring the staging task fails", func() {
 			BeforeEach(func() {
-				taskDesirer.DesireStagingReturns(errors.New("desire-staging-err"))
+				stagingDesirer.DesireStagingReturns(errors.New("desire-staging-err"))
 			})
 
 			It("returns the error", func() {
@@ -120,7 +119,7 @@ var _ = Describe("Staging", func() {
 		})
 
 		JustBeforeEach(func() {
-			err = bfrstStaging.CompleteStaging(task)
+			err = buildpackStagingBifrost.CompleteStaging(task)
 		})
 
 		It("should not return an error", func() {
@@ -133,9 +132,9 @@ var _ = Describe("Staging", func() {
 		})
 
 		It("should delete the task", func() {
-			Expect(taskDesirer.DeleteCallCount()).To(Equal(1))
+			Expect(stagingDesirer.DeleteCallCount()).To(Equal(1))
 
-			taskName := taskDesirer.DeleteArgsForCall(0)
+			taskName := stagingDesirer.DeleteArgsForCall(0)
 			Expect(taskName).To(Equal(task.TaskGuid))
 		})
 
@@ -149,16 +148,16 @@ var _ = Describe("Staging", func() {
 			})
 
 			It("should delete the task", func() {
-				Expect(taskDesirer.DeleteCallCount()).To(Equal(1))
+				Expect(stagingDesirer.DeleteCallCount()).To(Equal(1))
 
-				taskName := taskDesirer.DeleteArgsForCall(0)
+				taskName := stagingDesirer.DeleteArgsForCall(0)
 				Expect(taskName).To(Equal(task.TaskGuid))
 			})
 		})
 
 		Context("and the task deletion fails", func() {
 			BeforeEach(func() {
-				taskDesirer.DeleteReturns(errors.New("delete boom"))
+				stagingDesirer.DeleteReturns(errors.New("delete boom"))
 			})
 
 			It("should return an error", func() {

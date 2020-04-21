@@ -18,13 +18,6 @@ const DockerHubHost = "index.docker.io/v1/"
 
 var dockerRX = regexp.MustCompile(`([a-zA-Z0-9.-]+)(:([0-9]+))?/(\S+/\S+)`)
 
-//counterfeiter:generate . Converter
-type Converter interface {
-	ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error)
-	ConvertTask(taskGUID string, request cf.TaskRequest) (opi.Task, error)
-	ConvertStaging(stagingGUID string, request cf.StagingRequest) (opi.StagingTask, error)
-}
-
 type OPIConverter struct {
 	logger               lager.Logger
 	registryIP           string
@@ -35,7 +28,7 @@ type OPIConverter struct {
 	stagerConfig         eirini.StagerConfig
 }
 
-func NewConverter(logger lager.Logger, registryIP string, diskLimitMB int64, imageMetadataFetcher ImageMetadataFetcher, imageRefParser ImageRefParser, allowRunImageAsRoot bool, stagerConfig eirini.StagerConfig) *OPIConverter {
+func NewOPIConverter(logger lager.Logger, registryIP string, diskLimitMB int64, imageMetadataFetcher ImageMetadataFetcher, imageRefParser ImageRefParser, allowRunImageAsRoot bool, stagerConfig eirini.StagerConfig) *OPIConverter {
 	return &OPIConverter{
 		logger:               logger,
 		registryIP:           registryIP,

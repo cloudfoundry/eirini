@@ -26,7 +26,7 @@ var _ = Describe("Crashes", func() {
 		configFile *os.File
 		session    *gexec.Session
 
-		desirer     opi.Desirer
+		desirer     *k8s.StatefulSetDesirer
 		crashingLRP *opi.LRP
 	)
 

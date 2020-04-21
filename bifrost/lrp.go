@@ -10,9 +10,25 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 )
 
+//counterfeiter:generate . LRPConverter
+type LRPConverter interface {
+	ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error)
+}
+
+//counterfeiter:generate . LRPDesirer
+type LRPDesirer interface {
+	Desire(lrp *opi.LRP) error
+	List() ([]*opi.LRP, error)
+	Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
+	GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error)
+	Update(lrp *opi.LRP) error
+	Stop(identifier opi.LRPIdentifier) error
+	StopInstance(identifier opi.LRPIdentifier, index uint) error
+}
+
 type LRP struct {
-	Converter Converter
-	Desirer   opi.Desirer
+	Converter LRPConverter
+	Desirer   LRPDesirer
 }
 
 func (l *LRP) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {

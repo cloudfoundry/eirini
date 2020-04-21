@@ -19,7 +19,7 @@ import (
 var _ = Describe("StatefulSet Manager", func() {
 
 	var (
-		desirer opi.Desirer
+		desirer *StatefulSetDesirer
 		odinLRP *opi.LRP
 		thorLRP *opi.LRP
 	)

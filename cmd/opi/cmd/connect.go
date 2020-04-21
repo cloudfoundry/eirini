@@ -12,7 +12,6 @@ import (
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/eirini/stager/docker"
 	"code.cloudfoundry.org/eirini/util"
@@ -90,7 +89,7 @@ func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) *stager.Callb
 	return stager.NewCallbackStagingCompleter(logger, httpClient)
 }
 
-func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) opi.TaskDesirer {
+func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.TaskDesirer {
 	tlsConfigs := []k8s.StagingConfigTLS{
 		{
 			SecretName: cfg.Properties.CCUploaderSecretName,
@@ -136,7 +135,7 @@ func initBuildpackStagingBifrost(cfg *eirini.Config, clientset kubernetes.Interf
 
 	return &bifrost.BuildpackStaging{
 		Converter:        converter,
-		TaskDesirer:      taskDesirer,
+		StagingDesirer:   taskDesirer,
 		StagingCompleter: stagingCompleter,
 		Logger:           logger,
 	}
@@ -183,7 +182,7 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 	}
 }
 
-func initConverter(cfg *eirini.Config) bifrost.Converter {
+func initConverter(cfg *eirini.Config) *bifrost.OPIConverter {
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
@@ -193,7 +192,7 @@ func initConverter(cfg *eirini.Config) bifrost.Converter {
 		UploaderImage:   cfg.Properties.UploaderImage,
 		ExecutorImage:   cfg.Properties.ExecutorImage,
 	}
-	return bifrost.NewConverter(
+	return bifrost.NewOPIConverter(
 		convertLogger,
 		cfg.Properties.RegistryAddress,
 		cfg.Properties.DiskLimitMB,

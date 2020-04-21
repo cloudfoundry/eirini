@@ -25,7 +25,7 @@ var _ = Describe("OPI Converter", func() {
 	var (
 		logger              *lagertest.TestLogger
 		err                 error
-		converter           bifrost.Converter
+		converter           *bifrost.OPIConverter
 		imgMetadataFetcher  *bifrostfakes.FakeImageMetadataFetcher
 		imgRefParser        *bifrostfakes.FakeImageRefParser
 		allowRunImageAsRoot bool
@@ -46,7 +46,7 @@ var _ = Describe("OPI Converter", func() {
 	})
 
 	JustBeforeEach(func() {
-		converter = bifrost.NewConverter(
+		converter = bifrost.NewOPIConverter(
 			logger,
 			registryIP,
 			defaultDiskQuota,

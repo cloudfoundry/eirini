@@ -21,7 +21,7 @@ import (
 var _ = Describe("Routes", func() {
 
 	var (
-		desirer opi.Desirer
+		desirer *k8s.StatefulSetDesirer
 		odinLRP *opi.LRP
 	)
 

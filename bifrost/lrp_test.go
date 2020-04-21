@@ -10,7 +10,6 @@ import (
 	"code.cloudfoundry.org/eirini/bifrost/bifrostfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/opi/opifakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -18,22 +17,22 @@ import (
 var _ = Describe("Bifrost LRP", func() {
 
 	var (
-		err        error
-		lrpBifrost *bifrost.LRP
-		request    cf.DesireLRPRequest
-		converter  *bifrostfakes.FakeConverter
-		desirer    *opifakes.FakeDesirer
+		err          error
+		lrpBifrost   *bifrost.LRP
+		request      cf.DesireLRPRequest
+		lrpConverter *bifrostfakes.FakeLRPConverter
+		lrpDesirer   *bifrostfakes.FakeLRPDesirer
 	)
 
 	BeforeEach(func() {
-		converter = new(bifrostfakes.FakeConverter)
-		desirer = new(opifakes.FakeDesirer)
+		lrpConverter = new(bifrostfakes.FakeLRPConverter)
+		lrpDesirer = new(bifrostfakes.FakeLRPDesirer)
 	})
 
 	JustBeforeEach(func() {
 		lrpBifrost = &bifrost.LRP{
-			Converter: converter,
-			Desirer:   desirer,
+			Converter: lrpConverter,
+			Desirer:   lrpDesirer,
 		}
 	})
 
@@ -49,7 +48,7 @@ var _ = Describe("Bifrost LRP", func() {
 				lrp = opi.LRP{
 					Image: "docker.png",
 				}
-				converter.ConvertLRPReturns(lrp, nil)
+				lrpConverter.ConvertLRPReturns(lrp, nil)
 			})
 
 			It("should not return an error", func() {
@@ -57,13 +56,13 @@ var _ = Describe("Bifrost LRP", func() {
 			})
 
 			It("should use Converter", func() {
-				Expect(converter.ConvertLRPCallCount()).To(Equal(1))
-				Expect(converter.ConvertLRPArgsForCall(0)).To(Equal(request))
+				Expect(lrpConverter.ConvertLRPCallCount()).To(Equal(1))
+				Expect(lrpConverter.ConvertLRPArgsForCall(0)).To(Equal(request))
 			})
 
 			It("should use Desirer with the converted LRP", func() {
-				Expect(desirer.DesireCallCount()).To(Equal(1))
-				desired := desirer.DesireArgsForCall(0)
+				Expect(lrpDesirer.DesireCallCount()).To(Equal(1))
+				desired := lrpDesirer.DesireArgsForCall(0)
 				Expect(desired).To(Equal(&lrp))
 			})
 		})
@@ -72,7 +71,7 @@ var _ = Describe("Bifrost LRP", func() {
 			Context("when Converter fails", func() {
 				BeforeEach(func() {
 					request = cf.DesireLRPRequest{GUID: "my-guid"}
-					converter.ConvertLRPReturns(opi.LRP{}, errors.New("failed-to-convert"))
+					lrpConverter.ConvertLRPReturns(opi.LRP{}, errors.New("failed-to-convert"))
 				})
 
 				It("should return an error", func() {
@@ -81,20 +80,20 @@ var _ = Describe("Bifrost LRP", func() {
 
 				It("should use Converter", func() {
 					Expect(lrpBifrost.Transfer(context.Background(), request)).ToNot(Succeed())
-					Expect(converter.ConvertLRPCallCount()).To(Equal(1))
-					Expect(converter.ConvertLRPArgsForCall(0)).To(Equal(request))
+					Expect(lrpConverter.ConvertLRPCallCount()).To(Equal(1))
+					Expect(lrpConverter.ConvertLRPArgsForCall(0)).To(Equal(request))
 				})
 
 				It("should not use Desirer", func() {
 					Expect(lrpBifrost.Transfer(context.Background(), request)).ToNot(Succeed())
-					Expect(desirer.DesireCallCount()).To(Equal(0))
+					Expect(lrpDesirer.DesireCallCount()).To(Equal(0))
 				})
 
 			})
 
 			Context("When Desirer fails", func() {
 				BeforeEach(func() {
-					desirer.DesireReturns(errors.New("failed-to-desire-main-error"))
+					lrpDesirer.DesireReturns(errors.New("failed-to-desire-main-error"))
 				})
 
 				It("shoud return an error", func() {
@@ -126,7 +125,7 @@ var _ = Describe("Bifrost LRP", func() {
 					createLRP("efgh", "234", "235.26535"),
 					createLRP("ijkl", "123", "2342342.2"),
 				}
-				desirer.ListReturns(lrps, nil)
+				lrpDesirer.ListReturns(lrps, nil)
 			})
 
 			It("should succeed", func() {
@@ -149,7 +148,7 @@ var _ = Describe("Bifrost LRP", func() {
 
 		Context("When an error occurs", func() {
 			BeforeEach(func() {
-				desirer.ListReturns(nil, errors.New("arrgh"))
+				lrpDesirer.ListReturns(nil, errors.New("arrgh"))
 			})
 
 			It("should return a meaningful errormessage", func() {
@@ -184,7 +183,7 @@ var _ = Describe("Bifrost LRP", func() {
 					LastUpdated:     "whenever",
 					AppURIs:         `[{"hostname":"my.route","port":8080},{"hostname":"your.route","port":5555}]`,
 				}
-				desirer.GetReturns(&lrp, nil)
+				lrpDesirer.GetReturns(&lrp, nil)
 			})
 
 			Context("with instance count modified", func() {
@@ -192,19 +191,19 @@ var _ = Describe("Bifrost LRP", func() {
 					updateRequest.Update = &models.DesiredLRPUpdate{}
 					updateRequest.Update.SetInstances(int32(5))
 					updateRequest.Update.SetAnnotation("21421321.3")
-					desirer.UpdateReturns(nil)
+					lrpDesirer.UpdateReturns(nil)
 				})
 
 				It("should get the existing LRP", func() {
-					Expect(desirer.GetCallCount()).To(Equal(1))
-					identifier := desirer.GetArgsForCall(0)
+					Expect(lrpDesirer.GetCallCount()).To(Equal(1))
+					identifier := lrpDesirer.GetArgsForCall(0)
 					Expect(identifier.GUID).To(Equal("guid_1234"))
 					Expect(identifier.Version).To(Equal("version_1234"))
 				})
 
 				It("should submit the updated LRP", func() {
-					Expect(desirer.UpdateCallCount()).To(Equal(1))
-					lrp := desirer.UpdateArgsForCall(0)
+					Expect(lrpDesirer.UpdateCallCount()).To(Equal(1))
+					lrp := lrpDesirer.UpdateArgsForCall(0)
 					Expect(lrp.TargetInstances).To(Equal(int(5)))
 					Expect(lrp.LastUpdated).To(Equal("21421321.3"))
 				})
@@ -215,7 +214,7 @@ var _ = Describe("Bifrost LRP", func() {
 
 				Context("when the update fails", func() {
 					BeforeEach(func() {
-						desirer.UpdateReturns(errors.New("your app is bad"))
+						lrpDesirer.UpdateReturns(errors.New("your app is bad"))
 					})
 
 					It("should propagate the error", func() {
@@ -252,19 +251,19 @@ var _ = Describe("Bifrost LRP", func() {
 					updateRequest.Update.SetInstances(updatedInstances)
 					updateRequest.Update.SetAnnotation(updatedTimestamp)
 
-					desirer.UpdateReturns(nil)
+					lrpDesirer.UpdateReturns(nil)
 				})
 
 				It("should get the existing LRP", func() {
-					Expect(desirer.GetCallCount()).To(Equal(1))
-					identifier := desirer.GetArgsForCall(0)
+					Expect(lrpDesirer.GetCallCount()).To(Equal(1))
+					identifier := lrpDesirer.GetArgsForCall(0)
 					Expect(identifier.GUID).To(Equal("guid_1234"))
 					Expect(identifier.Version).To(Equal("version_1234"))
 				})
 
 				It("should have the updated routes", func() {
-					Expect(desirer.UpdateCallCount()).To(Equal(1))
-					lrp := desirer.UpdateArgsForCall(0)
+					Expect(lrpDesirer.UpdateCallCount()).To(Equal(1))
+					lrp := lrpDesirer.UpdateArgsForCall(0)
 					Expect(lrp.AppURIs).To(Equal(`[{"hostname":"my.route","port":8080},{"hostname":"my.other.route","port":7777}]`))
 				})
 
@@ -282,8 +281,8 @@ var _ = Describe("Bifrost LRP", func() {
 					})
 
 					It("should update it to an empty array", func() {
-						Expect(desirer.UpdateCallCount()).To(Equal(1))
-						lrp := desirer.UpdateArgsForCall(0)
+						Expect(lrpDesirer.UpdateCallCount()).To(Equal(1))
+						lrp := lrpDesirer.UpdateArgsForCall(0)
 						Expect(lrp.AppURIs).To(Equal(`[]`))
 					})
 				})
@@ -293,19 +292,19 @@ var _ = Describe("Bifrost LRP", func() {
 		Context("when the app does not exist", func() {
 
 			BeforeEach(func() {
-				desirer.GetReturns(nil, errors.New("app does not exist"))
+				lrpDesirer.GetReturns(nil, errors.New("app does not exist"))
 			})
 
 			It("should try to get the LRP", func() {
-				Expect(desirer.GetCallCount()).To(Equal(1))
-				identifier := desirer.GetArgsForCall(0)
+				Expect(lrpDesirer.GetCallCount()).To(Equal(1))
+				identifier := lrpDesirer.GetArgsForCall(0)
 				Expect(identifier.GUID).To(Equal("guid_1234"))
 				Expect(identifier.Version).To(Equal("version_1234"))
 
 			})
 
 			It("should not submit anything to be updated", func() {
-				Expect(desirer.UpdateCallCount()).To(Equal(0))
+				Expect(lrpDesirer.UpdateCallCount()).To(Equal(0))
 			})
 
 			It("should propagate the error", func() {
@@ -334,14 +333,14 @@ var _ = Describe("Bifrost LRP", func() {
 					TargetInstances: 5,
 				}
 
-				desirer.GetReturns(lrp, nil)
+				lrpDesirer.GetReturns(lrp, nil)
 			})
 
 			It("should use the desirer to get the lrp", func() {
 				_, err = lrpBifrost.GetApp(context.Background(), identifier)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(desirer.GetCallCount()).To(Equal(1))
-				Expect(desirer.GetArgsForCall(0)).To(Equal(identifier))
+				Expect(lrpDesirer.GetCallCount()).To(Equal(1))
+				Expect(lrpDesirer.GetArgsForCall(0)).To(Equal(identifier))
 			})
 
 			It("should return a DesiredLRP", func() {
@@ -355,7 +354,7 @@ var _ = Describe("Bifrost LRP", func() {
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				desirer.GetReturns(nil, errors.New("Failed to get LRP"))
+				lrpDesirer.GetReturns(nil, errors.New("Failed to get LRP"))
 			})
 
 			It("should return an error", func() {
@@ -376,7 +375,7 @@ var _ = Describe("Bifrost LRP", func() {
 		})
 
 		It("should call the desirer with the expected guid", func() {
-			identifier := desirer.StopArgsForCall(0)
+			identifier := lrpDesirer.StopArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("guid_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 		})
@@ -384,7 +383,7 @@ var _ = Describe("Bifrost LRP", func() {
 		Context("when desirer's stop fails", func() {
 
 			BeforeEach(func() {
-				desirer.StopReturns(errors.New("failed-to-stop"))
+				lrpDesirer.StopReturns(errors.New("failed-to-stop"))
 			})
 
 			It("returns an error", func() {
@@ -404,7 +403,7 @@ var _ = Describe("Bifrost LRP", func() {
 		})
 
 		It("should call the desirer with the expected guid and index", func() {
-			identifier, index := desirer.StopInstanceArgsForCall(0)
+			identifier, index := lrpDesirer.StopInstanceArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("guid_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 			Expect(index).To(Equal(uint(1)))
@@ -412,7 +411,7 @@ var _ = Describe("Bifrost LRP", func() {
 
 		Context("when desirer's stop instance fails", func() {
 			BeforeEach(func() {
-				desirer.StopInstanceReturns(errors.New("failed-to-stop"))
+				lrpDesirer.StopInstanceReturns(errors.New("failed-to-stop"))
 			})
 
 			It("returns a meaningful error", func() {
@@ -434,7 +433,7 @@ var _ = Describe("Bifrost LRP", func() {
 				{Index: 2, Since: 678, State: opi.ErrorState, PlacementError: "this is not the place"},
 			}
 
-			desirer.GetInstancesReturns(opiInstances, nil)
+			lrpDesirer.GetInstancesReturns(opiInstances, nil)
 		})
 
 		JustBeforeEach(func() {
@@ -442,8 +441,8 @@ var _ = Describe("Bifrost LRP", func() {
 		})
 
 		It("should get the app instances from Desirer", func() {
-			Expect(desirer.GetInstancesCallCount()).To(Equal(1))
-			identifier := desirer.GetInstancesArgsForCall(0)
+			Expect(lrpDesirer.GetInstancesCallCount()).To(Equal(1))
+			identifier := lrpDesirer.GetInstancesArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("guid_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 		})
@@ -462,7 +461,7 @@ var _ = Describe("Bifrost LRP", func() {
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				desirer.GetInstancesReturns([]*opi.Instance{}, errors.New("not found"))
+				lrpDesirer.GetInstancesReturns([]*opi.Instance{}, errors.New("not found"))
 			})
 
 			It("returns an error", func() {

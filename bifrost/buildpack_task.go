@@ -8,9 +8,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+//counterfeiter:generate . TaskConverter
+type TaskConverter interface {
+	ConvertTask(taskGUID string, request cf.TaskRequest) (opi.Task, error)
+}
+
+//counterfeiter:generate . TaskDesirer
+type TaskDesirer interface {
+	Desire(task *opi.Task) error
+}
+
 type BuildpackTask struct {
-	Converter   Converter
-	TaskDesirer opi.TaskDesirer
+	Converter   TaskConverter
+	TaskDesirer TaskDesirer
 }
 
 func (b *BuildpackTask) TransferTask(ctx context.Context, taskGUID string, taskRequest cf.TaskRequest) error {

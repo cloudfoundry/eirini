@@ -17,24 +17,24 @@ import (
 var _ = Describe("Handler", func() {
 
 	var (
-		ts               *httptest.Server
-		client           *http.Client
-		bifrost          *handlerfakes.FakeAppBifrost
-		buildpackStaging *handlerfakes.FakeStagingBifrost
-		dockerStaging    *handlerfakes.FakeStagingBifrost
-		buildpackTask    *handlerfakes.FakeTaskBifrost
-		handlerClient    http.Handler
+		ts                      *httptest.Server
+		client                  *http.Client
+		lrpBifrost              *handlerfakes.FakeLRPBifrost
+		buildpackStagingBifrost *handlerfakes.FakeStagingBifrost
+		dockerStagingBifrost    *handlerfakes.FakeStagingBifrost
+		buildpackTaskBifrost    *handlerfakes.FakeTaskBifrost
+		handlerClient           http.Handler
 	)
 
 	BeforeEach(func() {
 		client = &http.Client{}
-		bifrost = new(handlerfakes.FakeAppBifrost)
-		buildpackStaging = new(handlerfakes.FakeStagingBifrost)
-		dockerStaging = new(handlerfakes.FakeStagingBifrost)
-		buildpackTask = new(handlerfakes.FakeTaskBifrost)
+		lrpBifrost = new(handlerfakes.FakeLRPBifrost)
+		buildpackStagingBifrost = new(handlerfakes.FakeStagingBifrost)
+		dockerStagingBifrost = new(handlerfakes.FakeStagingBifrost)
+		buildpackTaskBifrost = new(handlerfakes.FakeTaskBifrost)
 
 		lager := lagertest.NewTestLogger("handler-test")
-		handlerClient = New(bifrost, buildpackStaging, dockerStaging, buildpackTask, lager)
+		handlerClient = New(lrpBifrost, buildpackStagingBifrost, dockerStagingBifrost, buildpackTaskBifrost, lager)
 	})
 
 	JustBeforeEach(func() {
@@ -108,7 +108,7 @@ var _ = Describe("Handler", func() {
 				path = "/apps/myguid/myversion"
 				expectedStatus = http.StatusOK
 
-				bifrost.GetAppReturns(&models.DesiredLRP{}, nil)
+				lrpBifrost.GetAppReturns(&models.DesiredLRP{}, nil)
 			})
 
 			It("serves the endpoint", func() {

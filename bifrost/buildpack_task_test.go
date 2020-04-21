@@ -11,43 +11,42 @@ import (
 	"code.cloudfoundry.org/eirini/bifrost/bifrostfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/opi/opifakes"
 )
 
 var _ = Describe("Transfer Task", func() {
 
 	var (
-		err         error
-		bfrstTask   *bifrost.BuildpackTask
-		converter   *bifrostfakes.FakeConverter
-		taskDesirer *opifakes.FakeTaskDesirer
-		taskGUID    string
-		taskRequest cf.TaskRequest
-		task        opi.Task
+		err                  error
+		buildpackTaskBifrost *bifrost.BuildpackTask
+		taskConverter        *bifrostfakes.FakeTaskConverter
+		taskDesirer          *bifrostfakes.FakeTaskDesirer
+		taskGUID             string
+		taskRequest          cf.TaskRequest
+		task                 opi.Task
 	)
 
 	BeforeEach(func() {
-		converter = new(bifrostfakes.FakeConverter)
-		taskDesirer = new(opifakes.FakeTaskDesirer)
+		taskConverter = new(bifrostfakes.FakeTaskConverter)
+		taskDesirer = new(bifrostfakes.FakeTaskDesirer)
 		taskGUID = "task-guid"
 		task = opi.Task{GUID: "my-guid"}
-		converter.ConvertTaskReturns(task, nil)
+		taskConverter.ConvertTaskReturns(task, nil)
 		taskRequest = cf.TaskRequest{AppGUID: "app-guid"}
-		bfrstTask = &bifrost.BuildpackTask{
-			Converter:   converter,
+		buildpackTaskBifrost = &bifrost.BuildpackTask{
+			Converter:   taskConverter,
 			TaskDesirer: taskDesirer,
 		}
 	})
 
 	JustBeforeEach(func() {
-		err = bfrstTask.TransferTask(context.Background(), taskGUID, taskRequest)
+		err = buildpackTaskBifrost.TransferTask(context.Background(), taskGUID, taskRequest)
 	})
 
 	It("transfers the task", func() {
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(converter.ConvertTaskCallCount()).To(Equal(1))
-		actualTaskGUID, actualTaskRequest := converter.ConvertTaskArgsForCall(0)
+		Expect(taskConverter.ConvertTaskCallCount()).To(Equal(1))
+		actualTaskGUID, actualTaskRequest := taskConverter.ConvertTaskArgsForCall(0)
 		Expect(actualTaskGUID).To(Equal(taskGUID))
 		Expect(actualTaskRequest).To(Equal(taskRequest))
 
@@ -58,7 +57,7 @@ var _ = Describe("Transfer Task", func() {
 
 	When("converting the task fails", func() {
 		BeforeEach(func() {
-			converter.ConvertTaskReturns(opi.Task{}, errors.New("task-conv-err"))
+			taskConverter.ConvertTaskReturns(opi.Task{}, errors.New("task-conv-err"))
 		})
 
 		It("returns the error", func() {

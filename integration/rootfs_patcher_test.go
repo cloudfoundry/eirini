@@ -16,7 +16,7 @@ import (
 
 var _ = Describe("RootfsPatcher", func() {
 	var (
-		desirer     opi.Desirer
+		desirer     *k8s.StatefulSetDesirer
 		odinLRP     *opi.LRP
 		thorLRP     *opi.LRP
 		patcherPath string

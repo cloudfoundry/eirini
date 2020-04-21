@@ -14,6 +14,7 @@ const (
 	unregisterSubject = "router.unregister"
 )
 
+//counterfeiter:generate . Publisher
 type Publisher interface {
 	Publish(subj string, data []byte) error
 }

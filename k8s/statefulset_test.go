@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	. "code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
@@ -40,7 +40,7 @@ var _ = Describe("Statefulset Desirer", func() {
 		eventLister           *k8sfakes.FakeEventLister
 		secretsClient         *k8sfakes.FakeSecretsClient
 		statefulSetClient     *k8sfakes.FakeStatefulSetClient
-		statefulSetDesirer    opi.Desirer
+		statefulSetDesirer    *k8s.StatefulSetDesirer
 		livenessProbeCreator  *k8sfakes.FakeProbeCreator
 		readinessProbeCreator *k8sfakes.FakeProbeCreator
 		logger                *lagertest.TestLogger
@@ -62,7 +62,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		hasher.HashReturns("random", nil)
 		logger = lagertest.NewTestLogger("handler-test")
-		statefulSetDesirer = &StatefulSetDesirer{
+		statefulSetDesirer = &k8s.StatefulSetDesirer{
 			Pods:                      podClient,
 			Secrets:                   secretsClient,
 			StatefulSets:              statefulSetClient,
@@ -116,17 +116,17 @@ var _ = Describe("Statefulset Desirer", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 				Expect(statefulSet.Annotations).To(HaveKeyWithValue(annotationName, expectedValue))
 			},
-			Entry("ProcessGUID", AnnotationProcessGUID, "guid_1234-version_1234"),
-			Entry("AppUris", AnnotationAppUris, "my.example.route"),
-			Entry("AppName", AnnotationAppName, "Baldur"),
-			Entry("AppID", AnnotationAppID, "premium_app_guid_1234"),
-			Entry("Version", AnnotationVersion, "version_1234"),
-			Entry("OriginalRequest", AnnotationOriginalRequest, "original request"),
-			Entry("RegisteredRoutes", AnnotationRegisteredRoutes, "my.example.route"),
-			Entry("SpaceName", AnnotationSpaceName, "space-foo"),
-			Entry("SpaceGUID", AnnotationSpaceGUID, "space-guid"),
-			Entry("OrgName", AnnotationOrgName, "org-foo"),
-			Entry("OrgGUID", AnnotationOrgGUID, "org-guid"),
+			Entry("ProcessGUID", k8s.AnnotationProcessGUID, "guid_1234-version_1234"),
+			Entry("AppUris", k8s.AnnotationAppUris, "my.example.route"),
+			Entry("AppName", k8s.AnnotationAppName, "Baldur"),
+			Entry("AppID", k8s.AnnotationAppID, "premium_app_guid_1234"),
+			Entry("Version", k8s.AnnotationVersion, "version_1234"),
+			Entry("OriginalRequest", k8s.AnnotationOriginalRequest, "original request"),
+			Entry("RegisteredRoutes", k8s.AnnotationRegisteredRoutes, "my.example.route"),
+			Entry("SpaceName", k8s.AnnotationSpaceName, "space-foo"),
+			Entry("SpaceGUID", k8s.AnnotationSpaceGUID, "space-guid"),
+			Entry("OrgName", k8s.AnnotationOrgName, "org-foo"),
+			Entry("OrgGUID", k8s.AnnotationOrgGUID, "org-guid"),
 		)
 
 		DescribeTable("Statefulset Template Annotations",
@@ -134,22 +134,22 @@ var _ = Describe("Statefulset Desirer", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 				Expect(statefulSet.Spec.Template.Annotations).To(HaveKeyWithValue(annotationName, expectedValue))
 			},
-			Entry("ProcessGUID", AnnotationProcessGUID, "guid_1234-version_1234"),
-			Entry("AppUris", AnnotationAppUris, "my.example.route"),
-			Entry("AppName", AnnotationAppName, "Baldur"),
-			Entry("AppID", AnnotationAppID, "premium_app_guid_1234"),
-			Entry("Version", AnnotationVersion, "version_1234"),
-			Entry("OriginalRequest", AnnotationOriginalRequest, "original request"),
-			Entry("RegisteredRoutes", AnnotationRegisteredRoutes, "my.example.route"),
-			Entry("SpaceName", AnnotationSpaceName, "space-foo"),
-			Entry("SpaceGUID", AnnotationSpaceGUID, "space-guid"),
-			Entry("OrgName", AnnotationOrgName, "org-foo"),
-			Entry("OrgGUID", AnnotationOrgGUID, "org-guid"),
+			Entry("ProcessGUID", k8s.AnnotationProcessGUID, "guid_1234-version_1234"),
+			Entry("AppUris", k8s.AnnotationAppUris, "my.example.route"),
+			Entry("AppName", k8s.AnnotationAppName, "Baldur"),
+			Entry("AppID", k8s.AnnotationAppID, "premium_app_guid_1234"),
+			Entry("Version", k8s.AnnotationVersion, "version_1234"),
+			Entry("OriginalRequest", k8s.AnnotationOriginalRequest, "original request"),
+			Entry("RegisteredRoutes", k8s.AnnotationRegisteredRoutes, "my.example.route"),
+			Entry("SpaceName", k8s.AnnotationSpaceName, "space-foo"),
+			Entry("SpaceGUID", k8s.AnnotationSpaceGUID, "space-guid"),
+			Entry("OrgName", k8s.AnnotationOrgName, "org-foo"),
+			Entry("OrgGUID", k8s.AnnotationOrgGUID, "org-guid"),
 		)
 
 		It("should provide last updated to the statefulset annotation", func() {
 			statefulSet := statefulSetClient.CreateArgsForCall(0)
-			Expect(statefulSet.Annotations).To(HaveKeyWithValue(AnnotationLastUpdated, lrp.LastUpdated))
+			Expect(statefulSet.Annotations).To(HaveKeyWithValue(k8s.AnnotationLastUpdated, lrp.LastUpdated))
 		})
 
 		It("should set seccomp pod annotation", func() {
@@ -193,47 +193,47 @@ var _ = Describe("Statefulset Desirer", func() {
 		It("should set app_guid as a label", func() {
 			statefulSet := statefulSetClient.CreateArgsForCall(0)
 
-			Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelAppGUID, "premium_app_guid_1234"))
-			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelAppGUID, "premium_app_guid_1234"))
+			Expect(statefulSet.Labels).To(HaveKeyWithValue(k8s.LabelAppGUID, "premium_app_guid_1234"))
+			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(k8s.LabelAppGUID, "premium_app_guid_1234"))
 		})
 
 		It("should set process_type as a label", func() {
 			statefulSet := statefulSetClient.CreateArgsForCall(0)
-			Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelProcessType, "worker"))
-			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelProcessType, "worker"))
+			Expect(statefulSet.Labels).To(HaveKeyWithValue(k8s.LabelProcessType, "worker"))
+			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(k8s.LabelProcessType, "worker"))
 		})
 
 		It("should set guid as a label", func() {
 			statefulSet := statefulSetClient.CreateArgsForCall(0)
-			Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelGUID, "guid_1234"))
-			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelGUID, "guid_1234"))
+			Expect(statefulSet.Labels).To(HaveKeyWithValue(k8s.LabelGUID, "guid_1234"))
+			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(k8s.LabelGUID, "guid_1234"))
 		})
 
 		It("should set version as a label", func() {
 			statefulSet := statefulSetClient.CreateArgsForCall(0)
-			Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelVersion, "version_1234"))
-			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelVersion, "version_1234"))
+			Expect(statefulSet.Labels).To(HaveKeyWithValue(k8s.LabelVersion, "version_1234"))
+			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(k8s.LabelVersion, "version_1234"))
 		})
 
 		It("should set source_type as a label", func() {
 			statefulSet := statefulSetClient.CreateArgsForCall(0)
-			Expect(statefulSet.Labels).To(HaveKeyWithValue(LabelSourceType, "APP"))
-			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(LabelSourceType, "APP"))
+			Expect(statefulSet.Labels).To(HaveKeyWithValue(k8s.LabelSourceType, "APP"))
+			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(k8s.LabelSourceType, "APP"))
 		})
 
 		It("should set guid as a label selector", func() {
 			statefulSet := statefulSetClient.CreateArgsForCall(0)
-			Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelGUID, "guid_1234"))
+			Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(k8s.LabelGUID, "guid_1234"))
 		})
 
 		It("should set version as a label selector", func() {
 			statefulSet := statefulSetClient.CreateArgsForCall(0)
-			Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelVersion, "version_1234"))
+			Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(k8s.LabelVersion, "version_1234"))
 		})
 
 		It("should set source_type as a label selector", func() {
 			statefulSet := statefulSetClient.CreateArgsForCall(0)
-			Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelSourceType, "APP"))
+			Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(k8s.LabelSourceType, "APP"))
 		})
 
 		It("should set disk limit", func() {
@@ -275,17 +275,17 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(weightedTerm.PodAffinityTerm.TopologyKey).To(Equal("kubernetes.io/hostname"))
 			Expect(weightedTerm.PodAffinityTerm.LabelSelector.MatchExpressions).To(ConsistOf(
 				metav1.LabelSelectorRequirement{
-					Key:      LabelGUID,
+					Key:      k8s.LabelGUID,
 					Operator: metav1.LabelSelectorOpIn,
 					Values:   []string{"guid_1234"},
 				},
 				metav1.LabelSelectorRequirement{
-					Key:      LabelVersion,
+					Key:      k8s.LabelVersion,
 					Operator: metav1.LabelSelectorOpIn,
 					Values:   []string{"version_1234"},
 				},
 				metav1.LabelSelectorRequirement{
-					Key:      LabelSourceType,
+					Key:      k8s.LabelSourceType,
 					Operator: metav1.LabelSelectorOpIn,
 					Values:   []string{"APP"},
 				},
@@ -332,9 +332,9 @@ var _ = Describe("Statefulset Desirer", func() {
 				statefulSet := statefulSetClient.CreateArgsForCall(0)
 				Expect(pdb.Name).To(Equal(statefulSet.Name))
 				Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromInt(1))))
-				Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelGUID, lrp.GUID))
-				Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelVersion, lrp.Version))
-				Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(LabelSourceType, "APP"))
+				Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(k8s.LabelGUID, lrp.GUID))
+				Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(k8s.LabelVersion, lrp.Version))
+				Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(k8s.LabelSourceType, "APP"))
 			})
 
 			Context("when pod disruption budget creation fails", func() {
@@ -445,9 +445,9 @@ var _ = Describe("Statefulset Desirer", func() {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "baldur",
 							Annotations: map[string]string{
-								AnnotationProcessGUID:      "Baldur-guid",
-								AnnotationLastUpdated:      "never",
-								AnnotationRegisteredRoutes: "myroute.io",
+								k8s.AnnotationProcessGUID:      "Baldur-guid",
+								k8s.AnnotationLastUpdated:      "never",
+								k8s.AnnotationRegisteredRoutes: "myroute.io",
 							},
 						},
 						Spec: appsv1.StatefulSetSpec{
@@ -471,8 +471,8 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(statefulSetClient.UpdateCallCount()).To(Equal(1))
 
 			st := statefulSetClient.UpdateArgsForCall(0)
-			Expect(st.GetAnnotations()).To(HaveKeyWithValue(AnnotationLastUpdated, "now"))
-			Expect(st.GetAnnotations()).To(HaveKeyWithValue(AnnotationRegisteredRoutes, "new-route.io"))
+			Expect(st.GetAnnotations()).To(HaveKeyWithValue(k8s.AnnotationLastUpdated, "now"))
+			Expect(st.GetAnnotations()).To(HaveKeyWithValue(k8s.AnnotationRegisteredRoutes, "new-route.io"))
 			Expect(st.GetAnnotations()).NotTo(HaveKey("another"))
 			Expect(*st.Spec.Replicas).To(Equal(int32(5)))
 		})
