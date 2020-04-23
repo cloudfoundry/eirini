@@ -39,6 +39,7 @@ type BinPaths struct {
 	MetricsCollector         string `json:"metrics_collector"`
 	RouteStatefulsetInformer string `json:"route_stateful_set_informer"`
 	RoutePodInformer         string `json:"route_pod_informer"`
+	EventsReporter           string `json:"events_reporter"`
 }
 
 var (
@@ -69,6 +70,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 
 	paths.RoutePodInformer, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/route-pod-informer")
+	Expect(err).NotTo(HaveOccurred())
+
+	paths.EventsReporter, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/event-reporter")
 	Expect(err).NotTo(HaveOccurred())
 
 	data, err := json.Marshal(paths)
@@ -103,6 +107,8 @@ var _ = AfterEach(func() {
 		opiSession.Kill()
 	}
 	Expect(os.Remove(opiConfig)).To(Succeed())
+	Expect(os.Remove(localhostCertPath)).To(Succeed())
+	Expect(os.Remove(localhostKeyPath)).To(Succeed())
 })
 
 func generateKeyPair(name string) (string, string) {
