@@ -99,7 +99,7 @@ var _ = Describe("Events", func() {
 				},
 			)
 
-			resp, err := desireLRP(httpClient, opiURL, lrp)
+			resp, err := desireLRP(lrp)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 		})

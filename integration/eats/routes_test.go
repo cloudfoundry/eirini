@@ -110,7 +110,7 @@ var _ = Describe("Routes", func() {
 
 	Describe("Desiring an app", func() {
 		JustBeforeEach(func() {
-			resp, err := desireLRP(httpClient, opiURL, lrp)
+			resp, err := desireLRP(lrp)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 		})
@@ -161,12 +161,12 @@ var _ = Describe("Routes", func() {
 		}
 
 		JustBeforeEach(func() {
-			resp, err := desireLRP(httpClient, opiURL, lrp)
+			resp, err := desireLRP(lrp)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 			Eventually(registerChan).Should(Receive())
 
-			resp, err = updateLRP(httpClient, opiURL, cf.UpdateDesiredLRPRequest{
+			resp, err = updateLRP(cf.UpdateDesiredLRPRequest{
 				GUID:    lrp.GUID,
 				Version: lrp.Version,
 				UpdateDesiredLRPRequest: models.UpdateDesiredLRPRequest{
@@ -262,12 +262,12 @@ var _ = Describe("Routes", func() {
 	Describe("Stopping an app", func() {
 
 		JustBeforeEach(func() {
-			resp, err := desireLRP(httpClient, opiURL, lrp)
+			resp, err := desireLRP(lrp)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 			Eventually(registerChan).Should(Receive())
 
-			resp, err = stopLRP(httpClient, opiURL, lrp.GUID, lrp.Version)
+			resp, err = stopLRP(lrp.GUID, lrp.Version)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
@@ -284,12 +284,12 @@ var _ = Describe("Routes", func() {
 	Describe("Stopping an app instance", func() {
 
 		JustBeforeEach(func() {
-			resp, err := desireLRP(httpClient, opiURL, lrp)
+			resp, err := desireLRP(lrp)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 			Eventually(registerChan).Should(Receive())
 
-			resp, err = stopLRPInstance(httpClient, opiURL, lrp.GUID, lrp.Version, 0)
+			resp, err = stopLRPInstance(lrp.GUID, lrp.Version, 0)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
