@@ -8,6 +8,7 @@ module Fluent
   class LoggregatorOutput < Output
 
     LABEL_GUID = 'cloudfoundry.org/guid'.freeze
+    LABEL_APP_GUID = 'cloudfoundry.org/app_guid'.freeze
     LABEL_SOURCE_TYPE = 'cloudfoundry.org/source_type'.freeze
 
     Plugin.register_output('loggregator', self)
@@ -44,12 +45,21 @@ module Fluent
 
         env.source_id = k8s_labels.fetch(LABEL_GUID, '')
 
-        env.instance_id = get_instance_id(record)
-
         # Use a default source type APP if there's no kubernetes label.
         source_type = k8s_labels.fetch(LABEL_SOURCE_TYPE, 'APP')
+        if source_type == 'TASK'
+          env.source_id = k8s_labels.fetch(LABEL_APP_GUID, '')
+        end
 
-        source_type = source_type == 'APP' ? 'APP/PROC/WEB' : source_type
+        env.instance_id = get_instance_id(record, source_type)
+
+        case source_type
+        when 'APP'
+          source_type = 'APP/PROC/WEB'
+        when 'TASK'
+          source_type = "APP/TASK/#{k8s_labels.fetch(LABEL_GUID, '')}"
+        end
+
         env.tags['source_type'] = source_type
 
         env.tags['pod_name'] = record.fetch('kubernetes', {}).fetch('pod_name', '')
@@ -87,7 +97,11 @@ module Fluent
       pod_name.split('-')[-1]
     end
 
-    def get_instance_id(record)
+    def get_instance_id(record, source_type)
+      if source_type == 'TASK'
+        return '0'
+      end
+
       pod_name = record.fetch('kubernetes', {}).fetch('pod_name', '')
       if has_instance_index?(pod_name)
         get_instance_index(pod_name)

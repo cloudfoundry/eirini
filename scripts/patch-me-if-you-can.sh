@@ -5,10 +5,10 @@ set -euo pipefail
 IFS=$'\n\t'
 
 readonly USAGE="Usage: patch-me-if-you-can.sh -c <cluster-name> [ -s ] [ <component-name> ... ]"
-readonly SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly EIRINI_BASEDIR=$(realpath "$SCRIPT_DIR/..")
 readonly EIRINI_RELEASE_BASEDIR=$(realpath "$SCRIPT_DIR/../../eirini-release")
-
+readonly EIRINI_PRIVATE_CONFIG_BASEDIR=$(realpath "$SCRIPT_DIR/../../eirini-private-config")
 
 main() {
   if [ "$#" == "0" ]; then
@@ -19,23 +19,23 @@ main() {
   local cluster_name skip_docker_build="false"
   while getopts ":c:s" opt; do
     case ${opt} in
-      c )
+      c)
         cluster_name=$OPTARG
         ;;
-      s )
+      s)
         skip_docker_build="true"
         ;;
-      \? )
+      \?)
         echo "Invalid option: $OPTARG" 1>&2
         echo "$USAGE"
         ;;
-      : )
+      :)
         echo "Invalid option: $OPTARG requires an argument" 1>&2
         echo "$USAGE"
         ;;
     esac
   done
-  shift $((OPTIND -1))
+  shift $((OPTIND - 1))
 
   if [ -z "$cluster_name" ]; then
     echo "Cluster name not provided"
@@ -61,6 +61,7 @@ main() {
     done
   fi
 
+  pull_private_config
   helm_upgrade
 }
 
@@ -77,32 +78,38 @@ update_component() {
 docker_build() {
   echo "Building docker image for $1"
   pushd "$EIRINI_BASEDIR"
-    docker build . -f "$EIRINI_BASEDIR/docker/$component/Dockerfile" \
-      --build-arg GIT_SHA=big-sha \
-      --tag "eirini/$component:patch-me-if-you-can"
+  docker build . -f "$EIRINI_BASEDIR/docker/$component/Dockerfile" \
+    --build-arg GIT_SHA=big-sha \
+    --tag "eirini/$component:patch-me-if-you-can"
   popd
 }
 
 docker_push() {
   echo "Pushing docker image for $1"
   pushd "$EIRINI_BASEDIR"
-    docker push "eirini/$component:patch-me-if-you-can"
+  docker push "eirini/$component:patch-me-if-you-can"
   popd
 }
 
 update_image_in_helm_chart() {
   echo "Applying docker image of $1 to kubernetes cluster"
   pushd "$EIRINI_RELEASE_BASEDIR/helm/eirini/templates"
-    local file new_image_ref
-    file=$(rg -l "image: eirini/${1}")
-    new_image_ref="$(docker inspect --format='{{index .RepoDigests 0}}' "eirini/${1}:patch-me-if-you-can")"
-    sed -i -e "s|image: eirini/${1}.*$|image: ${new_image_ref}|g" "$file"
+  local file new_image_ref
+  file=$(rg -l "image: eirini/${1}")
+  new_image_ref="$(docker inspect --format='{{index .RepoDigests 0}}' "eirini/${1}:patch-me-if-you-can")"
+  sed -i -e "s|image: eirini/${1}.*$|image: ${new_image_ref}|g" "$file"
+  popd
+}
+
+pull_private_config() {
+  pushd "$EIRINI_PRIVATE_CONFIG_BASEDIR"
+  git pull --rebase
   popd
 }
 
 helm_upgrade() {
   pushd "$EIRINI_RELEASE_BASEDIR/helm/cf"
-    helm dep update
+  helm dep update
   popd
 
   local secret ca_cert secret_name bits_tls_crt bits_tls_key
@@ -114,12 +121,12 @@ helm_upgrade() {
   bits_tls_key=$(kubectl get secret "$secret_name" --namespace default -o jsonpath="{.data['tls\.key']}" | base64 --decode -)
 
   pushd "$EIRINI_RELEASE_BASEDIR/helm"
-    helm upgrade --install scf ./cf \
-      --namespace scf \
-      --values "$HOME/workspace/eirini-private-config/environments/kube-clusters/$(current_cluster_name)/values.yaml" \
-      --set "secrets.UAA_CA_CERT=${ca_cert}" \
-      --set "bits.secrets.BITS_TLS_KEY=${bits_tls_key}" \
-      --set "bits.secrets.BITS_TLS_CRT=${bits_tls_crt}"
+  helm upgrade --install scf ./cf \
+    --namespace scf \
+    --values "$HOME/workspace/eirini-private-config/environments/kube-clusters/$(current_cluster_name)/values.yaml" \
+    --set "secrets.UAA_CA_CERT=${ca_cert}" \
+    --set "bits.secrets.BITS_TLS_KEY=${bits_tls_key}" \
+    --set "bits.secrets.BITS_TLS_CRT=${bits_tls_crt}"
   popd
 }
 

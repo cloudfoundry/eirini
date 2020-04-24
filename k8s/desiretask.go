@@ -17,6 +17,7 @@ import (
 const (
 	ActiveDeadlineSeconds = 900
 	stagingSourceType     = "STG"
+	taskSourceType        = "TASK"
 	parallelism           = 1
 	completions           = 1
 )
@@ -79,6 +80,7 @@ func (d *TaskDesirer) Delete(guid string) error {
 
 func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 	job := d.toJob(task)
+	job.Labels[LabelSourceType] = taskSourceType
 
 	envs := getEnvs(task)
 	containers := []v1.Container{
@@ -277,8 +279,8 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 	job.GenerateName = namePrefix
 
 	job.Labels = map[string]string{
+		LabelGUID:    task.GUID,
 		LabelAppGUID: task.AppGUID,
-		LabelGUID:    task.Env[eirini.EnvAppID],
 	}
 
 	job.Annotations = map[string]string{
