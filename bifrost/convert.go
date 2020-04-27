@@ -160,6 +160,7 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 
 	task := opi.Task{
 		GUID:      taskGUID,
+		Name:      request.Name,
 		AppName:   request.AppName,
 		AppGUID:   request.AppGUID,
 		OrgName:   request.OrgName,

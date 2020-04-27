@@ -81,6 +81,7 @@ type Healtcheck struct {
 // result
 type Task struct {
 	GUID      string
+	Name      string
 	Image     string
 	Env       map[string]string
 	Command   []string

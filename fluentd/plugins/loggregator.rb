@@ -8,6 +8,7 @@ module Fluent
   class LoggregatorOutput < Output
 
     LABEL_GUID = 'cloudfoundry.org/guid'.freeze
+    LABEL_NAME = 'cloudfoundry.org/name'.freeze
     LABEL_APP_GUID = 'cloudfoundry.org/app_guid'.freeze
     LABEL_SOURCE_TYPE = 'cloudfoundry.org/source_type'.freeze
 
@@ -57,7 +58,7 @@ module Fluent
         when 'APP'
           source_type = 'APP/PROC/WEB'
         when 'TASK'
-          source_type = "APP/TASK/#{k8s_labels.fetch(LABEL_GUID, '')}"
+          source_type = "APP/TASK/#{k8s_labels[LABEL_NAME]}"
         end
 
         env.tags['source_type'] = source_type

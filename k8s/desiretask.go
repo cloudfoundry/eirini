@@ -81,6 +81,7 @@ func (d *TaskDesirer) Delete(guid string) error {
 func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 	job := d.toJob(task)
 	job.Labels[LabelSourceType] = taskSourceType
+	job.Labels[LabelName] = task.Name
 
 	envs := getEnvs(task)
 	containers := []v1.Container{
