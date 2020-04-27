@@ -612,7 +612,7 @@ var _ = Describe("OPI Converter", func() {
 						eirini.EnvBuildpackCacheUploadURI:         "buildpack-cache-upload-uri",
 						eirini.EnvBuildpackCacheChecksum:          "sumcheck",
 						eirini.EnvBuildpackCacheChecksumAlgorithm: "sha256",
-						"TMPDIR": "/buildpack-cache/tmp",
+						eirini.EnvBuildpackCacheDir:               "/buildpack-cache/tmp",
 					},
 					MemoryMB:  1234,
 					DiskMB:    4567,
