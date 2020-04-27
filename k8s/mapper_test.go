@@ -34,6 +34,7 @@ var _ = Describe("Mapper", func() {
 				},
 			},
 			Spec: appsv1.StatefulSetSpec{
+				Replicas: int32ptr(3),
 				Template: corev1.PodTemplateSpec{
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{
@@ -72,7 +73,7 @@ var _ = Describe("Mapper", func() {
 				},
 			},
 			Status: appsv1.StatefulSetStatus{
-				ReadyReplicas: 3,
+				ReadyReplicas: 2,
 			},
 		}
 		lrp = StatefulSetToLRP(statefulset)
@@ -100,7 +101,11 @@ var _ = Describe("Mapper", func() {
 	})
 
 	It("should set the correct LRP running instances", func() {
-		Expect(lrp.RunningInstances).To(Equal(3))
+		Expect(lrp.RunningInstances).To(Equal(2))
+	})
+
+	It("should set the correct LRP target instances", func() {
+		Expect(lrp.TargetInstances).To(Equal(3))
 	})
 
 	It("should set the correct LRP ports", func() {
