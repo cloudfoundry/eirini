@@ -64,6 +64,7 @@ type BuildpackLifecycle struct {
 }
 
 type TaskRequest struct {
+	Name               string                `json:"name"`
 	AppGUID            string                `json:"app_guid"`
 	AppName            string                `json:"app_name"`
 	OrgName            string                `json:"org_name"`

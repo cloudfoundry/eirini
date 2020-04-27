@@ -45,6 +45,7 @@ const (
 	AnnotationStagingGUID = "cloudfoundry.org/staging_guid"
 
 	LabelGUID        = "cloudfoundry.org/guid"
+	LabelName        = "cloudfoundry.org/name"
 	LabelVersion     = "cloudfoundry.org/version"
 	LabelAppGUID     = "cloudfoundry.org/app_guid"
 	LabelProcessType = "cloudfoundry.org/process_type"
