@@ -140,7 +140,7 @@ RSpec.describe 'Loggregator Fluentd' do
           env.timestamp = (now.to_f * (10**9)).to_i
           env.instance_id = '0'
           env.source_id = 'app-guid'
-          env.tags['source_type'] = 'APP/TASK/task-guid'
+          env.tags['source_type'] = 'APP/TASK/task-name'
           env.tags['namespace'] = 'test_namespace'
           env.tags['container'] = 'test_container'
           env.tags['cluster'] = 'test_host'
@@ -167,6 +167,7 @@ RSpec.describe 'Loggregator Fluentd' do
                     'cloudfoundry.org/source_type' => 'TASK',
                     'cloudfoundry.org/app_guid' => 'app-guid',
                     'cloudfoundry.org/guid' => 'task-guid',
+                    'cloudfoundry.org/name' => 'task-name',
                   },
               }
           }]], '')

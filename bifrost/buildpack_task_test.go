@@ -31,7 +31,24 @@ var _ = Describe("Transfer Task", func() {
 		taskGUID = "task-guid"
 		task = opi.Task{GUID: "my-guid"}
 		taskConverter.ConvertTaskReturns(task, nil)
-		taskRequest = cf.TaskRequest{AppGUID: "app-guid"}
+		taskRequest = cf.TaskRequest{
+			Name:               "cake",
+			AppGUID:            "app-guid",
+			AppName:            "foo",
+			OrgName:            "my-org",
+			OrgGUID:            "asdf123",
+			SpaceName:          "my-space",
+			SpaceGUID:          "fdsa4321",
+			CompletionCallback: "my-callback",
+			Environment:        nil,
+			Lifecycle: cf.Lifecycle{
+				BuildpackLifecycle: &cf.BuildpackLifecycle{
+					DropletHash:  "h123jhh",
+					DropletGUID:  "fds1234",
+					StartCommand: "run",
+				},
+			},
+		}
 		buildpackTaskBifrost = &bifrost.BuildpackTask{
 			Converter:   taskConverter,
 			TaskDesirer: taskDesirer,

@@ -485,6 +485,7 @@ var _ = Describe("OPI Converter", func() {
 		BeforeEach(func() {
 			taskRequest = cf.TaskRequest{
 				AppGUID:            "our-app-id",
+				Name:               "task-name",
 				Environment:        []cf.EnvironmentVariable{{Name: "HOWARD", Value: "the alien"}},
 				CompletionCallback: "example.com/call/me/maybe",
 				Lifecycle: cf.Lifecycle{
@@ -506,6 +507,7 @@ var _ = Describe("OPI Converter", func() {
 			Expect(task).To(Equal(opi.Task{
 				GUID:    "guid_1234",
 				AppGUID: "our-app-id",
+				Name:    "task-name",
 				Env: map[string]string{
 					"HOWARD":        "the alien",
 					"HOME":          "/home/vcap/app",

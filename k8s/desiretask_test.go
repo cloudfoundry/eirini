@@ -87,6 +87,7 @@ var _ = Describe("Desiretask", func() {
 		task = &opi.Task{
 			Image:     Image,
 			AppName:   "my-app",
+			Name:      "task-name",
 			AppGUID:   "my-app-guid",
 			OrgName:   "my-org",
 			SpaceName: "my-space",
@@ -193,6 +194,7 @@ var _ = Describe("Desiretask", func() {
 			Entry("AppGUID", LabelAppGUID, "my-app-guid"),
 			Entry("LabelGUID", LabelGUID, "task-123"),
 			Entry("AppSource", LabelSourceType, "TASK"),
+			Entry("TaskName", LabelName, "task-name"),
 		)
 
 		DescribeTable("the pod associated with the task should have the expected annotations", func(key, value string) {
