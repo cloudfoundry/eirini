@@ -35,6 +35,7 @@ var _ = Describe("TaskHandler", func() {
 		method = "POST"
 		path = "/tasks/guid_1234"
 		body = `{
+                "name": "task-name",
 				"app_guid": "our-app-id",
 				"environment": [{"name": "HOWARD", "value": "the alien"}],
 				"completion_callback": "example.com/call/me/maybe",
@@ -72,6 +73,7 @@ var _ = Describe("TaskHandler", func() {
 		_, actualTaskGUID, actualTaskRequest := buildpackTask.TransferTaskArgsForCall(0)
 		Expect(actualTaskGUID).To(Equal("guid_1234"))
 		Expect(actualTaskRequest).To(Equal(cf.TaskRequest{
+			Name:               "task-name",
 			AppGUID:            "our-app-id",
 			Environment:        []cf.EnvironmentVariable{{Name: "HOWARD", Value: "the alien"}},
 			CompletionCallback: "example.com/call/me/maybe",
