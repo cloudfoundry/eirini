@@ -219,7 +219,7 @@ var _ = Describe("StatefulSet Manager", func() {
 				}
 				statefulset := getStatefulSet(odinLRP)
 
-				Expect(statefulset.Status.ReadyReplicas).To(Equal(statefulset.Status.Replicas))
+				Eventually(statefulset.Status.ReadyReplicas).Should(Equal(statefulset.Status.Replicas))
 			})
 		})
 	})
