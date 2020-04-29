@@ -16,13 +16,13 @@ import (
 var _ = Describe("Transfer Task", func() {
 
 	var (
-		err                  error
-		buildpackTaskBifrost *bifrost.BuildpackTask
-		taskConverter        *bifrostfakes.FakeTaskConverter
-		taskDesirer          *bifrostfakes.FakeTaskDesirer
-		taskGUID             string
-		taskRequest          cf.TaskRequest
-		task                 opi.Task
+		err           error
+		taskBifrost   *bifrost.Task
+		taskConverter *bifrostfakes.FakeTaskConverter
+		taskDesirer   *bifrostfakes.FakeTaskDesirer
+		taskGUID      string
+		taskRequest   cf.TaskRequest
+		task          opi.Task
 	)
 
 	BeforeEach(func() {
@@ -49,14 +49,14 @@ var _ = Describe("Transfer Task", func() {
 				},
 			},
 		}
-		buildpackTaskBifrost = &bifrost.BuildpackTask{
+		taskBifrost = &bifrost.Task{
 			Converter:   taskConverter,
 			TaskDesirer: taskDesirer,
 		}
 	})
 
 	JustBeforeEach(func() {
-		err = buildpackTaskBifrost.TransferTask(context.Background(), taskGUID, taskRequest)
+		err = taskBifrost.TransferTask(context.Background(), taskGUID, taskRequest)
 	})
 
 	It("transfers the task", func() {

@@ -46,12 +46,12 @@ func connect(cmd *cobra.Command, args []string) {
 
 	buildpackStagingBifrost := initBuildpackStagingBifrost(cfg, clientset)
 	dockerStagingBifrost := initDockerStagingBifrost(cfg)
-	buildpackTaskBifrost := initBuildpackTaskBifrost(cfg, clientset)
+	taskBifrost := initTaskBifrost(cfg, clientset)
 	bifrost := initLRPBifrost(clientset, cfg)
 
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	handler := handler.New(bifrost, buildpackStagingBifrost, dockerStagingBifrost, buildpackTaskBifrost, handlerLogger)
+	handler := handler.New(bifrost, buildpackStagingBifrost, dockerStagingBifrost, taskBifrost, handlerLogger)
 
 	var server *http.Server
 	handlerLogger.Info("opi-connected")
@@ -153,10 +153,10 @@ func initDockerStagingBifrost(cfg *eirini.Config) *bifrost.DockerStaging {
 	}
 }
 
-func initBuildpackTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.BuildpackTask {
+func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.Task {
 	converter := initConverter(cfg)
 	taskDesirer := initTaskDesirer(cfg, clientset)
-	return &bifrost.BuildpackTask{
+	return &bifrost.Task{
 		Converter:   converter,
 		TaskDesirer: taskDesirer,
 	}
