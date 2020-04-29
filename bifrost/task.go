@@ -9,21 +9,23 @@ import (
 )
 
 //counterfeiter:generate . TaskConverter
+
 type TaskConverter interface {
 	ConvertTask(taskGUID string, request cf.TaskRequest) (opi.Task, error)
 }
 
 //counterfeiter:generate . TaskDesirer
+
 type TaskDesirer interface {
 	Desire(task *opi.Task) error
 }
 
-type BuildpackTask struct {
+type Task struct {
 	Converter   TaskConverter
 	TaskDesirer TaskDesirer
 }
 
-func (b *BuildpackTask) TransferTask(ctx context.Context, taskGUID string, taskRequest cf.TaskRequest) error {
+func (b *Task) TransferTask(ctx context.Context, taskGUID string, taskRequest cf.TaskRequest) error {
 	desiredTask, err := b.Converter.ConvertTask(taskGUID, taskRequest)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert task")

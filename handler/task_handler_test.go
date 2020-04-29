@@ -18,9 +18,9 @@ import (
 var _ = Describe("TaskHandler", func() {
 
 	var (
-		ts            *httptest.Server
-		logger        *lagertest.TestLogger
-		buildpackTask *handlerfakes.FakeTaskBifrost
+		ts          *httptest.Server
+		logger      *lagertest.TestLogger
+		taskBifrost *handlerfakes.FakeTaskBifrost
 
 		response *http.Response
 		body     string
@@ -30,27 +30,27 @@ var _ = Describe("TaskHandler", func() {
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test")
-		buildpackTask = new(handlerfakes.FakeTaskBifrost)
+		taskBifrost = new(handlerfakes.FakeTaskBifrost)
 
 		method = "POST"
 		path = "/tasks/guid_1234"
 		body = `{
-                "name": "task-name",
+				"name": "task-name",
 				"app_guid": "our-app-id",
 				"environment": [{"name": "HOWARD", "value": "the alien"}],
 				"completion_callback": "example.com/call/me/maybe",
 				"lifecycle": {
-          "buildpack_lifecycle": {
+					"buildpack_lifecycle": {
 						"droplet_guid": "some-guid",
 						"droplet_hash": "some-hash",
-					  "start_command": "some command"
+						"start_command": "some command"
 					}
 				}
 			}`
 	})
 
 	JustBeforeEach(func() {
-		handler := New(nil, nil, nil, buildpackTask, logger)
+		handler := New(nil, nil, nil, taskBifrost, logger)
 		ts = httptest.NewServer(handler)
 		req, err := http.NewRequest(method, ts.URL+path, bytes.NewReader([]byte(body)))
 		Expect(err).NotTo(HaveOccurred())
@@ -69,8 +69,8 @@ var _ = Describe("TaskHandler", func() {
 	})
 
 	It("should transfer the task", func() {
-		Expect(buildpackTask.TransferTaskCallCount()).To(Equal(1))
-		_, actualTaskGUID, actualTaskRequest := buildpackTask.TransferTaskArgsForCall(0)
+		Expect(taskBifrost.TransferTaskCallCount()).To(Equal(1))
+		_, actualTaskGUID, actualTaskRequest := taskBifrost.TransferTaskArgsForCall(0)
 		Expect(actualTaskGUID).To(Equal("guid_1234"))
 		Expect(actualTaskRequest).To(Equal(cf.TaskRequest{
 			Name:               "task-name",
@@ -89,7 +89,7 @@ var _ = Describe("TaskHandler", func() {
 
 	When("transferring the task fails", func() {
 		BeforeEach(func() {
-			buildpackTask.TransferTaskReturns(errors.New("transfer-task-err"))
+			taskBifrost.TransferTaskReturns(errors.New("transfer-task-err"))
 		})
 
 		It("should return 500 Internal Server Error code", func() {
@@ -107,7 +107,7 @@ var _ = Describe("TaskHandler", func() {
 		})
 
 		It("should not transfer the task", func() {
-			Expect(buildpackTask.TransferTaskCallCount()).To(Equal(0))
+			Expect(taskBifrost.TransferTaskCallCount()).To(Equal(0))
 		})
 	})
 })

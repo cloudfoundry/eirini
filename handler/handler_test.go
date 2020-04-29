@@ -22,7 +22,7 @@ var _ = Describe("Handler", func() {
 		lrpBifrost              *handlerfakes.FakeLRPBifrost
 		buildpackStagingBifrost *handlerfakes.FakeStagingBifrost
 		dockerStagingBifrost    *handlerfakes.FakeStagingBifrost
-		buildpackTaskBifrost    *handlerfakes.FakeTaskBifrost
+		taskBifrost             *handlerfakes.FakeTaskBifrost
 		handlerClient           http.Handler
 	)
 
@@ -31,10 +31,10 @@ var _ = Describe("Handler", func() {
 		lrpBifrost = new(handlerfakes.FakeLRPBifrost)
 		buildpackStagingBifrost = new(handlerfakes.FakeStagingBifrost)
 		dockerStagingBifrost = new(handlerfakes.FakeStagingBifrost)
-		buildpackTaskBifrost = new(handlerfakes.FakeTaskBifrost)
+		taskBifrost = new(handlerfakes.FakeTaskBifrost)
 
 		lager := lagertest.NewTestLogger("handler-test")
-		handlerClient = New(lrpBifrost, buildpackStagingBifrost, dockerStagingBifrost, buildpackTaskBifrost, lager)
+		handlerClient = New(lrpBifrost, buildpackStagingBifrost, dockerStagingBifrost, taskBifrost, lager)
 	})
 
 	JustBeforeEach(func() {
