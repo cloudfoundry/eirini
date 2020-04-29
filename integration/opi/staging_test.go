@@ -88,7 +88,7 @@ var _ = Describe("Staging", func() {
 		BeforeEach(func() {
 			body = `{
 				"app_name": "my-app",
-        "app_guid": "my-app-guid",
+				"app_guid": "my-app-guid",
 				"org_name": "my-org",
 				"org_guid": "org-id",
 				"space_name": "my-space",
@@ -115,7 +115,7 @@ var _ = Describe("Staging", func() {
 			Expect(job.Labels[key]).To(Equal(value))
 		},
 			Entry("AppGUID", LabelAppGUID, "my-app-guid"),
-			Entry("LabelGUID", LabelGUID, "my-app-guid"),
+			Entry("LabelGUID", LabelGUID, "the-staging-guid"),
 			Entry("SourceType", LabelSourceType, "STG"),
 			Entry("StagingGUID", LabelStagingGUID, "the-staging-guid"),
 		)
