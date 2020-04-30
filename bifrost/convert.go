@@ -198,7 +198,8 @@ func (c *OPIConverter) ConvertStaging(stagingGUID string, request cf.StagingRequ
 		eirini.EnvBuildpackCacheUploadURI:         lifecycleData.BuildpackCacheUploadURI,
 		eirini.EnvBuildpackCacheChecksum:          lifecycleData.BuildpackCacheChecksum,
 		eirini.EnvBuildpackCacheChecksumAlgorithm: lifecycleData.BuildpackCacheChecksumAlgorithm,
-		eirini.EnvBuildpackCacheDir:               fmt.Sprintf("%s/tmp", eirini.BuildpackCacheDir),
+		eirini.EnvBuildpackCacheArtifactsDir:      fmt.Sprintf("%s/buildpack-cache", eirini.BuildpackCacheDir),
+		eirini.EnvBuildpackCacheOutputArtifact:    fmt.Sprintf("%s/cache.tgz", eirini.BuildpackCacheDir),
 	}
 
 	stagingEnv := mergeEnvs(request.Environment, eiriniEnv)

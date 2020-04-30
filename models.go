@@ -13,7 +13,8 @@ const (
 	EnvBuildpackCacheDownloadURI       = "BUILDPACK_CACHE_DOWNLOAD_URI"
 	EnvBuildpackCacheChecksum          = "BUILDPACK_CACHE_CHECKSUM"
 	EnvBuildpackCacheChecksumAlgorithm = "BUILDPACK_CACHE_CHECKSUM_ALGORITHM"
-	EnvBuildpackCacheDir               = "BUILDPACK_CACHE_DIR"
+	EnvBuildpackCacheArtifactsDir      = "EIRINI_BUILD_ARTIFACTS_CACHE_DIR"
+	EnvBuildpackCacheOutputArtifact    = "EIRINI_OUTPUT_BUILD_ARTIFACTS_CACHE"
 
 	EnvPodName              = "POD_NAME"
 	EnvCFInstanceIP         = "CF_INSTANCE_IP"
@@ -29,7 +30,7 @@ const (
 	RecipeOutputName       = "staging-output"
 	RecipeOutputLocation   = "/out"
 	RecipePacksBuilderPath = "/packs/builder"
-	BuildpackCacheDir      = "/buildpack-cache"
+	BuildpackCacheDir      = "/tmp"
 	BuildpackCacheName     = "buildpack-cache"
 
 	AppMetricsEmissionIntervalInSecs = 15
