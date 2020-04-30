@@ -48,7 +48,7 @@ module Fluent
 
         # Use a default source type APP if there's no kubernetes label.
         source_type = k8s_labels.fetch(LABEL_SOURCE_TYPE, 'APP')
-        if source_type == 'TASK'
+        if ['TASK', 'STG'].include?(source_type)
           env.source_id = k8s_labels.fetch(LABEL_APP_GUID, '')
         end
 

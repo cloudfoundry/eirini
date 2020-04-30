@@ -98,6 +98,7 @@ RSpec.describe 'Loggregator Fluentd' do
           env.log = log
           env.timestamp = (now.to_f * (10**9)).to_i
           env.instance_id = '44'
+          env.source_id = 'the_app_guid'
           env.tags['source_type'] = 'STG'
           env.tags['namespace'] = 'test_namespace'
           env.tags['container'] = 'test_container'
@@ -123,6 +124,7 @@ RSpec.describe 'Loggregator Fluentd' do
                   'host' => 'test_host',
                   'labels' => {
                     'cloudfoundry.org/source_type' => 'STG',
+                    'cloudfoundry.org/app_guid' => 'the_app_guid',
                   },
               }
           }]], '')
