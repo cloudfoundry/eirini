@@ -86,7 +86,9 @@ var _ = Describe("StatefulSet Manager", func() {
 			}
 
 			statefulset := getStatefulSet(odinLRP)
-			Expect(statefulset.Status.ReadyReplicas).To(Equal(statefulset.Status.Replicas))
+			Eventually(func() int32 {
+				return getStatefulSet(odinLRP).Status.ReadyReplicas
+			}).Should(Equal(statefulset.Spec.Replicas))
 		})
 
 		It("should create a pod disruption budget for the lrp", func() {
