@@ -5,8 +5,10 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/utils"
+	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,10 +48,16 @@ type TaskDesirer struct {
 	RegistrySecretName string
 	JobClient          JobClient
 	Logger             lager.Logger
+	SecretsClient      SecretsClient
 }
 
 func (d *TaskDesirer) Desire(task *opi.Task) error {
-	_, err := d.JobClient.Create(d.toTaskJob(task))
+	taskJob, err := d.toTaskJob(task)
+	if err != nil {
+		return err
+	}
+
+	_, err = d.JobClient.Create(taskJob)
 	return err
 }
 
@@ -78,7 +86,7 @@ func (d *TaskDesirer) Delete(guid string) error {
 	})
 }
 
-func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
+func (d *TaskDesirer) toTaskJob(task *opi.Task) (*batch.Job, error) {
 	job := d.toJob(task)
 	job.Labels[LabelSourceType] = taskSourceType
 	job.Labels[LabelName] = task.Name
@@ -100,9 +108,45 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 		},
 	}
 
+	if task.PrivateRegistry != nil && task.PrivateRegistry.Username != "" && task.PrivateRegistry.Password != "" {
+		createdSecret, err := d.createTaskSecret(task)
+		if err != nil {
+			return nil, err
+		}
+
+		job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{
+			Name: createdSecret.Name,
+		})
+	}
+
 	job.Spec.Template.Spec.Containers = containers
 
-	return job
+	return job, nil
+}
+
+func (d *TaskDesirer) createTaskSecret(task *opi.Task) (*corev1.Secret, error) {
+	secret := &v1.Secret{}
+
+	secretNamePrefix := fmt.Sprintf("%s-%s", task.AppName, task.SpaceName)
+	secretNamePrefix = fmt.Sprintf("%s-registry-secret-", utils.SanitizeName(secretNamePrefix, task.GUID))
+	secret.GenerateName = secretNamePrefix
+
+	secret.Type = corev1.SecretTypeDockerConfigJson
+
+	dockerConfig := dockerutils.NewDockerConfig(
+		task.PrivateRegistry.Server,
+		task.PrivateRegistry.Username,
+		task.PrivateRegistry.Password,
+	)
+	dockerConfigJSON, err := dockerConfig.JSON()
+	if err != nil {
+		return nil, err
+	}
+	secret.StringData = map[string]string{
+		dockerutils.DockerConfigKey: dockerConfigJSON,
+	}
+
+	return d.SecretsClient.Create(secret)
 }
 
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {

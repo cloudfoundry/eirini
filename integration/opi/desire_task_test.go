@@ -2,113 +2,153 @@ package opi_test
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
+	"code.cloudfoundry.org/eirini/models/cf"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/batch/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Desire Task", func() {
 	var (
-		body string
-		jobs *v1.JobList
+		request cf.TaskRequest
+		jobs    *batchv1.JobList
 	)
 
 	JustBeforeEach(func() {
-		desireTaskReq, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/the-task-guid", url), bytes.NewReader([]byte(body)))
+		body, err := json.Marshal(request)
 		Expect(err).NotTo(HaveOccurred())
-		resp, err := httpClient.Do(desireTaskReq)
+
+		httpRequest, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/the-task-guid", url), bytes.NewReader(body))
+		Expect(err).NotTo(HaveOccurred())
+
+		resp, err := httpClient.Do(httpRequest)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
-
-		jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("buildpack tasks", func() {
 		BeforeEach(func() {
-			body = `{
-			"app_name": "my_app",
-			"space_name": "my_space",
-			"environment": [
-			   {
-				   "name": "my-env",
-					 "value": "my-value"
-				 }
-			],
-			"lifecycle": {
-				"buildpack_lifecycle": {
-						"droplet_guid": "foo",
-						"droplet_hash": "bar",
-						"start_command": "some command"
+			request = cf.TaskRequest{
+				AppName:     "my_app",
+				SpaceName:   "my_space",
+				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
+				Lifecycle: cf.Lifecycle{
+					BuildpackLifecycle: &cf.BuildpackLifecycle{
+						DropletHash:  "foo",
+						DropletGUID:  "bar",
+						StartCommand: "some command",
+					},
+				},
+			}
+		})
+
+		It("should create a valid job for the task", func() {
+			Eventually(func() ([]batchv1.Job, error) {
+				var err error
+				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+				return jobs.Items, err
+			}).Should(HaveLen(1))
+
+			By("creating a job for the task", func() {
+				Expect(jobs.Items).To(HaveLen(1))
+				Expect(jobs.Items[0].Name).To(HavePrefix("my-app-my-space-"))
+			})
+
+			By("setting the registry secret name", func() {
+				podSpec := jobs.Items[0].Spec.Template.Spec
+				Expect(podSpec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
+			})
+
+			By("specifying the right containers", func() {
+				jobContainers := jobs.Items[0].Spec.Template.Spec.Containers
+				Expect(jobContainers).To(HaveLen(1))
+				Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
+				Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "START_COMMAND", Value: "some command"}))
+				Expect(jobContainers[0].Image).To(Equal("registry/cloudfoundry/bar:foo"))
+				Expect(jobContainers[0].Command).To(ConsistOf("/lifecycle/launch"))
+			})
+		})
+	})
+
+	Context("docker tasks", func() {
+		BeforeEach(func() {
+			request = cf.TaskRequest{
+				AppName:     "my_app",
+				SpaceName:   "my_space",
+				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
+				Lifecycle: cf.Lifecycle{
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image:   "eirini/dorini",
+						Command: []string{"echo", "hello"},
+					},
+				},
+			}
+		})
+
+		It("creates the job succssfully", func() {
+			Eventually(func() ([]batchv1.Job, error) {
+				var err error
+				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+				return jobs.Items, err
+			}).Should(HaveLen(1))
+
+			By("creating a job for the task", func() {
+				Expect(jobs.Items).To(HaveLen(1))
+				Expect(jobs.Items[0].Name).To(HavePrefix("my-app-my-space-"))
+			})
+
+			By("should specify the right containers", func() {
+				jobContainers := jobs.Items[0].Spec.Template.Spec.Containers
+				Expect(jobContainers).To(HaveLen(1))
+				Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
+				Expect(jobContainers[0].Image).To(Equal("eirini/dorini"))
+				Expect(jobContainers[0].Command).To(ConsistOf("echo", "hello"))
+			})
+		})
+
+		When("the task uses a private Docker registry", func() {
+			BeforeEach(func() {
+				request.Lifecycle.DockerLifecycle.RegistryUsername = "username"
+				request.Lifecycle.DockerLifecycle.RegistryPassword = "password"
+			})
+
+			It("creates a new secret and points the job to it", func() {
+				Eventually(func() ([]batchv1.Job, error) {
+					var err error
+					jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+					return jobs.Items, err
+				}).Should(HaveLen(1))
+
+				imagePullSecrets := jobs.Items[0].Spec.Template.Spec.ImagePullSecrets
+				var registrySecretName string
+				for _, imagePullSecret := range imagePullSecrets {
+					if strings.HasPrefix(imagePullSecret.Name, "my-app-my-space-registry-secret-") {
+						registrySecretName = imagePullSecret.Name
 					}
 				}
-		  }`
-		})
+				Expect(registrySecretName).NotTo(BeEmpty())
 
-		It("should create a job for the task", func() {
-			Expect(jobs.Items).To(HaveLen(1))
-			Expect(jobs.Items[0].Name).To(HavePrefix("my-app-my-space-"))
-		})
-
-		It("should set the registry secret name", func() {
-			podSpec := jobs.Items[0].Spec.Template.Spec
-			Expect(podSpec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
-		})
-
-		It("should specify the right containers", func() {
-			jobContainers := jobs.Items[0].Spec.Template.Spec.Containers
-			Expect(jobContainers).To(HaveLen(1))
-			Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
-			Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "START_COMMAND", Value: "some command"}))
-			Expect(jobContainers[0].Image).To(Equal("registry/cloudfoundry/foo:bar"))
-			Expect(jobContainers[0].Command).To(ConsistOf("/lifecycle/launch"))
-		})
-	})
-
-	Context("buildpack tasks", func() {
-		BeforeEach(func() {
-			body = `{
-			"app_name": "my_app",
-			"space_name": "my_space",
-			"environment": [
-				{
-					"name": "my-env",
-					"value": "my-value"
-				}
-			],
-			"lifecycle": {
-				"docker_lifecycle": {
-					"image": "eirini/dorini",
-					"command": ["echo", "hello"],
-					"registry_username": "reg-user",
-					"registry_password": "reg-pass"
-				}
-			}`
-		})
-
-		It("should create a job for the task", func() {
-			Expect(jobs.Items).To(HaveLen(1))
-			Expect(jobs.Items[0].Name).To(HavePrefix("my-app-my-space-"))
-		})
-
-		It("should set the registry secret name", func() {
-			podSpec := jobs.Items[0].Spec.Template.Spec
-			// TODO: Where does this value go?
-			Expect(podSpec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "is-this-where-this-goes?"}))
-		})
-
-		It("should specify the right containers", func() {
-			jobContainers := jobs.Items[0].Spec.Template.Spec.Containers
-			Expect(jobContainers).To(HaveLen(1))
-			Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
-			// Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "START_COMMAND", Value: "echo hello"}))
-			Expect(jobContainers[0].Image).To(Equal("eirini/dorini"))
-			Expect(jobContainers[0].Command).To(ConsistOf("echo hello"))
+				secret, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Get(registrySecretName, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(secret).NotTo(BeNil())
+				Expect(secret.Data).To(
+					HaveKeyWithValue(
+						".dockerconfigjson",
+						[]byte(fmt.Sprintf(
+							`{"auths":{"index.docker.io/v1/":{"username":"username","password":"password","auth":"%s"}}}`,
+							base64.StdEncoding.EncodeToString([]byte("username:password")),
+						)),
+					),
+				)
+			})
 		})
 	})
 })

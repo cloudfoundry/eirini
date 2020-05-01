@@ -1,6 +1,7 @@
 package k8s_test
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
@@ -29,10 +30,11 @@ var _ = Describe("Desiretask", func() {
 	)
 
 	var (
-		task          *opi.Task
-		desirer       *TaskDesirer
-		fakeJobClient *k8sfakes.FakeJobClient
-		job           *batch.Job
+		task              *opi.Task
+		desirer           *TaskDesirer
+		fakeJobClient     *k8sfakes.FakeJobClient
+		fakeSecretsClient *k8sfakes.FakeSecretsClient
+		job               *batch.Job
 	)
 
 	assertGeneralSpec := func(job *batch.Job) {
@@ -84,6 +86,7 @@ var _ = Describe("Desiretask", func() {
 
 	BeforeEach(func() {
 		fakeJobClient = new(k8sfakes.FakeJobClient)
+		fakeSecretsClient = new(k8sfakes.FakeSecretsClient)
 		task = &opi.Task{
 			Image:     Image,
 			AppName:   "my-app",
@@ -137,6 +140,7 @@ var _ = Describe("Desiretask", func() {
 			ServiceAccountName: "staging-serivce-account",
 			RegistrySecretName: "registry-secret",
 			Logger:             lagertest.NewTestLogger("desiretask"),
+			SecretsClient:      fakeSecretsClient,
 		}
 	})
 
@@ -149,12 +153,14 @@ var _ = Describe("Desiretask", func() {
 
 		JustBeforeEach(func() {
 			err = desirer.Desire(task)
-			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
-			job = fakeJobClient.CreateArgsForCall(0)
 		})
 
-		It("should desire the task", func() {
+		It("should create a job for the task with the correct attributes", func() {
 			Expect(err).NotTo(HaveOccurred())
+
+			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
+			job = fakeJobClient.CreateArgsForCall(0)
+
 			Expect(job.GenerateName).To(HavePrefix("my-app-my-space-"))
 
 			assertGeneralSpec(job)
@@ -164,6 +170,50 @@ var _ = Describe("Desiretask", func() {
 			Expect(containers).To(HaveLen(1))
 			assertContainer(containers[0], "opi-task")
 			Expect(containers[0].Command).To(ConsistOf("/lifecycle/launch"))
+
+			By("setting the expected annotations on the job", func() {
+				Expect(job.Annotations).To(SatisfyAll(
+					HaveKeyWithValue(AnnotationAppName, "my-app"),
+					HaveKeyWithValue(AnnotationAppID, "my-app-guid"),
+					HaveKeyWithValue(AnnotationOrgName, "my-org"),
+					HaveKeyWithValue(AnnotationOrgGUID, "org-id"),
+					HaveKeyWithValue(AnnotationSpaceName, "my-space"),
+					HaveKeyWithValue(AnnotationSpaceGUID, "space-id"),
+				))
+			})
+
+			By("setting the expected labels on the job", func() {
+				Expect(job.Labels).To(SatisfyAll(
+					HaveKeyWithValue(LabelAppGUID, "my-app-guid"),
+					HaveKeyWithValue(LabelGUID, "task-123"),
+					HaveKeyWithValue(LabelSourceType, "TASK"),
+					HaveKeyWithValue(LabelName, "task-name"),
+				))
+			})
+
+			By("setting the expected annotations on the associated pod", func() {
+				Expect(job.Spec.Template.Annotations).To(SatisfyAll(
+					HaveKeyWithValue(AnnotationAppName, "my-app"),
+					HaveKeyWithValue(AnnotationAppID, "my-app-guid"),
+					HaveKeyWithValue(AnnotationOrgName, "my-org"),
+					HaveKeyWithValue(AnnotationOrgGUID, "org-id"),
+					HaveKeyWithValue(AnnotationSpaceName, "my-space"),
+					HaveKeyWithValue(AnnotationSpaceGUID, "space-id"),
+				))
+			})
+
+			By("setting the expected labels on the associated pod", func() {
+				Expect(job.Spec.Template.Labels).To(SatisfyAll(
+					HaveKeyWithValue(LabelAppGUID, "my-app-guid"),
+					HaveKeyWithValue(LabelGUID, "task-123"),
+					HaveKeyWithValue(LabelSourceType, "TASK"),
+				))
+			})
+
+			By("not setting stating-specific labels on the job", func() {
+				Expect(job.Labels[LabelSourceType]).NotTo(Equal("STG"))
+				Expect(job.Labels).NotTo(HaveKey(LabelStagingGUID))
+			})
 		})
 
 		When("the prefix would be invalid", func() {
@@ -173,52 +223,13 @@ var _ = Describe("Desiretask", func() {
 			})
 
 			It("should use the guid as the prefix instead", func() {
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
+				job = fakeJobClient.CreateArgsForCall(0)
+
 				Expect(job.GenerateName).To(Equal(taskGUID + "-"))
 			})
-		})
-
-		DescribeTable("the task should have the expected annotations", func(key, value string) {
-			Expect(job.Annotations).To(HaveKeyWithValue(key, value))
-		},
-			Entry("AppName", AnnotationAppName, "my-app"),
-			Entry("AppGUID", AnnotationAppID, "my-app-guid"),
-			Entry("OrgName", AnnotationOrgName, "my-org"),
-			Entry("OrgName", AnnotationOrgGUID, "org-id"),
-			Entry("SpaceName", AnnotationSpaceName, "my-space"),
-			Entry("SpaceGUID", AnnotationSpaceGUID, "space-id"),
-		)
-
-		DescribeTable("the task should have the expected labels", func(key, value string) {
-			Expect(job.Labels).To(HaveKeyWithValue(key, value))
-		},
-			Entry("AppGUID", LabelAppGUID, "my-app-guid"),
-			Entry("LabelGUID", LabelGUID, "task-123"),
-			Entry("AppSource", LabelSourceType, "TASK"),
-			Entry("TaskName", LabelName, "task-name"),
-		)
-
-		DescribeTable("the pod associated with the task should have the expected annotations", func(key, value string) {
-			Expect(job.Spec.Template.Annotations).To(HaveKeyWithValue(key, value))
-		},
-			Entry("AppName", AnnotationAppName, "my-app"),
-			Entry("AppGUID", AnnotationAppID, "my-app-guid"),
-			Entry("OrgName", AnnotationOrgName, "my-org"),
-			Entry("OrgName", AnnotationOrgGUID, "org-id"),
-			Entry("SpaceName", AnnotationSpaceName, "my-space"),
-			Entry("SpaceGUID", AnnotationSpaceGUID, "space-id"),
-		)
-
-		DescribeTable("the pod associated with the task should have the expected labels", func(key, value string) {
-			Expect(job.Spec.Template.Labels).To(HaveKeyWithValue(key, value))
-		},
-			Entry("AppGUID", LabelAppGUID, "my-app-guid"),
-			Entry("LabelGUID", LabelGUID, "task-123"),
-			Entry("AppSource", LabelSourceType, "TASK"),
-		)
-
-		It("should not have staging specific labels", func() {
-			Expect(job.Labels[LabelSourceType]).NotTo(Equal("STG"))
-			Expect(job.Labels).NotTo(HaveKey(LabelStagingGUID))
 		})
 
 		Context("and the job already exists", func() {
@@ -228,6 +239,51 @@ var _ = Describe("Desiretask", func() {
 
 			It("should return an error", func() {
 				Expect(err).To(MatchError(ContainSubstring("job already exists")))
+			})
+		})
+
+		Context("when the job uses a private registry", func() {
+			BeforeEach(func() {
+				task.PrivateRegistry = &opi.PrivateRegistry{
+					Server:   "some-server",
+					Username: "username",
+					Password: "password",
+				}
+				fakeSecretsClient.CreateReturns(&v1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "the-generated-secret-name"}}, nil)
+			})
+
+			It("creates a secret with the registry credentials", func() {
+				Expect(fakeSecretsClient.CreateCallCount()).To(Equal(1))
+				actualSecret := fakeSecretsClient.CreateArgsForCall(0)
+				Expect(actualSecret.GenerateName).To(Equal("my-app-my-space-registry-secret-"))
+				Expect(actualSecret.Type).To(Equal(v1.SecretTypeDockerConfigJson))
+				Expect(actualSecret.StringData).To(
+					HaveKeyWithValue(
+						".dockerconfigjson",
+						fmt.Sprintf(
+							`{"auths":{"some-server":{"username":"username","password":"password","auth":"%s"}}}`,
+							base64.StdEncoding.EncodeToString([]byte("username:password")),
+						),
+					),
+				)
+
+				Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
+				job = fakeJobClient.CreateArgsForCall(0)
+
+				Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(
+					v1.LocalObjectReference{Name: "registry-secret"},
+					v1.LocalObjectReference{Name: "the-generated-secret-name"},
+				))
+			})
+
+			Context("when creating the secret fails", func() {
+				BeforeEach(func() {
+					fakeSecretsClient.CreateReturns(nil, errors.New("create-secret-err"))
+				})
+
+				It("returns an error", func() {
+					Expect(err).To(MatchError("create-secret-err"))
+				})
 			})
 		})
 	})
@@ -438,7 +494,6 @@ var _ = Describe("Desiretask", func() {
 	})
 
 	Context("When deleting a task", func() {
-
 		BeforeEach(func() {
 			jobs := &batch.JobList{
 				Items: []batch.Job{

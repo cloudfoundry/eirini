@@ -31,15 +31,18 @@ var (
 	url              string
 )
 
-var _ = BeforeSuite(func() {
-	var err error
-	pathToOpi, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
+var _ = SynchronizedBeforeSuite(func() []byte {
+	path, err := gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
 	Expect(err).NotTo(HaveOccurred())
+	return []byte(path)
+}, func(data []byte) {
+	pathToOpi = string(data)
 
 	fixture = util.NewFixture(GinkgoWriter)
 })
 
-var _ = AfterSuite(func() {
+var _ = SynchronizedAfterSuite(func() {
+}, func() {
 	gexec.CleanupBuildArtifacts()
 })
 
