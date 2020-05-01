@@ -145,17 +145,11 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi.Task, error) {
 	c.logger.Debug("convert-task", lager.Data{"app-id": request.AppGUID, "staging-guid": taskGUID})
 
-	if request.Lifecycle.BuildpackLifecycle == nil {
-		return opi.Task{}, errors.New("unsupported lifecycle, only buildpack lifecycle is supported")
-	}
-
-	lifecycle := request.Lifecycle.BuildpackLifecycle
-	buildpackEnv := map[string]string{
-		"HOME":          "/home/vcap/app",
-		"PATH":          "/usr/local/bin:/usr/bin:/bin",
-		"USER":          "vcap",
-		"TMPDIR":        "/home/vcap/tmp",
-		"START_COMMAND": lifecycle.StartCommand,
+	env := map[string]string{
+		"HOME":   "/home/vcap/app",
+		"PATH":   "/usr/local/bin:/usr/bin:/bin",
+		"USER":   "vcap",
+		"TMPDIR": "/home/vcap/tmp",
 	}
 
 	task := opi.Task{
@@ -167,10 +161,30 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 		SpaceName: request.SpaceName,
 		OrgGUID:   request.OrgGUID,
 		SpaceGUID: request.SpaceGUID,
-		Env:       mergeEnvs(request.Environment, buildpackEnv),
-		Command:   []string{"/lifecycle/launch"},
-		Image:     c.imageURI(lifecycle.DropletGUID, lifecycle.DropletHash),
 	}
+
+	if request.Lifecycle.BuildpackLifecycle != nil {
+		lifecycle := request.Lifecycle.BuildpackLifecycle
+		task.Command = []string{"/lifecycle/launch"}
+		task.Image = c.imageURI(lifecycle.DropletGUID, lifecycle.DropletHash)
+		env["START_COMMAND"] = lifecycle.StartCommand
+	}
+
+	if request.Lifecycle.DockerLifecycle != nil {
+		lifecycle := request.Lifecycle.DockerLifecycle
+		task.Command = lifecycle.Command
+		task.Image = lifecycle.Image
+		if lifecycle.RegistryUsername != "" || lifecycle.RegistryPassword != "" {
+			task.PrivateRegistry = &opi.PrivateRegistry{
+				Server:   parseRegistryHost(lifecycle.Image),
+				Username: lifecycle.RegistryUsername,
+				Password: lifecycle.RegistryPassword,
+			}
+		}
+	}
+
+	task.Env = mergeEnvs(request.Environment, env)
+
 	return task, nil
 }
 

@@ -80,20 +80,21 @@ type Healtcheck struct {
 // A Task is a one-off process that is run exactly once and returns a
 // result.
 type Task struct {
-	GUID      string
-	Name      string
-	Image     string
-	Env       map[string]string
-	Command   []string
-	AppName   string
-	AppGUID   string
-	OrgName   string
-	OrgGUID   string
-	SpaceName string
-	SpaceGUID string
-	MemoryMB  int64
-	DiskMB    int64
-	CPUWeight uint8
+	GUID            string
+	Name            string
+	Image           string
+	PrivateRegistry *PrivateRegistry
+	Env             map[string]string
+	Command         []string
+	AppName         string
+	AppGUID         string
+	OrgName         string
+	OrgGUID         string
+	SpaceName       string
+	SpaceGUID       string
+	MemoryMB        int64
+	DiskMB          int64
+	CPUWeight       uint8
 }
 
 type StagingTask struct {

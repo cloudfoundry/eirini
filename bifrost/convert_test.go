@@ -477,59 +477,100 @@ var _ = Describe("OPI Converter", func() {
 	})
 
 	Describe("Convert Task", func() {
-
 		var (
 			taskRequest cf.TaskRequest
 			task        opi.Task
 		)
-		BeforeEach(func() {
-			taskRequest = cf.TaskRequest{
-				AppGUID:            "our-app-id",
-				Name:               "task-name",
-				Environment:        []cf.EnvironmentVariable{{Name: "HOWARD", Value: "the alien"}},
-				CompletionCallback: "example.com/call/me/maybe",
-				Lifecycle: cf.Lifecycle{
-					BuildpackLifecycle: &cf.BuildpackLifecycle{
-						DropletGUID:  "some-guid",
-						DropletHash:  "some-hash",
-						StartCommand: "some command",
-					},
-				},
-			}
-		})
 
 		JustBeforeEach(func() {
 			task, err = converter.ConvertTask("guid_1234", taskRequest)
 		})
 
-		It("should convert the task request", func() {
-			Expect(err).NotTo(HaveOccurred())
-			Expect(task).To(Equal(opi.Task{
-				GUID:    "guid_1234",
-				AppGUID: "our-app-id",
-				Name:    "task-name",
-				Env: map[string]string{
-					"HOWARD":        "the alien",
-					"HOME":          "/home/vcap/app",
-					"PATH":          "/usr/local/bin:/usr/bin:/bin",
-					"USER":          "vcap",
-					"TMPDIR":        "/home/vcap/tmp",
-					"START_COMMAND": "some command",
-				},
-				Command: []string{"/lifecycle/launch"},
-				Image:   fmt.Sprintf("%s/cloudfoundry/some-guid:some-hash", registryIP),
-			}))
-		})
-
-		When("the request has a docker lifecycle", func() {
+		When("the task has a buildpack lifecycle", func() {
 			BeforeEach(func() {
-				taskRequest.Lifecycle = cf.Lifecycle{
-					DockerLifecycle: &cf.DockerLifecycle{},
+				taskRequest = cf.TaskRequest{
+					AppGUID:            "our-app-id",
+					Name:               "task-name",
+					Environment:        []cf.EnvironmentVariable{{Name: "HOWARD", Value: "the alien"}},
+					CompletionCallback: "example.com/call/me/maybe",
+					Lifecycle: cf.Lifecycle{
+						BuildpackLifecycle: &cf.BuildpackLifecycle{
+							DropletGUID:  "some-guid",
+							DropletHash:  "some-hash",
+							StartCommand: "some command",
+						},
+					},
 				}
 			})
 
-			It("should return an error", func() {
-				Expect(err).To(MatchError(ContainSubstring("unsupported lifecycle")))
+			It("should convert the task request", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(task).To(Equal(opi.Task{
+					GUID:    "guid_1234",
+					AppGUID: "our-app-id",
+					Name:    "task-name",
+					Env: map[string]string{
+						"HOWARD":        "the alien",
+						"HOME":          "/home/vcap/app",
+						"PATH":          "/usr/local/bin:/usr/bin:/bin",
+						"USER":          "vcap",
+						"TMPDIR":        "/home/vcap/tmp",
+						"START_COMMAND": "some command",
+					},
+					Command: []string{"/lifecycle/launch"},
+					Image:   fmt.Sprintf("%s/cloudfoundry/some-guid:some-hash", registryIP),
+				}))
+			})
+		})
+
+		When("the task has a docker lifecycle", func() {
+			BeforeEach(func() {
+				taskRequest = cf.TaskRequest{
+					AppGUID:            "our-app-id",
+					Name:               "task-name",
+					Environment:        []cf.EnvironmentVariable{{Name: "HOWARD", Value: "the alien"}},
+					CompletionCallback: "example.com/call/me/maybe",
+					Lifecycle: cf.Lifecycle{
+						DockerLifecycle: &cf.DockerLifecycle{
+							Image:   "some/image",
+							Command: []string{"some", "command"},
+						},
+					},
+				}
+			})
+
+			It("should convert the task request", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(task).To(Equal(opi.Task{
+					GUID:    "guid_1234",
+					AppGUID: "our-app-id",
+					Name:    "task-name",
+					Env: map[string]string{
+						"HOWARD": "the alien",
+						"HOME":   "/home/vcap/app",
+						"PATH":   "/usr/local/bin:/usr/bin:/bin",
+						"USER":   "vcap",
+						"TMPDIR": "/home/vcap/tmp",
+					},
+					Command: []string{"some", "command"},
+					Image:   "some/image",
+				}))
+			})
+
+			When("the docker image is in a private registry", func() {
+				BeforeEach(func() {
+					taskRequest.Lifecycle.DockerLifecycle.Image = "private-registry/some/image"
+					taskRequest.Lifecycle.DockerLifecycle.RegistryUsername = "bob"
+					taskRequest.Lifecycle.DockerLifecycle.RegistryPassword = "12345"
+				})
+
+				It("includes the private registry details in the conversion", func() {
+					Expect(err).NotTo(HaveOccurred())
+					Expect(task.PrivateRegistry).ToNot(BeNil())
+					Expect(task.PrivateRegistry.Username).To(Equal("bob"))
+					Expect(task.PrivateRegistry.Password).To(Equal("12345"))
+					Expect(task.PrivateRegistry.Server).To(Equal("private-registry"))
+				})
 			})
 		})
 	})
