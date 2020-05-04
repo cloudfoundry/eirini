@@ -48,13 +48,13 @@ func IsStopped(eventList *v1.EventList) bool {
 }
 
 func toCPUMillicores(cpuPercentage uint8) resource.Quantity {
-	return *resource.NewScaledQuantity(int64(cpuPercentage)*10, resource.Milli) // nolint:gomnd
+	return *resource.NewScaledQuantity(int64(cpuPercentage)*10, resource.Milli) //nolint:gomnd
 }
 
 func toCPUPercentage(cpuMillicores int64) float64 {
-	return float64(cpuMillicores) / 10 // nolint:gomnd
+	return float64(cpuMillicores) / 10
 }
 
 func toSeconds(millis uint) int32 {
-	return int32(millis / 1000) // nolint:gomnd
+	return int32(millis / 1000) //nolint:gomnd
 }

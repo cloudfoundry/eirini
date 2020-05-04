@@ -23,7 +23,7 @@ func (i *LRPIdentifier) ProcessGUID() string {
 
 // An LRP, or long-running-process, is a stateless process
 // where the scheduler should attempt to keep N copies running,
-// killing and recreating as needed to maintain that guarantee
+// killing and recreating as needed to maintain that guarantee.
 type LRP struct {
 	LRPIdentifier
 	ProcessType            string
@@ -78,7 +78,7 @@ type Healtcheck struct {
 }
 
 // A Task is a one-off process that is run exactly once and returns a
-// result
+// result.
 type Task struct {
 	GUID      string
 	Name      string

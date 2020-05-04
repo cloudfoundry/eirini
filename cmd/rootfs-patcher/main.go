@@ -18,7 +18,7 @@ func main() {
 
 	if *rootfsVersion == "" || *namespace == "" {
 		flag.PrintDefaults()
-		os.Exit(1) // nolint:gomnd
+		os.Exit(1)
 	}
 
 	kubeClient := cmd.CreateKubeClient(*kubeConfigPath)

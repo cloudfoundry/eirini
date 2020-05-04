@@ -235,7 +235,7 @@ func (m *StatefulSetDesirer) update(lrp *opi.LRP) error {
 		return err
 	}
 
-	if lrp.TargetInstances <= 1 { //nolint:gomnd
+	if lrp.TargetInstances <= 1 {
 		err = m.PodDisruptionBudets.Delete(statefulSet.Name, &metav1.DeleteOptions{})
 		if err != nil && !k8serrors.IsNotFound(err) {
 			return err
@@ -268,7 +268,7 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 	switch len(statefulsets) {
 	case 0:
 		return nil, ErrNotFound
-	case 1: // nolint:gomnd
+	case 1:
 		return &statefulsets[0], nil
 	default:
 		panic(fmt.Sprintf("more than one was identified as %+v", identifier))
@@ -324,7 +324,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 }
 
 func (m *StatefulSetDesirer) createPodDisruptionBudget(lrp *opi.LRP) error {
-	if lrp.TargetInstances > 1 { //nolint:gomnd
+	if lrp.TargetInstances > 1 {
 		minAvailable := intstr.FromInt(PdbMinAvailableInstances)
 		_, err := m.PodDisruptionBudets.Create(&v1beta1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
