@@ -51,7 +51,7 @@ require (
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-test/deep v1.0.4 // indirect
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.4.0 // indirect
+	github.com/golang/protobuf v1.4.1 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.4.1 // indirect
 	github.com/gophercloud/gophercloud v0.10.0 // indirect
@@ -63,7 +63,6 @@ require (
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3
 	github.com/nats-io/nats-server/v2 v2.1.6
@@ -74,23 +73,26 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/poy/onpar v0.0.0-20190519213022-ee068f8ea4d1 // indirect
-	github.com/prometheus/client_golang v1.5.1 // indirect
-	github.com/prometheus/procfs v0.0.11 // indirect
-	github.com/sirupsen/logrus v1.5.0 // indirect
+	github.com/prometheus/client_golang v1.6.0 // indirect
+	github.com/sirupsen/logrus v1.6.0 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	go.uber.org/multierr v1.5.0
-	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904 // indirect
-	golang.org/x/sys v0.0.0-20200413165638-669c56c373c4 // indirect
-	google.golang.org/genproto v0.0.0-20200413115906-b5235f65be36 // indirect
-	google.golang.org/grpc v1.28.1
+	golang.org/x/crypto v0.0.0-20200429183012-4b2356b1ed79 // indirect
+	golang.org/x/net v0.0.0-20200505041828-1ed23360d12c // indirect
+	golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3 // indirect
+	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
+	golang.org/x/tools v0.0.0-20200505023115-26f46d2f7ef8 // indirect
+	google.golang.org/appengine v1.6.6 // indirect
+	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84 // indirect
+	google.golang.org/grpc v1.29.1
 	gopkg.in/yaml.v2 v2.2.8
-	k8s.io/api v0.18.1
-	k8s.io/apimachinery v0.18.1
+	k8s.io/api v0.18.2
+	k8s.io/apimachinery v0.18.2
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/klog v1.0.0
 	k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe // indirect
-	k8s.io/metrics v0.18.1
+	k8s.io/metrics v0.18.2
 	k8s.io/utils v0.0.0-20200414100711-2df71ebbae66 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )

@@ -109,7 +109,7 @@ github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 github.com/gogo/protobuf/sortkeys
 github.com/gogo/protobuf/types
-# github.com/golang/protobuf v1.4.0
+# github.com/golang/protobuf v1.4.1
 github.com/golang/protobuf/jsonpb
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
@@ -162,7 +162,7 @@ github.com/jessevdk/go-flags
 github.com/json-iterator/go
 # github.com/julienschmidt/httprouter v1.3.0
 github.com/julienschmidt/httprouter
-# github.com/konsorten/go-windows-terminal-sequences v1.0.2
+# github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
@@ -238,7 +238,7 @@ github.com/opencontainers/image-spec/specs-go/v1
 github.com/opencontainers/runc/libcontainer/user
 # github.com/pkg/errors v0.9.1
 github.com/pkg/errors
-# github.com/prometheus/client_golang v1.5.1
+# github.com/prometheus/client_golang v1.6.0
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promhttp
@@ -252,7 +252,7 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/sirupsen/logrus v1.5.0
+# github.com/sirupsen/logrus v1.6.0
 github.com/sirupsen/logrus
 # github.com/spf13/cobra v1.0.0
 github.com/spf13/cobra
@@ -264,7 +264,7 @@ github.com/square/certstrap/pkix
 go.uber.org/atomic
 # go.uber.org/multierr v1.5.0
 go.uber.org/multierr
-# golang.org/x/crypto v0.0.0-20200414173820-0848c9571904
+# golang.org/x/crypto v0.0.0-20200429183012-4b2356b1ed79
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/ed25519
@@ -273,7 +273,7 @@ golang.org/x/crypto/ssh/terminal
 # golang.org/x/mod v0.2.0
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+# golang.org/x/net v0.0.0-20200505041828-1ed23360d12c
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
@@ -293,7 +293,8 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20200413165638-669c56c373c4
+# golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3
+golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
@@ -321,9 +322,9 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/time v0.0.0-20191024005414-555d28b269f0
+# golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200331025713-a30bf2db82d4
+# golang.org/x/tools v0.0.0-20200505023115-26f46d2f7ef8
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/gcimporter
@@ -331,6 +332,10 @@ golang.org/x/tools/go/internal/packagesdriver
 golang.org/x/tools/go/packages
 golang.org/x/tools/go/types/typeutil
 golang.org/x/tools/imports
+golang.org/x/tools/internal/event
+golang.org/x/tools/internal/event/core
+golang.org/x/tools/internal/event/keys
+golang.org/x/tools/internal/event/label
 golang.org/x/tools/internal/fastwalk
 golang.org/x/tools/internal/gocommand
 golang.org/x/tools/internal/gopathwalk
@@ -339,7 +344,7 @@ golang.org/x/tools/internal/packagesinternal
 # golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
-# google.golang.org/appengine v1.6.5
+# google.golang.org/appengine v1.6.6
 google.golang.org/appengine
 google.golang.org/appengine/internal
 google.golang.org/appengine/internal/app_identity
@@ -350,9 +355,9 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20200413115906-b5235f65be36
+# google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.28.1
+# google.golang.org/grpc v1.29.1
 google.golang.org/grpc
 google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
@@ -380,6 +385,7 @@ google.golang.org/grpc/internal/grpcsync
 google.golang.org/grpc/internal/grpcutil
 google.golang.org/grpc/internal/resolver/dns
 google.golang.org/grpc/internal/resolver/passthrough
+google.golang.org/grpc/internal/status
 google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
 google.golang.org/grpc/keepalive
@@ -391,7 +397,7 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# google.golang.org/protobuf v1.21.0
+# google.golang.org/protobuf v1.22.0
 google.golang.org/protobuf/encoding/protojson
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
@@ -433,7 +439,7 @@ gopkg.in/inf.v0
 gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
-# k8s.io/api v0.18.1
+# k8s.io/api v0.18.2
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1
@@ -474,7 +480,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apimachinery v0.18.1 => k8s.io/apimachinery v0.17.4
+# k8s.io/apimachinery v0.18.2 => k8s.io/apimachinery v0.17.4
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
 k8s.io/apimachinery/pkg/api/resource
@@ -733,7 +739,7 @@ k8s.io/klog
 k8s.io/klog/v2
 # k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe
 k8s.io/kube-openapi/pkg/util/proto
-# k8s.io/metrics v0.18.1 => k8s.io/metrics v0.17.4
+# k8s.io/metrics v0.18.2 => k8s.io/metrics v0.17.4
 k8s.io/metrics/pkg/apis/metrics
 k8s.io/metrics/pkg/apis/metrics/v1alpha1
 k8s.io/metrics/pkg/apis/metrics/v1beta1
