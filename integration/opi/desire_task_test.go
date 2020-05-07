@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"strings"
 
+	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/models/cf"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -86,8 +88,8 @@ var _ = Describe("Desire Task", func() {
 				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
 				Lifecycle: cf.Lifecycle{
 					DockerLifecycle: &cf.DockerLifecycle{
-						Image:   "eirini/dorini",
-						Command: []string{"echo", "hello"},
+						Image:   "busybox",
+						Command: []string{"/bin/echo", "hello"},
 					},
 				},
 			}
@@ -105,19 +107,30 @@ var _ = Describe("Desire Task", func() {
 				Expect(jobs.Items[0].Name).To(HavePrefix("my-app-my-space-"))
 			})
 
-			By("should specify the right containers", func() {
+			By("specifying the right containers", func() {
 				jobContainers := jobs.Items[0].Spec.Template.Spec.Containers
 				Expect(jobContainers).To(HaveLen(1))
 				Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
-				Expect(jobContainers[0].Image).To(Equal("eirini/dorini"))
-				Expect(jobContainers[0].Command).To(ConsistOf("echo", "hello"))
+				Expect(jobContainers[0].Image).To(Equal("busybox"))
+				Expect(jobContainers[0].Command).To(ConsistOf("/bin/echo", "hello"))
+			})
+
+			By("completing the task", func() {
+				Eventually(func() []batchv1.JobCondition {
+					jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+					return jobs.Items[0].Status.Conditions
+				}, "5s").Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(batchv1.JobComplete),
+					"Status": Equal(corev1.ConditionTrue),
+				})))
 			})
 		})
 
 		When("the task uses a private Docker registry", func() {
 			BeforeEach(func() {
-				request.Lifecycle.DockerLifecycle.RegistryUsername = "username"
-				request.Lifecycle.DockerLifecycle.RegistryPassword = "password"
+				request.Lifecycle.DockerLifecycle.Image = "eiriniuser/notdora"
+				request.Lifecycle.DockerLifecycle.RegistryUsername = "eiriniuser"
+				request.Lifecycle.DockerLifecycle.RegistryPassword = util.GetEiriniDockerHubPassword()
 			})
 
 			It("creates a new secret and points the job to it", func() {
@@ -143,11 +156,22 @@ var _ = Describe("Desire Task", func() {
 					HaveKeyWithValue(
 						".dockerconfigjson",
 						[]byte(fmt.Sprintf(
-							`{"auths":{"index.docker.io/v1/":{"username":"username","password":"password","auth":"%s"}}}`,
-							base64.StdEncoding.EncodeToString([]byte("username:password")),
+							`{"auths":{"index.docker.io/v1/":{"username":"eiriniuser","password":"%s","auth":"%s"}}}`,
+							util.GetEiriniDockerHubPassword(),
+							base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("eiriniuser:%s", util.GetEiriniDockerHubPassword()))),
 						)),
 					),
 				)
+
+				By("completing the task", func() {
+					Eventually(func() []batchv1.JobCondition {
+						jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+						return jobs.Items[0].Status.Conditions
+					}, "5s").Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+						"Type":   Equal(batchv1.JobComplete),
+						"Status": Equal(corev1.ConditionTrue),
+					})))
+				})
 			})
 		})
 	})
