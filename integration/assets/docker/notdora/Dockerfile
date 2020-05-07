@@ -3,7 +3,7 @@ WORKDIR /eirini/
 COPY . .
 RUN  CGO_ENABLED=0 GOOS=linux go build -mod vendor -trimpath -a -installsuffix cgo -o notdora ./integration/assets/notdora
 
-FROM scratch
+FROM busybox
 COPY --from=builder /eirini/notdora /notdora
 USER 1001
 
