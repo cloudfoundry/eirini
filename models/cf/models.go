@@ -64,7 +64,7 @@ type DesiredLRPKey struct {
 }
 
 type DesiredLRPSchedulingInfosResponse struct {
-	DesiredLrpSchedulingInfos []DesiredLRPSchedulingInfo `json:"desired_lrp_scheduling_infos,omitempty"`
+	DesiredLrpSchedulingInfos []DesiredLRPSchedulingInfo `json:"desired_lrp_scheduling_infos"`
 }
 
 type DesiredLRPLifecycleResponse struct {
