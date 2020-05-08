@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/bifrost/bifrostfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -136,9 +135,9 @@ var _ = Describe("Bifrost LRP", func() {
 			It("should translate []LRPs to []DesiredLRPSchedulingInfo", func() {
 				desiredLRPSchedulingInfos, _ := lrpBifrost.List(context.Background())
 				Expect(desiredLRPSchedulingInfos).To(HaveLen(3))
-				Expect(desiredLRPSchedulingInfos[0].ProcessGuid).To(Equal("abcd-123"))
-				Expect(desiredLRPSchedulingInfos[1].ProcessGuid).To(Equal("efgh-234"))
-				Expect(desiredLRPSchedulingInfos[2].ProcessGuid).To(Equal("ijkl-123"))
+				Expect(desiredLRPSchedulingInfos[0].ProcessGUID).To(Equal("abcd-123"))
+				Expect(desiredLRPSchedulingInfos[1].ProcessGUID).To(Equal("efgh-234"))
+				Expect(desiredLRPSchedulingInfos[2].ProcessGUID).To(Equal("ijkl-123"))
 
 				Expect(desiredLRPSchedulingInfos[0].Annotation).To(Equal("3464634.2"))
 				Expect(desiredLRPSchedulingInfos[1].Annotation).To(Equal("235.26535"))
@@ -188,9 +187,8 @@ var _ = Describe("Bifrost LRP", func() {
 
 			Context("with instance count modified", func() {
 				BeforeEach(func() {
-					updateRequest.Update = &models.DesiredLRPUpdate{}
-					updateRequest.Update.SetInstances(int32(5))
-					updateRequest.Update.SetAnnotation("21421321.3")
+					updateRequest.Update.Instances = 5
+					updateRequest.Update.Annotation = "21421321.3"
 					lrpDesirer.UpdateReturns(nil)
 				})
 
@@ -241,15 +239,15 @@ var _ = Describe("Bifrost LRP", func() {
 
 					rawJSON := json.RawMessage(routesJSON)
 
-					updatedInstances := int32(5)
+					updatedInstances := 5
 					updatedTimestamp := "23456.7"
-					updateRequest.Update = &models.DesiredLRPUpdate{
-						Routes: &models.Routes{
-							"cf-router": &rawJSON,
+					updateRequest.Update = cf.DesiredLRPUpdate{
+						Routes: map[string]json.RawMessage{
+							"cf-router": rawJSON,
 						},
 					}
-					updateRequest.Update.SetInstances(updatedInstances)
-					updateRequest.Update.SetAnnotation(updatedTimestamp)
+					updateRequest.Update.Instances = updatedInstances
+					updateRequest.Update.Annotation = updatedTimestamp
 
 					lrpDesirer.UpdateReturns(nil)
 				})
@@ -275,8 +273,8 @@ var _ = Describe("Bifrost LRP", func() {
 						Expect(marshalErr).ToNot(HaveOccurred())
 
 						rawJSON := json.RawMessage(routesJSON)
-						updateRequest.Update.Routes = &models.Routes{
-							"cf-router": &rawJSON,
+						updateRequest.Update.Routes = map[string]json.RawMessage{
+							"cf-router": rawJSON,
 						}
 					})
 
@@ -346,7 +344,7 @@ var _ = Describe("Bifrost LRP", func() {
 			It("should return a DesiredLRP", func() {
 				desiredLRP, _ := lrpBifrost.GetApp(context.Background(), identifier)
 				Expect(desiredLRP).ToNot(BeNil())
-				Expect(desiredLRP.ProcessGuid).To(Equal("guid_1234-version_1234"))
+				Expect(desiredLRP.ProcessGUID).To(Equal("guid_1234-version_1234"))
 				Expect(desiredLRP.Instances).To(Equal(int32(5)))
 			})
 

@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"github.com/pkg/errors"
@@ -50,14 +50,14 @@ func (r FailedStagingReporter) Report(pod *v1.Pod) {
 	)
 	r.Logger.Error("staging pod failed", errors.New(reason))
 
-	response, err := r.createFailureResponse(reason, stagingGUID, completionCallback)
+	completionRequest, err := r.createFailureCompletionRequest(reason, stagingGUID, completionCallback)
 	if err != nil {
-		r.Logger.Error("cannot send failed staging response", err)
+		r.Logger.Error("cannot send failed staging completion request", err)
 		return
 	}
 
-	if err := r.sendResponse(eiriniAddr, response); err != nil {
-		r.Logger.Error("cannot send failed staging response", err)
+	if err := r.sendCompletionRequest(eiriniAddr, completionRequest); err != nil {
+		r.Logger.Error("cannot send failed staging completion request", err)
 	}
 }
 
@@ -80,33 +80,33 @@ func getFailedContainerStatusIfAny(statuses []v1.ContainerStatus) *v1.ContainerS
 	return nil
 }
 
-func (r FailedStagingReporter) createFailureResponse(failure string, stagingGUID, completionCallback string) (*models.TaskCallbackResponse, error) {
+func (r FailedStagingReporter) createFailureCompletionRequest(failure string, stagingGUID, completionCallback string) (cf.TaskCompletedRequest, error) {
 	annotation := cc_messages.StagingTaskAnnotation{
 		CompletionCallback: completionCallback,
 	}
 
 	annotationJSON, err := json.Marshal(annotation)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot create callback annotation")
+		return cf.TaskCompletedRequest{}, errors.Wrap(err, "cannot create callback annotation")
 	}
 
-	return &models.TaskCallbackResponse{
-		TaskGuid:      stagingGUID,
+	return cf.TaskCompletedRequest{
+		TaskGUID:      stagingGUID,
 		Failed:        true,
 		FailureReason: failure,
 		Annotation:    string(annotationJSON),
 	}, nil
 }
 
-func (r FailedStagingReporter) sendResponse(eiriniAddr string, response *models.TaskCallbackResponse) error {
-	responseJSON, err := json.Marshal(response)
+func (r FailedStagingReporter) sendCompletionRequest(eiriniAddr string, completionRequest cf.TaskCompletedRequest) error {
+	completionRequestJSON, err := json.Marshal(completionRequest)
 	if err != nil {
-		return errors.Wrap(err, "cannot marshal staging callback response")
+		return errors.Wrap(err, "cannot marshal staging callback request")
 	}
 
-	uri := fmt.Sprintf("%s/stage/%s/completed", eiriniAddr, response.TaskGuid)
+	uri := fmt.Sprintf("%s/stage/%s/completed", eiriniAddr, completionRequest.TaskGUID)
 
-	req, err := http.NewRequest("PUT", uri, bytes.NewBuffer(responseJSON))
+	req, err := http.NewRequest("PUT", uri, bytes.NewBuffer(completionRequestJSON))
 	if err != nil {
 		return errors.Wrap(err, "failed to create request")
 	}
@@ -124,7 +124,7 @@ func (r FailedStagingReporter) sendResponse(eiriniAddr string, response *models.
 		if err == nil {
 			message = string(body)
 		}
-		return fmt.Errorf("request not successful: status=%d taskGuid=%s %s", resp.StatusCode, response.TaskGuid, message)
+		return fmt.Errorf("request not successful: status=%d taskGuid=%s %s", resp.StatusCode, completionRequest.TaskGUID, message)
 	}
 
 	return nil

@@ -31,7 +31,6 @@ const (
 
 	AnnotationAppName          = "cloudfoundry.org/application_name"
 	AnnotationVersion          = "cloudfoundry.org/version"
-	AnnotationAppUris          = "cloudfoundry.org/application_uris"
 	AnnotationAppID            = "cloudfoundry.org/application_id"
 	AnnotationSpaceName        = "cloudfoundry.org/space_name"
 	AnnotationOrgName          = "cloudfoundry.org/org_name"
@@ -103,8 +102,6 @@ type StatefulSetDesirer struct {
 	ApplicationServiceAccount string
 }
 
-var ErrNotFound = errors.New("statefulset not found")
-
 //counterfeiter:generate . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
@@ -163,11 +160,8 @@ func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
 func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 	statefulSet, err := m.getStatefulSet(identifier)
 	if err != nil {
-		if err != ErrNotFound {
-			return err
-		}
-		m.Logger.Info("stateful set not found", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
-		return nil
+		m.Logger.Debug("failed to get statefulset", lager.Data{"guid": identifier.GUID, "version": identifier.Version, "error": err.Error()})
+		return err
 	}
 
 	err = m.PodDisruptionBudets.Delete(statefulSet.Name, &metav1.DeleteOptions{})
@@ -204,7 +198,11 @@ func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index ui
 		return errors.Wrap(err, "failed to get statefulset")
 	}
 	if len(statefulsets.Items) == 0 {
-		return errors.New("app does not exist")
+		return eirini.ErrNotFound
+	}
+
+	if int32(index) >= *statefulsets.Items[0].Spec.Replicas {
+		return eirini.ErrInvalidInstanceIndex
 	}
 
 	name := statefulsets.Items[0].Name
@@ -267,7 +265,7 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 	statefulsets := statefulSet.Items
 	switch len(statefulsets) {
 	case 0:
-		return nil, ErrNotFound
+		return nil, eirini.ErrNotFound
 	case 1:
 		return &statefulsets[0], nil
 	default:
@@ -276,6 +274,10 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 }
 
 func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
+	if _, err := m.Get(identifier); err == eirini.ErrNotFound {
+		return []*opi.Instance{}, err
+	}
+
 	pods, err := m.Pods.List(metav1.ListOptions{
 		LabelSelector: labelSelectorString(identifier),
 	})
@@ -543,7 +545,6 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 		AnnotationVersion:          lrp.Version,
 		AnnotationLastUpdated:      lrp.LastUpdated,
 		AnnotationProcessGUID:      lrp.ProcessGUID(),
-		AnnotationAppUris:          lrp.AppURIs,
 		AnnotationAppName:          lrp.AppName,
 		AnnotationOrgName:          lrp.OrgName,
 		AnnotationOrgGUID:          lrp.OrgGUID,

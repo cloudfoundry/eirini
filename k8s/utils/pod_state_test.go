@@ -51,6 +51,24 @@ var _ = Describe("PodState", func() {
 			Expect(GetPodState(pod)).To(Equal(opi.PendingState))
 		})
 
+		When("the container state is not waiting", func() {
+			It("should return 'PENDING' state", func() {
+				pod := corev1.Pod{
+					Status: corev1.PodStatus{
+						ContainerStatuses: []corev1.ContainerStatus{
+							{
+								State: corev1.ContainerState{
+									Terminated: &corev1.ContainerStateTerminated{},
+								},
+							},
+						},
+						Phase: corev1.PodPending,
+					},
+				}
+				Expect(GetPodState(pod)).To(Equal(opi.PendingState))
+			})
+		})
+
 		Context("and the image for one of the containers cannot be pulled", func() {
 			Context("when there is one container in the pod", func() {
 				It("should return 'CRASHED' state", func() {

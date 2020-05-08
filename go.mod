@@ -11,7 +11,7 @@ replace (
 
 require (
 	cloud.google.com/go v0.56.0 // indirect
-	code.cloudfoundry.org/bbs v0.0.0-20200409175931-d92132c08218
+	code.cloudfoundry.org/bbs v0.0.0-20200409175931-d92132c08218 // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	code.cloudfoundry.org/consuladapter v0.0.0-20190222031846-a0ec466a22b6 // indirect
@@ -50,8 +50,6 @@ require (
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-test/deep v1.0.4 // indirect
-	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.4.1 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.4.1 // indirect
 	github.com/gophercloud/gophercloud v0.10.0 // indirect

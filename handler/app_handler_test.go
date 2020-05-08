@@ -3,19 +3,19 @@ package handler_test
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 
-	"code.cloudfoundry.org/bbs/models"
+	"github.com/pkg/errors"
+
+	"code.cloudfoundry.org/eirini"
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/handler/handlerfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/julienschmidt/httprouter"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -197,7 +197,7 @@ var _ = Describe("AppHandler", func() {
 			appHandler           *App
 			responseRecorder     *httptest.ResponseRecorder
 			expectedJSONResponse string
-			schedInfos           []*models.DesiredLRPSchedulingInfo
+			schedInfos           []cf.DesiredLRPSchedulingInfo
 		)
 
 		BeforeEach(func() {
@@ -211,11 +211,12 @@ var _ = Describe("AppHandler", func() {
 			responseRecorder = httptest.NewRecorder()
 			appHandler = NewAppHandler(lrpBifrost, lager)
 			appHandler.List(responseRecorder, req, httprouter.Params{})
-			expectedResponse := models.DesiredLRPSchedulingInfosResponse{
+			expectedResponse := cf.DesiredLRPSchedulingInfosResponse{
 				DesiredLrpSchedulingInfos: schedInfos,
 			}
-			expectedJSONResponse, err = (&jsonpb.Marshaler{Indent: "", OrigName: true}).MarshalToString(&expectedResponse)
+			expectedJSONResponseBytes, err := json.Marshal(expectedResponse)
 			Expect(err).ToNot(HaveOccurred())
+			expectedJSONResponse = string(expectedJSONResponseBytes)
 		})
 
 		Context("When there are existing apps", func() {
@@ -232,7 +233,7 @@ var _ = Describe("AppHandler", func() {
 
 		Context("When there are no existing apps", func() {
 			BeforeEach(func() {
-				schedInfos = []*models.DesiredLRPSchedulingInfo{}
+				schedInfos = []cf.DesiredLRPSchedulingInfo{}
 				lrpBifrost.ListReturns(schedInfos, nil)
 			})
 
@@ -274,7 +275,7 @@ var _ = Describe("AppHandler", func() {
 		var (
 			path       string
 			response   *http.Response
-			desiredLRP *models.DesiredLRP
+			desiredLRP cf.DesiredLRP
 		)
 
 		BeforeEach(func() {
@@ -300,8 +301,8 @@ var _ = Describe("AppHandler", func() {
 
 		Context("when the app exists", func() {
 			BeforeEach(func() {
-				desiredLRP = &models.DesiredLRP{
-					ProcessGuid: "guid_1234-version_1234",
+				desiredLRP = cf.DesiredLRP{
+					ProcessGUID: "guid_1234-version_1234",
 					Instances:   5,
 				}
 				lrpBifrost.GetAppReturns(desiredLRP, nil)
@@ -312,12 +313,12 @@ var _ = Describe("AppHandler", func() {
 			})
 
 			It("should return the DesiredLRP in the response body", func() {
-				var getLRPResponse models.DesiredLRPResponse
+				var getLRPResponse cf.DesiredLRPResponse
 				err := json.NewDecoder(response.Body).Decode(&getLRPResponse)
 				Expect(err).ToNot(HaveOccurred())
 
-				actualLRP := getLRPResponse.DesiredLrp
-				Expect(actualLRP.ProcessGuid).To(Equal("guid_1234-version_1234"))
+				actualLRP := getLRPResponse.DesiredLRP
+				Expect(actualLRP.ProcessGUID).To(Equal("guid_1234-version_1234"))
 				Expect(actualLRP.Instances).To(Equal(int32(5)))
 			})
 
@@ -325,7 +326,7 @@ var _ = Describe("AppHandler", func() {
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				lrpBifrost.GetAppReturns(nil, errors.New("boom"))
+				lrpBifrost.GetAppReturns(cf.DesiredLRP{}, errors.New("boom"))
 			})
 
 			It("should return a 404 HTTP status code", func() {
@@ -397,13 +398,13 @@ var _ = Describe("AppHandler", func() {
 
 		Context("when Bifrost returns an error", func() {
 			BeforeEach(func() {
-				lrpBifrost.GetInstancesReturns([]*cf.Instance{}, errors.New("not found"))
+				lrpBifrost.GetInstancesReturns([]*cf.Instance{}, errors.New("failed to get instances"))
 			})
 
 			It("returns the error in the response", func() {
 				expectedResponse := `
 					{
-						"error": "not found",
+						"error": "failed to get instances",
 						"process_guid": "guid_1234-version_1234",
 						"instances": []
 					}`
@@ -415,6 +416,24 @@ var _ = Describe("AppHandler", func() {
 			It("should provide a helpful log message", findLog("app-handler-test.get-app-instances.bifrost-failed", "guid_1234"))
 		})
 
+		Context("when the app is not found", func() {
+			BeforeEach(func() {
+				lrpBifrost.GetInstancesReturns([]*cf.Instance{}, errors.Wrap(eirini.ErrNotFound, "failed to get instances"))
+			})
+
+			It("returns the error in the response", func() {
+				expectedResponse := `
+					{
+						"error": "failed to get instances: not found",
+						"process_guid": "guid_1234-version_1234",
+						"instances": []
+					}`
+				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
+				body, err := ioutil.ReadAll(response.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(body)).To(MatchJSON(expectedResponse))
+			})
+		})
 	})
 
 	Context("Update an app", func() {
@@ -425,7 +444,7 @@ var _ = Describe("AppHandler", func() {
 		)
 
 		verifyResponseObject := func() {
-			var responseObj models.DesiredLRPLifecycleResponse
+			var responseObj cf.DesiredLRPLifecycleResponse
 			err := json.NewDecoder(response.Body).Decode(&responseObj)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -460,7 +479,7 @@ var _ = Describe("AppHandler", func() {
 				_, request := lrpBifrost.UpdateArgsForCall(0)
 				Expect(request.GUID).To(Equal("app-id"))
 				Expect(request.Version).To(Equal("version-id"))
-				Expect(request.Update.GetInstances()).To(Equal(int32(5)))
+				Expect(request.Update.Instances).To(Equal(5))
 			})
 		})
 
@@ -534,6 +553,18 @@ var _ = Describe("AppHandler", func() {
 			Expect(identifier.Version).To(Equal("version_1234"))
 		})
 
+		Context("when app is not found", func() {
+			BeforeEach(func() {
+				lrpBifrost.StopReturns(errors.Wrap(eirini.ErrNotFound, "failed-to-stop"))
+			})
+
+			It("should return a 404 HTTP status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
+			})
+
+			It("should provide a helpful log message", findLog("app-handler-test.stop-app.bifrost-failed", "app_1234"))
+		})
+
 		Context("when app stop is not successful", func() {
 			BeforeEach(func() {
 				lrpBifrost.StopReturns(errors.New("someting-bad-happened"))
@@ -544,7 +575,6 @@ var _ = Describe("AppHandler", func() {
 			})
 
 			It("should provide a helpful log message", findLog("app-handler-test.stop-app.bifrost-failed", "app_1234"))
-
 		})
 	})
 
@@ -583,6 +613,30 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		Context("when app stop is not successful", func() {
+			Context("because the app does not exist", func() {
+				BeforeEach(func() {
+					lrpBifrost.StopInstanceReturns(errors.Wrap(eirini.ErrNotFound, "something-bad-happened"))
+				})
+
+				It("should return a 404 HTTP status code", func() {
+					Expect(response.StatusCode).To(Equal(http.StatusNotFound))
+				})
+
+				It("should provide a helpful log message", findLog("app-handler-test.stop-app-instance.bifrost-failed", "app_1234"))
+			})
+
+			Context("because the app index does not exist", func() {
+				BeforeEach(func() {
+					lrpBifrost.StopInstanceReturns(errors.Wrap(eirini.ErrInvalidInstanceIndex, "something-bad-happened"))
+				})
+
+				It("should return a 404 HTTP status code", func() {
+					Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+				})
+
+				It("should provide a helpful log message", findLog("app-handler-test.stop-app-instance.bifrost-failed", "app_1234"))
+			})
+
 			Context("because of some internal error", func() {
 				BeforeEach(func() {
 					lrpBifrost.StopInstanceReturns(errors.New("something-bad-happened"))
@@ -622,14 +676,14 @@ var _ = Describe("AppHandler", func() {
 	})
 })
 
-func createSchedulingInfos() []*models.DesiredLRPSchedulingInfo {
-	schedInfo1 := &models.DesiredLRPSchedulingInfo{}
-	schedInfo1.ProcessGuid = "1234"
+func createSchedulingInfos() []cf.DesiredLRPSchedulingInfo {
+	schedInfo1 := cf.DesiredLRPSchedulingInfo{}
+	schedInfo1.ProcessGUID = "1234"
 
-	schedInfo2 := &models.DesiredLRPSchedulingInfo{}
-	schedInfo2.ProcessGuid = "5678"
+	schedInfo2 := cf.DesiredLRPSchedulingInfo{}
+	schedInfo2.ProcessGUID = "5678"
 
-	return []*models.DesiredLRPSchedulingInfo{
+	return []cf.DesiredLRPSchedulingInfo{
 		schedInfo1,
 		schedInfo2,
 	}

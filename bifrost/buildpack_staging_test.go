@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/bifrost/bifrostfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -102,24 +101,23 @@ var _ = Describe("Staging", func() {
 	Describe("Complete Staging", func() {
 
 		var (
-			task *models.TaskCallbackResponse
+			taskCompletedRequest cf.TaskCompletedRequest
 		)
 
 		BeforeEach(func() {
 			annotation := `{"completion_callback": "some-cc-endpoint.io/call/me/maybe"}`
 
-			task = &models.TaskCallbackResponse{
-				TaskGuid:      "our-task-guid",
+			taskCompletedRequest = cf.TaskCompletedRequest{
+				TaskGUID:      "our-task-guid",
 				Failed:        false,
 				FailureReason: "",
 				Result:        `{"very": "good"}`,
 				Annotation:    annotation,
-				CreatedAt:     123456123,
 			}
 		})
 
 		JustBeforeEach(func() {
-			err = buildpackStagingBifrost.CompleteStaging(task)
+			err = buildpackStagingBifrost.CompleteStaging(taskCompletedRequest)
 		})
 
 		It("should not return an error", func() {
@@ -128,14 +126,14 @@ var _ = Describe("Staging", func() {
 
 		It("should complete staging", func() {
 			Expect(stagingCompleter.CompleteStagingCallCount()).To(Equal(1))
-			Expect(stagingCompleter.CompleteStagingArgsForCall(0)).To(Equal(task))
+			Expect(stagingCompleter.CompleteStagingArgsForCall(0)).To(Equal(taskCompletedRequest))
 		})
 
 		It("should delete the task", func() {
 			Expect(stagingDesirer.DeleteCallCount()).To(Equal(1))
 
 			taskName := stagingDesirer.DeleteArgsForCall(0)
-			Expect(taskName).To(Equal(task.TaskGuid))
+			Expect(taskName).To(Equal(taskCompletedRequest.TaskGUID))
 		})
 
 		Context("and the staging completer fails", func() {
@@ -151,7 +149,7 @@ var _ = Describe("Staging", func() {
 				Expect(stagingDesirer.DeleteCallCount()).To(Equal(1))
 
 				taskName := stagingDesirer.DeleteArgsForCall(0)
-				Expect(taskName).To(Equal(task.TaskGuid))
+				Expect(taskName).To(Equal(taskCompletedRequest.TaskGUID))
 			})
 		})
 

@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"time"
 
-	"code.cloudfoundry.org/bbs/models"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
@@ -34,15 +34,15 @@ func NewCallbackStagingCompleter(logger lager.Logger, httpClient *http.Client) *
 	}
 }
 
-func (s *CallbackStagingCompleter) CompleteStaging(task *models.TaskCallbackResponse) error {
-	l := s.Logger.Session("complete-staging", lager.Data{"task-guid": task.TaskGuid})
-	callbackBody, err := s.constructStagingResponse(task)
+func (s *CallbackStagingCompleter) CompleteStaging(taskCompletedRequest cf.TaskCompletedRequest) error {
+	l := s.Logger.Session("complete-staging", lager.Data{"task-guid": taskCompletedRequest.TaskGUID})
+	callbackBody, err := s.constructStagingResponse(taskCompletedRequest)
 	if err != nil {
 		l.Error("failed-to-construct-staging-response", err)
 		return err
 	}
 
-	callbackURI, err := s.getCallbackURI(task)
+	callbackURI, err := s.getCallbackURI(taskCompletedRequest)
 	if err != nil {
 		l.Error("failed-to-parse-callback-uri", err)
 		return err
@@ -104,16 +104,16 @@ func (s *CallbackStagingCompleter) executeRequest(request *http.Request) error {
 	return nil
 }
 
-func (s *CallbackStagingCompleter) constructStagingResponse(task *models.TaskCallbackResponse) ([]byte, error) {
+func (s *CallbackStagingCompleter) constructStagingResponse(taskCompletedRequest cf.TaskCompletedRequest) ([]byte, error) {
 	var response cc_messages.StagingResponseForCC
 
-	if task.Failed {
+	if taskCompletedRequest.Failed {
 		response.Error = &cc_messages.StagingError{
 			Id:      cc_messages.STAGING_ERROR,
-			Message: task.FailureReason,
+			Message: taskCompletedRequest.FailureReason,
 		}
 	} else {
-		result := json.RawMessage([]byte(task.Result))
+		result := json.RawMessage([]byte(taskCompletedRequest.Result))
 		response.Result = &result
 	}
 
@@ -125,9 +125,9 @@ func (s *CallbackStagingCompleter) constructStagingResponse(task *models.TaskCal
 	return responseJSON, nil
 }
 
-func (s *CallbackStagingCompleter) getCallbackURI(task *models.TaskCallbackResponse) (string, error) {
+func (s *CallbackStagingCompleter) getCallbackURI(taskCompletedRequest cf.TaskCompletedRequest) (string, error) {
 	var annotation cc_messages.StagingTaskAnnotation
-	if err := json.Unmarshal([]byte(task.Annotation), &annotation); err != nil {
+	if err := json.Unmarshal([]byte(taskCompletedRequest.Annotation), &annotation); err != nil {
 		s.Logger.Error("failed-to-parse-annotation", err)
 		return "", err
 	}

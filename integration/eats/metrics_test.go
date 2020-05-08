@@ -85,9 +85,7 @@ var _ = Describe("Metrics", func() {
 		})
 
 		JustBeforeEach(func() {
-			resp, err := desireLRP(lrp)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
 		})
 
 		It("reports its metrics", func() {

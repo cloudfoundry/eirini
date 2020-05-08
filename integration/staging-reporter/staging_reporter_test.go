@@ -7,10 +7,10 @@ import (
 	"os"
 	"os/exec"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
@@ -106,12 +106,12 @@ var _ = Describe("StagingReporter", func() {
 					bytes, err := ioutil.ReadAll(req.Body)
 					Expect(err).NotTo(HaveOccurred())
 
-					var callbackResponse models.TaskCallbackResponse
-					Expect(json.Unmarshal(bytes, &callbackResponse)).To(Succeed())
+					var taskCompletedRequest cf.TaskCompletedRequest
+					Expect(json.Unmarshal(bytes, &taskCompletedRequest)).To(Succeed())
 
-					Expect(callbackResponse.TaskGuid).To(Equal("the-staging-guid"))
-					Expect(callbackResponse.Failed).To(BeTrue())
-					Expect(callbackResponse.Annotation).To(ContainSubstring(`"completion_callback":"the-cloud-controller-address/staging/complete"`))
+					Expect(taskCompletedRequest.TaskGUID).To(Equal("the-staging-guid"))
+					Expect(taskCompletedRequest.Failed).To(BeTrue())
+					Expect(taskCompletedRequest.Annotation).To(ContainSubstring(`"completion_callback":"the-cloud-controller-address/staging/complete"`))
 				},
 			)
 

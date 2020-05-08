@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -40,6 +41,11 @@ type BinPaths struct {
 	RouteStatefulsetInformer string `json:"route_stateful_set_informer"`
 	RoutePodInformer         string `json:"route_pod_informer"`
 	EventsReporter           string `json:"events_reporter"`
+}
+
+type routeInfo struct {
+	Hostname string `json:"hostname"`
+	Port     int    `json:"port"`
 }
 
 var (
@@ -203,16 +209,86 @@ func waitOpiReady(httpClient rest.HTTPClient, opiURL string) {
 	}).Should(Succeed())
 }
 
-func desireLRP(lrpRequest cf.DesireLRPRequest) (*http.Response, error) {
+func getLRP(processGUID, versionGUID string) (cf.DesiredLRP, error) {
+	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps/%s/%s", opiURL, processGUID, versionGUID), nil)
+	if err != nil {
+		return cf.DesiredLRP{}, err
+	}
+
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return cf.DesiredLRP{}, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode >= 400 {
+		return cf.DesiredLRP{}, errors.New(response.Status)
+	}
+
+	var desiredLRPResponse cf.DesiredLRPResponse
+	if err := json.NewDecoder(response.Body).Decode(&desiredLRPResponse); err != nil {
+		return cf.DesiredLRP{}, err
+	}
+
+	return desiredLRPResponse.DesiredLRP, nil
+}
+
+func getLRPs() ([]cf.DesiredLRPSchedulingInfo, error) {
+	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps", opiURL), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode >= 400 {
+		return nil, errors.New(response.Status)
+	}
+
+	var desiredLRPSchedulingInfoResponse cf.DesiredLRPSchedulingInfosResponse
+	decoder := json.NewDecoder(response.Body)
+	err = decoder.Decode(&desiredLRPSchedulingInfoResponse)
+	Expect(err).ToNot(HaveOccurred())
+	return desiredLRPSchedulingInfoResponse.DesiredLrpSchedulingInfos, nil
+}
+
+func getInstances(processGUID, versionGUID string) (*cf.GetInstancesResponse, error) {
+	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps/%s/%s/instances", opiURL, processGUID, versionGUID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	var instancesResponse *cf.GetInstancesResponse
+	err = json.NewDecoder(response.Body).Decode(&instancesResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode >= 400 {
+		return instancesResponse, errors.New(response.Status)
+	}
+
+	return instancesResponse, nil
+}
+
+func desireLRP(lrpRequest cf.DesireLRPRequest) *http.Response {
 	body, err := json.Marshal(lrpRequest)
-	if err != nil {
-		return nil, err
-	}
+	Expect(err).NotTo(HaveOccurred())
 	desireLrpReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s", opiURL, lrpRequest.GUID), bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	return httpClient.Do(desireLrpReq)
+	Expect(err).NotTo(HaveOccurred())
+	response, err := httpClient.Do(desireLrpReq)
+	Expect(err).NotTo(HaveOccurred())
+	return response
 }
 
 func stopLRP(processGUID, versionGUID string) (*http.Response, error) {

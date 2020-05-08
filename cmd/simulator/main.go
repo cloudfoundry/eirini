@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -96,7 +95,7 @@ func (s *StagerSimulator) TransferStaging(ctx context.Context, stagingGUID strin
 	return nil
 }
 
-func (s *StagerSimulator) CompleteStaging(*models.TaskCallbackResponse) error {
+func (s *StagerSimulator) CompleteStaging(cf.TaskCompletedRequest) error {
 	return nil
 }
 

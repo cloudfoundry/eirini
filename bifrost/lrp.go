@@ -2,10 +2,10 @@ package bifrost
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/pkg/errors"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 )
@@ -39,7 +39,7 @@ func (l *LRP) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
 	return errors.Wrap(l.Desirer.Desire(&desiredLRP), "failed to desire")
 }
 
-func (l *LRP) List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error) {
+func (l *LRP) List(ctx context.Context) ([]cf.DesiredLRPSchedulingInfo, error) {
 	lrps, err := l.Desirer.List()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list desired LRPs")
@@ -48,21 +48,21 @@ func (l *LRP) List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, err
 	return toDesiredLRPSchedulingInfo(lrps), nil
 }
 
-func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []*models.DesiredLRPSchedulingInfo {
-	infos := []*models.DesiredLRPSchedulingInfo{}
+func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []cf.DesiredLRPSchedulingInfo {
+	infos := []cf.DesiredLRPSchedulingInfo{}
 	for _, l := range lrps {
-		info := &models.DesiredLRPSchedulingInfo{}
-		info.DesiredLRPKey.ProcessGuid = l.LRPIdentifier.ProcessGUID()
+		info := cf.DesiredLRPSchedulingInfo{}
+		info.DesiredLRPKey.ProcessGUID = l.LRPIdentifier.ProcessGUID()
 		info.Annotation = l.LastUpdated
 		infos = append(infos, info)
 	}
 	return infos
 }
 
-func (l *LRP) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error {
+func (l *LRP) Update(ctx context.Context, request cf.UpdateDesiredLRPRequest) error {
 	identifier := opi.LRPIdentifier{
-		GUID:    update.GUID,
-		Version: update.Version,
+		GUID:    request.GUID,
+		Version: request.Version,
 	}
 
 	lrp, err := l.Desirer.Get(identifier)
@@ -70,24 +70,32 @@ func (l *LRP) Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) err
 		return errors.Wrap(err, "failed to get app")
 	}
 
-	u := update.GetUpdate()
+	lrp.TargetInstances = request.Update.Instances
+	lrp.LastUpdated = request.Update.Annotation
 
-	lrp.TargetInstances = int(u.GetInstances())
-	lrp.LastUpdated = u.GetAnnotation()
-
-	lrp.AppURIs = getURIs(update)
+	lrp.AppURIs = getURIs(request.Update)
 	return errors.Wrap(l.Desirer.Update(lrp), "failed to update")
 }
 
-func (l *LRP) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (*models.DesiredLRP, error) {
+func (l *LRP) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (cf.DesiredLRP, error) {
 	lrp, err := l.Desirer.Get(identifier)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get app")
+		return cf.DesiredLRP{}, errors.Wrap(err, "failed to get app")
 	}
 
-	desiredLRP := &models.DesiredLRP{
-		ProcessGuid: identifier.ProcessGUID(),
+	desiredLRP := cf.DesiredLRP{
+		ProcessGUID: identifier.ProcessGUID(),
 		Instances:   int32(lrp.TargetInstances),
+		Annotation:  lrp.LastUpdated,
+	}
+
+	if lrp.AppURIs != "" {
+		routes := json.RawMessage{}
+		if err := routes.UnmarshalJSON([]byte(lrp.AppURIs)); err != nil {
+			return cf.DesiredLRP{}, errors.Wrap(err, "failed to unmarshal routes")
+		}
+		lrpRoutes := map[string]json.RawMessage{"cf-router": routes}
+		desiredLRP.Routes = lrpRoutes
 	}
 
 	return desiredLRP, nil
@@ -123,28 +131,16 @@ func (l *LRP) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([
 	return cfInstances, nil
 }
 
-func getURIs(update cf.UpdateDesiredLRPRequest) string {
-	if !routesAvailable(update.Update.Routes) {
+func getURIs(update cf.DesiredLRPUpdate) string {
+	cfRouterRoutes, hasRoutes := update.Routes["cf-router"]
+	if !hasRoutes {
 		return ""
 	}
 
-	cfRouterRoutes := (*update.Update.Routes)["cf-router"]
 	data, err := cfRouterRoutes.MarshalJSON()
 	if err != nil {
 		panic("This should never happen")
 	}
 
 	return string(data)
-}
-
-func routesAvailable(routes *models.Routes) bool {
-	if routes == nil {
-		return false
-	}
-
-	if _, ok := (*routes)["cf-router"]; !ok {
-		return false
-	}
-
-	return true
 }

@@ -5,16 +5,15 @@ import (
 	"context"
 	"sync"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/models/cf"
 )
 
 type FakeStagingBifrost struct {
-	CompleteStagingStub        func(*models.TaskCallbackResponse) error
+	CompleteStagingStub        func(cf.TaskCompletedRequest) error
 	completeStagingMutex       sync.RWMutex
 	completeStagingArgsForCall []struct {
-		arg1 *models.TaskCallbackResponse
+		arg1 cf.TaskCompletedRequest
 	}
 	completeStagingReturns struct {
 		result1 error
@@ -39,11 +38,11 @@ type FakeStagingBifrost struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStagingBifrost) CompleteStaging(arg1 *models.TaskCallbackResponse) error {
+func (fake *FakeStagingBifrost) CompleteStaging(arg1 cf.TaskCompletedRequest) error {
 	fake.completeStagingMutex.Lock()
 	ret, specificReturn := fake.completeStagingReturnsOnCall[len(fake.completeStagingArgsForCall)]
 	fake.completeStagingArgsForCall = append(fake.completeStagingArgsForCall, struct {
-		arg1 *models.TaskCallbackResponse
+		arg1 cf.TaskCompletedRequest
 	}{arg1})
 	fake.recordInvocation("CompleteStaging", []interface{}{arg1})
 	fake.completeStagingMutex.Unlock()
@@ -63,13 +62,13 @@ func (fake *FakeStagingBifrost) CompleteStagingCallCount() int {
 	return len(fake.completeStagingArgsForCall)
 }
 
-func (fake *FakeStagingBifrost) CompleteStagingCalls(stub func(*models.TaskCallbackResponse) error) {
+func (fake *FakeStagingBifrost) CompleteStagingCalls(stub func(cf.TaskCompletedRequest) error) {
 	fake.completeStagingMutex.Lock()
 	defer fake.completeStagingMutex.Unlock()
 	fake.CompleteStagingStub = stub
 }
 
-func (fake *FakeStagingBifrost) CompleteStagingArgsForCall(i int) *models.TaskCallbackResponse {
+func (fake *FakeStagingBifrost) CompleteStagingArgsForCall(i int) cf.TaskCompletedRequest {
 	fake.completeStagingMutex.RLock()
 	defer fake.completeStagingMutex.RUnlock()
 	argsForCall := fake.completeStagingArgsForCall[i]

@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
@@ -14,11 +13,11 @@ import (
 //counterfeiter:generate . LRPBifrost
 type LRPBifrost interface {
 	Transfer(ctx context.Context, request cf.DesireLRPRequest) error
-	List(ctx context.Context) ([]*models.DesiredLRPSchedulingInfo, error)
+	List(ctx context.Context) ([]cf.DesiredLRPSchedulingInfo, error)
 	Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error
 	Stop(ctx context.Context, identifier opi.LRPIdentifier) error
 	StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error
-	GetApp(ctx context.Context, identifier opi.LRPIdentifier) (*models.DesiredLRP, error)
+	GetApp(ctx context.Context, identifier opi.LRPIdentifier) (cf.DesiredLRP, error)
 	GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error)
 }
 
@@ -30,7 +29,7 @@ type TaskBifrost interface {
 //counterfeiter:generate . StagingBifrost
 type StagingBifrost interface {
 	TransferStaging(ctx context.Context, stagingGUID string, request cf.StagingRequest) error
-	CompleteStaging(*models.TaskCallbackResponse) error
+	CompleteStaging(cf.TaskCompletedRequest) error
 }
 
 func New(lrpBifrost LRPBifrost,

@@ -1,5 +1,7 @@
 package eirini
 
+import "errors"
+
 const (
 	//Environment Variable Names
 	EnvDownloadURL                     = "DOWNLOAD_URL"
@@ -44,6 +46,10 @@ const (
 	EiriniClientCert = "eirini-client-crt"
 	EiriniClientKey  = "eirini-client-crt-key"
 )
+
+var ErrNotFound = errors.New("not found")
+
+var ErrInvalidInstanceIndex = errors.New("invalid instance index")
 
 type Config struct {
 	Properties Properties `yaml:"opi"`

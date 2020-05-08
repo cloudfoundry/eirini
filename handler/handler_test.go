@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"code.cloudfoundry.org/bbs/models"
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/handler/handlerfakes"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager/lagertest"
 )
 
@@ -108,7 +108,7 @@ var _ = Describe("Handler", func() {
 				path = "/apps/myguid/myversion"
 				expectedStatus = http.StatusOK
 
-				lrpBifrost.GetAppReturns(&models.DesiredLRP{}, nil)
+				lrpBifrost.GetAppReturns(cf.DesiredLRP{}, nil)
 			})
 
 			It("serves the endpoint", func() {

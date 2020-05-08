@@ -52,6 +52,9 @@ func podRunning(pod *corev1.Pod) bool {
 
 func containersHaveBrokenImage(statuses []corev1.ContainerStatus) bool {
 	for _, status := range statuses {
+		if status.State.Waiting == nil {
+			continue
+		}
 		if status.State.Waiting.Reason == "ErrImagePull" || status.State.Waiting.Reason == "ImagePullBackOff" {
 			return true
 		}
