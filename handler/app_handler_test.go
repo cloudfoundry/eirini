@@ -269,6 +269,19 @@ var _ = Describe("AppHandler", func() {
 				Expect(found).To(BeTrue(), "haven't received app-handler-test.list-apps.bifrost-failed message")
 			})
 		})
+
+		Context("When there are no apps", func() {
+			BeforeEach(func() {
+				lrpBifrost.ListReturns([]cf.DesiredLRPSchedulingInfo{}, nil)
+			})
+
+			It("returns an empty non-nil desired_lrp_scheduling_infos array", func() {
+				body, err := readBody(responseRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(strings.Trim(string(body), "\n")).To(Equal(`{"desired_lrp_scheduling_infos":[]}`))
+			})
+		})
 	})
 
 	Context("Get an app", func() {
