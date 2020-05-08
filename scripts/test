@@ -5,4 +5,4 @@ set -eu
 export INTEGRATION_KUBECONFIG=${INTEGRATION_KUBECONFIG:-"$HOME/.kube/config"}
 export GO111MODULE=on
 
-ginkgo -mod=vendor -race -p -keepGoing -randomizeAllSpecs -randomizeSuites $@
+ginkgo -mod=vendor -p -keepGoing -randomizeAllSpecs -randomizeSuites $@

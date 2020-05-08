@@ -99,9 +99,7 @@ var _ = Describe("Events", func() {
 				},
 			)
 
-			resp, err := desireLRP(lrp)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
 		})
 
 		It("should generate and send a crash event", func() {

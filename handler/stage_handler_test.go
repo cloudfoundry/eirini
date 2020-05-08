@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"code.cloudfoundry.org/bbs/models"
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/handler/handlerfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -189,7 +188,7 @@ var _ = Describe("StageHandler", func() {
 
 			It("should return a high level error in the response body", func() {
 				bytes, _ := ioutil.ReadAll(response.Body)
-				stagingError := cf.StagingError{}
+				stagingError := cf.Error{}
 				err := json.Unmarshal(bytes, &stagingError)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(stagingError.Message).To(Equal("staging task with guid guid_1234 failed to start"))
@@ -213,7 +212,7 @@ var _ = Describe("StageHandler", func() {
 
 			It("should return the error in the response body", func() {
 				bytes, _ := ioutil.ReadAll(response.Body)
-				stagingError := cf.StagingError{}
+				stagingError := cf.Error{}
 				err := json.Unmarshal(bytes, &stagingError)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(stagingError.Message).ToNot(BeEmpty())
@@ -234,8 +233,7 @@ var _ = Describe("StageHandler", func() {
 				"failed": false,
 				"failure_reason": "",
 				"result": "very good",
-				"annotation": "{\"lifecycle\": \"the-cycle-of-life\",\"completion_callback\": \"example.com/call/me/maybe\"}",
-				"created_at": 123456123
+				"annotation": "{\"lifecycle\": \"the-cycle-of-life\",\"completion_callback\": \"example.com/call/me/maybe\"}"
 			}`
 		})
 
@@ -245,14 +243,13 @@ var _ = Describe("StageHandler", func() {
 
 		It("should submit the task callback response", func() {
 			Expect(buildpackStagingClient.CompleteStagingCallCount()).To(Equal(1))
-			task := buildpackStagingClient.CompleteStagingArgsForCall(0)
-			Expect(task).To(Equal(&models.TaskCallbackResponse{
-				TaskGuid:      "our-task-guid",
+			taskCompletedRequest := buildpackStagingClient.CompleteStagingArgsForCall(0)
+			Expect(taskCompletedRequest).To(Equal(cf.TaskCompletedRequest{
+				TaskGUID:      "our-task-guid",
 				Failed:        false,
 				FailureReason: "",
 				Result:        "very good",
 				Annotation:    `{"lifecycle": "the-cycle-of-life","completion_callback": "example.com/call/me/maybe"}`,
-				CreatedAt:     123456123,
 			}))
 		})
 

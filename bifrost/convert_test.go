@@ -100,8 +100,8 @@ var _ = Describe("OPI Converter", func() {
 				HealthCheckHTTPEndpoint: "/heat",
 				HealthCheckTimeoutMs:    400,
 				Ports:                   []int32{8000, 8888},
-				Routes: map[string]*json.RawMessage{
-					"cf-router": &rawJSON,
+				Routes: map[string]json.RawMessage{
+					"cf-router": rawJSON,
 				},
 				VolumeMounts: []cf.VolumeMount{
 					{

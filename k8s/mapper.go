@@ -37,7 +37,7 @@ func StatefulSetToLRP(s appsv1.StatefulSet) *opi.LRP {
 		TargetInstances:  int(*s.Spec.Replicas),
 		Ports:            ports,
 		LastUpdated:      s.Annotations[AnnotationLastUpdated],
-		AppURIs:          s.Annotations[AnnotationAppUris],
+		AppURIs:          s.Annotations[AnnotationRegisteredRoutes],
 		AppGUID:          s.Annotations[AnnotationAppID],
 		MemoryMB:         memory,
 		DiskMB:           disk,

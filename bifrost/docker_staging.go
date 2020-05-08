@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
 	"github.com/containers/image/types"
@@ -60,8 +59,8 @@ type executionMetadata struct {
 }
 
 func (s DockerStaging) TransferStaging(ctx context.Context, stagingGUID string, request cf.StagingRequest) error {
-	taskCallbackResponse := &models.TaskCallbackResponse{
-		TaskGuid:   stagingGUID,
+	taskCallbackResponse := cf.TaskCompletedRequest{
+		TaskGUID:   stagingGUID,
 		Annotation: fmt.Sprintf(`{"completion_callback": "%s"}`, request.CompletionCallback),
 	}
 
@@ -87,14 +86,14 @@ func (s DockerStaging) TransferStaging(ctx context.Context, stagingGUID string, 
 	return s.CompleteStaging(taskCallbackResponse)
 }
 
-func (s DockerStaging) respondWithFailure(taskCallbackResponse *models.TaskCallbackResponse, err error) error {
-	taskCallbackResponse.Failed = true
-	taskCallbackResponse.FailureReason = err.Error()
-	return s.CompleteStaging(taskCallbackResponse)
+func (s DockerStaging) respondWithFailure(taskCompletedRequest cf.TaskCompletedRequest, err error) error {
+	taskCompletedRequest.Failed = true
+	taskCompletedRequest.FailureReason = err.Error()
+	return s.CompleteStaging(taskCompletedRequest)
 }
 
-func (s DockerStaging) CompleteStaging(task *models.TaskCallbackResponse) error {
-	return s.StagingCompleter.CompleteStaging(task)
+func (s DockerStaging) CompleteStaging(taskCompletedRequest cf.TaskCompletedRequest) error {
+	return s.StagingCompleter.CompleteStaging(taskCompletedRequest)
 }
 
 func (s DockerStaging) getImageConfig(lifecycle *cf.StagingDockerLifecycle) (*v1.ImageConfig, error) {

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
@@ -22,13 +21,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 )
 
-type routeInfo struct {
-	Hostname string `json:"hostname"`
-	Port     int    `json:"port"`
-}
-
 var _ = Describe("Routes", func() {
-
 	var (
 		collectorSession        *gexec.Session
 		collectorConfig         string
@@ -73,7 +66,7 @@ var _ = Describe("Routes", func() {
 			GUID:         "the-app-guid",
 			Version:      "the-version",
 			NumInstances: 1,
-			Routes: map[string]*json.RawMessage{
+			Routes: map[string]json.RawMessage{
 				"cf-router": marshalRoutes([]routeInfo{
 					{Hostname: "app-hostname-1", Port: 8080},
 				}),
@@ -110,9 +103,7 @@ var _ = Describe("Routes", func() {
 
 	Describe("Desiring an app", func() {
 		JustBeforeEach(func() {
-			resp, err := desireLRP(lrp)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
 		})
 
 		It("continuously registers its routes", func() {
@@ -145,7 +136,7 @@ var _ = Describe("Routes", func() {
 		var (
 			desiredRoutes []routeInfo
 			emittedRoutes []string
-			instances     int32
+			instances     int
 		)
 
 		appRoutes := func() []string {
@@ -161,22 +152,16 @@ var _ = Describe("Routes", func() {
 		}
 
 		JustBeforeEach(func() {
-			resp, err := desireLRP(lrp)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
 			Eventually(registerChan).Should(Receive())
 
-			resp, err = updateLRP(cf.UpdateDesiredLRPRequest{
+			resp, err := updateLRP(cf.UpdateDesiredLRPRequest{
 				GUID:    lrp.GUID,
 				Version: lrp.Version,
-				UpdateDesiredLRPRequest: models.UpdateDesiredLRPRequest{
-					Update: &models.DesiredLRPUpdate{
-						OptionalInstances: &models.DesiredLRPUpdate_Instances{
-							Instances: instances,
-						},
-						Routes: &models.Routes{
-							"cf-router": marshalRoutes(desiredRoutes),
-						},
+				Update: cf.DesiredLRPUpdate{
+					Instances: instances,
+					Routes: map[string]json.RawMessage{
+						"cf-router": marshalRoutes(desiredRoutes),
 					},
 				},
 			})
@@ -186,7 +171,7 @@ var _ = Describe("Routes", func() {
 
 		When("a new route is added to the app", func() {
 			BeforeEach(func() {
-				instances = int32(lrp.NumInstances)
+				instances = lrp.NumInstances
 				desiredRoutes = []routeInfo{
 					{Hostname: "app-hostname-1", Port: 8080},
 					{Hostname: "app-hostname-2", Port: 8080},
@@ -200,7 +185,7 @@ var _ = Describe("Routes", func() {
 
 		When("a route is removed from the app", func() {
 			BeforeEach(func() {
-				instances = int32(lrp.NumInstances)
+				instances = lrp.NumInstances
 				desiredRoutes = []routeInfo{}
 			})
 
@@ -221,7 +206,7 @@ var _ = Describe("Routes", func() {
 		When("an app is scaled up", func() {
 
 			BeforeEach(func() {
-				instances = int32(lrp.NumInstances) + 1
+				instances = lrp.NumInstances + 1
 				desiredRoutes = []routeInfo{
 					{Hostname: "app-hostname-1", Port: 8080},
 				}
@@ -262,12 +247,10 @@ var _ = Describe("Routes", func() {
 	Describe("Stopping an app", func() {
 
 		JustBeforeEach(func() {
-			resp, err := desireLRP(lrp)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
 			Eventually(registerChan).Should(Receive())
 
-			resp, err = stopLRP(lrp.GUID, lrp.Version)
+			resp, err := stopLRP(lrp.GUID, lrp.Version)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
@@ -284,12 +267,10 @@ var _ = Describe("Routes", func() {
 	Describe("Stopping an app instance", func() {
 
 		JustBeforeEach(func() {
-			resp, err := desireLRP(lrp)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
 			Eventually(registerChan).Should(Receive())
 
-			resp, err = stopLRPInstance(lrp.GUID, lrp.Version, 0)
+			resp, err := stopLRPInstance(lrp.GUID, lrp.Version, 0)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
@@ -335,11 +316,11 @@ func getNatsServerConfig() *server.Options {
 	}
 }
 
-func marshalRoutes(routes []routeInfo) *json.RawMessage {
+func marshalRoutes(routes []routeInfo) json.RawMessage {
 	bytes, err := json.Marshal(routes)
 	Expect(err).NotTo(HaveOccurred())
 
-	rawMessage := &json.RawMessage{}
+	rawMessage := json.RawMessage{}
 	Expect(rawMessage.UnmarshalJSON(bytes)).To(Succeed())
 	return rawMessage
 }

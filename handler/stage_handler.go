@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
 	"github.com/julienschmidt/httprouter"
@@ -61,15 +60,15 @@ func (s *Stage) StagingComplete(res http.ResponseWriter, req *http.Request, ps h
 	stagingGUID := ps.ByName("staging_guid")
 	logger := s.logger.Session("staging-complete", lager.Data{"staging-guid": stagingGUID})
 
-	task := &models.TaskCallbackResponse{}
-	err := json.NewDecoder(req.Body).Decode(task)
+	taskCompletedRequest := cf.TaskCompletedRequest{}
+	err := json.NewDecoder(req.Body).Decode(&taskCompletedRequest)
 	if err != nil {
 		logger.Error("parsing-incoming-task-failed", err)
 		res.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if err = s.buildpackStagingBifrost.CompleteStaging(task); err != nil {
+	if err = s.buildpackStagingBifrost.CompleteStaging(taskCompletedRequest); err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		logger.Error("staging-completion-failed", err)
 		return
@@ -80,7 +79,7 @@ func (s *Stage) StagingComplete(res http.ResponseWriter, req *http.Request, ps h
 
 func writeErrorResponse(resp http.ResponseWriter, status int, err error) {
 	resp.WriteHeader(status)
-	encodingErr := json.NewEncoder(resp).Encode(&cf.StagingError{Message: err.Error()})
+	encodingErr := json.NewEncoder(resp).Encode(&cf.Error{Message: err.Error()})
 	if encodingErr != nil {
 		panic(encodingErr)
 	}

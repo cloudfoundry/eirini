@@ -81,14 +81,14 @@ var _ = Describe("DockerStager", func() {
 
 		It("should complete staging with correct parameters", func() {
 			Expect(stagingCompleter.CompleteStagingCallCount()).To(Equal(1))
-			task := stagingCompleter.CompleteStagingArgsForCall(0)
+			taskCompletedRequest := stagingCompleter.CompleteStagingArgsForCall(0)
 
-			Expect(task.TaskGuid).To(Equal("stg-guid"))
-			Expect(task.Failed).To(BeFalse())
-			Expect(task.Annotation).To(Equal(`{"completion_callback": "the-completion-callback/call/me"}`))
+			Expect(taskCompletedRequest.TaskGUID).To(Equal("stg-guid"))
+			Expect(taskCompletedRequest.Failed).To(BeFalse())
+			Expect(taskCompletedRequest.Annotation).To(Equal(`{"completion_callback": "the-completion-callback/call/me"}`))
 
 			var payload bifrost.StagingResult
-			Expect(json.Unmarshal([]byte(task.Result), &payload)).To(Succeed())
+			Expect(json.Unmarshal([]byte(taskCompletedRequest.Result), &payload)).To(Succeed())
 
 			Expect(payload.LifecycleType).To(Equal("docker"))
 			Expect(payload.LifecycleMetadata.DockerImage).To(Equal("eirini/some-app:some-tag"))

@@ -3,14 +3,14 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
-	"code.cloudfoundry.org/bbs/models"
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -61,21 +61,20 @@ func (a *App) List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		return
 	}
 
-	response := models.DesiredLRPSchedulingInfosResponse{
+	response := cf.DesiredLRPSchedulingInfosResponse{
 		DesiredLrpSchedulingInfos: desiredLRPSchedulingInfos,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
-	marshaler := &jsonpb.Marshaler{Indent: "", OrigName: true}
-	result, err := marshaler.MarshalToString(&response)
+	result, err := json.Marshal(&response)
 	if err != nil {
 		loggerSession.Error("encode-json-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if _, err = w.Write([]byte(result)); err != nil {
+	if _, err = w.Write(result); err != nil {
 		loggerSession.Error("failed-to-write-response", err)
 	}
 }
@@ -93,20 +92,14 @@ func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	response := models.DesiredLRPResponse{
-		DesiredLrp: desiredLRP,
+	response := cf.DesiredLRPResponse{
+		DesiredLRP: desiredLRP,
 	}
 
-	marshaler := &jsonpb.Marshaler{Indent: "", OrigName: true}
-	result, err := marshaler.MarshalToString(&response)
-	if err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		loggerSession.Error("encode-json-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
-	}
-
-	if _, err = w.Write([]byte(result)); err != nil {
-		loggerSession.Error("Could not write response", err)
 	}
 }
 
@@ -118,14 +111,16 @@ func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter
 		Version: ps.ByName("version_guid"),
 	}
 	response := cf.GetInstancesResponse{ProcessGUID: identifier.ProcessGUID()}
-
 	instances, err := a.lrpBifrost.GetInstances(r.Context(), identifier)
+	response.Instances = instances
+
 	if err != nil {
 		loggerSession.Error("bifrost-failed", err)
 		response.Error = err.Error()
 		response.Instances = []*cf.Instance{}
-	} else {
-		response.Instances = instances
+	}
+	if errors.Is(err, eirini.ErrNotFound) {
+		w.WriteHeader(http.StatusNotFound)
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -161,10 +156,13 @@ func (a *App) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
 	}
-	err := a.lrpBifrost.Stop(r.Context(), identifier)
-	if err != nil {
+	if err := a.lrpBifrost.Stop(r.Context(), identifier); err != nil {
 		loggerSession.Error("bifrost-failed", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		statusCode := http.StatusInternalServerError
+		if errors.Is(err, eirini.ErrNotFound) {
+			statusCode = http.StatusNotFound
+		}
+		w.WriteHeader(statusCode)
 	}
 }
 
@@ -182,18 +180,24 @@ func (a *App) StopInstance(w http.ResponseWriter, r *http.Request, ps httprouter
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
-	err = a.lrpBifrost.StopInstance(r.Context(), identifier, uint(index))
-	if err != nil {
+	if err := a.lrpBifrost.StopInstance(r.Context(), identifier, uint(index)); err != nil {
 		loggerSession.Error("bifrost-failed", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		statusCode := http.StatusInternalServerError
+		if errors.Is(err, eirini.ErrNotFound) {
+			statusCode = http.StatusNotFound
+		}
+		if errors.Is(err, eirini.ErrInvalidInstanceIndex) {
+			statusCode = http.StatusBadRequest
+		}
+		w.WriteHeader(statusCode)
 	}
 }
 
 func writeUpdateErrorResponse(w http.ResponseWriter, err error, statusCode int, loggerSession lager.Logger) {
 	w.WriteHeader(statusCode)
 
-	response := models.DesiredLRPLifecycleResponse{
-		Error: &models.Error{
+	response := cf.DesiredLRPLifecycleResponse{
+		Error: cf.Error{
 			Message: err.Error(),
 		},
 	}

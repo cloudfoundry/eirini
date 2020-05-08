@@ -5,25 +5,24 @@ import (
 	"context"
 	"sync"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 )
 
 type FakeLRPBifrost struct {
-	GetAppStub        func(context.Context, opi.LRPIdentifier) (*models.DesiredLRP, error)
+	GetAppStub        func(context.Context, opi.LRPIdentifier) (cf.DesiredLRP, error)
 	getAppMutex       sync.RWMutex
 	getAppArgsForCall []struct {
 		arg1 context.Context
 		arg2 opi.LRPIdentifier
 	}
 	getAppReturns struct {
-		result1 *models.DesiredLRP
+		result1 cf.DesiredLRP
 		result2 error
 	}
 	getAppReturnsOnCall map[int]struct {
-		result1 *models.DesiredLRP
+		result1 cf.DesiredLRP
 		result2 error
 	}
 	GetInstancesStub        func(context.Context, opi.LRPIdentifier) ([]*cf.Instance, error)
@@ -40,17 +39,17 @@ type FakeLRPBifrost struct {
 		result1 []*cf.Instance
 		result2 error
 	}
-	ListStub        func(context.Context) ([]*models.DesiredLRPSchedulingInfo, error)
+	ListStub        func(context.Context) ([]cf.DesiredLRPSchedulingInfo, error)
 	listMutex       sync.RWMutex
 	listArgsForCall []struct {
 		arg1 context.Context
 	}
 	listReturns struct {
-		result1 []*models.DesiredLRPSchedulingInfo
+		result1 []cf.DesiredLRPSchedulingInfo
 		result2 error
 	}
 	listReturnsOnCall map[int]struct {
-		result1 []*models.DesiredLRPSchedulingInfo
+		result1 []cf.DesiredLRPSchedulingInfo
 		result2 error
 	}
 	StopStub        func(context.Context, opi.LRPIdentifier) error
@@ -106,7 +105,7 @@ type FakeLRPBifrost struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeLRPBifrost) GetApp(arg1 context.Context, arg2 opi.LRPIdentifier) (*models.DesiredLRP, error) {
+func (fake *FakeLRPBifrost) GetApp(arg1 context.Context, arg2 opi.LRPIdentifier) (cf.DesiredLRP, error) {
 	fake.getAppMutex.Lock()
 	ret, specificReturn := fake.getAppReturnsOnCall[len(fake.getAppArgsForCall)]
 	fake.getAppArgsForCall = append(fake.getAppArgsForCall, struct {
@@ -131,7 +130,7 @@ func (fake *FakeLRPBifrost) GetAppCallCount() int {
 	return len(fake.getAppArgsForCall)
 }
 
-func (fake *FakeLRPBifrost) GetAppCalls(stub func(context.Context, opi.LRPIdentifier) (*models.DesiredLRP, error)) {
+func (fake *FakeLRPBifrost) GetAppCalls(stub func(context.Context, opi.LRPIdentifier) (cf.DesiredLRP, error)) {
 	fake.getAppMutex.Lock()
 	defer fake.getAppMutex.Unlock()
 	fake.GetAppStub = stub
@@ -144,28 +143,28 @@ func (fake *FakeLRPBifrost) GetAppArgsForCall(i int) (context.Context, opi.LRPId
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeLRPBifrost) GetAppReturns(result1 *models.DesiredLRP, result2 error) {
+func (fake *FakeLRPBifrost) GetAppReturns(result1 cf.DesiredLRP, result2 error) {
 	fake.getAppMutex.Lock()
 	defer fake.getAppMutex.Unlock()
 	fake.GetAppStub = nil
 	fake.getAppReturns = struct {
-		result1 *models.DesiredLRP
+		result1 cf.DesiredLRP
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeLRPBifrost) GetAppReturnsOnCall(i int, result1 *models.DesiredLRP, result2 error) {
+func (fake *FakeLRPBifrost) GetAppReturnsOnCall(i int, result1 cf.DesiredLRP, result2 error) {
 	fake.getAppMutex.Lock()
 	defer fake.getAppMutex.Unlock()
 	fake.GetAppStub = nil
 	if fake.getAppReturnsOnCall == nil {
 		fake.getAppReturnsOnCall = make(map[int]struct {
-			result1 *models.DesiredLRP
+			result1 cf.DesiredLRP
 			result2 error
 		})
 	}
 	fake.getAppReturnsOnCall[i] = struct {
-		result1 *models.DesiredLRP
+		result1 cf.DesiredLRP
 		result2 error
 	}{result1, result2}
 }
@@ -234,7 +233,7 @@ func (fake *FakeLRPBifrost) GetInstancesReturnsOnCall(i int, result1 []*cf.Insta
 	}{result1, result2}
 }
 
-func (fake *FakeLRPBifrost) List(arg1 context.Context) ([]*models.DesiredLRPSchedulingInfo, error) {
+func (fake *FakeLRPBifrost) List(arg1 context.Context) ([]cf.DesiredLRPSchedulingInfo, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
@@ -258,7 +257,7 @@ func (fake *FakeLRPBifrost) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakeLRPBifrost) ListCalls(stub func(context.Context) ([]*models.DesiredLRPSchedulingInfo, error)) {
+func (fake *FakeLRPBifrost) ListCalls(stub func(context.Context) ([]cf.DesiredLRPSchedulingInfo, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
@@ -271,28 +270,28 @@ func (fake *FakeLRPBifrost) ListArgsForCall(i int) context.Context {
 	return argsForCall.arg1
 }
 
-func (fake *FakeLRPBifrost) ListReturns(result1 []*models.DesiredLRPSchedulingInfo, result2 error) {
+func (fake *FakeLRPBifrost) ListReturns(result1 []cf.DesiredLRPSchedulingInfo, result2 error) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	fake.listReturns = struct {
-		result1 []*models.DesiredLRPSchedulingInfo
+		result1 []cf.DesiredLRPSchedulingInfo
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeLRPBifrost) ListReturnsOnCall(i int, result1 []*models.DesiredLRPSchedulingInfo, result2 error) {
+func (fake *FakeLRPBifrost) ListReturnsOnCall(i int, result1 []cf.DesiredLRPSchedulingInfo, result2 error) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	if fake.listReturnsOnCall == nil {
 		fake.listReturnsOnCall = make(map[int]struct {
-			result1 []*models.DesiredLRPSchedulingInfo
+			result1 []cf.DesiredLRPSchedulingInfo
 			result2 error
 		})
 	}
 	fake.listReturnsOnCall[i] = struct {
-		result1 []*models.DesiredLRPSchedulingInfo
+		result1 []cf.DesiredLRPSchedulingInfo
 		result2 error
 	}{result1, result2}
 }

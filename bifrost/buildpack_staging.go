@@ -3,7 +3,6 @@ package bifrost
 import (
 	"context"
 
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
@@ -24,7 +23,7 @@ type StagingDesirer interface {
 
 //counterfeiter:generate . StagingCompleter
 type StagingCompleter interface {
-	CompleteStaging(*models.TaskCallbackResponse) error
+	CompleteStaging(cf.TaskCompletedRequest) error
 }
 
 type BuildpackStaging struct {
@@ -43,11 +42,11 @@ func (b *BuildpackStaging) TransferStaging(ctx context.Context, stagingGUID stri
 	return errors.Wrap(b.StagingDesirer.DesireStaging(&desiredStaging), "failed to desire")
 }
 
-func (b *BuildpackStaging) CompleteStaging(task *models.TaskCallbackResponse) error {
-	l := b.Logger.Session("complete-staging", lager.Data{"task-guid": task.TaskGuid})
+func (b *BuildpackStaging) CompleteStaging(taskCompletedRequest cf.TaskCompletedRequest) error {
+	l := b.Logger.Session("complete-staging", lager.Data{"task-guid": taskCompletedRequest.TaskGUID})
 	l.Debug("Complete staging")
 	return multierr.Combine(
-		b.StagingCompleter.CompleteStaging(task),
-		b.StagingDesirer.Delete(task.TaskGuid),
+		b.StagingCompleter.CompleteStaging(taskCompletedRequest),
+		b.StagingDesirer.Delete(taskCompletedRequest.TaskGUID),
 	)
 }

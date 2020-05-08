@@ -2,8 +2,6 @@ package cf
 
 import (
 	"encoding/json"
-
-	"code.cloudfoundry.org/bbs/models"
 )
 
 type VolumeMount struct {
@@ -11,38 +9,66 @@ type VolumeMount struct {
 	MountDir string `json:"mount_dir"`
 }
 
+type DesiredLRP struct {
+	ProcessGUID string                     `json:"process_guid"`
+	Instances   int32                      `json:"instances"`
+	Routes      map[string]json.RawMessage `json:"routes,omitempty"`
+	Annotation  string                     `json:"annotation"`
+}
+
+type DesiredLRPResponse struct {
+	DesiredLRP DesiredLRP `json:"desired_lrp"`
+}
+
 type DesireLRPRequest struct {
-	GUID                    string                      `json:"guid"`
-	Version                 string                      `json:"version"`
-	ProcessGUID             string                      `json:"process_guid"`
-	ProcessType             string                      `json:"process_type"`
-	AppGUID                 string                      `json:"app_guid"`
-	AppName                 string                      `json:"app_name"`
-	SpaceGUID               string                      `json:"space_guid"`
-	SpaceName               string                      `json:"space_name"`
-	OrganizationGUID        string                      `json:"organization_guid"`
-	OrganizationName        string                      `json:"organization_name"`
-	PlacementTags           []string                    `json:"placement_tags"`
-	Ports                   []int32                     `json:"ports"`
-	Routes                  map[string]*json.RawMessage `json:"routes"`
-	Environment             map[string]string           `json:"environment"`
-	EgressRules             []json.RawMessage           `json:"egress_rules"`
-	NumInstances            int                         `json:"instances"`
-	LastUpdated             string                      `json:"last_updated"`
-	HealthCheckType         string                      `json:"health_check_type"`
-	HealthCheckHTTPEndpoint string                      `json:"health_check_http_endpoint"`
-	HealthCheckTimeoutMs    uint                        `json:"health_check_timeout_ms"`
-	StartTimeoutMs          uint                        `json:"start_timeout_ms"`
-	MemoryMB                int64                       `json:"memory_mb"`
-	DiskMB                  int64                       `json:"disk_mb"`
-	CPUWeight               uint8                       `json:"cpu_weight"`
-	VolumeMounts            []VolumeMount               `json:"volume_mounts"`
-	Lifecycle               Lifecycle                   `json:"lifecycle"`
-	DropletHash             string                      `json:"droplet_hash"`
-	DropletGUID             string                      `json:"droplet_guid"`
-	StartCommand            string                      `json:"start_command"`
-	UserDefinedAnnotations  map[string]string           `json:"user_defined_annotations"`
+	GUID                    string                     `json:"guid"`
+	Version                 string                     `json:"version"`
+	ProcessGUID             string                     `json:"process_guid"`
+	ProcessType             string                     `json:"process_type"`
+	AppGUID                 string                     `json:"app_guid"`
+	AppName                 string                     `json:"app_name"`
+	SpaceGUID               string                     `json:"space_guid"`
+	SpaceName               string                     `json:"space_name"`
+	OrganizationGUID        string                     `json:"organization_guid"`
+	OrganizationName        string                     `json:"organization_name"`
+	PlacementTags           []string                   `json:"placement_tags"`
+	Ports                   []int32                    `json:"ports"`
+	Routes                  map[string]json.RawMessage `json:"routes"`
+	Environment             map[string]string          `json:"environment"`
+	EgressRules             []json.RawMessage          `json:"egress_rules"`
+	NumInstances            int                        `json:"instances"`
+	LastUpdated             string                     `json:"last_updated"`
+	HealthCheckType         string                     `json:"health_check_type"`
+	HealthCheckHTTPEndpoint string                     `json:"health_check_http_endpoint"`
+	HealthCheckTimeoutMs    uint                       `json:"health_check_timeout_ms"`
+	StartTimeoutMs          uint                       `json:"start_timeout_ms"`
+	MemoryMB                int64                      `json:"memory_mb"`
+	DiskMB                  int64                      `json:"disk_mb"`
+	CPUWeight               uint8                      `json:"cpu_weight"`
+	VolumeMounts            []VolumeMount              `json:"volume_mounts"`
+	Lifecycle               Lifecycle                  `json:"lifecycle"`
+	DropletHash             string                     `json:"droplet_hash"`
+	DropletGUID             string                     `json:"droplet_guid"`
+	StartCommand            string                     `json:"start_command"`
+	UserDefinedAnnotations  map[string]string          `json:"user_defined_annotations"`
 	LRP                     string
+}
+
+type DesiredLRPSchedulingInfo struct {
+	DesiredLRPKey `json:"desired_lrp_key"`
+	Annotation    string `json:"annotation"`
+}
+
+type DesiredLRPKey struct {
+	ProcessGUID string `json:"process_guid"`
+}
+
+type DesiredLRPSchedulingInfosResponse struct {
+	DesiredLrpSchedulingInfos []DesiredLRPSchedulingInfo `json:"desired_lrp_scheduling_infos,omitempty"`
+}
+
+type DesiredLRPLifecycleResponse struct {
+	Error Error `json:"error,omitempty"`
 }
 
 type Lifecycle struct {
@@ -74,6 +100,14 @@ type TaskRequest struct {
 	CompletionCallback string                `json:"completion_callback"`
 	Environment        []EnvironmentVariable `json:"environment"`
 	Lifecycle          Lifecycle             `json:"lifecycle"`
+}
+
+type TaskCompletedRequest struct {
+	TaskGUID      string `json:"task_guid"`
+	Failed        bool   `json:"failed"`
+	FailureReason string `json:"failure_reason"`
+	Result        string `json:"result"`
+	Annotation    string `json:"annotation,omitempty"`
 }
 
 type StagingRequest struct {
@@ -126,9 +160,15 @@ type EnvironmentVariable struct {
 }
 
 type UpdateDesiredLRPRequest struct {
-	models.UpdateDesiredLRPRequest
-	GUID    string `json:"guid"`
-	Version string `json:"version"`
+	GUID    string           `json:"guid"`
+	Version string           `json:"version"`
+	Update  DesiredLRPUpdate `json:"update,omitempty"`
+}
+
+type DesiredLRPUpdate struct {
+	Instances  int                        `json:"instances"`
+	Routes     map[string]json.RawMessage `json:"routes"`
+	Annotation string                     `json:"annotation"`
 }
 
 type GetInstancesResponse struct {
@@ -159,6 +199,6 @@ type AppCrashedRequest struct {
 	CrashTimestamp  int64  `json:"crash_timestamp"`
 }
 
-type StagingError struct {
+type Error struct {
 	Message string `json:"message"`
 }

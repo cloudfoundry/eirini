@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 
-	"code.cloudfoundry.org/bbs/models"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/lager/lagertest"
 )
@@ -17,11 +17,11 @@ import (
 var _ = Describe("StagingCompleter", func() {
 
 	var (
-		server           *ghttp.Server
-		task             *models.TaskCallbackResponse
-		handlers         []http.HandlerFunc
-		stagingCompleter *stager.CallbackStagingCompleter
-		err              error
+		server               *ghttp.Server
+		taskCompletedRequest cf.TaskCompletedRequest
+		handlers             []http.HandlerFunc
+		stagingCompleter     *stager.CallbackStagingCompleter
+		err                  error
 	)
 
 	const retries = 10
@@ -30,13 +30,12 @@ var _ = Describe("StagingCompleter", func() {
 		server = ghttp.NewServer()
 		annotation := fmt.Sprintf(`{"completion_callback": "%s/call/me/maybe"}`, server.URL())
 
-		task = &models.TaskCallbackResponse{
-			TaskGuid:      "our-task-guid",
+		taskCompletedRequest = cf.TaskCompletedRequest{
+			TaskGUID:      "our-task-guid",
 			Failed:        false,
 			FailureReason: "",
 			Result:        `{"very": "good"}`,
 			Annotation:    annotation,
-			CreatedAt:     123456123,
 		}
 
 		handlers = []http.HandlerFunc{
@@ -59,7 +58,7 @@ var _ = Describe("StagingCompleter", func() {
 			Retries:    retries,
 			Delay:      10 * time.Millisecond,
 		}
-		err = stagingCompleter.CompleteStaging(task)
+		err = stagingCompleter.CompleteStaging(taskCompletedRequest)
 	})
 
 	AfterEach(func() {
@@ -76,9 +75,9 @@ var _ = Describe("StagingCompleter", func() {
 
 	Context("and the staging failed", func() {
 		BeforeEach(func() {
-			task.Failed = true
-			task.FailureReason = "u broke my boy"
-			task.Result = ""
+			taskCompletedRequest.Failed = true
+			taskCompletedRequest.FailureReason = "u broke my boy"
+			taskCompletedRequest.Result = ""
 
 			handlers = []http.HandlerFunc{
 				ghttp.VerifyJSON(`{
@@ -101,7 +100,7 @@ var _ = Describe("StagingCompleter", func() {
 
 	Context("and the staging result is not a valid json", func() {
 		BeforeEach(func() {
-			task.Result = "{not valid json"
+			taskCompletedRequest.Result = "{not valid json"
 		})
 
 		It("should return an error", func() {
@@ -115,7 +114,7 @@ var _ = Describe("StagingCompleter", func() {
 
 	Context("and the annotation is not a valid json", func() {
 		BeforeEach(func() {
-			task.Annotation = "{ !(valid json)"
+			taskCompletedRequest.Annotation = "{ !(valid json)"
 		})
 
 		It("should return an error", func() {

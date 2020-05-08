@@ -79,8 +79,7 @@ var _ = Describe("FailedStagingReporter", func() {
   					"failed": true,
 						"failure_reason": "Container 'failing-container' in Pod 'not-feeling-well' failed: ErrImagePull",
   					"result": "",
-  					"annotation": "{\"lifecycle\":\"\",\"completion_callback\":\"internal_cc_staging_endpoint.io/stage/build_completed\"}",
-  					"created_at": 0
+  					"annotation": "{\"lifecycle\":\"\",\"completion_callback\":\"internal_cc_staging_endpoint.io/stage/build_completed\"}"
   				}`),
 				))
 		})
