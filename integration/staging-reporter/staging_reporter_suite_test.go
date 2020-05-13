@@ -21,12 +21,19 @@ var (
 	pathToStagingReporter string
 )
 
-var _ = BeforeSuite(func() {
-	var err error
-	pathToStagingReporter, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/staging-reporter")
+var _ = SynchronizedBeforeSuite(func() []byte {
+	path, err := gexec.Build("code.cloudfoundry.org/eirini/cmd/staging-reporter")
 	Expect(err).NotTo(HaveOccurred())
+	return []byte(path)
+}, func(data []byte) {
+	pathToStagingReporter = string(data)
 
 	fixture = util.NewFixture(GinkgoWriter)
+})
+
+var _ = SynchronizedAfterSuite(func() {
+}, func() {
+	gexec.CleanupBuildArtifacts()
 })
 
 var _ = BeforeEach(func() {
@@ -39,10 +46,6 @@ var _ = BeforeEach(func() {
 
 var _ = AfterEach(func() {
 	fixture.TearDown()
-})
-
-var _ = AfterSuite(func() {
-	gexec.CleanupBuildArtifacts()
 })
 
 func defaultStagingReporterConfig() *eirini.StagingReporterConfig {
