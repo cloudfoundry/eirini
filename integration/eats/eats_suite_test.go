@@ -90,7 +90,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 
 	fixture = util.NewFixture(GinkgoWriter)
-	SetDefaultEventuallyTimeout(10 * time.Second)
+	SetDefaultEventuallyTimeout(20 * time.Second)
 })
 
 var _ = BeforeEach(func() {

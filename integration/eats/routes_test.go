@@ -110,7 +110,7 @@ var _ = Describe("Routes", func() {
 			var msg *nats.Msg
 
 			for i := 0; i < 5; i++ {
-				Eventually(registerChan, "15s").Should(Receive(&msg))
+				Eventually(registerChan).Should(Receive(&msg))
 				var actualMessage route.RegistryMessage
 				Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
 				Expect(net.ParseIP(actualMessage.Host).IsUnspecified()).To(BeFalse())
@@ -127,7 +127,7 @@ var _ = Describe("Routes", func() {
 			})
 
 			It("does not register routes", func() {
-				Consistently(registerChan, "5s").ShouldNot(Receive())
+				Consistently(registerChan).ShouldNot(Receive())
 			})
 		})
 	})
@@ -257,7 +257,7 @@ var _ = Describe("Routes", func() {
 
 		It("unregisteres the app route", func() {
 			var msg *nats.Msg
-			Eventually(unregisterChan, "15s").Should(Receive(&msg))
+			Eventually(unregisterChan).Should(Receive(&msg))
 			var actualMessage route.RegistryMessage
 			Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
 			Expect(actualMessage.URIs).To(ConsistOf("app-hostname-1"))

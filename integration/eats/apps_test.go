@@ -131,7 +131,7 @@ var _ = Describe("Apps", func() {
 			desireAppWithInstances("the-app-guid", "v1", 3)
 			Eventually(func() []*cf.Instance {
 				return getRunningInstances("the-app-guid", "v1")
-			}, "20s").Should(HaveLen(3))
+			}).Should(HaveLen(3))
 		})
 
 		It("successfully stops the instance", func() {
@@ -140,7 +140,7 @@ var _ = Describe("Apps", func() {
 
 			Eventually(func() []*cf.Instance {
 				return getRunningInstances("the-app-guid", "v1")
-			}, "10s").Should(ConsistOf(
+			}).Should(ConsistOf(
 				gstruct.PointTo(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
 					"Index": Equal(0),
 					"State": Equal("RUNNING"),
@@ -192,7 +192,7 @@ var _ = Describe("Apps", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				return resp.Instances
-			}, "20s").Should(ConsistOf(
+			}).Should(ConsistOf(
 				gstruct.PointTo(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
 					"Index": Equal(0),
 					"State": Equal("RUNNING"),
