@@ -150,9 +150,11 @@ var _ = Describe("StatefulSet Manager", func() {
 					return listPods(odinLRP.LRPIdentifier)
 				}, timeout).Should(HaveLen(2))
 
-				nodeNames := nodeNamesFromPods(listPods(odinLRP.LRPIdentifier))
-
-				Expect(nodeNames).To(HaveLen(2))
+				var nodeNames []string
+				Eventually(func() []string {
+					nodeNames = nodeNamesFromPods(listPods(odinLRP.LRPIdentifier))
+					return nodeNames
+				}).Should(HaveLen(2))
 				Expect(nodeNames[0]).ToNot(Equal(nodeNames[1]))
 			})
 		})
