@@ -18,13 +18,16 @@ var (
 	cmdPath string
 )
 
-var _ = BeforeSuite(func() {
-	var err error
-	cmdPath, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
-	Expect(err).ToNot(HaveOccurred())
+var _ = SynchronizedBeforeSuite(func() []byte {
+	path, err := gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
+	Expect(err).NotTo(HaveOccurred())
+	return []byte(path)
+}, func(data []byte) {
+	cmdPath = string(data)
 })
 
-var _ = AfterSuite(func() {
+var _ = SynchronizedAfterSuite(func() {
+}, func() {
 	gexec.CleanupBuildArtifacts()
 })
 
