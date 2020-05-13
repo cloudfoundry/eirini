@@ -103,7 +103,7 @@ var _ = Describe("Events", func() {
 		})
 
 		It("should generate and send a crash event", func() {
-			Eventually(capiServer.ReceivedRequests, "10s").Should(HaveLen(1))
+			Eventually(capiServer.ReceivedRequests).Should(HaveLen(1))
 		})
 	})
 })
