@@ -124,7 +124,10 @@ func podNamesFromPods(pods []corev1.Pod) []string {
 func nodeNamesFromPods(pods []corev1.Pod) []string {
 	names := []string{}
 	for _, p := range pods {
-		names = append(names, p.Spec.NodeName)
+		nodeName := p.Spec.NodeName
+		if nodeName != "" {
+			names = append(names, nodeName)
+		}
 	}
 	return names
 }
