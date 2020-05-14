@@ -12,26 +12,25 @@ import (
 
 func TestStagingReporter(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "StagingReporter Suite")
+	RunSpecs(t, "TaskReporter Suite")
 }
 
 var (
-	fixture               *util.Fixture
-	pathToStagingReporter string
+	fixture            *util.Fixture
+	pathToTaskReporter string
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	path, err := gexec.Build("code.cloudfoundry.org/eirini/cmd/staging-reporter")
+	var err error
+	pathToTaskReporter, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/task-reporter")
 	Expect(err).NotTo(HaveOccurred())
-	return []byte(path)
+	return []byte(pathToTaskReporter)
 }, func(data []byte) {
-	pathToStagingReporter = string(data)
-
+	pathToTaskReporter = string(data)
 	fixture = util.NewFixture(GinkgoWriter)
 })
 
-var _ = SynchronizedAfterSuite(func() {
-}, func() {
+var _ = SynchronizedAfterSuite(func() {}, func() {
 	gexec.CleanupBuildArtifacts()
 })
 

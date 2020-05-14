@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/exec"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/integration/util"
@@ -22,67 +21,38 @@ import (
 var _ = Describe("StagingReporter", func() {
 	var (
 		eiriniServer *ghttp.Server
-		configFile   *os.File
+		configFile   string
+		certPath     string
+		keyPath      string
 		session      *gexec.Session
 		taskDesirer  k8s.TaskDesirer
 	)
 
 	BeforeEach(func() {
-		var err error
+		certPath, keyPath = util.GenerateKeyPair("opi")
 
-		eiriniServer, err = util.CreateTestServer(
-			util.PathToTestFixture("cert"),
-			util.PathToTestFixture("key"),
-			util.PathToTestFixture("cert"),
-		)
+		var err error
+		eiriniServer, err = util.CreateTestServer(certPath, keyPath, certPath)
 		Expect(err).ToNot(HaveOccurred())
 		eiriniServer.Start()
 
-		config := defaultReporterConfig()
-
-		configFile, err = util.CreateConfigFile(config)
-		Expect(err).NotTo(HaveOccurred())
-
-		command := exec.Command(pathToStagingReporter, "-c", configFile.Name()) // #nosec G204
-		session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
-		Expect(err).ToNot(HaveOccurred())
-
-		logger := lagertest.NewTestLogger("staging-reporter-test")
-		tlsconfigs := []k8s.StagingConfigTLS{
-			{
-				SecretName: "cc-uploader-secret",
-				KeyPaths: []k8s.KeyPath{
-					{
-						Key:  "foo1",
-						Path: "bar1",
-					},
-				},
+		config := &eirini.ReporterConfig{
+			KubeConfig: eirini.KubeConfig{
+				Namespace:  fixture.Namespace,
+				ConfigPath: fixture.KubeConfigPath,
 			},
-			{
-				SecretName: "eirini-client-secret",
-				KeyPaths: []k8s.KeyPath{
-					{
-						Key:  "foo2",
-						Path: "bar2",
-					},
-				},
-			},
-			{
-				SecretName: "ca-cert-secret",
-				KeyPaths: []k8s.KeyPath{
-					{
-						Key:  "foo3",
-						Path: "bar3",
-					},
-				},
-			},
+			EiriniCertPath: certPath,
+			CAPath:         certPath,
+			EiriniKeyPath:  keyPath,
 		}
+
+		session, configFile = util.RunBinary(pathToStagingReporter, config)
+
 		taskDesirer = k8s.TaskDesirer{
 			Namespace:          fixture.Namespace,
-			TLSConfig:          tlsconfigs,
 			ServiceAccountName: "",
 			JobClient:          fixture.Clientset.BatchV1().Jobs(fixture.Namespace),
-			Logger:             logger,
+			Logger:             lagertest.NewTestLogger("staging-reporter-test"),
 		}
 	})
 
@@ -90,32 +60,17 @@ var _ = Describe("StagingReporter", func() {
 		if session != nil {
 			session.Kill()
 		}
-		if configFile != nil {
-			os.Remove(configFile.Name())
-		}
+		os.Remove(configFile)
+		os.Remove(keyPath)
+		os.Remove(certPath)
 		eiriniServer.Close()
 	})
 
 	Context("When a staging job crashes", func() {
+		var stagingTask *opi.StagingTask
 
-		It("notifies eirini of a staging failure", func() {
-			eiriniServer.RouteToHandler(
-				"PUT",
-				"/stage/the-staging-guid/completed",
-				func(w http.ResponseWriter, req *http.Request) {
-					bytes, err := ioutil.ReadAll(req.Body)
-					Expect(err).NotTo(HaveOccurred())
-
-					var taskCompletedRequest cf.TaskCompletedRequest
-					Expect(json.Unmarshal(bytes, &taskCompletedRequest)).To(Succeed())
-
-					Expect(taskCompletedRequest.TaskGUID).To(Equal("the-staging-guid"))
-					Expect(taskCompletedRequest.Failed).To(BeTrue())
-					Expect(taskCompletedRequest.Annotation).To(ContainSubstring(`"completion_callback":"the-cloud-controller-address/staging/complete"`))
-				},
-			)
-
-			stagingTask := opi.StagingTask{
+		BeforeEach(func() {
+			stagingTask = &opi.StagingTask{
 				Task: &opi.Task{
 					GUID: "the-staging-guid",
 					Env: map[string]string{
@@ -138,7 +93,26 @@ var _ = Describe("StagingReporter", func() {
 				ExecutorImage:   "eirini/recipe-executor",
 			}
 
-			Expect(taskDesirer.DesireStaging(&stagingTask)).To(Succeed())
+			eiriniServer.RouteToHandler(
+				"PUT",
+				"/stage/the-staging-guid/completed",
+				func(w http.ResponseWriter, req *http.Request) {
+					bytes, err := ioutil.ReadAll(req.Body)
+					Expect(err).NotTo(HaveOccurred())
+
+					var taskCompletedRequest cf.TaskCompletedRequest
+					Expect(json.Unmarshal(bytes, &taskCompletedRequest)).To(Succeed())
+
+					Expect(taskCompletedRequest.TaskGUID).To(Equal("the-staging-guid"))
+					Expect(taskCompletedRequest.Failed).To(BeTrue())
+					Expect(taskCompletedRequest.Annotation).To(ContainSubstring(`"completion_callback":"the-cloud-controller-address/staging/complete"`))
+				},
+			)
+
+		})
+
+		It("notifies eirini of a staging failure", func() {
+			Expect(taskDesirer.DesireStaging(stagingTask)).To(Succeed())
 			Eventually(eiriniServer.ReceivedRequests, "10s").Should(HaveLen(1))
 		})
 	})

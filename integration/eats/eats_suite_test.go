@@ -37,6 +37,7 @@ type BinPaths struct {
 	RouteStatefulsetInformer string `json:"route_stateful_set_informer"`
 	RoutePodInformer         string `json:"route_pod_informer"`
 	EventsReporter           string `json:"events_reporter"`
+	TaskReporter             string `json:"task_reporter"`
 }
 
 type routeInfo struct {
@@ -75,6 +76,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 
 	paths.EventsReporter, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/event-reporter")
+	Expect(err).NotTo(HaveOccurred())
+
+	paths.TaskReporter, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/task-reporter")
 	Expect(err).NotTo(HaveOccurred())
 
 	data, err := json.Marshal(paths)
@@ -271,6 +275,18 @@ func desireLRP(lrpRequest cf.DesireLRPRequest) *http.Response {
 	response, err := httpClient.Do(desireLrpReq)
 	Expect(err).NotTo(HaveOccurred())
 	return response
+}
+
+func desireTask(httpClient rest.HTTPClient, opiURL string, taskRequest cf.TaskRequest) (*http.Response, error) {
+	body, err := json.Marshal(taskRequest)
+	if err != nil {
+		return nil, err
+	}
+	desireLrpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", opiURL, taskRequest.GUID), bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	return httpClient.Do(desireLrpReq)
 }
 
 func stopLRP(httpClient rest.HTTPClient, opiURL, processGUID, versionGUID string) (*http.Response, error) {
