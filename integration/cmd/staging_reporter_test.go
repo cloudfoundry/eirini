@@ -16,7 +16,7 @@ var _ = Describe("StagingReporter", func() {
 
 		command    *exec.Cmd
 		cmdPath    string
-		config     *eirini.StagingReporterConfig
+		config     *eirini.ReporterConfig
 		configFile *os.File
 	)
 
@@ -35,7 +35,7 @@ var _ = Describe("StagingReporter", func() {
 	Context("When staging reporter is executed with a valid config", func() {
 
 		BeforeEach(func() {
-			config = defaultStagingReporterConfig()
+			config = defaultReporterConfig()
 			configFile, err = createStagingReporterConfigFile(config)
 		})
 
