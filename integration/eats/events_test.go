@@ -29,7 +29,7 @@ var _ = Describe("Events", func() {
 
 	BeforeEach(func() {
 		var err error
-		certPath, keyPath = generateKeyPair("capi")
+		certPath, keyPath = util.GenerateKeyPair("capi")
 		capiServer, err = util.CreateTestServer(
 			certPath, keyPath, certPath,
 		)
@@ -46,7 +46,7 @@ var _ = Describe("Events", func() {
 			CCKeyPath:     keyPath,
 			CCCAPath:      certPath,
 		}
-		eventsSession, eventsConfigFile = runBinary(binPaths.EventsReporter, config)
+		eventsSession, eventsConfigFile = util.RunBinary(binPaths.EventsReporter, config)
 	})
 
 	AfterEach(func() {

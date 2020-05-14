@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 
 	"code.cloudfoundry.org/eirini/integration/eats/fakes"
+	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"code.cloudfoundry.org/loggregator/plumbing"
@@ -36,7 +37,7 @@ var _ = Describe("Metrics", func() {
 	)
 
 	BeforeEach(func() {
-		metricsCertPath, metricsKeyPath = generateKeyPair("metron")
+		metricsCertPath, metricsKeyPath = util.GenerateKeyPair("metron")
 
 		envelopes = make(chan *loggregator_v2.Envelope)
 		var metronAddress string
@@ -53,7 +54,7 @@ var _ = Describe("Metrics", func() {
 			LoggregatorKeyPath:               metricsKeyPath,
 			AppMetricsEmissionIntervalInSecs: 1,
 		}
-		metricsSession, metricsConfigFile = runBinary(binPaths.MetricsCollector, config)
+		metricsSession, metricsConfigFile = util.RunBinary(binPaths.MetricsCollector, config)
 	})
 
 	AfterEach(func() {
