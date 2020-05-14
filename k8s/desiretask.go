@@ -65,7 +65,7 @@ func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 	return err
 }
 
-func (d *TaskDesirer) Delete(guid string) error {
+func (d *TaskDesirer) DeleteStaging(guid string) error {
 	logger := d.Logger.Session("delete", lager.Data{"guid": guid})
 	jobs, err := d.JobClient.List(meta_v1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", LabelStagingGUID, guid),
