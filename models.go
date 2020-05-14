@@ -128,7 +128,7 @@ type MetricsCollectorConfig struct {
 	KubeConfig `yaml:",inline"`
 }
 
-type StagingReporterConfig struct {
+type ReporterConfig struct {
 	EiriniCertPath string `yaml:"eirini_cert_path"`
 	EiriniKeyPath  string `yaml:"eirini_key_path"`
 	CAPath         string `yaml:"ca_path"`

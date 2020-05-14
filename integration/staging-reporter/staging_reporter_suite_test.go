@@ -48,8 +48,8 @@ var _ = AfterEach(func() {
 	fixture.TearDown()
 })
 
-func defaultStagingReporterConfig() *eirini.StagingReporterConfig {
-	config := &eirini.StagingReporterConfig{
+func defaultReporterConfig() *eirini.ReporterConfig {
+	config := &eirini.ReporterConfig{
 		KubeConfig: eirini.KubeConfig{
 			Namespace:  fixture.Namespace,
 			ConfigPath: fixture.KubeConfigPath,

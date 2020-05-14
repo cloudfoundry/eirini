@@ -38,7 +38,7 @@ var _ = Describe("StagingReporter", func() {
 		Expect(err).ToNot(HaveOccurred())
 		eiriniServer.Start()
 
-		config := defaultStagingReporterConfig()
+		config := defaultReporterConfig()
 
 		configFile, err = util.CreateConfigFile(config)
 		Expect(err).NotTo(HaveOccurred())
