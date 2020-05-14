@@ -8,7 +8,6 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -124,14 +123,14 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) (*batch.Job, error) {
 	return job, nil
 }
 
-func (d *TaskDesirer) createTaskSecret(task *opi.Task) (*corev1.Secret, error) {
+func (d *TaskDesirer) createTaskSecret(task *opi.Task) (*v1.Secret, error) {
 	secret := &v1.Secret{}
 
 	secretNamePrefix := fmt.Sprintf("%s-%s", task.AppName, task.SpaceName)
 	secretNamePrefix = fmt.Sprintf("%s-registry-secret-", utils.SanitizeName(secretNamePrefix, task.GUID))
 	secret.GenerateName = secretNamePrefix
 
-	secret.Type = corev1.SecretTypeDockerConfigJson
+	secret.Type = v1.SecretTypeDockerConfigJson
 
 	dockerConfig := dockerutils.NewDockerConfig(
 		task.PrivateRegistry.Server,
