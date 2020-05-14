@@ -18,7 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Desire Task", func() {
+var _ = Describe("Task Desire and Complete", func() {
 	var (
 		request cf.TaskRequest
 		jobs    *batchv1.JobList
@@ -95,7 +95,7 @@ var _ = Describe("Desire Task", func() {
 			}
 		})
 
-		It("creates the job succssfully", func() {
+		It("creates the job successfully", func() {
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
 				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
@@ -124,6 +124,32 @@ var _ = Describe("Desire Task", func() {
 					"Status": Equal(corev1.ConditionTrue),
 				})))
 			})
+		})
+
+		When("the completed handler is called", func() {
+			It("removes the job", func() {
+				// Ensure the job is created
+				Eventually(func() ([]batchv1.Job, error) {
+					var err error
+					jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+					return jobs.Items, err
+				}).Should(HaveLen(1))
+
+				// Complete the task
+				httpRequest, err := http.NewRequest("PUT", fmt.Sprintf("%s/tasks/the-task-guid/completed", url), nil)
+				Expect(err).NotTo(HaveOccurred())
+				resp, err := httpClient.Do(httpRequest)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
+				// Ensure the job is deleted
+				Eventually(func() ([]batchv1.Job, error) {
+					var err error
+					jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+					return jobs.Items, err
+				}).Should(BeEmpty())
+			})
+
 		})
 
 		When("the task uses a private Docker registry", func() {

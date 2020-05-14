@@ -56,7 +56,7 @@ func (s *Stage) stage(stagingGUID string, stagingRequest cf.StagingRequest) erro
 	return s.buildpackStagingBifrost.TransferStaging(context.Background(), stagingGUID, stagingRequest)
 }
 
-func (s *Stage) StagingComplete(res http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+func (s *Stage) CompleteStaging(res http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	stagingGUID := ps.ByName("staging_guid")
 	logger := s.logger.Session("staging-complete", lager.Data{"staging-guid": stagingGUID})
 

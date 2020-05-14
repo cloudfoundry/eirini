@@ -200,6 +200,19 @@ var _ = Describe("Handler", func() {
 			})
 		})
 
+		Context("PUT /tasks/:id/completed", func() {
+
+			BeforeEach(func() {
+				method = "PUT"
+				path = "/tasks/task_123/completed"
+				expectedStatus = http.StatusOK
+			})
+
+			It("serves the endpoint", func() {
+				assertEndpoint()
+			})
+
+		})
 	})
 
 })
