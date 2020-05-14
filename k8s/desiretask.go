@@ -16,11 +16,10 @@ import (
 )
 
 const (
-	ActiveDeadlineSeconds = 900
-	stagingSourceType     = "STG"
-	taskSourceType        = "TASK"
-	parallelism           = 1
-	completions           = 1
+	stagingSourceType = "STG"
+	taskSourceType    = "TASK"
+	parallelism       = 1
+	completions       = 1
 )
 
 //counterfeiter:generate . JobClient
@@ -310,9 +309,9 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 
 	job := &batch.Job{
 		Spec: batch.JobSpec{
-			ActiveDeadlineSeconds: int64ptr(ActiveDeadlineSeconds),
-			Parallelism:           int32ptr(parallelism),
-			Completions:           int32ptr(completions),
+			Parallelism:  int32ptr(parallelism),
+			Completions:  int32ptr(completions),
+			BackoffLimit: int32ptr(0),
 			Template: v1.PodTemplateSpec{
 				Spec: v1.PodSpec{
 					AutomountServiceAccountToken: &automountServiceAccountToken,

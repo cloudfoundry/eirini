@@ -39,7 +39,6 @@ var _ = Describe("Desiretask", func() {
 
 	assertGeneralSpec := func(job *batch.Job) {
 		automountServiceAccountToken := false
-		Expect(job.Spec.ActiveDeadlineSeconds).To(Equal(int64ptr(900)))
 		Expect(job.Spec.Template.Spec.RestartPolicy).To(Equal(v1.RestartPolicyNever))
 		Expect(job.Spec.Template.Spec.AutomountServiceAccountToken).To(Equal(&automountServiceAccountToken))
 		Expect(job.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(Equal(true)))
@@ -578,11 +577,6 @@ var _ = Describe("Desiretask", func() {
 
 	})
 })
-
-func int64ptr(i int) *int64 {
-	u := int64(i)
-	return &u
-}
 
 func int32ptr(i int) *int32 {
 	u := int32(i)
