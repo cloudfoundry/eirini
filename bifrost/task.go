@@ -18,6 +18,7 @@ type TaskConverter interface {
 
 type TaskDesirer interface {
 	Desire(task *opi.Task) error
+	Delete(name string) error
 }
 
 type Task struct {
@@ -32,4 +33,8 @@ func (b *Task) TransferTask(ctx context.Context, taskGUID string, taskRequest cf
 	}
 
 	return errors.Wrap(b.TaskDesirer.Desire(&desiredTask), "failed to desire")
+}
+
+func (b *Task) CompleteTask(taskGUID string) error {
+	return errors.Wrapf(b.TaskDesirer.Delete(taskGUID), "failed to delete task %s", taskGUID)
 }

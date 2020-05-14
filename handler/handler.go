@@ -24,6 +24,7 @@ type LRPBifrost interface {
 //counterfeiter:generate . TaskBifrost
 type TaskBifrost interface {
 	TransferTask(ctx context.Context, taskGUID string, request cf.TaskRequest) error
+	CompleteTask(taskGUID string) error
 }
 
 //counterfeiter:generate . StagingBifrost
@@ -62,9 +63,10 @@ func registerAppsEndpoints(handler *httprouter.Router, appHandler *App) {
 
 func registerStageEndpoints(handler *httprouter.Router, stageHandler *Stage) {
 	handler.POST("/stage/:staging_guid", stageHandler.Stage)
-	handler.PUT("/stage/:staging_guid/completed", stageHandler.StagingComplete)
+	handler.PUT("/stage/:staging_guid/completed", stageHandler.CompleteStaging)
 }
 
 func registerTaskEndpoints(handler *httprouter.Router, taskHandler *Task) {
 	handler.POST("/tasks/:task_guid", taskHandler.Run)
+	handler.PUT("/tasks/:task_guid/completed", taskHandler.CompleteTask)
 }

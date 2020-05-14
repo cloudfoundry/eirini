@@ -104,3 +104,7 @@ type TaskSimulator struct{}
 func (t *TaskSimulator) TransferTask(ctx context.Context, taskGUID string, request cf.TaskRequest) error {
 	return nil
 }
+
+func (t *TaskSimulator) CompleteTask(taskGUID string) error {
+	return nil
+}
