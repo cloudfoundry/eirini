@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -19,12 +18,10 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/tlsconfig/certtest"
 	. "github.com/onsi/ginkgo"
 	ginkgoconfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/rest"
 )
 
@@ -95,7 +92,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 var _ = BeforeEach(func() {
 	fixture.SetUp()
 
-	localhostCertPath, localhostKeyPath = generateKeyPair("localhost")
+	localhostCertPath, localhostKeyPath = util.GenerateKeyPair("localhost")
 
 	var err error
 	httpClient, err = makeTestHTTPClient(localhostCertPath, localhostKeyPath)
@@ -115,20 +112,6 @@ var _ = AfterEach(func() {
 	Expect(os.Remove(localhostCertPath)).To(Succeed())
 	Expect(os.Remove(localhostKeyPath)).To(Succeed())
 })
-
-func generateKeyPair(name string) (string, string) {
-	authority, err := certtest.BuildCA(name)
-	Expect(err).NotTo(HaveOccurred())
-	cert, err := authority.BuildSignedCertificate(name, certtest.WithDomains(name))
-	Expect(err).NotTo(HaveOccurred())
-
-	certData, keyData, err := cert.CertificatePEMAndPrivateKey()
-	Expect(err).NotTo(HaveOccurred())
-	metricsCertPath := writeTempFile(certData, fmt.Sprintf("%s-cert", name))
-	metricsKeyPath := writeTempFile(keyData, fmt.Sprintf("%s-key", name))
-
-	return metricsCertPath, metricsKeyPath
-}
 
 func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
 	eiriniConfig := &eirini.Config{
@@ -316,26 +299,4 @@ func updateLRP(updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error)
 		return nil, err
 	}
 	return httpClient.Do(updateLrpReq)
-}
-
-func writeTempFile(content []byte, fileName string) string {
-	configFile, err := ioutil.TempFile("", fileName)
-	Expect(err).ToNot(HaveOccurred())
-	defer configFile.Close()
-
-	err = ioutil.WriteFile(configFile.Name(), content, os.ModePerm)
-	Expect(err).ToNot(HaveOccurred())
-	return configFile.Name()
-}
-
-func runBinary(binaryPath string, config interface{}) (*gexec.Session, string) {
-	configBytes, err := yaml.Marshal(config)
-	Expect(err).NotTo(HaveOccurred())
-
-	configFile := writeTempFile(configBytes, filepath.Base(binaryPath)+"-config.yaml")
-	command := exec.Command(binaryPath, "-c", configFile) // #nosec G204
-	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
-	Expect(err).ToNot(HaveOccurred())
-
-	return session, configFile
 }
