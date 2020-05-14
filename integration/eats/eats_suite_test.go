@@ -290,7 +290,7 @@ func desireLRP(lrpRequest cf.DesireLRPRequest) *http.Response {
 	return response
 }
 
-func stopLRP(processGUID, versionGUID string) (*http.Response, error) {
+func stopLRP(httpClient rest.HTTPClient, opiURL, processGUID, versionGUID string) (*http.Response, error) {
 	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop", opiURL, processGUID, versionGUID), nil)
 	if err != nil {
 		return nil, err

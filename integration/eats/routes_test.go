@@ -250,7 +250,7 @@ var _ = Describe("Routes", func() {
 			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
 			Eventually(registerChan).Should(Receive())
 
-			resp, err := stopLRP(lrp.GUID, lrp.Version)
+			resp, err := stopLRP(httpClient, opiURL, lrp.GUID, lrp.Version)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
