@@ -18,7 +18,7 @@ type StagingConverter interface {
 //counterfeiter:generate . StagingDesirer
 type StagingDesirer interface {
 	DesireStaging(task *opi.StagingTask) error
-	Delete(name string) error
+	DeleteStaging(name string) error
 }
 
 //counterfeiter:generate . StagingCompleter
@@ -47,6 +47,6 @@ func (b *BuildpackStaging) CompleteStaging(taskCompletedRequest cf.TaskCompleted
 	l.Debug("Complete staging")
 	return multierr.Combine(
 		b.StagingCompleter.CompleteStaging(taskCompletedRequest),
-		b.StagingDesirer.Delete(taskCompletedRequest.TaskGUID),
+		b.StagingDesirer.DeleteStaging(taskCompletedRequest.TaskGUID),
 	)
 }

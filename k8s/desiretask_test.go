@@ -507,7 +507,7 @@ var _ = Describe("Desiretask", func() {
 		})
 
 		It("should delete the job", func() {
-			Expect(desirer.Delete(taskGUID)).To(Succeed())
+			Expect(desirer.DeleteStaging(taskGUID)).To(Succeed())
 
 			Expect(fakeJobClient.ListCallCount()).To(Equal(1))
 			Expect(fakeJobClient.ListArgsForCall(0).LabelSelector).To(Equal(fmt.Sprintf("%s=%s", LabelStagingGUID, taskGUID)))
@@ -523,7 +523,7 @@ var _ = Describe("Desiretask", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(desirer.Delete(taskGUID)).To(MatchError(fmt.Sprintf("job with guid %s should have 1 instance, but it has: %d", taskGUID, 0)))
+				Expect(desirer.DeleteStaging(taskGUID)).To(MatchError(fmt.Sprintf("job with guid %s should have 1 instance, but it has: %d", taskGUID, 0)))
 				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
 				Expect(fakeJobClient.DeleteCallCount()).To(BeZero())
 			})
@@ -537,7 +537,7 @@ var _ = Describe("Desiretask", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(desirer.Delete(taskGUID)).To(MatchError(fmt.Sprintf("job with guid %s should have 1 instance, but it has: %d", taskGUID, 2)))
+				Expect(desirer.DeleteStaging(taskGUID)).To(MatchError(fmt.Sprintf("job with guid %s should have 1 instance, but it has: %d", taskGUID, 2)))
 				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
 				Expect(fakeJobClient.DeleteCallCount()).To(BeZero())
 			})
@@ -550,7 +550,7 @@ var _ = Describe("Desiretask", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(desirer.Delete(taskGUID)).To(MatchError("failed to list jobs"))
+				Expect(desirer.DeleteStaging(taskGUID)).To(MatchError("failed to list jobs"))
 				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
 				Expect(fakeJobClient.DeleteCallCount()).To(BeZero())
 			})
@@ -563,7 +563,7 @@ var _ = Describe("Desiretask", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(desirer.Delete(taskGUID)).To(MatchError(ContainSubstring("failed to delete")))
+				Expect(desirer.DeleteStaging(taskGUID)).To(MatchError(ContainSubstring("failed to delete")))
 			})
 		})
 

@@ -130,9 +130,9 @@ var _ = Describe("Staging", func() {
 		})
 
 		It("should delete the task", func() {
-			Expect(stagingDesirer.DeleteCallCount()).To(Equal(1))
+			Expect(stagingDesirer.DeleteStagingCallCount()).To(Equal(1))
 
-			taskName := stagingDesirer.DeleteArgsForCall(0)
+			taskName := stagingDesirer.DeleteStagingArgsForCall(0)
 			Expect(taskName).To(Equal(taskCompletedRequest.TaskGUID))
 		})
 
@@ -146,16 +146,16 @@ var _ = Describe("Staging", func() {
 			})
 
 			It("should delete the task", func() {
-				Expect(stagingDesirer.DeleteCallCount()).To(Equal(1))
+				Expect(stagingDesirer.DeleteStagingCallCount()).To(Equal(1))
 
-				taskName := stagingDesirer.DeleteArgsForCall(0)
+				taskName := stagingDesirer.DeleteStagingArgsForCall(0)
 				Expect(taskName).To(Equal(taskCompletedRequest.TaskGUID))
 			})
 		})
 
 		Context("and the task deletion fails", func() {
 			BeforeEach(func() {
-				stagingDesirer.DeleteReturns(errors.New("delete boom"))
+				stagingDesirer.DeleteStagingReturns(errors.New("delete boom"))
 			})
 
 			It("should return an error", func() {
