@@ -46,7 +46,12 @@ var _ = Describe("Routes", func() {
 		unregisterChan = make(chan *nats.Msg)
 
 		natsConfig = getNatsServerConfig()
-		natsServer = natstest.RunServer(natsConfig)
+		// natstest.RunServer will panic after 10 seconds and that can't be changed
+		Eventually(func() error {
+			var err error
+			natsServer, err = runNatsTestServer(natsConfig)
+			return err
+		}, "1m").Should(Succeed())
 		natsClient = subscribeToNats(natsConfig, registerChan, unregisterChan)
 
 		eiriniRouteConfig := eirini.RouteEmitterConfig{
@@ -345,4 +350,15 @@ func subscribeToNats(natsConfig *server.Options, registerChan, unregisterChan ch
 	Expect(err).NotTo(HaveOccurred())
 
 	return natsClient
+}
+
+func runNatsTestServer(opts *server.Options) (server *server.Server, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("Failed to start test NATS server: %s", r)
+		}
+	}()
+
+	server = natstest.RunServer(opts)
+	return server, nil
 }
