@@ -66,11 +66,11 @@ var _ = Describe("Tasks", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 
-				Eventually(getTaskJobsFn("the-task"), "10s").Should(HaveLen(1))
+				Eventually(getTaskJobsFn("the-task")).Should(HaveLen(1))
 			})
 
 			By("cleaning up the task", func() {
-				Eventually(getTaskJobsFn("the-task"), "10s").Should(BeEmpty())
+				Eventually(getTaskJobsFn("the-task")).Should(BeEmpty())
 			})
 		})
 	})
