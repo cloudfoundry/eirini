@@ -95,7 +95,7 @@ func (s *StagerSimulator) TransferStaging(ctx context.Context, stagingGUID strin
 	return nil
 }
 
-func (s *StagerSimulator) CompleteStaging(cf.TaskCompletedRequest) error {
+func (s *StagerSimulator) CompleteStaging(cf.StagingCompletedRequest) error {
 	return nil
 }
 

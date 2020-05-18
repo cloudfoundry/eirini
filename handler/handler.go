@@ -30,7 +30,7 @@ type TaskBifrost interface {
 //counterfeiter:generate . StagingBifrost
 type StagingBifrost interface {
 	TransferStaging(ctx context.Context, stagingGUID string, request cf.StagingRequest) error
-	CompleteStaging(cf.TaskCompletedRequest) error
+	CompleteStaging(cf.StagingCompletedRequest) error
 }
 
 func New(lrpBifrost LRPBifrost,

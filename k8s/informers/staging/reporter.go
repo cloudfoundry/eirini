@@ -71,17 +71,17 @@ func getFailedContainerStatusIfAny(statuses []v1.ContainerStatus) *v1.ContainerS
 	return nil
 }
 
-func (r FailedStagingReporter) createFailureCompletionRequest(failure string, stagingGUID, completionCallback string) (cf.TaskCompletedRequest, error) {
+func (r FailedStagingReporter) createFailureCompletionRequest(failure string, stagingGUID, completionCallback string) (cf.StagingCompletedRequest, error) {
 	annotation := cc_messages.StagingTaskAnnotation{
 		CompletionCallback: completionCallback,
 	}
 
 	annotationJSON, err := json.Marshal(annotation)
 	if err != nil {
-		return cf.TaskCompletedRequest{}, errors.Wrap(err, "cannot create callback annotation")
+		return cf.StagingCompletedRequest{}, errors.Wrap(err, "cannot create callback annotation")
 	}
 
-	return cf.TaskCompletedRequest{
+	return cf.StagingCompletedRequest{
 		TaskGUID:      stagingGUID,
 		Failed:        true,
 		FailureReason: failure,

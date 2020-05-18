@@ -59,7 +59,7 @@ type executionMetadata struct {
 }
 
 func (s DockerStaging) TransferStaging(ctx context.Context, stagingGUID string, request cf.StagingRequest) error {
-	taskCallbackResponse := cf.TaskCompletedRequest{
+	taskCallbackResponse := cf.StagingCompletedRequest{
 		TaskGUID:   stagingGUID,
 		Annotation: fmt.Sprintf(`{"completion_callback": "%s"}`, request.CompletionCallback),
 	}
@@ -86,13 +86,13 @@ func (s DockerStaging) TransferStaging(ctx context.Context, stagingGUID string, 
 	return s.CompleteStaging(taskCallbackResponse)
 }
 
-func (s DockerStaging) respondWithFailure(taskCompletedRequest cf.TaskCompletedRequest, err error) error {
+func (s DockerStaging) respondWithFailure(taskCompletedRequest cf.StagingCompletedRequest, err error) error {
 	taskCompletedRequest.Failed = true
 	taskCompletedRequest.FailureReason = err.Error()
 	return s.CompleteStaging(taskCompletedRequest)
 }
 
-func (s DockerStaging) CompleteStaging(taskCompletedRequest cf.TaskCompletedRequest) error {
+func (s DockerStaging) CompleteStaging(taskCompletedRequest cf.StagingCompletedRequest) error {
 	return s.StagingCompleter.CompleteStaging(taskCompletedRequest)
 }
 

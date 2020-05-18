@@ -34,7 +34,7 @@ func NewCallbackStagingCompleter(logger lager.Logger, httpClient *http.Client) *
 	}
 }
 
-func (s *CallbackStagingCompleter) CompleteStaging(taskCompletedRequest cf.TaskCompletedRequest) error {
+func (s *CallbackStagingCompleter) CompleteStaging(taskCompletedRequest cf.StagingCompletedRequest) error {
 	l := s.Logger.Session("complete-staging", lager.Data{"task-guid": taskCompletedRequest.TaskGUID})
 	callbackBody, err := s.constructStagingResponse(taskCompletedRequest)
 	if err != nil {
@@ -104,7 +104,7 @@ func (s *CallbackStagingCompleter) executeRequest(request *http.Request) error {
 	return nil
 }
 
-func (s *CallbackStagingCompleter) constructStagingResponse(taskCompletedRequest cf.TaskCompletedRequest) ([]byte, error) {
+func (s *CallbackStagingCompleter) constructStagingResponse(taskCompletedRequest cf.StagingCompletedRequest) ([]byte, error) {
 	var response cc_messages.StagingResponseForCC
 
 	if taskCompletedRequest.Failed {
@@ -125,7 +125,7 @@ func (s *CallbackStagingCompleter) constructStagingResponse(taskCompletedRequest
 	return responseJSON, nil
 }
 
-func (s *CallbackStagingCompleter) getCallbackURI(taskCompletedRequest cf.TaskCompletedRequest) (string, error) {
+func (s *CallbackStagingCompleter) getCallbackURI(taskCompletedRequest cf.StagingCompletedRequest) (string, error) {
 	var annotation cc_messages.StagingTaskAnnotation
 	if err := json.Unmarshal([]byte(taskCompletedRequest.Annotation), &annotation); err != nil {
 		s.Logger.Error("failed-to-parse-annotation", err)

@@ -101,13 +101,13 @@ var _ = Describe("Staging", func() {
 	Describe("Complete Staging", func() {
 
 		var (
-			taskCompletedRequest cf.TaskCompletedRequest
+			taskCompletedRequest cf.StagingCompletedRequest
 		)
 
 		BeforeEach(func() {
 			annotation := `{"completion_callback": "some-cc-endpoint.io/call/me/maybe"}`
 
-			taskCompletedRequest = cf.TaskCompletedRequest{
+			taskCompletedRequest = cf.StagingCompletedRequest{
 				TaskGUID:      "our-task-guid",
 				Failed:        false,
 				FailureReason: "",

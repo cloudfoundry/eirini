@@ -103,14 +103,6 @@ type TaskRequest struct {
 	Lifecycle          Lifecycle             `json:"lifecycle"`
 }
 
-type TaskCompletedRequest struct {
-	TaskGUID      string `json:"task_guid"`
-	Failed        bool   `json:"failed"`
-	FailureReason string `json:"failure_reason"`
-	Result        string `json:"result"`
-	Annotation    string `json:"annotation,omitempty"`
-}
-
 type StagingRequest struct {
 	AppGUID            string                     `json:"app_guid"`
 	AppName            string                     `json:"app_name"`
@@ -125,6 +117,14 @@ type StagingRequest struct {
 	MemoryMB           int64                      `json:"memory_mb"`
 	DiskMB             int64                      `json:"disk_mb"`
 	CPUWeight          uint8                      `json:"cpu_weight"`
+}
+
+type StagingCompletedRequest struct {
+	TaskGUID      string `json:"task_guid"`
+	Failed        bool   `json:"failed"`
+	FailureReason string `json:"failure_reason"`
+	Result        string `json:"result"`
+	Annotation    string `json:"annotation,omitempty"`
 }
 
 type StagingLifecycle struct {

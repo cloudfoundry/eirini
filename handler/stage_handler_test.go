@@ -244,7 +244,7 @@ var _ = Describe("StageHandler", func() {
 		It("should submit the task callback response", func() {
 			Expect(buildpackStagingClient.CompleteStagingCallCount()).To(Equal(1))
 			taskCompletedRequest := buildpackStagingClient.CompleteStagingArgsForCall(0)
-			Expect(taskCompletedRequest).To(Equal(cf.TaskCompletedRequest{
+			Expect(taskCompletedRequest).To(Equal(cf.StagingCompletedRequest{
 				TaskGUID:      "our-task-guid",
 				Failed:        false,
 				FailureReason: "",

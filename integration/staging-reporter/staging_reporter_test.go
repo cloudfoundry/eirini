@@ -100,7 +100,7 @@ var _ = Describe("StagingReporter", func() {
 					bytes, err := ioutil.ReadAll(req.Body)
 					Expect(err).NotTo(HaveOccurred())
 
-					var taskCompletedRequest cf.TaskCompletedRequest
+					var taskCompletedRequest cf.StagingCompletedRequest
 					Expect(json.Unmarshal(bytes, &taskCompletedRequest)).To(Succeed())
 
 					Expect(taskCompletedRequest.TaskGUID).To(Equal("the-staging-guid"))

@@ -18,7 +18,7 @@ var _ = Describe("StagingCompleter", func() {
 
 	var (
 		server               *ghttp.Server
-		taskCompletedRequest cf.TaskCompletedRequest
+		taskCompletedRequest cf.StagingCompletedRequest
 		handlers             []http.HandlerFunc
 		stagingCompleter     *stager.CallbackStagingCompleter
 		err                  error
@@ -30,7 +30,7 @@ var _ = Describe("StagingCompleter", func() {
 		server = ghttp.NewServer()
 		annotation := fmt.Sprintf(`{"completion_callback": "%s/call/me/maybe"}`, server.URL())
 
-		taskCompletedRequest = cf.TaskCompletedRequest{
+		taskCompletedRequest = cf.StagingCompletedRequest{
 			TaskGUID:      "our-task-guid",
 			Failed:        false,
 			FailureReason: "",

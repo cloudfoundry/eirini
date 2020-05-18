@@ -23,7 +23,7 @@ type StagingDesirer interface {
 
 //counterfeiter:generate . StagingCompleter
 type StagingCompleter interface {
-	CompleteStaging(cf.TaskCompletedRequest) error
+	CompleteStaging(cf.StagingCompletedRequest) error
 }
 
 type BuildpackStaging struct {
@@ -42,7 +42,7 @@ func (b *BuildpackStaging) TransferStaging(ctx context.Context, stagingGUID stri
 	return errors.Wrap(b.StagingDesirer.DesireStaging(&desiredStaging), "failed to desire")
 }
 
-func (b *BuildpackStaging) CompleteStaging(taskCompletedRequest cf.TaskCompletedRequest) error {
+func (b *BuildpackStaging) CompleteStaging(taskCompletedRequest cf.StagingCompletedRequest) error {
 	l := b.Logger.Session("complete-staging", lager.Data{"task-guid": taskCompletedRequest.TaskGUID})
 	l.Debug("Complete staging")
 	return multierr.Combine(

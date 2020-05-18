@@ -9,10 +9,10 @@ import (
 )
 
 type FakeStagingCompleter struct {
-	CompleteStagingStub        func(cf.TaskCompletedRequest) error
+	CompleteStagingStub        func(cf.StagingCompletedRequest) error
 	completeStagingMutex       sync.RWMutex
 	completeStagingArgsForCall []struct {
-		arg1 cf.TaskCompletedRequest
+		arg1 cf.StagingCompletedRequest
 	}
 	completeStagingReturns struct {
 		result1 error
@@ -24,11 +24,11 @@ type FakeStagingCompleter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStagingCompleter) CompleteStaging(arg1 cf.TaskCompletedRequest) error {
+func (fake *FakeStagingCompleter) CompleteStaging(arg1 cf.StagingCompletedRequest) error {
 	fake.completeStagingMutex.Lock()
 	ret, specificReturn := fake.completeStagingReturnsOnCall[len(fake.completeStagingArgsForCall)]
 	fake.completeStagingArgsForCall = append(fake.completeStagingArgsForCall, struct {
-		arg1 cf.TaskCompletedRequest
+		arg1 cf.StagingCompletedRequest
 	}{arg1})
 	fake.recordInvocation("CompleteStaging", []interface{}{arg1})
 	fake.completeStagingMutex.Unlock()
@@ -48,13 +48,13 @@ func (fake *FakeStagingCompleter) CompleteStagingCallCount() int {
 	return len(fake.completeStagingArgsForCall)
 }
 
-func (fake *FakeStagingCompleter) CompleteStagingCalls(stub func(cf.TaskCompletedRequest) error) {
+func (fake *FakeStagingCompleter) CompleteStagingCalls(stub func(cf.StagingCompletedRequest) error) {
 	fake.completeStagingMutex.Lock()
 	defer fake.completeStagingMutex.Unlock()
 	fake.CompleteStagingStub = stub
 }
 
-func (fake *FakeStagingCompleter) CompleteStagingArgsForCall(i int) cf.TaskCompletedRequest {
+func (fake *FakeStagingCompleter) CompleteStagingArgsForCall(i int) cf.StagingCompletedRequest {
 	fake.completeStagingMutex.RLock()
 	defer fake.completeStagingMutex.RUnlock()
 	argsForCall := fake.completeStagingArgsForCall[i]
