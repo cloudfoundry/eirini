@@ -30,9 +30,9 @@ var _ = Describe("Apps", func() {
 		})
 
 		When("the app already exist", func() {
-			It("returns 400", func() {
+			It("returns 202", func() {
 				resp := desireApp("the-app-guid", "the-version")
-				Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+				Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 			})
 		})
 	})

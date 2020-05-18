@@ -192,9 +192,9 @@ var _ = Describe("StatefulSet Manager", func() {
 		})
 
 		Context("when we create the same StatefulSet again", func() {
-			It("should error", func() {
+			It("should not error", func() {
 				err := desirer.Desire(odinLRP)
-				Expect(err).To(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 

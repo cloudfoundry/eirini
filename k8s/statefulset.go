@@ -135,6 +135,9 @@ func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
 	}
 
 	if _, err := m.StatefulSets.Create(m.toStatefulSet(lrp)); err != nil {
+		if statusErr, ok := err.(*k8serrors.StatusError); ok && statusErr.Status().Reason == metav1.StatusReasonAlreadyExists {
+			return nil
+		}
 		return errors.Wrap(err, "failed to create statefulset")
 	}
 

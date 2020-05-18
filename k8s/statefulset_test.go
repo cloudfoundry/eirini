@@ -347,7 +347,25 @@ var _ = Describe("Statefulset Desirer", func() {
 				})
 
 			})
+			Context("when the statefulset already exists", func() {
+				BeforeEach(func() {
+					statefulSetClient.CreateReturns(nil, k8serrors.NewAlreadyExists(schema.GroupResource{}, "potato"))
+				})
 
+				It("does not fail", func() {
+					Expect(desireErr).NotTo(HaveOccurred())
+				})
+			})
+
+			Context("when creating the statefulset fails", func() {
+				BeforeEach(func() {
+					statefulSetClient.CreateReturns(nil, errors.New("potato"))
+				})
+
+				It("propagates the error", func() {
+					Expect(desireErr).To(MatchError(ContainSubstring("potato")))
+				})
+			})
 		})
 
 		Context("When the app references a private docker image", func() {
