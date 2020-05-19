@@ -277,18 +277,6 @@ func desireLRP(lrpRequest cf.DesireLRPRequest) *http.Response {
 	return response
 }
 
-func desireTask(httpClient rest.HTTPClient, opiURL string, taskRequest cf.TaskRequest) (*http.Response, error) {
-	body, err := json.Marshal(taskRequest)
-	if err != nil {
-		return nil, err
-	}
-	desireLrpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", opiURL, taskRequest.GUID), bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	return httpClient.Do(desireLrpReq)
-}
-
 func stopLRP(httpClient rest.HTTPClient, opiURL, processGUID, versionGUID string) (*http.Response, error) {
 	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop", opiURL, processGUID, versionGUID), nil)
 	if err != nil {

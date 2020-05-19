@@ -60,13 +60,11 @@ var _ = Describe("Desiretask", func() {
 			}
 		}
 
-		Expect(container.Env).To(ConsistOf(
+		Expect(container.Env).To(ContainElements(
 			v1.EnvVar{Name: eirini.EnvDownloadURL, Value: "example.com/download"},
 			v1.EnvVar{Name: eirini.EnvDropletUploadURL, Value: "example.com/upload"},
 			v1.EnvVar{Name: eirini.EnvAppID, Value: "env-app-id"},
 			v1.EnvVar{Name: eirini.EnvStagingGUID, Value: taskGUID},
-			v1.EnvVar{Name: eirini.EnvCompletionCallback, Value: "example.com/call/me/maybe"},
-			v1.EnvVar{Name: eirini.EnvEiriniAddress, Value: "http://opi.cf.internal"},
 			v1.EnvVar{Name: eirini.EnvCFInstanceInternalIP, ValueFrom: expectedValFrom("status.podIP")},
 			v1.EnvVar{Name: eirini.EnvCFInstanceIP, ValueFrom: expectedValFrom("status.podIP")},
 			v1.EnvVar{Name: eirini.EnvPodName, ValueFrom: expectedValFrom("metadata.name")},
@@ -76,8 +74,17 @@ var _ = Describe("Desiretask", func() {
 		))
 	}
 
+	assertStagingContainer := func(container v1.Container, name string) {
+		assertContainer(container, name)
+
+		Expect(container.Env).To(ContainElements(
+			v1.EnvVar{Name: eirini.EnvCompletionCallback, Value: "example.com/call/me/maybe"},
+			v1.EnvVar{Name: eirini.EnvEiriniAddress, Value: "http://opi.cf.internal"},
+		))
+	}
+
 	assertExecutorContainer := func(container v1.Container, cpu uint8, mem, disk int64) {
-		assertContainer(container, "opi-task-executor")
+		assertStagingContainer(container, "opi-task-executor")
 		Expect(container.Resources.Requests.Memory()).To(Equal(resource.NewScaledQuantity(mem, resource.Mega)))
 		Expect(container.Resources.Requests.Cpu()).To(Equal(resource.NewScaledQuantity(int64(cpu*10), resource.Milli)))
 		Expect(container.Resources.Requests.StorageEphemeral()).To(Equal(resource.NewScaledQuantity(disk, resource.Mega)))
@@ -87,22 +94,21 @@ var _ = Describe("Desiretask", func() {
 		fakeJobClient = new(k8sfakes.FakeJobClient)
 		fakeSecretsClient = new(k8sfakes.FakeSecretsClient)
 		task = &opi.Task{
-			Image:     Image,
-			AppName:   "my-app",
-			Name:      "task-name",
-			AppGUID:   "my-app-guid",
-			OrgName:   "my-org",
-			SpaceName: "my-space",
-			SpaceGUID: "space-id",
-			OrgGUID:   "org-id",
-			GUID:      taskGUID,
+			Image:              Image,
+			CompletionCallback: "cloud-countroller.io/task/completed",
+			AppName:            "my-app",
+			Name:               "task-name",
+			AppGUID:            "my-app-guid",
+			OrgName:            "my-org",
+			SpaceName:          "my-space",
+			SpaceGUID:          "space-id",
+			OrgGUID:            "org-id",
+			GUID:               taskGUID,
 			Env: map[string]string{
-				eirini.EnvDownloadURL:        "example.com/download",
-				eirini.EnvDropletUploadURL:   "example.com/upload",
-				eirini.EnvAppID:              "env-app-id",
-				eirini.EnvStagingGUID:        taskGUID,
-				eirini.EnvCompletionCallback: "example.com/call/me/maybe",
-				eirini.EnvEiriniAddress:      "http://opi.cf.internal",
+				eirini.EnvDownloadURL:      "example.com/download",
+				eirini.EnvDropletUploadURL: "example.com/upload",
+				eirini.EnvAppID:            "env-app-id",
+				eirini.EnvStagingGUID:      taskGUID,
 			},
 			MemoryMB:  1,
 			CPUWeight: 2,
@@ -178,6 +184,7 @@ var _ = Describe("Desiretask", func() {
 					HaveKeyWithValue(AnnotationOrgGUID, "org-id"),
 					HaveKeyWithValue(AnnotationSpaceName, "my-space"),
 					HaveKeyWithValue(AnnotationSpaceGUID, "space-id"),
+					HaveKeyWithValue(AnnotationCompletionCallback, "cloud-countroller.io/task/completed"),
 				))
 			})
 
@@ -431,6 +438,9 @@ var _ = Describe("Desiretask", func() {
 				UploaderImage:   Image,
 				Task:            task,
 			}
+			env := stagingTask.Env
+			env[eirini.EnvCompletionCallback] = "example.com/call/me/maybe"
+			env[eirini.EnvEiriniAddress] = "http://opi.cf.internal"
 		})
 
 		JustBeforeEach(func() {
@@ -451,13 +461,13 @@ var _ = Describe("Desiretask", func() {
 			containers := job.Spec.Template.Spec.Containers
 			Expect(containers).To(HaveLen(1))
 
-			assertContainer(initContainers[0], "opi-task-downloader")
+			assertStagingContainer(initContainers[0], "opi-task-downloader")
 			assertExecutorContainer(initContainers[1],
 				stagingTask.CPUWeight,
 				stagingTask.MemoryMB,
 				stagingTask.DiskMB,
 			)
-			assertContainer(containers[0], "opi-task-uploader")
+			assertStagingContainer(containers[0], "opi-task-uploader")
 			assertStagingSpec(job)
 		})
 

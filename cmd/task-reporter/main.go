@@ -7,6 +7,7 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
@@ -30,26 +31,21 @@ func main() {
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
-	if cfg.EiriniAddress == "" {
-		cmdcommons.ExitIfError(errors.New("EiriniAddress is missing"))
-	}
-
 	launchTaskReporter(
 		clientset,
-		cfg.EiriniAddress,
 		cfg.CAPath,
-		cfg.EiriniCertPath,
-		cfg.EiriniKeyPath,
+		cfg.CCCertPath,
+		cfg.CCKeyPath,
 		cfg.Namespace,
 	)
 }
 
-func launchTaskReporter(clientset kubernetes.Interface, eiriniAddress, ca, eiriniCert, eiriniKey, namespace string) {
+func launchTaskReporter(clientset kubernetes.Interface, ca, ccCert, ccKey, namespace string) {
 	httpClient, err := util.CreateTLSHTTPClient(
 		[]util.CertPaths{
 			{
-				Crt: eiriniCert,
-				Key: eiriniKey,
+				Crt: ccCert,
+				Key: ccKey,
 				Ca:  ca,
 			},
 		},
@@ -60,13 +56,24 @@ func launchTaskReporter(clientset kubernetes.Interface, eiriniAddress, ca, eirin
 	taskLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	reporter := task.StateReporter{
-		EiriniAddress: eiriniAddress,
-		Client:        httpClient,
-		Logger:        taskLogger,
+		Client:      httpClient,
+		Logger:      taskLogger,
+		TaskDeleter: initTaskDeleter(namespace, clientset),
 	}
 	taskInformer := task.NewInformer(clientset, 0, namespace, reporter, make(chan struct{}), taskLogger)
 
 	taskInformer.Start()
+}
+
+func initTaskDeleter(namespace string, clientset kubernetes.Interface) task.Deleter {
+	logger := lager.NewLogger("task-deleter")
+	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+
+	return &k8s.TaskDesirer{
+		Namespace: namespace,
+		JobClient: clientset.BatchV1().Jobs(namespace),
+		Logger:    logger,
+	}
 }
 
 func readConfigFile(path string) (*eirini.ReporterConfig, error) {

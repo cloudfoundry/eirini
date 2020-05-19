@@ -153,14 +153,15 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 	}
 
 	task := opi.Task{
-		GUID:      taskGUID,
-		Name:      request.Name,
-		AppName:   request.AppName,
-		AppGUID:   request.AppGUID,
-		OrgName:   request.OrgName,
-		SpaceName: request.SpaceName,
-		OrgGUID:   request.OrgGUID,
-		SpaceGUID: request.SpaceGUID,
+		GUID:               taskGUID,
+		Name:               request.Name,
+		CompletionCallback: request.CompletionCallback,
+		AppName:            request.AppName,
+		AppGUID:            request.AppGUID,
+		OrgName:            request.OrgName,
+		SpaceName:          request.SpaceName,
+		OrgGUID:            request.OrgGUID,
+		SpaceGUID:          request.SpaceGUID,
 	}
 
 	if request.Lifecycle.BuildpackLifecycle != nil {

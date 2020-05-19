@@ -1,6 +1,7 @@
 package task_test
 
 import (
+	"fmt"
 	"net/http"
 
 	. "github.com/onsi/ginkgo"
@@ -11,43 +12,47 @@ import (
 
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
+	"code.cloudfoundry.org/eirini/k8s/informers/task/taskfakes"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("Reporter", func() {
 
 	var (
-		reporter task.StateReporter
-		server   *ghttp.Server
-		logger   *lagertest.TestLogger
-		handlers []http.HandlerFunc
-		job      *batchv1.Job
+		reporter    task.StateReporter
+		server      *ghttp.Server
+		logger      *lagertest.TestLogger
+		job         *batchv1.Job
+		taskDeleter *taskfakes.FakeDeleter
+		handlers    []http.HandlerFunc
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("task-reporter-test")
+		taskDeleter = new(taskfakes.FakeDeleter)
 
-		handlers = []http.HandlerFunc{
-			ghttp.VerifyRequest("PUT", "/tasks/the-task-guid/completed"),
-		}
-	})
-
-	JustBeforeEach(func() {
 		server = ghttp.NewServer()
-		server.AppendHandlers(
-			ghttp.CombineHandlers(handlers...),
-		)
+		handlers = []http.HandlerFunc{
+			ghttp.VerifyRequest("PUT", "/the-callback-url"),
+			ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
+				TaskGUID: "the-task-guid",
+			}),
+		}
 
 		reporter = task.StateReporter{
-			EiriniAddress: server.URL(),
-			Client:        &http.Client{},
-			Logger:        logger,
+			Client:      &http.Client{},
+			Logger:      logger,
+			TaskDeleter: taskDeleter,
 		}
 
 		job = &batchv1.Job{
 			ObjectMeta: v1.ObjectMeta{
 				Labels: map[string]string{
 					k8s.LabelGUID: "the-task-guid",
+				},
+				Annotations: map[string]string{
+					k8s.AnnotationCompletionCallback: fmt.Sprintf("%s/the-callback-url", server.URL()),
 				},
 			},
 			Status: batchv1.JobStatus{
@@ -60,41 +65,91 @@ var _ = Describe("Reporter", func() {
 		}
 	})
 
+	JustBeforeEach(func() {
+		server.AppendHandlers(
+			ghttp.CombineHandlers(handlers...),
+		)
+
+		reporter.Report(job)
+	})
+
 	AfterEach(func() {
 		server.Close()
 	})
 
-	It("completes the task execution in eirini", func() {
-		reporter.Report(job)
+	It("notifies the cloud controller", func() {
 		Expect(server.ReceivedRequests()).To(HaveLen(1))
 	})
 
-	When("job has not completed", func() {
-		JustBeforeEach(func() {
-			job.Status = batchv1.JobStatus{}
-		})
-
-		It("doesn't send anything to eirini", func() {
-			reporter.Report(job)
-			Expect(server.ReceivedRequests()).To(HaveLen(0))
-		})
+	It("deletes the job on kubernetes", func() {
+		Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
+		Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-task-guid"))
 	})
 
-	When("the eirini server returns an unexpected status code", func() {
+	When("the job failed", func() {
 		BeforeEach(func() {
+			job.Status.Conditions = []batchv1.JobCondition{
+				{
+					Type:   batchv1.JobFailed,
+					Reason: "because",
+				},
+			}
 			handlers = []http.HandlerFunc{
-				ghttp.VerifyRequest("PUT", "/tasks/the-task-guid/completed"),
-				ghttp.RespondWith(http.StatusBadGateway, "potato"),
+				ghttp.VerifyRequest("PUT", "/the-callback-url"),
+				ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
+					TaskGUID:      "the-task-guid",
+					Failed:        true,
+					FailureReason: "because",
+				}),
 			}
 		})
 
+		It("notifies the cloud controller", func() {
+			Expect(server.ReceivedRequests()).To(HaveLen(1))
+		})
+
+		It("deletes the job on kubernetes", func() {
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
+			Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-task-guid"))
+		})
+	})
+
+	When("job has not completed", func() {
+		BeforeEach(func() {
+			job.Status = batchv1.JobStatus{}
+		})
+
+		It("doesn't send anything to the cloud controller", func() {
+			Expect(server.ReceivedRequests()).To(HaveLen(0))
+		})
+
+		It("doesn't send delete the job on kubernetes", func() {
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
+		})
+	})
+
+	When("the cloud controller returns an unexpected status code", func() {
+		BeforeEach(func() {
+			server.Reset()
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("PUT", "/the-callback-url"),
+					ghttp.RespondWith(http.StatusBadGateway, "potato"),
+				),
+			)
+		})
+
 		It("logs the error", func() {
-			reporter.Report(job)
 			logs := logger.Logs()
 			Expect(logs).To(HaveLen(1))
 			log := logs[0]
 			Expect(log.Message).To(Equal("task-reporter-test.cannot send task status response"))
 			Expect(log.Data).To(HaveKeyWithValue("error", "request not successful: status=502 potato"))
+		})
+
+		It("still deletes the job on kubernetes", func() {
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
+			Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-task-guid"))
 		})
 	})
 })

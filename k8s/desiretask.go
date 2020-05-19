@@ -96,6 +96,7 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) (*batch.Job, error) {
 	job := d.toJob(task)
 	job.Labels[LabelSourceType] = taskSourceType
 	job.Labels[LabelName] = task.Name
+	job.Annotations[AnnotationCompletionCallback] = task.CompletionCallback
 
 	envs := getEnvs(task)
 	containers := []v1.Container{

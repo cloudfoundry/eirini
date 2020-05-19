@@ -41,9 +41,9 @@ var _ = Describe("StagingReporter", func() {
 				Namespace:  fixture.Namespace,
 				ConfigPath: fixture.KubeConfigPath,
 			},
-			EiriniCertPath: certPath,
-			CAPath:         certPath,
-			EiriniKeyPath:  keyPath,
+			CCCertPath: certPath,
+			CAPath:     certPath,
+			CCKeyPath:  keyPath,
 		}
 
 		session, configFile = util.RunBinary(pathToStagingReporter, config)

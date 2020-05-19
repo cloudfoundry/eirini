@@ -129,10 +129,9 @@ type MetricsCollectorConfig struct {
 }
 
 type ReporterConfig struct {
-	EiriniAddress  string `yaml:"eirini_address"`
-	EiriniCertPath string `yaml:"eirini_cert_path"`
-	EiriniKeyPath  string `yaml:"eirini_key_path"`
-	CAPath         string `yaml:"ca_path"`
+	CCCertPath string `yaml:"cc_cert_path"`
+	CCKeyPath  string `yaml:"cc_key_path"`
+	CAPath     string `yaml:"ca_path"`
 
 	KubeConfig `yaml:",inline"`
 }

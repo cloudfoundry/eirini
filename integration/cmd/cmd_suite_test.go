@@ -88,9 +88,9 @@ func defaultReporterConfig() *eirini.ReporterConfig {
 		KubeConfig: eirini.KubeConfig{
 			ConfigPath: pathToTestFixture("kube.conf"),
 		},
-		EiriniCertPath: pathToTestFixture("cert"),
-		EiriniKeyPath:  pathToTestFixture("key"),
-		CAPath:         pathToTestFixture("cert"),
+		CCCertPath: pathToTestFixture("cert"),
+		CCKeyPath:  pathToTestFixture("key"),
+		CAPath:     pathToTestFixture("cert"),
 	}
 
 	return config

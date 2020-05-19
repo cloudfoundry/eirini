@@ -103,6 +103,12 @@ type TaskRequest struct {
 	Lifecycle          Lifecycle             `json:"lifecycle"`
 }
 
+type TaskCompletedRequest struct {
+	TaskGUID      string `json:"task_guid"`
+	Failed        bool   `json:"failed"`
+	FailureReason string `json:"failure_reason"`
+}
+
 type StagingRequest struct {
 	AppGUID            string                     `json:"app_guid"`
 	AppName            string                     `json:"app_name"`

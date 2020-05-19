@@ -33,8 +33,8 @@ func main() {
 	launchStagingReporter(
 		clientset,
 		cfg.CAPath,
-		cfg.EiriniCertPath,
-		cfg.EiriniKeyPath,
+		cfg.CCCertPath,
+		cfg.CCKeyPath,
 		cfg.Namespace,
 	)
 }

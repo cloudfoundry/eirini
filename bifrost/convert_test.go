@@ -506,9 +506,10 @@ var _ = Describe("OPI Converter", func() {
 			It("should convert the task request", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(task).To(Equal(opi.Task{
-					GUID:    "guid_1234",
-					AppGUID: "our-app-id",
-					Name:    "task-name",
+					GUID:               "guid_1234",
+					AppGUID:            "our-app-id",
+					Name:               "task-name",
+					CompletionCallback: "example.com/call/me/maybe",
 					Env: map[string]string{
 						"HOWARD":        "the alien",
 						"HOME":          "/home/vcap/app",
@@ -542,9 +543,10 @@ var _ = Describe("OPI Converter", func() {
 			It("should convert the task request", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(task).To(Equal(opi.Task{
-					GUID:    "guid_1234",
-					AppGUID: "our-app-id",
-					Name:    "task-name",
+					GUID:               "guid_1234",
+					AppGUID:            "our-app-id",
+					Name:               "task-name",
+					CompletionCallback: "example.com/call/me/maybe",
 					Env: map[string]string{
 						"HOWARD": "the alien",
 						"HOME":   "/home/vcap/app",
