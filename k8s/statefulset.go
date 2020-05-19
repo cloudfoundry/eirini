@@ -135,7 +135,8 @@ func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
 	}
 
 	if _, err := m.StatefulSets.Create(m.toStatefulSet(lrp)); err != nil {
-		if statusErr, ok := err.(*k8serrors.StatusError); ok && statusErr.Status().Reason == metav1.StatusReasonAlreadyExists {
+		var statusErr *k8serrors.StatusError
+		if errors.As(err, &statusErr) && statusErr.Status().Reason == metav1.StatusReasonAlreadyExists {
 			m.Logger.Debug("statefulset already exists", lager.Data{"guid": lrp.GUID, "version": lrp.Version, "error": err.Error()})
 			return nil
 		}
