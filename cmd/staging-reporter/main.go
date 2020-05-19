@@ -33,8 +33,8 @@ func main() {
 	launchStagingReporter(
 		clientset,
 		cfg.CAPath,
-		cfg.CCCertPath,
-		cfg.CCKeyPath,
+		cfg.EiriniCertPath,
+		cfg.EiriniKeyPath,
 		cfg.Namespace,
 	)
 }
@@ -62,13 +62,13 @@ func launchStagingReporter(clientset kubernetes.Interface, ca, eiriniCert, eirin
 	stagingInformer.Start()
 }
 
-func readConfigFile(path string) (*eirini.ReporterConfig, error) {
+func readConfigFile(path string) (*eirini.StagingReporterConfig, error) {
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read file")
 	}
 
-	var conf eirini.ReporterConfig
+	var conf eirini.StagingReporterConfig
 	err = yaml.Unmarshal(fileBytes, &conf)
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
 }

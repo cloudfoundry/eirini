@@ -44,7 +44,7 @@ var _ = Describe("TaskReporter", func() {
 			ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{TaskGUID: "the-task-guid"}),
 		}
 
-		config := &eirini.ReporterConfig{
+		config := &eirini.TaskReporterConfig{
 			KubeConfig: eirini.KubeConfig{
 				Namespace:  fixture.Namespace,
 				ConfigPath: fixture.KubeConfigPath,

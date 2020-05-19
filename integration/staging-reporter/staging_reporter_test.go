@@ -36,14 +36,14 @@ var _ = Describe("StagingReporter", func() {
 		Expect(err).ToNot(HaveOccurred())
 		eiriniServer.Start()
 
-		config := &eirini.ReporterConfig{
+		config := &eirini.StagingReporterConfig{
 			KubeConfig: eirini.KubeConfig{
 				Namespace:  fixture.Namespace,
 				ConfigPath: fixture.KubeConfigPath,
 			},
-			CCCertPath: certPath,
-			CAPath:     certPath,
-			CCKeyPath:  keyPath,
+			EiriniCertPath: certPath,
+			CAPath:         certPath,
+			EiriniKeyPath:  keyPath,
 		}
 
 		session, configFile = util.RunBinary(pathToStagingReporter, config)

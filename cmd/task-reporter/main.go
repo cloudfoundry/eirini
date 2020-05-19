@@ -76,13 +76,13 @@ func initTaskDeleter(namespace string, clientset kubernetes.Interface) task.Dele
 	}
 }
 
-func readConfigFile(path string) (*eirini.ReporterConfig, error) {
+func readConfigFile(path string) (*eirini.TaskReporterConfig, error) {
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read file")
 	}
 
-	var conf eirini.ReporterConfig
+	var conf eirini.TaskReporterConfig
 	err = yaml.Unmarshal(fileBytes, &conf)
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
 }
