@@ -3,8 +3,6 @@
 set -xeuo pipefail
 IFS=$'\n\t'
 
-readonly SECRET_REGEX="cc-certs-volume:|cc-server-crt:|cc-server-crt-key:|cc-uploader-crt:|cc-uploader-crt-key:|internal-ca-cert:|eirini-client-crt:|eirini-client-crt-key:"
-
 main() {
   create-registry-secret
   create-image-pull-secret
@@ -24,9 +22,23 @@ create-image-pull-secret() {
     kubectl apply -f -
 }
 
+get-secret() {
+  local id secret
+  id=${1}
+  secret="$(kubectl get secret "$SECRET_NAME" --namespace="$SCF_NAMESPACE" -ojsonpath=\"{.data.$id}\")"
+  echo "  $id: $secret"
+}
+
+get-secrets() {
+  local id
+  for id in cc-certs-volume cc-server-crt cc-server-crt-key cc-uploader-crt cc-uploader-crt-key internal-ca-cert eirini-client-crt eirini-client-crt-key; do
+    get-secret $id
+  done
+}
+
 create-registry-secret() {
   local scf_secrets secret_file_path
-  scf_secrets="$(kubectl get secret "$SECRET_NAME" --namespace="$SCF_NAMESPACE" --export -o yaml | grep -E "$SECRET_REGEX")"
+  scf_secrets="$(get-secrets)"
   secret_file_path=/tmp/secret.yml
 
   cat <<EOT >>$secret_file_path
