@@ -40,7 +40,7 @@ var _ = Describe("TaskReporter", func() {
 		cloudControllerServer.Start()
 
 		handlers = []http.HandlerFunc{
-			ghttp.VerifyRequest("PUT", "/the-callback"),
+			ghttp.VerifyRequest("POST", "/the-callback"),
 			ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{TaskGUID: "the-task-guid"}),
 		}
 
@@ -111,7 +111,7 @@ var _ = Describe("TaskReporter", func() {
 			task.Command = []string{"false"}
 
 			handlers = []http.HandlerFunc{
-				ghttp.VerifyRequest("PUT", "/the-callback"),
+				ghttp.VerifyRequest("POST", "/the-callback"),
 				ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
 					TaskGUID:      "failing-task-guid",
 					Failed:        true,
