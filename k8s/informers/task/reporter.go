@@ -29,7 +29,7 @@ func (r StateReporter) Report(job *batchv1.Job) {
 		uri := job.Annotations[k8s.AnnotationCompletionCallback]
 		req := r.generateTaskComletedRequest(taskGUID, job.Status.Conditions)
 
-		if err := utils.Put(r.Client, uri, req); err != nil {
+		if err := utils.Post(r.Client, uri, req); err != nil {
 			r.Logger.Error("cannot send task status response", err, lager.Data{"taskGuid": taskGUID})
 		}
 

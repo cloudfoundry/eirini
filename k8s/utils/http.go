@@ -11,12 +11,20 @@ import (
 )
 
 func Put(client *http.Client, uri string, body interface{}) error {
+	return do("PUT", client, uri, body)
+}
+
+func Post(client *http.Client, uri string, body interface{}) error {
+	return do("POST", client, uri, body)
+}
+
+func do(method string, client *http.Client, uri string, body interface{}) error {
 	bodyJSON, err := json.Marshal(body)
 	if err != nil {
 		return errors.Wrap(err, "cannot marshal body")
 	}
 
-	req, err := http.NewRequest("PUT", uri, bytes.NewBuffer(bodyJSON))
+	req, err := http.NewRequest(method, uri, bytes.NewBuffer(bodyJSON))
 	if err != nil {
 		return errors.Wrap(err, "failed to create request")
 	}
