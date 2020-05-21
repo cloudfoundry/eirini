@@ -19,7 +19,6 @@ import (
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/models/cf"
 	. "github.com/onsi/ginkgo"
-	ginkgoconfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"k8s.io/client-go/rest"
@@ -131,7 +130,7 @@ func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
 			ServerKeyPath:        keyPath,
 			ClientCAPath:         certPath,
 			DiskLimitMB:          500,
-			TLSPort:              61000 + ginkgoconfig.GinkgoConfig.ParallelNode,
+			TLSPort:              fixture.NextAvailablePort(),
 			CCUploaderSecretName: "cc-uploader-secret",
 			CCUploaderCertPath:   "path-to-crt",
 			CCUploaderKeyPath:    "path-to-key",

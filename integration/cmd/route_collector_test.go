@@ -8,7 +8,6 @@ import (
 	natsserver "github.com/nats-io/nats-server/v2/server"
 	natstest "github.com/nats-io/nats-server/v2/test"
 	. "github.com/onsi/ginkgo"
-	ginkgoconfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
@@ -33,7 +32,7 @@ var _ = Describe("RouteCollector", func() {
 		natsServerOpts = natstest.DefaultTestOptions
 		natsServerOpts.Username = "nats"
 		natsServerOpts.Password = natsPassword
-		natsServerOpts.Port = 61000 + ginkgoconfig.GinkgoConfig.ParallelNode
+		natsServerOpts.Port = fixture.NextAvailablePort()
 		natsServer = natstest.RunServer(&natsServerOpts)
 
 		cmdPath, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/route-collector")

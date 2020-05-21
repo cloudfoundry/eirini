@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/integration/util"
 	natsserver "github.com/nats-io/nats-server/v2/server"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,6 +17,7 @@ import (
 
 var (
 	cmdPath string
+	fixture *util.Fixture
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
@@ -24,11 +26,20 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	return []byte(path)
 }, func(data []byte) {
 	cmdPath = string(data)
+	fixture = util.NewFixture(GinkgoWriter)
 })
 
 var _ = SynchronizedAfterSuite(func() {
 }, func() {
 	gexec.CleanupBuildArtifacts()
+})
+
+var _ = BeforeEach(func() {
+	fixture.SetUp()
+})
+
+var _ = AfterEach(func() {
+	fixture.TearDown()
 })
 
 func TestIntegration(t *testing.T) {

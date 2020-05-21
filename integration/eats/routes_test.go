@@ -3,7 +3,6 @@ package eats_test
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -16,7 +15,6 @@ import (
 	natstest "github.com/nats-io/nats-server/v2/test"
 	"github.com/nats-io/nats.go"
 	. "github.com/onsi/ginkgo"
-	ginkgoconfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	. "github.com/onsi/gomega/gstruct"
@@ -313,7 +311,7 @@ func receivedMessage(channel <-chan *nats.Msg) route.RegistryMessage {
 func getNatsServerConfig() *server.Options {
 	return &server.Options{
 		Host:           "127.0.0.1",
-		Port:           51000 + rand.Intn(1000) + ginkgoconfig.GinkgoConfig.ParallelNode,
+		Port:           fixture.NextAvailablePort(),
 		NoLog:          true,
 		NoSigs:         true,
 		MaxControlLine: 2048,

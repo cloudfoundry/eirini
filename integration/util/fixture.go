@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/hashicorp/go-multierror"
 
@@ -13,15 +14,23 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	. "github.com/onsi/ginkgo" //nolint:golint,stylecheck
 	. "github.com/onsi/gomega" //nolint:golint,stylecheck
 )
 
+const (
+	basePortNumber = 20000
+	portRange      = 1000
+)
+
 type Fixture struct {
-	Clientset      kubernetes.Interface
-	Namespace      string
-	PspName        string
-	KubeConfigPath string
-	Writer         io.Writer
+	Clientset         kubernetes.Interface
+	Namespace         string
+	PspName           string
+	KubeConfigPath    string
+	Writer            io.Writer
+	nextAvailablePort int
+	portMux           *sync.Mutex
 }
 
 func NewFixture(writer io.Writer) *Fixture {
@@ -34,9 +43,11 @@ func NewFixture(writer io.Writer) *Fixture {
 	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
 
 	return &Fixture{
-		KubeConfigPath: kubeConfigPath,
-		Clientset:      clientset,
-		Writer:         writer,
+		KubeConfigPath:    kubeConfigPath,
+		Clientset:         clientset,
+		Writer:            writer,
+		nextAvailablePort: basePortNumber + portRange*GinkgoParallelNode(),
+		portMux:           &sync.Mutex{},
 	}
 }
 
@@ -44,6 +55,24 @@ func (f *Fixture) SetUp() {
 	f.Namespace = CreateRandomNamespace(f.Clientset)
 	f.PspName = fmt.Sprintf("%s-psp", f.Namespace)
 	Expect(CreatePodCreationPSP(f.Namespace, f.PspName, f.Clientset)).To(Succeed(), "failed to create pod creation PSP")
+}
+
+func (f *Fixture) NextAvailablePort() int {
+	f.portMux.Lock()
+	defer f.portMux.Unlock()
+
+	if f.nextAvailablePort > f.maxPortNumber() {
+		Fail("Ginkgo node %d is not allowed to allocate more than %d ports", GinkgoParallelNode(), portRange)
+	}
+
+	port := f.nextAvailablePort
+	f.nextAvailablePort += 1
+
+	return port
+}
+
+func (f Fixture) maxPortNumber() int {
+	return basePortNumber + portRange*GinkgoParallelNode() + portRange
 }
 
 func (f *Fixture) TearDown() {
