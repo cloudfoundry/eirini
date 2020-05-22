@@ -66,7 +66,7 @@ func (f *Fixture) NextAvailablePort() int {
 	}
 
 	port := f.nextAvailablePort
-	f.nextAvailablePort += 1
+	f.nextAvailablePort++
 
 	return port
 }
