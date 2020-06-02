@@ -6,7 +6,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/lager"
-	batchv1 "k8s.io/api/batch/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -14,7 +14,7 @@ import (
 )
 
 type Reporter interface {
-	Report(*batchv1.Job)
+	Report(*v1.Pod, *v1.Pod)
 }
 
 type Informer struct {
@@ -52,7 +52,7 @@ func (c *Informer) Start() {
 		informers.WithTweakListOptions(tweakListOpts),
 	)
 
-	informer := factory.Batch().V1().Jobs().Informer()
+	informer := factory.Core().V1().Pods().Informer()
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: c.updateFunc,
 	})
@@ -60,9 +60,10 @@ func (c *Informer) Start() {
 	informer.Run(c.stopperChan)
 }
 
-func (c *Informer) updateFunc(_ interface{}, newObj interface{}) {
-	job := newObj.(*batchv1.Job)
-	c.reporter.Report(job)
+func (c *Informer) updateFunc(oldObj interface{}, newObj interface{}) {
+	oldPod := oldObj.(*v1.Pod)
+	pod := newObj.(*v1.Pod)
+	c.reporter.Report(oldPod, pod)
 }
 
 func tweakListOpts(opts *metav1.ListOptions) {

@@ -84,6 +84,7 @@ var _ = Describe("TaskReporter", func() {
 		cloudControllerServer.AppendHandlers(
 			ghttp.CombineHandlers(handlers...),
 		)
+
 		Expect(taskDesirer.Desire(task)).To(Succeed())
 	})
 
@@ -99,6 +100,7 @@ var _ = Describe("TaskReporter", func() {
 
 	It("notifies the cloud controller of a task completion", func() {
 		Eventually(cloudControllerServer.ReceivedRequests, "10s").Should(HaveLen(1))
+		Consistently(cloudControllerServer.ReceivedRequests, "10s").Should(HaveLen(1))
 	})
 
 	It("deletes the job", func() {
@@ -115,13 +117,14 @@ var _ = Describe("TaskReporter", func() {
 				ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
 					TaskGUID:      "failing-task-guid",
 					Failed:        true,
-					FailureReason: "BackoffLimitExceeded",
+					FailureReason: "Error",
 				}),
 			}
 		})
 
 		It("notifies the cloud controller of a task failure", func() {
 			Eventually(cloudControllerServer.ReceivedRequests, "10s").Should(HaveLen(1))
+			Consistently(cloudControllerServer.ReceivedRequests, "10s").Should(HaveLen(1))
 		})
 
 		It("deletes the job", func() {

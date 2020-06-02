@@ -197,6 +197,9 @@ var _ = Describe("Desiretask", func() {
 					HaveKeyWithValue(AnnotationOrgGUID, "org-id"),
 					HaveKeyWithValue(AnnotationSpaceName, "my-space"),
 					HaveKeyWithValue(AnnotationSpaceGUID, "space-id"),
+					HaveKeyWithValue(AnnotationOpiTaskContainerName, "opi-task"),
+					HaveKeyWithValue(AnnotationGUID, "task-123"),
+					HaveKeyWithValue(AnnotationCompletionCallback, "cloud-countroller.io/task/completed"),
 				))
 			})
 

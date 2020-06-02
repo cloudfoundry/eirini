@@ -16,10 +16,11 @@ import (
 )
 
 const (
-	stagingSourceType = "STG"
-	taskSourceType    = "TASK"
-	parallelism       = 1
-	completions       = 1
+	stagingSourceType    = "STG"
+	taskSourceType       = "TASK"
+	opiTaskContainerName = "opi-task"
+	parallelism          = 1
+	completions          = 1
 )
 
 //counterfeiter:generate . JobClient
@@ -97,11 +98,14 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) (*batch.Job, error) {
 	job.Labels[LabelSourceType] = taskSourceType
 	job.Labels[LabelName] = task.Name
 	job.Annotations[AnnotationCompletionCallback] = task.CompletionCallback
+	job.Spec.Template.Annotations[AnnotationGUID] = task.GUID
+	job.Spec.Template.Annotations[AnnotationOpiTaskContainerName] = opiTaskContainerName
+	job.Spec.Template.Annotations[AnnotationCompletionCallback] = task.CompletionCallback
 
 	envs := getEnvs(task)
 	containers := []v1.Container{
 		{
-			Name:            "opi-task",
+			Name:            opiTaskContainerName,
 			Image:           task.Image,
 			ImagePullPolicy: v1.PullAlways,
 			Env:             envs,
