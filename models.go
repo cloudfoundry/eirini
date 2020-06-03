@@ -20,6 +20,7 @@ const (
 
 	EnvPodName              = "POD_NAME"
 	EnvCFInstanceIP         = "CF_INSTANCE_IP"
+	EnvCFInstanceGUID       = "CF_INSTANCE_GUID"
 	EnvCFInstanceInternalIP = "CF_INSTANCE_INTERNAL_IP"
 	EnvCFInstanceAddr       = "CF_INSTANCE_ADDR"
 	EnvCFInstancePort       = "CF_INSTANCE_PORT"

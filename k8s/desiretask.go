@@ -267,10 +267,18 @@ func getEnvs(task *opi.Task) []v1.EnvVar {
 			},
 		},
 		{
+			Name: eirini.EnvCFInstanceGUID,
+			ValueFrom: &v1.EnvVarSource{
+				FieldRef: &v1.ObjectFieldSelector{
+					FieldPath: "metadata.uid",
+				},
+			},
+		},
+		{
 			Name: eirini.EnvCFInstanceIP,
 			ValueFrom: &v1.EnvVarSource{
 				FieldRef: &v1.ObjectFieldSelector{
-					FieldPath: "status.podIP",
+					FieldPath: "status.hostIP",
 				},
 			},
 		},

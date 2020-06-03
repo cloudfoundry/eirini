@@ -296,6 +296,18 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(statefulSet.Spec.Template.Spec.ServiceAccountName).To(Equal("eirini"))
 		})
 
+		It("should set the container environment variables", func() {
+			statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Spec.Template.Spec.Containers).To(HaveLen(1))
+			container := statefulSet.Spec.Template.Spec.Containers[0]
+			Expect(container.Env).To(ContainElements(
+				corev1.EnvVar{Name: eirini.EnvPodName, ValueFrom: expectedValFrom("metadata.name")},
+				corev1.EnvVar{Name: eirini.EnvCFInstanceGUID, ValueFrom: expectedValFrom("metadata.uid")},
+				corev1.EnvVar{Name: eirini.EnvCFInstanceInternalIP, ValueFrom: expectedValFrom("status.podIP")},
+				corev1.EnvVar{Name: eirini.EnvCFInstanceIP, ValueFrom: expectedValFrom("status.hostIP")},
+			))
+		})
+
 		Context("when application should run as root", func() {
 			BeforeEach(func() {
 				lrp.RunsAsRoot = true

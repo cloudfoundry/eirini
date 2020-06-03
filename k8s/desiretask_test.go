@@ -51,22 +51,14 @@ var _ = Describe("Desiretask", func() {
 		Expect(container.Image).To(Equal(Image))
 		Expect(container.ImagePullPolicy).To(Equal(v1.PullAlways))
 
-		expectedValFrom := func(fieldPath string) *v1.EnvVarSource {
-			return &v1.EnvVarSource{
-				FieldRef: &v1.ObjectFieldSelector{
-					APIVersion: "",
-					FieldPath:  fieldPath,
-				},
-			}
-		}
-
 		Expect(container.Env).To(ContainElements(
 			v1.EnvVar{Name: eirini.EnvDownloadURL, Value: "example.com/download"},
 			v1.EnvVar{Name: eirini.EnvDropletUploadURL, Value: "example.com/upload"},
 			v1.EnvVar{Name: eirini.EnvAppID, Value: "env-app-id"},
 			v1.EnvVar{Name: eirini.EnvStagingGUID, Value: taskGUID},
+			v1.EnvVar{Name: eirini.EnvCFInstanceGUID, ValueFrom: expectedValFrom("metadata.uid")},
 			v1.EnvVar{Name: eirini.EnvCFInstanceInternalIP, ValueFrom: expectedValFrom("status.podIP")},
-			v1.EnvVar{Name: eirini.EnvCFInstanceIP, ValueFrom: expectedValFrom("status.podIP")},
+			v1.EnvVar{Name: eirini.EnvCFInstanceIP, ValueFrom: expectedValFrom("status.hostIP")},
 			v1.EnvVar{Name: eirini.EnvPodName, ValueFrom: expectedValFrom("metadata.name")},
 			v1.EnvVar{Name: eirini.EnvCFInstanceAddr, Value: ""},
 			v1.EnvVar{Name: eirini.EnvCFInstancePort, Value: ""},

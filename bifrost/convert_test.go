@@ -184,9 +184,9 @@ var _ = Describe("OPI Converter", func() {
 				})
 
 				It("should set CF_INSTANCE_* env variables", func() {
-					Expect(lrp.Env).To(HaveKeyWithValue("CF_INSTANCE_ADDR", "0.0.0.0:8000"))
-					Expect(lrp.Env).To(HaveKeyWithValue("CF_INSTANCE_PORT", "8000"))
-					Expect(lrp.Env).To(HaveKeyWithValue("CF_INSTANCE_PORTS", MatchJSON(`[{"external": 8000, "internal": 8000}]`)))
+					Expect(lrp.Env).To(HaveKeyWithValue(eirini.EnvCFInstanceAddr, "0.0.0.0:8000"))
+					Expect(lrp.Env).To(HaveKeyWithValue(eirini.EnvCFInstancePort, "8000"))
+					Expect(lrp.Env).To(HaveKeyWithValue(eirini.EnvCFInstancePorts, MatchJSON(`[{"external": 8000, "internal": 8000}]`)))
 				})
 
 				It("should set LANG env variable", func() {
@@ -464,6 +464,7 @@ var _ = Describe("OPI Converter", func() {
 					Expect(lrp.Env).To(HaveKeyWithValue("PATH", "/usr/local/bin:/usr/bin:/bin"))
 					Expect(lrp.Env).To(HaveKeyWithValue("USER", "vcap"))
 					Expect(lrp.Env).To(HaveKeyWithValue("TMPDIR", "/home/vcap/tmp"))
+					Expect(lrp.Env).To(HaveKeyWithValue("PWD", "/home/vcap/app"))
 					Expect(lrp.Env).To(HaveKeyWithValue("START_COMMAND", "start me"))
 				})
 

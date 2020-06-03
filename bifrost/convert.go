@@ -49,10 +49,10 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 
 	port := request.Ports[0]
 	env = map[string]string{
-		"LANG":              "en_US.UTF-8",
-		"CF_INSTANCE_ADDR":  fmt.Sprintf("0.0.0.0:%d", port),
-		"CF_INSTANCE_PORT":  fmt.Sprintf("%d", port),
-		"CF_INSTANCE_PORTS": fmt.Sprintf(`[{"external":%d,"internal":%d}]`, port, port),
+		"LANG":                    "en_US.UTF-8",
+		eirini.EnvCFInstanceAddr:  fmt.Sprintf("0.0.0.0:%d", port),
+		eirini.EnvCFInstancePort:  fmt.Sprintf("%d", port),
+		eirini.EnvCFInstancePorts: fmt.Sprintf(`[{"external":%d,"internal":%d}]`, port, port),
 	}
 
 	healthcheck := opi.Healtcheck{
@@ -293,6 +293,7 @@ func (c *OPIConverter) buildpackProperties(dropletGUID, dropletHash, startComman
 		"HOME":          "/home/vcap/app",
 		"PATH":          "/usr/local/bin:/usr/bin:/bin",
 		"USER":          "vcap",
+		"PWD":           "/home/vcap/app",
 		"TMPDIR":        "/home/vcap/tmp",
 		"START_COMMAND": startCommand,
 	}
