@@ -169,7 +169,7 @@ func MakeTestHTTPClient() (*http.Client, error) {
 	return httpClient, nil
 }
 
-func DefaultEiriniConfig(namespace string) *eirini.Config {
+func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 	return &eirini.Config{
 		Properties: eirini.Properties{
 			KubeConfig: eirini.KubeConfig{
@@ -182,7 +182,7 @@ func DefaultEiriniConfig(namespace string) *eirini.Config {
 			ServerCertPath:       PathToTestFixture("cert"),
 			ServerKeyPath:        PathToTestFixture("key"),
 			ClientCAPath:         PathToTestFixture("cert"),
-			TLSPort:              61000 + rand.Intn(1000) + ginkgoconfig.GinkgoConfig.ParallelNode,
+			TLSPort:              tlsPort,
 			CCUploaderSecretName: "cc-uploader-secret",
 			CCUploaderCertPath:   "path-to-crt",
 			CCUploaderKeyPath:    "path-to-key",

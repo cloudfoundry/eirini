@@ -43,7 +43,7 @@ var _ = Describe("connect command", func() {
 
 	Context("when we invoke connect command with valid config", func() {
 		BeforeEach(func() {
-			config = util.DefaultEiriniConfig("test-ns")
+			config = util.DefaultEiriniConfig("test-ns", fixture.NextAvailablePort())
 			configFile, err := util.CreateConfigFile(config)
 			Expect(err).ToNot(HaveOccurred())
 			configFilePath = configFile.Name()

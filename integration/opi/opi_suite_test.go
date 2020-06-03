@@ -55,7 +55,7 @@ var _ = BeforeEach(func() {
 	httpClient, err = util.MakeTestHTTPClient()
 	Expect(err).ToNot(HaveOccurred())
 
-	eiriniConfig := util.DefaultEiriniConfig(fixture.Namespace)
+	eiriniConfig := util.DefaultEiriniConfig(fixture.Namespace, fixture.NextAvailablePort())
 	eiriniConfigFile, err = util.CreateConfigFile(eiriniConfig)
 	Expect(err).ToNot(HaveOccurred())
 
