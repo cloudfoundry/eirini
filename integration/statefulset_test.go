@@ -3,9 +3,10 @@ package statefulsets_test
 import (
 	"fmt"
 
-	"code.cloudfoundry.org/eirini/integration/util"
-	. "code.cloudfoundry.org/eirini/k8s"
+	testutil "code.cloudfoundry.org/eirini/integration/util"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
@@ -19,7 +20,7 @@ import (
 var _ = Describe("StatefulSet Manager", func() {
 
 	var (
-		desirer *StatefulSetDesirer
+		desirer *k8s.StatefulSetDesirer
 		odinLRP *opi.LRP
 		thorLRP *opi.LRP
 	)
@@ -39,14 +40,21 @@ var _ = Describe("StatefulSet Manager", func() {
 
 	JustBeforeEach(func() {
 		logger := lagertest.NewTestLogger("test")
-		desirer = NewStatefulSetDesirer(
-			fixture.Clientset,
-			fixture.Namespace,
-			"registry-secret",
-			"rootfsversion",
-			"default",
-			logger,
-		)
+		desirer = &k8s.StatefulSetDesirer{
+			Pods:                      k8s.NewPodsClient(fixture.Clientset),
+			Secrets:                   k8s.NewSecretsClient(fixture.Clientset),
+			StatefulSets:              k8s.NewStatefulSetClient(fixture.Clientset),
+			PodDisruptionBudets:       k8s.NewPodDisruptionBudgetClient(fixture.Clientset),
+			Events:                    k8s.NewEventsClient(fixture.Clientset),
+			StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
+			RegistrySecretName:        "registry-secret",
+			RootfsVersion:             "rootfsversion",
+			LivenessProbeCreator:      k8s.CreateLivenessProbe,
+			ReadinessProbeCreator:     k8s.CreateReadinessProbe,
+			Hasher:                    util.TruncatedSHA256Hasher{},
+			Logger:                    logger,
+			ApplicationServiceAccount: "default",
+		}
 	})
 
 	Context("When creating a LRP", func() {
@@ -65,7 +73,7 @@ var _ = Describe("StatefulSet Manager", func() {
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Command).To(Equal(odinLRP.Command))
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Image).To(Equal(odinLRP.Image))
 			Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(odinLRP.TargetInstances)))
-			Expect(statefulset.Annotations[AnnotationOriginalRequest]).To(Equal(odinLRP.LRP))
+			Expect(statefulset.Annotations[k8s.AnnotationOriginalRequest]).To(Equal(odinLRP.LRP))
 		})
 
 		It("should create all associated pods", func() {
@@ -122,17 +130,17 @@ var _ = Describe("StatefulSet Manager", func() {
 				statefulset := getStatefulSet(odinLRP)
 				Expect(statefulset.Annotations).To(HaveKeyWithValue(key, value))
 			},
-				Entry("SpaceName", AnnotationSpaceName, "odin-space"),
-				Entry("SpaceGUID", AnnotationSpaceGUID, "odin-space-guid"),
-				Entry("OrgName", AnnotationOrgName, "odin-org"),
-				Entry("OrgGUID", AnnotationOrgGUID, "odin-org-guid"),
+				Entry("SpaceName", k8s.AnnotationSpaceName, "odin-space"),
+				Entry("SpaceGUID", k8s.AnnotationSpaceGUID, "odin-space-guid"),
+				Entry("OrgName", k8s.AnnotationOrgName, "odin-org"),
+				Entry("OrgGUID", k8s.AnnotationOrgGUID, "odin-org-guid"),
 			)
 
 			It("sets appropriate labels to statefulset", func() {
 				statefulset := getStatefulSet(odinLRP)
-				Expect(statefulset.Labels).To(HaveKeyWithValue(LabelGUID, odinLRP.LRPIdentifier.GUID))
-				Expect(statefulset.Labels).To(HaveKeyWithValue(LabelVersion, odinLRP.LRPIdentifier.Version))
-				Expect(statefulset.Labels).To(HaveKeyWithValue(LabelSourceType, "APP"))
+				Expect(statefulset.Labels).To(HaveKeyWithValue(k8s.LabelGUID, odinLRP.LRPIdentifier.GUID))
+				Expect(statefulset.Labels).To(HaveKeyWithValue(k8s.LabelVersion, odinLRP.LRPIdentifier.Version))
+				Expect(statefulset.Labels).To(HaveKeyWithValue(k8s.LabelSourceType, "APP"))
 			})
 		})
 
@@ -166,7 +174,7 @@ var _ = Describe("StatefulSet Manager", func() {
 				odinLRP.PrivateRegistry = &opi.PrivateRegistry{
 					Server:   "index.docker.io/v1/",
 					Username: "eiriniuser",
-					Password: util.GetEiriniDockerHubPassword(),
+					Password: testutil.GetEiriniDockerHubPassword(),
 				}
 			})
 
@@ -223,7 +231,7 @@ var _ = Describe("StatefulSet Manager", func() {
 				}
 				statefulset := getStatefulSet(odinLRP)
 
-				Eventually(statefulset.Status.ReadyReplicas).Should(Equal(statefulset.Status.Replicas))
+				Eventually(statefulset.Status.ReadyReplicas, "5s").Should(Equal(statefulset.Status.Replicas))
 			})
 		})
 	})
@@ -283,7 +291,7 @@ var _ = Describe("StatefulSet Manager", func() {
 				odinLRP.PrivateRegistry = &opi.PrivateRegistry{
 					Server:   "index.docker.io/v1/",
 					Username: "eiriniuser",
-					Password: util.GetEiriniDockerHubPassword(),
+					Password: testutil.GetEiriniDockerHubPassword(),
 				}
 			})
 

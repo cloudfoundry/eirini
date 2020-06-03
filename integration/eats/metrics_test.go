@@ -45,7 +45,7 @@ var _ = Describe("Metrics", func() {
 
 		config := &eirini.MetricsCollectorConfig{
 			KubeConfig: eirini.KubeConfig{
-				Namespace:  fixture.Namespace,
+				Namespace:  fixture.DefaultNamespace,
 				ConfigPath: fixture.KubeConfigPath,
 			},
 			LoggregatorAddress:               metronAddress,

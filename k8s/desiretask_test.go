@@ -252,7 +252,8 @@ var _ = Describe("Desiretask", func() {
 
 			It("creates a secret with the registry credentials", func() {
 				Expect(fakeSecretsClient.CreateCallCount()).To(Equal(1))
-				actualSecret := fakeSecretsClient.CreateArgsForCall(0)
+				namespace, actualSecret := fakeSecretsClient.CreateArgsForCall(0)
+				Expect(namespace).To(Equal("tests"))
 				Expect(actualSecret.GenerateName).To(Equal("my-app-my-space-registry-secret-"))
 				Expect(actualSecret.Type).To(Equal(v1.SecretTypeDockerConfigJson))
 				Expect(actualSecret.StringData).To(

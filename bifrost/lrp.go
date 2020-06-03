@@ -87,6 +87,7 @@ func (l *LRP) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (cf.Desi
 		ProcessGUID: identifier.ProcessGUID(),
 		Instances:   int32(lrp.TargetInstances),
 		Annotation:  lrp.LastUpdated,
+		Namespace:   lrp.Namespace,
 	}
 
 	if lrp.AppURIs != "" {

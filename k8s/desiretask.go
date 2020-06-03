@@ -153,7 +153,7 @@ func (d *TaskDesirer) createTaskSecret(task *opi.Task) (*v1.Secret, error) {
 		dockerutils.DockerConfigKey: dockerConfigJSON,
 	}
 
-	return d.SecretsClient.Create(secret)
+	return d.SecretsClient.Create(d.Namespace, secret)
 }
 
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {

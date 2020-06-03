@@ -19,7 +19,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 )
 
@@ -61,27 +60,32 @@ const (
 //counterfeiter:generate . PodListerDeleter
 type PodListerDeleter interface {
 	List(opts metav1.ListOptions) (*corev1.PodList, error)
-	Delete(name string, options *metav1.DeleteOptions) error
+	Delete(namespace, name string) error
 }
 
 //counterfeiter:generate . PodDisruptionBudgetClient
 type PodDisruptionBudgetClient interface {
-	Create(*v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)
-	Delete(name string, options *metav1.DeleteOptions) error
+	Create(namespace string, podDisruptionBudget *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)
+	Delete(namespace string, name string) error
 }
 
 //counterfeiter:generate . StatefulSetClient
 type StatefulSetClient interface {
-	Create(*appsv1.StatefulSet) (*appsv1.StatefulSet, error)
-	Update(*appsv1.StatefulSet) (*appsv1.StatefulSet, error)
-	Delete(name string, options *metav1.DeleteOptions) error
+	Create(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
+	Update(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
+	Delete(namespace string, name string, options *metav1.DeleteOptions) error
 	List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error)
 }
 
 //counterfeiter:generate . SecretsClient
 type SecretsClient interface {
-	Create(*corev1.Secret) (*corev1.Secret, error)
-	Delete(name string, options *metav1.DeleteOptions) error
+	Create(namespace string, secret *corev1.Secret) (*corev1.Secret, error)
+	Delete(namespace string, name string) error
+}
+
+//counterfeiter:generate . EventLister
+type EventLister interface {
+	List(opts metav1.ListOptions) (*corev1.EventList, error)
 }
 
 //counterfeiter:generate . LRPMapper
@@ -106,36 +110,18 @@ type StatefulSetDesirer struct {
 //counterfeiter:generate . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func NewStatefulSetDesirer(client kubernetes.Interface, namespace, registrySecretName, rootfsVersion, appServiceAccount string, logger lager.Logger) *StatefulSetDesirer {
-	return &StatefulSetDesirer{
-		Pods:                      client.CoreV1().Pods(namespace),
-		Secrets:                   client.CoreV1().Secrets(namespace),
-		StatefulSets:              client.AppsV1().StatefulSets(namespace),
-		PodDisruptionBudets:       client.PolicyV1beta1().PodDisruptionBudgets(namespace),
-		Events:                    client.CoreV1().Events(namespace),
-		RegistrySecretName:        registrySecretName,
-		StatefulSetToLRPMapper:    StatefulSetToLRP,
-		RootfsVersion:             rootfsVersion,
-		LivenessProbeCreator:      CreateLivenessProbe,
-		ReadinessProbeCreator:     CreateReadinessProbe,
-		Hasher:                    util.TruncatedSHA256Hasher{},
-		Logger:                    logger,
-		ApplicationServiceAccount: appServiceAccount,
-	}
-}
-
 func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
 	if lrp.PrivateRegistry != nil {
 		secret, err := m.generateRegistryCredsSecret(lrp)
 		if err != nil {
 			return errors.Wrap(err, "failed to generate private registry secret for statefulset")
 		}
-		if _, err := m.Secrets.Create(secret); err != nil {
+		if _, err := m.Secrets.Create(lrp.Namespace, secret); err != nil {
 			return errors.Wrap(err, "failed to create private registry secret for statefulset")
 		}
 	}
 
-	if _, err := m.StatefulSets.Create(m.toStatefulSet(lrp)); err != nil {
+	if _, err := m.StatefulSets.Create(lrp.Namespace, m.toStatefulSet(lrp)); err != nil {
 		var statusErr *k8serrors.StatusError
 		if errors.As(err, &statusErr) && statusErr.Status().Reason == metav1.StatusReasonAlreadyExists {
 			m.Logger.Debug("statefulset already exists", lager.Data{"guid": lrp.GUID, "version": lrp.Version, "error": err.Error()})
@@ -144,7 +130,7 @@ func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
 		return errors.Wrap(err, "failed to create statefulset")
 	}
 
-	return m.createPodDisruptionBudget(lrp)
+	return m.createPodDisruptionBudget(lrp.Namespace, lrp)
 }
 
 func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
@@ -170,7 +156,7 @@ func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 		return err
 	}
 
-	err = m.PodDisruptionBudets.Delete(statefulSet.Name, &metav1.DeleteOptions{})
+	err = m.PodDisruptionBudets.Delete(statefulSet.Namespace, statefulSet.Name)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
@@ -183,13 +169,13 @@ func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 	deleteOptions := &metav1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	}
-	return m.StatefulSets.Delete(statefulSet.Name, deleteOptions)
+	return m.StatefulSets.Delete(statefulSet.Namespace, statefulSet.Name, deleteOptions)
 }
 
 func (m *StatefulSetDesirer) deletePrivateRegistrySecret(statefulSet *appsv1.StatefulSet) error {
 	for _, secret := range statefulSet.Spec.Template.Spec.ImagePullSecrets {
 		if secret.Name == m.privateRegistrySecretName(statefulSet.Name) {
-			return m.Secrets.Delete(secret.Name, &metav1.DeleteOptions{})
+			return m.Secrets.Delete(statefulSet.Namespace, secret.Name)
 		}
 	}
 
@@ -211,8 +197,8 @@ func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index ui
 		return eirini.ErrInvalidInstanceIndex
 	}
 
-	name := statefulsets.Items[0].Name
-	err = m.Pods.Delete(fmt.Sprintf("%s-%d", name, index), nil)
+	statefulset := statefulsets.Items[0]
+	err = m.Pods.Delete(statefulset.Namespace, fmt.Sprintf("%s-%d", statefulset.Name, index))
 	return errors.Wrap(err, "failed to delete pod")
 }
 
@@ -234,19 +220,19 @@ func (m *StatefulSetDesirer) update(lrp *opi.LRP) error {
 	statefulSet.Annotations[AnnotationLastUpdated] = lrp.LastUpdated
 	statefulSet.Annotations[AnnotationRegisteredRoutes] = lrp.AppURIs
 
-	_, err = m.StatefulSets.Update(statefulSet)
+	_, err = m.StatefulSets.Update(statefulSet.Namespace, statefulSet)
 	if err != nil {
 		return err
 	}
 
 	if lrp.TargetInstances <= 1 {
-		err = m.PodDisruptionBudets.Delete(statefulSet.Name, &metav1.DeleteOptions{})
+		err = m.PodDisruptionBudets.Delete(statefulSet.Namespace, statefulSet.Name)
 		if err != nil && !k8serrors.IsNotFound(err) {
 			return err
 		}
 		return nil
 	}
-	err = m.createPodDisruptionBudget(lrp)
+	err = m.createPodDisruptionBudget(statefulSet.Namespace, lrp)
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return err
 	}
@@ -331,10 +317,10 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	return instances, nil
 }
 
-func (m *StatefulSetDesirer) createPodDisruptionBudget(lrp *opi.LRP) error {
+func (m *StatefulSetDesirer) createPodDisruptionBudget(namespace string, lrp *opi.LRP) error {
 	if lrp.TargetInstances > 1 {
 		minAvailable := intstr.FromInt(PdbMinAvailableInstances)
-		_, err := m.PodDisruptionBudets.Create(&v1beta1.PodDisruptionBudget{
+		_, err := m.PodDisruptionBudets.Create(namespace, &v1beta1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: m.statefulSetName(lrp),
 			},

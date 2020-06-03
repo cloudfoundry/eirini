@@ -19,7 +19,8 @@ var _ = Describe("Mapper", func() {
 	BeforeEach(func() {
 		statefulset := appsv1.StatefulSet{
 			ObjectMeta: meta.ObjectMeta{
-				Name: "baldur",
+				Name:      "baldur",
+				Namespace: "baldur-ns",
 				Labels: map[string]string{
 					LabelGUID: "Bald-guid",
 				},
@@ -90,6 +91,10 @@ var _ = Describe("Mapper", func() {
 
 	It("should set the correct LRP space name", func() {
 		Expect(lrp.SpaceName).To(Equal("space-foo"))
+	})
+
+	It("should set the correct LRP namespace", func() {
+		Expect(lrp.Namespace).To(Equal("baldur-ns"))
 	})
 
 	It("should set the correct LRP image", func() {

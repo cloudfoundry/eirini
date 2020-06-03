@@ -6,14 +6,14 @@ import (
 
 	"code.cloudfoundry.org/eirini/k8s"
 	v1 "k8s.io/api/core/v1"
-	v1a "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type FakeSecretsClient struct {
-	CreateStub        func(*v1.Secret) (*v1.Secret, error)
+	CreateStub        func(string, *v1.Secret) (*v1.Secret, error)
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
-		arg1 *v1.Secret
+		arg1 string
+		arg2 *v1.Secret
 	}
 	createReturns struct {
 		result1 *v1.Secret
@@ -23,11 +23,11 @@ type FakeSecretsClient struct {
 		result1 *v1.Secret
 		result2 error
 	}
-	DeleteStub        func(string, *v1a.DeleteOptions) error
+	DeleteStub        func(string, string) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
 		arg1 string
-		arg2 *v1a.DeleteOptions
+		arg2 string
 	}
 	deleteReturns struct {
 		result1 error
@@ -39,16 +39,17 @@ type FakeSecretsClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeSecretsClient) Create(arg1 *v1.Secret) (*v1.Secret, error) {
+func (fake *FakeSecretsClient) Create(arg1 string, arg2 *v1.Secret) (*v1.Secret, error) {
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
-		arg1 *v1.Secret
-	}{arg1})
-	fake.recordInvocation("Create", []interface{}{arg1})
+		arg1 string
+		arg2 *v1.Secret
+	}{arg1, arg2})
+	fake.recordInvocation("Create", []interface{}{arg1, arg2})
 	fake.createMutex.Unlock()
 	if fake.CreateStub != nil {
-		return fake.CreateStub(arg1)
+		return fake.CreateStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -63,17 +64,17 @@ func (fake *FakeSecretsClient) CreateCallCount() int {
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakeSecretsClient) CreateCalls(stub func(*v1.Secret) (*v1.Secret, error)) {
+func (fake *FakeSecretsClient) CreateCalls(stub func(string, *v1.Secret) (*v1.Secret, error)) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = stub
 }
 
-func (fake *FakeSecretsClient) CreateArgsForCall(i int) *v1.Secret {
+func (fake *FakeSecretsClient) CreateArgsForCall(i int) (string, *v1.Secret) {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	argsForCall := fake.createArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeSecretsClient) CreateReturns(result1 *v1.Secret, result2 error) {
@@ -102,12 +103,12 @@ func (fake *FakeSecretsClient) CreateReturnsOnCall(i int, result1 *v1.Secret, re
 	}{result1, result2}
 }
 
-func (fake *FakeSecretsClient) Delete(arg1 string, arg2 *v1a.DeleteOptions) error {
+func (fake *FakeSecretsClient) Delete(arg1 string, arg2 string) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
 		arg1 string
-		arg2 *v1a.DeleteOptions
+		arg2 string
 	}{arg1, arg2})
 	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
 	fake.deleteMutex.Unlock()
@@ -127,13 +128,13 @@ func (fake *FakeSecretsClient) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeSecretsClient) DeleteCalls(stub func(string, *v1a.DeleteOptions) error) {
+func (fake *FakeSecretsClient) DeleteCalls(stub func(string, string) error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakeSecretsClient) DeleteArgsForCall(i int) (string, *v1a.DeleteOptions) {
+func (fake *FakeSecretsClient) DeleteArgsForCall(i int) (string, string) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]

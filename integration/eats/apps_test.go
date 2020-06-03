@@ -2,6 +2,7 @@ package eats_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -11,27 +12,53 @@ import (
 )
 
 var _ = Describe("Apps", func() {
-	Describe("Desiring an app", func() {
+	var (
+		namespace      string
+		lrpGUID        string
+		lrpVersion     string
+		lrpProcessGUID string
+	)
 
+	BeforeEach(func() {
+		namespace = fixture.Namespace
+		lrpGUID = generateGUID("lrp")
+		lrpVersion = generateGUID("version")
+		lrpProcessGUID = processGUID(lrpGUID, lrpVersion)
+	})
+
+	Describe("Desiring an app", func() {
 		var desireResp *http.Response
 
 		JustBeforeEach(func() {
-			desireResp = desireApp("the-app-guid", "the-version")
+			desireResp = desireAppInNamespace(lrpGUID, lrpVersion, namespace)
 		})
 
 		It("succeeds", func() {
 			Expect(desireResp.StatusCode).To(Equal(http.StatusAccepted))
 		})
 
-		It("deploys the LRP", func() {
-			lrp, err := getLRP("the-app-guid", "the-version")
+		It("deploys the LRP to the specified namespace", func() {
+			lrp, err := getLRP(lrpGUID, lrpVersion)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(lrp.ProcessGUID).To(Equal("the-app-guid-the-version"))
+			Expect(lrp.ProcessGUID).To(Equal(lrpProcessGUID))
+			Expect(lrp.Namespace).To(Equal(fixture.Namespace))
+		})
+
+		When("a namespace is not specified", func() {
+			BeforeEach(func() {
+				namespace = ""
+			})
+
+			It("deploys the LRP to the default namespace", func() {
+				lrp, err := getLRP(lrpGUID, lrpVersion)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(lrp.Namespace).To(Equal(fixture.DefaultNamespace))
+			})
 		})
 
 		When("the app already exist", func() {
 			It("returns 202", func() {
-				resp := desireApp("the-app-guid", "the-version")
+				resp := desireApp(lrpGUID, lrpVersion)
 				Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 			})
 		})
@@ -39,14 +66,14 @@ var _ = Describe("Apps", func() {
 
 	Describe("Update an app", func() {
 		BeforeEach(func() {
-			desireApp("the-app-guid", "the-version")
+			desireApp(lrpGUID, lrpVersion)
 		})
 
 		It("successfully updates the app", func() {
 			updatedRoutes := []routeInfo{{Hostname: "updated-host", Port: 4321}}
-			updateResp := updateApp("the-app-guid", "the-version", 2, "333333", updatedRoutes)
+			updateResp := updateApp(lrpGUID, lrpVersion, 2, "333333", updatedRoutes)
 			Expect(updateResp.StatusCode).To(Equal(http.StatusOK))
-			lrp, err := getLRP("the-app-guid", "the-version")
+			lrp, err := getLRP(lrpGUID, lrpVersion)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(lrp.Instances).To(BeNumerically("==", 2))
 			Expect(lrp.Annotation).To(Equal("333333"))
@@ -59,13 +86,21 @@ var _ = Describe("Apps", func() {
 	})
 
 	Describe("Listing apps", func() {
+		var (
+			anotherLrpGUID    string
+			anotherLrpVersion string
+		)
+
 		JustBeforeEach(func() {
-			firstLrp := createLrpRequest("the-first-app-guid", "v1")
+			anotherLrpGUID = generateGUID("another-lrp")
+			anotherLrpVersion = generateGUID("another-version")
+
+			firstLrp := createLrpRequest(lrpGUID, lrpVersion)
 			firstLrp.NumInstances = 2
 			firstLrp.LastUpdated = "111111"
 			desireLRP(firstLrp)
 
-			secondLrp := createLrpRequest("the-second-app-guid", "v1")
+			secondLrp := createLrpRequest(anotherLrpGUID, anotherLrpVersion)
 			secondLrp.LastUpdated = "222222"
 			desireLRP(secondLrp)
 		})
@@ -79,27 +114,29 @@ var _ = Describe("Apps", func() {
 				lrpsAnnotations[lrp.DesiredLRPKey.ProcessGUID] = lrp.Annotation
 			}
 
-			Expect(lrpsAnnotations).To(SatisfyAll(HaveLen(2), HaveKey("the-first-app-guid-v1"), HaveKey("the-second-app-guid-v1")))
-			Expect(lrpsAnnotations["the-first-app-guid-v1"]).To(Equal("111111"))
-			Expect(lrpsAnnotations["the-second-app-guid-v1"]).To(Equal("222222"))
+			anotherProcessGUID := processGUID(anotherLrpGUID, anotherLrpVersion)
+
+			Expect(lrpsAnnotations).To(SatisfyAll(HaveKey(lrpProcessGUID), HaveKey(anotherProcessGUID)))
+			Expect(lrpsAnnotations[lrpProcessGUID]).To(Equal("111111"))
+			Expect(lrpsAnnotations[anotherProcessGUID]).To(Equal("222222"))
 		})
 	})
 
 	Describe("Get an app", func() {
 		JustBeforeEach(func() {
-			desireApp("the-app-guid", "v1")
+			desireApp(lrpGUID, lrpVersion)
 		})
 
 		It("successfully returns the LRP", func() {
-			lrp, err := getLRP("the-app-guid", "v1")
+			lrp, err := getLRP(lrpGUID, lrpVersion)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(lrp.ProcessGUID).To(Equal("the-app-guid-v1"))
+			Expect(lrp.ProcessGUID).To(Equal(lrpProcessGUID))
 			Expect(lrp.Instances).To(Equal(int32(1)))
 		})
 
 		When("the app doesn't exist", func() {
 			It("returns a 404", func() {
-				_, err := getLRP("does-not-exist", "v1")
+				_, err := getLRP("does-not-exist", lrpVersion)
 				Expect(err).To(MatchError("404 Not Found"))
 			})
 		})
@@ -107,19 +144,19 @@ var _ = Describe("Apps", func() {
 
 	Describe("Stop an app", func() {
 		BeforeEach(func() {
-			desireApp("the-app-guid", "v1")
+			desireApp(lrpGUID, lrpVersion)
 		})
 
 		It("successfully stops the app", func() {
-			_, err := stopLRP(httpClient, opiURL, "the-app-guid", "v1")
+			_, err := stopLRP(httpClient, opiURL, lrpGUID, lrpVersion)
 			Expect(err).NotTo(HaveOccurred())
-			_, err = getLRP("the-app-guid", "v1")
+			_, err = getLRP(lrpGUID, lrpVersion)
 			Expect(err).To(MatchError("404 Not Found"))
 		})
 
 		When("the app doesn't exist", func() {
 			It("returns a 404", func() {
-				response, err := stopLRP(httpClient, opiURL, "does-not-exist", "v1")
+				response, err := stopLRP(httpClient, opiURL, "does-not-exist", lrpVersion)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
 			})
@@ -128,18 +165,18 @@ var _ = Describe("Apps", func() {
 
 	Describe("Stop an app instance", func() {
 		BeforeEach(func() {
-			desireAppWithInstances("the-app-guid", "v1", 3)
+			desireAppWithInstances(lrpGUID, lrpVersion, 3)
 			Eventually(func() []*cf.Instance {
-				return getRunningInstances("the-app-guid", "v1")
+				return getRunningInstances(lrpGUID, lrpVersion)
 			}).Should(HaveLen(3))
 		})
 
 		It("successfully stops the instance", func() {
-			_, err := stopLRPInstance("the-app-guid", "v1", 1)
+			_, err := stopLRPInstance(lrpGUID, lrpVersion, 1)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() []*cf.Instance {
-				return getRunningInstances("the-app-guid", "v1")
+				return getRunningInstances(lrpGUID, lrpVersion)
 			}).Should(ConsistOf(
 				gstruct.PointTo(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
 					"Index": Equal(0),
@@ -156,7 +193,7 @@ var _ = Describe("Apps", func() {
 
 		When("the app does not exist", func() {
 			It("should return 404", func() {
-				resp, err := stopLRPInstance("does-not-exist", "v1", 1)
+				resp, err := stopLRPInstance("does-not-exist", lrpVersion, 1)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 			})
@@ -164,7 +201,7 @@ var _ = Describe("Apps", func() {
 
 		When("the app instance does not exist", func() {
 			It("should return 400", func() {
-				resp, err := stopLRPInstance("the-app-guid", "v1", 99)
+				resp, err := stopLRPInstance(lrpGUID, lrpVersion, 99)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 			})
@@ -172,7 +209,7 @@ var _ = Describe("Apps", func() {
 
 		When("the app instance is a negative number", func() {
 			It("should return 400", func() {
-				resp, err := stopLRPInstance("the-app-guid", "v1", -1)
+				resp, err := stopLRPInstance(lrpGUID, lrpVersion, -1)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 			})
@@ -181,14 +218,14 @@ var _ = Describe("Apps", func() {
 
 	Describe("Get instances", func() {
 		JustBeforeEach(func() {
-			desireAppWithInstances("the-app-guid", "v1", 3)
+			desireAppWithInstances(lrpGUID, lrpVersion, 3)
 		})
 
 		It("returns the app instances", func() {
 			var resp *cf.GetInstancesResponse
 			Eventually(func() []*cf.Instance {
 				var err error
-				resp, err = getInstances("the-app-guid", "v1")
+				resp, err = getInstances(lrpGUID, lrpVersion)
 				Expect(err).NotTo(HaveOccurred())
 
 				return resp.Instances
@@ -213,7 +250,7 @@ var _ = Describe("Apps", func() {
 
 		When("the app doesn't exist", func() {
 			It("returns a 404", func() {
-				resp, err := getInstances("does-not-exist", "v1")
+				resp, err := getInstances("does-not-exist", lrpVersion)
 				Expect(err).To(MatchError("404 Not Found"))
 				Expect(resp.Error).To(Equal("failed to get instances for app: not found"))
 			})
@@ -221,13 +258,19 @@ var _ = Describe("Apps", func() {
 	})
 })
 
-func desireApp(appGUID, version string) *http.Response { // nolint:unparam
+func desireApp(appGUID, version string) *http.Response {
 	return desireAppWithInstances(appGUID, version, 1)
 }
 
 func desireAppWithInstances(appGUID, version string, instances int) *http.Response {
 	lrp := createLrpRequest(appGUID, version)
 	lrp.NumInstances = instances
+	return desireLRP(lrp)
+}
+
+func desireAppInNamespace(appGUID, version, namespace string) *http.Response {
+	lrp := createLrpRequest(appGUID, version)
+	lrp.Namespace = namespace
 	return desireLRP(lrp)
 }
 
@@ -272,4 +315,8 @@ func getRunningInstances(appGUID, version string) []*cf.Instance {
 		}
 	}
 	return runningInstances
+}
+
+func processGUID(guid, version string) string {
+	return fmt.Sprintf("%s-%s", guid, version)
 }

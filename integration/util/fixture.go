@@ -26,6 +26,7 @@ const (
 type Fixture struct {
 	Clientset         kubernetes.Interface
 	Namespace         string
+	DefaultNamespace  string
 	PspName           string
 	KubeConfigPath    string
 	Writer            io.Writer
@@ -52,9 +53,8 @@ func NewFixture(writer io.Writer) *Fixture {
 }
 
 func (f *Fixture) SetUp() {
-	f.Namespace = CreateRandomNamespace(f.Clientset)
-	f.PspName = fmt.Sprintf("%s-psp", f.Namespace)
-	Expect(CreatePodCreationPSP(f.Namespace, f.PspName, f.Clientset)).To(Succeed(), "failed to create pod creation PSP")
+	f.DefaultNamespace = f.configureNewNamespace()
+	f.Namespace = f.configureNewNamespace()
 }
 
 func (f *Fixture) NextAvailablePort() int {
@@ -78,11 +78,23 @@ func (f Fixture) maxPortNumber() int {
 func (f *Fixture) TearDown() {
 	var errs *multierror.Error
 	errs = multierror.Append(errs, f.printDebugInfo())
-
-	errs = multierror.Append(errs, DeleteNamespace(f.Namespace, f.Clientset))
-	errs = multierror.Append(errs, DeletePSP(f.PspName, f.Clientset))
-
+	errs = multierror.Append(errs, f.deleteNamespace(f.Namespace))
+	errs = multierror.Append(errs, f.deleteNamespace(f.DefaultNamespace))
 	Expect(errs.ErrorOrNil()).NotTo(HaveOccurred())
+}
+
+func (f *Fixture) configureNewNamespace() string {
+	namespace := CreateRandomNamespace(f.Clientset)
+	Expect(CreatePodCreationPSP(namespace, getPspName(namespace), f.Clientset)).To(Succeed(), "failed to create pod creation PSP")
+	return namespace
+}
+
+func (f *Fixture) deleteNamespace(namespace string) error {
+	var errs *multierror.Error
+	errs = multierror.Append(errs, DeleteNamespace(namespace, f.Clientset))
+	errs = multierror.Append(errs, DeletePSP(getPspName(namespace), f.Clientset))
+
+	return errs.ErrorOrNil()
 }
 
 //nolint:gocyclo
@@ -149,4 +161,8 @@ func consumeRequest(request rest.ResponseWrapper, out io.Writer) error {
 			return nil
 		}
 	}
+}
+
+func getPspName(namespace string) string {
+	return fmt.Sprintf("%s-psp", namespace)
 }

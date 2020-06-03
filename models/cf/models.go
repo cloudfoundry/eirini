@@ -14,6 +14,7 @@ type DesiredLRP struct {
 	Instances   int32                      `json:"instances"`
 	Routes      map[string]json.RawMessage `json:"routes,omitempty"`
 	Annotation  string                     `json:"annotation"`
+	Namespace   string
 }
 
 type DesiredLRPResponse struct {
@@ -31,6 +32,7 @@ type DesireLRPRequest struct {
 	SpaceName               string                     `json:"space_name"`
 	OrganizationGUID        string                     `json:"organization_guid"`
 	OrganizationName        string                     `json:"organization_name"`
+	Namespace               string                     `json:"namespace"`
 	PlacementTags           []string                   `json:"placement_tags"`
 	Ports                   []int32                    `json:"ports"`
 	Routes                  map[string]json.RawMessage `json:"routes"`

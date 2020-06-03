@@ -59,7 +59,7 @@ var _ = Describe("Routes", func() {
 			EmitPeriodInSeconds: 1,
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: fixture.KubeConfigPath,
-				Namespace:  fixture.Namespace,
+				Namespace:  fixture.DefaultNamespace,
 			},
 		}
 		collectorSession, collectorConfig = util.RunBinary(binPaths.RouteCollector, eiriniRouteConfig)
@@ -67,8 +67,8 @@ var _ = Describe("Routes", func() {
 		instanceInformerSession, instanceInformerConfig = util.RunBinary(binPaths.RoutePodInformer, eiriniRouteConfig)
 
 		lrp = cf.DesireLRPRequest{
-			GUID:         "the-app-guid",
-			Version:      "the-version",
+			GUID:         generateGUID("lrp"),
+			Version:      generateGUID("version"),
 			NumInstances: 1,
 			Routes: map[string]json.RawMessage{
 				"cf-router": marshalRoutes([]routeInfo{
@@ -120,8 +120,8 @@ var _ = Describe("Routes", func() {
 				Expect(net.ParseIP(actualMessage.Host).IsUnspecified()).To(BeFalse())
 				Expect(actualMessage.Port).To(BeNumerically("==", 8080))
 				Expect(actualMessage.URIs).To(ConsistOf("app-hostname-1"))
-				Expect(actualMessage.App).To(Equal("the-app-guid"))
-				Expect(actualMessage.PrivateInstanceID).To(ContainSubstring("the-app-guid"))
+				Expect(actualMessage.App).To(Equal(lrp.GUID))
+				Expect(actualMessage.PrivateInstanceID).To(ContainSubstring(lrp.GUID))
 			}
 		})
 
@@ -221,7 +221,7 @@ var _ = Describe("Routes", func() {
 					return receivedMessage(registerChan)
 				}).Should(MatchFields(IgnoreExtras, Fields{
 					"URIs":              ConsistOf("app-hostname-1"),
-					"PrivateInstanceID": SatisfyAll(ContainSubstring("the-app-guid"), MatchRegexp("-1$")),
+					"PrivateInstanceID": SatisfyAll(ContainSubstring(lrp.GUID), MatchRegexp("-1$")),
 				}))
 
 			})
@@ -241,7 +241,7 @@ var _ = Describe("Routes", func() {
 					return receivedMessage(unregisterChan)
 				}).Should(MatchFields(IgnoreExtras, Fields{
 					"URIs":              ConsistOf("app-hostname-1"),
-					"PrivateInstanceID": SatisfyAll(ContainSubstring("the-app-guid"), MatchRegexp("-0$")),
+					"PrivateInstanceID": SatisfyAll(ContainSubstring(lrp.GUID), MatchRegexp("-0$")),
 				}))
 
 			})
@@ -284,13 +284,13 @@ var _ = Describe("Routes", func() {
 				return receivedMessage(unregisterChan)
 			}).Should(MatchFields(IgnoreExtras, Fields{
 				"URIs":              ConsistOf("app-hostname-1"),
-				"PrivateInstanceID": SatisfyAll(ContainSubstring("the-app-guid"), MatchRegexp("-0$")),
+				"PrivateInstanceID": SatisfyAll(ContainSubstring(lrp.GUID), MatchRegexp("-0$")),
 			}))
 			Eventually(func() route.RegistryMessage {
 				return receivedMessage(registerChan)
 			}).Should(MatchFields(IgnoreExtras, Fields{
 				"URIs":              ConsistOf("app-hostname-1"),
-				"PrivateInstanceID": SatisfyAll(ContainSubstring("the-app-guid"), MatchRegexp("-0$")),
+				"PrivateInstanceID": SatisfyAll(ContainSubstring(lrp.GUID), MatchRegexp("-0$")),
 			}))
 		})
 	})

@@ -174,5 +174,6 @@ func createLRP(name string) *opi.LRP {
 		LRPIdentifier:   opi.LRPIdentifier{GUID: guid, Version: "version_" + guid},
 		LRP:             "metadata",
 		DiskMB:          2047,
+		Namespace:       fixture.Namespace,
 	}
 }

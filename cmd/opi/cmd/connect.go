@@ -121,7 +121,7 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 		TLSConfig:          tlsConfigs,
 		ServiceAccountName: cfg.Properties.ApplicationServiceAccount,
 		RegistrySecretName: cfg.Properties.RegistrySecretName,
-		SecretsClient:      clientset.CoreV1().Secrets(cfg.Properties.Namespace),
+		SecretsClient:      k8s.NewSecretsClient(clientset),
 		JobClient:          clientset.BatchV1().Jobs(cfg.Properties.Namespace),
 		Logger:             logger,
 	}
@@ -164,17 +164,23 @@ func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifros
 }
 
 func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost.LRP {
-	kubeNamespace := cfg.Properties.Namespace
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	desirer := k8s.NewStatefulSetDesirer(
-		clientset,
-		kubeNamespace,
-		cfg.Properties.RegistrySecretName,
-		cfg.Properties.RootfsVersion,
-		cfg.Properties.ApplicationServiceAccount,
-		desireLogger,
-	)
+	desirer := &k8s.StatefulSetDesirer{
+		Pods:                      k8s.NewPodsClient(clientset),
+		Secrets:                   k8s.NewSecretsClient(clientset),
+		StatefulSets:              k8s.NewStatefulSetClient(clientset),
+		PodDisruptionBudets:       k8s.NewPodDisruptionBudgetClient(clientset),
+		Events:                    k8s.NewEventsClient(clientset),
+		StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
+		RegistrySecretName:        cfg.Properties.RegistrySecretName,
+		RootfsVersion:             cfg.Properties.RootfsVersion,
+		LivenessProbeCreator:      k8s.CreateLivenessProbe,
+		ReadinessProbeCreator:     k8s.CreateReadinessProbe,
+		Hasher:                    util.TruncatedSHA256Hasher{},
+		Logger:                    desireLogger,
+		ApplicationServiceAccount: cfg.Properties.ApplicationServiceAccount,
+	}
 	converter := initConverter(cfg)
 
 	return &bifrost.LRP{
@@ -195,6 +201,7 @@ func initConverter(cfg *eirini.Config) *bifrost.OPIConverter {
 	}
 	return bifrost.NewOPIConverter(
 		convertLogger,
+		cfg.Properties.Namespace,
 		cfg.Properties.RegistryAddress,
 		cfg.Properties.DiskLimitMB,
 		docker.Fetch,

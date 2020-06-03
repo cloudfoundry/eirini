@@ -5,16 +5,16 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s"
-	v1a "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
+	v1a "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type FakePodListerDeleter struct {
-	DeleteStub        func(string, *v1.DeleteOptions) error
+	DeleteStub        func(string, string) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
 		arg1 string
-		arg2 *v1.DeleteOptions
+		arg2 string
 	}
 	deleteReturns struct {
 		result1 error
@@ -22,29 +22,29 @@ type FakePodListerDeleter struct {
 	deleteReturnsOnCall map[int]struct {
 		result1 error
 	}
-	ListStub        func(v1.ListOptions) (*v1a.PodList, error)
+	ListStub        func(v1a.ListOptions) (*v1.PodList, error)
 	listMutex       sync.RWMutex
 	listArgsForCall []struct {
-		arg1 v1.ListOptions
+		arg1 v1a.ListOptions
 	}
 	listReturns struct {
-		result1 *v1a.PodList
+		result1 *v1.PodList
 		result2 error
 	}
 	listReturnsOnCall map[int]struct {
-		result1 *v1a.PodList
+		result1 *v1.PodList
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePodListerDeleter) Delete(arg1 string, arg2 *v1.DeleteOptions) error {
+func (fake *FakePodListerDeleter) Delete(arg1 string, arg2 string) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
 		arg1 string
-		arg2 *v1.DeleteOptions
+		arg2 string
 	}{arg1, arg2})
 	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
 	fake.deleteMutex.Unlock()
@@ -64,13 +64,13 @@ func (fake *FakePodListerDeleter) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakePodListerDeleter) DeleteCalls(stub func(string, *v1.DeleteOptions) error) {
+func (fake *FakePodListerDeleter) DeleteCalls(stub func(string, string) error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakePodListerDeleter) DeleteArgsForCall(i int) (string, *v1.DeleteOptions) {
+func (fake *FakePodListerDeleter) DeleteArgsForCall(i int) (string, string) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]
@@ -100,11 +100,11 @@ func (fake *FakePodListerDeleter) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakePodListerDeleter) List(arg1 v1.ListOptions) (*v1a.PodList, error) {
+func (fake *FakePodListerDeleter) List(arg1 v1a.ListOptions) (*v1.PodList, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		arg1 v1.ListOptions
+		arg1 v1a.ListOptions
 	}{arg1})
 	fake.recordInvocation("List", []interface{}{arg1})
 	fake.listMutex.Unlock()
@@ -124,41 +124,41 @@ func (fake *FakePodListerDeleter) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakePodListerDeleter) ListCalls(stub func(v1.ListOptions) (*v1a.PodList, error)) {
+func (fake *FakePodListerDeleter) ListCalls(stub func(v1a.ListOptions) (*v1.PodList, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
 }
 
-func (fake *FakePodListerDeleter) ListArgsForCall(i int) v1.ListOptions {
+func (fake *FakePodListerDeleter) ListArgsForCall(i int) v1a.ListOptions {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	argsForCall := fake.listArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakePodListerDeleter) ListReturns(result1 *v1a.PodList, result2 error) {
+func (fake *FakePodListerDeleter) ListReturns(result1 *v1.PodList, result2 error) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	fake.listReturns = struct {
-		result1 *v1a.PodList
+		result1 *v1.PodList
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakePodListerDeleter) ListReturnsOnCall(i int, result1 *v1a.PodList, result2 error) {
+func (fake *FakePodListerDeleter) ListReturnsOnCall(i int, result1 *v1.PodList, result2 error) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	if fake.listReturnsOnCall == nil {
 		fake.listReturnsOnCall = make(map[int]struct {
-			result1 *v1a.PodList
+			result1 *v1.PodList
 			result2 error
 		})
 	}
 	fake.listReturnsOnCall[i] = struct {
-		result1 *v1a.PodList
+		result1 *v1.PodList
 		result2 error
 	}{result1, result2}
 }

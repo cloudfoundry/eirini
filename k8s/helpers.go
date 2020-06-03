@@ -8,11 +8,6 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//counterfeiter:generate . EventLister
-type EventLister interface {
-	List(opts meta.ListOptions) (*v1.EventList, error)
-}
-
 func MapToEnvVar(env map[string]string) []v1.EnvVar {
 	envVars := []v1.EnvVar{}
 	for k, v := range env {

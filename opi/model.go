@@ -33,6 +33,7 @@ type LRP struct {
 	OrgGUID                string
 	SpaceName              string
 	SpaceGUID              string
+	Namespace              string
 	Image                  string
 	Command                []string
 	PrivateRegistry        *PrivateRegistry

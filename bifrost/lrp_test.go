@@ -329,6 +329,8 @@ var _ = Describe("Bifrost LRP", func() {
 			BeforeEach(func() {
 				lrp = &opi.LRP{
 					TargetInstances: 5,
+					LastUpdated:     "1234.5",
+					Namespace:       "namespace",
 				}
 
 				lrpDesirer.GetReturns(lrp, nil)
@@ -346,8 +348,9 @@ var _ = Describe("Bifrost LRP", func() {
 				Expect(desiredLRP).ToNot(BeNil())
 				Expect(desiredLRP.ProcessGUID).To(Equal("guid_1234-version_1234"))
 				Expect(desiredLRP.Instances).To(Equal(int32(5)))
+				Expect(desiredLRP.Annotation).To(Equal("1234.5"))
+				Expect(desiredLRP.Namespace).To(Equal("namespace"))
 			})
-
 		})
 
 		Context("when the app does not exist", func() {

@@ -31,6 +31,7 @@ func StatefulSetToLRP(s appsv1.StatefulSet) *opi.LRP {
 		},
 		AppName:          s.Annotations[AnnotationAppName],
 		SpaceName:        s.Annotations[AnnotationSpaceName],
+		Namespace:        s.Namespace,
 		Image:            container.Image,
 		Command:          container.Command,
 		RunningInstances: int(s.Status.ReadyReplicas),
