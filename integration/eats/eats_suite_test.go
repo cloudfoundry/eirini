@@ -310,4 +310,3 @@ func generateGUID(prefix string) string {
 	Expect(err).NotTo(HaveOccurred())
 	return fmt.Sprintf("%s-%s", prefix, guid)
 }
-
