@@ -26,12 +26,17 @@ var _ = Describe("Bifrost LRP", func() {
 	BeforeEach(func() {
 		lrpConverter = new(bifrostfakes.FakeLRPConverter)
 		lrpDesirer = new(bifrostfakes.FakeLRPDesirer)
+		request = cf.DesireLRPRequest{
+			GUID:      "my-guid",
+			Namespace: "my-namespace",
+		}
 	})
 
 	JustBeforeEach(func() {
 		lrpBifrost = &bifrost.LRP{
-			Converter: lrpConverter,
-			Desirer:   lrpDesirer,
+			DefaultNamespace: "default-namespace",
+			Converter:        lrpConverter,
+			Desirer:          lrpDesirer,
 		}
 	})
 
@@ -61,8 +66,26 @@ var _ = Describe("Bifrost LRP", func() {
 
 			It("should use Desirer with the converted LRP", func() {
 				Expect(lrpDesirer.DesireCallCount()).To(Equal(1))
-				desired := lrpDesirer.DesireArgsForCall(0)
+				_, desired := lrpDesirer.DesireArgsForCall(0)
 				Expect(desired).To(Equal(&lrp))
+			})
+
+			It("should desire the LRP in the requested namespace", func() {
+				Expect(lrpDesirer.DesireCallCount()).To(Equal(1))
+				namespace, _ := lrpDesirer.DesireArgsForCall(0)
+				Expect(namespace).To(Equal("my-namespace"))
+			})
+
+			When("no namespace is specified", func() {
+				BeforeEach(func() {
+					request.Namespace = ""
+				})
+
+				It("should desire the LRP in the default namespace", func() {
+					Expect(lrpDesirer.DesireCallCount()).To(Equal(1))
+					namespace, _ := lrpDesirer.DesireArgsForCall(0)
+					Expect(namespace).To(Equal("default-namespace"))
+				})
 			})
 		})
 
@@ -330,7 +353,6 @@ var _ = Describe("Bifrost LRP", func() {
 				lrp = &opi.LRP{
 					TargetInstances: 5,
 					LastUpdated:     "1234.5",
-					Namespace:       "namespace",
 				}
 
 				lrpDesirer.GetReturns(lrp, nil)
@@ -349,7 +371,6 @@ var _ = Describe("Bifrost LRP", func() {
 				Expect(desiredLRP.ProcessGUID).To(Equal("guid_1234-version_1234"))
 				Expect(desiredLRP.Instances).To(Equal(int32(5)))
 				Expect(desiredLRP.Annotation).To(Equal("1234.5"))
-				Expect(desiredLRP.Namespace).To(Equal("namespace"))
 			})
 		})
 

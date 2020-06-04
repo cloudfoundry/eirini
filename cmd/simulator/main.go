@@ -37,7 +37,8 @@ func main() {
 
 type DesirerSimulator struct{}
 
-func (d *DesirerSimulator) Desire(lrps *opi.LRP) error {
+func (d *DesirerSimulator) Desire(namespace string,
+	klrps *opi.LRP) error {
 	return nil
 }
 

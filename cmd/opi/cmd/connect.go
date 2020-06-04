@@ -184,8 +184,9 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 	converter := initConverter(cfg)
 
 	return &bifrost.LRP{
-		Converter: converter,
-		Desirer:   desirer,
+		DefaultNamespace: cfg.Properties.Namespace,
+		Converter:        converter,
+		Desirer:          desirer,
 	}
 }
 
@@ -201,7 +202,6 @@ func initConverter(cfg *eirini.Config) *bifrost.OPIConverter {
 	}
 	return bifrost.NewOPIConverter(
 		convertLogger,
-		cfg.Properties.Namespace,
 		cfg.Properties.RegistryAddress,
 		cfg.Properties.DiskLimitMB,
 		docker.Fetch,

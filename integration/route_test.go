@@ -63,7 +63,7 @@ var _ = Describe("Routes", func() {
 
 		When("an LRP is desired", func() {
 			It("sends register routes message", func() {
-				Expect(desirer.Desire(odinLRP)).To(Succeed())
+				Expect(desirer.Desire(fixture.Namespace, odinLRP)).To(Succeed())
 				Eventually(func() bool {
 					pods := listPods(odinLRP.LRPIdentifier)
 					if len(pods) < 1 {
@@ -105,7 +105,7 @@ else
 	done;
 fi;`,
 					}
-					err := desirer.Desire(odinLRP)
+					err := desirer.Desire(fixture.Namespace, odinLRP)
 					Expect(err).ToNot(HaveOccurred())
 					Eventually(func() bool {
 						pods := listPods(odinLRP.LRPIdentifier)
@@ -143,7 +143,7 @@ fi;`,
 		)
 
 		BeforeEach(func() {
-			err := desirer.Desire(odinLRP)
+			err := desirer.Desire(fixture.Namespace, odinLRP)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(func() bool {
 				pods := listPods(odinLRP.LRPIdentifier)
@@ -263,7 +263,7 @@ fi;`,
 
 		BeforeEach(func() {
 			odinLRP.TargetInstances = 2
-			Expect(desirer.Desire(odinLRP)).To(Succeed())
+			Expect(desirer.Desire(fixture.Namespace, odinLRP)).To(Succeed())
 			Eventually(func() bool {
 				pods := listPods(odinLRP.LRPIdentifier)
 				if len(pods) < 2 {

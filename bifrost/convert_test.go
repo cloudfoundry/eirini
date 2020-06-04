@@ -19,7 +19,6 @@ import (
 var _ = Describe("OPI Converter", func() {
 	const (
 		defaultDiskQuota = int64(2058)
-		defaultNamespace = "default"
 		registryIP       = "eirini-registry.service.cf.internal"
 	)
 
@@ -49,7 +48,6 @@ var _ = Describe("OPI Converter", func() {
 	JustBeforeEach(func() {
 		converter = bifrost.NewOPIConverter(
 			logger,
-			defaultNamespace,
 			registryIP,
 			defaultDiskQuota,
 			imgMetadataFetcher.Spy,
@@ -145,10 +143,6 @@ var _ = Describe("OPI Converter", func() {
 					Expect(lrp.OrgName).To(Equal("marvel"))
 				})
 
-				It("should set the namespace", func() {
-					Expect(lrp.Namespace).To(Equal("namespace"))
-				})
-
 				It("should set the correct TargetInstances", func() {
 					Expect(lrp.TargetInstances).To(Equal(3))
 				})
@@ -232,18 +226,6 @@ var _ = Describe("OPI Converter", func() {
 				It("should not error", func() {
 					Expect(err).ToNot(HaveOccurred())
 				})
-
-				When("no namespace is specified", func() {
-					BeforeEach(func() {
-						desireLRPRequest.Namespace = ""
-					})
-
-					It("uses the default namespace", func() {
-						Expect(lrp.Namespace).To(Equal("default"))
-					})
-
-				})
-
 			}
 
 			Context("when the disk quota is not provided", func() {

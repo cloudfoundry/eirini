@@ -17,7 +17,7 @@ type LRPConverter interface {
 
 //counterfeiter:generate . LRPDesirer
 type LRPDesirer interface {
-	Desire(lrp *opi.LRP) error
+	Desire(namespace string, lrp *opi.LRP) error
 	List() ([]*opi.LRP, error)
 	Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 	GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error)
@@ -27,8 +27,9 @@ type LRPDesirer interface {
 }
 
 type LRP struct {
-	Converter LRPConverter
-	Desirer   LRPDesirer
+	DefaultNamespace string
+	Converter        LRPConverter
+	Desirer          LRPDesirer
 }
 
 func (l *LRP) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
@@ -36,7 +37,11 @@ func (l *LRP) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to convert request")
 	}
-	return errors.Wrap(l.Desirer.Desire(&desiredLRP), "failed to desire")
+	namespace := l.DefaultNamespace
+	if request.Namespace != "" {
+		namespace = request.Namespace
+	}
+	return errors.Wrap(l.Desirer.Desire(namespace, &desiredLRP), "failed to desire")
 }
 
 func (l *LRP) List(ctx context.Context) ([]cf.DesiredLRPSchedulingInfo, error) {
@@ -87,7 +92,6 @@ func (l *LRP) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (cf.Desi
 		ProcessGUID: identifier.ProcessGUID(),
 		Instances:   int32(lrp.TargetInstances),
 		Annotation:  lrp.LastUpdated,
-		Namespace:   lrp.Namespace,
 	}
 
 	if lrp.AppURIs != "" {

@@ -93,7 +93,7 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		JustBeforeEach(func() {
-			desireErr = statefulSetDesirer.Desire(lrp)
+			desireErr = statefulSetDesirer.Desire("the-namespace", lrp)
 		})
 
 		It("should succeed", func() {
@@ -1112,7 +1112,6 @@ func randStringBytes() string {
 func createLRP(name, routes string) *opi.LRP {
 	lastUpdated := randStringBytes()
 	return &opi.LRP{
-		Namespace: "the-namespace",
 		LRPIdentifier: opi.LRPIdentifier{
 			GUID:    "guid_1234",
 			Version: "version_1234",

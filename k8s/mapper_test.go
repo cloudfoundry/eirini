@@ -93,10 +93,6 @@ var _ = Describe("Mapper", func() {
 		Expect(lrp.SpaceName).To(Equal("space-foo"))
 	})
 
-	It("should set the correct LRP namespace", func() {
-		Expect(lrp.Namespace).To(Equal("baldur-ns"))
-	})
-
 	It("should set the correct LRP image", func() {
 		Expect(lrp.Image).To(Equal("busybox"))
 	})

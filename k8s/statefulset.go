@@ -112,18 +112,18 @@ type StatefulSetDesirer struct {
 //counterfeiter:generate . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
+func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP) error {
 	if lrp.PrivateRegistry != nil {
 		secret, err := m.generateRegistryCredsSecret(lrp)
 		if err != nil {
 			return errors.Wrap(err, "failed to generate private registry secret for statefulset")
 		}
-		if _, err := m.Secrets.Create(lrp.Namespace, secret); err != nil {
+		if _, err := m.Secrets.Create(namespace, secret); err != nil {
 			return errors.Wrap(err, "failed to create private registry secret for statefulset")
 		}
 	}
 
-	if _, err := m.StatefulSets.Create(lrp.Namespace, m.toStatefulSet(lrp)); err != nil {
+	if _, err := m.StatefulSets.Create(namespace, m.toStatefulSet(lrp)); err != nil {
 		var statusErr *k8serrors.StatusError
 		if errors.As(err, &statusErr) && statusErr.Status().Reason == metav1.StatusReasonAlreadyExists {
 			m.Logger.Debug("statefulset already exists", lager.Data{"guid": lrp.GUID, "version": lrp.Version, "error": err.Error()})
@@ -132,7 +132,7 @@ func (m *StatefulSetDesirer) Desire(lrp *opi.LRP) error {
 		return errors.Wrap(err, "failed to create statefulset")
 	}
 
-	return m.createPodDisruptionBudget(lrp.Namespace, lrp)
+	return m.createPodDisruptionBudget(namespace, lrp)
 }
 
 func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {

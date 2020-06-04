@@ -60,9 +60,9 @@ var _ = Describe("StatefulSet Manager", func() {
 	Context("When creating a LRP", func() {
 
 		JustBeforeEach(func() {
-			err := desirer.Desire(odinLRP)
+			err := desirer.Desire(fixture.Namespace, odinLRP)
 			Expect(err).ToNot(HaveOccurred())
-			err = desirer.Desire(thorLRP)
+			err = desirer.Desire(fixture.Namespace, thorLRP)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -70,6 +70,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		It("should create a StatefulSet object", func() {
 			statefulset := getStatefulSet(odinLRP)
 			Expect(statefulset.Name).To(ContainSubstring(odinLRP.GUID))
+			Expect(statefulset.Namespace).To(Equal(fixture.Namespace))
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Command).To(Equal(odinLRP.Command))
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Image).To(Equal(odinLRP.Image))
 			Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(odinLRP.TargetInstances)))
@@ -201,7 +202,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		Context("when we create the same StatefulSet again", func() {
 			It("should not error", func() {
-				err := desirer.Desire(odinLRP)
+				err := desirer.Desire(fixture.Namespace, odinLRP)
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -240,7 +241,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		var statefulsetName string
 
 		JustBeforeEach(func() {
-			err := desirer.Desire(odinLRP)
+			err := desirer.Desire(fixture.Namespace, odinLRP)
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func() []corev1.Pod {
@@ -316,7 +317,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		JustBeforeEach(func() {
 			odinLRP.TargetInstances = instancesBefore
-			Expect(desirer.Desire(odinLRP)).To(Succeed())
+			Expect(desirer.Desire(fixture.Namespace, odinLRP)).To(Succeed())
 
 			odinLRP.TargetInstances = instancesAfter
 			Expect(desirer.Update(odinLRP)).To(Succeed())
@@ -386,7 +387,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		}
 
 		JustBeforeEach(func() {
-			err := desirer.Desire(odinLRP)
+			err := desirer.Desire(fixture.Namespace, odinLRP)
 			Expect(err).ToNot(HaveOccurred())
 		})
 

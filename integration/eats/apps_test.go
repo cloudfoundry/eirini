@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Apps", func() {
@@ -38,10 +41,7 @@ var _ = Describe("Apps", func() {
 		})
 
 		It("deploys the LRP to the specified namespace", func() {
-			lrp, err := getLRP(lrpGUID, lrpVersion)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(lrp.ProcessGUID).To(Equal(lrpProcessGUID))
-			Expect(lrp.Namespace).To(Equal(fixture.Namespace))
+			Expect(getStatefulSet(lrpGUID, lrpVersion).Namespace).To(Equal(fixture.Namespace))
 		})
 
 		When("a namespace is not specified", func() {
@@ -50,9 +50,7 @@ var _ = Describe("Apps", func() {
 			})
 
 			It("deploys the LRP to the default namespace", func() {
-				lrp, err := getLRP(lrpGUID, lrpVersion)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(lrp.Namespace).To(Equal(fixture.DefaultNamespace))
+				Expect(getStatefulSet(lrpGUID, lrpVersion).Namespace).To(Equal(fixture.DefaultNamespace))
 			})
 		})
 
@@ -319,4 +317,13 @@ func getRunningInstances(appGUID, version string) []*cf.Instance {
 
 func processGUID(guid, version string) string {
 	return fmt.Sprintf("%s-%s", guid, version)
+}
+
+func getStatefulSet(guid, version string) *appsv1.StatefulSet {
+	statefulSets, err := fixture.Clientset.AppsV1().StatefulSets("").List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, guid, k8s.LabelVersion, version),
+	})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(statefulSets.Items).To(HaveLen(1))
+	return &statefulSets.Items[0]
 }

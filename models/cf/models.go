@@ -14,7 +14,6 @@ type DesiredLRP struct {
 	Instances   int32                      `json:"instances"`
 	Routes      map[string]json.RawMessage `json:"routes,omitempty"`
 	Annotation  string                     `json:"annotation"`
-	Namespace   string
 }
 
 type DesiredLRPResponse struct {

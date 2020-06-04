@@ -20,7 +20,6 @@ var dockerRX = regexp.MustCompile(`([a-zA-Z0-9.-]+)(:([0-9]+))?/(\S+/\S+)`)
 
 type OPIConverter struct {
 	logger               lager.Logger
-	defaultNamespace     string
 	registryIP           string
 	diskLimitMB          int64
 	imageMetadataFetcher ImageMetadataFetcher
@@ -29,10 +28,9 @@ type OPIConverter struct {
 	stagerConfig         eirini.StagerConfig
 }
 
-func NewOPIConverter(logger lager.Logger, defaultNamespace, registryIP string, diskLimitMB int64, imageMetadataFetcher ImageMetadataFetcher, imageRefParser ImageRefParser, allowRunImageAsRoot bool, stagerConfig eirini.StagerConfig) *OPIConverter {
+func NewOPIConverter(logger lager.Logger, registryIP string, diskLimitMB int64, imageMetadataFetcher ImageMetadataFetcher, imageRefParser ImageRefParser, allowRunImageAsRoot bool, stagerConfig eirini.StagerConfig) *OPIConverter {
 	return &OPIConverter{
 		logger:               logger,
-		defaultNamespace:     defaultNamespace,
 		registryIP:           registryIP,
 		diskLimitMB:          diskLimitMB,
 		imageMetadataFetcher: imageMetadataFetcher,
@@ -116,11 +114,6 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 		diskMB = request.DiskMB
 	}
 
-	namespace := request.Namespace
-	if request.Namespace == "" {
-		namespace = c.defaultNamespace
-	}
-
 	return opi.LRP{
 		AppName:                request.AppName,
 		AppGUID:                request.AppGUID,
@@ -130,7 +123,6 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 		OrgGUID:                request.OrganizationGUID,
 		SpaceName:              request.SpaceName,
 		SpaceGUID:              request.SpaceGUID,
-		Namespace:              namespace,
 		LRPIdentifier:          identifier,
 		ProcessType:            request.ProcessType,
 		Image:                  image,

@@ -50,9 +50,9 @@ var _ = Describe("RootfsPatcher", func() {
 	})
 
 	It("should update rootfs version label", func() {
-		err := desirer.Desire(odinLRP)
+		err := desirer.Desire(fixture.Namespace, odinLRP)
 		Expect(err).ToNot(HaveOccurred())
-		err = desirer.Desire(thorLRP)
+		err = desirer.Desire(fixture.Namespace, thorLRP)
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() []string {
 			pods := append(listPods(odinLRP.LRPIdentifier), listPods(thorLRP.LRPIdentifier)...)
