@@ -159,11 +159,18 @@ var _ = Describe("Bifrost LRP", func() {
 				desiredLRPSchedulingInfos, _ := lrpBifrost.List(context.Background())
 				Expect(desiredLRPSchedulingInfos).To(HaveLen(3))
 				Expect(desiredLRPSchedulingInfos[0].ProcessGUID).To(Equal("abcd-123"))
-				Expect(desiredLRPSchedulingInfos[1].ProcessGUID).To(Equal("efgh-234"))
-				Expect(desiredLRPSchedulingInfos[2].ProcessGUID).To(Equal("ijkl-123"))
-
+				Expect(desiredLRPSchedulingInfos[0].GUID).To(Equal("abcd"))
+				Expect(desiredLRPSchedulingInfos[0].Version).To(Equal("123"))
 				Expect(desiredLRPSchedulingInfos[0].Annotation).To(Equal("3464634.2"))
+
+				Expect(desiredLRPSchedulingInfos[1].ProcessGUID).To(Equal("efgh-234"))
+				Expect(desiredLRPSchedulingInfos[1].GUID).To(Equal("efgh"))
+				Expect(desiredLRPSchedulingInfos[1].Version).To(Equal("234"))
 				Expect(desiredLRPSchedulingInfos[1].Annotation).To(Equal("235.26535"))
+
+				Expect(desiredLRPSchedulingInfos[2].ProcessGUID).To(Equal("ijkl-123"))
+				Expect(desiredLRPSchedulingInfos[2].GUID).To(Equal("ijkl"))
+				Expect(desiredLRPSchedulingInfos[2].Version).To(Equal("123"))
 				Expect(desiredLRPSchedulingInfos[2].Annotation).To(Equal("2342342.2"))
 			})
 		})

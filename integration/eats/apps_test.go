@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -117,6 +118,37 @@ var _ = Describe("Apps", func() {
 			Expect(lrpsAnnotations).To(SatisfyAll(HaveKey(lrpProcessGUID), HaveKey(anotherProcessGUID)))
 			Expect(lrpsAnnotations[lrpProcessGUID]).To(Equal("111111"))
 			Expect(lrpsAnnotations[anotherProcessGUID]).To(Equal("222222"))
+		})
+
+		When("non-eirini statefulSets exist", func() {
+			BeforeEach(func() {
+				_, err := fixture.Clientset.AppsV1().StatefulSets(fixture.DefaultNamespace).Create(&appsv1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: generateGUID("non-eirini-"),
+					},
+					Spec: appsv1.StatefulSetSpec{
+						Template: corev1.PodTemplateSpec{
+							ObjectMeta: metav1.ObjectMeta{
+								Labels: map[string]string{"foo": "bar"},
+							},
+						},
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{"foo": "bar"},
+						},
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("does not list them", func() {
+				lrps, err := getLRPs()
+				Expect(err).NotTo(HaveOccurred())
+
+				for _, lrp := range lrps {
+					Expect(lrp.GUID).NotTo(BeEmpty(), fmt.Sprintf("%#v does not look like an LRP", lrp))
+					Expect(lrp.Version).NotTo(BeEmpty(), fmt.Sprintf("%#v does not look like an LRP", lrp))
+				}
+			})
 		})
 	})
 

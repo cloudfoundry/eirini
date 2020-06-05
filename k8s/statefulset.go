@@ -136,7 +136,9 @@ func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP) error {
 }
 
 func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
-	statefulsets, err := m.StatefulSets.List(metav1.ListOptions{})
+	statefulsets, err := m.StatefulSets.List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", LabelSourceType, appSourceType),
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}

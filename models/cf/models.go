@@ -57,6 +57,8 @@ type DesireLRPRequest struct {
 
 type DesiredLRPSchedulingInfo struct {
 	DesiredLRPKey `json:"desired_lrp_key"`
+	GUID          string `json:"guid"`
+	Version       string `json:"version"`
 	Annotation    string `json:"annotation"`
 }
 

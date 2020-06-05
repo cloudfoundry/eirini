@@ -659,6 +659,17 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(mapper.CallCount()).To(Equal(3))
 		})
 
+		It("lists all statefulSets with APP source_type", func() {
+			statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
+			_, err := statefulSetDesirer.List()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(statefulSetClient.ListCallCount()).To(Equal(1))
+
+			listOpts := statefulSetClient.ListArgsForCall(0)
+			Expect(listOpts.LabelSelector).To(Equal("cloudfoundry.org/source_type=APP"))
+		})
+
 		Context("no statefulSets exist", func() {
 			It("returns an empy list of LRPs", func() {
 				statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
