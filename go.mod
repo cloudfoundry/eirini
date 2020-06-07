@@ -82,6 +82,7 @@ require (
 	github.com/poy/onpar v0.0.0-20190519213022-ee068f8ea4d1 // indirect
 	github.com/prometheus/client_golang v1.6.0 // indirect
 	github.com/prometheus/common v0.10.0 // indirect
+	github.com/prometheus/procfs v0.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.6.0 // indirect
 	github.com/spf13/cobra v1.0.0
@@ -92,8 +93,8 @@ require (
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
 	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
-	golang.org/x/tools v0.0.0-20200604183345-4d5ea46c79fe // indirect
-	google.golang.org/genproto v0.0.0-20200604104852-0b0486081ffb // indirect
+	golang.org/x/tools v0.0.0-20200606014950-c42cb6316fb6 // indirect
+	google.golang.org/genproto v0.0.0-20200605102947-12044bf5ea91 // indirect
 	google.golang.org/grpc v1.29.1
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.3
