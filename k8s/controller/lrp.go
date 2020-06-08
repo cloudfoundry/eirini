@@ -13,11 +13,11 @@ import (
 )
 
 type RestLrp struct {
-	client    http.Client
+	client    *http.Client
 	eiriniURI string
 }
 
-func NewRestLrp(client http.Client, eiriniURI string) *RestLrp {
+func NewRestLrp(client *http.Client, eiriniURI string) *RestLrp {
 	return &RestLrp{
 		client:    client,
 		eiriniURI: eiriniURI,

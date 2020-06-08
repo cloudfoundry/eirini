@@ -24,7 +24,7 @@ var _ = Describe("Lrp", func() {
 		server = ghttp.NewServer()
 
 		lrpController = controller.NewRestLrp(
-			http.Client{},
+			&http.Client{},
 			server.URL(),
 		)
 
