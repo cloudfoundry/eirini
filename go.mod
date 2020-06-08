@@ -66,6 +66,7 @@ require (
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jessevdk/go-flags v1.4.0
+	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3
