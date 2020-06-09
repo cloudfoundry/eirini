@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
+	eiriniclient "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -25,6 +26,7 @@ const (
 
 type Fixture struct {
 	Clientset         kubernetes.Interface
+	LRPClientset      eiriniclient.Interface
 	Namespace         string
 	DefaultNamespace  string
 	PspName           string
@@ -43,9 +45,13 @@ func NewFixture(writer io.Writer) *Fixture {
 	clientset, err := kubernetes.NewForConfig(config)
 	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
 
+	lrpclientset, err := eiriniclient.NewForConfig(config)
+	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
+
 	return &Fixture{
 		KubeConfigPath:    kubeConfigPath,
 		Clientset:         clientset,
+		LRPClientset:      lrpclientset,
 		Writer:            writer,
 		nextAvailablePort: basePortNumber + portRange*GinkgoParallelNode(),
 		portMux:           &sync.Mutex{},
