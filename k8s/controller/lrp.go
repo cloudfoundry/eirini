@@ -24,7 +24,7 @@ func NewRestLrp(client *http.Client, eiriniURI string) *RestLrp {
 	}
 }
 
-func (c RestLrp) Create(lrp eiriniv1.LRP) error {
+func (c RestLrp) Create(lrp *eiriniv1.LRP) error {
 	var createReq cf.DesireLRPRequest
 	if err := copier.Copy(&createReq, &lrp.Spec); err != nil {
 		return err
@@ -40,7 +40,7 @@ func (c RestLrp) Create(lrp eiriniv1.LRP) error {
 	)
 }
 
-func (c RestLrp) Update(oldLRP, lrp eiriniv1.LRP) error {
+func (c RestLrp) Update(oldLRP, lrp *eiriniv1.LRP) error {
 	if oldLRP.Spec.LastUpdated == lrp.Spec.LastUpdated {
 		return nil
 	}
@@ -63,7 +63,7 @@ func (c RestLrp) Update(oldLRP, lrp eiriniv1.LRP) error {
 	)
 }
 
-func (c RestLrp) Delete(lrp eiriniv1.LRP) error {
+func (c RestLrp) Delete(lrp *eiriniv1.LRP) error {
 	requestURL := fmt.Sprintf("%s/apps/%s/%s/stop", c.eiriniURI, lrp.Spec.GUID, lrp.Spec.Version)
 	return errors.Wrapf(
 		c.httpDo(http.MethodPut, requestURL, nil),
