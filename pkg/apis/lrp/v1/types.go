@@ -19,7 +19,7 @@ type LRP struct {
 }
 
 type LRPSpec struct {
-	GUID                    string                     `json:"GUID"`
+	GUID                    string                     `json:"guid"`
 	Version                 string                     `json:"version"`
 	ProcessGUID             string                     `json:"processGUID"`
 	ProcessType             string                     `json:"processType"`
@@ -29,11 +29,11 @@ type LRPSpec struct {
 	SpaceName               string                     `json:"spaceName"`
 	OrganizationGUID        string                     `json:"organizationGUID"`
 	OrganizationName        string                     `json:"organizationName"`
-	PlacementTags           []string                   `json:"placementTags"`
-	Ports                   []int32                    `json:"ports"`
-	Routes                  map[string]json.RawMessage `json:"routes"`
-	Environment             map[string]string          `json:"environment"`
-	EgressRules             []json.RawMessage          `json:"egressRules"`
+	PlacementTags           []string                   `json:"placementTags,omitempty"`
+	Ports                   []int32                    `json:"ports,omitempty"`
+	Routes                  map[string]json.RawMessage `json:"routes,omitempty"`
+	Environment             map[string]string          `json:"environment,omitempty"`
+	EgressRules             []json.RawMessage          `json:"egressRules,omitempty"`
 	NumInstances            int                        `json:"instances"`
 	LastUpdated             string                     `json:"lastUpdated"`
 	HealthCheckType         string                     `json:"healthCheckType"`
@@ -43,22 +43,22 @@ type LRPSpec struct {
 	MemoryMB                int64                      `json:"memoryMB"`
 	DiskMB                  int64                      `json:"diskMB"`
 	CPUWeight               uint8                      `json:"cpuWeight"`
-	VolumeMounts            []VolumeMount              `json:"volumeMounts"`
+	VolumeMounts            []VolumeMount              `json:"volumeMounts,omitempty"`
 	Lifecycle               Lifecycle                  `json:"lifecycle"`
 	DropletHash             string                     `json:"dropletHash"`
 	DropletGUID             string                     `json:"dropletGUID"`
 	StartCommand            string                     `json:"startCommand"`
-	UserDefinedAnnotations  map[string]string          `json:"userDefinedAnnotations"`
+	UserDefinedAnnotations  map[string]string          `json:"userDefinedAnnotations,omitempty"`
 }
 
 type Lifecycle struct {
-	DockerLifecycle    *DockerLifecycle    `json:"docker"`
-	BuildpackLifecycle *BuildpackLifecycle `json:"buildpack"`
+	DockerLifecycle    *DockerLifecycle    `json:"docker,omitempty"`
+	BuildpackLifecycle *BuildpackLifecycle `json:"buildpack,omitempty"`
 }
 
 type DockerLifecycle struct {
 	Image            string   `json:"image"`
-	Command          []string `json:"command"`
+	Command          []string `json:"command,omitempty"`
 	RegistryUsername string   `json:"registryUsername"`
 	RegistryPassword string   `json:"registryPassword"`
 }
