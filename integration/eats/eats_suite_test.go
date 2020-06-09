@@ -38,6 +38,7 @@ type BinPaths struct {
 	RoutePodInformer         string `json:"route_pod_informer"`
 	EventsReporter           string `json:"events_reporter"`
 	TaskReporter             string `json:"task_reporter"`
+	LRPController            string `json:"lrp_controller"`
 }
 
 type routeInfo struct {
@@ -79,6 +80,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 
 	paths.TaskReporter, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/task-reporter")
+	Expect(err).NotTo(HaveOccurred())
+
+	paths.LRPController, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/lrp-controller")
 	Expect(err).NotTo(HaveOccurred())
 
 	data, err := json.Marshal(paths)
