@@ -60,6 +60,7 @@ require (
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/hashicorp/consul/api v1.3.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
+	github.com/hashicorp/go-retryablehttp v0.6.6
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.9 // indirect

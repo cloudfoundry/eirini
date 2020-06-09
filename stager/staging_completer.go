@@ -1,46 +1,34 @@
 package stager
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
-	"net/http"
 	"net/url"
-	"time"
 
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
+	"github.com/pkg/errors"
 )
 
-const (
-	numRetries = 10
-	delay      = 2 * time.Second
-)
-
-type CallbackStagingCompleter struct {
-	Logger     lager.Logger
-	HTTPClient *http.Client
-	Retries    int
-	Delay      time.Duration
+//counterfeiter:generate . CallbackClient
+type CallbackClient interface {
+	Post(url string, data interface{}) error
 }
 
-func NewCallbackStagingCompleter(logger lager.Logger, httpClient *http.Client) *CallbackStagingCompleter {
+type CallbackStagingCompleter struct {
+	logger         lager.Logger
+	callbackClient CallbackClient
+}
+
+func NewCallbackStagingCompleter(logger lager.Logger, callbackClient CallbackClient) *CallbackStagingCompleter {
 	return &CallbackStagingCompleter{
-		Logger:     logger,
-		HTTPClient: httpClient,
-		Retries:    numRetries,
-		Delay:      delay,
+		logger:         logger,
+		callbackClient: callbackClient,
 	}
 }
 
 func (s *CallbackStagingCompleter) CompleteStaging(taskCompletedRequest cf.StagingCompletedRequest) error {
-	l := s.Logger.Session("complete-staging", lager.Data{"task-guid": taskCompletedRequest.TaskGUID})
-	callbackBody, err := s.constructStagingResponse(taskCompletedRequest)
-	if err != nil {
-		l.Error("failed-to-construct-staging-response", err)
-		return err
-	}
+	l := s.logger.Session("complete-staging", lager.Data{"task-guid": taskCompletedRequest.TaskGUID})
 
 	callbackURI, err := s.getCallbackURI(taskCompletedRequest)
 	if err != nil {
@@ -53,58 +41,12 @@ func (s *CallbackStagingCompleter) CompleteStaging(taskCompletedRequest cf.Stagi
 		l.Error("failed-to-parse-callback-request", err)
 	}
 
-	makeRequest := func() *http.Request {
-		request, err := http.NewRequest("POST", callbackURI, bytes.NewBuffer(callbackBody))
-		if err != nil {
-			panic("Should not happen: The only reason for NewRequest to error " +
-				"should be a non-parsable URL, wihich is being checked for:" + err.Error())
-		}
-		request.Header.Set("Content-Type", "application/json")
-		return request
-	}
+	response := s.constructStagingResponse(taskCompletedRequest)
 
-	return s.executeRequestWithRetries(makeRequest)
+	return errors.Wrap(s.callbackClient.Post(callbackURI, response), "callback-response-unsuccessful")
 }
 
-func (s *CallbackStagingCompleter) executeRequestWithRetries(makeRequest func() *http.Request) error {
-	l := s.Logger.Session("execute-callback-request")
-	n := 0
-	var err error
-	for {
-		// Create a new request on each iteration to avoid race
-		err = s.executeRequest(makeRequest())
-		if err == nil {
-			break
-		}
-
-		n++
-		if n == s.Retries {
-			break
-		}
-		l.Error("Sending delete request again", err)
-
-		time.Sleep(s.Delay)
-	}
-	return err
-}
-
-func (s *CallbackStagingCompleter) executeRequest(request *http.Request) error {
-	l := s.Logger.Session("execute-callback-request", lager.Data{"request-uri": request.URL})
-
-	resp, err := s.HTTPClient.Do(request)
-	if err != nil {
-		l.Error("cc-staging-complete-failed", err)
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= http.StatusMultipleChoices {
-		l.Error("cc-staging-complete-failed-status-code", nil, lager.Data{"status-code": resp.StatusCode})
-		return fmt.Errorf("callback-response-unsuccessful, code: %d", resp.StatusCode)
-	}
-	return nil
-}
-
-func (s *CallbackStagingCompleter) constructStagingResponse(taskCompletedRequest cf.StagingCompletedRequest) ([]byte, error) {
+func (s *CallbackStagingCompleter) constructStagingResponse(taskCompletedRequest cf.StagingCompletedRequest) cc_messages.StagingResponseForCC {
 	var response cc_messages.StagingResponseForCC
 
 	if taskCompletedRequest.Failed {
@@ -117,18 +59,13 @@ func (s *CallbackStagingCompleter) constructStagingResponse(taskCompletedRequest
 		response.Result = &result
 	}
 
-	responseJSON, err := json.Marshal(response)
-	if err != nil {
-		s.Logger.Error("failed-to-marshal-response", err)
-		return []byte{}, err
-	}
-	return responseJSON, nil
+	return response
 }
 
 func (s *CallbackStagingCompleter) getCallbackURI(taskCompletedRequest cf.StagingCompletedRequest) (string, error) {
 	var annotation cc_messages.StagingTaskAnnotation
 	if err := json.Unmarshal([]byte(taskCompletedRequest.Annotation), &annotation); err != nil {
-		s.Logger.Error("failed-to-parse-annotation", err)
+		s.logger.Error("failed-to-parse-annotation", err)
 		return "", err
 	}
 

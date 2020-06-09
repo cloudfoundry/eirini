@@ -86,7 +86,9 @@ func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) *stager.Callb
 		panic(errors.Wrap(err, "failed to create stager http client"))
 	}
 
-	return stager.NewCallbackStagingCompleter(logger, httpClient)
+	retryableJSONClient := util.NewRetryableJSONClient(httpClient)
+
+	return stager.NewCallbackStagingCompleter(logger, retryableJSONClient)
 }
 
 func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.TaskDesirer {
