@@ -17,7 +17,7 @@ var _ = Describe("Lrp", func() {
 	var (
 		server        *ghttp.Server
 		lrpController *controller.RestLrp
-		lrp           eiriniv1.LRP
+		lrp           *eiriniv1.LRP
 	)
 
 	BeforeEach(func() {
@@ -28,7 +28,7 @@ var _ = Describe("Lrp", func() {
 			server.URL(),
 		)
 
-		lrp = eiriniv1.LRP{
+		lrp = &eiriniv1.LRP{
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: "some-namespace",
 			},
@@ -96,14 +96,14 @@ var _ = Describe("Lrp", func() {
 
 	Describe("update", func() {
 
-		var oldLRP eiriniv1.LRP
+		var oldLRP *eiriniv1.LRP
 
 		BeforeEach(func() {
 			lrp.Spec.NumInstances = 10
 			lrp.Spec.Routes = map[string]json.RawMessage{"foobar": []byte(`{"foo":"bar"}`)}
 			lrp.Spec.LastUpdated = "today"
 
-			oldLRP = eiriniv1.LRP{Spec: eiriniv1.LRPSpec{LastUpdated: "yesterday"}}
+			oldLRP = &eiriniv1.LRP{Spec: eiriniv1.LRPSpec{LastUpdated: "yesterday"}}
 			server.RouteToHandler("POST", "/apps/process-guid",
 				ghttp.VerifyJSONRepresenting(cf.UpdateDesiredLRPRequest{
 					GUID:    "guid",

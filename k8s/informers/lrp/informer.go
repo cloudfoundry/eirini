@@ -10,9 +10,9 @@ import (
 )
 
 type Controller interface {
-	Create(eiriniv1.LRP) error
-	Update(oldLRP eiriniv1.LRP, newLRP eiriniv1.LRP) error
-	Delete(eiriniv1.LRP) error
+	Create(*eiriniv1.LRP) error
+	Update(oldLRP, newLRP *eiriniv1.LRP) error
+	Delete(*eiriniv1.LRP) error
 }
 
 type Informer struct {
@@ -35,21 +35,21 @@ func (i Informer) Start() {
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(object interface{}) {
-			lrp := object.(eiriniv1.LRP)
+			lrp := object.(*eiriniv1.LRP)
 			if err := i.controller.Create(lrp); err != nil {
 				i.logger.Error("create-lrp-failed", err, lager.Data{"lrp": lrp})
 			}
 		},
-		UpdateFunc: func(oldOb, newObj interface{}) {
-			newLRP := newObj.(eiriniv1.LRP)
-			oldLRP := newObj.(eiriniv1.LRP)
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			newLRP := newObj.(*eiriniv1.LRP)
+			oldLRP := oldObj.(*eiriniv1.LRP)
 			if err := i.controller.Update(oldLRP, newLRP); err != nil {
 				i.logger.Error("update-lrp-failed", err, lager.Data{"new_lrp": newLRP, "old_lrp": oldLRP})
 			}
 		},
 		DeleteFunc: func(object interface{}) {
-			lrp := object.(eiriniv1.LRP)
-			if err := i.controller.Delete(object.(eiriniv1.LRP)); err != nil {
+			lrp := object.(*eiriniv1.LRP)
+			if err := i.controller.Delete(lrp); err != nil {
 				i.logger.Error("delete-lrp-failed", err, lager.Data{"lrp": lrp})
 			}
 		},
