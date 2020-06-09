@@ -13,7 +13,7 @@ import (
 //counterfeiter:generate . Deleter
 
 type Deleter interface {
-	Delete(guid string) error
+	Delete(guid string) (string, error)
 }
 
 type StateReporter struct {
@@ -36,7 +36,7 @@ func (r StateReporter) Report(oldPod, pod *corev1.Pod) {
 		r.Logger.Error("cannot send task status response", err, lager.Data{"taskGuid": taskGUID})
 	}
 
-	if err := r.TaskDeleter.Delete(taskGUID); err != nil {
+	if _, err := r.TaskDeleter.Delete(taskGUID); err != nil {
 		r.Logger.Error("cannot delete job", err, lager.Data{"taskGuid": taskGUID})
 	}
 }

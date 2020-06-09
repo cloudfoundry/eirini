@@ -12,13 +12,14 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/ghttp"
 	. "github.com/onsi/gomega/gstruct"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Task Desire and Complete", func() {
+var _ = Describe("Task Desire and Cancel", func() {
 	var (
 		request cf.TaskRequest
 		jobs    *batchv1.JobList
@@ -28,7 +29,7 @@ var _ = Describe("Task Desire and Complete", func() {
 		body, err := json.Marshal(request)
 		Expect(err).NotTo(HaveOccurred())
 
-		httpRequest, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/the-task-guid", url), bytes.NewReader(body))
+		httpRequest, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", url, request.GUID), bytes.NewReader(body))
 		Expect(err).NotTo(HaveOccurred())
 
 		resp, err := httpClient.Do(httpRequest)
@@ -39,6 +40,7 @@ var _ = Describe("Task Desire and Complete", func() {
 	Context("buildpack tasks", func() {
 		BeforeEach(func() {
 			request = cf.TaskRequest{
+				GUID:        "the-task-guid",
 				AppName:     "my_app",
 				SpaceName:   "my_space",
 				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
@@ -83,6 +85,7 @@ var _ = Describe("Task Desire and Complete", func() {
 	Context("docker tasks", func() {
 		BeforeEach(func() {
 			request = cf.TaskRequest{
+				GUID:        "the-task-guid",
 				AppName:     "my_app",
 				SpaceName:   "my_space",
 				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
@@ -126,32 +129,6 @@ var _ = Describe("Task Desire and Complete", func() {
 			})
 		})
 
-		When("the completed handler is called", func() {
-			It("removes the job", func() {
-				// Ensure the job is created
-				Eventually(func() ([]batchv1.Job, error) {
-					var err error
-					jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
-					return jobs.Items, err
-				}).Should(HaveLen(1))
-
-				// Complete the task
-				httpRequest, err := http.NewRequest("PUT", fmt.Sprintf("%s/tasks/the-task-guid/completed", url), nil)
-				Expect(err).NotTo(HaveOccurred())
-				resp, err := httpClient.Do(httpRequest)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(resp.StatusCode).To(Equal(http.StatusOK))
-
-				// Ensure the job is deleted
-				Eventually(func() ([]batchv1.Job, error) {
-					var err error
-					jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
-					return jobs.Items, err
-				}).Should(BeEmpty())
-			})
-
-		})
-
 		When("the task uses a private Docker registry", func() {
 			BeforeEach(func() {
 				request.Lifecycle.DockerLifecycle.Image = "eiriniuser/notdora"
@@ -189,7 +166,7 @@ var _ = Describe("Task Desire and Complete", func() {
 					),
 				)
 
-				By("completing the task", func() {
+				By("allowing the task to complete", func() {
 					Eventually(func() []batchv1.JobCondition {
 						jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
 						return jobs.Items[0].Status.Conditions
@@ -199,6 +176,76 @@ var _ = Describe("Task Desire and Complete", func() {
 					})))
 				})
 			})
+		})
+	})
+
+	Describe("cancelling", func() {
+		var (
+			cloudControllerServer *ghttp.Server
+		)
+
+		BeforeEach(func() {
+			var err error
+			cloudControllerServer, err = util.CreateTestServer(
+				util.PathToTestFixture("cert"),
+				util.PathToTestFixture("key"),
+				util.PathToTestFixture("cert"),
+			)
+			Expect(err).ToNot(HaveOccurred())
+			cloudControllerServer.Start()
+
+			cloudControllerServer.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("POST", "/"),
+					ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
+						TaskGUID:      "cancelled-task-guid",
+						Failed:        true,
+						FailureReason: "task was cancelled",
+					}),
+				),
+			)
+
+			request = cf.TaskRequest{
+				GUID:      "cancelled-task-guid",
+				AppName:   "my_app",
+				SpaceName: "my_space",
+				Lifecycle: cf.Lifecycle{
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image:   "busybox",
+						Command: []string{"/bin/sleep", "100"},
+					},
+				},
+				CompletionCallback: cloudControllerServer.URL(),
+			}
+		})
+
+		AfterEach(func() {
+			cloudControllerServer.Close()
+		})
+
+		It("deletes the job and notifies the Cloud Controller", func() {
+			// Ensure the job is created
+			Eventually(func() ([]batchv1.Job, error) {
+				var err error
+				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+				return jobs.Items, err
+			}).Should(HaveLen(1))
+
+			// Cancel the task
+			httpRequest, err := http.NewRequest("DELETE", fmt.Sprintf("%s/tasks/cancelled-task-guid", url), nil)
+			Expect(err).NotTo(HaveOccurred())
+			resp, err := httpClient.Do(httpRequest)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
+
+			// Ensure the job is deleted
+			Eventually(func() ([]batchv1.Job, error) {
+				var err error
+				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+				return jobs.Items, err
+			}).Should(BeEmpty())
+
+			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
 		})
 	})
 })

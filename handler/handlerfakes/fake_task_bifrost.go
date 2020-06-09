@@ -10,15 +10,15 @@ import (
 )
 
 type FakeTaskBifrost struct {
-	CompleteTaskStub        func(string) error
-	completeTaskMutex       sync.RWMutex
-	completeTaskArgsForCall []struct {
+	CancelTaskStub        func(string) error
+	cancelTaskMutex       sync.RWMutex
+	cancelTaskArgsForCall []struct {
 		arg1 string
 	}
-	completeTaskReturns struct {
+	cancelTaskReturns struct {
 		result1 error
 	}
-	completeTaskReturnsOnCall map[int]struct {
+	cancelTaskReturnsOnCall map[int]struct {
 		result1 error
 	}
 	TransferTaskStub        func(context.Context, string, cf.TaskRequest) error
@@ -38,62 +38,62 @@ type FakeTaskBifrost struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskBifrost) CompleteTask(arg1 string) error {
-	fake.completeTaskMutex.Lock()
-	ret, specificReturn := fake.completeTaskReturnsOnCall[len(fake.completeTaskArgsForCall)]
-	fake.completeTaskArgsForCall = append(fake.completeTaskArgsForCall, struct {
+func (fake *FakeTaskBifrost) CancelTask(arg1 string) error {
+	fake.cancelTaskMutex.Lock()
+	ret, specificReturn := fake.cancelTaskReturnsOnCall[len(fake.cancelTaskArgsForCall)]
+	fake.cancelTaskArgsForCall = append(fake.cancelTaskArgsForCall, struct {
 		arg1 string
 	}{arg1})
-	fake.recordInvocation("CompleteTask", []interface{}{arg1})
-	fake.completeTaskMutex.Unlock()
-	if fake.CompleteTaskStub != nil {
-		return fake.CompleteTaskStub(arg1)
+	fake.recordInvocation("CancelTask", []interface{}{arg1})
+	fake.cancelTaskMutex.Unlock()
+	if fake.CancelTaskStub != nil {
+		return fake.CancelTaskStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.completeTaskReturns
+	fakeReturns := fake.cancelTaskReturns
 	return fakeReturns.result1
 }
 
-func (fake *FakeTaskBifrost) CompleteTaskCallCount() int {
-	fake.completeTaskMutex.RLock()
-	defer fake.completeTaskMutex.RUnlock()
-	return len(fake.completeTaskArgsForCall)
+func (fake *FakeTaskBifrost) CancelTaskCallCount() int {
+	fake.cancelTaskMutex.RLock()
+	defer fake.cancelTaskMutex.RUnlock()
+	return len(fake.cancelTaskArgsForCall)
 }
 
-func (fake *FakeTaskBifrost) CompleteTaskCalls(stub func(string) error) {
-	fake.completeTaskMutex.Lock()
-	defer fake.completeTaskMutex.Unlock()
-	fake.CompleteTaskStub = stub
+func (fake *FakeTaskBifrost) CancelTaskCalls(stub func(string) error) {
+	fake.cancelTaskMutex.Lock()
+	defer fake.cancelTaskMutex.Unlock()
+	fake.CancelTaskStub = stub
 }
 
-func (fake *FakeTaskBifrost) CompleteTaskArgsForCall(i int) string {
-	fake.completeTaskMutex.RLock()
-	defer fake.completeTaskMutex.RUnlock()
-	argsForCall := fake.completeTaskArgsForCall[i]
+func (fake *FakeTaskBifrost) CancelTaskArgsForCall(i int) string {
+	fake.cancelTaskMutex.RLock()
+	defer fake.cancelTaskMutex.RUnlock()
+	argsForCall := fake.cancelTaskArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeTaskBifrost) CompleteTaskReturns(result1 error) {
-	fake.completeTaskMutex.Lock()
-	defer fake.completeTaskMutex.Unlock()
-	fake.CompleteTaskStub = nil
-	fake.completeTaskReturns = struct {
+func (fake *FakeTaskBifrost) CancelTaskReturns(result1 error) {
+	fake.cancelTaskMutex.Lock()
+	defer fake.cancelTaskMutex.Unlock()
+	fake.CancelTaskStub = nil
+	fake.cancelTaskReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeTaskBifrost) CompleteTaskReturnsOnCall(i int, result1 error) {
-	fake.completeTaskMutex.Lock()
-	defer fake.completeTaskMutex.Unlock()
-	fake.CompleteTaskStub = nil
-	if fake.completeTaskReturnsOnCall == nil {
-		fake.completeTaskReturnsOnCall = make(map[int]struct {
+func (fake *FakeTaskBifrost) CancelTaskReturnsOnCall(i int, result1 error) {
+	fake.cancelTaskMutex.Lock()
+	defer fake.cancelTaskMutex.Unlock()
+	fake.CancelTaskStub = nil
+	if fake.cancelTaskReturnsOnCall == nil {
+		fake.cancelTaskReturnsOnCall = make(map[int]struct {
 			result1 error
 		})
 	}
-	fake.completeTaskReturnsOnCall[i] = struct {
+	fake.cancelTaskReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -163,8 +163,8 @@ func (fake *FakeTaskBifrost) TransferTaskReturnsOnCall(i int, result1 error) {
 func (fake *FakeTaskBifrost) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.completeTaskMutex.RLock()
-	defer fake.completeTaskMutex.RUnlock()
+	fake.cancelTaskMutex.RLock()
+	defer fake.cancelTaskMutex.RUnlock()
 	fake.transferTaskMutex.RLock()
 	defer fake.transferTaskMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

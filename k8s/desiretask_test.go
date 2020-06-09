@@ -20,8 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Desiretask", func() {
-
+var _ = Describe("TaskDesirer", func() {
 	const (
 		Namespace       = "tests"
 		Image           = "docker.png"
@@ -141,7 +140,7 @@ var _ = Describe("Desiretask", func() {
 		}
 	})
 
-	Context("When desiring a task", func() {
+	Describe("Desire", func() {
 		var err error
 
 		BeforeEach(func() {
@@ -290,7 +289,7 @@ var _ = Describe("Desiretask", func() {
 		})
 	})
 
-	Context("When desiring a staging task", func() {
+	Describe("DesireStaging", func() {
 		var (
 			stagingTask *opi.StagingTask
 			err         error
@@ -498,13 +497,16 @@ var _ = Describe("Desiretask", func() {
 		})
 	})
 
-	Context("When deleting a task", func() {
+	Describe("Delete/DeleteStaging", func() {
 		BeforeEach(func() {
 			jobs := &batch.JobList{
 				Items: []batch.Job{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "my-job",
+							Annotations: map[string]string{
+								AnnotationCompletionCallback: "the/completion/callback",
+							},
 						}},
 				},
 			}
@@ -523,9 +525,16 @@ var _ = Describe("Desiretask", func() {
 		})
 
 		When("deleting a non-staging job", func() {
-			It("selects jobs using the task label guid", func() {
-				Expect(desirer.Delete(taskGUID)).To(Succeed())
+			It("deletes the job", func() {
+				completionCallback, err := desirer.Delete(taskGUID)
 
+				By("succeeding")
+				Expect(err).To(Succeed())
+
+				By("returning the task completion callback")
+				Expect(completionCallback).To(Equal("the/completion/callback"))
+
+				By("selecting the job using the task label guid")
 				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
 				Expect(fakeJobClient.ListArgsForCall(0).LabelSelector).To(Equal(fmt.Sprintf("%s=%s", LabelGUID, taskGUID)))
 			})
@@ -558,7 +567,6 @@ var _ = Describe("Desiretask", func() {
 		})
 
 		Context("when listing the jobs by label fails", func() {
-
 			BeforeEach(func() {
 				fakeJobClient.ListReturns(nil, errors.New("failed to list jobs"))
 			})
@@ -580,7 +588,6 @@ var _ = Describe("Desiretask", func() {
 				Expect(desirer.DeleteStaging(taskGUID)).To(MatchError(ContainSubstring("failed to delete")))
 			})
 		})
-
 	})
 })
 

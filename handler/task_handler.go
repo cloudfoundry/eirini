@@ -41,15 +41,15 @@ func (t *Task) Run(resp http.ResponseWriter, req *http.Request, ps httprouter.Pa
 	resp.WriteHeader(http.StatusAccepted)
 }
 
-func (t *Task) CompleteTask(resp http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+func (t *Task) CancelTask(resp http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	taskGUID := ps.ByName("task_guid")
-	logger := t.logger.Session("task-delete", lager.Data{"task-guid": taskGUID})
+	logger := t.logger.Session("task-cancel", lager.Data{"task-guid": taskGUID})
 
-	if err := t.taskBifrost.CompleteTask(taskGUID); err != nil {
+	if err := t.taskBifrost.CancelTask(taskGUID); err != nil {
 		logger.Error("task-request-task-delete-failed", err)
 		writeErrorResponse(resp, http.StatusInternalServerError, err)
 		return
 	}
 
-	resp.WriteHeader(http.StatusOK)
+	resp.WriteHeader(http.StatusNoContent)
 }

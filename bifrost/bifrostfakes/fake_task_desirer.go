@@ -9,16 +9,18 @@ import (
 )
 
 type FakeTaskDesirer struct {
-	DeleteStub        func(string) error
+	DeleteStub        func(string) (string, error)
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
 		arg1 string
 	}
 	deleteReturns struct {
-		result1 error
+		result1 string
+		result2 error
 	}
 	deleteReturnsOnCall map[int]struct {
-		result1 error
+		result1 string
+		result2 error
 	}
 	DesireStub        func(*opi.Task) error
 	desireMutex       sync.RWMutex
@@ -35,7 +37,7 @@ type FakeTaskDesirer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskDesirer) Delete(arg1 string) error {
+func (fake *FakeTaskDesirer) Delete(arg1 string) (string, error) {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
@@ -47,10 +49,10 @@ func (fake *FakeTaskDesirer) Delete(arg1 string) error {
 		return fake.DeleteStub(arg1)
 	}
 	if specificReturn {
-		return ret.result1
+		return ret.result1, ret.result2
 	}
 	fakeReturns := fake.deleteReturns
-	return fakeReturns.result1
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeTaskDesirer) DeleteCallCount() int {
@@ -59,7 +61,7 @@ func (fake *FakeTaskDesirer) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeTaskDesirer) DeleteCalls(stub func(string) error) {
+func (fake *FakeTaskDesirer) DeleteCalls(stub func(string) (string, error)) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
@@ -72,27 +74,30 @@ func (fake *FakeTaskDesirer) DeleteArgsForCall(i int) string {
 	return argsForCall.arg1
 }
 
-func (fake *FakeTaskDesirer) DeleteReturns(result1 error) {
+func (fake *FakeTaskDesirer) DeleteReturns(result1 string, result2 error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = nil
 	fake.deleteReturns = struct {
-		result1 error
-	}{result1}
+		result1 string
+		result2 error
+	}{result1, result2}
 }
 
-func (fake *FakeTaskDesirer) DeleteReturnsOnCall(i int, result1 error) {
+func (fake *FakeTaskDesirer) DeleteReturnsOnCall(i int, result1 string, result2 error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = nil
 	if fake.deleteReturnsOnCall == nil {
 		fake.deleteReturnsOnCall = make(map[int]struct {
-			result1 error
+			result1 string
+			result2 error
 		})
 	}
 	fake.deleteReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
+		result1 string
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeTaskDesirer) Desire(arg1 *opi.Task) error {

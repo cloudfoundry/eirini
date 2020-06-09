@@ -8,22 +8,24 @@ import (
 )
 
 type FakeDeleter struct {
-	DeleteStub        func(string) error
+	DeleteStub        func(string) (string, error)
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
 		arg1 string
 	}
 	deleteReturns struct {
-		result1 error
+		result1 string
+		result2 error
 	}
 	deleteReturnsOnCall map[int]struct {
-		result1 error
+		result1 string
+		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeDeleter) Delete(arg1 string) error {
+func (fake *FakeDeleter) Delete(arg1 string) (string, error) {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
@@ -35,10 +37,10 @@ func (fake *FakeDeleter) Delete(arg1 string) error {
 		return fake.DeleteStub(arg1)
 	}
 	if specificReturn {
-		return ret.result1
+		return ret.result1, ret.result2
 	}
 	fakeReturns := fake.deleteReturns
-	return fakeReturns.result1
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *FakeDeleter) DeleteCallCount() int {
@@ -47,7 +49,7 @@ func (fake *FakeDeleter) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeDeleter) DeleteCalls(stub func(string) error) {
+func (fake *FakeDeleter) DeleteCalls(stub func(string) (string, error)) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
@@ -60,27 +62,30 @@ func (fake *FakeDeleter) DeleteArgsForCall(i int) string {
 	return argsForCall.arg1
 }
 
-func (fake *FakeDeleter) DeleteReturns(result1 error) {
+func (fake *FakeDeleter) DeleteReturns(result1 string, result2 error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = nil
 	fake.deleteReturns = struct {
-		result1 error
-	}{result1}
+		result1 string
+		result2 error
+	}{result1, result2}
 }
 
-func (fake *FakeDeleter) DeleteReturnsOnCall(i int, result1 error) {
+func (fake *FakeDeleter) DeleteReturnsOnCall(i int, result1 string, result2 error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = nil
 	if fake.deleteReturnsOnCall == nil {
 		fake.deleteReturnsOnCall = make(map[int]struct {
-			result1 error
+			result1 string
+			result2 error
 		})
 	}
 	fake.deleteReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
+		result1 string
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeDeleter) Invocations() map[string][][]interface{} {

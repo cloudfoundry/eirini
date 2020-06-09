@@ -106,6 +106,6 @@ func (t *TaskSimulator) TransferTask(ctx context.Context, taskGUID string, reque
 	return nil
 }
 
-func (t *TaskSimulator) CompleteTask(taskGUID string) error {
+func (t *TaskSimulator) CancelTask(taskGUID string) error {
 	return nil
 }

@@ -28,6 +28,7 @@ type JobClient interface {
 	Create(*batch.Job) (*batch.Job, error)
 	Delete(guid string, deleteOpts *meta_v1.DeleteOptions) error
 	List(opts meta_v1.ListOptions) (*batch.JobList, error)
+	Update(*batch.Job) (*batch.Job, error)
 }
 
 type KeyPath struct {
@@ -65,30 +66,32 @@ func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 	return err
 }
 
-func (d *TaskDesirer) Delete(guid string) error {
+func (d *TaskDesirer) Delete(guid string) (string, error) {
 	return d.delete(guid, LabelGUID)
 }
 
 func (d *TaskDesirer) DeleteStaging(guid string) error {
-	return d.delete(guid, LabelStagingGUID)
+	_, err := d.delete(guid, LabelStagingGUID)
+	return err
 }
 
-func (d *TaskDesirer) delete(guid, label string) error {
+func (d *TaskDesirer) delete(guid, label string) (string, error) {
 	logger := d.Logger.Session("delete", lager.Data{"guid": guid})
 	jobs, err := d.JobClient.List(meta_v1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", label, guid),
 	})
 	if err != nil {
 		logger.Error("failed to list jobs", err)
-		return err
+		return "", err
 	}
 	if len(jobs.Items) != 1 {
 		logger.Error("job with guid does not have 1 instance", nil, lager.Data{"instances": len(jobs.Items)})
-		return fmt.Errorf("job with guid %s should have 1 instance, but it has: %d", guid, len(jobs.Items))
+		return "", fmt.Errorf("job with guid %s should have 1 instance, but it has: %d", guid, len(jobs.Items))
 	}
 
+	callbackURL := jobs.Items[0].Annotations[AnnotationCompletionCallback]
 	backgroundPropagation := meta_v1.DeletePropagationBackground
-	return d.JobClient.Delete(jobs.Items[0].Name, &meta_v1.DeleteOptions{
+	return callbackURL, d.JobClient.Delete(jobs.Items[0].Name, &meta_v1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
 }

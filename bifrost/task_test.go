@@ -19,6 +19,7 @@ var _ = Describe("Buildpack task", func() {
 		taskBifrost   *bifrost.Task
 		taskConverter *bifrostfakes.FakeTaskConverter
 		taskDesirer   *bifrostfakes.FakeTaskDesirer
+		jsonClient    *bifrostfakes.FakeJSONClient
 		taskGUID      string
 		task          opi.Task
 	)
@@ -26,12 +27,14 @@ var _ = Describe("Buildpack task", func() {
 	BeforeEach(func() {
 		taskConverter = new(bifrostfakes.FakeTaskConverter)
 		taskDesirer = new(bifrostfakes.FakeTaskDesirer)
+		jsonClient = new(bifrostfakes.FakeJSONClient)
 		taskGUID = "task-guid"
 		task = opi.Task{GUID: "my-guid"}
 		taskConverter.ConvertTaskReturns(task, nil)
 		taskBifrost = &bifrost.Task{
 			Converter:   taskConverter,
 			TaskDesirer: taskDesirer,
+			JSONClient:  jsonClient,
 		}
 	})
 
@@ -106,9 +109,13 @@ var _ = Describe("Buildpack task", func() {
 		})
 	})
 
-	Describe("Complete Task", func() {
+	Describe("Cancel Task", func() {
+		BeforeEach(func() {
+			taskDesirer.DeleteReturns("the/callback/url", nil)
+		})
+
 		JustBeforeEach(func() {
-			err = taskBifrost.CompleteTask(taskGUID)
+			err = taskBifrost.CancelTask(taskGUID)
 		})
 
 		It("succeeds", func() {
@@ -122,11 +129,62 @@ var _ = Describe("Buildpack task", func() {
 
 		When("deleting the task fails", func() {
 			BeforeEach(func() {
-				taskDesirer.DeleteReturns(errors.New("delete-task-err"))
+				taskDesirer.DeleteReturns("", errors.New("delete-task-err"))
 			})
 
 			It("returns the error", func() {
 				Expect(err).To(MatchError(ContainSubstring("delete-task-err")))
+			})
+		})
+
+		It("notifies the cloud controller", func() {
+			Eventually(jsonClient.PostCallCount).Should(Equal(1))
+
+			url, data := jsonClient.PostArgsForCall(0)
+			Expect(url).To(Equal("the/callback/url"))
+			Expect(data).To(Equal(cf.TaskCompletedRequest{
+				TaskGUID:      taskGUID,
+				Failed:        true,
+				FailureReason: "task was cancelled",
+			}))
+		})
+
+		When("notifying the cloud controller fails", func() {
+			BeforeEach(func() {
+				jsonClient.PostReturns(errors.New("cc-error"))
+			})
+
+			It("still succeeds", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		When("the callback URL is empty", func() {
+			BeforeEach(func() {
+				taskDesirer.DeleteReturns("", nil)
+			})
+
+			It("still succeeds", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("does not notify the cloud controller", func() {
+				Consistently(jsonClient.PostCallCount).Should(BeZero())
+			})
+		})
+
+		When("cloud controller notification takes forever", func() {
+			It("still succeeds", func(done Done) {
+				jsonClient.PostStub = func(string, interface{}) error {
+					<-make(chan interface{}) // block forever
+					return nil
+				}
+
+				err = taskBifrost.CancelTask(taskGUID)
+
+				Expect(err).NotTo(HaveOccurred())
+
+				close(done)
 			})
 		})
 	})

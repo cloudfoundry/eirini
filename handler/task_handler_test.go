@@ -132,29 +132,29 @@ var _ = Describe("TaskHandler", func() {
 		})
 	})
 
-	Describe("TaskCompleted", func() {
+	Describe("Task cancelled", func() {
 		BeforeEach(func() {
-			method = "PUT"
-			path = "/tasks/guid_1234/completed"
+			method = "DELETE"
+			path = "/tasks/guid_1234"
 			body = ""
 		})
 
 		It("succeeds", func() {
-			Expect(response.StatusCode).To(Equal(http.StatusOK))
+			Expect(response.StatusCode).To(Equal(http.StatusNoContent))
 		})
 
 		It("should not transfer the task", func() {
 			Expect(taskBifrost.TransferTaskCallCount()).To(Equal(0))
 		})
 
-		It("completes the task", func() {
-			Expect(taskBifrost.CompleteTaskCallCount()).To(Equal(1))
-			Expect(taskBifrost.CompleteTaskArgsForCall(0)).To(Equal("guid_1234"))
+		It("cancels the task", func() {
+			Expect(taskBifrost.CancelTaskCallCount()).To(Equal(1))
+			Expect(taskBifrost.CancelTaskArgsForCall(0)).To(Equal("guid_1234"))
 		})
 
-		When("completing the task fails", func() {
+		When("cancelling the task fails", func() {
 			BeforeEach(func() {
-				taskBifrost.CompleteTaskReturns(errors.New("BOOM"))
+				taskBifrost.CancelTaskReturns(errors.New("BOOM"))
 			})
 
 			It("returns 500 status code", func() {

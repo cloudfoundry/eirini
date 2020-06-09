@@ -72,7 +72,7 @@ func connect(cmd *cobra.Command, args []string) {
 		server.ListenAndServeTLS(cfg.Properties.ServerCertPath, cfg.Properties.ServerKeyPath))
 }
 
-func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) *stager.CallbackStagingCompleter {
+func initRetryableJSONClient(cfg *eirini.Config) *util.RetryableJSONClient {
 	httpClient, err := util.CreateTLSHTTPClient(
 		[]util.CertPaths{
 			{
@@ -86,8 +86,11 @@ func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) *stager.Callb
 		panic(errors.Wrap(err, "failed to create stager http client"))
 	}
 
-	retryableJSONClient := util.NewRetryableJSONClient(httpClient)
+	return util.NewRetryableJSONClient(httpClient)
+}
 
+func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) *stager.CallbackStagingCompleter {
+	retryableJSONClient := initRetryableJSONClient(cfg)
 	return stager.NewCallbackStagingCompleter(logger, retryableJSONClient)
 }
 
@@ -159,9 +162,11 @@ func initDockerStagingBifrost(cfg *eirini.Config) *bifrost.DockerStaging {
 func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.Task {
 	converter := initConverter(cfg)
 	taskDesirer := initTaskDesirer(cfg, clientset)
+	retryableJSONClient := initRetryableJSONClient(cfg)
 	return &bifrost.Task{
 		Converter:   converter,
 		TaskDesirer: taskDesirer,
+		JSONClient:  retryableJSONClient,
 	}
 }
 
