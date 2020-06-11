@@ -2,6 +2,7 @@ package util
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/onsi/ginkgo"
 )
@@ -9,7 +10,12 @@ import (
 func GetKubeconfig() string {
 	kubeconf := os.Getenv("INTEGRATION_KUBECONFIG")
 	if kubeconf == "" {
-		ginkgo.Fail("Integration kubeconfig not provided. Please export INTEGRATION_KUBECONFIG")
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			ginkgo.Fail("INTEGRATION_KUBECONFIG not provided, failed to use default: " + err.Error())
+		}
+		return filepath.Join(homeDir, ".kube", "config")
+
 	}
 	return kubeconf
 }
