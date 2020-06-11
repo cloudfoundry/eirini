@@ -41,14 +41,15 @@ type StagingConfigTLS struct {
 }
 
 type TaskDesirer struct {
-	Namespace          string
-	CertsSecretName    string
-	TLSConfig          []StagingConfigTLS
-	ServiceAccountName string
-	RegistrySecretName string
-	JobClient          JobClient
-	Logger             lager.Logger
-	SecretsClient      SecretsClient
+	Namespace                 string
+	CertsSecretName           string
+	TLSConfig                 []StagingConfigTLS
+	ServiceAccountName        string
+	StagingServiceAccountName string
+	RegistrySecretName        string
+	JobClient                 JobClient
+	Logger                    lager.Logger
+	SecretsClient             SecretsClient
 }
 
 func (d *TaskDesirer) Desire(task *opi.Task) error {
@@ -98,6 +99,7 @@ func (d *TaskDesirer) delete(guid, label string) (string, error) {
 
 func (d *TaskDesirer) toTaskJob(task *opi.Task) (*batch.Job, error) {
 	job := d.toJob(task)
+	job.Spec.Template.Spec.ServiceAccountName = d.ServiceAccountName
 	job.Labels[LabelSourceType] = taskSourceType
 	job.Labels[LabelName] = task.Name
 	job.Annotations[AnnotationCompletionCallback] = task.CompletionCallback
@@ -165,6 +167,8 @@ func (d *TaskDesirer) createTaskSecret(task *opi.Task) (*v1.Secret, error) {
 
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	job := d.toJob(task.Task)
+
+	job.Spec.Template.Spec.ServiceAccountName = d.StagingServiceAccountName
 
 	secretsVolume := v1.Volume{
 		Name: eirini.CertsVolumeName,
@@ -361,7 +365,6 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 
 	job.Spec.Template.Labels = job.Labels
 	job.Spec.Template.Annotations = job.Annotations
-	job.Spec.Template.Spec.ServiceAccountName = d.ServiceAccountName
 
 	return job
 }

@@ -97,6 +97,7 @@ type Properties struct {
 	KubeConfig `yaml:",inline"`
 
 	ApplicationServiceAccount string `yaml:"application_service_account"`
+	StagingServiceAccount     string `yaml:"staging_service_account"`
 
 	AllowRunImageAsRoot bool `yaml:"allow_run_image_as_root"`
 

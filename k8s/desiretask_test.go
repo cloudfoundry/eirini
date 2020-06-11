@@ -42,7 +42,6 @@ var _ = Describe("TaskDesirer", func() {
 		Expect(job.Spec.Template.Spec.AutomountServiceAccountToken).To(Equal(&automountServiceAccountToken))
 		Expect(job.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(Equal(true)))
 		Expect(job.Spec.Template.Spec.SecurityContext.RunAsUser).To(PointTo(Equal(int64(2000))))
-		Expect(job.Spec.Template.Spec.ServiceAccountName).To(Equal("staging-serivce-account"))
 	}
 
 	assertContainer := func(container v1.Container, name string) {
@@ -130,13 +129,14 @@ var _ = Describe("TaskDesirer", func() {
 		}
 
 		desirer = &TaskDesirer{
-			Namespace:          Namespace,
-			TLSConfig:          tlsStagingConfigs,
-			JobClient:          fakeJobClient,
-			ServiceAccountName: "staging-serivce-account",
-			RegistrySecretName: "registry-secret",
-			Logger:             lagertest.NewTestLogger("desiretask"),
-			SecretsClient:      fakeSecretsClient,
+			Namespace:                 Namespace,
+			TLSConfig:                 tlsStagingConfigs,
+			JobClient:                 fakeJobClient,
+			ServiceAccountName:        "service-account",
+			StagingServiceAccountName: "staging-service-account",
+			RegistrySecretName:        "registry-secret",
+			Logger:                    lagertest.NewTestLogger("desiretask"),
+			SecretsClient:             fakeSecretsClient,
 		}
 	})
 
@@ -157,11 +157,12 @@ var _ = Describe("TaskDesirer", func() {
 			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
 			job = fakeJobClient.CreateArgsForCall(0)
 
-			Expect(job.GenerateName).To(HavePrefix("my-app-my-space-"))
-
 			assertGeneralSpec(job)
 
+			Expect(job.GenerateName).To(HavePrefix("my-app-my-space-"))
+			Expect(job.Spec.Template.Spec.ServiceAccountName).To(Equal("service-account"))
 			Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(v1.LocalObjectReference{Name: "registry-secret"}))
+
 			containers := job.Spec.Template.Spec.Containers
 			Expect(containers).To(HaveLen(1))
 			assertContainer(containers[0], "opi-task")
@@ -422,6 +423,7 @@ var _ = Describe("TaskDesirer", func() {
 		}
 
 		assertStagingSpec := func(job *batch.Job) {
+			Expect(job.Spec.Template.Spec.ServiceAccountName).To(Equal("staging-service-account"))
 			assertVolumes(job)
 			assertContainerVolumeMount(job)
 		}
@@ -449,6 +451,7 @@ var _ = Describe("TaskDesirer", func() {
 			Expect(job.GenerateName).To(Equal("my-app-my-space-"))
 
 			assertGeneralSpec(job)
+			assertStagingSpec(job)
 
 			initContainers := job.Spec.Template.Spec.InitContainers
 			Expect(initContainers).To(HaveLen(2))
@@ -463,7 +466,6 @@ var _ = Describe("TaskDesirer", func() {
 				stagingTask.DiskMB,
 			)
 			assertStagingContainer(containers[0], "opi-task-uploader")
-			assertStagingSpec(job)
 		})
 
 		When("the prefix would be invalid", func() {

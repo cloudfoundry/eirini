@@ -66,6 +66,10 @@ var _ = Describe("Task Desire and Cancel", func() {
 				Expect(jobs.Items[0].Name).To(HavePrefix("my-app-my-space-"))
 			})
 
+			By("using the correct service account", func() {
+				Expect(jobs.Items[0].Spec.Template.Spec.ServiceAccountName).To(Equal("default"))
+			})
+
 			By("setting the registry secret name", func() {
 				podSpec := jobs.Items[0].Spec.Template.Spec
 				Expect(podSpec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))

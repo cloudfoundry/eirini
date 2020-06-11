@@ -47,6 +47,7 @@ var _ = Describe("Staging", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(jobs.Items).Should(HaveLen(1))
 		Expect(jobs.Items[0].Name).Should(HavePrefix("my-app-my-space-"))
+		Expect(jobs.Items[0].Spec.Template.Spec.ServiceAccountName).To(Equal("staging"))
 	})
 
 	It("should create the correct containers for the job", func() {
