@@ -31,14 +31,18 @@ var _ = Describe("Apps CRDs", func() {
 		controllerSession    *gexec.Session
 	)
 
-	listStatefulSets := func() []appsv1.StatefulSet {
+	getStatefulSet := func() *appsv1.StatefulSet {
 		stsList, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(metav1.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		return stsList.Items
+		if len(stsList.Items) == 0 {
+			return nil
+		}
+		Expect(stsList.Items).To(HaveLen(1))
+		return &stsList.Items[0]
 	}
 
-	getLRP := func(name string) *eiriniv1.LRP {
-		lrp, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Get(name, metav1.GetOptions{})
+	getLRP := func() *eiriniv1.LRP {
+		lrp, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Get(lrpName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		return lrp
 	}
@@ -99,10 +103,8 @@ var _ = Describe("Apps CRDs", func() {
 
 	Describe("Desiring an app", func() {
 		It("deploys the app to the same namespace as the CRD", func() {
-			Eventually(listStatefulSets).Should(HaveLen(1))
-
-			statefulsets := listStatefulSets()
-			st := statefulsets[0]
+			Eventually(getStatefulSet).ShouldNot(BeNil())
+			st := getStatefulSet()
 
 			Expect(st.Labels).To(SatisfyAll(
 				HaveKeyWithValue(k8s.LabelGUID, lrpGUID),
@@ -119,9 +121,9 @@ var _ = Describe("Apps CRDs", func() {
 	Describe("Update an app", func() {
 		When("routes are updated", func() {
 			BeforeEach(func() {
-				Eventually(listStatefulSets).Should(HaveLen(1))
+				Eventually(getStatefulSet).ShouldNot(BeNil())
 
-				lrp := getLRP(lrpName)
+				lrp := getLRP()
 				lrp.Spec.Routes = map[string]json.RawMessage{
 					"cf-router": marshalRoutes([]routeInfo{
 						{Hostname: "app-hostname-1", Port: 8080},
@@ -135,9 +137,7 @@ var _ = Describe("Apps CRDs", func() {
 
 			It("updates the underlying statefulset", func() {
 				Eventually(func() string {
-					statefulsets := listStatefulSets()
-					st := statefulsets[0]
-					return st.Annotations[k8s.AnnotationRegisteredRoutes]
+					return getStatefulSet().Annotations[k8s.AnnotationRegisteredRoutes]
 				}).Should(MatchJSON(`[{"hostname": "app-hostname-1", "port": 8080}]`))
 			})
 
@@ -145,9 +145,9 @@ var _ = Describe("Apps CRDs", func() {
 
 		When("instance count is updated", func() {
 			BeforeEach(func() {
-				Eventually(listStatefulSets).Should(HaveLen(1))
+				Eventually(getStatefulSet).ShouldNot(BeNil())
 
-				lrp := getLRP(lrpName)
+				lrp := getLRP()
 				lrp.Spec.NumInstances = 3
 				lrp.Spec.LastUpdated = "now"
 
@@ -157,18 +157,16 @@ var _ = Describe("Apps CRDs", func() {
 
 			It("updates the underlying statefulset", func() {
 				Eventually(func() int32 {
-					statefulsets := listStatefulSets()
-					st := statefulsets[0]
-					return *st.Spec.Replicas
+					return *getStatefulSet().Spec.Replicas
 				}).Should(Equal(int32(3)))
 			})
 		})
 
 		When("lastUpdated timestamp is not updated", func() {
 			BeforeEach(func() {
-				Eventually(listStatefulSets).Should(HaveLen(1))
+				Eventually(getStatefulSet).ShouldNot(BeNil())
 
-				lrp := getLRP(lrpName)
+				lrp := getLRP()
 				lrp.Spec.NumInstances = 3
 
 				_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Update(lrp)
@@ -177,9 +175,7 @@ var _ = Describe("Apps CRDs", func() {
 
 			It("does not update the underlying statefulset", func() {
 				Consistently(func() int32 {
-					statefulsets := listStatefulSets()
-					st := statefulsets[0]
-					return *st.Spec.Replicas
+					return *getStatefulSet().Spec.Replicas
 				}).Should(Equal(int32(2)))
 			})
 		})
@@ -187,13 +183,13 @@ var _ = Describe("Apps CRDs", func() {
 
 	Describe("Stop an app", func() {
 		BeforeEach(func() {
-			Eventually(listStatefulSets).Should(HaveLen(1))
+			Eventually(getStatefulSet).ShouldNot(BeNil())
 
 			Expect(fixture.LRPClientset.EiriniV1().LRPs(namespace).Delete(lrpName, &metav1.DeleteOptions{})).To(Succeed())
 		})
 
 		It("deletes the undurlying statefulset", func() {
-			Eventually(listStatefulSets).Should(BeEmpty())
+			Eventually(getStatefulSet).Should(BeNil())
 		})
 	})
 })
