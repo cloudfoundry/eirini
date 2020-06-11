@@ -52,11 +52,13 @@ func (b *Task) CancelTask(taskGUID string) error {
 		return nil
 	}
 
-	go b.JSONClient.Post(callbackURL, cf.TaskCompletedRequest{
-		TaskGUID:      taskGUID,
-		Failed:        true,
-		FailureReason: "task was cancelled",
-	})
+	go func() {
+		_ = b.JSONClient.Post(callbackURL, cf.TaskCompletedRequest{
+			TaskGUID:      taskGUID,
+			Failed:        true,
+			FailureReason: "task was cancelled",
+		})
+	}()
 
 	return nil
 }
