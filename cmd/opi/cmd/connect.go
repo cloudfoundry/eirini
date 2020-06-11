@@ -53,8 +53,15 @@ func connect(cmd *cobra.Command, args []string) {
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	handler := handler.New(bifrost, buildpackStagingBifrost, dockerStagingBifrost, taskBifrost, handlerLogger)
 
-	var server *http.Server
 	handlerLogger.Info("opi-connected")
+	if cfg.Properties.ServePlaintext {
+		servePlaintext(cfg, handler, handlerLogger)
+	}
+	serveTLS(cfg, handler, handlerLogger)
+}
+
+func serveTLS(cfg *eirini.Config, handler http.Handler, logger lager.Logger) {
+	var server *http.Server
 
 	tlsConfig, err := tlsconfig.Build(
 		tlsconfig.WithInternalServiceDefaults(),
@@ -68,8 +75,16 @@ func connect(cmd *cobra.Command, args []string) {
 		Handler:   handler,
 		TLSConfig: tlsConfig,
 	}
-	handlerLogger.Fatal("opi-crashed",
+	logger.Fatal("opi-crashed",
 		server.ListenAndServeTLS(cfg.Properties.ServerCertPath, cfg.Properties.ServerKeyPath))
+}
+
+func servePlaintext(cfg *eirini.Config, handler http.Handler, logger lager.Logger) {
+	server := &http.Server{
+		Addr:    fmt.Sprintf("0.0.0.0:%d", cfg.Properties.PlaintextPort),
+		Handler: handler,
+	}
+	logger.Fatal("opi-crashed", server.ListenAndServe())
 }
 
 func initRetryableJSONClient(cfg *eirini.Config) *util.RetryableJSONClient {

@@ -66,6 +66,7 @@ type Properties struct {
 	ServerCertPath string `yaml:"server_cert_path"`
 	ServerKeyPath  string `yaml:"server_key_path"`
 	TLSPort        int    `yaml:"tls_port"`
+	PlaintextPort  int    `yaml:"plaintext_port"`
 
 	CCUploaderSecretName string `yaml:"cc_uploader_secret_name"`
 	CCUploaderCertPath   string `yaml:"cc_uploader_cert_path"`
@@ -98,6 +99,8 @@ type Properties struct {
 	ApplicationServiceAccount string `yaml:"application_service_account"`
 
 	AllowRunImageAsRoot bool `yaml:"allow_run_image_as_root"`
+
+	ServePlaintext bool `yaml:"serve_plaintext"`
 }
 
 type EventReporterConfig struct {
