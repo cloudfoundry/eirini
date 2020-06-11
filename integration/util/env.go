@@ -15,7 +15,6 @@ func GetKubeconfig() string {
 			ginkgo.Fail("INTEGRATION_KUBECONFIG not provided, failed to use default: " + err.Error())
 		}
 		return filepath.Join(homeDir, ".kube", "config")
-
 	}
 	return kubeconf
 }
