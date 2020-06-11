@@ -199,6 +199,7 @@ func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 			UploaderImage:   "docker.io/eirini/integration_test_staging",
 
 			ApplicationServiceAccount: "default",
+			StagingServiceAccount:     "staging",
 			RegistryAddress:           "registry",
 			RegistrySecretName:        "registry-secret",
 		},
