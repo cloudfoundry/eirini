@@ -667,19 +667,5 @@ var _ = Describe("OPI Converter", func() {
 				},
 			}))
 		})
-
-		When("there are no resource limitations", func() {
-			BeforeEach(func() {
-				stagingRequest.MemoryMB = 0
-				stagingRequest.DiskMB = 0
-				stagingRequest.CPUWeight = 0
-			})
-
-			It("should set default values", func() {
-				Expect(stagingTask.MemoryMB).To(Equal(int64(200)))
-				Expect(stagingTask.DiskMB).To(Equal(int64(500)))
-				Expect(stagingTask.CPUWeight).To(Equal(uint8(50)))
-			})
-		})
 	})
 })

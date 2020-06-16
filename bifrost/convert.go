@@ -219,21 +219,6 @@ func (c *OPIConverter) ConvertStaging(stagingGUID string, request cf.StagingRequ
 
 	stagingEnv := mergeEnvs(request.Environment, eiriniEnv)
 
-	memMB := request.MemoryMB
-	if memMB == 0 {
-		memMB = 200
-	}
-
-	diskMB := request.DiskMB
-	if diskMB == 0 {
-		diskMB = 500
-	}
-
-	cpuWeight := request.CPUWeight
-	if cpuWeight == 0 {
-		cpuWeight = 50
-	}
-
 	stagingTask := opi.StagingTask{
 		DownloaderImage: c.stagerConfig.DownloaderImage,
 		UploaderImage:   c.stagerConfig.UploaderImage,
@@ -247,9 +232,9 @@ func (c *OPIConverter) ConvertStaging(stagingGUID string, request cf.StagingRequ
 			OrgGUID:   request.OrgGUID,
 			SpaceGUID: request.SpaceGUID,
 			Env:       stagingEnv,
-			MemoryMB:  memMB,
-			DiskMB:    diskMB,
-			CPUWeight: cpuWeight,
+			MemoryMB:  request.MemoryMB,
+			DiskMB:    request.DiskMB,
+			CPUWeight: request.CPUWeight,
 		},
 	}
 	return stagingTask, nil
