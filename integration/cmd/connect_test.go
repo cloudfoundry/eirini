@@ -40,6 +40,7 @@ var _ = Describe("connect command", func() {
 
 		configFilePath = ""
 		session = nil
+		config = nil
 	})
 
 	JustBeforeEach(func() {
