@@ -52,6 +52,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 
 	eiriniBins = util.NewEiriniBinaries(binsPath)
+	eiriniBins.OPI.Build()
 
 	data, err := json.Marshal(eiriniBins)
 	Expect(err).NotTo(HaveOccurred())

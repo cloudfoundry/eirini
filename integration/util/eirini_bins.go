@@ -76,6 +76,17 @@ func (b *Binary) Run(config interface{}) (*gexec.Session, string) {
 	return session, configFile
 }
 
+// Build builds the binary. Normally, you should not use this function as it is
+// built if needed upon first run anyway. However, sometimes it might make sense
+// to explicitly build a common binary that is used across all the tests
+// in SynchronizedBeforeSuite thus preventing running the build on concurrent nodes.
+//
+// For example, EATs tests will always run OPI, therefore it is a good idea to
+// build it in advance.
+func (b *Binary) Build() {
+	b.buildIfNecessary()
+}
+
 func (b *Binary) buildIfNecessary() {
 	_, err := os.Stat(b.BinPath)
 	if os.IsNotExist(err) {
