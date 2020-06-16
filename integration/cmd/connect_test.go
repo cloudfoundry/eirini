@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/integration/util"
@@ -44,10 +43,7 @@ var _ = Describe("connect command", func() {
 	})
 
 	JustBeforeEach(func() {
-		var err error
-		command := exec.Command(cmdPath, "connect", "-c", configFilePath) // #nosec G204
-		session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
-		Expect(err).ToNot(HaveOccurred())
+		session, configFilePath = eiriniBins.OPI.Run(config)
 	})
 
 	AfterEach(func() {

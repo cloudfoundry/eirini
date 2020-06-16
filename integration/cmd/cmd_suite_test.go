@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -10,28 +11,36 @@ import (
 	natsserver "github.com/nats-io/nats-server/v2/server"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
-	yaml "gopkg.in/yaml.v2"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 var (
-	cmdPath string
-	fixture *util.Fixture
+	fixture    *util.Fixture
+	eiriniBins util.EiriniBinaries
+	binsPath   string
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	path, err := gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
+	var err error
+	binsPath, err = ioutil.TempDir("", "bins")
 	Expect(err).NotTo(HaveOccurred())
-	return []byte(path)
+
+	eiriniBins = util.NewEiriniBinaries(binsPath)
+
+	data, err := json.Marshal(eiriniBins)
+	Expect(err).NotTo(HaveOccurred())
+
+	return data
 }, func(data []byte) {
-	cmdPath = string(data)
+	err := json.Unmarshal(data, &eiriniBins)
+	Expect(err).NotTo(HaveOccurred())
+
 	fixture = util.NewFixture(GinkgoWriter)
 })
 
-var _ = SynchronizedAfterSuite(func() {
-}, func() {
-	gexec.CleanupBuildArtifacts()
+var _ = SynchronizedAfterSuite(func() {}, func() {
+	eiriniBins.TearDown()
+	Expect(os.RemoveAll(binsPath)).To(Succeed())
 })
 
 var _ = BeforeEach(func() {
@@ -105,42 +114,4 @@ func defaultReporterConfig() *eirini.TaskReporterConfig {
 	}
 
 	return config
-}
-
-func createRouteEmitterConfig(config *eirini.RouteEmitterConfig) (*os.File, error) {
-	bs, err := yaml.Marshal(config)
-	Expect(err).ToNot(HaveOccurred())
-
-	return createConfigFile(bs)
-}
-
-func createMetricsCollectorConfigFile(config *eirini.MetricsCollectorConfig) (*os.File, error) {
-	bs, err := yaml.Marshal(config)
-	Expect(err).ToNot(HaveOccurred())
-
-	return createConfigFile(bs)
-}
-
-func createEventReporterConfigFile(config *eirini.EventReporterConfig) (*os.File, error) {
-	bs, err := yaml.Marshal(config)
-	Expect(err).ToNot(HaveOccurred())
-
-	return createConfigFile(bs)
-}
-
-func createStagingReporterConfigFile(config *eirini.TaskReporterConfig) (*os.File, error) {
-	bs, err := yaml.Marshal(config)
-	Expect(err).ToNot(HaveOccurred())
-
-	return createConfigFile(bs)
-}
-
-func createConfigFile(yamlBytes []byte) (*os.File, error) {
-	configFile, err := ioutil.TempFile("", "config.yml")
-	Expect(err).ToNot(HaveOccurred())
-
-	err = ioutil.WriteFile(configFile.Name(), yamlBytes, os.ModePerm)
-	Expect(err).ToNot(HaveOccurred())
-
-	return configFile, err
 }

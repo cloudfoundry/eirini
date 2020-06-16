@@ -2,7 +2,7 @@ package cmd_test
 
 import (
 	"os"
-	"os/exec"
+	"syscall"
 
 	"code.cloudfoundry.org/eirini"
 	. "github.com/onsi/ginkgo"
@@ -12,37 +12,31 @@ import (
 
 var _ = Describe("EventReporter", func() {
 	var (
-		err error
-
-		command    *exec.Cmd
-		cmdPath    string
-		config     *eirini.EventReporterConfig
-		configFile *os.File
+		config         *eirini.EventReporterConfig
+		configFilePath string
+		session        *gexec.Session
 	)
 
-	BeforeEach(func() {
-		cmdPath, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/event-reporter")
-
+	JustBeforeEach(func() {
+		session, configFilePath = eiriniBins.EventsReporter.Run(config)
 	})
 
 	AfterEach(func() {
-		if command != nil {
-			err = command.Process.Kill()
-			Expect(err).ToNot(HaveOccurred())
+		if configFilePath != "" {
+			Expect(os.Remove(configFilePath)).To(Succeed())
+		}
+		if session != nil {
+			Eventually(session.Kill()).Should(gexec.Exit())
 		}
 	})
 
 	Context("When event reporter is executed with a valid config", func() {
-
 		BeforeEach(func() {
 			config = defaultEventReporterConfig()
-			configFile, err = createEventReporterConfigFile(config)
 		})
 
 		It("should be able to start properly", func() {
-			command = exec.Command(cmdPath, "-c", configFile.Name())
-			_, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(session.Command.Process.Signal(syscall.Signal(0))).To(Succeed())
 		})
 	})
 })

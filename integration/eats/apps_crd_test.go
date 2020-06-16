@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
 	. "github.com/onsi/ginkgo"
@@ -88,7 +87,7 @@ var _ = Describe("Apps CRDs", func() {
 			EiriniKeyPath:  localhostKeyPath,
 			CAPath:         localhostCertPath,
 		}
-		controllerSession, controllerConfigFile = util.RunBinary(binPaths.LRPController, config)
+		controllerSession, controllerConfigFile = eiriniBins.LRPController.Run(config)
 
 		_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Create(lrp)
 		Expect(err).NotTo(HaveOccurred())

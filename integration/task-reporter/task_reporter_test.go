@@ -54,7 +54,7 @@ var _ = Describe("TaskReporter", func() {
 			CCKeyPath:  keyPath,
 		}
 
-		session, configFile = util.RunBinary(pathToTaskReporter, config)
+		session, configFile = eiriniBins.TaskReporter.Run(config)
 
 		taskDesirer = k8s.TaskDesirer{
 			Namespace:          fixture.Namespace,
@@ -92,9 +92,9 @@ var _ = Describe("TaskReporter", func() {
 		if session != nil {
 			session.Kill()
 		}
-		os.Remove(configFile)
-		os.Remove(keyPath)
-		os.Remove(certPath)
+		Expect(os.Remove(configFile)).To(Succeed())
+		Expect(os.Remove(keyPath)).To(Succeed())
+		Expect(os.Remove(certPath)).To(Succeed())
 		cloudControllerServer.Close()
 	})
 

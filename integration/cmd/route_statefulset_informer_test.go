@@ -2,7 +2,7 @@ package cmd_test
 
 import (
 	"os"
-	"os/exec"
+	"syscall"
 
 	"code.cloudfoundry.org/eirini"
 	natsserver "github.com/nats-io/nats-server/v2/server"
@@ -14,12 +14,9 @@ import (
 
 var _ = Describe("RouteStatefulSetInformer", func() {
 	var (
-		err error
-
-		command    *exec.Cmd
-		cmdPath    string
-		config     *eirini.RouteEmitterConfig
-		configFile *os.File
+		config         *eirini.RouteEmitterConfig
+		configFilePath string
+		session        *gexec.Session
 
 		natsPassword   string
 		natsServerOpts natsserver.Options
@@ -27,37 +24,36 @@ var _ = Describe("RouteStatefulSetInformer", func() {
 	)
 
 	BeforeEach(func() {
-
 		natsPassword = "password"
 		natsServerOpts = natstest.DefaultTestOptions
 		natsServerOpts.Username = "nats"
 		natsServerOpts.Password = natsPassword
 		natsServerOpts.Port = fixture.NextAvailablePort()
 		natsServer = natstest.RunServer(&natsServerOpts)
+	})
 
-		cmdPath, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/route-statefulset-informer")
-		Expect(err).ToNot(HaveOccurred())
+	JustBeforeEach(func() {
+		session, configFilePath = eiriniBins.RouteStatefulsetInformer.Run(config)
 	})
 
 	AfterEach(func() {
 		natsServer.Shutdown()
 
-		if command != nil {
-			err = command.Process.Kill()
-			Expect(err).ToNot(HaveOccurred())
+		if configFilePath != "" {
+			Expect(os.Remove(configFilePath)).To(Succeed())
+		}
+		if session != nil {
+			Eventually(session.Kill()).Should(gexec.Exit())
 		}
 	})
 
 	Context("When route collector is executed with valid nats config", func() {
 		BeforeEach(func() {
 			config = defaultRouteEmitterConfig(natsServerOpts)
-			configFile, err = createRouteEmitterConfig(config)
 		})
 
 		It("should be able to start properly", func() {
-			command = exec.Command(cmdPath, "-c", configFile.Name())
-			_, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(session.Command.Process.Signal(syscall.Signal(0))).To(Succeed())
 		})
 	})
 })

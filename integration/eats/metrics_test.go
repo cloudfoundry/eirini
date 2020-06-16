@@ -54,7 +54,7 @@ var _ = Describe("Metrics", func() {
 			LoggregatorKeyPath:               metricsKeyPath,
 			AppMetricsEmissionIntervalInSecs: 1,
 		}
-		metricsSession, metricsConfigFile = util.RunBinary(binPaths.MetricsCollector, config)
+		metricsSession, metricsConfigFile = eiriniBins.MetricsCollector.Run(config)
 	})
 
 	AfterEach(func() {

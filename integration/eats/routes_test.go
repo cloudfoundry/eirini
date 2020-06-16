@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	"github.com/nats-io/nats-server/v2/server"
@@ -62,9 +61,9 @@ var _ = Describe("Routes", func() {
 				Namespace:  fixture.DefaultNamespace,
 			},
 		}
-		collectorSession, collectorConfig = util.RunBinary(binPaths.RouteCollector, eiriniRouteConfig)
-		uriInformerSession, uriInformerConfig = util.RunBinary(binPaths.RouteStatefulsetInformer, eiriniRouteConfig)
-		instanceInformerSession, instanceInformerConfig = util.RunBinary(binPaths.RoutePodInformer, eiriniRouteConfig)
+		collectorSession, collectorConfig = eiriniBins.RouteCollector.Run(eiriniRouteConfig)
+		uriInformerSession, uriInformerConfig = eiriniBins.RouteStatefulsetInformer.Run(eiriniRouteConfig)
+		instanceInformerSession, instanceInformerConfig = eiriniBins.RoutePodInformer.Run(eiriniRouteConfig)
 
 		lrp = cf.DesireLRPRequest{
 			GUID:         generateGUID("lrp"),

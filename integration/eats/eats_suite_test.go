@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/exec"
 	"testing"
 	"time"
 
@@ -30,71 +29,45 @@ func TestEats(t *testing.T) {
 	RunSpecs(t, "Eats Suite")
 }
 
-type BinPaths struct {
-	OPI                      string `json:"opi"`
-	RouteCollector           string `json:"route_collector"`
-	MetricsCollector         string `json:"metrics_collector"`
-	RouteStatefulsetInformer string `json:"route_stateful_set_informer"`
-	RoutePodInformer         string `json:"route_pod_informer"`
-	EventsReporter           string `json:"events_reporter"`
-	TaskReporter             string `json:"task_reporter"`
-	LRPController            string `json:"lrp_controller"`
-}
-
 type routeInfo struct {
 	Hostname string `json:"hostname"`
 	Port     int    `json:"port"`
 }
 
 var (
-	fixture *util.Fixture
+	fixture    *util.Fixture
+	binsPath   string
+	eiriniBins util.EiriniBinaries
 
 	localhostCertPath, localhostKeyPath string
 	opiConfig                           string
 	opiSession                          *gexec.Session
 	httpClient                          *http.Client
 	opiURL                              string
-	binPaths                            BinPaths
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	paths := BinPaths{}
-
 	var err error
-	paths.OPI, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
+	binsPath, err = ioutil.TempDir("", "bins")
 	Expect(err).NotTo(HaveOccurred())
 
-	paths.RouteCollector, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/route-collector")
-	Expect(err).NotTo(HaveOccurred())
+	eiriniBins = util.NewEiriniBinaries(binsPath)
 
-	paths.MetricsCollector, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/metrics-collector")
-	Expect(err).NotTo(HaveOccurred())
-
-	paths.RouteStatefulsetInformer, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/route-statefulset-informer")
-	Expect(err).NotTo(HaveOccurred())
-
-	paths.RoutePodInformer, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/route-pod-informer")
-	Expect(err).NotTo(HaveOccurred())
-
-	paths.EventsReporter, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/event-reporter")
-	Expect(err).NotTo(HaveOccurred())
-
-	paths.TaskReporter, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/task-reporter")
-	Expect(err).NotTo(HaveOccurred())
-
-	paths.LRPController, err = gexec.Build("code.cloudfoundry.org/eirini/cmd/lrp-controller")
-	Expect(err).NotTo(HaveOccurred())
-
-	data, err := json.Marshal(paths)
+	data, err := json.Marshal(eiriniBins)
 	Expect(err).NotTo(HaveOccurred())
 
 	return data
 }, func(data []byte) {
-	err := json.Unmarshal(data, &binPaths)
+	err := json.Unmarshal(data, &eiriniBins)
 	Expect(err).NotTo(HaveOccurred())
 
 	fixture = util.NewFixture(GinkgoWriter)
 	SetDefaultEventuallyTimeout(20 * time.Second)
+})
+
+var _ = SynchronizedAfterSuite(func() {}, func() {
+	eiriniBins.TearDown()
+	Expect(os.RemoveAll(binsPath)).To(Succeed())
 })
 
 var _ = BeforeEach(func() {
@@ -154,16 +127,12 @@ func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
 			ApplicationServiceAccount: "default",
 		},
 	}
-	eiriniConfigFile, err := util.CreateConfigFile(eiriniConfig)
-	Expect(err).ToNot(HaveOccurred())
 
-	eiriniCommand := exec.Command(binPaths.OPI, "connect", "-c", eiriniConfigFile.Name()) // #nosec G204
-	eiriniSession, err := gexec.Start(eiriniCommand, GinkgoWriter, GinkgoWriter)
-	Expect(err).ToNot(HaveOccurred())
+	eiriniSession, eiriniConfigFilePath := eiriniBins.OPI.Run(eiriniConfig)
 
 	url := fmt.Sprintf("https://localhost:%d", eiriniConfig.Properties.TLSPort)
 
-	return eiriniSession, eiriniConfigFile.Name(), url
+	return eiriniSession, eiriniConfigFilePath, url
 }
 
 func makeTestHTTPClient(certPath, keyPath string) (*http.Client, error) {

@@ -1,10 +1,11 @@
 package opi_test
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
-	"os/exec"
 	"testing"
 
 	"code.cloudfoundry.org/eirini/integration/util"
@@ -23,27 +24,36 @@ func TestOpi(t *testing.T) {
 const secretName = "certs-secret"
 
 var (
-	fixture          *util.Fixture
-	pathToOpi        string
-	httpClient       *http.Client
-	eiriniConfigFile *os.File
-	session          *gexec.Session
-	url              string
+	eiriniBins           util.EiriniBinaries
+	binsPath             string
+	fixture              *util.Fixture
+	httpClient           *http.Client
+	eiriniConfigFilePath string
+	session              *gexec.Session
+	url                  string
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	path, err := gexec.Build("code.cloudfoundry.org/eirini/cmd/opi")
+	var err error
+	binsPath, err = ioutil.TempDir("", "bins")
 	Expect(err).NotTo(HaveOccurred())
-	return []byte(path)
+
+	eiriniBins = util.NewEiriniBinaries(binsPath)
+
+	data, err := json.Marshal(eiriniBins)
+	Expect(err).NotTo(HaveOccurred())
+
+	return data
 }, func(data []byte) {
-	pathToOpi = string(data)
+	err := json.Unmarshal(data, &eiriniBins)
+	Expect(err).NotTo(HaveOccurred())
 
 	fixture = util.NewFixture(GinkgoWriter)
 })
 
-var _ = SynchronizedAfterSuite(func() {
-}, func() {
-	gexec.CleanupBuildArtifacts()
+var _ = SynchronizedAfterSuite(func() {}, func() {
+	eiriniBins.TearDown()
+	Expect(os.RemoveAll(binsPath)).To(Succeed())
 })
 
 var _ = BeforeEach(func() {
@@ -56,12 +66,8 @@ var _ = BeforeEach(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	eiriniConfig := util.DefaultEiriniConfig(fixture.Namespace, fixture.NextAvailablePort())
-	eiriniConfigFile, err = util.CreateConfigFile(eiriniConfig)
-	Expect(err).ToNot(HaveOccurred())
 
-	command := exec.Command(pathToOpi, "connect", "-c", eiriniConfigFile.Name()) // #nosec G204
-	session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
-	Expect(err).ToNot(HaveOccurred())
+	session, eiriniConfigFilePath = eiriniBins.OPI.Run(eiriniConfig)
 
 	url = fmt.Sprintf("https://localhost:%d/", eiriniConfig.Properties.TLSPort)
 	Eventually(func() error {
@@ -71,12 +77,8 @@ var _ = BeforeEach(func() {
 })
 
 var _ = AfterEach(func() {
-	if eiriniConfigFile != nil {
-		Expect(os.Remove(eiriniConfigFile.Name())).To(Succeed())
-	}
-	if session != nil {
-		session.Kill()
-	}
+	Expect(os.Remove(eiriniConfigFilePath)).To(Succeed())
+	session.Kill()
 
 	fixture.TearDown()
 })

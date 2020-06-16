@@ -46,7 +46,7 @@ var _ = Describe("StagingReporter", func() {
 			EiriniKeyPath:  keyPath,
 		}
 
-		session, configFile = util.RunBinary(pathToStagingReporter, config)
+		session, configFile = eiriniBins.StagingReporter.Run(config)
 
 		taskDesirer = k8s.TaskDesirer{
 			Namespace:          fixture.Namespace,
@@ -60,9 +60,9 @@ var _ = Describe("StagingReporter", func() {
 		if session != nil {
 			session.Kill()
 		}
-		os.Remove(configFile)
-		os.Remove(keyPath)
-		os.Remove(certPath)
+		Expect(os.Remove(configFile)).To(Succeed())
+		Expect(os.Remove(keyPath)).To(Succeed())
+		Expect(os.Remove(certPath)).To(Succeed())
 		eiriniServer.Close()
 	})
 

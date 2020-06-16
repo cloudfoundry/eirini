@@ -1,12 +1,14 @@
 package staging_reporter_test
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"code.cloudfoundry.org/eirini/integration/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
@@ -16,23 +18,32 @@ func TestStagingReporter(t *testing.T) {
 }
 
 var (
-	fixture               *util.Fixture
-	pathToStagingReporter string
+	fixture    *util.Fixture
+	eiriniBins util.EiriniBinaries
+	binsPath   string
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	path, err := gexec.Build("code.cloudfoundry.org/eirini/cmd/staging-reporter")
+	var err error
+	binsPath, err = ioutil.TempDir("", "bins")
 	Expect(err).NotTo(HaveOccurred())
-	return []byte(path)
+
+	eiriniBins = util.NewEiriniBinaries(binsPath)
+
+	data, err := json.Marshal(eiriniBins)
+	Expect(err).NotTo(HaveOccurred())
+
+	return data
 }, func(data []byte) {
-	pathToStagingReporter = string(data)
+	err := json.Unmarshal(data, &eiriniBins)
+	Expect(err).NotTo(HaveOccurred())
 
 	fixture = util.NewFixture(GinkgoWriter)
 })
 
-var _ = SynchronizedAfterSuite(func() {
-}, func() {
-	gexec.CleanupBuildArtifacts()
+var _ = SynchronizedAfterSuite(func() {}, func() {
+	eiriniBins.TearDown()
+	Expect(os.RemoveAll(binsPath)).To(Succeed())
 })
 
 var _ = BeforeEach(func() {

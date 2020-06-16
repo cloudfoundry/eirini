@@ -46,7 +46,7 @@ var _ = Describe("Events", func() {
 			CCKeyPath:     keyPath,
 			CCCAPath:      certPath,
 		}
-		eventsSession, eventsConfigFile = util.RunBinary(binPaths.EventsReporter, config)
+		eventsSession, eventsConfigFile = eiriniBins.EventsReporter.Run(config)
 	})
 
 	AfterEach(func() {
