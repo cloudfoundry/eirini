@@ -9,6 +9,8 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pw
 readonly EIRINI_BASEDIR=$(realpath "$SCRIPT_DIR/..")
 readonly EIRINI_RELEASE_BASEDIR=$(realpath "$SCRIPT_DIR/../../eirini-release")
 readonly EIRINI_PRIVATE_CONFIG_BASEDIR=$(realpath "$SCRIPT_DIR/../../eirini-private-config")
+readonly EIRINI_CI_BASEDIR="$HOME/workspace/eirini-ci"
+readonly CF4K8S_DIR="$HOME/workspace/cf-for-k8s"
 
 main() {
   if [ "$#" == "0" ]; then
@@ -43,9 +45,9 @@ main() {
     exit 1
   fi
 
-  if [ "$cluster_name" != "$(current_cluster_name)" ]; then
+  if [[ "$(current_cluster_name)" =~ "gke_.*${cluster_name}\$" ]]; then
     echo "Your current cluster is $(current_cluster_name), but you want to update $cluster_name. Please target $cluster_name"
-    echo eval "\$(ibmcloud ks cluster config --export $cluster_name)"
+    echo "gcloudcluster $cluster_name"
     exit 1
   fi
 
@@ -62,7 +64,8 @@ main() {
   fi
 
   pull_private_config
-  helm_upgrade
+  patch_cf_for_k8s
+  deploy_cf "$cluster_name"
 }
 
 update_component() {
@@ -101,32 +104,65 @@ update_image_in_helm_chart() {
   popd
 }
 
+patch_cf_for_k8s() {
+  local build_path eirini_values eirini_custom_values
+  rm -rf "$CF4K8S_DIR/build/eirini/_vendir/eirini"
+
+  build_path="$CF4K8S_DIR/build/eirini/"
+  eirini_values="$build_path/eirini-values.yml"
+  eirini_custom_values="$build_path/eirini-custom-values.yml"
+
+  cat >"$build_path/add-namespaces-overlay.yml" <<EOF
+#@ load("@ytt:overlay", "overlay")
+
+#@overlay/match by=overlay.subset({"kind":"Namespace", "metadata":{"name":"cf-workloads"}})
+#@overlay/remove
+---
+
+EOF
+
+  cat >>"$eirini_custom_values" <<EOF
+---
+opi:
+  serviceName: eirini
+  lrpController:
+    tls:
+      secretName: "eirini-internal-tls-certs"
+      keyPath: "tls.key"
+      caPath: "tls.ca"
+      certPath: "tls.crt"
+  tasks:
+    tls:
+      taskReporter:
+          secretName: "eirini-internal-tls-certs"
+          keyPath: "tls.key"
+          caPath: "tls.ca"
+          certPath: "tls.crt"
+
+EOF
+
+  yq merge --inplace "$eirini_values" "$eirini_custom_values"
+  rm "$eirini_custom_values"
+
+  cp -r "$EIRINI_RELEASE_BASEDIR/helm/eirini" "$CF4K8S_DIR/build/eirini/_vendir/"
+
+  "$CF4K8S_DIR"/build/eirini/build.sh
+}
+
+deploy_cf() {
+  local cluster_name
+  cluster_name="$1"
+  kapp deploy -a cf -f <(
+    ytt -f "$CF4K8S_DIR/config" \
+      -f "$EIRINI_CI_BASEDIR/cf-for-k8s" \
+      -f "$EIRINI_PRIVATE_CONFIG_BASEDIR/environments/kube-clusters/"${cluster_name}"/default-values.yml" \
+      -f "$EIRINI_PRIVATE_CONFIG_BASEDIR/environments/kube-clusters/"${cluster_name}"/loadbalancer-values.yml"
+  ) -y
+}
+
 pull_private_config() {
   pushd "$EIRINI_PRIVATE_CONFIG_BASEDIR"
   git pull --rebase
-  popd
-}
-
-helm_upgrade() {
-  pushd "$EIRINI_RELEASE_BASEDIR/helm/cf"
-  helm dep update
-  popd
-
-  local secret ca_cert secret_name bits_tls_crt bits_tls_key
-  secret=$(kubectl get pods --namespace uaa -o jsonpath='{.items[?(.metadata.name=="uaa-0")].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}')
-  ca_cert=$(kubectl get secret "$secret" --namespace uaa -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)
-
-  secret_name=$(kubectl get secrets | grep "$(current_cluster_name)" | cut -d ' ' -f 1)
-  bits_tls_crt=$(kubectl get secret "$secret_name" --namespace default -o jsonpath="{.data['tls\.crt']}" | base64 --decode -)
-  bits_tls_key=$(kubectl get secret "$secret_name" --namespace default -o jsonpath="{.data['tls\.key']}" | base64 --decode -)
-
-  pushd "$EIRINI_RELEASE_BASEDIR/helm"
-  helm upgrade --install scf ./cf \
-    --namespace scf \
-    --values "$HOME/workspace/eirini-private-config/environments/kube-clusters/$(current_cluster_name)/values.yaml" \
-    --set "secrets.UAA_CA_CERT=${ca_cert}" \
-    --set "bits.secrets.BITS_TLS_KEY=${bits_tls_key}" \
-    --set "bits.secrets.BITS_TLS_CRT=${bits_tls_crt}"
   popd
 }
 
