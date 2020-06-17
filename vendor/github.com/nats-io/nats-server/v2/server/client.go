@@ -1196,6 +1196,14 @@ func (c *client) markConnAsClosed(reason ClosedState, skipFlush bool) bool {
 	if skipFlush {
 		c.flags.set(skipFlushOnClose)
 	}
+	// Be consistent with the creation: for routes and gateways,
+	// we use Noticef on create, so use that too for delete.
+	if c.kind == ROUTER || c.kind == GATEWAY {
+		c.Noticef("%s connection closed: %s", c.typeString(), reason)
+	} else { // Client and Leaf Node connections.
+		c.Debugf("%s connection closed: %s", c.typeString(), reason)
+	}
+
 	// Save off the connection if its a client or leafnode.
 	if c.kind == CLIENT || c.kind == LEAF {
 		if nc := c.nc; nc != nil && c.srv != nil {
@@ -1278,6 +1286,7 @@ func (c *client) processInfo(arg []byte) error {
 }
 
 func (c *client) processErr(errStr string) {
+	close := true
 	switch c.kind {
 	case CLIENT:
 		c.Errorf("Client Error %s", errStr)
@@ -1287,8 +1296,12 @@ func (c *client) processErr(errStr string) {
 		c.Errorf("Gateway Error %s", errStr)
 	case LEAF:
 		c.Errorf("Leafnode Error %s", errStr)
+		c.leafProcessErr(errStr)
+		close = false
 	}
-	c.closeConnection(ParseError)
+	if close {
+		c.closeConnection(ParseError)
+	}
 }
 
 // Password pattern matcher.
@@ -2121,6 +2134,8 @@ func (c *client) addShadowSub(sub *subscription, im *streamImport, useFrom bool)
 
 	// Update our route map here.
 	c.srv.updateRouteSubscriptionMap(im.acc, &nsub, 1)
+	c.srv.updateLeafNodes(im.acc, &nsub, 1)
+
 	return &nsub, nil
 }
 
@@ -3052,7 +3067,7 @@ func (c *client) processMsgResults(acc *Account, r *SublistResult, msg, subject,
 		// these after everything else.
 		switch sub.client.kind {
 		case ROUTER:
-			if (c.kind != ROUTER && !c.isSolicitedLeafNode()) || (flags&pmrAllowSendFromRouteToRoute != 0) {
+			if (c.kind != ROUTER && !c.isSpokeLeafNode()) || (flags&pmrAllowSendFromRouteToRoute != 0) {
 				c.addSubToRouteTargets(sub)
 			}
 			continue
@@ -3064,7 +3079,7 @@ func (c *client) processMsgResults(acc *Account, r *SublistResult, msg, subject,
 			// Leaf node delivery audience is different however.
 			// Also leaf nodes are always no echo, so we make sure we are not
 			// going to send back to ourselves here.
-			if c != sub.client && (c.kind != ROUTER || !c.isSolicitedLeafNode()) {
+			if c != sub.client && (c.kind != ROUTER || !c.isSpokeLeafNode()) {
 				c.addSubToRouteTargets(sub)
 			}
 			continue
@@ -3510,13 +3525,6 @@ func (c *client) closeConnection(reason ClosedState) {
 // been started.
 func (c *client) teardownConn() {
 	c.mu.Lock()
-	// Be consistent with the creation: for routes and gateways,
-	// we use Noticef on create, so use that too for delete.
-	if c.kind == ROUTER || c.kind == GATEWAY {
-		c.Noticef("%s connection closed", c.typeString())
-	} else { // Client and Leaf Node connections.
-		c.Debugf("%s connection closed", c.typeString())
-	}
 
 	c.clearAuthTimer()
 	c.clearPingTimer()
