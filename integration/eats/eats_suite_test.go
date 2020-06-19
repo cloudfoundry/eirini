@@ -17,7 +17,6 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"github.com/hashicorp/go-uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -277,10 +276,4 @@ func updateLRP(updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error)
 		return nil, err
 	}
 	return httpClient.Do(updateLrpReq)
-}
-
-func generateGUID(prefix string) string {
-	guid, err := uuid.GenerateUUID()
-	Expect(err).NotTo(HaveOccurred())
-	return fmt.Sprintf("%s-%s", prefix, guid)
 }

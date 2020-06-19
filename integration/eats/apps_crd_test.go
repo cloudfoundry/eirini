@@ -2,9 +2,11 @@ package eats_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
 	. "github.com/onsi/ginkgo"
@@ -40,6 +42,22 @@ var _ = Describe("Apps CRDs", func() {
 		return &stsList.Items[0]
 	}
 
+	getPodReadiness := func() bool {
+		pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, lrpGUID, k8s.LabelVersion, lrpVersion),
+		})
+		Expect(err).NotTo(HaveOccurred())
+		if len(pods.Items) != 1 {
+			return false
+		}
+
+		containerStatuses := pods.Items[0].Status.ContainerStatuses
+		if len(containerStatuses) != 1 {
+			return false
+		}
+		return containerStatuses[0].Ready
+	}
+
 	getLRP := func() *eiriniv1.LRP {
 		lrp, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Get(lrpName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -48,8 +66,8 @@ var _ = Describe("Apps CRDs", func() {
 
 	BeforeEach(func() {
 		namespace = fixture.Namespace
-		lrpGUID = generateGUID("lrp")
-		lrpVersion = generateGUID("version")
+		lrpGUID = util.GenerateGUID()
+		lrpVersion = util.GenerateGUID()
 		lrpProcessGUID = processGUID(lrpGUID, lrpVersion)
 
 		lrp := &eiriniv1.LRP{
@@ -65,7 +83,7 @@ var _ = Describe("Apps CRDs", func() {
 				SpaceName:        "s",
 				OrganizationName: "o",
 				Environment:      map[string]string{"FOO": "BAR"},
-				NumInstances:     2,
+				NumInstances:     1,
 				LastUpdated:      "a long time ago in a galaxy far, far away",
 				Ports:            []int32{8080},
 				Lifecycle: eiriniv1.Lifecycle{
@@ -111,9 +129,11 @@ var _ = Describe("Apps CRDs", func() {
 				HaveKeyWithValue(k8s.LabelSourceType, "APP"),
 				HaveKeyWithValue(k8s.LabelAppGUID, "the-app-guid"),
 			))
-			Expect(st.Spec.Replicas).To(PointTo(Equal(int32(2))))
+			Expect(st.Spec.Replicas).To(PointTo(Equal(int32(1))))
 			Expect(st.Spec.Template.Spec.Containers[0].Image).To(Equal("eirini/dorini"))
 			Expect(st.Spec.Template.Spec.Containers[0].Env).To(ContainElement(corev1.EnvVar{Name: "FOO", Value: "BAR"}))
+
+			Eventually(getPodReadiness).Should(BeTrue(), "LRP Pod not ready")
 		})
 	})
 
@@ -175,7 +195,7 @@ var _ = Describe("Apps CRDs", func() {
 			It("does not update the underlying statefulset", func() {
 				Consistently(func() int32 {
 					return *getStatefulSet().Spec.Replicas
-				}).Should(Equal(int32(2)))
+				}).Should(Equal(int32(1)))
 			})
 		})
 	})

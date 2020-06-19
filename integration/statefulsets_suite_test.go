@@ -157,7 +157,6 @@ func podReady(pod corev1.Pod) bool {
 }
 
 func createLRP(name string) *opi.LRP {
-	guid := util.RandomString()
 	routes, err := json.Marshal([]cf.Route{{Hostname: "foo.example.com", Port: 8080}})
 	Expect(err).ToNot(HaveOccurred())
 	return &opi.LRP{
@@ -171,7 +170,7 @@ func createLRP(name string) *opi.LRP {
 		TargetInstances: 2,
 		Image:           "busybox",
 		AppURIs:         string(routes),
-		LRPIdentifier:   opi.LRPIdentifier{GUID: guid, Version: "version_" + guid},
+		LRPIdentifier:   opi.LRPIdentifier{GUID: util.GenerateGUID(), Version: util.GenerateGUID()},
 		LRP:             "metadata",
 		DiskMB:          2047,
 	}

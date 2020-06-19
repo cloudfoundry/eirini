@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	. "github.com/onsi/ginkgo"
@@ -25,8 +26,8 @@ var _ = Describe("Apps", func() {
 
 	BeforeEach(func() {
 		namespace = fixture.Namespace
-		lrpGUID = generateGUID("lrp")
-		lrpVersion = generateGUID("version")
+		lrpGUID = util.GenerateGUID()
+		lrpVersion = util.GenerateGUID()
 		lrpProcessGUID = processGUID(lrpGUID, lrpVersion)
 	})
 
@@ -91,8 +92,8 @@ var _ = Describe("Apps", func() {
 		)
 
 		JustBeforeEach(func() {
-			anotherLrpGUID = generateGUID("another-lrp")
-			anotherLrpVersion = generateGUID("another-version")
+			anotherLrpGUID = util.GenerateGUID()
+			anotherLrpVersion = util.GenerateGUID()
 
 			firstLrp := createLrpRequest(lrpGUID, lrpVersion)
 			firstLrp.NumInstances = 2
@@ -124,7 +125,7 @@ var _ = Describe("Apps", func() {
 			BeforeEach(func() {
 				_, err := fixture.Clientset.AppsV1().StatefulSets(fixture.DefaultNamespace).Create(&appsv1.StatefulSet{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: generateGUID("non-eirini-"),
+						Name: util.GenerateGUID(),
 					},
 					Spec: appsv1.StatefulSetSpec{
 						Template: corev1.PodTemplateSpec{

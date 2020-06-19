@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	"github.com/nats-io/nats-server/v2/server"
@@ -66,8 +67,8 @@ var _ = Describe("Routes", func() {
 		instanceInformerSession, instanceInformerConfig = eiriniBins.RoutePodInformer.Run(eiriniRouteConfig)
 
 		lrp = cf.DesireLRPRequest{
-			GUID:         generateGUID("lrp"),
-			Version:      generateGUID("version"),
+			GUID:         util.GenerateGUID(),
+			Version:      util.GenerateGUID(),
 			NumInstances: 1,
 			Routes: map[string]json.RawMessage{
 				"cf-router": marshalRoutes([]routeInfo{
