@@ -33,7 +33,7 @@ func main() {
 		cmdcommons.Exitf("Missing env var %s", eirini.EnvEiriniNamespace)
 	}
 
-	clientset := cmdcommons.CreateKubeClient(cfg.Properties.ConfigPath)
+	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
 	launchConfigUpdater(eiriniNamespace, clientset)
 }
@@ -49,13 +49,13 @@ func launchConfigUpdater(namespace string, clientset kubernetes.Interface) {
 	configInformer.Start()
 }
 
-func readConfigFile(path string) (*eirini.Config, error) {
+func readConfigFile(path string) (*eirini.ConfigUpdaterConfig, error) {
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read file")
 	}
 
-	var conf eirini.Config
+	var conf eirini.ConfigUpdaterConfig
 	err = yaml.Unmarshal(fileBytes, &conf)
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
 }
