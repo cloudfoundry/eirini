@@ -11,6 +11,7 @@ readonly EIRINI_RELEASE_BASEDIR=$(realpath "$SCRIPT_DIR/../../eirini-release")
 readonly EIRINI_PRIVATE_CONFIG_BASEDIR=$(realpath "$SCRIPT_DIR/../../eirini-private-config")
 readonly EIRINI_CI_BASEDIR="$HOME/workspace/eirini-ci"
 readonly CF4K8S_DIR="$HOME/workspace/cf-for-k8s"
+readonly CAPIK8SDIR="$HOME/workspace/capi-k8s-release"
 
 main() {
   if [ "$#" == "0" ]; then
@@ -59,13 +60,32 @@ main() {
     fi
     local component
     for component in "$@"; do
-      update_component "$component"
+      if is_cloud_controller $component; then
+        custom_ccng_values_file=$(mktemp)
+        build_ccng_image $custom_ccng_values_file
+        extra_args=("-f" "$custom_ccng_values_file")
+      else
+        update_component "$component"
+      fi
     done
   fi
 
   pull_private_config
   patch_cf_for_k8s
-  deploy_cf "$cluster_name"
+  deploy_cf "$cluster_name" "${extra_args[@]}"
+}
+
+is_cloud_controller() {
+  local component
+  component="$1"
+  [[ "$component" =~ cloud.controller ]] || [[ "$component" =~ "ccng" ]] || [[ "$component" =~ "capi" ]] || [[ "$component" =~ "cc" ]]
+}
+
+build_ccng_image() {
+  export IMAGE_DESTINATION_KPACK_WATCHER="docker.io/eirini/dev-kpack-watcher"
+  export IMAGE_DESTINATION_CCNG="docker.io/eirini/dev-ccng"
+  "$CAPIK8SDIR"/scripts/build-into-values.sh "$CAPIK8SDIR/values/images.yml"
+  "$CAPIK8SDIR"/scripts/bump-cf-for-k8s.sh
 }
 
 update_component() {
@@ -152,11 +172,13 @@ EOF
 deploy_cf() {
   local cluster_name
   cluster_name="$1"
+  shift 1
   kapp deploy -a cf -f <(
     ytt -f "$CF4K8S_DIR/config" \
       -f "$EIRINI_CI_BASEDIR/cf-for-k8s" \
       -f "$EIRINI_PRIVATE_CONFIG_BASEDIR/environments/kube-clusters/"${cluster_name}"/default-values.yml" \
-      -f "$EIRINI_PRIVATE_CONFIG_BASEDIR/environments/kube-clusters/"${cluster_name}"/loadbalancer-values.yml"
+      -f "$EIRINI_PRIVATE_CONFIG_BASEDIR/environments/kube-clusters/"${cluster_name}"/loadbalancer-values.yml" \
+      $@
   ) -y
 }
 
