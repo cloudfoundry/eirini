@@ -32,7 +32,7 @@ var _ = Describe("TaskDesirer", func() {
 		task              *opi.Task
 		desirer           *TaskDesirer
 		fakeJobClient     *k8sfakes.FakeJobClient
-		fakeSecretsClient *k8sfakes.FakeSecretsClient
+		fakeSecretsClient *k8sfakes.FakeSecretsCreatorDeleter
 		job               *batch.Job
 	)
 
@@ -82,7 +82,7 @@ var _ = Describe("TaskDesirer", func() {
 
 	BeforeEach(func() {
 		fakeJobClient = new(k8sfakes.FakeJobClient)
-		fakeSecretsClient = new(k8sfakes.FakeSecretsClient)
+		fakeSecretsClient = new(k8sfakes.FakeSecretsCreatorDeleter)
 		task = &opi.Task{
 			Image:              Image,
 			CompletionCallback: "cloud-countroller.io/task/completed",

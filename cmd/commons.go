@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"k8s.io/client-go/kubernetes"
@@ -40,4 +41,8 @@ func ExitIfError(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func Exitf(messageFormat string, args ...interface{}) {
+	panic(fmt.Sprintf(messageFormat, args...))
 }

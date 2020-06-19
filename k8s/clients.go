@@ -64,19 +64,27 @@ func (c *statefulSetClient) List(opts metav1.ListOptions) (*appsv1.StatefulSetLi
 	return c.clientSet.AppsV1().StatefulSets("").List(opts)
 }
 
-type secretsClient struct {
+type SecretsClient struct {
 	clientSet kubernetes.Interface
 }
 
-func NewSecretsClient(clientSet kubernetes.Interface) SecretsClient {
-	return &secretsClient{clientSet: clientSet}
+func NewSecretsClient(clientSet kubernetes.Interface) *SecretsClient {
+	return &SecretsClient{clientSet: clientSet}
 }
 
-func (c *secretsClient) Create(namespace string, secret *corev1.Secret) (*corev1.Secret, error) {
+func (c *SecretsClient) Get(namespace, name string) (*corev1.Secret, error) {
+	return c.clientSet.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+}
+
+func (c *SecretsClient) Create(namespace string, secret *corev1.Secret) (*corev1.Secret, error) {
 	return c.clientSet.CoreV1().Secrets(namespace).Create(secret)
 }
 
-func (c *secretsClient) Delete(namespace string, name string) error {
+func (c *SecretsClient) Update(namespace string, secret *corev1.Secret) (*corev1.Secret, error) {
+	return c.clientSet.CoreV1().Secrets(namespace).Update(secret)
+}
+
+func (c *SecretsClient) Delete(namespace string, name string) error {
 	return c.clientSet.CoreV1().Secrets(namespace).Delete(name, nil)
 }
 

@@ -38,7 +38,7 @@ func connect(cmd *cobra.Command, args []string) {
 	path, err := cmd.Flags().GetString("config")
 	cmdcommons.ExitIfError(err)
 	if path == "" {
-		cmdcommons.ExitIfError(errors.New("--config is missing"))
+		cmdcommons.Exitf("--config is missing")
 	}
 
 	cfg := setConfigFromFile(path)

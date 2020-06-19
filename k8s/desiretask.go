@@ -49,7 +49,7 @@ type TaskDesirer struct {
 	RegistrySecretName        string
 	JobClient                 JobClient
 	Logger                    lager.Logger
-	SecretsClient             SecretsClient
+	SecretsClient             SecretsCreatorDeleter
 }
 
 func (d *TaskDesirer) Desire(task *opi.Task) error {

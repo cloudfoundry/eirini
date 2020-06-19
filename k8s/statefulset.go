@@ -79,8 +79,8 @@ type StatefulSetClient interface {
 	List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error)
 }
 
-//counterfeiter:generate . SecretsClient
-type SecretsClient interface {
+//counterfeiter:generate . SecretsCreatorDeleter
+type SecretsCreatorDeleter interface {
 	Create(namespace string, secret *corev1.Secret) (*corev1.Secret, error)
 	Delete(namespace string, name string) error
 }
@@ -95,7 +95,7 @@ type LRPMapper func(s appsv1.StatefulSet) *opi.LRP
 
 type StatefulSetDesirer struct {
 	Pods                      PodListerDeleter
-	Secrets                   SecretsClient
+	Secrets                   SecretsCreatorDeleter
 	StatefulSets              StatefulSetClient
 	PodDisruptionBudets       PodDisruptionBudgetClient
 	Events                    EventLister

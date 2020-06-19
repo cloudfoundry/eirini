@@ -4,6 +4,7 @@ import "errors"
 
 const (
 	//Environment Variable Names
+	EnvEiriniNamespace                 = "EIRINI_NAMESPACE"
 	EnvDownloadURL                     = "DOWNLOAD_URL"
 	EnvBuildpacks                      = "BUILDPACKS"
 	EnvDropletUploadURL                = "DROPLET_UPLOAD_URL"
@@ -46,6 +47,8 @@ const (
 	CCAPIKeyName     = "cc-server-crt-key"
 	EiriniClientCert = "eirini-client-crt"
 	EiriniClientKey  = "eirini-client-crt-key"
+
+	RegistrySecretName = "default-image-pull-secret"
 )
 
 var ErrNotFound = errors.New("not found")

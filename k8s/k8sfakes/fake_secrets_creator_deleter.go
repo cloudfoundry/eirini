@@ -8,7 +8,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type FakeSecretsClient struct {
+type FakeSecretsCreatorDeleter struct {
 	CreateStub        func(string, *v1.Secret) (*v1.Secret, error)
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
@@ -39,7 +39,7 @@ type FakeSecretsClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeSecretsClient) Create(arg1 string, arg2 *v1.Secret) (*v1.Secret, error) {
+func (fake *FakeSecretsCreatorDeleter) Create(arg1 string, arg2 *v1.Secret) (*v1.Secret, error) {
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
@@ -58,26 +58,26 @@ func (fake *FakeSecretsClient) Create(arg1 string, arg2 *v1.Secret) (*v1.Secret,
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeSecretsClient) CreateCallCount() int {
+func (fake *FakeSecretsCreatorDeleter) CreateCallCount() int {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakeSecretsClient) CreateCalls(stub func(string, *v1.Secret) (*v1.Secret, error)) {
+func (fake *FakeSecretsCreatorDeleter) CreateCalls(stub func(string, *v1.Secret) (*v1.Secret, error)) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = stub
 }
 
-func (fake *FakeSecretsClient) CreateArgsForCall(i int) (string, *v1.Secret) {
+func (fake *FakeSecretsCreatorDeleter) CreateArgsForCall(i int) (string, *v1.Secret) {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	argsForCall := fake.createArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeSecretsClient) CreateReturns(result1 *v1.Secret, result2 error) {
+func (fake *FakeSecretsCreatorDeleter) CreateReturns(result1 *v1.Secret, result2 error) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = nil
@@ -87,7 +87,7 @@ func (fake *FakeSecretsClient) CreateReturns(result1 *v1.Secret, result2 error) 
 	}{result1, result2}
 }
 
-func (fake *FakeSecretsClient) CreateReturnsOnCall(i int, result1 *v1.Secret, result2 error) {
+func (fake *FakeSecretsCreatorDeleter) CreateReturnsOnCall(i int, result1 *v1.Secret, result2 error) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = nil
@@ -103,7 +103,7 @@ func (fake *FakeSecretsClient) CreateReturnsOnCall(i int, result1 *v1.Secret, re
 	}{result1, result2}
 }
 
-func (fake *FakeSecretsClient) Delete(arg1 string, arg2 string) error {
+func (fake *FakeSecretsCreatorDeleter) Delete(arg1 string, arg2 string) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
@@ -122,26 +122,26 @@ func (fake *FakeSecretsClient) Delete(arg1 string, arg2 string) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeSecretsClient) DeleteCallCount() int {
+func (fake *FakeSecretsCreatorDeleter) DeleteCallCount() int {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeSecretsClient) DeleteCalls(stub func(string, string) error) {
+func (fake *FakeSecretsCreatorDeleter) DeleteCalls(stub func(string, string) error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakeSecretsClient) DeleteArgsForCall(i int) (string, string) {
+func (fake *FakeSecretsCreatorDeleter) DeleteArgsForCall(i int) (string, string) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeSecretsClient) DeleteReturns(result1 error) {
+func (fake *FakeSecretsCreatorDeleter) DeleteReturns(result1 error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = nil
@@ -150,7 +150,7 @@ func (fake *FakeSecretsClient) DeleteReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeSecretsClient) DeleteReturnsOnCall(i int, result1 error) {
+func (fake *FakeSecretsCreatorDeleter) DeleteReturnsOnCall(i int, result1 error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = nil
@@ -164,7 +164,7 @@ func (fake *FakeSecretsClient) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeSecretsClient) Invocations() map[string][][]interface{} {
+func (fake *FakeSecretsCreatorDeleter) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.createMutex.RLock()
@@ -178,7 +178,7 @@ func (fake *FakeSecretsClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeSecretsClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakeSecretsCreatorDeleter) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -190,4 +190,4 @@ func (fake *FakeSecretsClient) recordInvocation(key string, args []interface{}) 
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ k8s.SecretsClient = new(FakeSecretsClient)
+var _ k8s.SecretsCreatorDeleter = new(FakeSecretsCreatorDeleter)

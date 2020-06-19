@@ -22,6 +22,7 @@ type EiriniBinaries struct {
 	TaskReporter             Binary `json:"task_reporter"`
 	LRPController            Binary `json:"lrp_controller"`
 	StagingReporter          Binary `json:"staging_reporter"`
+	ConfigUpdater            Binary `json:"config_updater"`
 }
 
 func NewEiriniBinaries(binsPath string) EiriniBinaries {
@@ -35,6 +36,7 @@ func NewEiriniBinaries(binsPath string) EiriniBinaries {
 		TaskReporter:             NewBinary("code.cloudfoundry.org/eirini/cmd/task-reporter", binsPath, []string{}),
 		LRPController:            NewBinary("code.cloudfoundry.org/eirini/cmd/lrp-controller", binsPath, []string{}),
 		StagingReporter:          NewBinary("code.cloudfoundry.org/eirini/cmd/staging-reporter", binsPath, []string{}),
+		ConfigUpdater:            NewBinary("code.cloudfoundry.org/eirini/cmd/config-updater", binsPath, []string{}),
 	}
 }
 
@@ -58,7 +60,7 @@ func NewBinary(packagePath, binsPath string, extraArgs []string) Binary {
 	}
 }
 
-func (b *Binary) Run(config interface{}) (*gexec.Session, string) {
+func (b *Binary) Run(config interface{}, envVars ...string) (*gexec.Session, string) {
 	b.buildIfNecessary()
 
 	configBytes, err := yaml.Marshal(config)
@@ -70,6 +72,7 @@ func (b *Binary) Run(config interface{}) (*gexec.Session, string) {
 	}
 	args := append(b.ExtraArgs, "-c", configFile)
 	command := exec.Command(b.BinPath, args...) //#nosec G204
+	command.Env = envVars
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 
