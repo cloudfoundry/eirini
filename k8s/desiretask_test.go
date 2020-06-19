@@ -500,17 +500,27 @@ var _ = Describe("TaskDesirer", func() {
 	})
 
 	Describe("Delete/DeleteStaging", func() {
+		var jobs *batch.JobList
+
 		BeforeEach(func() {
-			jobs := &batch.JobList{
-				Items: []batch.Job{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "my-job",
-							Annotations: map[string]string{
-								AnnotationCompletionCallback: "the/completion/callback",
-							},
-						}},
-				},
+			job :=
+				batch.Job{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-job",
+						Namespace: "my-namespace",
+						Annotations: map[string]string{
+							AnnotationCompletionCallback: "the/completion/callback",
+							AnnotationAppName:            "my-app",
+							AnnotationSpaceName:          "my-space",
+						},
+						Labels: map[string]string{
+							LabelGUID: taskGUID,
+						},
+					},
+				}
+
+			jobs = &batch.JobList{
+				Items: []batch.Job{job},
 			}
 			fakeJobClient.ListReturns(jobs, nil)
 		})
@@ -565,6 +575,44 @@ var _ = Describe("TaskDesirer", func() {
 				Expect(desirer.DeleteStaging(taskGUID)).To(MatchError(fmt.Sprintf("job with guid %s should have 1 instance, but it has: %d", taskGUID, 2)))
 				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
 				Expect(fakeJobClient.DeleteCallCount()).To(BeZero())
+			})
+		})
+
+		Context("when the job references image pull secrets", func() {
+			var (
+				dockerRegistrySecretName string
+				deleteErr                error
+			)
+
+			BeforeEach(func() {
+				dockerRegistrySecretName = fmt.Sprintf("%s-%s-registry-secret-%s", "my-app", "my-space", taskGUID)
+
+				jobs.Items[0].Spec.Template.Spec.ImagePullSecrets = []v1.LocalObjectReference{
+					{Name: dockerRegistrySecretName},
+					{Name: "another-random-secret"},
+				}
+			})
+
+			JustBeforeEach(func() {
+				_, deleteErr = desirer.Delete(task.GUID)
+			})
+
+			It("deletes the docker registry image pull secret only", func() {
+				Expect(deleteErr).NotTo(HaveOccurred())
+				Expect(fakeSecretsClient.DeleteCallCount()).To(Equal(1))
+				actualNamespace, actualSecretName := fakeSecretsClient.DeleteArgsForCall(0)
+				Expect(actualNamespace).To(Equal("my-namespace"))
+				Expect(actualSecretName).To(Equal(dockerRegistrySecretName))
+			})
+
+			Context("when deleting the docker registry image pull secret fails", func() {
+				BeforeEach(func() {
+					fakeSecretsClient.DeleteReturns(errors.New("docker-secret-delete-failure"))
+				})
+
+				It("returns the error", func() {
+					Expect(deleteErr).To(MatchError("docker-secret-delete-failure"))
+				})
 			})
 		})
 

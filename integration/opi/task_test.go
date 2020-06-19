@@ -223,11 +223,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			}
 		})
 
-		AfterEach(func() {
-			cloudControllerServer.Close()
-		})
-
-		It("deletes the job and notifies the Cloud Controller", func() {
+		JustBeforeEach(func() {
 			// Ensure the job is created
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
@@ -241,7 +237,13 @@ var _ = Describe("Task Desire and Cancel", func() {
 			resp, err := httpClient.Do(httpRequest)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
+		})
 
+		AfterEach(func() {
+			cloudControllerServer.Close()
+		})
+
+		It("deletes the job and notifies the Cloud Controller", func() {
 			// Ensure the job is deleted
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
@@ -250,6 +252,29 @@ var _ = Describe("Task Desire and Cancel", func() {
 			}).Should(BeEmpty())
 
 			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
+		})
+
+		When("cancelling a task with docker lifecycle", func() {
+			BeforeEach(func() {
+				request.Lifecycle.DockerLifecycle.Image = "eiriniuser/notdora"
+				request.Lifecycle.DockerLifecycle.RegistryUsername = "eiriniuser"
+				request.Lifecycle.DockerLifecycle.RegistryPassword = util.GetEiriniDockerHubPassword()
+			})
+
+			It("deletes the docker registry secret", func() {
+				Eventually(func() ([]string, error) {
+					secrets, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).List(metav1.ListOptions{})
+					if err != nil {
+						return nil, err
+					}
+
+					secretNames := []string{}
+					for _, secret := range secrets.Items {
+						secretNames = append(secretNames, secret.Name)
+					}
+					return secretNames, nil
+				}).Should(Not(ContainElement(HavePrefix("my-app-my-space-registry-secret-"))))
+			})
 		})
 	})
 })

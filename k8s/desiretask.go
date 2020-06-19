@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"fmt"
+	"strings"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/utils"
@@ -90,9 +91,14 @@ func (d *TaskDesirer) delete(guid, label string) (string, error) {
 		return "", fmt.Errorf("job with guid %s should have 1 instance, but it has: %d", guid, len(jobs.Items))
 	}
 
-	callbackURL := jobs.Items[0].Annotations[AnnotationCompletionCallback]
+	job := jobs.Items[0]
+	if err := d.deleteDockerRegistrySecret(job); err != nil {
+		return "", err
+	}
+
+	callbackURL := job.Annotations[AnnotationCompletionCallback]
 	backgroundPropagation := meta_v1.DeletePropagationBackground
-	return callbackURL, d.JobClient.Delete(jobs.Items[0].Name, &meta_v1.DeleteOptions{
+	return callbackURL, d.JobClient.Delete(job.Name, &meta_v1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
 }
@@ -143,10 +149,7 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) (*batch.Job, error) {
 func (d *TaskDesirer) createTaskSecret(task *opi.Task) (*v1.Secret, error) {
 	secret := &v1.Secret{}
 
-	secretNamePrefix := fmt.Sprintf("%s-%s", task.AppName, task.SpaceName)
-	secretNamePrefix = fmt.Sprintf("%s-registry-secret-", utils.SanitizeName(secretNamePrefix, task.GUID))
-	secret.GenerateName = secretNamePrefix
-
+	secret.GenerateName = dockerImagePullSecretNamePrefix(task.AppName, task.SpaceName, task.GUID)
 	secret.Type = v1.SecretTypeDockerConfigJson
 
 	dockerConfig := dockerutils.NewDockerConfig(
@@ -367,4 +370,28 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 	job.Spec.Template.Annotations = job.Annotations
 
 	return job
+}
+
+func (d *TaskDesirer) deleteDockerRegistrySecret(job batch.Job) error {
+	dockerSecretNamePrefix := dockerImagePullSecretNamePrefix(
+		job.Annotations[AnnotationAppName],
+		job.Annotations[AnnotationSpaceName],
+		job.Labels[LabelGUID],
+	)
+
+	for _, secret := range job.Spec.Template.Spec.ImagePullSecrets {
+		if !strings.HasPrefix(secret.Name, dockerSecretNamePrefix) {
+			continue
+		}
+		if err := d.SecretsClient.Delete(job.Namespace, secret.Name); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func dockerImagePullSecretNamePrefix(appName, spaceName, taskGUID string) string {
+	secretNamePrefix := fmt.Sprintf("%s-%s", appName, spaceName)
+	return fmt.Sprintf("%s-registry-secret-", utils.SanitizeName(secretNamePrefix, taskGUID))
 }
