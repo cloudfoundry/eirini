@@ -25,8 +25,11 @@ func main() {
 	_, err := flags.ParseArgs(&opts, os.Args)
 	cmdcommons.ExitIfError(err)
 
-	cfg, err := readConfigFile(opts.ConfigFile)
-	cmdcommons.ExitIfError(err)
+	var cfg eirini.ConfigUpdaterConfig
+	if opts.ConfigFile != "" {
+		cfg, err = readConfigFile(opts.ConfigFile)
+		cmdcommons.ExitIfError(err)
+	}
 
 	eiriniNamespace := os.Getenv(eirini.EnvEiriniNamespace)
 	if eiriniNamespace == "" {
@@ -49,13 +52,13 @@ func launchConfigUpdater(namespace string, clientset kubernetes.Interface) {
 	configInformer.Start()
 }
 
-func readConfigFile(path string) (*eirini.ConfigUpdaterConfig, error) {
+func readConfigFile(path string) (eirini.ConfigUpdaterConfig, error) {
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read file")
+		return eirini.ConfigUpdaterConfig{}, errors.Wrap(err, "failed to read file")
 	}
 
 	var conf eirini.ConfigUpdaterConfig
 	err = yaml.Unmarshal(fileBytes, &conf)
-	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
+	return conf, errors.Wrap(err, "failed to unmarshal yaml")
 }

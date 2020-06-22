@@ -66,11 +66,12 @@ func (b *Binary) Run(config interface{}, envVars ...string) (*gexec.Session, str
 	configBytes, err := yaml.Marshal(config)
 	Expect(err).NotTo(HaveOccurred())
 
-	configFile := filepath.Base(b.BinPath) + "-config-that-does-not-exist.yaml"
+	var configFile string
+	args := b.ExtraArgs
 	if config != nil {
 		configFile = WriteTempFile(configBytes, filepath.Base(b.BinPath)+"-config.yaml")
+		args = append(args, "-c", configFile)
 	}
-	args := append(b.ExtraArgs, "-c", configFile)
 	command := exec.Command(b.BinPath, args...) //#nosec G204
 	command.Env = envVars
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
