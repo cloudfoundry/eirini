@@ -84,6 +84,7 @@ is_cloud_controller() {
 build_ccng_image() {
   export IMAGE_DESTINATION_KPACK_WATCHER="docker.io/eirini/dev-kpack-watcher"
   export IMAGE_DESTINATION_CCNG="docker.io/eirini/dev-ccng"
+  git -C "$CAPIK8SDIR" checkout values/images.yml
   "$CAPIK8SDIR"/scripts/build-into-values.sh "$CAPIK8SDIR/values/images.yml"
   "$CAPIK8SDIR"/scripts/bump-cf-for-k8s.sh
 }
