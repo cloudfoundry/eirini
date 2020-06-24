@@ -52,13 +52,14 @@ main() {
     exit 1
   fi
 
+  local extra_args
   if [ "$skip_docker_build" != "true" ]; then
     if [ "$#" == "0" ]; then
       echo "No components specified. Nothing to do."
       echo "If you want to helm upgrade without building containers, please pass the '-s' flag"
       exit 0
     fi
-    local component extra_args
+    local component
     for component in "$@"; do
       if is_cloud_controller $component; then
         custom_ccng_values_file=$(mktemp)
