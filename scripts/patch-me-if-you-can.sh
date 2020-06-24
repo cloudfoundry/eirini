@@ -58,7 +58,7 @@ main() {
       echo "If you want to helm upgrade without building containers, please pass the '-s' flag"
       exit 0
     fi
-    local component
+    local component extra_args
     for component in "$@"; do
       if is_cloud_controller $component; then
         custom_ccng_values_file=$(mktemp)
