@@ -35,7 +35,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		cleanupStatefulSet(thorLRP)
 		Eventually(func() []appsv1.StatefulSet {
 			return listAllStatefulSets(odinLRP, thorLRP)
-		}, timeout).Should(BeEmpty())
+		}).Should(BeEmpty())
 	})
 
 	JustBeforeEach(func() {
@@ -83,7 +83,7 @@ var _ = Describe("StatefulSet Manager", func() {
 			Eventually(func() []string {
 				podNames = podNamesFromPods(listPods(odinLRP.LRPIdentifier))
 				return podNames
-			}, timeout).Should(HaveLen(odinLRP.TargetInstances))
+			}).Should(HaveLen(odinLRP.TargetInstances))
 
 			for i := 0; i < odinLRP.TargetInstances; i++ {
 				podIndex := i
@@ -91,7 +91,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 				Eventually(func() string {
 					return getPodPhase(podIndex, odinLRP.LRPIdentifier)
-				}, timeout).Should(Equal("Ready"))
+				}).Should(Equal("Ready"))
 			}
 
 			statefulset := getStatefulSet(odinLRP)
@@ -157,7 +157,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 				Eventually(func() []corev1.Pod {
 					return listPods(odinLRP.LRPIdentifier)
-				}, timeout).Should(HaveLen(2))
+				}).Should(HaveLen(2))
 
 				var nodeNames []string
 				Eventually(func() []string {
@@ -189,13 +189,13 @@ var _ = Describe("StatefulSet Manager", func() {
 			It("sets the ImagePullSecret correctly in the pod template", func() {
 				Eventually(func() []corev1.Pod {
 					return listPods(odinLRP.LRPIdentifier)
-				}, timeout).Should(HaveLen(odinLRP.TargetInstances))
+				}).Should(HaveLen(odinLRP.TargetInstances))
 
 				for i := 0; i < odinLRP.TargetInstances; i++ {
 					podIndex := i
 					Eventually(func() string {
 						return getPodPhase(podIndex, odinLRP.LRPIdentifier)
-					}, timeout).Should(Equal("Ready"))
+					}).Should(Equal("Ready"))
 				}
 			})
 		})
@@ -222,13 +222,13 @@ var _ = Describe("StatefulSet Manager", func() {
 				Eventually(func() []string {
 					podNames = podNamesFromPods(listPods(odinLRP.LRPIdentifier))
 					return podNames
-				}, timeout).Should(HaveLen(odinLRP.TargetInstances))
+				}).Should(HaveLen(odinLRP.TargetInstances))
 
 				for i := 0; i < odinLRP.TargetInstances; i++ {
 					podIndex := i
 					Eventually(func() string {
 						return getPodPhase(podIndex, odinLRP.LRPIdentifier)
-					}, timeout).Should(Equal("Ready"))
+					}).Should(Equal("Ready"))
 				}
 				statefulset := getStatefulSet(odinLRP)
 
@@ -246,7 +246,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 			Eventually(func() []corev1.Pod {
 				return listPods(odinLRP.LRPIdentifier)
-			}, timeout).Should(HaveLen(odinLRP.TargetInstances))
+			}).Should(HaveLen(odinLRP.TargetInstances))
 
 			statefulsetName = getStatefulSet(odinLRP).Name
 
@@ -257,20 +257,20 @@ var _ = Describe("StatefulSet Manager", func() {
 		It("should delete the StatefulSet object", func() {
 			Eventually(func() []appsv1.StatefulSet {
 				return listStatefulSets("odin")
-			}, timeout).Should(BeEmpty())
+			}).Should(BeEmpty())
 		})
 
 		It("should delete the associated pods", func() {
 			Eventually(func() []corev1.Pod {
 				return listPods(odinLRP.LRPIdentifier)
-			}, timeout).Should(BeEmpty())
+			}).Should(BeEmpty())
 		})
 
 		It("should delete the pod disruption budget for the lrp", func() {
 			Eventually(func() error {
 				_, err := podDisruptionBudgets().Get(statefulsetName, v1.GetOptions{})
 				return err
-			}, timeout).Should(MatchError(ContainSubstring("not found")))
+			}).Should(MatchError(ContainSubstring("not found")))
 		})
 
 		Context("when the lrp has only 1 instance", func() {
@@ -282,7 +282,7 @@ var _ = Describe("StatefulSet Manager", func() {
 				Eventually(func() error {
 					_, err := podDisruptionBudgets().Get(statefulsetName, v1.GetOptions{})
 					return err
-				}, timeout).Should(MatchError(ContainSubstring("not found")))
+				}).Should(MatchError(ContainSubstring("not found")))
 			})
 		})
 
@@ -299,7 +299,7 @@ var _ = Describe("StatefulSet Manager", func() {
 			It("should delete the StatefulSet object", func() {
 				Eventually(func() []appsv1.StatefulSet {
 					return listStatefulSets("odin")
-				}, timeout).Should(BeEmpty())
+				}).Should(BeEmpty())
 			})
 
 			It("should delete the private registry secret", func() {
@@ -392,7 +392,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		})
 
 		It("correctly reports the running instances", func() {
-			Eventually(numberOfInstancesFn, timeout).Should(Equal(odinLRP.TargetInstances))
+			Eventually(numberOfInstancesFn).Should(Equal(odinLRP.TargetInstances))
 			Consistently(numberOfInstancesFn, "10s").Should(Equal(odinLRP.TargetInstances))
 		})
 
@@ -417,7 +417,7 @@ fi;`,
 			})
 
 			It("correctly reports the running instances", func() {
-				Eventually(numberOfInstancesFn, timeout).Should(Equal(1), fmt.Sprintf("pod %#v did not start", odinLRP.LRPIdentifier))
+				Eventually(numberOfInstancesFn).Should(Equal(1), fmt.Sprintf("pod %#v did not start", odinLRP.LRPIdentifier))
 				Consistently(numberOfInstancesFn, "10s").Should(Equal(1), fmt.Sprintf("pod %#v did not keep running", odinLRP.LRPIdentifier))
 			})
 		})

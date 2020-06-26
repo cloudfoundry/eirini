@@ -61,7 +61,7 @@ var _ = Describe("RootfsPatcher", func() {
 				result = append(result, utils.GetPodState(p))
 			}
 			return result
-		}, timeout).Should(ConsistOf(opi.RunningState, opi.RunningState, opi.RunningState, opi.RunningState))
+		}).Should(ConsistOf(opi.RunningState, opi.RunningState, opi.RunningState, opi.RunningState))
 
 		newVersion := "new-rootfsversion"
 

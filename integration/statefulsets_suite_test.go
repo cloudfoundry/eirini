@@ -25,10 +25,6 @@ var (
 	fixture *util.Fixture
 )
 
-const (
-	timeout time.Duration = 60 * time.Second
-)
-
 var _ = BeforeSuite(func() {
 	fixture = util.NewFixture(GinkgoWriter)
 })
@@ -42,6 +38,7 @@ var _ = AfterEach(func() {
 })
 
 func TestIntegration(t *testing.T) {
+	SetDefaultEventuallyTimeout(time.Minute)
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Integration Suite")
 }

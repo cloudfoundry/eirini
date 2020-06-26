@@ -30,7 +30,7 @@ var _ = Describe("Routes", func() {
 		cleanupStatefulSet(odinLRP)
 		Eventually(func() []appsv1.StatefulSet {
 			return listAllStatefulSets(odinLRP, odinLRP)
-		}, timeout).Should(BeEmpty())
+		}).Should(BeEmpty())
 	})
 
 	BeforeEach(func() {
@@ -70,7 +70,7 @@ var _ = Describe("Routes", func() {
 						return false
 					}
 					return podReady(pods[0])
-				}, timeout).Should(BeTrue())
+				}).Should(BeTrue())
 
 				routes, err := collector.Collect()
 				Expect(err).ToNot(HaveOccurred())
@@ -113,7 +113,7 @@ fi;`,
 							return false
 						}
 						return podCrashed(pods[0]) && podReady(pods[1])
-					}, timeout).Should(BeTrue())
+					}).Should(BeTrue())
 				})
 
 				It("should only return a register message for the working instance", func() {
@@ -151,7 +151,7 @@ fi;`,
 					return false
 				}
 				return podReady(pods[0]) && podReady(pods[1])
-			}, timeout).Should(BeTrue())
+			}).Should(BeTrue())
 
 			stopChan = make(chan struct{})
 			informerWG = sync.WaitGroup{}
@@ -270,7 +270,7 @@ fi;`,
 					return false
 				}
 				return podReady(pods[0]) && podReady(pods[1])
-			}, timeout).Should(BeTrue())
+			}).Should(BeTrue())
 
 			stopChan = make(chan struct{})
 			informerWG = sync.WaitGroup{}
@@ -306,7 +306,7 @@ fi;`,
 				odinLRP.TargetInstances = 1
 				Expect(desirer.Update(odinLRP)).To(Succeed())
 
-				Eventually(fakeRouteEmitter.EmitCallCount, timeout).Should(Equal(1))
+				Eventually(fakeRouteEmitter.EmitCallCount).Should(Equal(1))
 				Expect(fakeRouteEmitter.EmitArgsForCall(0)).To(Equal(route.Message{
 					Routes: route.Routes{
 						UnregisteredRoutes: []string{"foo.example.com"},
@@ -325,7 +325,7 @@ fi;`,
 				pods := listPods(odinLRP.LRPIdentifier)
 				Expect(desirer.StopInstance(odinLRP.LRPIdentifier, 0)).To(Succeed())
 
-				Eventually(fakeRouteEmitter.EmitCallCount, timeout).Should(Equal(1))
+				Eventually(fakeRouteEmitter.EmitCallCount).Should(Equal(1))
 				Expect(fakeRouteEmitter.EmitArgsForCall(0)).To(Equal(route.Message{
 					Routes: route.Routes{
 						UnregisteredRoutes: []string{"foo.example.com"},

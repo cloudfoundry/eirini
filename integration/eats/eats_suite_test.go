@@ -24,6 +24,7 @@ import (
 )
 
 func TestEats(t *testing.T) {
+	SetDefaultEventuallyTimeout(2 * time.Minute)
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Eats Suite")
 }
@@ -62,7 +63,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 
 	fixture = util.NewFixture(GinkgoWriter)
-	SetDefaultEventuallyTimeout(20 * time.Second)
 })
 
 var _ = SynchronizedAfterSuite(func() {}, func() {
