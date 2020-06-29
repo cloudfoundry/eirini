@@ -40,7 +40,7 @@ var _ = Describe("RootfsPatcher", func() {
 			ReadinessProbeCreator:     k8s.CreateReadinessProbe,
 			Hasher:                    util.TruncatedSHA256Hasher{},
 			Logger:                    logger,
-			ApplicationServiceAccount: intutil.ApplicationServiceAccount,
+			ApplicationServiceAccount: intutil.GetApplicationServiceAccount(),
 		}
 		odinLRP = createLRP("ödin")
 		thorLRP = createLRP("thor")

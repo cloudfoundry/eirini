@@ -53,7 +53,7 @@ var _ = Describe("StatefulSet Manager", func() {
 			ReadinessProbeCreator:     k8s.CreateReadinessProbe,
 			Hasher:                    util.TruncatedSHA256Hasher{},
 			Logger:                    logger,
-			ApplicationServiceAccount: testutil.ApplicationServiceAccount,
+			ApplicationServiceAccount: testutil.GetApplicationServiceAccount(),
 		}
 	})
 

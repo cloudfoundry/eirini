@@ -2,16 +2,12 @@ package eats_test
 
 import (
 	"encoding/json"
-	"fmt"
-	"os"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 	. "github.com/onsi/gomega/gstruct"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,9 +23,6 @@ var _ = Describe("Apps CRDs", func() {
 		lrpGUID        string
 		lrpVersion     string
 		lrpProcessGUID string
-
-		controllerConfigFile string
-		controllerSession    *gexec.Session
 	)
 
 	getStatefulSet := func() *appsv1.StatefulSet {
@@ -40,22 +33,6 @@ var _ = Describe("Apps CRDs", func() {
 		}
 		Expect(stsList.Items).To(HaveLen(1))
 		return &stsList.Items[0]
-	}
-
-	getPodReadiness := func() bool {
-		pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, lrpGUID, k8s.LabelVersion, lrpVersion),
-		})
-		Expect(err).NotTo(HaveOccurred())
-		if len(pods.Items) != 1 {
-			return false
-		}
-
-		containerStatuses := pods.Items[0].Status.ContainerStatuses
-		if len(containerStatuses) != 1 {
-			return false
-		}
-		return containerStatuses[0].Ready
 	}
 
 	getLRP := func() *eiriniv1.LRP {
@@ -94,28 +71,8 @@ var _ = Describe("Apps CRDs", func() {
 			},
 		}
 
-		config := &eirini.LrpControllerConfig{
-			KubeConfig: eirini.KubeConfig{
-				Namespace:  fixture.DefaultNamespace,
-				ConfigPath: fixture.KubeConfigPath,
-			},
-			EiriniURI: opiURL,
-
-			EiriniCertPath: localhostCertPath,
-			EiriniKeyPath:  localhostKeyPath,
-			CAPath:         localhostCertPath,
-		}
-		controllerSession, controllerConfigFile = eiriniBins.LRPController.Run(config)
-
 		_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Create(lrp)
 		Expect(err).NotTo(HaveOccurred())
-	})
-
-	AfterEach(func() {
-		if controllerSession != nil {
-			controllerSession.Kill()
-		}
-		Expect(os.Remove(controllerConfigFile)).To(Succeed())
 	})
 
 	Describe("Desiring an app", func() {
@@ -133,7 +90,9 @@ var _ = Describe("Apps CRDs", func() {
 			Expect(st.Spec.Template.Spec.Containers[0].Image).To(Equal("eirini/dorini"))
 			Expect(st.Spec.Template.Spec.Containers[0].Env).To(ContainElement(corev1.EnvVar{Name: "FOO", Value: "BAR"}))
 
-			Eventually(getPodReadiness).Should(BeTrue(), "LRP Pod not ready")
+			Eventually(func() bool {
+				return getPodReadiness(lrpGUID, lrpVersion)
+			}).Should(BeTrue(), "LRP Pod not ready")
 		})
 	})
 

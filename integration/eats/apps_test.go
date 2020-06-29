@@ -44,6 +44,9 @@ var _ = Describe("Apps", func() {
 
 		It("deploys the LRP to the specified namespace", func() {
 			Expect(getStatefulSet(lrpGUID, lrpVersion).Namespace).To(Equal(fixture.Namespace))
+			Eventually(func() bool {
+				return getPodReadiness(lrpGUID, lrpVersion)
+			}).Should(BeTrue(), "LRP Pod not ready")
 		})
 
 		When("a namespace is not specified", func() {

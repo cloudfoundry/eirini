@@ -7,6 +7,8 @@ import (
 	"github.com/onsi/ginkgo"
 )
 
+const DefaultApplicationServiceAccount = "eirini"
+
 func GetKubeconfig() string {
 	kubeconf := os.Getenv("INTEGRATION_KUBECONFIG")
 	if kubeconf == "" {
@@ -25,4 +27,12 @@ func GetEiriniDockerHubPassword() string {
 		ginkgo.Skip("eiriniuser password not provided. Please export EIRINIUSER_PASSWORD")
 	}
 	return password
+}
+
+func GetApplicationServiceAccount() string {
+	serviceAccountName := os.Getenv("APPLICATION_SERVICE_ACCOUNT")
+	if serviceAccountName != "" {
+		return serviceAccountName
+	}
+	return DefaultApplicationServiceAccount
 }

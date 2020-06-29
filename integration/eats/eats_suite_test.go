@@ -16,10 +16,12 @@ import (
 	"code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/integration/util"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
 
@@ -124,7 +126,7 @@ func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
 			ExecutorImage:   "docker.io/eirini/integration_test_staging",
 			UploaderImage:   "docker.io/eirini/integration_test_staging",
 
-			ApplicationServiceAccount: util.ApplicationServiceAccount,
+			ApplicationServiceAccount: util.GetApplicationServiceAccount(),
 		},
 	}
 
@@ -213,6 +215,23 @@ func getLRPs() ([]cf.DesiredLRPSchedulingInfo, error) {
 	err = decoder.Decode(&desiredLRPSchedulingInfoResponse)
 	Expect(err).ToNot(HaveOccurred())
 	return desiredLRPSchedulingInfoResponse.DesiredLrpSchedulingInfos, nil
+}
+
+func getPodReadiness(lrpGUID, lrpVersion string) bool {
+	pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, lrpGUID, k8s.LabelVersion, lrpVersion),
+	})
+	Expect(err).NotTo(HaveOccurred())
+	if len(pods.Items) != 1 {
+		return false
+	}
+
+	containerStatuses := pods.Items[0].Status.ContainerStatuses
+	if len(containerStatuses) != 1 {
+		return false
+	}
+
+	return containerStatuses[0].Ready
 }
 
 func getInstances(processGUID, versionGUID string) (*cf.GetInstancesResponse, error) {

@@ -132,7 +132,7 @@ var _ = Describe("Desire App", func() {
 
 			When("the app service account has its automountServiceAccountToken set to false", func() {
 				BeforeEach(func() {
-					appServiceAccount, err := fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Get(util.ApplicationServiceAccount, metav1.GetOptions{})
+					appServiceAccount, err := fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Get(util.GetApplicationServiceAccount(), metav1.GetOptions{})
 					Expect(err).NotTo(HaveOccurred())
 					automountServiceAccountToken := false
 					appServiceAccount.AutomountServiceAccountToken = &automountServiceAccountToken
