@@ -190,19 +190,20 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	desirer := &k8s.StatefulSetDesirer{
-		Pods:                      k8s.NewPodsClient(clientset),
-		Secrets:                   k8s.NewSecretsClient(clientset),
-		StatefulSets:              k8s.NewStatefulSetClient(clientset),
-		PodDisruptionBudets:       k8s.NewPodDisruptionBudgetClient(clientset),
-		Events:                    k8s.NewEventsClient(clientset),
-		StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
-		RegistrySecretName:        cfg.Properties.RegistrySecretName,
-		RootfsVersion:             cfg.Properties.RootfsVersion,
-		LivenessProbeCreator:      k8s.CreateLivenessProbe,
-		ReadinessProbeCreator:     k8s.CreateReadinessProbe,
-		Hasher:                    util.TruncatedSHA256Hasher{},
-		Logger:                    desireLogger,
-		ApplicationServiceAccount: cfg.Properties.ApplicationServiceAccount,
+		Pods:                              k8s.NewPodsClient(clientset),
+		Secrets:                           k8s.NewSecretsClient(clientset),
+		StatefulSets:                      k8s.NewStatefulSetClient(clientset),
+		PodDisruptionBudets:               k8s.NewPodDisruptionBudgetClient(clientset),
+		Events:                            k8s.NewEventsClient(clientset),
+		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
+		RegistrySecretName:                cfg.Properties.RegistrySecretName,
+		RootfsVersion:                     cfg.Properties.RootfsVersion,
+		LivenessProbeCreator:              k8s.CreateLivenessProbe,
+		ReadinessProbeCreator:             k8s.CreateReadinessProbe,
+		Hasher:                            util.TruncatedSHA256Hasher{},
+		Logger:                            desireLogger,
+		ApplicationServiceAccount:         cfg.Properties.ApplicationServiceAccount,
+		AllowAutomountServiceAccountToken: cfg.Properties.UnsafeAllowAutomountServiceAccountToken,
 	}
 	converter := initConverter(cfg)
 

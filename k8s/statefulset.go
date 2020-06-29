@@ -94,19 +94,20 @@ type EventLister interface {
 type LRPMapper func(s appsv1.StatefulSet) *opi.LRP
 
 type StatefulSetDesirer struct {
-	Pods                      PodListerDeleter
-	Secrets                   SecretsCreatorDeleter
-	StatefulSets              StatefulSetClient
-	PodDisruptionBudets       PodDisruptionBudgetClient
-	Events                    EventLister
-	StatefulSetToLRPMapper    LRPMapper
-	RegistrySecretName        string
-	RootfsVersion             string
-	LivenessProbeCreator      ProbeCreator
-	ReadinessProbeCreator     ProbeCreator
-	Hasher                    util.Hasher
-	Logger                    lager.Logger
-	ApplicationServiceAccount string
+	Pods                              PodListerDeleter
+	Secrets                           SecretsCreatorDeleter
+	StatefulSets                      StatefulSetClient
+	PodDisruptionBudets               PodDisruptionBudgetClient
+	Events                            EventLister
+	StatefulSetToLRPMapper            LRPMapper
+	RegistrySecretName                string
+	RootfsVersion                     string
+	LivenessProbeCreator              ProbeCreator
+	ReadinessProbeCreator             ProbeCreator
+	Hasher                            util.Hasher
+	Logger                            lager.Logger
+	ApplicationServiceAccount         string
+	AllowAutomountServiceAccountToken bool
 }
 
 //counterfeiter:generate . ProbeCreator
@@ -462,7 +463,6 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	ephemeralStorage := *resource.NewScaledQuantity(lrp.DiskMB, resource.Mega)
 
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
-	automountServiceAccountToken := false
 	allowPrivilegeEscalation := false
 
 	statefulSet := &appsv1.StatefulSet{
@@ -474,8 +474,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 			Replicas:            int32ptr(lrp.TargetInstances),
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
-					AutomountServiceAccountToken: &automountServiceAccountToken,
-					ImagePullSecrets:             m.calculateImagePullSecrets(lrp),
+					ImagePullSecrets: m.calculateImagePullSecrets(lrp),
 					Containers: []corev1.Container{
 						{
 							Name:            "opi",
@@ -508,6 +507,11 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 				},
 			},
 		},
+	}
+
+	automountServiceAccountToken := false
+	if !m.AllowAutomountServiceAccountToken {
+		statefulSet.Spec.Template.Spec.AutomountServiceAccountToken = &automountServiceAccountToken
 	}
 
 	statefulSet.Spec.Selector = m.labelSelector(lrp)

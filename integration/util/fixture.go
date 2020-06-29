@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	basePortNumber = 20000
-	portRange      = 1000
+	basePortNumber            = 20000
+	portRange                 = 1000
+	ApplicationServiceAccount = "app-service-account"
 )
 
 type Fixture struct {
@@ -91,7 +92,7 @@ func (f *Fixture) TearDown() {
 
 func (f *Fixture) configureNewNamespace() string {
 	namespace := CreateRandomNamespace(f.Clientset)
-	Expect(CreatePodCreationPSP(namespace, getPspName(namespace), f.Clientset)).To(Succeed(), "failed to create pod creation PSP")
+	Expect(CreatePodCreationPSP(namespace, getPspName(namespace), ApplicationServiceAccount, f.Clientset)).To(Succeed(), "failed to create pod creation PSP")
 	return namespace
 }
 

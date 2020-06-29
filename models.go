@@ -102,7 +102,8 @@ type Properties struct {
 	ApplicationServiceAccount string `yaml:"application_service_account"`
 	StagingServiceAccount     string `yaml:"staging_service_account"`
 
-	AllowRunImageAsRoot bool `yaml:"allow_run_image_as_root"`
+	AllowRunImageAsRoot                     bool `yaml:"allow_run_image_as_root"`
+	UnsafeAllowAutomountServiceAccountToken bool `yaml:"unsafe_allow_automount_service_account_token"`
 
 	ServePlaintext bool `yaml:"serve_plaintext"`
 }

@@ -67,7 +67,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			})
 
 			By("using the correct service account", func() {
-				Expect(jobs.Items[0].Spec.Template.Spec.ServiceAccountName).To(Equal("default"))
+				Expect(jobs.Items[0].Spec.Template.Spec.ServiceAccountName).To(Equal(util.ApplicationServiceAccount))
 			})
 
 			By("setting the registry secret name", func() {

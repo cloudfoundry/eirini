@@ -183,6 +183,12 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(*statefulSet.Spec.Template.Spec.Containers[0].SecurityContext.AllowPrivilegeEscalation).To(Equal(false))
 		})
 
+		It("should not automount service account token", func() {
+			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
+			f := false
+			Expect(statefulSet.Spec.Template.Spec.AutomountServiceAccountToken).To(Equal(&f))
+		})
+
 		It("should set imagePullPolicy to Always", func() {
 			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
 			Expect(string(statefulSet.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal("Always"))
@@ -311,6 +317,17 @@ var _ = Describe("Statefulset Desirer", func() {
 				corev1.EnvVar{Name: eirini.EnvCFInstanceInternalIP, ValueFrom: expectedValFrom("status.podIP")},
 				corev1.EnvVar{Name: eirini.EnvCFInstanceIP, ValueFrom: expectedValFrom("status.hostIP")},
 			))
+		})
+
+		Context("when automounting service account token is allowed", func() {
+			BeforeEach(func() {
+				statefulSetDesirer.AllowAutomountServiceAccountToken = true
+			})
+
+			It("does not set automountServiceAccountToken", func() {
+				_, statefulSet := statefulSetClient.CreateArgsForCall(0)
+				Expect(statefulSet.Spec.Template.Spec.AutomountServiceAccountToken).To(BeNil())
+			})
 		})
 
 		Context("when application should run as root", func() {

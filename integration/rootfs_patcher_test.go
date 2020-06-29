@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
+	intutil "code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
@@ -39,7 +40,7 @@ var _ = Describe("RootfsPatcher", func() {
 			ReadinessProbeCreator:     k8s.CreateReadinessProbe,
 			Hasher:                    util.TruncatedSHA256Hasher{},
 			Logger:                    logger,
-			ApplicationServiceAccount: "default",
+			ApplicationServiceAccount: intutil.ApplicationServiceAccount,
 		}
 		odinLRP = createLRP("ödin")
 		thorLRP = createLRP("thor")

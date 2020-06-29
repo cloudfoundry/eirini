@@ -67,17 +67,29 @@ func (b *Binary) Run(config interface{}, envVars ...string) (*gexec.Session, str
 	Expect(err).NotTo(HaveOccurred())
 
 	var configFile string
-	args := b.ExtraArgs
 	if config != nil {
 		configFile = WriteTempFile(configBytes, filepath.Base(b.BinPath)+"-config.yaml")
-		args = append(args, "-c", configFile)
+	}
+
+	return b.runWithConfig(configFile, envVars...), configFile
+}
+
+func (b *Binary) runWithConfig(configFilePath string, envVars ...string) *gexec.Session {
+	args := b.ExtraArgs
+	if configFilePath != "" {
+		args = append(args, "-c", configFilePath)
 	}
 	command := exec.Command(b.BinPath, args...) //#nosec G204
 	command.Env = envVars
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
+	return session
+}
 
-	return session, configFile
+func (b *Binary) Restart(configFilePath string, runningSession *gexec.Session) *gexec.Session {
+	envVars := runningSession.Command.Env
+	runningSession.Kill().Wait()
+	return b.runWithConfig(configFilePath, envVars...)
 }
 
 // Build builds the binary. Normally, you should not use this function as it is

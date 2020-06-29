@@ -124,7 +124,7 @@ func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
 			ExecutorImage:   "docker.io/eirini/integration_test_staging",
 			UploaderImage:   "docker.io/eirini/integration_test_staging",
 
-			ApplicationServiceAccount: "default",
+			ApplicationServiceAccount: util.ApplicationServiceAccount,
 		},
 	}
 

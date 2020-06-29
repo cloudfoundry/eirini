@@ -3,10 +3,14 @@ package opi_test
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
+	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/integration/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,12 +23,13 @@ var _ = Describe("Desire App", func() {
 			"guid": "the-app-guid",
 			"version": "0.0.0",
 			"ports" : [8080],
-		  "lifecycle": {
+			"lifecycle": {
 				"docker_lifecycle": {
-				  "image": "foo",
-					"command": ["bar", "baz"]
+				"image": "busybox",
+				"command": ["/bin/sleep", "100"]
 				}
-			}
+			},
+			"instances": 1
 		}`
 	})
 
@@ -67,6 +72,78 @@ var _ = Describe("Desire App", func() {
 			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(metav1.ListOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(statefulsets.Items[0].Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "yes, please"))
+		})
+	})
+
+	Describe("automounting serviceacccount token", func() {
+		const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
+		var podMountPaths []string
+
+		setAutoMountServiceTokenAccountInConfig := func(set bool) {
+			configBytes, err := ioutil.ReadFile(eiriniConfigFilePath)
+			Expect(err).NotTo(HaveOccurred())
+			var eiriniConfig eirini.Config
+			Expect(yaml.Unmarshal(configBytes, &eiriniConfig)).To(Succeed())
+
+			eiriniConfig.Properties.UnsafeAllowAutomountServiceAccountToken = set
+
+			configBytes, err = yaml.Marshal(eiriniConfig)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(ioutil.WriteFile(eiriniConfigFilePath, configBytes, 0600)).To(Succeed())
+
+			session = eiriniBins.OPI.Restart(eiriniConfigFilePath, session)
+			Eventually(func() error {
+				_, getErr := httpClient.Get(url)
+				return getErr
+			}, "10s").Should(Succeed())
+		}
+
+		JustBeforeEach(func() {
+			Eventually(func() ([]corev1.Pod, error) {
+				pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(metav1.ListOptions{})
+				if err != nil {
+					return nil, err
+				}
+				return pods.Items, nil
+			}, "10s").ShouldNot(BeEmpty())
+
+			pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(metav1.ListOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pods.Items).To(HaveLen(1))
+
+			podMountPaths = []string{}
+			for _, podMount := range pods.Items[0].Spec.Containers[0].VolumeMounts {
+				podMountPaths = append(podMountPaths, podMount.MountPath)
+			}
+		})
+
+		It("does not mount the service account token", func() {
+			Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
+		})
+
+		When("unsafe_allow_automount_service_account_token is set", func() {
+			BeforeEach(func() {
+				setAutoMountServiceTokenAccountInConfig(true)
+			})
+
+			It("mounts the service account token (because this is how K8S works by default)", func() {
+				Expect(podMountPaths).To(ContainElement(serviceAccountTokenMountPath))
+			})
+
+			When("the app service account has its automountServiceAccountToken set to false", func() {
+				BeforeEach(func() {
+					appServiceAccount, err := fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Get(util.ApplicationServiceAccount, metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+					automountServiceAccountToken := false
+					appServiceAccount.AutomountServiceAccountToken = &automountServiceAccountToken
+					_, err = fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Update(appServiceAccount)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("does not mount the service account token", func() {
+					Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
+				})
+			})
 		})
 	})
 })

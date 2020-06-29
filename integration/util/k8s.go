@@ -46,7 +46,7 @@ func createNamespace(namespace string, clientset kubernetes.Interface) {
 	}
 }
 
-func CreatePodCreationPSP(namespace, pspName string, clientset kubernetes.Interface) error {
+func CreatePodCreationPSP(namespace, pspName, serviceAccountName string, clientset kubernetes.Interface) error {
 	_, err := clientset.PolicyV1beta1().PodSecurityPolicies().Create(&policyv1.PodSecurityPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pspName,
@@ -97,6 +97,16 @@ func CreatePodCreationPSP(namespace, pspName string, clientset kubernetes.Interf
 		return err
 	}
 
+	_, err = clientset.CoreV1().ServiceAccounts(namespace).Create(&corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceAccountName,
+			Namespace: namespace,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
 	_, err = clientset.RbacV1().RoleBindings(namespace).Create(&rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "default-account-psp",
@@ -109,7 +119,7 @@ func CreatePodCreationPSP(namespace, pspName string, clientset kubernetes.Interf
 		},
 		Subjects: []rbacv1.Subject{{
 			Kind:      rbacv1.ServiceAccountKind,
-			Name:      "default",
+			Name:      serviceAccountName,
 			Namespace: namespace,
 		}},
 	})
@@ -198,7 +208,7 @@ func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 			ExecutorImage:   "docker.io/eirini/integration_test_staging",
 			UploaderImage:   "docker.io/eirini/integration_test_staging",
 
-			ApplicationServiceAccount: "default",
+			ApplicationServiceAccount: ApplicationServiceAccount,
 			StagingServiceAccount:     "staging",
 			RegistryAddress:           "registry",
 			RegistrySecretName:        "registry-secret",

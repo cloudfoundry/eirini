@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
+	testutil "code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
 	informerroute "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/k8s/informers/route/event"
@@ -49,7 +50,7 @@ var _ = Describe("Routes", func() {
 			ReadinessProbeCreator:     k8s.CreateReadinessProbe,
 			Hasher:                    util.TruncatedSHA256Hasher{},
 			Logger:                    logger,
-			ApplicationServiceAccount: "default",
+			ApplicationServiceAccount: testutil.ApplicationServiceAccount,
 		}
 	})
 
