@@ -72,7 +72,7 @@ var _ = Describe("RootfsPatcher", func() {
 			"--rootfs-version", newVersion)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Expect(err).ToNot(HaveOccurred())
-		Eventually(session, "1m").Should(gexec.Exit(0))
+		Eventually(session).Should(gexec.Exit(0))
 
 		statefulsets := listAllStatefulSets(odinLRP, thorLRP)
 		Expect(statefulsets[0].Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, newVersion))

@@ -234,7 +234,7 @@ var _ = Describe("StatefulSet Manager", func() {
 				Eventually(func() int32 {
 					statefulset := getStatefulSet(odinLRP)
 					return statefulset.Status.ReadyReplicas
-				}, "5s").Should(BeNumerically("==", odinLRP.TargetInstances))
+				}).Should(BeNumerically("==", odinLRP.TargetInstances))
 			})
 		})
 	})
