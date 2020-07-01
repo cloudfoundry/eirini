@@ -22,7 +22,6 @@ type EiriniBinaries struct {
 	TaskReporter             Binary `json:"task_reporter"`
 	LRPController            Binary `json:"lrp_controller"`
 	StagingReporter          Binary `json:"staging_reporter"`
-	ConfigUpdater            Binary `json:"config_updater"`
 }
 
 func NewEiriniBinaries(binsPath string) EiriniBinaries {
@@ -36,7 +35,6 @@ func NewEiriniBinaries(binsPath string) EiriniBinaries {
 		TaskReporter:             NewBinary("code.cloudfoundry.org/eirini/cmd/task-reporter", binsPath, []string{}),
 		LRPController:            NewBinary("code.cloudfoundry.org/eirini/cmd/lrp-controller", binsPath, []string{}),
 		StagingReporter:          NewBinary("code.cloudfoundry.org/eirini/cmd/staging-reporter", binsPath, []string{}),
-		ConfigUpdater:            NewBinary("code.cloudfoundry.org/eirini/cmd/config-updater", binsPath, []string{}),
 	}
 }
 

@@ -168,7 +168,3 @@ type LrpControllerConfig struct {
 
 	KubeConfig `yaml:",inline"`
 }
-
-type ConfigUpdaterConfig struct {
-	KubeConfig `yaml:",inline"`
-}

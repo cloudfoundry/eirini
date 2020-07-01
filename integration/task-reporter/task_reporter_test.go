@@ -99,12 +99,12 @@ var _ = Describe("TaskReporter", func() {
 	})
 
 	It("notifies the cloud controller of a task completion", func() {
-		Eventually(cloudControllerServer.ReceivedRequests, "10s").Should(HaveLen(1))
-		Consistently(cloudControllerServer.ReceivedRequests, "10s").Should(HaveLen(1))
+		Eventually(cloudControllerServer.ReceivedRequests, "1m").Should(HaveLen(1))
+		Consistently(cloudControllerServer.ReceivedRequests, "1m").Should(HaveLen(1))
 	})
 
 	It("deletes the job", func() {
-		Eventually(getTaskJobsFn("the-task-guid"), "20s").Should(BeEmpty())
+		Eventually(getTaskJobsFn("the-task-guid"), "1m").Should(BeEmpty())
 	})
 
 	When("a task job fails", func() {

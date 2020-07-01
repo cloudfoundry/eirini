@@ -38,7 +38,7 @@ var _ = AfterEach(func() {
 })
 
 func TestIntegration(t *testing.T) {
-	SetDefaultEventuallyTimeout(time.Minute)
+	SetDefaultEventuallyTimeout(4 * time.Minute)
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Integration Suite")
 }
