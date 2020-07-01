@@ -230,9 +230,11 @@ var _ = Describe("StatefulSet Manager", func() {
 						return getPodPhase(podIndex, odinLRP.LRPIdentifier)
 					}).Should(Equal("Ready"))
 				}
-				statefulset := getStatefulSet(odinLRP)
 
-				Eventually(statefulset.Status.ReadyReplicas, "5s").Should(Equal(statefulset.Status.Replicas))
+				Eventually(func() int32 {
+					statefulset := getStatefulSet(odinLRP)
+					return statefulset.Status.ReadyReplicas
+				}, "5s").Should(BeNumerically("==", odinLRP.TargetInstances))
 			})
 		})
 	})
