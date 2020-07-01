@@ -24,7 +24,7 @@ require (
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	code.cloudfoundry.org/locket v0.0.0-20191127212858-571765e813ca // indirect
-	code.cloudfoundry.org/loggregator v0.0.0-00010101000000-000000000000
+	code.cloudfoundry.org/loggregator v0.0.0-20190918193452-3ce1eab57797
 	code.cloudfoundry.org/rep v0.0.0-20191210190026-b68fa6668abc // indirect
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
 	code.cloudfoundry.org/tlsconfig v0.0.0-20200131000646-bbe0f8da39b3
@@ -80,9 +80,9 @@ require (
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	golang.org/x/text v0.3.3 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	golang.org/x/tools v0.0.0-20200701041122-1837592efa10 // indirect
+	golang.org/x/tools v0.0.0-20200701151220-7cb253f4c4f8 // indirect
 	google.golang.org/genproto v0.0.0-20200701001935-0939c5918c31 // indirect
-	google.golang.org/grpc v1.29.1
+	google.golang.org/grpc v1.30.0
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
 	k8s.io/api v0.18.5
