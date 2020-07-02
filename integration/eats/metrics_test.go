@@ -6,16 +6,17 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/tlsconfig"
 
 	"code.cloudfoundry.org/eirini/integration/eats/fakes"
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
-	"code.cloudfoundry.org/loggregator/plumbing"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
@@ -123,12 +124,31 @@ var _ = Describe("Metrics", func() {
 })
 
 func newGrpcServer(cert, key, ca, addr string) (*grpc.Server, net.Listener) {
-	creds, err := plumbing.NewServerCredentials(cert, key, ca)
+	creds, err := newServerCredentials(cert, key, ca)
 	Expect(err).ToNot(HaveOccurred())
 
 	listener, err := net.Listen("tcp", addr)
 	Expect(err).ToNot(HaveOccurred())
 	return grpc.NewServer(grpc.Creds(creds)), listener
+}
+
+func newServerCredentials(
+	certFile string,
+	keyFile string,
+	caCertFile string,
+) (credentials.TransportCredentials, error) {
+	tlsConfig, err := tlsconfig.Build(
+		tlsconfig.WithInternalServiceDefaults(),
+		tlsconfig.WithIdentityFromFile(certFile, keyFile),
+	).Server(
+		tlsconfig.WithClientAuthenticationFromFile(caCertFile),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return credentials.NewTLS(tlsConfig), nil
 }
 
 func runMetronStub(certPath, keyPath string, envelopes chan *loggregator_v2.Envelope) (*grpc.Server, string) {

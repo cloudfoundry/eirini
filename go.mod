@@ -3,9 +3,7 @@ module code.cloudfoundry.org/eirini
 go 1.13
 
 replace (
-	code.cloudfoundry.org/loggregator => github.com/cloudfoundry/loggregator-release/src v0.0.0-20200519193342-cdadcb411259
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
-	google.golang.org/grpc => google.golang.org/grpc v1.29.1
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
 	k8s.io/client-go => k8s.io/client-go v0.17.0
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe
@@ -21,11 +19,12 @@ require (
 	code.cloudfoundry.org/diego-logging-client v0.0.0-20190918155030-cd01d2d2c629 // indirect
 	code.cloudfoundry.org/executor v0.0.0-20191210222949-67a08c48e56c // indirect
 	code.cloudfoundry.org/garden v0.0.0-20191128141255-60b076cc4749 // indirect
+	code.cloudfoundry.org/go-diodes v0.0.0-20190809170250-f77fb823c7ee // indirect
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	code.cloudfoundry.org/locket v0.0.0-20191127212858-571765e813ca // indirect
-	code.cloudfoundry.org/loggregator v0.0.0-20190918193452-3ce1eab57797
 	code.cloudfoundry.org/rep v0.0.0-20191210190026-b68fa6668abc // indirect
+	code.cloudfoundry.org/rfc5424 v0.0.0-20180905210152-236a6d29298a // indirect
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
 	code.cloudfoundry.org/tlsconfig v0.0.0-20200131000646-bbe0f8da39b3
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
@@ -48,6 +47,7 @@ require (
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.4.2 // indirect
 	github.com/gophercloud/gophercloud v0.12.0 // indirect
+	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/hashicorp/consul/api v1.3.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.6.6
@@ -65,6 +65,7 @@ require (
 	github.com/nats-io/nats-server/v2 v2.1.7
 	github.com/nats-io/nats.go v1.10.0
 	github.com/nats-io/nkeys v0.2.0 // indirect
+	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/onsi/ginkgo v1.13.0
 	github.com/onsi/gomega v1.10.1
 	github.com/opencontainers/go-digest v1.0.0 // indirect
