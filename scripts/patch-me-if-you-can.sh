@@ -12,6 +12,7 @@ readonly EIRINI_PRIVATE_CONFIG_BASEDIR=$(realpath "$SCRIPT_DIR/../../eirini-priv
 readonly EIRINI_CI_BASEDIR="$HOME/workspace/eirini-ci"
 readonly CF4K8S_DIR="$HOME/workspace/cf-for-k8s"
 readonly CAPIK8SDIR="$HOME/workspace/capi-k8s-release"
+readonly PATCH_TAG='patch-me-if-you-can'
 
 main() {
   if [ "$#" == "0" ]; then
@@ -103,16 +104,14 @@ update_component() {
 docker_build() {
   echo "Building docker image for $1"
   pushd "$EIRINI_BASEDIR"
-  docker build . -f "$EIRINI_BASEDIR/docker/$component/Dockerfile" \
-    --build-arg GIT_SHA=big-sha \
-    --tag "eirini/$component:patch-me-if-you-can"
+  make --directory=docker "$component" TAG="$PATCH_TAG"
   popd
 }
 
 docker_push() {
   echo "Pushing docker image for $1"
   pushd "$EIRINI_BASEDIR"
-  docker push "eirini/$component:patch-me-if-you-can"
+  make --directory=docker push-$component TAG="$PATCH_TAG"
   popd
 }
 
@@ -121,7 +120,7 @@ update_image_in_helm_chart() {
   pushd "$EIRINI_RELEASE_BASEDIR/helm/eirini/templates"
   local file new_image_ref
   file=$(rg -l "image: eirini/${1}")
-  new_image_ref="$(docker inspect --format='{{index .RepoDigests 0}}' "eirini/${1}:patch-me-if-you-can")"
+  new_image_ref="$(docker inspect --format='{{index .RepoDigests 0}}' "eirini/${1}:$PATCH_TAG")"
   sed -i -e "s|image: eirini/${1}.*$|image: ${new_image_ref}|g" "$file"
   popd
 }
