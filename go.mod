@@ -66,7 +66,7 @@ require (
 	github.com/nats-io/nats.go v1.10.0
 	github.com/nats-io/nkeys v0.2.0 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
-	github.com/onsi/ginkgo v1.13.0
+	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.10.1
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1
@@ -81,8 +81,8 @@ require (
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	golang.org/x/text v0.3.3 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	golang.org/x/tools v0.0.0-20200701151220-7cb253f4c4f8 // indirect
-	google.golang.org/genproto v0.0.0-20200701001935-0939c5918c31 // indirect
+	golang.org/x/tools v0.0.0-20200702044944-0cc1aa72b347 // indirect
+	google.golang.org/genproto v0.0.0-20200706141556-5779274c8e96 // indirect
 	google.golang.org/grpc v1.30.0
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
@@ -91,7 +91,7 @@ require (
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/code-generator v0.17.4
 	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.2.0 // indirect
+	k8s.io/klog/v2 v2.3.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20200615155156-dffdd1682719 // indirect
 	k8s.io/metrics v0.18.5
 	k8s.io/utils v0.0.0-20200619165400-6e3d28b6ed19 // indirect
