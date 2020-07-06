@@ -28,6 +28,8 @@ linters:
     - funlen
     - wsl
     - goerr113
+    - noctx
+    - gofumpt
 
 issues:
   exclude-use-default: true
