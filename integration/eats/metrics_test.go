@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/tlsconfig"
@@ -105,19 +106,24 @@ var _ = Describe("Metrics", func() {
 			})
 
 			It("reports metrics for each instance", func() {
-				var (
-					instanceIds []string
-					envelope    *loggregator_v2.Envelope
-				)
-				for i := 0; i < lrp.NumInstances; i++ {
-					Eventually(envelopes).Should(Receive(&envelope))
-
-					Expect(envelope.SourceId).To(Equal("the-app-guid"))
-					checkMetrics(envelope, lrp.MemoryMB, lrp.DiskMB)
-
-					instanceIds = append(instanceIds, envelope.InstanceId)
+				instanceIds := make(map[string]bool)
+				timeout := time.After(time.Minute)
+			outer:
+				for {
+					select {
+					case <-timeout:
+						break outer
+					case envelope := <-envelopes:
+						Expect(envelope.SourceId).To(Equal("the-app-guid"))
+						checkMetrics(envelope, lrp.MemoryMB, lrp.DiskMB)
+						instanceIds[envelope.InstanceId] = true
+					}
+					if len(instanceIds) == 3 {
+						break
+					}
 				}
-				Expect(instanceIds).To(ConsistOf("0", "1", "2"))
+
+				Expect(instanceIds).To(SatisfyAll(HaveKey("0"), HaveKey("1"), HaveKey("2")))
 			})
 		})
 	})
