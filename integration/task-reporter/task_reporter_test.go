@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -61,6 +63,7 @@ var _ = Describe("TaskReporter", func() {
 			ServiceAccountName: "",
 			JobClient:          fixture.Clientset.BatchV1().Jobs(fixture.Namespace),
 			Logger:             lagertest.NewTestLogger("task-reporter-test"),
+			SecretsClient:      k8s.NewSecretsClient(fixture.Clientset),
 		}
 
 		task = &opi.Task{
@@ -129,6 +132,40 @@ var _ = Describe("TaskReporter", func() {
 
 		It("deletes the job", func() {
 			Eventually(getTaskJobsFn("failing-task-guid"), "20s").Should(BeEmpty())
+		})
+	})
+
+	When("a private docker registry is used", func() {
+		BeforeEach(func() {
+			task.Image = "eiriniuser/notdora"
+			task.PrivateRegistry = &opi.PrivateRegistry{
+				Server:   bifrost.DockerHubHost,
+				Username: "eiriniuser",
+				Password: util.GetEiriniDockerHubPassword(),
+			}
+			task.Command = []string{"sleep", "1"}
+		})
+
+		It("deletes the docker registry secret", func() {
+			registrySecretPrefix := fmt.Sprintf("%s-%s-registry-secret-", task.AppName, task.SpaceName)
+			jobs, err := getTaskJobsFn(task.GUID)()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(jobs).To(HaveLen(1))
+
+			imagePullSecrets := jobs[0].Spec.Template.Spec.ImagePullSecrets
+			var registrySecretName string
+			for _, imagePullSecret := range imagePullSecrets {
+				if strings.HasPrefix(imagePullSecret.Name, registrySecretPrefix) {
+					registrySecretName = imagePullSecret.Name
+					break
+				}
+			}
+			Expect(registrySecretName).NotTo(BeEmpty())
+
+			Eventually(func() error {
+				_, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Get(registrySecretName, metav1.GetOptions{})
+				return err
+			}, "10s").Should(MatchError(ContainSubstring(`secrets "%s" not found`, registrySecretName)))
 		})
 	})
 })
