@@ -12,10 +12,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	batch "k8s.io/api/batch/v1"
-	batchv1 "k8s.io/api/batch/v1"
 )
 
 const (
@@ -28,10 +26,10 @@ const (
 
 //counterfeiter:generate . JobClient
 type JobClient interface {
-	Create(namespace string, job *batchv1.Job) (*batchv1.Job, error)
-	Update(namespace string, job *batchv1.Job) (*batchv1.Job, error)
-	Delete(namespace string, name string, options *metav1.DeleteOptions) error
-	List(opts metav1.ListOptions) (*batchv1.JobList, error)
+	Create(namespace string, job *batch.Job) (*batch.Job, error)
+	Update(namespace string, job *batch.Job) (*batch.Job, error)
+	Delete(namespace string, name string, options *meta_v1.DeleteOptions) error
+	List(opts meta_v1.ListOptions) (*batch.JobList, error)
 }
 
 type KeyPath struct {
@@ -57,18 +55,14 @@ type TaskDesirer struct {
 }
 
 func (d *TaskDesirer) Desire(namespace string, task *opi.Task) error {
-	job, err := d.toTaskJob(task)
-	if err != nil {
-		return err
-	}
-
+	job := d.toTaskJob(task)
 	if imageInPrivateRegistry(task) {
 		if err := d.addImagePullSecret(namespace, task, job); err != nil {
 			return err
 		}
 	}
 
-	_, err = d.JobClient.Create(namespace, job)
+	_, err := d.JobClient.Create(namespace, job)
 	return err
 }
 
@@ -112,7 +106,7 @@ func (d *TaskDesirer) delete(guid, label string) (string, error) {
 	})
 }
 
-func (d *TaskDesirer) toTaskJob(task *opi.Task) (*batch.Job, error) {
+func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 	job := d.toJob(task)
 	job.Spec.Template.Spec.ServiceAccountName = d.ServiceAccountName
 	job.Labels[LabelSourceType] = taskSourceType
@@ -141,7 +135,7 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) (*batch.Job, error) {
 
 	job.Spec.Template.Spec.Containers = containers
 
-	return job, nil
+	return job
 }
 
 func (d *TaskDesirer) createTaskSecret(namespace string, task *opi.Task) (*v1.Secret, error) {
