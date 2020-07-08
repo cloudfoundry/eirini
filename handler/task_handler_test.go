@@ -33,19 +33,7 @@ var _ = Describe("TaskHandler", func() {
 
 		method = "POST"
 		path = "/tasks/guid_1234"
-		body = `{
-				"name": "task-name",
-				"app_guid": "our-app-id",
-				"environment": [{"name": "HOWARD", "value": "the alien"}],
-				"completion_callback": "example.com/call/me/maybe",
-				"lifecycle": {
-					"buildpack_lifecycle": {
-						"droplet_guid": "some-guid",
-						"droplet_hash": "some-hash",
-						"start_command": "some command"
-					}
-				}
-			}`
+		body = ""
 	})
 
 	JustBeforeEach(func() {
@@ -70,17 +58,23 @@ var _ = Describe("TaskHandler", func() {
 			method = "POST"
 			path = "/tasks/guid_1234"
 			body = `{
-                "name": "task-name",
+				"guid": "some-guid",
+				"name": "task-name",
 				"app_guid": "our-app-id",
+				"org_name": "our-org-name",
+				"org_guid": "our-org-guid",
+				"space_name": "our-space-name",
+				"space_guid": "our-space-guid",
+				"namespace": "our-namespace",
 				"environment": [{"name": "HOWARD", "value": "the alien"}],
 				"completion_callback": "example.com/call/me/maybe",
 				"lifecycle": {
-          "buildpack_lifecycle": {
-						"droplet_guid": "some-guid",
-						"droplet_hash": "some-hash",
-					  "start_command": "some command"
+					"buildpack_lifecycle": {
+							"droplet_guid": "some-guid",
+							"droplet_hash": "some-hash",
+							"start_command": "some command"
+						}
 					}
-				}
 			}`
 		})
 
@@ -93,8 +87,14 @@ var _ = Describe("TaskHandler", func() {
 			_, actualTaskGUID, actualTaskRequest := taskBifrost.TransferTaskArgsForCall(0)
 			Expect(actualTaskGUID).To(Equal("guid_1234"))
 			Expect(actualTaskRequest).To(Equal(cf.TaskRequest{
+				GUID:               "some-guid",
 				Name:               "task-name",
 				AppGUID:            "our-app-id",
+				OrgName:            "our-org-name",
+				OrgGUID:            "our-org-guid",
+				SpaceName:          "our-space-name",
+				SpaceGUID:          "our-space-guid",
+				Namespace:          "our-namespace",
 				Environment:        []cf.EnvironmentVariable{{Name: "HOWARD", Value: "the alien"}},
 				CompletionCallback: "example.com/call/me/maybe",
 				Lifecycle: cf.Lifecycle{

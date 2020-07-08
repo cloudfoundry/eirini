@@ -2,6 +2,7 @@ package k8s
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,11 +58,35 @@ func (c *statefulSetClient) Update(namespace string, statefulSet *appsv1.Statefu
 }
 
 func (c *statefulSetClient) Delete(namespace string, name string, options *metav1.DeleteOptions) error {
-	return c.clientSet.AppsV1().StatefulSets(namespace).Delete(name, nil)
+	return c.clientSet.AppsV1().StatefulSets(namespace).Delete(name, options)
 }
 
 func (c *statefulSetClient) List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error) {
 	return c.clientSet.AppsV1().StatefulSets("").List(opts)
+}
+
+type jobClient struct {
+	clientSet kubernetes.Interface
+}
+
+func NewJobClient(clientSet kubernetes.Interface) JobClient {
+	return &jobClient{clientSet: clientSet}
+}
+
+func (c *jobClient) Create(namespace string, job *batchv1.Job) (*batchv1.Job, error) {
+	return c.clientSet.BatchV1().Jobs(namespace).Create(job)
+}
+
+func (c *jobClient) Update(namespace string, job *batchv1.Job) (*batchv1.Job, error) {
+	return c.clientSet.BatchV1().Jobs(namespace).Update(job)
+}
+
+func (c *jobClient) Delete(namespace string, name string, options *metav1.DeleteOptions) error {
+	return c.clientSet.BatchV1().Jobs(namespace).Delete(name, options)
+}
+
+func (c *jobClient) List(opts metav1.ListOptions) (*batchv1.JobList, error) {
+	return c.clientSet.BatchV1().Jobs("").List(opts)
 }
 
 type SecretsClient struct {

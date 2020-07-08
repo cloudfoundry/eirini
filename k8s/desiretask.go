@@ -12,8 +12,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	batch "k8s.io/api/batch/v1"
+	batchv1 "k8s.io/api/batch/v1"
 )
 
 const (
@@ -26,10 +28,10 @@ const (
 
 //counterfeiter:generate . JobClient
 type JobClient interface {
-	Create(*batch.Job) (*batch.Job, error)
-	Delete(guid string, deleteOpts *meta_v1.DeleteOptions) error
-	List(opts meta_v1.ListOptions) (*batch.JobList, error)
-	Update(*batch.Job) (*batch.Job, error)
+	Create(namespace string, job *batchv1.Job) (*batchv1.Job, error)
+	Update(namespace string, job *batchv1.Job) (*batchv1.Job, error)
+	Delete(namespace string, name string, options *metav1.DeleteOptions) error
+	List(opts metav1.ListOptions) (*batchv1.JobList, error)
 }
 
 type KeyPath struct {
@@ -42,7 +44,7 @@ type StagingConfigTLS struct {
 }
 
 type TaskDesirer struct {
-	Namespace                 string
+	DefaultStagingNamespace   string
 	CertsSecretName           string
 	TLSConfig                 []StagingConfigTLS
 	ServiceAccountName        string
@@ -51,20 +53,27 @@ type TaskDesirer struct {
 	JobClient                 JobClient
 	Logger                    lager.Logger
 	SecretsClient             SecretsCreatorDeleter
+	StatefulSets              StatefulSetClient
 }
 
-func (d *TaskDesirer) Desire(task *opi.Task) error {
-	taskJob, err := d.toTaskJob(task)
+func (d *TaskDesirer) Desire(namespace string, task *opi.Task) error {
+	job, err := d.toTaskJob(task)
 	if err != nil {
 		return err
 	}
 
-	_, err = d.JobClient.Create(taskJob)
+	if imageInPrivateRegistry(task) {
+		if err := d.addImagePullSecret(namespace, task, job); err != nil {
+			return err
+		}
+	}
+
+	_, err = d.JobClient.Create(namespace, job)
 	return err
 }
 
 func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
-	_, err := d.JobClient.Create(d.toStagingJob(task))
+	_, err := d.JobClient.Create(d.DefaultStagingNamespace, d.toStagingJob(task))
 	return err
 }
 
@@ -98,7 +107,7 @@ func (d *TaskDesirer) delete(guid, label string) (string, error) {
 
 	callbackURL := job.Annotations[AnnotationCompletionCallback]
 	backgroundPropagation := meta_v1.DeletePropagationBackground
-	return callbackURL, d.JobClient.Delete(job.Name, &meta_v1.DeleteOptions{
+	return callbackURL, d.JobClient.Delete(job.Namespace, job.Name, &meta_v1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
 }
@@ -130,23 +139,12 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) (*batch.Job, error) {
 		},
 	}
 
-	if task.PrivateRegistry != nil && task.PrivateRegistry.Username != "" && task.PrivateRegistry.Password != "" {
-		createdSecret, err := d.createTaskSecret(task)
-		if err != nil {
-			return nil, err
-		}
-
-		job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{
-			Name: createdSecret.Name,
-		})
-	}
-
 	job.Spec.Template.Spec.Containers = containers
 
 	return job, nil
 }
 
-func (d *TaskDesirer) createTaskSecret(task *opi.Task) (*v1.Secret, error) {
+func (d *TaskDesirer) createTaskSecret(namespace string, task *opi.Task) (*v1.Secret, error) {
 	secret := &v1.Secret{}
 
 	secret.GenerateName = dockerImagePullSecretNamePrefix(task.AppName, task.SpaceName, task.GUID)
@@ -165,7 +163,7 @@ func (d *TaskDesirer) createTaskSecret(task *opi.Task) (*v1.Secret, error) {
 		dockerutils.DockerConfigKey: dockerConfigJSON,
 	}
 
-	return d.SecretsClient.Create(d.Namespace, secret)
+	return d.SecretsClient.Create(namespace, secret)
 }
 
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
@@ -391,7 +389,24 @@ func (d *TaskDesirer) deleteDockerRegistrySecret(job batch.Job) error {
 	return nil
 }
 
+func (d *TaskDesirer) addImagePullSecret(namespace string, task *opi.Task, job *batch.Job) error {
+	createdSecret, err := d.createTaskSecret(namespace, task)
+	if err != nil {
+		return err
+	}
+
+	spec := &job.Spec.Template.Spec
+	spec.ImagePullSecrets = append(spec.ImagePullSecrets, v1.LocalObjectReference{
+		Name: createdSecret.Name,
+	})
+	return nil
+}
+
 func dockerImagePullSecretNamePrefix(appName, spaceName, taskGUID string) string {
 	secretNamePrefix := fmt.Sprintf("%s-%s", appName, spaceName)
 	return fmt.Sprintf("%s-registry-secret-", utils.SanitizeName(secretNamePrefix, taskGUID))
+}
+
+func imageInPrivateRegistry(task *opi.Task) bool {
+	return task.PrivateRegistry != nil && task.PrivateRegistry.Username != "" && task.PrivateRegistry.Password != ""
 }

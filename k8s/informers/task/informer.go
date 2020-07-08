@@ -48,7 +48,6 @@ func (c *Informer) Start() {
 	factory := informers.NewSharedInformerFactoryWithOptions(
 		c.clientset,
 		c.syncPeriod,
-		informers.WithNamespace(c.namespace),
 		informers.WithTweakListOptions(tweakListOpts),
 	)
 

@@ -59,11 +59,11 @@ var _ = Describe("TaskReporter", func() {
 		session, configFile = eiriniBins.TaskReporter.Run(config)
 
 		taskDesirer = k8s.TaskDesirer{
-			Namespace:          fixture.Namespace,
-			ServiceAccountName: "",
-			JobClient:          fixture.Clientset.BatchV1().Jobs(fixture.Namespace),
-			Logger:             lagertest.NewTestLogger("task-reporter-test"),
-			SecretsClient:      k8s.NewSecretsClient(fixture.Clientset),
+			DefaultStagingNamespace: fixture.Namespace,
+			ServiceAccountName:      "",
+			JobClient:               k8s.NewJobClient(fixture.Clientset),
+			Logger:                  lagertest.NewTestLogger("task-reporter-test"),
+			SecretsClient:           k8s.NewSecretsClient(fixture.Clientset),
 		}
 
 		task = &opi.Task{
@@ -88,7 +88,7 @@ var _ = Describe("TaskReporter", func() {
 			ghttp.CombineHandlers(handlers...),
 		)
 
-		Expect(taskDesirer.Desire(task)).To(Succeed())
+		Expect(taskDesirer.Desire("", task)).To(Succeed())
 	})
 
 	AfterEach(func() {
