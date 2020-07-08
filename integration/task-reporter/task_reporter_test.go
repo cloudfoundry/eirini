@@ -88,7 +88,7 @@ var _ = Describe("TaskReporter", func() {
 			ghttp.CombineHandlers(handlers...),
 		)
 
-		Expect(taskDesirer.Desire("", task)).To(Succeed())
+		Expect(taskDesirer.Desire(fixture.Namespace, task)).To(Succeed())
 	})
 
 	AfterEach(func() {
