@@ -189,10 +189,10 @@ var _ = Describe("Apps", func() {
 		})
 
 		When("the app doesn't exist", func() {
-			It("returns a 404", func() {
+			It("succeeds", func() {
 				response, err := stopLRP(httpClient, opiURL, "does-not-exist", lrpVersion)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
+				Expect(response.StatusCode).To(Equal(http.StatusOK))
 			})
 		})
 	})
@@ -226,10 +226,10 @@ var _ = Describe("Apps", func() {
 		})
 
 		When("the app does not exist", func() {
-			It("should return 404", func() {
+			It("succeeds", func() {
 				resp, err := stopLRPInstance("does-not-exist", lrpVersion, 1)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+				Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			})
 		})
 

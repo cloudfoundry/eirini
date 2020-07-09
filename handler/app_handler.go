@@ -159,9 +159,6 @@ func (a *App) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	if err := a.lrpBifrost.Stop(r.Context(), identifier); err != nil {
 		loggerSession.Error("bifrost-failed", err)
 		statusCode := http.StatusInternalServerError
-		if errors.Is(err, eirini.ErrNotFound) {
-			statusCode = http.StatusNotFound
-		}
 		w.WriteHeader(statusCode)
 	}
 }
@@ -183,9 +180,6 @@ func (a *App) StopInstance(w http.ResponseWriter, r *http.Request, ps httprouter
 	if err := a.lrpBifrost.StopInstance(r.Context(), identifier, uint(index)); err != nil {
 		loggerSession.Error("bifrost-failed", err)
 		statusCode := http.StatusInternalServerError
-		if errors.Is(err, eirini.ErrNotFound) {
-			statusCode = http.StatusNotFound
-		}
 		if errors.Is(err, eirini.ErrInvalidInstanceIndex) {
 			statusCode = http.StatusBadRequest
 		}

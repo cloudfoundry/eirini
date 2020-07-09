@@ -566,18 +566,6 @@ var _ = Describe("AppHandler", func() {
 			Expect(identifier.Version).To(Equal("version_1234"))
 		})
 
-		Context("when app is not found", func() {
-			BeforeEach(func() {
-				lrpBifrost.StopReturns(errors.Wrap(eirini.ErrNotFound, "failed-to-stop"))
-			})
-
-			It("should return a 404 HTTP status code", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
-			})
-
-			It("should provide a helpful log message", findLog("app-handler-test.stop-app.bifrost-failed", "app_1234"))
-		})
-
 		Context("when app stop is not successful", func() {
 			BeforeEach(func() {
 				lrpBifrost.StopReturns(errors.New("someting-bad-happened"))
@@ -626,18 +614,6 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		Context("when app stop is not successful", func() {
-			Context("because the app does not exist", func() {
-				BeforeEach(func() {
-					lrpBifrost.StopInstanceReturns(errors.Wrap(eirini.ErrNotFound, "something-bad-happened"))
-				})
-
-				It("should return a 404 HTTP status code", func() {
-					Expect(response.StatusCode).To(Equal(http.StatusNotFound))
-				})
-
-				It("should provide a helpful log message", findLog("app-handler-test.stop-app-instance.bifrost-failed", "app_1234"))
-			})
-
 			Context("because the app index does not exist", func() {
 				BeforeEach(func() {
 					lrpBifrost.StopInstanceReturns(errors.Wrap(eirini.ErrInvalidInstanceIndex, "something-bad-happened"))

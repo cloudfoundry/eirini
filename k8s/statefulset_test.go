@@ -770,8 +770,21 @@ var _ = Describe("Statefulset Desirer", func() {
 					secretsClient.DeleteReturns(errors.New("boom"))
 				})
 
-				It("deletes the secret holding the creds of the private registry", func() {
+				It("returns the error", func() {
 					Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(MatchError(ContainSubstring("boom")))
+				})
+			})
+
+			Context("when the private registry secret does not exist", func() {
+				BeforeEach(func() {
+					secretsClient.DeleteReturns(k8serrors.NewNotFound(schema.GroupResource{
+						Group:    "core/v1",
+						Resource: "Secret",
+					}, "foo"))
+				})
+
+				It("succeeds", func() {
+					Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 				})
 			})
 		})
@@ -825,20 +838,19 @@ var _ = Describe("Statefulset Desirer", func() {
 				statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
 			})
 
-			It("returns a not found error", func() {
-				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{})).
-					To(MatchError(eirini.ErrNotFound))
+			It("succeeds", func() {
+				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{})).To(Succeed())
 			})
 
 			It("logs useful information", func() {
 				_ = statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "missing_guid", Version: "some_version"})
-				Expect(logger).To(gbytes.Say("not found.*missing_guid.*some_version"))
+				Expect(logger).To(gbytes.Say("statefulset does not exist.*missing_guid.*some_version"))
 			})
 		})
 	})
 
 	Context("Stop an LRP instance", func() {
-		It("deletes a pod instance", func() {
+		BeforeEach(func() {
 			st := &appsv1.StatefulSetList{
 				Items: []appsv1.StatefulSet{
 					{
@@ -854,7 +866,9 @@ var _ = Describe("Statefulset Desirer", func() {
 			}
 
 			statefulSetClient.ListReturns(st, nil)
+		})
 
+		It("deletes a pod instance", func() {
 			Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 0)).
 				To(Succeed())
 
@@ -869,39 +883,33 @@ var _ = Describe("Statefulset Desirer", func() {
 			It("should return an error", func() {
 				statefulSetClient.ListReturns(nil, errors.New("boom"))
 				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)).
-					To(MatchError("failed to get statefulset: boom"))
+					To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
 		})
 
 		Context("when the statefulset does not exist", func() {
-
-			It("returns an error", func() {
+			It("succeeds", func() {
 				statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
-				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "some", Version: "thing"}, 1)).
-					To(MatchError(eirini.ErrNotFound))
+				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "some", Version: "thing"}, 1)).To(Succeed())
 			})
 		})
 
-		Context("when the instance does not exist", func() {
-
+		Context("when the instance index is invalid", func() {
 			It("returns an error", func() {
-				st := &appsv1.StatefulSetList{
-					Items: []appsv1.StatefulSet{
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "baldur",
-							},
-							Spec: appsv1.StatefulSetSpec{
-								Replicas: int32ptr(2),
-							},
-						},
-					},
-				}
-
-				statefulSetClient.ListReturns(st, nil)
 				podClient.DeleteReturns(errors.New("boom"))
 				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 42)).
 					To(MatchError(eirini.ErrInvalidInstanceIndex))
+			})
+		})
+
+		Context("when the instance is already stopped", func() {
+			BeforeEach(func() {
+				podClient.DeleteReturns(k8serrors.NewNotFound(schema.GroupResource{}, "potato"))
+			})
+
+			It("succeeds", func() {
+				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)).
+					To(Succeed())
 			})
 		})
 	})

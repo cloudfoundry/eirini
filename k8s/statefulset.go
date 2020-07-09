@@ -155,9 +155,14 @@ func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
 }
 
 func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
+	log := m.Logger.Session("stop", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
 	statefulSet, err := m.getStatefulSet(identifier)
+	if errors.Is(err, eirini.ErrNotFound) {
+		log.Debug("statefulset does not exist")
+		return nil
+	}
 	if err != nil {
-		m.Logger.Debug("failed to get statefulset", lager.Data{"guid": identifier.GUID, "version": identifier.Version, "error": err.Error()})
+		log.Debug("failed to get statefulset", lager.Data{"error": err.Error()})
 		return err
 	}
 
@@ -166,7 +171,8 @@ func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 		return err
 	}
 
-	if err := m.deletePrivateRegistrySecret(statefulSet); err != nil {
+	err = m.deletePrivateRegistrySecret(statefulSet)
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 
@@ -188,22 +194,26 @@ func (m *StatefulSetDesirer) deletePrivateRegistrySecret(statefulSet *appsv1.Sta
 }
 
 func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index uint) error {
-	statefulsets, err := m.StatefulSets.List(metav1.ListOptions{
-		LabelSelector: labelSelectorString(identifier),
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to get statefulset")
+	log := m.Logger.Session("stopInstance", lager.Data{"guid": identifier.GUID, "version": identifier.Version, "index": index})
+	statefulset, err := m.getStatefulSet(identifier)
+	if errors.Is(err, eirini.ErrNotFound) {
+		log.Debug("statefulset does not exist")
+		return nil
 	}
-	if len(statefulsets.Items) == 0 {
-		return eirini.ErrNotFound
+	if err != nil {
+		log.Debug("failed to get statefulset", lager.Data{"error": err.Error()})
+		return err
 	}
 
-	if int32(index) >= *statefulsets.Items[0].Spec.Replicas {
+	if int32(index) >= *statefulset.Spec.Replicas {
 		return eirini.ErrInvalidInstanceIndex
 	}
 
-	statefulset := statefulsets.Items[0]
 	err = m.Pods.Delete(statefulset.Namespace, fmt.Sprintf("%s-%d", statefulset.Name, index))
+	if k8serrors.IsNotFound(err) {
+		log.Debug("pod does not exist")
+		return nil
+	}
 	return errors.Wrap(err, "failed to delete pod")
 }
 
