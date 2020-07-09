@@ -69,7 +69,7 @@ var _ = Describe("TaskReporter", func() {
 		task = &opi.Task{
 			Image:              "busybox",
 			Command:            []string{"echo", "hi"},
-			GUID:               "the-task-guid",
+			GUID:               util.Guidify("the-task-guid"),
 			CompletionCallback: fmt.Sprintf("%s/the-callback", cloudControllerServer.URL()),
 			AppName:            "app",
 			AppGUID:            "app-guid",
@@ -112,7 +112,7 @@ var _ = Describe("TaskReporter", func() {
 
 	When("a task job fails", func() {
 		BeforeEach(func() {
-			task.GUID = "failing-task-guid"
+			task.GUID = util.Guidify("failing-task-guid")
 			task.Command = []string{"false"}
 
 			handlers = []http.HandlerFunc{
