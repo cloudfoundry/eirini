@@ -128,7 +128,7 @@ type RouteEmitterConfig struct {
 
 type MetricsCollectorConfig struct {
 	LoggregatorAddress  string `yaml:"loggregator_address"`
-	LoggregatorCertPath string `yaml:"loggergator_cert_path"`
+	LoggregatorCertPath string `yaml:"loggregator_cert_path"`
 	LoggregatorKeyPath  string `yaml:"loggregator_key_path"`
 	LoggregatorCAPath   string `yaml:"loggregator_ca_path"`
 
