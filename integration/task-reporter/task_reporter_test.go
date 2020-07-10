@@ -29,7 +29,7 @@ var _ = Describe("TaskReporter", func() {
 		certPath              string
 		keyPath               string
 		session               *gexec.Session
-		taskDesirer           k8s.TaskDesirer
+		taskDesirer           *k8s.TaskDesirer
 		task                  *opi.Task
 		config                *eirini.TaskReporterConfig
 	)
@@ -54,14 +54,16 @@ var _ = Describe("TaskReporter", func() {
 			EiriniInstance: eiriniInstance,
 		}
 
-		taskDesirer = k8s.TaskDesirer{
-			DefaultStagingNamespace: fixture.Namespace,
-			ServiceAccountName:      "",
-			JobClient:               k8s.NewJobClient(fixture.Clientset),
-			Logger:                  lagertest.NewTestLogger("task-reporter-test"),
-			SecretsClient:           k8s.NewSecretsClient(fixture.Clientset),
-			EiriniInstance:          eiriniInstance,
-		}
+		taskDesirer = k8s.NewTaskDesirerWithEiriniInstance(
+			lagertest.NewTestLogger("test-task-desirer"),
+			k8s.NewJobClient(fixture.Clientset),
+			k8s.NewSecretsClient(fixture.Clientset),
+			fixture.Namespace,
+			nil,
+			"",
+			"",
+			"",
+			eiriniInstance)
 
 		taskGUID := util.GenerateGUID()
 		task = &opi.Task{

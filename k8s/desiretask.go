@@ -42,17 +42,62 @@ type StagingConfigTLS struct {
 }
 
 type TaskDesirer struct {
-	DefaultStagingNamespace   string
-	CertsSecretName           string
-	TLSConfig                 []StagingConfigTLS
-	ServiceAccountName        string
-	StagingServiceAccountName string
-	RegistrySecretName        string
-	JobClient                 JobClient
-	Logger                    lager.Logger
-	SecretsClient             SecretsCreatorDeleter
-	StatefulSets              StatefulSetClient
-	EiriniInstance            string
+	logger                    lager.Logger
+	jobClient                 JobClient
+	secretsClient             SecretsCreatorDeleter
+	defaultStagingNamespace   string
+	tlsConfig                 []StagingConfigTLS
+	serviceAccountName        string
+	stagingServiceAccountName string
+	registrySecretName        string
+	eiriniInstance            string
+}
+
+func NewTaskDesirer(
+	logger lager.Logger,
+	jobClient JobClient,
+	secretsClient SecretsCreatorDeleter,
+	defaultStagingNamespace string,
+	tlsConfig []StagingConfigTLS,
+	serviceAccountName string,
+	stagingServiceAccountName string,
+	registrySecretName string,
+) *TaskDesirer {
+	return &TaskDesirer{
+		logger:                    logger,
+		jobClient:                 jobClient,
+		secretsClient:             secretsClient,
+		defaultStagingNamespace:   defaultStagingNamespace,
+		tlsConfig:                 tlsConfig,
+		serviceAccountName:        serviceAccountName,
+		stagingServiceAccountName: stagingServiceAccountName,
+		registrySecretName:        registrySecretName,
+	}
+}
+
+func NewTaskDesirerWithEiriniInstance(
+	logger lager.Logger,
+	jobClient JobClient,
+	secretsClient SecretsCreatorDeleter,
+	defaultStagingNamespace string,
+	tlsConfig []StagingConfigTLS,
+	serviceAccountName string,
+	stagingServiceAccountName string,
+	registrySecretName string,
+	eiriniInstance string,
+) *TaskDesirer {
+	desirer := NewTaskDesirer(
+		logger,
+		jobClient,
+		secretsClient,
+		defaultStagingNamespace,
+		tlsConfig,
+		serviceAccountName,
+		stagingServiceAccountName,
+		registrySecretName,
+	)
+	desirer.eiriniInstance = eiriniInstance
+	return desirer
 }
 
 func (d *TaskDesirer) Desire(namespace string, task *opi.Task) error {
@@ -63,12 +108,12 @@ func (d *TaskDesirer) Desire(namespace string, task *opi.Task) error {
 		}
 	}
 
-	_, err := d.JobClient.Create(namespace, job)
+	_, err := d.jobClient.Create(namespace, job)
 	return err
 }
 
 func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
-	_, err := d.JobClient.Create(d.DefaultStagingNamespace, d.toStagingJob(task))
+	_, err := d.jobClient.Create(d.defaultStagingNamespace, d.toStagingJob(task))
 	return err
 }
 
@@ -82,8 +127,8 @@ func (d *TaskDesirer) DeleteStaging(guid string) error {
 }
 
 func (d *TaskDesirer) delete(guid, label string) (string, error) {
-	logger := d.Logger.Session("delete", lager.Data{"guid": guid})
-	jobs, err := d.JobClient.List(meta_v1.ListOptions{
+	logger := d.logger.Session("delete", lager.Data{"guid": guid})
+	jobs, err := d.jobClient.List(meta_v1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", label, guid),
 	})
 	if err != nil {
@@ -102,17 +147,17 @@ func (d *TaskDesirer) delete(guid, label string) (string, error) {
 
 	callbackURL := job.Annotations[AnnotationCompletionCallback]
 	backgroundPropagation := meta_v1.DeletePropagationBackground
-	return callbackURL, d.JobClient.Delete(job.Namespace, job.Name, &meta_v1.DeleteOptions{
+	return callbackURL, d.jobClient.Delete(job.Namespace, job.Name, &meta_v1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
 }
 
 func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 	job := d.toJob(task)
-	job.Spec.Template.Spec.ServiceAccountName = d.ServiceAccountName
+	job.Spec.Template.Spec.ServiceAccountName = d.serviceAccountName
 	job.Labels[LabelSourceType] = taskSourceType
 	job.Labels[LabelName] = task.Name
-	job.Labels[LabelEiriniInstance] = d.EiriniInstance
+	job.Labels[LabelEiriniInstance] = d.eiriniInstance
 	job.Annotations[AnnotationCompletionCallback] = task.CompletionCallback
 	job.Spec.Template.Annotations[AnnotationGUID] = task.GUID
 	job.Spec.Template.Annotations[AnnotationOpiTaskContainerName] = opiTaskContainerName
@@ -131,7 +176,7 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 
 	job.Spec.Template.Spec.ImagePullSecrets = []v1.LocalObjectReference{
 		{
-			Name: d.RegistrySecretName,
+			Name: d.registrySecretName,
 		},
 	}
 
@@ -159,13 +204,13 @@ func (d *TaskDesirer) createTaskSecret(namespace string, task *opi.Task) (*v1.Se
 		dockerutils.DockerConfigKey: dockerConfigJSON,
 	}
 
-	return d.SecretsClient.Create(namespace, secret)
+	return d.secretsClient.Create(namespace, secret)
 }
 
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	job := d.toJob(task.Task)
 
-	job.Spec.Template.Spec.ServiceAccountName = d.StagingServiceAccountName
+	job.Spec.Template.Spec.ServiceAccountName = d.stagingServiceAccountName
 
 	secretsVolume := v1.Volume{
 		Name: eirini.CertsVolumeName,
@@ -245,7 +290,7 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 
 func (d *TaskDesirer) getVolumeSources() []v1.VolumeProjection {
 	volumeSources := []v1.VolumeProjection{}
-	for _, conf := range d.TLSConfig {
+	for _, conf := range d.tlsConfig {
 		keyToPaths := []v1.KeyToPath{}
 		for _, keyPath := range conf.KeyPaths {
 			keyToPaths = append(keyToPaths, v1.KeyToPath{Key: keyPath.Key, Path: keyPath.Path})
@@ -377,7 +422,7 @@ func (d *TaskDesirer) deleteDockerRegistrySecret(job batch.Job) error {
 		if !strings.HasPrefix(secret.Name, dockerSecretNamePrefix) {
 			continue
 		}
-		if err := d.SecretsClient.Delete(job.Namespace, secret.Name); err != nil {
+		if err := d.secretsClient.Delete(job.Namespace, secret.Name); err != nil {
 			return err
 		}
 	}

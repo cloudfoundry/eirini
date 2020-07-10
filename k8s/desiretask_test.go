@@ -129,17 +129,17 @@ var _ = Describe("TaskDesirer", func() {
 			},
 		}
 
-		desirer = &TaskDesirer{
-			DefaultStagingNamespace:   defaultNamespace,
-			TLSConfig:                 tlsStagingConfigs,
-			JobClient:                 fakeJobClient,
-			ServiceAccountName:        "service-account",
-			StagingServiceAccountName: "staging-service-account",
-			RegistrySecretName:        "registry-secret",
-			Logger:                    lagertest.NewTestLogger("desiretask"),
-			SecretsClient:             fakeSecretsClient,
-			EiriniInstance:            "my-eirini",
-		}
+		desirer = NewTaskDesirerWithEiriniInstance(
+			lagertest.NewTestLogger("desiretask"),
+			fakeJobClient,
+			fakeSecretsClient,
+			defaultNamespace,
+			tlsStagingConfigs,
+			"service-account",
+			"staging-service-account",
+			"registry-secret",
+			"my-eirini",
+		)
 	})
 
 	Describe("Desire", func() {

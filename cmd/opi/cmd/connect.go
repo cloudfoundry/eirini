@@ -136,16 +136,16 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 	logger := lager.NewLogger("task-desirer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	return &k8s.TaskDesirer{
-		DefaultStagingNamespace:   cfg.Properties.Namespace,
-		TLSConfig:                 tlsConfigs,
-		ServiceAccountName:        cfg.Properties.ApplicationServiceAccount,
-		StagingServiceAccountName: cfg.Properties.StagingServiceAccount,
-		RegistrySecretName:        cfg.Properties.RegistrySecretName,
-		SecretsClient:             k8s.NewSecretsClient(clientset),
-		JobClient:                 k8s.NewJobClient(clientset),
-		Logger:                    logger,
-	}
+	return k8s.NewTaskDesirer(
+		logger,
+		k8s.NewJobClient(clientset),
+		k8s.NewSecretsClient(clientset),
+		cfg.Properties.Namespace,
+		tlsConfigs,
+		cfg.Properties.ApplicationServiceAccount,
+		cfg.Properties.StagingServiceAccount,
+		cfg.Properties.RegistrySecretName,
+	)
 }
 
 func initBuildpackStagingBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.BuildpackStaging {

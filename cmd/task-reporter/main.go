@@ -31,23 +31,16 @@ func main() {
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
-	launchTaskReporter(
-		clientset,
-		cfg.CAPath,
-		cfg.CCCertPath,
-		cfg.CCKeyPath,
-		cfg.Namespace,
-		cfg.EiriniInstance,
-	)
+	launchTaskReporter(clientset, cfg)
 }
 
-func launchTaskReporter(clientset kubernetes.Interface, ca, ccCert, ccKey, namespace, eiriniInstance string) {
+func launchTaskReporter(clientset kubernetes.Interface, cfg eirini.TaskReporterConfig) {
 	httpClient, err := util.CreateTLSHTTPClient(
 		[]util.CertPaths{
 			{
-				Crt: ccCert,
-				Key: ccKey,
-				Ca:  ca,
+				Crt: cfg.CCCertPath,
+				Key: cfg.CCKeyPath,
+				Ca:  cfg.CAPath,
 			},
 		},
 	)
@@ -59,9 +52,9 @@ func launchTaskReporter(clientset kubernetes.Interface, ca, ccCert, ccKey, names
 	reporter := task.StateReporter{
 		Client:      httpClient,
 		Logger:      taskLogger,
-		TaskDeleter: initTaskDeleter(namespace, clientset),
+		TaskDeleter: initTaskDeleter(cfg.Namespace, clientset),
 	}
-	taskInformer := task.NewInformer(clientset, 0, namespace, reporter, make(chan struct{}), taskLogger, eiriniInstance)
+	taskInformer := task.NewInformer(clientset, 0, cfg.Namespace, reporter, make(chan struct{}), taskLogger, cfg.EiriniInstance)
 
 	taskInformer.Start()
 }
@@ -70,21 +63,24 @@ func initTaskDeleter(namespace string, clientset kubernetes.Interface) task.Dele
 	logger := lager.NewLogger("task-deleter")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	return &k8s.TaskDesirer{
-		DefaultStagingNamespace: namespace,
-		JobClient:               k8s.NewJobClient(clientset),
-		Logger:                  logger,
-		SecretsClient:           k8s.NewSecretsClient(clientset),
-	}
+	return k8s.NewTaskDesirer(
+		logger,
+		k8s.NewJobClient(clientset),
+		k8s.NewSecretsClient(clientset),
+		"",
+		nil,
+		"",
+		"",
+		"")
 }
 
-func readConfigFile(path string) (*eirini.TaskReporterConfig, error) {
+func readConfigFile(path string) (eirini.TaskReporterConfig, error) {
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read file")
+		return eirini.TaskReporterConfig{}, errors.Wrap(err, "failed to read file")
 	}
 
 	var conf eirini.TaskReporterConfig
 	err = yaml.Unmarshal(fileBytes, &conf)
-	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
+	return conf, errors.Wrap(err, "failed to unmarshal yaml")
 }

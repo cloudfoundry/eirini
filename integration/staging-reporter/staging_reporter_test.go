@@ -25,7 +25,7 @@ var _ = Describe("StagingReporter", func() {
 		certPath     string
 		keyPath      string
 		session      *gexec.Session
-		taskDesirer  k8s.TaskDesirer
+		taskDesirer  *k8s.TaskDesirer
 	)
 
 	BeforeEach(func() {
@@ -48,12 +48,16 @@ var _ = Describe("StagingReporter", func() {
 
 		session, configFile = eiriniBins.StagingReporter.Run(config)
 
-		taskDesirer = k8s.TaskDesirer{
-			DefaultStagingNamespace: fixture.Namespace,
-			ServiceAccountName:      "",
-			JobClient:               k8s.NewJobClient(fixture.Clientset),
-			Logger:                  lagertest.NewTestLogger("staging-reporter-test"),
-		}
+		taskDesirer = k8s.NewTaskDesirer(
+			lagertest.NewTestLogger("staging-reporter-test"),
+			k8s.NewJobClient(fixture.Clientset),
+			nil,
+			fixture.Namespace,
+			nil,
+			"",
+			"",
+			"",
+		)
 	})
 
 	AfterEach(func() {
