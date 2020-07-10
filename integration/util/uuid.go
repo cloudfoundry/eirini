@@ -10,4 +10,3 @@ func GenerateGUID() string {
 	Expect(err).NotTo(HaveOccurred())
 	return guid[:30]
 }
-
