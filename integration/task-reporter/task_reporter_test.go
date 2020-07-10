@@ -31,6 +31,7 @@ var _ = Describe("TaskReporter", func() {
 		session               *gexec.Session
 		taskDesirer           k8s.TaskDesirer
 		task                  *opi.Task
+		config                *eirini.TaskReporterConfig
 	)
 
 	BeforeEach(func() {
@@ -41,22 +42,17 @@ var _ = Describe("TaskReporter", func() {
 		Expect(err).ToNot(HaveOccurred())
 		cloudControllerServer.Start()
 
-		handlers = []http.HandlerFunc{
-			ghttp.VerifyRequest("POST", "/the-callback"),
-			ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{TaskGUID: "the-task-guid"}),
-		}
-
-		config := &eirini.TaskReporterConfig{
+		eiriniInstance := fmt.Sprintf("%s-%d", util.GenerateGUID(), GinkgoParallelNode())
+		config = &eirini.TaskReporterConfig{
 			KubeConfig: eirini.KubeConfig{
 				Namespace:  fixture.Namespace,
 				ConfigPath: fixture.KubeConfigPath,
 			},
-			CCCertPath: certPath,
-			CAPath:     certPath,
-			CCKeyPath:  keyPath,
+			CCCertPath:     certPath,
+			CAPath:         certPath,
+			CCKeyPath:      keyPath,
+			EiriniInstance: eiriniInstance,
 		}
-
-		session, configFile = eiriniBins.TaskReporter.Run(config)
 
 		taskDesirer = k8s.TaskDesirer{
 			DefaultStagingNamespace: fixture.Namespace,
@@ -64,12 +60,14 @@ var _ = Describe("TaskReporter", func() {
 			JobClient:               k8s.NewJobClient(fixture.Clientset),
 			Logger:                  lagertest.NewTestLogger("task-reporter-test"),
 			SecretsClient:           k8s.NewSecretsClient(fixture.Clientset),
+			EiriniInstance:          eiriniInstance,
 		}
 
+		taskGUID := util.GenerateGUID()
 		task = &opi.Task{
 			Image:              "busybox",
 			Command:            []string{"echo", "hi"},
-			GUID:               util.Guidify("the-task-guid"),
+			GUID:               taskGUID,
 			CompletionCallback: fmt.Sprintf("%s/the-callback", cloudControllerServer.URL()),
 			AppName:            "app",
 			AppGUID:            "app-guid",
@@ -81,6 +79,11 @@ var _ = Describe("TaskReporter", func() {
 			DiskMB:             200,
 			CPUWeight:          1,
 		}
+
+		handlers = []http.HandlerFunc{
+			ghttp.VerifyRequest("POST", "/the-callback"),
+			ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{TaskGUID: taskGUID}),
+		}
 	})
 
 	JustBeforeEach(func() {
@@ -88,6 +91,7 @@ var _ = Describe("TaskReporter", func() {
 			ghttp.CombineHandlers(handlers...),
 		)
 
+		session, configFile = eiriniBins.TaskReporter.Run(config)
 		Expect(taskDesirer.Desire(fixture.Namespace, task)).To(Succeed())
 	})
 
@@ -107,18 +111,17 @@ var _ = Describe("TaskReporter", func() {
 	})
 
 	It("deletes the job", func() {
-		Eventually(getTaskJobsFn("the-task-guid"), "1m").Should(BeEmpty())
+		Eventually(getTaskJobsFn(task.GUID), "1m").Should(BeEmpty())
 	})
 
 	When("a task job fails", func() {
 		BeforeEach(func() {
-			task.GUID = util.Guidify("failing-task-guid")
 			task.Command = []string{"false"}
 
 			handlers = []http.HandlerFunc{
 				ghttp.VerifyRequest("POST", "/the-callback"),
 				ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
-					TaskGUID:      "failing-task-guid",
+					TaskGUID:      task.GUID,
 					Failed:        true,
 					FailureReason: "Error",
 				}),
@@ -131,7 +134,7 @@ var _ = Describe("TaskReporter", func() {
 		})
 
 		It("deletes the job", func() {
-			Eventually(getTaskJobsFn("failing-task-guid"), "20s").Should(BeEmpty())
+			Eventually(getTaskJobsFn(task.GUID), "20s").Should(BeEmpty())
 		})
 	})
 
@@ -166,6 +169,20 @@ var _ = Describe("TaskReporter", func() {
 				_, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Get(registrySecretName, metav1.GetOptions{})
 				return err
 			}, "10s").Should(MatchError(ContainSubstring(`secrets "%s" not found`, registrySecretName)))
+		})
+	})
+
+	When("the job is labeled with a different eirini instance ID", func() {
+		BeforeEach(func() {
+			config.EiriniInstance = "your-eirini" + util.GenerateGUID()
+		})
+
+		It("does not notify the cloud controller", func() {
+			Consistently(cloudControllerServer.ReceivedRequests, "10s").Should(BeEmpty())
+		})
+
+		It("does not delete the task", func() {
+			Consistently(getTaskJobsFn(task.GUID), "10s").ShouldNot(BeEmpty())
 		})
 	})
 })

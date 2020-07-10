@@ -52,6 +52,7 @@ type TaskDesirer struct {
 	Logger                    lager.Logger
 	SecretsClient             SecretsCreatorDeleter
 	StatefulSets              StatefulSetClient
+	EiriniInstance            string
 }
 
 func (d *TaskDesirer) Desire(namespace string, task *opi.Task) error {
@@ -111,6 +112,7 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 	job.Spec.Template.Spec.ServiceAccountName = d.ServiceAccountName
 	job.Labels[LabelSourceType] = taskSourceType
 	job.Labels[LabelName] = task.Name
+	job.Labels[LabelEiriniInstance] = d.EiriniInstance
 	job.Annotations[AnnotationCompletionCallback] = task.CompletionCallback
 	job.Spec.Template.Annotations[AnnotationGUID] = task.GUID
 	job.Spec.Template.Annotations[AnnotationOpiTaskContainerName] = opiTaskContainerName

@@ -37,10 +37,11 @@ func main() {
 		cfg.CCCertPath,
 		cfg.CCKeyPath,
 		cfg.Namespace,
+		cfg.EiriniInstance,
 	)
 }
 
-func launchTaskReporter(clientset kubernetes.Interface, ca, ccCert, ccKey, namespace string) {
+func launchTaskReporter(clientset kubernetes.Interface, ca, ccCert, ccKey, namespace, eiriniInstance string) {
 	httpClient, err := util.CreateTLSHTTPClient(
 		[]util.CertPaths{
 			{
@@ -60,7 +61,7 @@ func launchTaskReporter(clientset kubernetes.Interface, ca, ccCert, ccKey, names
 		Logger:      taskLogger,
 		TaskDeleter: initTaskDeleter(namespace, clientset),
 	}
-	taskInformer := task.NewInformer(clientset, 0, namespace, reporter, make(chan struct{}), taskLogger)
+	taskInformer := task.NewInformer(clientset, 0, namespace, reporter, make(chan struct{}), taskLogger, eiriniInstance)
 
 	taskInformer.Start()
 }

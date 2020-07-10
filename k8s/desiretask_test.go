@@ -138,6 +138,7 @@ var _ = Describe("TaskDesirer", func() {
 			RegistrySecretName:        "registry-secret",
 			Logger:                    lagertest.NewTestLogger("desiretask"),
 			SecretsClient:             fakeSecretsClient,
+			EiriniInstance:            "my-eirini",
 		}
 	})
 
@@ -191,6 +192,7 @@ var _ = Describe("TaskDesirer", func() {
 					HaveKeyWithValue(LabelGUID, "task-123"),
 					HaveKeyWithValue(LabelSourceType, "TASK"),
 					HaveKeyWithValue(LabelName, "task-name"),
+					HaveKeyWithValue(LabelEiriniInstance, "my-eirini"),
 				))
 			})
 
@@ -216,7 +218,7 @@ var _ = Describe("TaskDesirer", func() {
 				))
 			})
 
-			By("not setting stating-specific labels on the job", func() {
+			By("not setting staging-specific labels on the job", func() {
 				Expect(job.Labels[LabelSourceType]).NotTo(Equal("STG"))
 				Expect(job.Labels).NotTo(HaveKey(LabelStagingGUID))
 			})
@@ -494,6 +496,10 @@ var _ = Describe("TaskDesirer", func() {
 			Entry("LabelSourceType", LabelSourceType, "STG"),
 			Entry("LabelStagingGUID", LabelStagingGUID, taskGUID),
 		)
+
+		It("does not set the eirini instance label", func() {
+			Expect(job.Labels).NotTo(HaveKey(LabelEiriniInstance))
+		})
 
 		Context("When the staging task already exists", func() {
 			BeforeEach(func() {

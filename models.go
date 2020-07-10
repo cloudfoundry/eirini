@@ -138,9 +138,10 @@ type MetricsCollectorConfig struct {
 }
 
 type TaskReporterConfig struct {
-	CCCertPath string `yaml:"cc_cert_path"`
-	CCKeyPath  string `yaml:"cc_key_path"`
-	CAPath     string `yaml:"ca_path"`
+	CCCertPath     string `yaml:"cc_cert_path"`
+	CCKeyPath      string `yaml:"cc_key_path"`
+	CAPath         string `yaml:"ca_path"`
+	EiriniInstance string `yaml:"eirini_instance,omitempty"`
 
 	KubeConfig `yaml:",inline"`
 }
