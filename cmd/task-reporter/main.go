@@ -70,10 +70,10 @@ func initTaskDeleter(namespace string, clientset kubernetes.Interface) task.Dele
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	return &k8s.TaskDesirer{
-		DefaultStagingNamespace: namespace,
-		JobClient:               k8s.NewJobClient(clientset),
-		Logger:                  logger,
-		SecretsClient:           k8s.NewSecretsClient(clientset),
+		Namespace:     namespace,
+		JobClient:     clientset.BatchV1().Jobs(namespace),
+		Logger:        logger,
+		SecretsClient: k8s.NewSecretsClient(clientset),
 	}
 }
 

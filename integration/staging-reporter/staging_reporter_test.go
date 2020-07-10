@@ -49,10 +49,10 @@ var _ = Describe("StagingReporter", func() {
 		session, configFile = eiriniBins.StagingReporter.Run(config)
 
 		taskDesirer = k8s.TaskDesirer{
-			DefaultStagingNamespace: fixture.Namespace,
-			ServiceAccountName:      "",
-			JobClient:               k8s.NewJobClient(fixture.Clientset),
-			Logger:                  lagertest.NewTestLogger("staging-reporter-test"),
+			Namespace:          fixture.Namespace,
+			ServiceAccountName: "",
+			JobClient:          fixture.Clientset.BatchV1().Jobs(fixture.Namespace),
+			Logger:             lagertest.NewTestLogger("staging-reporter-test"),
 		}
 	})
 

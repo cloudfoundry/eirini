@@ -137,13 +137,13 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	return &k8s.TaskDesirer{
-		DefaultStagingNamespace:   cfg.Properties.Namespace,
+		Namespace:                 cfg.Properties.Namespace,
 		TLSConfig:                 tlsConfigs,
 		ServiceAccountName:        cfg.Properties.ApplicationServiceAccount,
 		StagingServiceAccountName: cfg.Properties.StagingServiceAccount,
 		RegistrySecretName:        cfg.Properties.RegistrySecretName,
 		SecretsClient:             k8s.NewSecretsClient(clientset),
-		JobClient:                 k8s.NewJobClient(clientset),
+		JobClient:                 clientset.BatchV1().Jobs(cfg.Properties.Namespace),
 		Logger:                    logger,
 	}
 }
@@ -180,10 +180,9 @@ func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifros
 	taskDesirer := initTaskDesirer(cfg, clientset)
 	retryableJSONClient := initRetryableJSONClient(cfg)
 	return &bifrost.Task{
-		DefaultNamespace: cfg.Properties.Namespace,
-		Converter:        converter,
-		TaskDesirer:      taskDesirer,
-		JSONClient:       retryableJSONClient,
+		Converter:   converter,
+		TaskDesirer: taskDesirer,
+		JSONClient:  retryableJSONClient,
 	}
 }
 

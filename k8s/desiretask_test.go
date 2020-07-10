@@ -22,10 +22,10 @@ import (
 
 var _ = Describe("TaskDesirer", func() {
 	const (
-		Image            = "docker.png"
-		CertsSecretName  = "secret-certs"
-		defaultNamespace = "default-ns"
-		taskGUID         = "task-123"
+		Namespace       = "tests"
+		Image           = "docker.png"
+		CertsSecretName = "secret-certs"
+		taskGUID        = "task-123"
 	)
 
 	var (
@@ -34,7 +34,6 @@ var _ = Describe("TaskDesirer", func() {
 		fakeJobClient     *k8sfakes.FakeJobClient
 		fakeSecretsClient *k8sfakes.FakeSecretsCreatorDeleter
 		job               *batch.Job
-		jobNamespace      string
 	)
 
 	assertGeneralSpec := func(job *batch.Job) {
@@ -130,7 +129,7 @@ var _ = Describe("TaskDesirer", func() {
 		}
 
 		desirer = &TaskDesirer{
-			DefaultStagingNamespace:   defaultNamespace,
+			Namespace:                 Namespace,
 			TLSConfig:                 tlsStagingConfigs,
 			JobClient:                 fakeJobClient,
 			ServiceAccountName:        "service-account",
@@ -149,14 +148,14 @@ var _ = Describe("TaskDesirer", func() {
 		})
 
 		JustBeforeEach(func() {
-			err = desirer.Desire("app-namespace", task)
+			err = desirer.Desire(task)
 		})
 
 		It("should create a job for the task with the correct attributes", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
-			jobNamespace, job = fakeJobClient.CreateArgsForCall(0)
+			job = fakeJobClient.CreateArgsForCall(0)
 
 			assertGeneralSpec(job)
 
@@ -168,10 +167,6 @@ var _ = Describe("TaskDesirer", func() {
 			Expect(containers).To(HaveLen(1))
 			assertContainer(containers[0], "opi-task")
 			Expect(containers[0].Command).To(ConsistOf("/lifecycle/launch"))
-
-			By("setting the job's namespace to the app's namespace", func() {
-				Expect(jobNamespace).To(Equal("app-namespace"))
-			})
 
 			By("setting the expected annotations on the job", func() {
 				Expect(job.Annotations).To(SatisfyAll(
@@ -232,7 +227,7 @@ var _ = Describe("TaskDesirer", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
-				_, job = fakeJobClient.CreateArgsForCall(0)
+				job = fakeJobClient.CreateArgsForCall(0)
 
 				Expect(job.GenerateName).To(Equal(taskGUID + "-"))
 			})
@@ -261,7 +256,7 @@ var _ = Describe("TaskDesirer", func() {
 			It("creates a secret with the registry credentials", func() {
 				Expect(fakeSecretsClient.CreateCallCount()).To(Equal(1))
 				namespace, actualSecret := fakeSecretsClient.CreateArgsForCall(0)
-				Expect(namespace).To(Equal("app-namespace"))
+				Expect(namespace).To(Equal("tests"))
 				Expect(actualSecret.GenerateName).To(Equal("my-app-my-space-registry-secret-"))
 				Expect(actualSecret.Type).To(Equal(v1.SecretTypeDockerConfigJson))
 				Expect(actualSecret.StringData).To(
@@ -275,7 +270,7 @@ var _ = Describe("TaskDesirer", func() {
 				)
 
 				Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
-				_, job = fakeJobClient.CreateArgsForCall(0)
+				job = fakeJobClient.CreateArgsForCall(0)
 
 				Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(
 					v1.LocalObjectReference{Name: "registry-secret"},
@@ -446,11 +441,9 @@ var _ = Describe("TaskDesirer", func() {
 		})
 
 		JustBeforeEach(func() {
-			var namespace string
 			err = desirer.DesireStaging(stagingTask)
 			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
-			namespace, job = fakeJobClient.CreateArgsForCall(0)
-			Expect(namespace).To(Equal(defaultNamespace))
+			job = fakeJobClient.CreateArgsForCall(0)
 		})
 
 		It("should desire the staging task", func() {
@@ -539,9 +532,8 @@ var _ = Describe("TaskDesirer", func() {
 			Expect(fakeJobClient.ListArgsForCall(0).LabelSelector).To(Equal(fmt.Sprintf("%s=%s", LabelStagingGUID, taskGUID)))
 
 			Expect(fakeJobClient.DeleteCallCount()).To(Equal(1))
-			namespace, jobName, _ := fakeJobClient.DeleteArgsForCall(0)
+			jobName, _ := fakeJobClient.DeleteArgsForCall(0)
 			Expect(jobName).To(Equal("my-job"))
-			Expect(namespace).To(Equal("my-namespace"))
 		})
 
 		When("deleting a non-staging job", func() {

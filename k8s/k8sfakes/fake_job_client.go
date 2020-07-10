@@ -10,11 +10,10 @@ import (
 )
 
 type FakeJobClient struct {
-	CreateStub        func(string, *v1.Job) (*v1.Job, error)
+	CreateStub        func(*v1.Job) (*v1.Job, error)
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
-		arg1 string
-		arg2 *v1.Job
+		arg1 *v1.Job
 	}
 	createReturns struct {
 		result1 *v1.Job
@@ -24,12 +23,11 @@ type FakeJobClient struct {
 		result1 *v1.Job
 		result2 error
 	}
-	DeleteStub        func(string, string, *v1a.DeleteOptions) error
+	DeleteStub        func(string, *v1a.DeleteOptions) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
 		arg1 string
-		arg2 string
-		arg3 *v1a.DeleteOptions
+		arg2 *v1a.DeleteOptions
 	}
 	deleteReturns struct {
 		result1 error
@@ -50,11 +48,10 @@ type FakeJobClient struct {
 		result1 *v1.JobList
 		result2 error
 	}
-	UpdateStub        func(string, *v1.Job) (*v1.Job, error)
+	UpdateStub        func(*v1.Job) (*v1.Job, error)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
-		arg1 string
-		arg2 *v1.Job
+		arg1 *v1.Job
 	}
 	updateReturns struct {
 		result1 *v1.Job
@@ -68,17 +65,16 @@ type FakeJobClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeJobClient) Create(arg1 string, arg2 *v1.Job) (*v1.Job, error) {
+func (fake *FakeJobClient) Create(arg1 *v1.Job) (*v1.Job, error) {
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
-		arg1 string
-		arg2 *v1.Job
-	}{arg1, arg2})
-	fake.recordInvocation("Create", []interface{}{arg1, arg2})
+		arg1 *v1.Job
+	}{arg1})
+	fake.recordInvocation("Create", []interface{}{arg1})
 	fake.createMutex.Unlock()
 	if fake.CreateStub != nil {
-		return fake.CreateStub(arg1, arg2)
+		return fake.CreateStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -93,17 +89,17 @@ func (fake *FakeJobClient) CreateCallCount() int {
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakeJobClient) CreateCalls(stub func(string, *v1.Job) (*v1.Job, error)) {
+func (fake *FakeJobClient) CreateCalls(stub func(*v1.Job) (*v1.Job, error)) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = stub
 }
 
-func (fake *FakeJobClient) CreateArgsForCall(i int) (string, *v1.Job) {
+func (fake *FakeJobClient) CreateArgsForCall(i int) *v1.Job {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	argsForCall := fake.createArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1
 }
 
 func (fake *FakeJobClient) CreateReturns(result1 *v1.Job, result2 error) {
@@ -132,18 +128,17 @@ func (fake *FakeJobClient) CreateReturnsOnCall(i int, result1 *v1.Job, result2 e
 	}{result1, result2}
 }
 
-func (fake *FakeJobClient) Delete(arg1 string, arg2 string, arg3 *v1a.DeleteOptions) error {
+func (fake *FakeJobClient) Delete(arg1 string, arg2 *v1a.DeleteOptions) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
 		arg1 string
-		arg2 string
-		arg3 *v1a.DeleteOptions
-	}{arg1, arg2, arg3})
-	fake.recordInvocation("Delete", []interface{}{arg1, arg2, arg3})
+		arg2 *v1a.DeleteOptions
+	}{arg1, arg2})
+	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
-		return fake.DeleteStub(arg1, arg2, arg3)
+		return fake.DeleteStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -158,17 +153,17 @@ func (fake *FakeJobClient) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeJobClient) DeleteCalls(stub func(string, string, *v1a.DeleteOptions) error) {
+func (fake *FakeJobClient) DeleteCalls(stub func(string, *v1a.DeleteOptions) error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakeJobClient) DeleteArgsForCall(i int) (string, string, *v1a.DeleteOptions) {
+func (fake *FakeJobClient) DeleteArgsForCall(i int) (string, *v1a.DeleteOptions) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeJobClient) DeleteReturns(result1 error) {
@@ -257,17 +252,16 @@ func (fake *FakeJobClient) ListReturnsOnCall(i int, result1 *v1.JobList, result2
 	}{result1, result2}
 }
 
-func (fake *FakeJobClient) Update(arg1 string, arg2 *v1.Job) (*v1.Job, error) {
+func (fake *FakeJobClient) Update(arg1 *v1.Job) (*v1.Job, error) {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
-		arg1 string
-		arg2 *v1.Job
-	}{arg1, arg2})
-	fake.recordInvocation("Update", []interface{}{arg1, arg2})
+		arg1 *v1.Job
+	}{arg1})
+	fake.recordInvocation("Update", []interface{}{arg1})
 	fake.updateMutex.Unlock()
 	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1, arg2)
+		return fake.UpdateStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -282,17 +276,17 @@ func (fake *FakeJobClient) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeJobClient) UpdateCalls(stub func(string, *v1.Job) (*v1.Job, error)) {
+func (fake *FakeJobClient) UpdateCalls(stub func(*v1.Job) (*v1.Job, error)) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakeJobClient) UpdateArgsForCall(i int) (string, *v1.Job) {
+func (fake *FakeJobClient) UpdateArgsForCall(i int) *v1.Job {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1
 }
 
 func (fake *FakeJobClient) UpdateReturns(result1 *v1.Job, result2 error) {

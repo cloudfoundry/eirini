@@ -101,7 +101,6 @@ type TaskRequest struct {
 	OrgGUID            string                `json:"org_guid"`
 	SpaceName          string                `json:"space_name"`
 	SpaceGUID          string                `json:"space_guid"`
-	Namespace          string                `json:"namespace"`
 	CompletionCallback string                `json:"completion_callback"`
 	Environment        []EnvironmentVariable `json:"environment"`
 	Lifecycle          Lifecycle             `json:"lifecycle"`

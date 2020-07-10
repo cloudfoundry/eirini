@@ -32,10 +32,9 @@ var _ = Describe("Buildpack task", func() {
 		task = opi.Task{GUID: "my-guid"}
 		taskConverter.ConvertTaskReturns(task, nil)
 		taskBifrost = &bifrost.Task{
-			DefaultNamespace: "default-namespace",
-			Converter:        taskConverter,
-			TaskDesirer:      taskDesirer,
-			JSONClient:       jsonClient,
+			Converter:   taskConverter,
+			TaskDesirer: taskDesirer,
+			JSONClient:  jsonClient,
 		}
 	})
 
@@ -53,7 +52,6 @@ var _ = Describe("Buildpack task", func() {
 				OrgGUID:            "asdf123",
 				SpaceName:          "my-space",
 				SpaceGUID:          "fdsa4321",
-				Namespace:          "our-namespace",
 				CompletionCallback: "my-callback",
 				Environment:        nil,
 				Lifecycle: cf.Lifecycle{
@@ -82,21 +80,8 @@ var _ = Describe("Buildpack task", func() {
 			Expect(actualTaskRequest).To(Equal(taskRequest))
 
 			Expect(taskDesirer.DesireCallCount()).To(Equal(1))
-			namespace, desiredTask := taskDesirer.DesireArgsForCall(0)
+			desiredTask := taskDesirer.DesireArgsForCall(0)
 			Expect(desiredTask.GUID).To(Equal("my-guid"))
-			Expect(namespace).To(Equal(taskRequest.Namespace))
-		})
-
-		When("the task request has an empty namespace", func() {
-			BeforeEach(func() {
-				taskRequest.Namespace = ""
-			})
-
-			It("desires the task in the default namespace", func() {
-				namespace, _ := taskDesirer.DesireArgsForCall(0)
-				Expect(namespace).To(Equal("default-namespace"))
-			})
-
 		})
 
 		When("converting the task fails", func() {
