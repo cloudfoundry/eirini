@@ -17,7 +17,7 @@ type TaskConverter interface {
 //counterfeiter:generate . TaskDesirer
 
 type TaskDesirer interface {
-	Desire(task *opi.Task) error
+	Desire(namespace string, task *opi.Task) error
 	Delete(guid string) (string, error)
 }
 
@@ -28,22 +28,28 @@ type JSONClient interface {
 }
 
 type Task struct {
-	Converter   TaskConverter
-	TaskDesirer TaskDesirer
-	JSONClient  JSONClient
+	DefaultNamespace string
+	Converter        TaskConverter
+	TaskDesirer      TaskDesirer
+	JSONClient       JSONClient
 }
 
-func (b *Task) TransferTask(ctx context.Context, taskGUID string, taskRequest cf.TaskRequest) error {
-	desiredTask, err := b.Converter.ConvertTask(taskGUID, taskRequest)
+func (t *Task) TransferTask(ctx context.Context, taskGUID string, taskRequest cf.TaskRequest) error {
+	desiredTask, err := t.Converter.ConvertTask(taskGUID, taskRequest)
 	if err != nil {
 		return errors.Wrap(err, "failed to convert task")
 	}
 
-	return errors.Wrap(b.TaskDesirer.Desire(&desiredTask), "failed to desire")
+	namespace := t.DefaultNamespace
+	if taskRequest.Namespace != "" {
+		namespace = taskRequest.Namespace
+	}
+
+	return errors.Wrap(t.TaskDesirer.Desire(namespace, &desiredTask), "failed to desire")
 }
 
-func (b *Task) CancelTask(taskGUID string) error {
-	callbackURL, err := b.TaskDesirer.Delete(taskGUID)
+func (t *Task) CancelTask(taskGUID string) error {
+	callbackURL, err := t.TaskDesirer.Delete(taskGUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete task %s", taskGUID)
 	}
@@ -53,7 +59,7 @@ func (b *Task) CancelTask(taskGUID string) error {
 	}
 
 	go func() {
-		_ = b.JSONClient.Post(callbackURL, cf.TaskCompletedRequest{
+		_ = t.JSONClient.Post(callbackURL, cf.TaskCompletedRequest{
 			TaskGUID:      taskGUID,
 			Failed:        true,
 			FailureReason: "task was cancelled",
