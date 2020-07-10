@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
 	"code.cloudfoundry.org/eirini/integration/util"
 	. "github.com/onsi/ginkgo"
@@ -36,6 +37,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	return data
 }, func(data []byte) {
+	SetDefaultEventuallyTimeout(60 * time.Second)
 	err := json.Unmarshal(data, &eiriniBins)
 	Expect(err).NotTo(HaveOccurred())
 
