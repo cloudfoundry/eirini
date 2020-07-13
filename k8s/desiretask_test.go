@@ -8,6 +8,7 @@ import (
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -15,6 +16,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/pkg/errors"
 	batch "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -138,6 +140,7 @@ var _ = Describe("TaskDesirer", func() {
 			"service-account",
 			"staging-service-account",
 			"registry-secret",
+			"rootfs-version",
 			"my-eirini",
 		)
 	})
@@ -183,6 +186,7 @@ var _ = Describe("TaskDesirer", func() {
 					HaveKeyWithValue(AnnotationSpaceName, "my-space"),
 					HaveKeyWithValue(AnnotationSpaceGUID, "space-id"),
 					HaveKeyWithValue(AnnotationCompletionCallback, "cloud-countroller.io/task/completed"),
+					HaveKeyWithValue(corev1.SeccompPodAnnotationKey, corev1.SeccompProfileRuntimeDefault),
 				))
 			})
 
@@ -193,6 +197,7 @@ var _ = Describe("TaskDesirer", func() {
 					HaveKeyWithValue(LabelSourceType, "TASK"),
 					HaveKeyWithValue(LabelName, "task-name"),
 					HaveKeyWithValue(LabelEiriniInstance, "my-eirini"),
+					HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, "rootfs-version"),
 				))
 			})
 
@@ -207,6 +212,7 @@ var _ = Describe("TaskDesirer", func() {
 					HaveKeyWithValue(AnnotationOpiTaskContainerName, "opi-task"),
 					HaveKeyWithValue(AnnotationGUID, "task-123"),
 					HaveKeyWithValue(AnnotationCompletionCallback, "cloud-countroller.io/task/completed"),
+					HaveKeyWithValue(corev1.SeccompPodAnnotationKey, corev1.SeccompProfileRuntimeDefault),
 				))
 			})
 
@@ -495,6 +501,19 @@ var _ = Describe("TaskDesirer", func() {
 			Entry("LabelGUID", LabelGUID, "task-123"),
 			Entry("LabelSourceType", LabelSourceType, "STG"),
 			Entry("LabelStagingGUID", LabelStagingGUID, taskGUID),
+			Entry("LabelRootfsVersion", rootfspatcher.RootfsVersionLabel, "rootfs-version"),
+		)
+
+		DescribeTable("the task should have the expected annotations", func(key, value string) {
+			Expect(job.Annotations).To(HaveKeyWithValue(key, value))
+		},
+			Entry("AnnotationAppName", AnnotationAppName, "my-app"),
+			Entry("AnnotationAppID", AnnotationAppID, "my-app-guid"),
+			Entry("AnnotationOrgName", AnnotationOrgName, "my-org"),
+			Entry("AnnotationOrgGUID", AnnotationOrgGUID, "org-id"),
+			Entry("AnnotationSpaceName", AnnotationSpaceName, "my-space"),
+			Entry("AnnotationSpaceGUID", AnnotationSpaceGUID, "space-id"),
+			Entry("SeccompPodAnnotationKey", corev1.SeccompPodAnnotationKey, corev1.SeccompProfileRuntimeDefault),
 		)
 
 		It("does not set the eirini instance label", func() {

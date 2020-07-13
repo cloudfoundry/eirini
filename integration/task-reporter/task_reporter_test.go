@@ -63,6 +63,7 @@ var _ = Describe("TaskReporter", func() {
 			"",
 			"",
 			"",
+			"",
 			eiriniInstance)
 
 		taskGUID := util.GenerateGUID()

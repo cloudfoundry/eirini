@@ -8,7 +8,9 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/lager"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,6 +53,7 @@ type TaskDesirer struct {
 	stagingServiceAccountName string
 	registrySecretName        string
 	eiriniInstance            string
+	rootfsVersion             string
 }
 
 func NewTaskDesirer(
@@ -62,6 +65,7 @@ func NewTaskDesirer(
 	serviceAccountName string,
 	stagingServiceAccountName string,
 	registrySecretName string,
+	rootfsVersion string,
 ) *TaskDesirer {
 	return &TaskDesirer{
 		logger:                    logger,
@@ -72,6 +76,7 @@ func NewTaskDesirer(
 		serviceAccountName:        serviceAccountName,
 		stagingServiceAccountName: stagingServiceAccountName,
 		registrySecretName:        registrySecretName,
+		rootfsVersion:             rootfsVersion,
 	}
 }
 
@@ -84,6 +89,7 @@ func NewTaskDesirerWithEiriniInstance(
 	serviceAccountName string,
 	stagingServiceAccountName string,
 	registrySecretName string,
+	rootfsVersion string,
 	eiriniInstance string,
 ) *TaskDesirer {
 	desirer := NewTaskDesirer(
@@ -95,6 +101,7 @@ func NewTaskDesirerWithEiriniInstance(
 		serviceAccountName,
 		stagingServiceAccountName,
 		registrySecretName,
+		rootfsVersion,
 	)
 	desirer.eiriniInstance = eiriniInstance
 	return desirer
@@ -392,17 +399,19 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 	job.GenerateName = namePrefix
 
 	job.Labels = map[string]string{
-		LabelGUID:    task.GUID,
-		LabelAppGUID: task.AppGUID,
+		LabelGUID:                        task.GUID,
+		LabelAppGUID:                     task.AppGUID,
+		rootfspatcher.RootfsVersionLabel: d.rootfsVersion,
 	}
 
 	job.Annotations = map[string]string{
-		AnnotationAppName:   task.AppName,
-		AnnotationAppID:     task.AppGUID,
-		AnnotationOrgName:   task.OrgName,
-		AnnotationOrgGUID:   task.OrgGUID,
-		AnnotationSpaceName: task.SpaceName,
-		AnnotationSpaceGUID: task.SpaceGUID,
+		AnnotationAppName:              task.AppName,
+		AnnotationAppID:                task.AppGUID,
+		AnnotationOrgName:              task.OrgName,
+		AnnotationOrgGUID:              task.OrgGUID,
+		AnnotationSpaceName:            task.SpaceName,
+		AnnotationSpaceGUID:            task.SpaceGUID,
+		corev1.SeccompPodAnnotationKey: corev1.SeccompProfileRuntimeDefault,
 	}
 
 	job.Spec.Template.Labels = job.Labels

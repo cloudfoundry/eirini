@@ -71,6 +71,7 @@ func initTaskDeleter(clientset kubernetes.Interface) task.Deleter {
 		nil,
 		"",
 		"",
+		"",
 		"")
 }
 

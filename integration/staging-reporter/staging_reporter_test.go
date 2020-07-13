@@ -57,6 +57,7 @@ var _ = Describe("StagingReporter", func() {
 			"",
 			"",
 			"",
+			"",
 		)
 	})
 

@@ -145,6 +145,7 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 		cfg.Properties.ApplicationServiceAccount,
 		cfg.Properties.StagingServiceAccount,
 		cfg.Properties.RegistrySecretName,
+		cfg.Properties.RootfsVersion,
 	)
 }
 
