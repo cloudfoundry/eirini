@@ -17,7 +17,6 @@ import (
 	"github.com/pkg/errors"
 	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -41,42 +40,42 @@ var _ = Describe("TaskDesirer", func() {
 
 	assertGeneralSpec := func(job *batch.Job) {
 		automountServiceAccountToken := false
-		Expect(job.Spec.Template.Spec.RestartPolicy).To(Equal(v1.RestartPolicyNever))
+		Expect(job.Spec.Template.Spec.RestartPolicy).To(Equal(corev1.RestartPolicyNever))
 		Expect(job.Spec.Template.Spec.AutomountServiceAccountToken).To(Equal(&automountServiceAccountToken))
 		Expect(job.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(Equal(true)))
 		Expect(job.Spec.Template.Spec.SecurityContext.RunAsUser).To(PointTo(Equal(int64(2000))))
 	}
 
-	assertContainer := func(container v1.Container, name string) {
+	assertContainer := func(container corev1.Container, name string) {
 		Expect(container.Name).To(Equal(name))
 		Expect(container.Image).To(Equal(Image))
-		Expect(container.ImagePullPolicy).To(Equal(v1.PullAlways))
+		Expect(container.ImagePullPolicy).To(Equal(corev1.PullAlways))
 
 		Expect(container.Env).To(ContainElements(
-			v1.EnvVar{Name: eirini.EnvDownloadURL, Value: "example.com/download"},
-			v1.EnvVar{Name: eirini.EnvDropletUploadURL, Value: "example.com/upload"},
-			v1.EnvVar{Name: eirini.EnvAppID, Value: "env-app-id"},
-			v1.EnvVar{Name: eirini.EnvStagingGUID, Value: taskGUID},
-			v1.EnvVar{Name: eirini.EnvCFInstanceGUID, ValueFrom: expectedValFrom("metadata.uid")},
-			v1.EnvVar{Name: eirini.EnvCFInstanceInternalIP, ValueFrom: expectedValFrom("status.podIP")},
-			v1.EnvVar{Name: eirini.EnvCFInstanceIP, ValueFrom: expectedValFrom("status.hostIP")},
-			v1.EnvVar{Name: eirini.EnvPodName, ValueFrom: expectedValFrom("metadata.name")},
-			v1.EnvVar{Name: eirini.EnvCFInstanceAddr, Value: ""},
-			v1.EnvVar{Name: eirini.EnvCFInstancePort, Value: ""},
-			v1.EnvVar{Name: eirini.EnvCFInstancePorts, Value: "[]"},
+			corev1.EnvVar{Name: eirini.EnvDownloadURL, Value: "example.com/download"},
+			corev1.EnvVar{Name: eirini.EnvDropletUploadURL, Value: "example.com/upload"},
+			corev1.EnvVar{Name: eirini.EnvAppID, Value: "env-app-id"},
+			corev1.EnvVar{Name: eirini.EnvStagingGUID, Value: taskGUID},
+			corev1.EnvVar{Name: eirini.EnvCFInstanceGUID, ValueFrom: expectedValFrom("metadata.uid")},
+			corev1.EnvVar{Name: eirini.EnvCFInstanceInternalIP, ValueFrom: expectedValFrom("status.podIP")},
+			corev1.EnvVar{Name: eirini.EnvCFInstanceIP, ValueFrom: expectedValFrom("status.hostIP")},
+			corev1.EnvVar{Name: eirini.EnvPodName, ValueFrom: expectedValFrom("metadata.name")},
+			corev1.EnvVar{Name: eirini.EnvCFInstanceAddr, Value: ""},
+			corev1.EnvVar{Name: eirini.EnvCFInstancePort, Value: ""},
+			corev1.EnvVar{Name: eirini.EnvCFInstancePorts, Value: "[]"},
 		))
 	}
 
-	assertStagingContainer := func(container v1.Container, name string) {
+	assertStagingContainer := func(container corev1.Container, name string) {
 		assertContainer(container, name)
 
 		Expect(container.Env).To(ContainElements(
-			v1.EnvVar{Name: eirini.EnvCompletionCallback, Value: "example.com/call/me/maybe"},
-			v1.EnvVar{Name: eirini.EnvEiriniAddress, Value: "http://opi.cf.internal"},
+			corev1.EnvVar{Name: eirini.EnvCompletionCallback, Value: "example.com/call/me/maybe"},
+			corev1.EnvVar{Name: eirini.EnvEiriniAddress, Value: "http://opi.cf.internal"},
 		))
 	}
 
-	assertExecutorContainer := func(container v1.Container, cpu uint8, mem, disk int64) {
+	assertExecutorContainer := func(container corev1.Container, cpu uint8, mem, disk int64) {
 		assertStagingContainer(container, "opi-task-executor")
 		Expect(container.Resources.Requests.Memory()).To(Equal(resource.NewScaledQuantity(mem, resource.Mega)))
 		Expect(container.Resources.Requests.Cpu()).To(Equal(resource.NewScaledQuantity(int64(cpu*10), resource.Milli)))
@@ -166,7 +165,7 @@ var _ = Describe("TaskDesirer", func() {
 
 			Expect(job.GenerateName).To(HavePrefix("my-app-my-space-"))
 			Expect(job.Spec.Template.Spec.ServiceAccountName).To(Equal("service-account"))
-			Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(v1.LocalObjectReference{Name: "registry-secret"}))
+			Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
 
 			containers := job.Spec.Template.Spec.Containers
 			Expect(containers).To(HaveLen(1))
@@ -263,7 +262,7 @@ var _ = Describe("TaskDesirer", func() {
 					Username: "username",
 					Password: "password",
 				}
-				fakeSecretsClient.CreateReturns(&v1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "the-generated-secret-name"}}, nil)
+				fakeSecretsClient.CreateReturns(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "the-generated-secret-name"}}, nil)
 			})
 
 			It("creates a secret with the registry credentials", func() {
@@ -271,7 +270,7 @@ var _ = Describe("TaskDesirer", func() {
 				namespace, actualSecret := fakeSecretsClient.CreateArgsForCall(0)
 				Expect(namespace).To(Equal("app-namespace"))
 				Expect(actualSecret.GenerateName).To(Equal("my-app-my-space-registry-secret-"))
-				Expect(actualSecret.Type).To(Equal(v1.SecretTypeDockerConfigJson))
+				Expect(actualSecret.Type).To(Equal(corev1.SecretTypeDockerConfigJson))
 				Expect(actualSecret.StringData).To(
 					HaveKeyWithValue(
 						".dockerconfigjson",
@@ -286,8 +285,8 @@ var _ = Describe("TaskDesirer", func() {
 				_, job = fakeJobClient.CreateArgsForCall(0)
 
 				Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(
-					v1.LocalObjectReference{Name: "registry-secret"},
-					v1.LocalObjectReference{Name: "the-generated-secret-name"},
+					corev1.LocalObjectReference{Name: "registry-secret"},
+					corev1.LocalObjectReference{Name: "the-generated-secret-name"},
 				))
 			})
 
@@ -314,15 +313,15 @@ var _ = Describe("TaskDesirer", func() {
 			Expect(job.Spec.Template.Spec.Volumes).To(ConsistOf(
 				MatchFields(IgnoreExtras, Fields{
 					"Name": Equal(eirini.CertsVolumeName),
-					"VolumeSource": Equal(v1.VolumeSource{
-						Projected: &v1.ProjectedVolumeSource{
-							Sources: []v1.VolumeProjection{
+					"VolumeSource": Equal(corev1.VolumeSource{
+						Projected: &corev1.ProjectedVolumeSource{
+							Sources: []corev1.VolumeProjection{
 								{
-									Secret: &v1.SecretProjection{
-										LocalObjectReference: v1.LocalObjectReference{
+									Secret: &corev1.SecretProjection{
+										LocalObjectReference: corev1.LocalObjectReference{
 											Name: "cc-uploader-certs",
 										},
-										Items: []v1.KeyToPath{
+										Items: []corev1.KeyToPath{
 											{
 												Key:  "key-to-cc-uploader-cert",
 												Path: "cc-uploader-cert",
@@ -335,11 +334,11 @@ var _ = Describe("TaskDesirer", func() {
 									},
 								},
 								{
-									Secret: &v1.SecretProjection{
-										LocalObjectReference: v1.LocalObjectReference{
+									Secret: &corev1.SecretProjection{
+										LocalObjectReference: corev1.LocalObjectReference{
 											Name: "eirini-certs",
 										},
-										Items: []v1.KeyToPath{
+										Items: []corev1.KeyToPath{
 											{
 												Key:  "key-to-eirini-cert",
 												Path: "eirini-cert",
@@ -352,11 +351,11 @@ var _ = Describe("TaskDesirer", func() {
 									},
 								},
 								{
-									Secret: &v1.SecretProjection{
-										LocalObjectReference: v1.LocalObjectReference{
+									Secret: &corev1.SecretProjection{
+										LocalObjectReference: corev1.LocalObjectReference{
 											Name: "global-ca",
 										},
-										Items: []v1.KeyToPath{
+										Items: []corev1.KeyToPath{
 											{
 												Key:  "key-to-ca",
 												Path: "ca",
@@ -620,7 +619,7 @@ var _ = Describe("TaskDesirer", func() {
 			BeforeEach(func() {
 				dockerRegistrySecretName = fmt.Sprintf("%s-%s-registry-secret-%s", "my-app", "my-space", taskGUID)
 
-				jobs.Items[0].Spec.Template.Spec.ImagePullSecrets = []v1.LocalObjectReference{
+				jobs.Items[0].Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{
 					{Name: dockerRegistrySecretName},
 					{Name: "another-random-secret"},
 				}

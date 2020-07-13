@@ -11,7 +11,6 @@ import (
 	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/lager"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -171,17 +170,17 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 	job.Spec.Template.Annotations[AnnotationCompletionCallback] = task.CompletionCallback
 
 	envs := getEnvs(task)
-	containers := []v1.Container{
+	containers := []corev1.Container{
 		{
 			Name:            opiTaskContainerName,
 			Image:           task.Image,
-			ImagePullPolicy: v1.PullAlways,
+			ImagePullPolicy: corev1.PullAlways,
 			Env:             envs,
 			Command:         task.Command,
 		},
 	}
 
-	job.Spec.Template.Spec.ImagePullSecrets = []v1.LocalObjectReference{
+	job.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{
 		{
 			Name: d.registrySecretName,
 		},
@@ -192,11 +191,11 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 	return job
 }
 
-func (d *TaskDesirer) createTaskSecret(namespace string, task *opi.Task) (*v1.Secret, error) {
-	secret := &v1.Secret{}
+func (d *TaskDesirer) createTaskSecret(namespace string, task *opi.Task) (*corev1.Secret, error) {
+	secret := &corev1.Secret{}
 
 	secret.GenerateName = dockerImagePullSecretNamePrefix(task.AppName, task.SpaceName, task.GUID)
-	secret.Type = v1.SecretTypeDockerConfigJson
+	secret.Type = corev1.SecretTypeDockerConfigJson
 
 	dockerConfig := dockerutils.NewDockerConfig(
 		task.PrivateRegistry.Server,
@@ -219,16 +218,16 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 
 	job.Spec.Template.Spec.ServiceAccountName = d.stagingServiceAccountName
 
-	secretsVolume := v1.Volume{
+	secretsVolume := corev1.Volume{
 		Name: eirini.CertsVolumeName,
-		VolumeSource: v1.VolumeSource{
-			Projected: &v1.ProjectedVolumeSource{
+		VolumeSource: corev1.VolumeSource{
+			Projected: &corev1.ProjectedVolumeSource{
 				Sources: d.getVolumeSources(),
 			},
 		},
 	}
 
-	secretsVolumeMount := v1.VolumeMount{
+	secretsVolumeMount := corev1.VolumeMount{
 		Name:      eirini.CertsVolumeName,
 		ReadOnly:  true,
 		MountPath: eirini.CertsMountPath,
@@ -239,42 +238,42 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	workspaceVolume, workspaceVolumeMount := getVolume(eirini.RecipeWorkspaceName, eirini.RecipeWorkspaceDir)
 	buildpackCacheVolume, buildpackCacheVolumeMount := getVolume(eirini.BuildpackCacheName, eirini.BuildpackCacheDir)
 
-	var downloaderVolumeMounts, executorVolumeMounts, uploaderVolumeMounts []v1.VolumeMount
+	var downloaderVolumeMounts, executorVolumeMounts, uploaderVolumeMounts []corev1.VolumeMount
 
 	downloaderVolumeMounts = append(downloaderVolumeMounts, secretsVolumeMount, buildpacksVolumeMount, workspaceVolumeMount, buildpackCacheVolumeMount)
 	executorVolumeMounts = append(executorVolumeMounts, secretsVolumeMount, buildpacksVolumeMount, workspaceVolumeMount, outputVolumeMount, buildpackCacheVolumeMount)
 	uploaderVolumeMounts = append(uploaderVolumeMounts, secretsVolumeMount, outputVolumeMount, buildpackCacheVolumeMount)
 
 	envs := getEnvs(task.Task)
-	initContainers := []v1.Container{
+	initContainers := []corev1.Container{
 		{
 			Name:            "opi-task-downloader",
 			Image:           task.DownloaderImage,
-			ImagePullPolicy: v1.PullAlways,
+			ImagePullPolicy: corev1.PullAlways,
 			Env:             envs,
 			VolumeMounts:    downloaderVolumeMounts,
 		},
 		{
 			Name:            "opi-task-executor",
 			Image:           task.ExecutorImage,
-			ImagePullPolicy: v1.PullAlways,
+			ImagePullPolicy: corev1.PullAlways,
 			Env:             envs,
 			VolumeMounts:    executorVolumeMounts,
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceMemory:           *resource.NewScaledQuantity(task.MemoryMB, resource.Mega),
-					v1.ResourceCPU:              toCPUMillicores(task.CPUWeight),
-					v1.ResourceEphemeralStorage: *resource.NewScaledQuantity(task.DiskMB, resource.Mega),
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceMemory:           *resource.NewScaledQuantity(task.MemoryMB, resource.Mega),
+					corev1.ResourceCPU:              toCPUMillicores(task.CPUWeight),
+					corev1.ResourceEphemeralStorage: *resource.NewScaledQuantity(task.DiskMB, resource.Mega),
 				},
 			},
 		},
 	}
 
-	containers := []v1.Container{
+	containers := []corev1.Container{
 		{
 			Name:            "opi-task-uploader",
 			Image:           task.UploaderImage,
-			ImagePullPolicy: v1.PullAlways,
+			ImagePullPolicy: corev1.PullAlways,
 			Env:             envs,
 			VolumeMounts:    uploaderVolumeMounts,
 		},
@@ -283,7 +282,7 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	job.Spec.Template.Spec.Containers = containers
 	job.Spec.Template.Spec.InitContainers = initContainers
 
-	volumes := []v1.Volume{secretsVolume, outputVolume, buildpacksVolume, workspaceVolume, buildpackCacheVolume}
+	volumes := []corev1.Volume{secretsVolume, outputVolume, buildpacksVolume, workspaceVolume, buildpackCacheVolume}
 	job.Spec.Template.Spec.Volumes = volumes
 
 	job.Annotations[AnnotationStagingGUID] = task.GUID
@@ -295,16 +294,16 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
 	return job
 }
 
-func (d *TaskDesirer) getVolumeSources() []v1.VolumeProjection {
-	volumeSources := []v1.VolumeProjection{}
+func (d *TaskDesirer) getVolumeSources() []corev1.VolumeProjection {
+	volumeSources := []corev1.VolumeProjection{}
 	for _, conf := range d.tlsConfig {
-		keyToPaths := []v1.KeyToPath{}
+		keyToPaths := []corev1.KeyToPath{}
 		for _, keyPath := range conf.KeyPaths {
-			keyToPaths = append(keyToPaths, v1.KeyToPath{Key: keyPath.Key, Path: keyPath.Path})
+			keyToPaths = append(keyToPaths, corev1.KeyToPath{Key: keyPath.Key, Path: keyPath.Path})
 		}
-		volumeSources = append(volumeSources, v1.VolumeProjection{
-			Secret: &v1.SecretProjection{
-				LocalObjectReference: v1.LocalObjectReference{
+		volumeSources = append(volumeSources, corev1.VolumeProjection{
+			Secret: &corev1.SecretProjection{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: conf.SecretName,
 				},
 				Items: keyToPaths,
@@ -315,37 +314,37 @@ func (d *TaskDesirer) getVolumeSources() []v1.VolumeProjection {
 	return volumeSources
 }
 
-func getEnvs(task *opi.Task) []v1.EnvVar {
+func getEnvs(task *opi.Task) []corev1.EnvVar {
 	envs := MapToEnvVar(task.Env)
-	fieldEnvs := []v1.EnvVar{
+	fieldEnvs := []corev1.EnvVar{
 		{
 			Name: eirini.EnvPodName,
-			ValueFrom: &v1.EnvVarSource{
-				FieldRef: &v1.ObjectFieldSelector{
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "metadata.name",
 				},
 			},
 		},
 		{
 			Name: eirini.EnvCFInstanceGUID,
-			ValueFrom: &v1.EnvVarSource{
-				FieldRef: &v1.ObjectFieldSelector{
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "metadata.uid",
 				},
 			},
 		},
 		{
 			Name: eirini.EnvCFInstanceIP,
-			ValueFrom: &v1.EnvVarSource{
-				FieldRef: &v1.ObjectFieldSelector{
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "status.hostIP",
 				},
 			},
 		},
 		{
 			Name: eirini.EnvCFInstanceInternalIP,
-			ValueFrom: &v1.EnvVarSource{
-				FieldRef: &v1.ObjectFieldSelector{
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
 					FieldPath: "status.podIP",
 				},
 			},
@@ -359,13 +358,13 @@ func getEnvs(task *opi.Task) []v1.EnvVar {
 	return envs
 }
 
-func getVolume(name, path string) (v1.Volume, v1.VolumeMount) {
-	mount := v1.VolumeMount{
+func getVolume(name, path string) (corev1.Volume, corev1.VolumeMount) {
+	mount := corev1.VolumeMount{
 		Name:      name,
 		MountPath: path,
 	}
 
-	vol := v1.Volume{
+	vol := corev1.Volume{
 		Name: name,
 	}
 
@@ -381,11 +380,11 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 			Parallelism:  int32ptr(parallelism),
 			Completions:  int32ptr(completions),
 			BackoffLimit: int32ptr(0),
-			Template: v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken: &automountServiceAccountToken,
-					RestartPolicy:                v1.RestartPolicyNever,
-					SecurityContext: &v1.PodSecurityContext{
+					RestartPolicy:                corev1.RestartPolicyNever,
+					SecurityContext: &corev1.PodSecurityContext{
 						RunAsNonRoot: &runAsNonRoot,
 						RunAsUser:    int64ptr(VcapUID),
 					},
@@ -446,7 +445,7 @@ func (d *TaskDesirer) addImagePullSecret(namespace string, task *opi.Task, job *
 	}
 
 	spec := &job.Spec.Template.Spec
-	spec.ImagePullSecrets = append(spec.ImagePullSecrets, v1.LocalObjectReference{
+	spec.ImagePullSecrets = append(spec.ImagePullSecrets, corev1.LocalObjectReference{
 		Name: createdSecret.Name,
 	})
 	return nil
