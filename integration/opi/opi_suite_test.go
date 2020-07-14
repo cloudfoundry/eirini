@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"code.cloudfoundry.org/eirini/integration/util"
 	. "github.com/onsi/ginkgo"
@@ -17,6 +18,7 @@ import (
 )
 
 func TestOpi(t *testing.T) {
+	SetDefaultEventuallyTimeout(time.Minute)
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Opi Suite")
 }
@@ -74,7 +76,7 @@ var _ = BeforeEach(func() {
 	Eventually(func() error {
 		_, getErr := httpClient.Get(url)
 		return getErr
-	}, "10s").Should(Succeed())
+	}).Should(Succeed())
 })
 
 var _ = AfterEach(func() {

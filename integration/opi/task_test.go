@@ -126,7 +126,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 				Eventually(func() []batchv1.JobCondition {
 					jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
 					return jobs.Items[0].Status.Conditions
-				}, "30s").Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+				}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(batchv1.JobComplete),
 					"Status": Equal(corev1.ConditionTrue),
 				})))
@@ -174,7 +174,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 					Eventually(func() []batchv1.JobCondition {
 						jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
 						return jobs.Items[0].Status.Conditions
-					}, "5s").Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+					}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(batchv1.JobComplete),
 						"Status": Equal(corev1.ConditionTrue),
 					})))

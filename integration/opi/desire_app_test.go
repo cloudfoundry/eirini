@@ -95,7 +95,7 @@ var _ = Describe("Desire App", func() {
 			Eventually(func() error {
 				_, getErr := httpClient.Get(url)
 				return getErr
-			}, "10s").Should(Succeed())
+			}).Should(Succeed())
 		}
 
 		JustBeforeEach(func() {
@@ -105,7 +105,7 @@ var _ = Describe("Desire App", func() {
 					return nil, err
 				}
 				return pods.Items, nil
-			}, "10s").ShouldNot(BeEmpty())
+			}).ShouldNot(BeEmpty())
 
 			pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(metav1.ListOptions{})
 			Expect(err).NotTo(HaveOccurred())

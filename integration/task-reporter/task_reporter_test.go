@@ -109,12 +109,12 @@ var _ = Describe("TaskReporter", func() {
 	})
 
 	It("notifies the cloud controller of a task completion", func() {
-		Eventually(cloudControllerServer.ReceivedRequests, "1m").Should(HaveLen(1))
+		Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
 		Consistently(cloudControllerServer.ReceivedRequests, "1m").Should(HaveLen(1))
 	})
 
 	It("deletes the job", func() {
-		Eventually(getTaskJobsFn(task.GUID), "1m").Should(BeEmpty())
+		Eventually(getTaskJobsFn(task.GUID)).Should(BeEmpty())
 	})
 
 	When("a task job fails", func() {
@@ -132,12 +132,12 @@ var _ = Describe("TaskReporter", func() {
 		})
 
 		It("notifies the cloud controller of a task failure", func() {
-			Eventually(cloudControllerServer.ReceivedRequests, "10s").Should(HaveLen(1))
+			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
 			Consistently(cloudControllerServer.ReceivedRequests, "10s").Should(HaveLen(1))
 		})
 
 		It("deletes the job", func() {
-			Eventually(getTaskJobsFn(task.GUID), "20s").Should(BeEmpty())
+			Eventually(getTaskJobsFn(task.GUID)).Should(BeEmpty())
 		})
 	})
 
@@ -171,7 +171,7 @@ var _ = Describe("TaskReporter", func() {
 			Eventually(func() error {
 				_, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Get(registrySecretName, metav1.GetOptions{})
 				return err
-			}, "10s").Should(MatchError(ContainSubstring(`secrets "%s" not found`, registrySecretName)))
+			}).Should(MatchError(ContainSubstring(`secrets "%s" not found`, registrySecretName)))
 		})
 	})
 

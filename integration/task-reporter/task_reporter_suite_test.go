@@ -14,6 +14,7 @@ import (
 )
 
 func TestStagingReporter(t *testing.T) {
+	SetDefaultEventuallyTimeout(60 * time.Second)
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "TaskReporter Suite")
 }
@@ -37,7 +38,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	return data
 }, func(data []byte) {
-	SetDefaultEventuallyTimeout(60 * time.Second)
 	err := json.Unmarshal(data, &eiriniBins)
 	Expect(err).NotTo(HaveOccurred())
 
