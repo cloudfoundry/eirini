@@ -149,16 +149,29 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 	)
 }
 
+func initTaskDeleter(clientset kubernetes.Interface) *k8s.TaskDeleter {
+	logger := lager.NewLogger("task-desirer")
+	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+
+	return k8s.NewTaskDeleter(
+		logger,
+		k8s.NewJobClient(clientset),
+		k8s.NewSecretsClient(clientset),
+	)
+}
+
 func initBuildpackStagingBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.BuildpackStaging {
 	logger := lager.NewLogger("buildpack-staging-bifrost")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	converter := initConverter(cfg)
 	taskDesirer := initTaskDesirer(cfg, clientset)
+	taskDeleter := initTaskDeleter(clientset)
 	stagingCompleter := initStagingCompleter(cfg, logger)
 
 	return &bifrost.BuildpackStaging{
 		Converter:        converter,
 		StagingDesirer:   taskDesirer,
+		StagingDeleter:   taskDeleter,
 		StagingCompleter: stagingCompleter,
 		Logger:           logger,
 	}
@@ -179,11 +192,13 @@ func initDockerStagingBifrost(cfg *eirini.Config) *bifrost.DockerStaging {
 func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.Task {
 	converter := initConverter(cfg)
 	taskDesirer := initTaskDesirer(cfg, clientset)
+	taskDeleter := initTaskDeleter(clientset)
 	retryableJSONClient := initRetryableJSONClient(cfg)
 	return &bifrost.Task{
 		DefaultNamespace: cfg.Properties.Namespace,
 		Converter:        converter,
 		TaskDesirer:      taskDesirer,
+		TaskDeleter:      taskDeleter,
 		JSONClient:       retryableJSONClient,
 	}
 }

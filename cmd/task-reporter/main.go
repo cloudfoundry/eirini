@@ -63,16 +63,11 @@ func initTaskDeleter(clientset kubernetes.Interface) task.Deleter {
 	logger := lager.NewLogger("task-deleter")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	return k8s.NewTaskDesirer(
+	return k8s.NewTaskDeleter(
 		logger,
 		k8s.NewJobClient(clientset),
 		k8s.NewSecretsClient(clientset),
-		"",
-		nil,
-		"",
-		"",
-		"",
-		"")
+	)
 }
 
 func readConfigFile(path string) (eirini.TaskReporterConfig, error) {

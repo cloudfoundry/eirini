@@ -18,6 +18,11 @@ type TaskConverter interface {
 
 type TaskDesirer interface {
 	Desire(namespace string, task *opi.Task) error
+}
+
+//counterfeiter:generate . TaskDeleter
+
+type TaskDeleter interface {
 	Delete(guid string) (string, error)
 }
 
@@ -31,6 +36,7 @@ type Task struct {
 	DefaultNamespace string
 	Converter        TaskConverter
 	TaskDesirer      TaskDesirer
+	TaskDeleter      TaskDeleter
 	JSONClient       JSONClient
 }
 
@@ -49,7 +55,7 @@ func (t *Task) TransferTask(ctx context.Context, taskGUID string, taskRequest cf
 }
 
 func (t *Task) CancelTask(taskGUID string) error {
-	callbackURL, err := t.TaskDesirer.Delete(taskGUID)
+	callbackURL, err := t.TaskDeleter.Delete(taskGUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete task %s", taskGUID)
 	}

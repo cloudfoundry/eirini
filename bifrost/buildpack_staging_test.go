@@ -21,12 +21,14 @@ var _ = Describe("Staging", func() {
 		buildpackStagingBifrost *bifrost.BuildpackStaging
 		stagingConverter        *bifrostfakes.FakeStagingConverter
 		stagingDesirer          *bifrostfakes.FakeStagingDesirer
+		stagingDeleter          *bifrostfakes.FakeStagingDeleter
 		stagingCompleter        *bifrostfakes.FakeStagingCompleter
 	)
 
 	BeforeEach(func() {
 		stagingConverter = new(bifrostfakes.FakeStagingConverter)
 		stagingDesirer = new(bifrostfakes.FakeStagingDesirer)
+		stagingDeleter = new(bifrostfakes.FakeStagingDeleter)
 		stagingCompleter = new(bifrostfakes.FakeStagingCompleter)
 	})
 
@@ -35,6 +37,7 @@ var _ = Describe("Staging", func() {
 		buildpackStagingBifrost = &bifrost.BuildpackStaging{
 			Converter:        stagingConverter,
 			StagingDesirer:   stagingDesirer,
+			StagingDeleter:   stagingDeleter,
 			StagingCompleter: stagingCompleter,
 			Logger:           logger,
 		}
@@ -130,9 +133,9 @@ var _ = Describe("Staging", func() {
 		})
 
 		It("should delete the task", func() {
-			Expect(stagingDesirer.DeleteStagingCallCount()).To(Equal(1))
+			Expect(stagingDeleter.DeleteStagingCallCount()).To(Equal(1))
 
-			taskName := stagingDesirer.DeleteStagingArgsForCall(0)
+			taskName := stagingDeleter.DeleteStagingArgsForCall(0)
 			Expect(taskName).To(Equal(taskCompletedRequest.TaskGUID))
 		})
 
@@ -146,16 +149,16 @@ var _ = Describe("Staging", func() {
 			})
 
 			It("should delete the task", func() {
-				Expect(stagingDesirer.DeleteStagingCallCount()).To(Equal(1))
+				Expect(stagingDeleter.DeleteStagingCallCount()).To(Equal(1))
 
-				taskName := stagingDesirer.DeleteStagingArgsForCall(0)
+				taskName := stagingDeleter.DeleteStagingArgsForCall(0)
 				Expect(taskName).To(Equal(taskCompletedRequest.TaskGUID))
 			})
 		})
 
 		Context("and the task deletion fails", func() {
 			BeforeEach(func() {
-				stagingDesirer.DeleteStagingReturns(errors.New("delete boom"))
+				stagingDeleter.DeleteStagingReturns(errors.New("delete boom"))
 			})
 
 			It("should return an error", func() {

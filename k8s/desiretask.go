@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"fmt"
-	"strings"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/utils"
@@ -12,7 +11,6 @@ import (
 	"code.cloudfoundry.org/lager"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	batch "k8s.io/api/batch/v1"
 )
@@ -25,12 +23,14 @@ const (
 	completions          = 1
 )
 
-//counterfeiter:generate . JobClient
-type JobClient interface {
+//counterfeiter:generate . JobCreator
+type JobCreator interface {
 	Create(namespace string, job *batch.Job) (*batch.Job, error)
-	Update(namespace string, job *batch.Job) (*batch.Job, error)
-	Delete(namespace string, name string, options *meta_v1.DeleteOptions) error
-	List(opts meta_v1.ListOptions) (*batch.JobList, error)
+}
+
+//counterfeiter:generate . SecretsCreator
+type SecretsCreator interface {
+	Create(namespace string, secret *corev1.Secret) (*corev1.Secret, error)
 }
 
 type KeyPath struct {
@@ -44,8 +44,8 @@ type StagingConfigTLS struct {
 
 type TaskDesirer struct {
 	logger                    lager.Logger
-	jobClient                 JobClient
-	secretsClient             SecretsCreatorDeleter
+	jobCreator                JobCreator
+	secretsCreator            SecretsCreator
 	defaultStagingNamespace   string
 	tlsConfig                 []StagingConfigTLS
 	serviceAccountName        string
@@ -57,8 +57,8 @@ type TaskDesirer struct {
 
 func NewTaskDesirer(
 	logger lager.Logger,
-	jobClient JobClient,
-	secretsClient SecretsCreatorDeleter,
+	jobClient JobCreator,
+	secretsCreator SecretsCreator,
 	defaultStagingNamespace string,
 	tlsConfig []StagingConfigTLS,
 	serviceAccountName string,
@@ -68,8 +68,8 @@ func NewTaskDesirer(
 ) *TaskDesirer {
 	return &TaskDesirer{
 		logger:                    logger,
-		jobClient:                 jobClient,
-		secretsClient:             secretsClient,
+		jobCreator:                jobClient,
+		secretsCreator:            secretsCreator,
 		defaultStagingNamespace:   defaultStagingNamespace,
 		tlsConfig:                 tlsConfig,
 		serviceAccountName:        serviceAccountName,
@@ -81,8 +81,8 @@ func NewTaskDesirer(
 
 func NewTaskDesirerWithEiriniInstance(
 	logger lager.Logger,
-	jobClient JobClient,
-	secretsClient SecretsCreatorDeleter,
+	jobClient JobCreator,
+	secretsCreator SecretsCreator,
 	defaultStagingNamespace string,
 	tlsConfig []StagingConfigTLS,
 	serviceAccountName string,
@@ -94,7 +94,7 @@ func NewTaskDesirerWithEiriniInstance(
 	desirer := NewTaskDesirer(
 		logger,
 		jobClient,
-		secretsClient,
+		secretsCreator,
 		defaultStagingNamespace,
 		tlsConfig,
 		serviceAccountName,
@@ -114,48 +114,13 @@ func (d *TaskDesirer) Desire(namespace string, task *opi.Task) error {
 		}
 	}
 
-	_, err := d.jobClient.Create(namespace, job)
+	_, err := d.jobCreator.Create(namespace, job)
 	return err
 }
 
 func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
-	_, err := d.jobClient.Create(d.defaultStagingNamespace, d.toStagingJob(task))
+	_, err := d.jobCreator.Create(d.defaultStagingNamespace, d.toStagingJob(task))
 	return err
-}
-
-func (d *TaskDesirer) Delete(guid string) (string, error) {
-	return d.delete(guid, LabelGUID)
-}
-
-func (d *TaskDesirer) DeleteStaging(guid string) error {
-	_, err := d.delete(guid, LabelStagingGUID)
-	return err
-}
-
-func (d *TaskDesirer) delete(guid, label string) (string, error) {
-	logger := d.logger.Session("delete", lager.Data{"guid": guid})
-	jobs, err := d.jobClient.List(meta_v1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", label, guid),
-	})
-	if err != nil {
-		logger.Error("failed to list jobs", err)
-		return "", err
-	}
-	if len(jobs.Items) != 1 {
-		logger.Error("job with guid does not have 1 instance", nil, lager.Data{"instances": len(jobs.Items)})
-		return "", fmt.Errorf("job with guid %s should have 1 instance, but it has: %d", guid, len(jobs.Items))
-	}
-
-	job := jobs.Items[0]
-	if err := d.deleteDockerRegistrySecret(job); err != nil {
-		return "", err
-	}
-
-	callbackURL := job.Annotations[AnnotationCompletionCallback]
-	backgroundPropagation := meta_v1.DeletePropagationBackground
-	return callbackURL, d.jobClient.Delete(job.Namespace, job.Name, &meta_v1.DeleteOptions{
-		PropagationPolicy: &backgroundPropagation,
-	})
 }
 
 func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
@@ -210,7 +175,7 @@ func (d *TaskDesirer) createTaskSecret(namespace string, task *opi.Task) (*corev
 		dockerutils.DockerConfigKey: dockerConfigJSON,
 	}
 
-	return d.secretsClient.Create(namespace, secret)
+	return d.secretsCreator.Create(namespace, secret)
 }
 
 func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
@@ -419,25 +384,6 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 	return job
 }
 
-func (d *TaskDesirer) deleteDockerRegistrySecret(job batch.Job) error {
-	dockerSecretNamePrefix := dockerImagePullSecretNamePrefix(
-		job.Annotations[AnnotationAppName],
-		job.Annotations[AnnotationSpaceName],
-		job.Labels[LabelGUID],
-	)
-
-	for _, secret := range job.Spec.Template.Spec.ImagePullSecrets {
-		if !strings.HasPrefix(secret.Name, dockerSecretNamePrefix) {
-			continue
-		}
-		if err := d.secretsClient.Delete(job.Namespace, secret.Name); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (d *TaskDesirer) addImagePullSecret(namespace string, task *opi.Task, job *batch.Job) error {
 	createdSecret, err := d.createTaskSecret(namespace, task)
 	if err != nil {
@@ -449,11 +395,6 @@ func (d *TaskDesirer) addImagePullSecret(namespace string, task *opi.Task, job *
 		Name: createdSecret.Name,
 	})
 	return nil
-}
-
-func dockerImagePullSecretNamePrefix(appName, spaceName, taskGUID string) string {
-	secretNamePrefix := fmt.Sprintf("%s-%s", appName, spaceName)
-	return fmt.Sprintf("%s-registry-secret-", utils.SanitizeName(secretNamePrefix, taskGUID))
 }
 
 func imageInPrivateRegistry(task *opi.Task) bool {

@@ -19,6 +19,7 @@ var _ = Describe("Buildpack task", func() {
 		taskBifrost   *bifrost.Task
 		taskConverter *bifrostfakes.FakeTaskConverter
 		taskDesirer   *bifrostfakes.FakeTaskDesirer
+		taskDeleter   *bifrostfakes.FakeTaskDeleter
 		jsonClient    *bifrostfakes.FakeJSONClient
 		taskGUID      string
 		task          opi.Task
@@ -27,6 +28,7 @@ var _ = Describe("Buildpack task", func() {
 	BeforeEach(func() {
 		taskConverter = new(bifrostfakes.FakeTaskConverter)
 		taskDesirer = new(bifrostfakes.FakeTaskDesirer)
+		taskDeleter = new(bifrostfakes.FakeTaskDeleter)
 		jsonClient = new(bifrostfakes.FakeJSONClient)
 		taskGUID = "task-guid"
 		task = opi.Task{GUID: "my-guid"}
@@ -35,6 +37,7 @@ var _ = Describe("Buildpack task", func() {
 			DefaultNamespace: "default-namespace",
 			Converter:        taskConverter,
 			TaskDesirer:      taskDesirer,
+			TaskDeleter:      taskDeleter,
 			JSONClient:       jsonClient,
 		}
 	})
@@ -126,7 +129,7 @@ var _ = Describe("Buildpack task", func() {
 
 	Describe("Cancel Task", func() {
 		BeforeEach(func() {
-			taskDesirer.DeleteReturns("the/callback/url", nil)
+			taskDeleter.DeleteReturns("the/callback/url", nil)
 		})
 
 		JustBeforeEach(func() {
@@ -138,13 +141,13 @@ var _ = Describe("Buildpack task", func() {
 		})
 
 		It("deletes the task", func() {
-			Expect(taskDesirer.DeleteCallCount()).To(Equal(1))
-			Expect(taskDesirer.DeleteArgsForCall(0)).To(Equal(taskGUID))
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
+			Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal(taskGUID))
 		})
 
 		When("deleting the task fails", func() {
 			BeforeEach(func() {
-				taskDesirer.DeleteReturns("", errors.New("delete-task-err"))
+				taskDeleter.DeleteReturns("", errors.New("delete-task-err"))
 			})
 
 			It("returns the error", func() {
@@ -176,7 +179,7 @@ var _ = Describe("Buildpack task", func() {
 
 		When("the callback URL is empty", func() {
 			BeforeEach(func() {
-				taskDesirer.DeleteReturns("", nil)
+				taskDeleter.DeleteReturns("", nil)
 			})
 
 			It("still succeeds", func() {

@@ -65,27 +65,27 @@ func (c *statefulSetClient) List(opts metav1.ListOptions) (*appsv1.StatefulSetLi
 	return c.clientSet.AppsV1().StatefulSets("").List(opts)
 }
 
-type jobClient struct {
+type JobClient struct {
 	clientSet kubernetes.Interface
 }
 
-func NewJobClient(clientSet kubernetes.Interface) JobClient {
-	return &jobClient{clientSet: clientSet}
+func NewJobClient(clientSet kubernetes.Interface) *JobClient {
+	return &JobClient{clientSet: clientSet}
 }
 
-func (c *jobClient) Create(namespace string, job *batchv1.Job) (*batchv1.Job, error) {
+func (c *JobClient) Create(namespace string, job *batchv1.Job) (*batchv1.Job, error) {
 	return c.clientSet.BatchV1().Jobs(namespace).Create(job)
 }
 
-func (c *jobClient) Update(namespace string, job *batchv1.Job) (*batchv1.Job, error) {
+func (c *JobClient) Update(namespace string, job *batchv1.Job) (*batchv1.Job, error) {
 	return c.clientSet.BatchV1().Jobs(namespace).Update(job)
 }
 
-func (c *jobClient) Delete(namespace string, name string, options *metav1.DeleteOptions) error {
+func (c *JobClient) Delete(namespace string, name string, options *metav1.DeleteOptions) error {
 	return c.clientSet.BatchV1().Jobs(namespace).Delete(name, options)
 }
 
-func (c *jobClient) List(opts metav1.ListOptions) (*batchv1.JobList, error) {
+func (c *JobClient) List(opts metav1.ListOptions) (*batchv1.JobList, error) {
 	return c.clientSet.BatchV1().Jobs("").List(opts)
 }
 

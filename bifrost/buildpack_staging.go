@@ -18,6 +18,10 @@ type StagingConverter interface {
 //counterfeiter:generate . StagingDesirer
 type StagingDesirer interface {
 	DesireStaging(task *opi.StagingTask) error
+}
+
+//counterfeiter:generate . StagingDeleter
+type StagingDeleter interface {
 	DeleteStaging(name string) error
 }
 
@@ -29,6 +33,7 @@ type StagingCompleter interface {
 type BuildpackStaging struct {
 	Converter        StagingConverter
 	StagingDesirer   StagingDesirer
+	StagingDeleter   StagingDeleter
 	StagingCompleter StagingCompleter
 	Logger           lager.Logger
 }
@@ -47,6 +52,6 @@ func (b *BuildpackStaging) CompleteStaging(taskCompletedRequest cf.StagingComple
 	l.Debug("Complete staging")
 	return multierr.Combine(
 		b.StagingCompleter.CompleteStaging(taskCompletedRequest),
-		b.StagingDesirer.DeleteStaging(taskCompletedRequest.TaskGUID),
+		b.StagingDeleter.DeleteStaging(taskCompletedRequest.TaskGUID),
 	)
 }

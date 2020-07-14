@@ -30,12 +30,12 @@ var _ = Describe("TaskDesirer", func() {
 	)
 
 	var (
-		task              *opi.Task
-		desirer           *TaskDesirer
-		fakeJobClient     *k8sfakes.FakeJobClient
-		fakeSecretsClient *k8sfakes.FakeSecretsCreatorDeleter
-		job               *batch.Job
-		jobNamespace      string
+		task               *opi.Task
+		desirer            *TaskDesirer
+		fakeJobCreator     *k8sfakes.FakeJobCreator
+		fakeSecretsCreator *k8sfakes.FakeSecretsCreator
+		job                *batch.Job
+		jobNamespace       string
 	)
 
 	assertGeneralSpec := func(job *batch.Job) {
@@ -83,8 +83,8 @@ var _ = Describe("TaskDesirer", func() {
 	}
 
 	BeforeEach(func() {
-		fakeJobClient = new(k8sfakes.FakeJobClient)
-		fakeSecretsClient = new(k8sfakes.FakeSecretsCreatorDeleter)
+		fakeJobCreator = new(k8sfakes.FakeJobCreator)
+		fakeSecretsCreator = new(k8sfakes.FakeSecretsCreator)
 		task = &opi.Task{
 			Image:              Image,
 			CompletionCallback: "cloud-countroller.io/task/completed",
@@ -132,8 +132,8 @@ var _ = Describe("TaskDesirer", func() {
 
 		desirer = NewTaskDesirerWithEiriniInstance(
 			lagertest.NewTestLogger("desiretask"),
-			fakeJobClient,
-			fakeSecretsClient,
+			fakeJobCreator,
+			fakeSecretsCreator,
 			defaultNamespace,
 			tlsStagingConfigs,
 			"service-account",
@@ -158,8 +158,8 @@ var _ = Describe("TaskDesirer", func() {
 		It("should create a job for the task with the correct attributes", func() {
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
-			jobNamespace, job = fakeJobClient.CreateArgsForCall(0)
+			Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
+			jobNamespace, job = fakeJobCreator.CreateArgsForCall(0)
 
 			assertGeneralSpec(job)
 
@@ -238,8 +238,8 @@ var _ = Describe("TaskDesirer", func() {
 			It("should use the guid as the prefix instead", func() {
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
-				_, job = fakeJobClient.CreateArgsForCall(0)
+				Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
+				_, job = fakeJobCreator.CreateArgsForCall(0)
 
 				Expect(job.GenerateName).To(Equal(taskGUID + "-"))
 			})
@@ -247,7 +247,7 @@ var _ = Describe("TaskDesirer", func() {
 
 		Context("and the job already exists", func() {
 			BeforeEach(func() {
-				fakeJobClient.CreateReturns(nil, errors.New("job already exists"))
+				fakeJobCreator.CreateReturns(nil, errors.New("job already exists"))
 			})
 
 			It("should return an error", func() {
@@ -262,12 +262,12 @@ var _ = Describe("TaskDesirer", func() {
 					Username: "username",
 					Password: "password",
 				}
-				fakeSecretsClient.CreateReturns(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "the-generated-secret-name"}}, nil)
+				fakeSecretsCreator.CreateReturns(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "the-generated-secret-name"}}, nil)
 			})
 
 			It("creates a secret with the registry credentials", func() {
-				Expect(fakeSecretsClient.CreateCallCount()).To(Equal(1))
-				namespace, actualSecret := fakeSecretsClient.CreateArgsForCall(0)
+				Expect(fakeSecretsCreator.CreateCallCount()).To(Equal(1))
+				namespace, actualSecret := fakeSecretsCreator.CreateArgsForCall(0)
 				Expect(namespace).To(Equal("app-namespace"))
 				Expect(actualSecret.GenerateName).To(Equal("my-app-my-space-registry-secret-"))
 				Expect(actualSecret.Type).To(Equal(corev1.SecretTypeDockerConfigJson))
@@ -281,8 +281,8 @@ var _ = Describe("TaskDesirer", func() {
 					),
 				)
 
-				Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
-				_, job = fakeJobClient.CreateArgsForCall(0)
+				Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
+				_, job = fakeJobCreator.CreateArgsForCall(0)
 
 				Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(
 					corev1.LocalObjectReference{Name: "registry-secret"},
@@ -292,7 +292,7 @@ var _ = Describe("TaskDesirer", func() {
 
 			Context("when creating the secret fails", func() {
 				BeforeEach(func() {
-					fakeSecretsClient.CreateReturns(nil, errors.New("create-secret-err"))
+					fakeSecretsCreator.CreateReturns(nil, errors.New("create-secret-err"))
 				})
 
 				It("returns an error", func() {
@@ -455,8 +455,8 @@ var _ = Describe("TaskDesirer", func() {
 		JustBeforeEach(func() {
 			var namespace string
 			err = desirer.DesireStaging(stagingTask)
-			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
-			namespace, job = fakeJobClient.CreateArgsForCall(0)
+			Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
+			namespace, job = fakeJobCreator.CreateArgsForCall(0)
 			Expect(namespace).To(Equal(defaultNamespace))
 		})
 
@@ -521,153 +521,11 @@ var _ = Describe("TaskDesirer", func() {
 
 		Context("When the staging task already exists", func() {
 			BeforeEach(func() {
-				fakeJobClient.CreateReturns(nil, errors.New("job already exists"))
+				fakeJobCreator.CreateReturns(nil, errors.New("job already exists"))
 			})
 
 			It("should return an error", func() {
 				Expect(err).To(MatchError(ContainSubstring("job already exists")))
-			})
-		})
-	})
-
-	Describe("Delete/DeleteStaging", func() {
-		var jobs *batch.JobList
-
-		BeforeEach(func() {
-			job :=
-				batch.Job{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-job",
-						Namespace: "my-namespace",
-						Annotations: map[string]string{
-							AnnotationCompletionCallback: "the/completion/callback",
-							AnnotationAppName:            "my-app",
-							AnnotationSpaceName:          "my-space",
-						},
-						Labels: map[string]string{
-							LabelGUID: taskGUID,
-						},
-					},
-				}
-
-			jobs = &batch.JobList{
-				Items: []batch.Job{job},
-			}
-			fakeJobClient.ListReturns(jobs, nil)
-		})
-
-		It("should delete a staging job", func() {
-			Expect(desirer.DeleteStaging(taskGUID)).To(Succeed())
-
-			Expect(fakeJobClient.ListCallCount()).To(Equal(1))
-			Expect(fakeJobClient.ListArgsForCall(0).LabelSelector).To(Equal(fmt.Sprintf("%s=%s", LabelStagingGUID, taskGUID)))
-
-			Expect(fakeJobClient.DeleteCallCount()).To(Equal(1))
-			namespace, jobName, _ := fakeJobClient.DeleteArgsForCall(0)
-			Expect(jobName).To(Equal("my-job"))
-			Expect(namespace).To(Equal("my-namespace"))
-		})
-
-		When("deleting a non-staging job", func() {
-			It("deletes the job", func() {
-				completionCallback, err := desirer.Delete(taskGUID)
-
-				By("succeeding")
-				Expect(err).To(Succeed())
-
-				By("returning the task completion callback")
-				Expect(completionCallback).To(Equal("the/completion/callback"))
-
-				By("selecting the job using the task label guid")
-				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
-				Expect(fakeJobClient.ListArgsForCall(0).LabelSelector).To(Equal(fmt.Sprintf("%s=%s", LabelGUID, taskGUID)))
-			})
-		})
-
-		Context("when the job does not exist", func() {
-			BeforeEach(func() {
-				fakeJobClient.ListReturns(&batch.JobList{}, nil)
-			})
-
-			It("should return an error", func() {
-				Expect(desirer.DeleteStaging(taskGUID)).To(MatchError(fmt.Sprintf("job with guid %s should have 1 instance, but it has: %d", taskGUID, 0)))
-				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
-				Expect(fakeJobClient.DeleteCallCount()).To(BeZero())
-			})
-		})
-
-		Context("when there are multiple jobs with the same guid", func() {
-			BeforeEach(func() {
-				fakeJobClient.ListReturns(&batch.JobList{
-					Items: []batch.Job{{}, {}},
-				}, nil)
-			})
-
-			It("should return an error", func() {
-				Expect(desirer.DeleteStaging(taskGUID)).To(MatchError(fmt.Sprintf("job with guid %s should have 1 instance, but it has: %d", taskGUID, 2)))
-				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
-				Expect(fakeJobClient.DeleteCallCount()).To(BeZero())
-			})
-		})
-
-		Context("when the job references image pull secrets", func() {
-			var (
-				dockerRegistrySecretName string
-				deleteErr                error
-			)
-
-			BeforeEach(func() {
-				dockerRegistrySecretName = fmt.Sprintf("%s-%s-registry-secret-%s", "my-app", "my-space", taskGUID)
-
-				jobs.Items[0].Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{
-					{Name: dockerRegistrySecretName},
-					{Name: "another-random-secret"},
-				}
-			})
-
-			JustBeforeEach(func() {
-				_, deleteErr = desirer.Delete(task.GUID)
-			})
-
-			It("deletes the docker registry image pull secret only", func() {
-				Expect(deleteErr).NotTo(HaveOccurred())
-				Expect(fakeSecretsClient.DeleteCallCount()).To(Equal(1))
-				actualNamespace, actualSecretName := fakeSecretsClient.DeleteArgsForCall(0)
-				Expect(actualNamespace).To(Equal("my-namespace"))
-				Expect(actualSecretName).To(Equal(dockerRegistrySecretName))
-			})
-
-			Context("when deleting the docker registry image pull secret fails", func() {
-				BeforeEach(func() {
-					fakeSecretsClient.DeleteReturns(errors.New("docker-secret-delete-failure"))
-				})
-
-				It("returns the error", func() {
-					Expect(deleteErr).To(MatchError("docker-secret-delete-failure"))
-				})
-			})
-		})
-
-		Context("when listing the jobs by label fails", func() {
-			BeforeEach(func() {
-				fakeJobClient.ListReturns(nil, errors.New("failed to list jobs"))
-			})
-
-			It("should return an error", func() {
-				Expect(desirer.DeleteStaging(taskGUID)).To(MatchError("failed to list jobs"))
-				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
-				Expect(fakeJobClient.DeleteCallCount()).To(BeZero())
-			})
-
-		})
-
-		Context("when the delete fails", func() {
-			BeforeEach(func() {
-				fakeJobClient.DeleteReturns(errors.New("failed to delete"))
-			})
-
-			It("should return an error", func() {
-				Expect(desirer.DeleteStaging(taskGUID)).To(MatchError(ContainSubstring("failed to delete")))
 			})
 		})
 	})
