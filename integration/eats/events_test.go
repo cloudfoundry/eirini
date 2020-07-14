@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
+	"gopkg.in/yaml.v2"
 )
 
 var _ = Describe("Events", func() {
@@ -26,6 +27,25 @@ var _ = Describe("Events", func() {
 		certPath   string
 		keyPath    string
 	)
+
+	restartWithConfig := func(updateConfig func(cfg eirini.EventReporterConfig) eirini.EventReporterConfig) string {
+		configBytes, err := ioutil.ReadFile(eventsConfigFile)
+		Expect(err).NotTo(HaveOccurred())
+		var eventsConfig eirini.EventReporterConfig
+		Expect(yaml.Unmarshal(configBytes, &eventsConfig)).To(Succeed())
+
+		newConfig := updateConfig(eventsConfig)
+
+		configBytes, err = yaml.Marshal(newConfig)
+		Expect(err).NotTo(HaveOccurred())
+		newConfigFile, err := ioutil.TempFile("", "")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(ioutil.WriteFile(newConfigFile.Name(), configBytes, 0600)).To(Succeed())
+
+		eventsSession = eiriniBins.EventsReporter.Restart(newConfigFile.Name(), eventsSession)
+
+		return newConfigFile.Name()
+	}
 
 	BeforeEach(func() {
 		var err error
@@ -104,6 +124,34 @@ var _ = Describe("Events", func() {
 
 		It("should generate and send a crash event", func() {
 			Eventually(capiServer.ReceivedRequests).Should(HaveLen(1))
+		})
+
+		When("CC TLS is disabled in the config", func() {
+			var (
+				configPath string
+			)
+
+			BeforeEach(func() {
+				capiServer.Close()
+				capiServer = ghttp.NewServer()
+
+				configPath = restartWithConfig(func(cfg eirini.EventReporterConfig) eirini.EventReporterConfig {
+					cfg.CCTLSDisabled = true
+					cfg.CCCertPath = ""
+					cfg.CCKeyPath = ""
+					cfg.CCCAPath = ""
+					cfg.CcInternalAPI = capiServer.URL()
+					return cfg
+				})
+
+			})
+			AfterEach(func() {
+				os.RemoveAll(configPath)
+			})
+
+			It("should generate and send a crash event", func() {
+				Eventually(capiServer.ReceivedRequests).Should(HaveLen(1))
+			})
 		})
 	})
 })

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -34,6 +35,7 @@ func main() {
 	launchEventReporter(
 		clientset,
 		cfg.CcInternalAPI,
+		cfg.CCTLSDisabled,
 		cfg.CCCAPath,
 		cfg.CCCertPath,
 		cfg.CCKeyPath,
@@ -41,9 +43,13 @@ func main() {
 	)
 }
 
-func launchEventReporter(clientset kubernetes.Interface, uri, ca, cert, key, namespace string) {
-	tlsConf, err := cc_client.NewTLSConfig(cert, key, ca)
-	cmdcommons.ExitIfError(err)
+func launchEventReporter(clientset kubernetes.Interface, uri string, tlsDisabled bool, ca, cert, key, namespace string) {
+	tlsConf := &tls.Config{}
+	if !tlsDisabled {
+		var err error
+		tlsConf, err = cc_client.NewTLSConfig(cert, key, ca)
+		cmdcommons.ExitIfError(err)
+	}
 
 	client := cc_client.NewCcClient(uri, tlsConf)
 	crashReporterLogger := lager.NewLogger("instance-crash-reporter")
