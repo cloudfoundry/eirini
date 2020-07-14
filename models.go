@@ -71,6 +71,7 @@ type Properties struct {
 	TLSPort        int    `yaml:"tls_port"`
 	PlaintextPort  int    `yaml:"plaintext_port"`
 
+	CCTLSDisabled        bool   `yaml:"cc_tls_disabled"`
 	CCUploaderSecretName string `yaml:"cc_uploader_secret_name"`
 	CCUploaderCertPath   string `yaml:"cc_uploader_cert_path"`
 	CCUploaderKeyPath    string `yaml:"cc_uploader_key_path"`

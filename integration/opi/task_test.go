@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/models/cf"
 	. "github.com/onsi/ginkgo"
@@ -190,13 +192,9 @@ var _ = Describe("Task Desire and Cancel", func() {
 
 		BeforeEach(func() {
 			var err error
-			cloudControllerServer, err = util.CreateTestServer(
-				util.PathToTestFixture("cert"),
-				util.PathToTestFixture("key"),
-				util.PathToTestFixture("cert"),
-			)
+			cloudControllerServer, err = util.CreateTestServer(certPath, keyPath, certPath)
 			Expect(err).ToNot(HaveOccurred())
-			cloudControllerServer.Start()
+			cloudControllerServer.HTTPTestServer.StartTLS()
 
 			cloudControllerServer.AppendHandlers(
 				ghttp.CombineHandlers(
@@ -274,6 +272,43 @@ var _ = Describe("Task Desire and Cancel", func() {
 					}
 					return secretNames, nil
 				}).Should(Not(ContainElement(HavePrefix("my-app-my-space-registry-secret-"))))
+			})
+		})
+
+		When("CC TLS is disabled and CC certs not configured", func() {
+			var newConfigPath string
+
+			BeforeEach(func() {
+				cloudControllerServer.Close()
+				cloudControllerServer = ghttp.NewServer()
+				cloudControllerServer.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
+							TaskGUID:      "cancelled-task-guid",
+							Failed:        true,
+							FailureReason: "task was cancelled",
+						}),
+					),
+				)
+
+				newConfigPath = restartWithConfig(func(cfg eirini.Config) eirini.Config {
+					cfg.Properties.CCTLSDisabled = true
+					cfg.Properties.CCCertPath = ""
+					cfg.Properties.CCKeyPath = ""
+					cfg.Properties.CCCAPath = ""
+					return cfg
+				})
+
+				request.CompletionCallback = cloudControllerServer.URL()
+			})
+
+			AfterEach(func() {
+				os.RemoveAll(newConfigPath)
+			})
+
+			It("sends the task completed message to the cloud controller", func() {
+				Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
 			})
 		})
 	})

@@ -3,14 +3,13 @@ package opi_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/integration/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -79,25 +78,6 @@ var _ = Describe("Desire App", func() {
 		const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
 		var podMountPaths []string
 
-		setAutoMountServiceTokenAccountInConfig := func(set bool) {
-			configBytes, err := ioutil.ReadFile(eiriniConfigFilePath)
-			Expect(err).NotTo(HaveOccurred())
-			var eiriniConfig eirini.Config
-			Expect(yaml.Unmarshal(configBytes, &eiriniConfig)).To(Succeed())
-
-			eiriniConfig.Properties.UnsafeAllowAutomountServiceAccountToken = set
-
-			configBytes, err = yaml.Marshal(eiriniConfig)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(ioutil.WriteFile(eiriniConfigFilePath, configBytes, 0600)).To(Succeed())
-
-			session = eiriniBins.OPI.Restart(eiriniConfigFilePath, session)
-			Eventually(func() error {
-				_, getErr := httpClient.Get(url)
-				return getErr
-			}).Should(Succeed())
-		}
-
 		JustBeforeEach(func() {
 			Eventually(func() ([]corev1.Pod, error) {
 				pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(metav1.ListOptions{})
@@ -122,8 +102,17 @@ var _ = Describe("Desire App", func() {
 		})
 
 		When("unsafe_allow_automount_service_account_token is set", func() {
+			var newConfigPath string
+
 			BeforeEach(func() {
-				setAutoMountServiceTokenAccountInConfig(true)
+				newConfigPath = restartWithConfig(func(config eirini.Config) eirini.Config {
+					config.Properties.UnsafeAllowAutomountServiceAccountToken = true
+					return config
+				})
+			})
+
+			AfterEach(func() {
+				os.RemoveAll(newConfigPath)
 			})
 
 			It("mounts the service account token (because this is how K8S works by default)", func() {

@@ -9,10 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/integration/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	"gopkg.in/yaml.v2"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
@@ -33,6 +35,8 @@ var (
 	eiriniConfigFilePath string
 	session              *gexec.Session
 	url                  string
+	certPath             string
+	keyPath              string
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
@@ -52,6 +56,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 
 	fixture = util.NewFixture(GinkgoWriter)
+	certPath, keyPath = util.GenerateKeyPair("capi")
 })
 
 var _ = SynchronizedAfterSuite(func() {}, func() {
@@ -69,6 +74,9 @@ var _ = BeforeEach(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	eiriniConfig := util.DefaultEiriniConfig(fixture.Namespace, fixture.NextAvailablePort())
+	eiriniConfig.Properties.CCCertPath = certPath
+	eiriniConfig.Properties.CCKeyPath = keyPath
+	eiriniConfig.Properties.CCCAPath = certPath
 
 	session, eiriniConfigFilePath = eiriniBins.OPI.Run(eiriniConfig)
 
@@ -85,3 +93,25 @@ var _ = AfterEach(func() {
 
 	fixture.TearDown()
 })
+
+func restartWithConfig(updateConfig func(cfg eirini.Config) eirini.Config) string {
+	configBytes, err := ioutil.ReadFile(eiriniConfigFilePath)
+	Expect(err).NotTo(HaveOccurred())
+	var eiriniConfig eirini.Config
+	Expect(yaml.Unmarshal(configBytes, &eiriniConfig)).To(Succeed())
+
+	newConfig := updateConfig(eiriniConfig)
+
+	configBytes, err = yaml.Marshal(newConfig)
+	Expect(err).NotTo(HaveOccurred())
+	newConfigFile, err := ioutil.TempFile("", "")
+	Expect(err).NotTo(HaveOccurred())
+	Expect(ioutil.WriteFile(newConfigFile.Name(), configBytes, 0600)).To(Succeed())
+
+	session = eiriniBins.OPI.Restart(newConfigFile.Name(), session)
+	Eventually(func() error {
+		_, getErr := httpClient.Get(url)
+		return getErr
+	}).Should(Succeed())
+	return newConfigFile.Name()
+}

@@ -88,17 +88,21 @@ func servePlaintext(cfg *eirini.Config, handler http.Handler, logger lager.Logge
 }
 
 func initRetryableJSONClient(cfg *eirini.Config) *util.RetryableJSONClient {
-	httpClient, err := util.CreateTLSHTTPClient(
-		[]util.CertPaths{
-			{
-				Crt: cfg.Properties.CCCertPath,
-				Key: cfg.Properties.CCKeyPath,
-				Ca:  cfg.Properties.CCCAPath,
+	httpClient := http.DefaultClient
+	if !cfg.Properties.CCTLSDisabled {
+		var err error
+		httpClient, err = util.CreateTLSHTTPClient(
+			[]util.CertPaths{
+				{
+					Crt: cfg.Properties.CCCertPath,
+					Key: cfg.Properties.CCKeyPath,
+					Ca:  cfg.Properties.CCCAPath,
+				},
 			},
-		},
-	)
-	if err != nil {
-		panic(errors.Wrap(err, "failed to create stager http client"))
+		)
+		if err != nil {
+			panic(errors.Wrap(err, "failed to create stager http client"))
+		}
 	}
 
 	return util.NewRetryableJSONClient(httpClient)

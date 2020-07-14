@@ -2,13 +2,20 @@ package opi_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
+	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/integration/util"
 	. "code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/models/cf"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/ghttp"
 	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,8 +24,9 @@ import (
 var _ = Describe("Staging", func() {
 
 	var (
-		job  batch.Job
-		body string
+		job         batch.Job
+		body        string
+		stagingGUID string
 	)
 
 	BeforeEach(func() {
@@ -29,10 +37,11 @@ var _ = Describe("Staging", func() {
 					"buildpack_lifecycle": {}
 				}
 			}`
+		stagingGUID = "the-staging-guid"
 	})
 
 	JustBeforeEach(func() {
-		resp, err := httpClient.Post(fmt.Sprintf("%s/stage/the-staging-guid", url), "json", bytes.NewReader([]byte(body)))
+		resp, err := httpClient.Post(fmt.Sprintf("%s/stage/%s", url, stagingGUID), "json", bytes.NewReader([]byte(body)))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 
@@ -120,5 +129,101 @@ var _ = Describe("Staging", func() {
 			Entry("SourceType", LabelSourceType, "STG"),
 			Entry("StagingGUID", LabelStagingGUID, "the-staging-guid"),
 		)
+	})
+
+	var _ = Describe("staging completion", func() {
+		var (
+			cloudControllerServer *ghttp.Server
+			completionRequest     cf.StagingCompletedRequest
+			body                  []byte
+			resp                  *http.Response
+			rawResult             json.RawMessage
+		)
+
+		BeforeEach(func() {
+			stagingGUID = "completion-guid-1"
+			var err error
+			cloudControllerServer, err = util.CreateTestServer(certPath, keyPath, certPath)
+			Expect(err).ToNot(HaveOccurred())
+			cloudControllerServer.HTTPTestServer.StartTLS()
+
+			rawResult = json.RawMessage(`{"very":"good"}`)
+			cloudControllerServer.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("POST", "/"),
+					ghttp.VerifyJSONRepresenting(cc_messages.StagingResponseForCC{
+						Result: &rawResult,
+					}),
+				),
+			)
+		})
+
+		AfterEach(func() {
+			cloudControllerServer.Close()
+		})
+
+		JustBeforeEach(func() {
+			annotation := cc_messages.StagingTaskAnnotation{
+				CompletionCallback: cloudControllerServer.URL(),
+			}
+			annotationJSON, err := json.Marshal(annotation)
+			Expect(err).NotTo(HaveOccurred())
+
+			completionRequest = cf.StagingCompletedRequest{
+				TaskGUID:   stagingGUID,
+				Failed:     false,
+				Annotation: string(annotationJSON),
+				Result:     `{"very":"good"}`,
+			}
+
+			body, err = json.Marshal(completionRequest)
+			Expect(err).NotTo(HaveOccurred())
+			req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/stage/%s/completed", url, stagingGUID), bytes.NewReader(body))
+			Expect(err).NotTo(HaveOccurred())
+			resp, err = httpClient.Do(req)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should pass the Result through to the CC staging completed endpoint", func() {
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
+		})
+
+		When("CC TLS is disabled and CC certs not configured", func() {
+			var (
+				newConfigPath string
+			)
+
+			BeforeEach(func() {
+				newConfigPath = restartWithConfig(func(cfg eirini.Config) eirini.Config {
+					cfg.Properties.CCTLSDisabled = true
+					cfg.Properties.CCCertPath = ""
+					cfg.Properties.CCKeyPath = ""
+					cfg.Properties.CCCAPath = ""
+					return cfg
+				})
+				stagingGUID = "completion-guid-2"
+
+				cloudControllerServer.Close()
+				cloudControllerServer = ghttp.NewServer()
+				cloudControllerServer.AppendHandlers(
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyJSONRepresenting(cc_messages.StagingResponseForCC{
+							Result: &rawResult,
+						}),
+					),
+				)
+			})
+
+			AfterEach(func() {
+				os.RemoveAll(newConfigPath)
+			})
+
+			It("should invoke the CC staging completed endpoint", func() {
+				Expect(resp.StatusCode).To(Equal(http.StatusOK))
+				Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
+			})
+		})
 	})
 })
