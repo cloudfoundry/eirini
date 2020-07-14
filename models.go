@@ -64,7 +64,7 @@ type KubeConfig struct {
 	ConfigPath string `yaml:"kube_config_path"`
 }
 
-type Properties struct {
+type Properties struct { //nolint:maligned
 	ClientCAPath   string `yaml:"client_ca_path"`
 	ServerCertPath string `yaml:"server_cert_path"`
 	ServerKeyPath  string `yaml:"server_key_path"`

@@ -110,7 +110,10 @@ func restartWithConfig(updateConfig func(cfg eirini.Config) eirini.Config) strin
 
 	session = eiriniBins.OPI.Restart(newConfigFile.Name(), session)
 	Eventually(func() error {
-		_, getErr := httpClient.Get(url)
+		resp, getErr := httpClient.Get(url)
+		if getErr == nil {
+			defer resp.Body.Close()
+		}
 		return getErr
 	}).Should(Succeed())
 	return newConfigFile.Name()
