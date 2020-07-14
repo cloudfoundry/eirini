@@ -34,7 +34,7 @@ var _ = Describe("Events", func() {
 			certPath, keyPath, certPath,
 		)
 		Expect(err).NotTo(HaveOccurred())
-		capiServer.Start()
+		capiServer.HTTPTestServer.StartTLS()
 
 		config := &eirini.EventReporterConfig{
 			KubeConfig: eirini.KubeConfig{

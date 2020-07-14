@@ -34,7 +34,7 @@ var _ = Describe("StagingReporter", func() {
 		var err error
 		eiriniServer, err = util.CreateTestServer(certPath, keyPath, certPath)
 		Expect(err).ToNot(HaveOccurred())
-		eiriniServer.Start()
+		eiriniServer.HTTPTestServer.StartTLS()
 
 		config := &eirini.StagingReporterConfig{
 			KubeConfig: eirini.KubeConfig{

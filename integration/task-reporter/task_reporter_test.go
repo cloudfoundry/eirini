@@ -40,7 +40,7 @@ var _ = Describe("TaskReporter", func() {
 		var err error
 		cloudControllerServer, err = util.CreateTestServer(certPath, keyPath, certPath)
 		Expect(err).ToNot(HaveOccurred())
-		cloudControllerServer.Start()
+		cloudControllerServer.HTTPTestServer.StartTLS()
 
 		eiriniInstance := fmt.Sprintf("%s-%d", util.GenerateGUID(), GinkgoParallelNode())
 		config = &eirini.TaskReporterConfig{
