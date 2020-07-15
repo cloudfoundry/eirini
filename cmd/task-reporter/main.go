@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -35,16 +36,20 @@ func main() {
 }
 
 func launchTaskReporter(clientset kubernetes.Interface, cfg eirini.TaskReporterConfig) {
-	httpClient, err := util.CreateTLSHTTPClient(
-		[]util.CertPaths{
-			{
-				Crt: cfg.CCCertPath,
-				Key: cfg.CCKeyPath,
-				Ca:  cfg.CAPath,
+	httpClient := http.DefaultClient
+	if !cfg.CCTLSDisabled {
+		var err error
+		httpClient, err = util.CreateTLSHTTPClient(
+			[]util.CertPaths{
+				{
+					Crt: cfg.CCCertPath,
+					Key: cfg.CCKeyPath,
+					Ca:  cfg.CAPath,
+				},
 			},
-		},
-	)
-	cmdcommons.ExitIfError(err)
+		)
+		cmdcommons.ExitIfError(err)
+	}
 
 	taskLogger := lager.NewLogger("task-informer")
 	taskLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))

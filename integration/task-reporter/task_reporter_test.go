@@ -113,6 +113,22 @@ var _ = Describe("TaskReporter", func() {
 		Consistently(cloudControllerServer.ReceivedRequests, "1m").Should(HaveLen(1))
 	})
 
+	When("the Cloud Controller is not using TLS", func() {
+		BeforeEach(func() {
+			config.CCTLSDisabled = true
+			config.CCCertPath = ""
+			config.CCKeyPath = ""
+			config.CAPath = ""
+			cloudControllerServer.Close()
+			cloudControllerServer = ghttp.NewServer()
+			task.CompletionCallback = fmt.Sprintf("%s/the-callback", cloudControllerServer.URL())
+		})
+
+		It("does something", func() {
+			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
+		})
+	})
+
 	It("deletes the job", func() {
 		Eventually(getTaskJobsFn(task.GUID)).Should(BeEmpty())
 	})
