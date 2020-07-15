@@ -1,4 +1,4 @@
-# cloud.google.com/go v0.60.0
+# cloud.google.com/go v0.61.0
 cloud.google.com/go/compute/metadata
 # code.cloudfoundry.org/bbs v0.0.0-20200615191359-7b6fa295fa8d
 code.cloudfoundry.org/bbs/encryption
@@ -28,7 +28,7 @@ code.cloudfoundry.org/tps/cc_client
 code.cloudfoundry.org/urljoiner
 # github.com/Azure/go-autorest v14.2.0+incompatible
 github.com/Azure/go-autorest
-# github.com/Azure/go-autorest/autorest v0.11.0
+# github.com/Azure/go-autorest/autorest v0.11.2
 github.com/Azure/go-autorest/autorest
 github.com/Azure/go-autorest/autorest/azure
 # github.com/Azure/go-autorest/autorest/adal v0.9.0
@@ -136,7 +136,7 @@ github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
 # github.com/google/gofuzz v1.1.0
 github.com/google/gofuzz
-# github.com/googleapis/gnostic v0.4.2 => github.com/googleapis/gnostic v0.4.0
+# github.com/googleapis/gnostic v0.5.0 => github.com/googleapis/gnostic v0.4.0
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
@@ -290,7 +290,7 @@ github.com/square/certstrap/pkix
 go.uber.org/atomic
 # go.uber.org/multierr v1.5.0
 go.uber.org/multierr
-# golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+# golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/ed25519
@@ -351,7 +351,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200707222132-065b96d36cf8
+# golang.org/x/tools v0.0.0-20200714190737-9048b464a08d
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/gcimporter
@@ -408,7 +408,7 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20200707001353-8e8330bf89df
+# google.golang.org/genproto v0.0.0-20200714145754-f631a03bbd91
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.30.0
 google.golang.org/grpc
