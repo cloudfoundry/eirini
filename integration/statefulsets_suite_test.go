@@ -2,14 +2,12 @@ package statefulsets_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
 
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -155,8 +153,6 @@ func podReady(pod corev1.Pod) bool {
 }
 
 func createLRP(name string) *opi.LRP {
-	routes, err := json.Marshal([]cf.Route{{Hostname: "foo.example.com", Port: 8080}})
-	Expect(err).ToNot(HaveOccurred())
 	return &opi.LRP{
 		Command: []string{
 			"/bin/sh",
@@ -167,7 +163,7 @@ func createLRP(name string) *opi.LRP {
 		SpaceName:       "space-foo",
 		TargetInstances: 2,
 		Image:           "busybox",
-		AppURIs:         string(routes),
+		AppURIs:         []opi.Route{{Hostname: "foo.example.com", Port: 8080}},
 		LRPIdentifier:   opi.LRPIdentifier{GUID: util.GenerateGUID(), Version: util.GenerateGUID()},
 		LRP:             "metadata",
 		DiskMB:          2047,

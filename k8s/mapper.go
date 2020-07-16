@@ -1,12 +1,22 @@
 package k8s
 
 import (
+	"encoding/json"
+
 	"code.cloudfoundry.org/eirini/opi"
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func StatefulSetToLRP(s appsv1.StatefulSet) *opi.LRP {
+func StatefulSetToLRP(s appsv1.StatefulSet) (*opi.LRP, error) {
+	stRoutes := s.Annotations[AnnotationRegisteredRoutes]
+	var uris []opi.Route
+	err := json.Unmarshal([]byte(stRoutes), &uris)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal uris")
+	}
+
 	ports := []int32{}
 	container := s.Spec.Template.Spec.Containers[0]
 
@@ -37,10 +47,10 @@ func StatefulSetToLRP(s appsv1.StatefulSet) *opi.LRP {
 		TargetInstances:  int(*s.Spec.Replicas),
 		Ports:            ports,
 		LastUpdated:      s.Annotations[AnnotationLastUpdated],
-		AppURIs:          s.Annotations[AnnotationRegisteredRoutes],
+		AppURIs:          uris,
 		AppGUID:          s.Annotations[AnnotationAppID],
 		MemoryMB:         memory,
 		DiskMB:           disk,
 		VolumeMounts:     volMounts,
-	}
+	}, nil
 }

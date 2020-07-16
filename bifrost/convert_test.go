@@ -195,7 +195,10 @@ var _ = Describe("OPI Converter", func() {
 				})
 
 				It("sets the app routes", func() {
-					Expect(lrp.AppURIs).To(Equal(`[{"hostname":"bumblebee.example.com","port":8000},{"hostname":"transformers.example.com","port":7070}]`))
+					Expect(lrp.AppURIs).To(ConsistOf(
+						opi.Route{Hostname: "bumblebee.example.com", Port: 8000},
+						opi.Route{Hostname: "transformers.example.com", Port: 7070},
+					))
 				})
 
 				It("should set the ports", func() {

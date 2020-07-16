@@ -27,7 +27,7 @@ var _ = Describe("Mapper", func() {
 				Annotations: map[string]string{
 					AnnotationProcessGUID:      "Baldur-guid",
 					AnnotationLastUpdated:      "last-updated-some-time-ago",
-					AnnotationRegisteredRoutes: "my.example.route",
+					AnnotationRegisteredRoutes: `[{"hostname":"my.example.route","port":8080}]`,
 					AnnotationAppID:            "guid_1234",
 					AnnotationVersion:          "version_1234",
 					AnnotationAppName:          "Baldur",
@@ -77,7 +77,7 @@ var _ = Describe("Mapper", func() {
 				ReadyReplicas: 2,
 			},
 		}
-		lrp = StatefulSetToLRP(statefulset)
+		lrp, _ = StatefulSetToLRP(statefulset)
 	})
 
 	It("should set the correct LRP identifier", func() {
@@ -118,7 +118,7 @@ var _ = Describe("Mapper", func() {
 	})
 
 	It("should set the correct LRP AppURIs", func() {
-		Expect(lrp.AppURIs).To(Equal("my.example.route"))
+		Expect(lrp.AppURIs).To(ConsistOf(opi.Route{Hostname: "my.example.route", Port: 8080}))
 	})
 
 	It("should set the correct LRP AppGUID", func() {
@@ -137,5 +137,19 @@ var _ = Describe("Mapper", func() {
 				MountPath: "/some/path",
 			},
 		}))
+	})
+
+	When("route marshalling fails", func() {
+		It("should return the error", func() {
+			statefulset := appsv1.StatefulSet{
+				ObjectMeta: meta.ObjectMeta{
+					Annotations: map[string]string{
+						AnnotationRegisteredRoutes: `[{`,
+					},
+				},
+			}
+			_, err := StatefulSetToLRP(statefulset)
+			Expect(err).To(MatchError(ContainSubstring("failed to unmarshal uris")))
+		})
 	})
 })

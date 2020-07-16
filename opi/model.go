@@ -47,9 +47,14 @@ type LRP struct {
 	CPUWeight              uint8
 	VolumeMounts           []VolumeMount
 	LRP                    string
-	AppURIs                string
+	AppURIs                []Route
 	LastUpdated            string
 	UserDefinedAnnotations map[string]string
+}
+
+type Route struct {
+	Hostname string `json:"hostname"`
+	Port     int32  `json:"port"`
 }
 
 type PrivateRegistry struct {

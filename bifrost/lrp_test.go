@@ -210,7 +210,10 @@ var _ = Describe("Bifrost LRP", func() {
 				lrp := opi.LRP{
 					TargetInstances: 2,
 					LastUpdated:     "whenever",
-					AppURIs:         `[{"hostname":"my.route","port":8080},{"hostname":"your.route","port":5555}]`,
+					AppURIs: []opi.Route{
+						{Hostname: "my.route", Port: 8080},
+						{Hostname: "your.route", Port: 5555},
+					},
 				}
 				lrpDesirer.GetReturns(&lrp, nil)
 			})
@@ -292,7 +295,10 @@ var _ = Describe("Bifrost LRP", func() {
 				It("should have the updated routes", func() {
 					Expect(lrpDesirer.UpdateCallCount()).To(Equal(1))
 					lrp := lrpDesirer.UpdateArgsForCall(0)
-					Expect(lrp.AppURIs).To(Equal(`[{"hostname":"my.route","port":8080},{"hostname":"my.other.route","port":7777}]`))
+					Expect(lrp.AppURIs).To(Equal([]opi.Route{
+						{Hostname: "my.route", Port: 8080},
+						{Hostname: "my.other.route", Port: 7777},
+					}))
 				})
 
 				Context("When there are no routes provided", func() {
@@ -311,7 +317,7 @@ var _ = Describe("Bifrost LRP", func() {
 					It("should update it to an empty array", func() {
 						Expect(lrpDesirer.UpdateCallCount()).To(Equal(1))
 						lrp := lrpDesirer.UpdateArgsForCall(0)
-						Expect(lrp.AppURIs).To(Equal(`[]`))
+						Expect(lrp.AppURIs).To(BeEmpty())
 					})
 				})
 			})
@@ -360,6 +366,10 @@ var _ = Describe("Bifrost LRP", func() {
 				lrp = &opi.LRP{
 					TargetInstances: 5,
 					LastUpdated:     "1234.5",
+					AppURIs: []opi.Route{
+						{Hostname: "route1.io", Port: 6666},
+						{Hostname: "route2.io", Port: 9999},
+					},
 				}
 
 				lrpDesirer.GetReturns(lrp, nil)
@@ -378,6 +388,7 @@ var _ = Describe("Bifrost LRP", func() {
 				Expect(desiredLRP.ProcessGUID).To(Equal("guid_1234-version_1234"))
 				Expect(desiredLRP.Instances).To(Equal(int32(5)))
 				Expect(desiredLRP.Annotation).To(Equal("1234.5"))
+				Expect(desiredLRP.Routes).To(HaveKeyWithValue("cf-router", json.RawMessage(`[{"hostname":"route1.io","port":6666},{"hostname":"route2.io","port":9999}]`)))
 			})
 		})
 

@@ -37,17 +37,12 @@ type LRPReconciler struct {
 
 func (c *LRPReconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	lrp := &eiriniv1.LRP{}
-	err := c.client.Get(context.Background(), request.NamespacedName, lrp)
-	if err != nil {
+	if err := c.client.Get(context.Background(), request.NamespacedName, lrp); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	err = c.do(lrp)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	return reconcile.Result{}, nil
+	err := c.do(lrp)
+	return reconcile.Result{}, err
 }
 
 func (l *LRPReconciler) do(lrp *eiriniv1.LRP) error {
@@ -69,7 +64,7 @@ func toOpiLrp(lrp *eiriniv1.LRP) *opi.LRP {
 	opiLrp := &opi.LRP{}
 	copier.Copy(opiLrp, lrp.Spec)
 	opiLrp.TargetInstances = lrp.Spec.Instances
-	opiLrp.AppURIs = lrp.Spec.AppRoutes
+	copier.Copy(&opiLrp.AppURIs, lrp.Spec.AppRoutes)
 	return opiLrp
 }
 

@@ -40,7 +40,12 @@ type LRPSpec struct {
 	VolumeMounts           []VolumeMount     `json:"volumeMounts,omitempty"`
 	LastUpdated            string            `json:"lastUpdated"`
 	UserDefinedAnnotations map[string]string `json:"userDefinedAnnotations,omitempty"`
-	AppRoutes              string            `json:"appRoutes"`
+	AppRoutes              []Route           `json:"appRoutes"`
+}
+
+type Route struct {
+	Hostname string `json:"hostname"`
+	Port     int32  `json:"port"`
 }
 
 type PrivateRegistry struct {

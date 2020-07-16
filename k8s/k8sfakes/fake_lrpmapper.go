@@ -10,22 +10,24 @@ import (
 )
 
 type FakeLRPMapper struct {
-	Stub        func(v1.StatefulSet) *opi.LRP
+	Stub        func(v1.StatefulSet) (*opi.LRP, error)
 	mutex       sync.RWMutex
 	argsForCall []struct {
 		arg1 v1.StatefulSet
 	}
 	returns struct {
 		result1 *opi.LRP
+		result2 error
 	}
 	returnsOnCall map[int]struct {
 		result1 *opi.LRP
+		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeLRPMapper) Spy(arg1 v1.StatefulSet) *opi.LRP {
+func (fake *FakeLRPMapper) Spy(arg1 v1.StatefulSet) (*opi.LRP, error) {
 	fake.mutex.Lock()
 	ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
 	fake.argsForCall = append(fake.argsForCall, struct {
@@ -37,9 +39,9 @@ func (fake *FakeLRPMapper) Spy(arg1 v1.StatefulSet) *opi.LRP {
 		return fake.Stub(arg1)
 	}
 	if specificReturn {
-		return ret.result1
+		return ret.result1, ret.result2
 	}
-	return fake.returns.result1
+	return fake.returns.result1, fake.returns.result2
 }
 
 func (fake *FakeLRPMapper) CallCount() int {
@@ -48,7 +50,7 @@ func (fake *FakeLRPMapper) CallCount() int {
 	return len(fake.argsForCall)
 }
 
-func (fake *FakeLRPMapper) Calls(stub func(v1.StatefulSet) *opi.LRP) {
+func (fake *FakeLRPMapper) Calls(stub func(v1.StatefulSet) (*opi.LRP, error)) {
 	fake.mutex.Lock()
 	defer fake.mutex.Unlock()
 	fake.Stub = stub
@@ -60,27 +62,30 @@ func (fake *FakeLRPMapper) ArgsForCall(i int) v1.StatefulSet {
 	return fake.argsForCall[i].arg1
 }
 
-func (fake *FakeLRPMapper) Returns(result1 *opi.LRP) {
+func (fake *FakeLRPMapper) Returns(result1 *opi.LRP, result2 error) {
 	fake.mutex.Lock()
 	defer fake.mutex.Unlock()
 	fake.Stub = nil
 	fake.returns = struct {
 		result1 *opi.LRP
-	}{result1}
+		result2 error
+	}{result1, result2}
 }
 
-func (fake *FakeLRPMapper) ReturnsOnCall(i int, result1 *opi.LRP) {
+func (fake *FakeLRPMapper) ReturnsOnCall(i int, result1 *opi.LRP, result2 error) {
 	fake.mutex.Lock()
 	defer fake.mutex.Unlock()
 	fake.Stub = nil
 	if fake.returnsOnCall == nil {
 		fake.returnsOnCall = make(map[int]struct {
 			result1 *opi.LRP
+			result2 error
 		})
 	}
 	fake.returnsOnCall[i] = struct {
 		result1 *opi.LRP
-	}{result1}
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeLRPMapper) Invocations() map[string][][]interface{} {

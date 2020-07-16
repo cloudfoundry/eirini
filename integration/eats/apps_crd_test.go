@@ -63,7 +63,7 @@ var _ = Describe("Apps CRDs", func() {
 				Ports:                  []int32{8080},
 				VolumeMounts:           []eiriniv1.VolumeMount{},
 				UserDefinedAnnotations: map[string]string{},
-				AppRoutes:              `[{"hostname": "app-hostname-1", port: 8080}]`,
+				AppRoutes:              []eiriniv1.Route{{Hostname: "app-hostname-1", Port: 8080}},
 			},
 		}
 
@@ -98,8 +98,7 @@ var _ = Describe("Apps CRDs", func() {
 				Eventually(getStatefulSet).ShouldNot(BeNil())
 
 				lrp := getLRP()
-				lrp.Spec.AppRoutes = `[{"hostname": "app-hostname-1", "port": 8080}]`
-				lrp.Spec.LastUpdated = "now"
+				lrp.Spec.AppRoutes = []eiriniv1.Route{{Hostname: "app-hostname-1", Port: 8080}}
 
 				_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Update(context.Background(), lrp, metav1.UpdateOptions{})
 				Expect(err).NotTo(HaveOccurred())
@@ -119,7 +118,6 @@ var _ = Describe("Apps CRDs", func() {
 
 				lrp := getLRP()
 				lrp.Spec.Instances = 3
-				lrp.Spec.LastUpdated = "now"
 
 				_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Update(context.Background(), lrp, metav1.UpdateOptions{})
 				Expect(err).NotTo(HaveOccurred())
@@ -132,23 +130,6 @@ var _ = Describe("Apps CRDs", func() {
 			})
 		})
 
-		When("lastUpdated timestamp is not updated", func() {
-			BeforeEach(func() {
-				Eventually(getStatefulSet).ShouldNot(BeNil())
-
-				lrp := getLRP()
-				lrp.Spec.Instances = 3
-
-				_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Update(context.Background(), lrp, metav1.UpdateOptions{})
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("does not update the underlying statefulset", func() {
-				Consistently(func() int32 {
-					return *getStatefulSet().Spec.Replicas
-				}).Should(Equal(int32(1)))
-			})
-		})
 	})
 
 	Describe("Stop an app", func() {

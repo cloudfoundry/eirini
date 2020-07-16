@@ -94,7 +94,7 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 		return opi.LRP{}, fmt.Errorf("missing lifecycle data")
 	}
 
-	routesJSON := getRequestedRoutes(request)
+	routes := getRequestedRoutes(request)
 
 	identifier := opi.LRPIdentifier{
 		GUID:    request.GUID,
@@ -117,7 +117,7 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 	return opi.LRP{
 		AppName:                request.AppName,
 		AppGUID:                request.AppGUID,
-		AppURIs:                routesJSON,
+		AppURIs:                routes,
 		LastUpdated:            request.LastUpdated,
 		OrgName:                request.OrganizationName,
 		OrgGUID:                request.OrganizationGUID,
@@ -286,22 +286,23 @@ func (c *OPIConverter) buildpackProperties(dropletGUID, dropletHash, startComman
 	return image, command, buildpackEnv
 }
 
-func getRequestedRoutes(request cf.DesireLRPRequest) string {
-	routes := request.Routes
-	if routes == nil {
-		return ""
+func getRequestedRoutes(request cf.DesireLRPRequest) []opi.Route {
+	jsonRoutes := request.Routes
+	if jsonRoutes == nil {
+		return []opi.Route{}
 	}
-	if _, ok := routes["cf-router"]; !ok {
-		return ""
+	if _, ok := jsonRoutes["cf-router"]; !ok {
+		return []opi.Route{}
 	}
 
-	cfRouterRoutes := routes["cf-router"]
-	data, err := cfRouterRoutes.MarshalJSON()
+	cfRouterRoutes := jsonRoutes["cf-router"]
+	var routes []opi.Route
+	err := json.Unmarshal(cfRouterRoutes, &routes)
 	if err != nil {
 		panic("This should never happen!")
 	}
 
-	return string(data)
+	return routes
 }
 
 func (c *OPIConverter) imageURI(dropletGUID, dropletHash string) string {

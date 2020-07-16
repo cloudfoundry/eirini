@@ -97,12 +97,12 @@ func (l *LRP) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (cf.Desi
 		Annotation:  lrp.LastUpdated,
 	}
 
-	if lrp.AppURIs != "" {
-		routes := json.RawMessage{}
-		if err := routes.UnmarshalJSON([]byte(lrp.AppURIs)); err != nil {
-			return cf.DesiredLRP{}, errors.Wrap(err, "failed to unmarshal routes")
+	if len(lrp.AppURIs) > 0 {
+		data, err := json.Marshal(lrp.AppURIs)
+		if err != nil {
+			return cf.DesiredLRP{}, errors.Wrap(err, "failed to marshal app uris")
 		}
-		lrpRoutes := map[string]json.RawMessage{"cf-router": routes}
+		lrpRoutes := map[string]json.RawMessage{"cf-router": data}
 		desiredLRP.Routes = lrpRoutes
 	}
 
@@ -139,16 +139,17 @@ func (l *LRP) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([
 	return cfInstances, nil
 }
 
-func getURIs(update cf.DesiredLRPUpdate) string {
+func getURIs(update cf.DesiredLRPUpdate) []opi.Route {
 	cfRouterRoutes, hasRoutes := update.Routes["cf-router"]
 	if !hasRoutes {
-		return ""
+		return []opi.Route{}
 	}
 
-	data, err := cfRouterRoutes.MarshalJSON()
+	var routes []opi.Route
+	err := json.Unmarshal(cfRouterRoutes, &routes)
 	if err != nil {
 		panic("This should never happen")
 	}
 
-	return string(data)
+	return routes
 }

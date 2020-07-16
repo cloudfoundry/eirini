@@ -87,7 +87,7 @@ var _ = Describe("Statefulset Desirer", func() {
 		)
 
 		BeforeEach(func() {
-			lrp = createLRP("Baldur", "my.example.route")
+			lrp = createLRP("Baldur", []opi.Route{{Hostname: "my.example.route", Port: 1000}})
 			livenessProbeCreator.Returns(&corev1.Probe{})
 			readinessProbeCreator.Returns(&corev1.Probe{})
 		})
@@ -122,7 +122,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			Entry("AppID", k8s.AnnotationAppID, "premium_app_guid_1234"),
 			Entry("Version", k8s.AnnotationVersion, "version_1234"),
 			Entry("OriginalRequest", k8s.AnnotationOriginalRequest, "original request"),
-			Entry("RegisteredRoutes", k8s.AnnotationRegisteredRoutes, "my.example.route"),
+			Entry("RegisteredRoutes", k8s.AnnotationRegisteredRoutes, `[{"hostname":"my.example.route","port":1000}]`),
 			Entry("SpaceName", k8s.AnnotationSpaceName, "space-foo"),
 			Entry("SpaceGUID", k8s.AnnotationSpaceGUID, "space-guid"),
 			Entry("OrgName", k8s.AnnotationOrgName, "org-foo"),
@@ -139,7 +139,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			Entry("AppID", k8s.AnnotationAppID, "premium_app_guid_1234"),
 			Entry("Version", k8s.AnnotationVersion, "version_1234"),
 			Entry("OriginalRequest", k8s.AnnotationOriginalRequest, "original request"),
-			Entry("RegisteredRoutes", k8s.AnnotationRegisteredRoutes, "my.example.route"),
+			Entry("RegisteredRoutes", k8s.AnnotationRegisteredRoutes, `[{"hostname":"my.example.route","port":1000}]`),
 			Entry("SpaceName", k8s.AnnotationSpaceName, "space-foo"),
 			Entry("SpaceGUID", k8s.AnnotationSpaceGUID, "space-guid"),
 			Entry("OrgName", k8s.AnnotationOrgName, "org-foo"),
@@ -344,7 +344,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("When the app name contains unsupported characters", func() {
 			BeforeEach(func() {
-				lrp = createLRP("Балдър", "my.example.route")
+				lrp = createLRP("Балдър", []opi.Route{{Hostname: "my.example.route", Port: 10000}})
 			})
 
 			It("should use the guid as a name", func() {
@@ -443,7 +443,7 @@ var _ = Describe("Statefulset Desirer", func() {
 	Context("When getting an app", func() {
 
 		BeforeEach(func() {
-			mapper.Returns(&opi.LRP{AppName: "baldur-app"})
+			mapper.Returns(&opi.LRP{AppName: "baldur-app"}, nil)
 		})
 
 		It("should use mapper to get LRP", func() {
@@ -501,7 +501,7 @@ var _ = Describe("Statefulset Desirer", func() {
 							Annotations: map[string]string{
 								k8s.AnnotationProcessGUID:      "Baldur-guid",
 								k8s.AnnotationLastUpdated:      "never",
-								k8s.AnnotationRegisteredRoutes: "myroute.io",
+								k8s.AnnotationRegisteredRoutes: `[{"hostname":"myroute.io","port":1000}]`,
 							},
 						},
 						Spec: appsv1.StatefulSetSpec{
@@ -518,7 +518,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			lrp := &opi.LRP{
 				TargetInstances: 5,
 				LastUpdated:     "now",
-				AppURIs:         "new-route.io",
+				AppURIs:         []opi.Route{{Hostname: "new-route.io", Port: 6666}},
 			}
 
 			Expect(statefulSetDesirer.Update(lrp)).To(Succeed())
@@ -527,7 +527,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			namespace, st := statefulSetClient.UpdateArgsForCall(0)
 			Expect(namespace).To(Equal("the-namespace"))
 			Expect(st.GetAnnotations()).To(HaveKeyWithValue(k8s.AnnotationLastUpdated, "now"))
-			Expect(st.GetAnnotations()).To(HaveKeyWithValue(k8s.AnnotationRegisteredRoutes, "new-route.io"))
+			Expect(st.GetAnnotations()).To(HaveKeyWithValue(k8s.AnnotationRegisteredRoutes, `[{"hostname":"new-route.io","port":6666}]`))
 			Expect(st.GetAnnotations()).NotTo(HaveKey("another"))
 			Expect(*st.Spec.Replicas).To(Equal(int32(5)))
 		})
@@ -1145,7 +1145,7 @@ func randStringBytes() string {
 	return string(b)
 }
 
-func createLRP(name, routes string) *opi.LRP {
+func createLRP(name string, routes []opi.Route) *opi.LRP {
 	lastUpdated := randStringBytes()
 	return &opi.LRP{
 		LRPIdentifier: opi.LRPIdentifier{

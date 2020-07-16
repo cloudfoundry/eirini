@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -93,7 +94,7 @@ type EventLister interface {
 }
 
 //counterfeiter:generate . LRPMapper
-type LRPMapper func(s appsv1.StatefulSet) *opi.LRP
+type LRPMapper func(s appsv1.StatefulSet) (*opi.LRP, error)
 
 type StatefulSetDesirer struct {
 	Pods                              PodListerDeleter
@@ -157,7 +158,7 @@ func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}
 
-	return m.statefulSetsToLRPs(statefulsets), nil
+	return m.statefulSetsToLRPs(statefulsets)
 }
 
 func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
@@ -241,11 +242,15 @@ func (m *StatefulSetDesirer) update(lrp *opi.LRP) error {
 	if err != nil {
 		return err
 	}
+	uris, err := json.Marshal(lrp.AppURIs)
+	if err != nil {
+		panic("failed to marshal routes")
+	}
 
 	count := int32(lrp.TargetInstances)
 	statefulSet.Spec.Replicas = &count
 	statefulSet.Annotations[AnnotationLastUpdated] = lrp.LastUpdated
-	statefulSet.Annotations[AnnotationRegisteredRoutes] = lrp.AppURIs
+	statefulSet.Annotations[AnnotationRegisteredRoutes] = string(uris)
 
 	_, err = m.StatefulSets.Update(statefulSet.Namespace, statefulSet)
 	if err != nil {
@@ -271,7 +276,7 @@ func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 	if err != nil {
 		return nil, err
 	}
-	return m.StatefulSetToLRPMapper(*statefulset), nil
+	return m.StatefulSetToLRPMapper(*statefulset)
 }
 
 func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error) {
@@ -374,13 +379,16 @@ func hasInsufficientMemory(eventList *corev1.EventList) bool {
 		strings.Contains(event.Message, "Insufficient memory")
 }
 
-func (m *StatefulSetDesirer) statefulSetsToLRPs(statefulSets *appsv1.StatefulSetList) []*opi.LRP {
+func (m *StatefulSetDesirer) statefulSetsToLRPs(statefulSets *appsv1.StatefulSetList) ([]*opi.LRP, error) {
 	lrps := []*opi.LRP{}
 	for _, s := range statefulSets.Items {
-		lrp := m.StatefulSetToLRPMapper(s)
+		lrp, err := m.StatefulSetToLRPMapper(s)
+		if err != nil {
+			return nil, err
+		}
 		lrps = append(lrps, lrp)
 	}
-	return lrps
+	return lrps, nil
 }
 
 func (m *StatefulSetDesirer) statefulSetName(lrp *opi.LRP) string {
@@ -566,11 +574,15 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	statefulSet.Spec.Template.Labels = labels
 	statefulSet.Labels = labels
 
+	uris, err := json.Marshal(lrp.AppURIs)
+	if err != nil {
+		panic("failed to marshal routes")
+	}
 	annotations := map[string]string{
 		AnnotationSpaceName:        lrp.SpaceName,
 		AnnotationSpaceGUID:        lrp.SpaceGUID,
 		AnnotationOriginalRequest:  lrp.LRP,
-		AnnotationRegisteredRoutes: lrp.AppURIs,
+		AnnotationRegisteredRoutes: string(uris),
 		AnnotationAppID:            lrp.AppGUID,
 		AnnotationVersion:          lrp.Version,
 		AnnotationLastUpdated:      lrp.LastUpdated,
