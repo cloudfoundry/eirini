@@ -2,7 +2,8 @@ package k8s
 
 import (
 	"context"
-	"errors"
+
+	"github.com/pkg/errors"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/opi"
@@ -35,45 +36,58 @@ type LRPReconciler struct {
 	scheme  *runtime.Scheme
 }
 
-func (c *LRPReconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *LRPReconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	lrp := &eiriniv1.LRP{}
-	if err := c.client.Get(context.Background(), request.NamespacedName, lrp); err != nil {
+	if err := r.client.Get(context.Background(), request.NamespacedName, lrp); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	err := c.do(lrp)
+	err := r.do(lrp)
 	return reconcile.Result{}, err
 }
 
-func (l *LRPReconciler) do(lrp *eiriniv1.LRP) error {
-	_, err := l.desirer.Get(opi.LRPIdentifier{
+func (r *LRPReconciler) do(lrp *eiriniv1.LRP) error {
+	_, err := r.desirer.Get(opi.LRPIdentifier{
 		GUID:    lrp.Spec.GUID,
 		Version: lrp.Spec.Version,
 	})
 	if errors.Is(err, eirini.ErrNotFound) {
-		return l.desirer.Desire(lrp.Namespace, toOpiLrp(lrp), l.setOwnerFn(lrp))
+		appLRP, parseErr := toOpiLrp(lrp)
+		if err != nil {
+			return errors.Wrap(parseErr, "failed to parse the crd spec to the lrp model")
+		}
+		return r.desirer.Desire(lrp.Namespace, appLRP, r.setOwnerFn(lrp))
 	}
 	if err != nil {
 		return err
 	}
 
-	return l.desirer.Update(toOpiLrp(lrp))
+	appLRP, err := toOpiLrp(lrp)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse the crd spec to the lrp model")
+	}
+	return r.desirer.Update(appLRP)
 }
 
-func toOpiLrp(lrp *eiriniv1.LRP) *opi.LRP {
-	opiLrp := &opi.LRP{}
-	copier.Copy(opiLrp, lrp.Spec)
-	opiLrp.TargetInstances = lrp.Spec.Instances
-	copier.Copy(&opiLrp.AppURIs, lrp.Spec.AppRoutes)
-	return opiLrp
-}
-
-func (l *LRPReconciler) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {
+func (r *LRPReconciler) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {
 	return func(resource interface{}) error {
 		obj := resource.(metav1.Object)
-		if err := ctrl.SetControllerReference(lrp, obj, l.scheme); err != nil {
+		if err := ctrl.SetControllerReference(lrp, obj, r.scheme); err != nil {
 			return err
 		}
 		return nil
 	}
+}
+
+func toOpiLrp(lrp *eiriniv1.LRP) (*opi.LRP, error) {
+	opiLrp := &opi.LRP{}
+	if err := copier.Copy(opiLrp, lrp.Spec); err != nil {
+		return nil, err
+	}
+	opiLrp.TargetInstances = lrp.Spec.Instances
+	if err := copier.Copy(&opiLrp.AppURIs, lrp.Spec.AppRoutes); err != nil {
+		return nil, err
+	}
+
+	return opiLrp, nil
 }

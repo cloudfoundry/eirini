@@ -32,7 +32,9 @@ type options struct {
 }
 
 func init() {
-	kscheme.AddToScheme(lrpscheme.Scheme)
+	if err := kscheme.AddToScheme(lrpscheme.Scheme); err != nil {
+		panic("failed to add the k8s scheme to the LRP CRD scheme")
+	}
 }
 
 func main() {

@@ -163,4 +163,3 @@ type StagerConfig struct {
 	UploaderImage   string
 	ExecutorImage   string
 }
-
