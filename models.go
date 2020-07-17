@@ -164,11 +164,3 @@ type StagerConfig struct {
 	ExecutorImage   string
 }
 
-type LrpControllerConfig struct {
-	EiriniCertPath string `yaml:"eirini_cert_path"`
-	EiriniKeyPath  string `yaml:"eirini_key_path"`
-	CAPath         string `yaml:"ca_path"`
-	EiriniURI      string `yaml:"eirini_uri"`
-
-	KubeConfig `yaml:",inline"`
-}

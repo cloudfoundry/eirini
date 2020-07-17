@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"encoding/json"
-
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -19,59 +17,48 @@ type LRP struct {
 }
 
 type LRPSpec struct {
-	GUID                    string                     `json:"guid"`
-	Version                 string                     `json:"version"`
-	ProcessGUID             string                     `json:"processGUID"`
-	ProcessType             string                     `json:"processType"`
-	AppGUID                 string                     `json:"appGUID"`
-	AppName                 string                     `json:"appName"`
-	SpaceGUID               string                     `json:"spaceGUID"`
-	SpaceName               string                     `json:"spaceName"`
-	OrganizationGUID        string                     `json:"organizationGUID"`
-	OrganizationName        string                     `json:"organizationName"`
-	PlacementTags           []string                   `json:"placementTags,omitempty"`
-	Ports                   []int32                    `json:"ports,omitempty"`
-	Routes                  map[string]json.RawMessage `json:"routes,omitempty"`
-	Environment             map[string]string          `json:"environment,omitempty"`
-	EgressRules             []json.RawMessage          `json:"egressRules,omitempty"`
-	NumInstances            int                        `json:"instances"`
-	LastUpdated             string                     `json:"lastUpdated"`
-	HealthCheckType         string                     `json:"healthCheckType"`
-	HealthCheckHTTPEndpoint string                     `json:"healthCheckHttpEndpoint"`
-	HealthCheckTimeoutMs    uint                       `json:"healthCheckTimeoutMs"`
-	StartTimeoutMs          uint                       `json:"startTimeoutMs"`
-	MemoryMB                int64                      `json:"memoryMB"`
-	DiskMB                  int64                      `json:"diskMB"`
-	CPUWeight               uint8                      `json:"cpuWeight"`
-	VolumeMounts            []VolumeMount              `json:"volumeMounts,omitempty"`
-	Lifecycle               Lifecycle                  `json:"lifecycle"`
-	DropletHash             string                     `json:"dropletHash"`
-	DropletGUID             string                     `json:"dropletGUID"`
-	StartCommand            string                     `json:"startCommand"`
-	UserDefinedAnnotations  map[string]string          `json:"userDefinedAnnotations,omitempty"`
+	GUID                   string            `json:"GUID"`
+	Version                string            `json:"version"`
+	ProcessType            string            `json:"processType"`
+	AppName                string            `json:"appName"`
+	AppGUID                string            `json:"appGUID"`
+	OrgName                string            `json:"orgName"`
+	OrgGUID                string            `json:"orgGUID"`
+	SpaceName              string            `json:"spaceName"`
+	SpaceGUID              string            `json:"spaceGUID"`
+	Image                  string            `json:"image"`
+	Command                []string          `json:"command,omitempty"`
+	PrivateRegistry        *PrivateRegistry  `json:"privateRegistry,omitempty"`
+	Env                    map[string]string `json:"env,omitempty"`
+	Health                 Healtcheck        `json:"health"`
+	Ports                  []int32           `json:"ports,omitempty"`
+	Instances              int               `json:"instances"`
+	MemoryMB               int64             `json:"memoryMB"`
+	DiskMB                 int64             `json:"diskMB"`
+	RunsAsRoot             bool              `json:"runsAsRoot"`
+	CPUWeight              uint8             `json:"cpuWeight"`
+	VolumeMounts           []VolumeMount     `json:"volumeMounts,omitempty"`
+	LastUpdated            string            `json:"lastUpdated"`
+	UserDefinedAnnotations map[string]string `json:"userDefinedAnnotations,omitempty"`
+	AppRoutes              string            `json:"appRoutes"`
 }
 
-type Lifecycle struct {
-	DockerLifecycle    *DockerLifecycle    `json:"docker,omitempty"`
-	BuildpackLifecycle *BuildpackLifecycle `json:"buildpack,omitempty"`
-}
-
-type DockerLifecycle struct {
-	Image            string   `json:"image"`
-	Command          []string `json:"command,omitempty"`
-	RegistryUsername string   `json:"registryUsername"`
-	RegistryPassword string   `json:"registryPassword"`
-}
-
-type BuildpackLifecycle struct {
-	DropletHash  string `json:"dropletHash"`
-	DropletGUID  string `json:"dropletGuid"`
-	StartCommand string `json:"startCommand"`
+type PrivateRegistry struct {
+	Server   string `json:"server"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type VolumeMount struct {
-	VolumeID string `json:"volumeID"`
-	MountDir string `json:"mountDir"`
+	MountPath string `json:"mountPath"`
+	ClaimName string `json:"claimName"`
+}
+
+type Healtcheck struct {
+	Type      string `json:"type"`
+	Port      int32  `json:"port"`
+	Endpoint  string `json:"endpoint"`
+	TimeoutMs uint   `json:"timeoutMs"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

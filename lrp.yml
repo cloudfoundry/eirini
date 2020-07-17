@@ -1,0 +1,22 @@
+apiVersion: eirini.cloudfoundry.org/v1
+kind: LRP
+metadata:
+  name: mylrp
+  namespace: cf-workloads
+spec:
+  GUID: some-guid
+  appGUID: some-guid
+  appName: ivan
+  cpuWeight: 2
+  diskMB: 256
+  env:
+    foo: bar
+  image: eirini/dorini
+  lastUpdated: now
+  memoryMB: 256
+  orgName: org
+  ports:
+  - 8080
+  spaceName: spacy
+  instances: 3
+  version: some-version
