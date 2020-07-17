@@ -3,11 +3,9 @@ module code.cloudfoundry.org/eirini
 go 1.13
 
 replace (
+	github.com/go-logr/logr => github.com/go-logr/logr v0.1.0
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
-	k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
-	k8s.io/client-go => k8s.io/client-go v0.17.0
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe
-	k8s.io/metrics => k8s.io/metrics v0.17.4
 )
 
 require (
@@ -40,11 +38,9 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
-	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-test/deep v1.0.4 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
-	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.5.0 // indirect
 	github.com/gophercloud/gophercloud v0.12.0 // indirect
 	github.com/gorilla/mux v1.7.4 // indirect
@@ -52,8 +48,6 @@ require (
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.6.6
 	github.com/hashicorp/go-uuid v1.0.2
-	github.com/hashicorp/golang-lru v0.5.4 // indirect
-	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jessevdk/go-flags v1.4.0
@@ -80,18 +74,18 @@ require (
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899 // indirect
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	golang.org/x/tools v0.0.0-20200714190737-9048b464a08d // indirect
-	google.golang.org/genproto v0.0.0-20200714145754-f631a03bbd91 // indirect
+	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
 	google.golang.org/grpc v1.30.0
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.5
+	k8s.io/apiextensions-apiserver v0.18.5 // indirect
 	k8s.io/apimachinery v0.18.5
-	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/code-generator v0.17.4
+	k8s.io/client-go v0.18.5
+	k8s.io/code-generator v0.18.5
 	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.3.0 // indirect
+	k8s.io/klog/v2 v2.1.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20200615155156-dffdd1682719 // indirect
 	k8s.io/metrics v0.18.5
 	k8s.io/utils v0.0.0-20200619165400-6e3d28b6ed19 // indirect
-	sigs.k8s.io/yaml v1.2.0 // indirect
+	sigs.k8s.io/controller-runtime v0.6.1
 )
