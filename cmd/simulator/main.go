@@ -9,6 +9,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/handler"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
@@ -37,8 +38,7 @@ func main() {
 
 type DesirerSimulator struct{}
 
-func (d *DesirerSimulator) Desire(namespace string,
-	klrps *opi.LRP) error {
+func (d *DesirerSimulator) Desire(namespace string, klrps *opi.LRP, opts ...k8s.DesirerOption) error {
 	return nil
 }
 

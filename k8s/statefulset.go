@@ -115,7 +115,9 @@ type StatefulSetDesirer struct {
 //counterfeiter:generate . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP) error {
+type DesirerOption func(resource interface{}) error
+
+func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP, opts ...DesirerOption) error {
 	if lrp.PrivateRegistry != nil {
 		secret, err := m.generateRegistryCredsSecret(lrp)
 		if err != nil {
@@ -126,7 +128,16 @@ func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP) error {
 		}
 	}
 
-	if _, err := m.StatefulSets.Create(namespace, m.toStatefulSet(lrp)); err != nil {
+	st := m.toStatefulSet(lrp)
+	st.Namespace = namespace
+	for _, opt := range opts {
+		if err := opt(st); err != nil {
+			m.Logger.Error("failed to apply option", err, lager.Data{"guid": lrp.GUID, "version": lrp.Version})
+			return errors.Wrap(err, "failed to apply options")
+		}
+	}
+
+	if _, err := m.StatefulSets.Create(namespace, st); err != nil {
 		var statusErr *k8serrors.StatusError
 		if errors.As(err, &statusErr) && statusErr.Status().Reason == metav1.StatusReasonAlreadyExists {
 			m.Logger.Debug("statefulset already exists", lager.Data{"guid": lrp.GUID, "version": lrp.Version, "error": err.Error()})

@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 )
@@ -17,7 +18,7 @@ type LRPConverter interface {
 
 //counterfeiter:generate . LRPDesirer
 type LRPDesirer interface {
-	Desire(namespace string, lrp *opi.LRP) error
+	Desire(namespace string, lrp *opi.LRP, opts ...k8s.DesirerOption) error
 	List() ([]*opi.LRP, error)
 	Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 	GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error)

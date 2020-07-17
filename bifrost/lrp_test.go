@@ -66,13 +66,13 @@ var _ = Describe("Bifrost LRP", func() {
 
 			It("should use Desirer with the converted LRP", func() {
 				Expect(lrpDesirer.DesireCallCount()).To(Equal(1))
-				_, desired := lrpDesirer.DesireArgsForCall(0)
+				_, desired, _ := lrpDesirer.DesireArgsForCall(0)
 				Expect(desired).To(Equal(&lrp))
 			})
 
 			It("should desire the LRP in the requested namespace", func() {
 				Expect(lrpDesirer.DesireCallCount()).To(Equal(1))
-				namespace, _ := lrpDesirer.DesireArgsForCall(0)
+				namespace, _, _ := lrpDesirer.DesireArgsForCall(0)
 				Expect(namespace).To(Equal("my-namespace"))
 			})
 
@@ -83,7 +83,7 @@ var _ = Describe("Bifrost LRP", func() {
 
 				It("should desire the LRP in the default namespace", func() {
 					Expect(lrpDesirer.DesireCallCount()).To(Equal(1))
-					namespace, _ := lrpDesirer.DesireArgsForCall(0)
+					namespace, _, _ := lrpDesirer.DesireArgsForCall(0)
 					Expect(namespace).To(Equal("default-namespace"))
 				})
 			})
