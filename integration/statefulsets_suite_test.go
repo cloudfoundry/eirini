@@ -1,6 +1,7 @@
 package statefulsets_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -48,7 +49,7 @@ func secrets() corev1_types.SecretInterface {
 }
 
 func getSecret(name string) (*corev1.Secret, error) {
-	return secrets().Get(name, metav1.GetOptions{})
+	return secrets().Get(context.Background(), name, metav1.GetOptions{})
 }
 
 func statefulSets() appsv1_types.StatefulSetInterface {
@@ -56,7 +57,7 @@ func statefulSets() appsv1_types.StatefulSetInterface {
 }
 
 func getStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
-	ss, getErr := statefulSets().List(metav1.ListOptions{LabelSelector: labelSelector(lrp.LRPIdentifier)})
+	ss, getErr := statefulSets().List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector(lrp.LRPIdentifier)})
 	Expect(getErr).NotTo(HaveOccurred())
 	return &ss.Items[0]
 }
@@ -75,9 +76,9 @@ func podDisruptionBudgets() v1beta1.PodDisruptionBudgetInterface {
 
 func cleanupStatefulSet(lrp *opi.LRP) {
 	backgroundPropagation := metav1.DeletePropagationBackground
-	deleteOptions := &metav1.DeleteOptions{PropagationPolicy: &backgroundPropagation}
+	deleteOptions := metav1.DeleteOptions{PropagationPolicy: &backgroundPropagation}
 	listOptions := metav1.ListOptions{LabelSelector: labelSelector(lrp.LRPIdentifier)}
-	err := statefulSets().DeleteCollection(deleteOptions, listOptions)
+	err := statefulSets().DeleteCollection(context.Background(), deleteOptions, listOptions)
 	Expect(err).ToNot(HaveOccurred())
 }
 
@@ -88,20 +89,20 @@ func listAllStatefulSets(lrp1, lrp2 *opi.LRP) []appsv1.StatefulSet {
 		k8s.LabelVersion, lrp1.LRPIdentifier.Version, lrp2.LRPIdentifier.Version,
 	)
 
-	list, err := statefulSets().List(metav1.ListOptions{LabelSelector: labels})
+	list, err := statefulSets().List(context.Background(), metav1.ListOptions{LabelSelector: labels})
 	Expect(err).NotTo(HaveOccurred())
 	return list.Items
 }
 
 func listStatefulSets(appName string) []appsv1.StatefulSet {
 	labelSelector := fmt.Sprintf("name=%s", appName)
-	list, err := statefulSets().List(metav1.ListOptions{LabelSelector: labelSelector})
+	list, err := statefulSets().List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
 	Expect(err).NotTo(HaveOccurred())
 	return list.Items
 }
 
 func listPodsByLabel(labelSelector string) []corev1.Pod {
-	pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(metav1.ListOptions{LabelSelector: labelSelector})
+	pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
 	Expect(err).NotTo(HaveOccurred())
 	return pods.Items
 }
@@ -130,7 +131,7 @@ func nodeNamesFromPods(pods []corev1.Pod) []string {
 }
 
 func getNodeCount() int {
-	nodeList, err := fixture.Clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodeList, err := fixture.Clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred())
 	return len(nodeList.Items)
 }

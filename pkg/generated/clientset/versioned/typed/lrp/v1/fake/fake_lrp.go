@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	lrpv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var lrpsResource = schema.GroupVersionResource{Group: "eirini.cloudfoundry.org",
 var lrpsKind = schema.GroupVersionKind{Group: "eirini.cloudfoundry.org", Version: "v1", Kind: "LRP"}
 
 // Get takes name of the lRP, and returns the corresponding lRP object, and an error if there is any.
-func (c *FakeLRPs) Get(name string, options v1.GetOptions) (result *lrpv1.LRP, err error) {
+func (c *FakeLRPs) Get(ctx context.Context, name string, options v1.GetOptions) (result *lrpv1.LRP, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(lrpsResource, c.ns, name), &lrpv1.LRP{})
 
@@ -50,7 +52,7 @@ func (c *FakeLRPs) Get(name string, options v1.GetOptions) (result *lrpv1.LRP, e
 }
 
 // List takes label and field selectors, and returns the list of LRPs that match those selectors.
-func (c *FakeLRPs) List(opts v1.ListOptions) (result *lrpv1.LRPList, err error) {
+func (c *FakeLRPs) List(ctx context.Context, opts v1.ListOptions) (result *lrpv1.LRPList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(lrpsResource, lrpsKind, c.ns, opts), &lrpv1.LRPList{})
 
@@ -72,14 +74,14 @@ func (c *FakeLRPs) List(opts v1.ListOptions) (result *lrpv1.LRPList, err error) 
 }
 
 // Watch returns a watch.Interface that watches the requested lRPs.
-func (c *FakeLRPs) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeLRPs) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(lrpsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a lRP and creates it.  Returns the server's representation of the lRP, and an error, if there is any.
-func (c *FakeLRPs) Create(lRP *lrpv1.LRP) (result *lrpv1.LRP, err error) {
+func (c *FakeLRPs) Create(ctx context.Context, lRP *lrpv1.LRP, opts v1.CreateOptions) (result *lrpv1.LRP, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(lrpsResource, c.ns, lRP), &lrpv1.LRP{})
 
@@ -90,7 +92,7 @@ func (c *FakeLRPs) Create(lRP *lrpv1.LRP) (result *lrpv1.LRP, err error) {
 }
 
 // Update takes the representation of a lRP and updates it. Returns the server's representation of the lRP, and an error, if there is any.
-func (c *FakeLRPs) Update(lRP *lrpv1.LRP) (result *lrpv1.LRP, err error) {
+func (c *FakeLRPs) Update(ctx context.Context, lRP *lrpv1.LRP, opts v1.UpdateOptions) (result *lrpv1.LRP, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(lrpsResource, c.ns, lRP), &lrpv1.LRP{})
 
@@ -101,7 +103,7 @@ func (c *FakeLRPs) Update(lRP *lrpv1.LRP) (result *lrpv1.LRP, err error) {
 }
 
 // Delete takes name of the lRP and deletes it. Returns an error if one occurs.
-func (c *FakeLRPs) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeLRPs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(lrpsResource, c.ns, name), &lrpv1.LRP{})
 
@@ -109,15 +111,15 @@ func (c *FakeLRPs) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeLRPs) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(lrpsResource, c.ns, listOptions)
+func (c *FakeLRPs) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(lrpsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &lrpv1.LRPList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched lRP.
-func (c *FakeLRPs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *lrpv1.LRP, err error) {
+func (c *FakeLRPs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *lrpv1.LRP, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(lrpsResource, c.ns, name, pt, data, subresources...), &lrpv1.LRP{})
 

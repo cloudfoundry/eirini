@@ -1,6 +1,7 @@
 package k8s_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -93,11 +94,11 @@ var _ = Describe("RouteCollector", func() {
 
 	JustBeforeEach(func() {
 		for _, p := range pods {
-			_, createErr := client.CoreV1().Pods("default").Create(p)
+			_, createErr := client.CoreV1().Pods("default").Create(context.Background(), p, metav1.CreateOptions{})
 			Expect(createErr).ToNot(HaveOccurred())
 		}
 		for _, s := range statefulsets {
-			_, createErr := client.AppsV1().StatefulSets("default").Create(s)
+			_, createErr := client.AppsV1().StatefulSets("default").Create(context.Background(), s, metav1.CreateOptions{})
 			Expect(createErr).ToNot(HaveOccurred())
 		}
 		routeMessages, err = collector.Collect()

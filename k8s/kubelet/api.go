@@ -1,6 +1,8 @@
 package kubelet
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -12,7 +14,7 @@ type API interface {
 
 //counterfeiter:generate . NodeAPI
 type NodeAPI interface {
-	List(opts metav1.ListOptions) (*corev1.NodeList, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*corev1.NodeList, error)
 }
 
 type StatsSummary struct {

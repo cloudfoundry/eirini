@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -76,7 +77,7 @@ type PodDisruptionBudgetClient interface {
 type StatefulSetClient interface {
 	Create(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
 	Update(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
-	Delete(namespace string, name string, options *metav1.DeleteOptions) error
+	Delete(namespace string, name string, options metav1.DeleteOptions) error
 	List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error)
 }
 
@@ -88,7 +89,7 @@ type SecretsCreatorDeleter interface {
 
 //counterfeiter:generate . EventLister
 type EventLister interface {
-	List(opts metav1.ListOptions) (*corev1.EventList, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*corev1.EventList, error)
 }
 
 //counterfeiter:generate . LRPMapper
@@ -178,10 +179,9 @@ func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 	}
 
 	backgroundPropagation := metav1.DeletePropagationBackground
-	deleteOptions := &metav1.DeleteOptions{
+	return m.StatefulSets.Delete(statefulSet.Namespace, statefulSet.Name, metav1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
-	}
-	return m.StatefulSets.Delete(statefulSet.Namespace, statefulSet.Name, deleteOptions)
+	})
 }
 
 func (m *StatefulSetDesirer) deletePrivateRegistrySecret(statefulSet *appsv1.StatefulSet) error {

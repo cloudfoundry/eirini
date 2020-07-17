@@ -2,6 +2,7 @@ package eats_test
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -218,7 +219,7 @@ func getLRPs() ([]cf.DesiredLRPSchedulingInfo, error) {
 }
 
 func getPodReadiness(lrpGUID, lrpVersion string) bool {
-	pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(metav1.ListOptions{
+	pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, lrpGUID, k8s.LabelVersion, lrpVersion),
 	})
 	Expect(err).NotTo(HaveOccurred())

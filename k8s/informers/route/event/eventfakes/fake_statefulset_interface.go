@@ -2,6 +2,7 @@
 package eventfakes
 
 import (
+	"context"
 	"sync"
 
 	v1a "k8s.io/api/apps/v1"
@@ -13,10 +14,12 @@ import (
 )
 
 type FakeStatefulSetInterface struct {
-	CreateStub        func(*v1a.StatefulSet) (*v1a.StatefulSet, error)
+	CreateStub        func(context.Context, *v1a.StatefulSet, v1b.CreateOptions) (*v1a.StatefulSet, error)
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
-		arg1 *v1a.StatefulSet
+		arg1 context.Context
+		arg2 *v1a.StatefulSet
+		arg3 v1b.CreateOptions
 	}
 	createReturns struct {
 		result1 *v1a.StatefulSet
@@ -26,11 +29,12 @@ type FakeStatefulSetInterface struct {
 		result1 *v1a.StatefulSet
 		result2 error
 	}
-	DeleteStub        func(string, *v1b.DeleteOptions) error
+	DeleteStub        func(context.Context, string, v1b.DeleteOptions) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
-		arg1 string
-		arg2 *v1b.DeleteOptions
+		arg1 context.Context
+		arg2 string
+		arg3 v1b.DeleteOptions
 	}
 	deleteReturns struct {
 		result1 error
@@ -38,11 +42,12 @@ type FakeStatefulSetInterface struct {
 	deleteReturnsOnCall map[int]struct {
 		result1 error
 	}
-	DeleteCollectionStub        func(*v1b.DeleteOptions, v1b.ListOptions) error
+	DeleteCollectionStub        func(context.Context, v1b.DeleteOptions, v1b.ListOptions) error
 	deleteCollectionMutex       sync.RWMutex
 	deleteCollectionArgsForCall []struct {
-		arg1 *v1b.DeleteOptions
-		arg2 v1b.ListOptions
+		arg1 context.Context
+		arg2 v1b.DeleteOptions
+		arg3 v1b.ListOptions
 	}
 	deleteCollectionReturns struct {
 		result1 error
@@ -50,11 +55,12 @@ type FakeStatefulSetInterface struct {
 	deleteCollectionReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetStub        func(string, v1b.GetOptions) (*v1a.StatefulSet, error)
+	GetStub        func(context.Context, string, v1b.GetOptions) (*v1a.StatefulSet, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		arg1 string
-		arg2 v1b.GetOptions
+		arg1 context.Context
+		arg2 string
+		arg3 v1b.GetOptions
 	}
 	getReturns struct {
 		result1 *v1a.StatefulSet
@@ -64,11 +70,12 @@ type FakeStatefulSetInterface struct {
 		result1 *v1a.StatefulSet
 		result2 error
 	}
-	GetScaleStub        func(string, v1b.GetOptions) (*v1c.Scale, error)
+	GetScaleStub        func(context.Context, string, v1b.GetOptions) (*v1c.Scale, error)
 	getScaleMutex       sync.RWMutex
 	getScaleArgsForCall []struct {
-		arg1 string
-		arg2 v1b.GetOptions
+		arg1 context.Context
+		arg2 string
+		arg3 v1b.GetOptions
 	}
 	getScaleReturns struct {
 		result1 *v1c.Scale
@@ -78,10 +85,11 @@ type FakeStatefulSetInterface struct {
 		result1 *v1c.Scale
 		result2 error
 	}
-	ListStub        func(v1b.ListOptions) (*v1a.StatefulSetList, error)
+	ListStub        func(context.Context, v1b.ListOptions) (*v1a.StatefulSetList, error)
 	listMutex       sync.RWMutex
 	listArgsForCall []struct {
-		arg1 v1b.ListOptions
+		arg1 context.Context
+		arg2 v1b.ListOptions
 	}
 	listReturns struct {
 		result1 *v1a.StatefulSetList
@@ -91,13 +99,15 @@ type FakeStatefulSetInterface struct {
 		result1 *v1a.StatefulSetList
 		result2 error
 	}
-	PatchStub        func(string, types.PatchType, []byte, ...string) (*v1a.StatefulSet, error)
+	PatchStub        func(context.Context, string, types.PatchType, []byte, v1b.PatchOptions, ...string) (*v1a.StatefulSet, error)
 	patchMutex       sync.RWMutex
 	patchArgsForCall []struct {
-		arg1 string
-		arg2 types.PatchType
-		arg3 []byte
-		arg4 []string
+		arg1 context.Context
+		arg2 string
+		arg3 types.PatchType
+		arg4 []byte
+		arg5 v1b.PatchOptions
+		arg6 []string
 	}
 	patchReturns struct {
 		result1 *v1a.StatefulSet
@@ -107,10 +117,12 @@ type FakeStatefulSetInterface struct {
 		result1 *v1a.StatefulSet
 		result2 error
 	}
-	UpdateStub        func(*v1a.StatefulSet) (*v1a.StatefulSet, error)
+	UpdateStub        func(context.Context, *v1a.StatefulSet, v1b.UpdateOptions) (*v1a.StatefulSet, error)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
-		arg1 *v1a.StatefulSet
+		arg1 context.Context
+		arg2 *v1a.StatefulSet
+		arg3 v1b.UpdateOptions
 	}
 	updateReturns struct {
 		result1 *v1a.StatefulSet
@@ -120,11 +132,13 @@ type FakeStatefulSetInterface struct {
 		result1 *v1a.StatefulSet
 		result2 error
 	}
-	UpdateScaleStub        func(string, *v1c.Scale) (*v1c.Scale, error)
+	UpdateScaleStub        func(context.Context, string, *v1c.Scale, v1b.UpdateOptions) (*v1c.Scale, error)
 	updateScaleMutex       sync.RWMutex
 	updateScaleArgsForCall []struct {
-		arg1 string
-		arg2 *v1c.Scale
+		arg1 context.Context
+		arg2 string
+		arg3 *v1c.Scale
+		arg4 v1b.UpdateOptions
 	}
 	updateScaleReturns struct {
 		result1 *v1c.Scale
@@ -134,10 +148,12 @@ type FakeStatefulSetInterface struct {
 		result1 *v1c.Scale
 		result2 error
 	}
-	UpdateStatusStub        func(*v1a.StatefulSet) (*v1a.StatefulSet, error)
+	UpdateStatusStub        func(context.Context, *v1a.StatefulSet, v1b.UpdateOptions) (*v1a.StatefulSet, error)
 	updateStatusMutex       sync.RWMutex
 	updateStatusArgsForCall []struct {
-		arg1 *v1a.StatefulSet
+		arg1 context.Context
+		arg2 *v1a.StatefulSet
+		arg3 v1b.UpdateOptions
 	}
 	updateStatusReturns struct {
 		result1 *v1a.StatefulSet
@@ -147,10 +163,11 @@ type FakeStatefulSetInterface struct {
 		result1 *v1a.StatefulSet
 		result2 error
 	}
-	WatchStub        func(v1b.ListOptions) (watch.Interface, error)
+	WatchStub        func(context.Context, v1b.ListOptions) (watch.Interface, error)
 	watchMutex       sync.RWMutex
 	watchArgsForCall []struct {
-		arg1 v1b.ListOptions
+		arg1 context.Context
+		arg2 v1b.ListOptions
 	}
 	watchReturns struct {
 		result1 watch.Interface
@@ -164,16 +181,18 @@ type FakeStatefulSetInterface struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetInterface) Create(arg1 *v1a.StatefulSet) (*v1a.StatefulSet, error) {
+func (fake *FakeStatefulSetInterface) Create(arg1 context.Context, arg2 *v1a.StatefulSet, arg3 v1b.CreateOptions) (*v1a.StatefulSet, error) {
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
-		arg1 *v1a.StatefulSet
-	}{arg1})
-	fake.recordInvocation("Create", []interface{}{arg1})
+		arg1 context.Context
+		arg2 *v1a.StatefulSet
+		arg3 v1b.CreateOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Create", []interface{}{arg1, arg2, arg3})
 	fake.createMutex.Unlock()
 	if fake.CreateStub != nil {
-		return fake.CreateStub(arg1)
+		return fake.CreateStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -188,17 +207,17 @@ func (fake *FakeStatefulSetInterface) CreateCallCount() int {
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakeStatefulSetInterface) CreateCalls(stub func(*v1a.StatefulSet) (*v1a.StatefulSet, error)) {
+func (fake *FakeStatefulSetInterface) CreateCalls(stub func(context.Context, *v1a.StatefulSet, v1b.CreateOptions) (*v1a.StatefulSet, error)) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = stub
 }
 
-func (fake *FakeStatefulSetInterface) CreateArgsForCall(i int) *v1a.StatefulSet {
+func (fake *FakeStatefulSetInterface) CreateArgsForCall(i int) (context.Context, *v1a.StatefulSet, v1b.CreateOptions) {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	argsForCall := fake.createArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStatefulSetInterface) CreateReturns(result1 *v1a.StatefulSet, result2 error) {
@@ -227,17 +246,18 @@ func (fake *FakeStatefulSetInterface) CreateReturnsOnCall(i int, result1 *v1a.St
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetInterface) Delete(arg1 string, arg2 *v1b.DeleteOptions) error {
+func (fake *FakeStatefulSetInterface) Delete(arg1 context.Context, arg2 string, arg3 v1b.DeleteOptions) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
-		arg1 string
-		arg2 *v1b.DeleteOptions
-	}{arg1, arg2})
-	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 v1b.DeleteOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Delete", []interface{}{arg1, arg2, arg3})
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
-		return fake.DeleteStub(arg1, arg2)
+		return fake.DeleteStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -252,17 +272,17 @@ func (fake *FakeStatefulSetInterface) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeStatefulSetInterface) DeleteCalls(stub func(string, *v1b.DeleteOptions) error) {
+func (fake *FakeStatefulSetInterface) DeleteCalls(stub func(context.Context, string, v1b.DeleteOptions) error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakeStatefulSetInterface) DeleteArgsForCall(i int) (string, *v1b.DeleteOptions) {
+func (fake *FakeStatefulSetInterface) DeleteArgsForCall(i int) (context.Context, string, v1b.DeleteOptions) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStatefulSetInterface) DeleteReturns(result1 error) {
@@ -288,17 +308,18 @@ func (fake *FakeStatefulSetInterface) DeleteReturnsOnCall(i int, result1 error) 
 	}{result1}
 }
 
-func (fake *FakeStatefulSetInterface) DeleteCollection(arg1 *v1b.DeleteOptions, arg2 v1b.ListOptions) error {
+func (fake *FakeStatefulSetInterface) DeleteCollection(arg1 context.Context, arg2 v1b.DeleteOptions, arg3 v1b.ListOptions) error {
 	fake.deleteCollectionMutex.Lock()
 	ret, specificReturn := fake.deleteCollectionReturnsOnCall[len(fake.deleteCollectionArgsForCall)]
 	fake.deleteCollectionArgsForCall = append(fake.deleteCollectionArgsForCall, struct {
-		arg1 *v1b.DeleteOptions
-		arg2 v1b.ListOptions
-	}{arg1, arg2})
-	fake.recordInvocation("DeleteCollection", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 v1b.DeleteOptions
+		arg3 v1b.ListOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("DeleteCollection", []interface{}{arg1, arg2, arg3})
 	fake.deleteCollectionMutex.Unlock()
 	if fake.DeleteCollectionStub != nil {
-		return fake.DeleteCollectionStub(arg1, arg2)
+		return fake.DeleteCollectionStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -313,17 +334,17 @@ func (fake *FakeStatefulSetInterface) DeleteCollectionCallCount() int {
 	return len(fake.deleteCollectionArgsForCall)
 }
 
-func (fake *FakeStatefulSetInterface) DeleteCollectionCalls(stub func(*v1b.DeleteOptions, v1b.ListOptions) error) {
+func (fake *FakeStatefulSetInterface) DeleteCollectionCalls(stub func(context.Context, v1b.DeleteOptions, v1b.ListOptions) error) {
 	fake.deleteCollectionMutex.Lock()
 	defer fake.deleteCollectionMutex.Unlock()
 	fake.DeleteCollectionStub = stub
 }
 
-func (fake *FakeStatefulSetInterface) DeleteCollectionArgsForCall(i int) (*v1b.DeleteOptions, v1b.ListOptions) {
+func (fake *FakeStatefulSetInterface) DeleteCollectionArgsForCall(i int) (context.Context, v1b.DeleteOptions, v1b.ListOptions) {
 	fake.deleteCollectionMutex.RLock()
 	defer fake.deleteCollectionMutex.RUnlock()
 	argsForCall := fake.deleteCollectionArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStatefulSetInterface) DeleteCollectionReturns(result1 error) {
@@ -349,17 +370,18 @@ func (fake *FakeStatefulSetInterface) DeleteCollectionReturnsOnCall(i int, resul
 	}{result1}
 }
 
-func (fake *FakeStatefulSetInterface) Get(arg1 string, arg2 v1b.GetOptions) (*v1a.StatefulSet, error) {
+func (fake *FakeStatefulSetInterface) Get(arg1 context.Context, arg2 string, arg3 v1b.GetOptions) (*v1a.StatefulSet, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		arg1 string
-		arg2 v1b.GetOptions
-	}{arg1, arg2})
-	fake.recordInvocation("Get", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 v1b.GetOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Get", []interface{}{arg1, arg2, arg3})
 	fake.getMutex.Unlock()
 	if fake.GetStub != nil {
-		return fake.GetStub(arg1, arg2)
+		return fake.GetStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -374,17 +396,17 @@ func (fake *FakeStatefulSetInterface) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
-func (fake *FakeStatefulSetInterface) GetCalls(stub func(string, v1b.GetOptions) (*v1a.StatefulSet, error)) {
+func (fake *FakeStatefulSetInterface) GetCalls(stub func(context.Context, string, v1b.GetOptions) (*v1a.StatefulSet, error)) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = stub
 }
 
-func (fake *FakeStatefulSetInterface) GetArgsForCall(i int) (string, v1b.GetOptions) {
+func (fake *FakeStatefulSetInterface) GetArgsForCall(i int) (context.Context, string, v1b.GetOptions) {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	argsForCall := fake.getArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStatefulSetInterface) GetReturns(result1 *v1a.StatefulSet, result2 error) {
@@ -413,17 +435,18 @@ func (fake *FakeStatefulSetInterface) GetReturnsOnCall(i int, result1 *v1a.State
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetInterface) GetScale(arg1 string, arg2 v1b.GetOptions) (*v1c.Scale, error) {
+func (fake *FakeStatefulSetInterface) GetScale(arg1 context.Context, arg2 string, arg3 v1b.GetOptions) (*v1c.Scale, error) {
 	fake.getScaleMutex.Lock()
 	ret, specificReturn := fake.getScaleReturnsOnCall[len(fake.getScaleArgsForCall)]
 	fake.getScaleArgsForCall = append(fake.getScaleArgsForCall, struct {
-		arg1 string
-		arg2 v1b.GetOptions
-	}{arg1, arg2})
-	fake.recordInvocation("GetScale", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 v1b.GetOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("GetScale", []interface{}{arg1, arg2, arg3})
 	fake.getScaleMutex.Unlock()
 	if fake.GetScaleStub != nil {
-		return fake.GetScaleStub(arg1, arg2)
+		return fake.GetScaleStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -438,17 +461,17 @@ func (fake *FakeStatefulSetInterface) GetScaleCallCount() int {
 	return len(fake.getScaleArgsForCall)
 }
 
-func (fake *FakeStatefulSetInterface) GetScaleCalls(stub func(string, v1b.GetOptions) (*v1c.Scale, error)) {
+func (fake *FakeStatefulSetInterface) GetScaleCalls(stub func(context.Context, string, v1b.GetOptions) (*v1c.Scale, error)) {
 	fake.getScaleMutex.Lock()
 	defer fake.getScaleMutex.Unlock()
 	fake.GetScaleStub = stub
 }
 
-func (fake *FakeStatefulSetInterface) GetScaleArgsForCall(i int) (string, v1b.GetOptions) {
+func (fake *FakeStatefulSetInterface) GetScaleArgsForCall(i int) (context.Context, string, v1b.GetOptions) {
 	fake.getScaleMutex.RLock()
 	defer fake.getScaleMutex.RUnlock()
 	argsForCall := fake.getScaleArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStatefulSetInterface) GetScaleReturns(result1 *v1c.Scale, result2 error) {
@@ -477,16 +500,17 @@ func (fake *FakeStatefulSetInterface) GetScaleReturnsOnCall(i int, result1 *v1c.
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetInterface) List(arg1 v1b.ListOptions) (*v1a.StatefulSetList, error) {
+func (fake *FakeStatefulSetInterface) List(arg1 context.Context, arg2 v1b.ListOptions) (*v1a.StatefulSetList, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		arg1 v1b.ListOptions
-	}{arg1})
-	fake.recordInvocation("List", []interface{}{arg1})
+		arg1 context.Context
+		arg2 v1b.ListOptions
+	}{arg1, arg2})
+	fake.recordInvocation("List", []interface{}{arg1, arg2})
 	fake.listMutex.Unlock()
 	if fake.ListStub != nil {
-		return fake.ListStub(arg1)
+		return fake.ListStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -501,17 +525,17 @@ func (fake *FakeStatefulSetInterface) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakeStatefulSetInterface) ListCalls(stub func(v1b.ListOptions) (*v1a.StatefulSetList, error)) {
+func (fake *FakeStatefulSetInterface) ListCalls(stub func(context.Context, v1b.ListOptions) (*v1a.StatefulSetList, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
 }
 
-func (fake *FakeStatefulSetInterface) ListArgsForCall(i int) v1b.ListOptions {
+func (fake *FakeStatefulSetInterface) ListArgsForCall(i int) (context.Context, v1b.ListOptions) {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	argsForCall := fake.listArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeStatefulSetInterface) ListReturns(result1 *v1a.StatefulSetList, result2 error) {
@@ -540,24 +564,26 @@ func (fake *FakeStatefulSetInterface) ListReturnsOnCall(i int, result1 *v1a.Stat
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetInterface) Patch(arg1 string, arg2 types.PatchType, arg3 []byte, arg4 ...string) (*v1a.StatefulSet, error) {
-	var arg3Copy []byte
-	if arg3 != nil {
-		arg3Copy = make([]byte, len(arg3))
-		copy(arg3Copy, arg3)
+func (fake *FakeStatefulSetInterface) Patch(arg1 context.Context, arg2 string, arg3 types.PatchType, arg4 []byte, arg5 v1b.PatchOptions, arg6 ...string) (*v1a.StatefulSet, error) {
+	var arg4Copy []byte
+	if arg4 != nil {
+		arg4Copy = make([]byte, len(arg4))
+		copy(arg4Copy, arg4)
 	}
 	fake.patchMutex.Lock()
 	ret, specificReturn := fake.patchReturnsOnCall[len(fake.patchArgsForCall)]
 	fake.patchArgsForCall = append(fake.patchArgsForCall, struct {
-		arg1 string
-		arg2 types.PatchType
-		arg3 []byte
-		arg4 []string
-	}{arg1, arg2, arg3Copy, arg4})
-	fake.recordInvocation("Patch", []interface{}{arg1, arg2, arg3Copy, arg4})
+		arg1 context.Context
+		arg2 string
+		arg3 types.PatchType
+		arg4 []byte
+		arg5 v1b.PatchOptions
+		arg6 []string
+	}{arg1, arg2, arg3, arg4Copy, arg5, arg6})
+	fake.recordInvocation("Patch", []interface{}{arg1, arg2, arg3, arg4Copy, arg5, arg6})
 	fake.patchMutex.Unlock()
 	if fake.PatchStub != nil {
-		return fake.PatchStub(arg1, arg2, arg3, arg4...)
+		return fake.PatchStub(arg1, arg2, arg3, arg4, arg5, arg6...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -572,17 +598,17 @@ func (fake *FakeStatefulSetInterface) PatchCallCount() int {
 	return len(fake.patchArgsForCall)
 }
 
-func (fake *FakeStatefulSetInterface) PatchCalls(stub func(string, types.PatchType, []byte, ...string) (*v1a.StatefulSet, error)) {
+func (fake *FakeStatefulSetInterface) PatchCalls(stub func(context.Context, string, types.PatchType, []byte, v1b.PatchOptions, ...string) (*v1a.StatefulSet, error)) {
 	fake.patchMutex.Lock()
 	defer fake.patchMutex.Unlock()
 	fake.PatchStub = stub
 }
 
-func (fake *FakeStatefulSetInterface) PatchArgsForCall(i int) (string, types.PatchType, []byte, []string) {
+func (fake *FakeStatefulSetInterface) PatchArgsForCall(i int) (context.Context, string, types.PatchType, []byte, v1b.PatchOptions, []string) {
 	fake.patchMutex.RLock()
 	defer fake.patchMutex.RUnlock()
 	argsForCall := fake.patchArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6
 }
 
 func (fake *FakeStatefulSetInterface) PatchReturns(result1 *v1a.StatefulSet, result2 error) {
@@ -611,16 +637,18 @@ func (fake *FakeStatefulSetInterface) PatchReturnsOnCall(i int, result1 *v1a.Sta
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetInterface) Update(arg1 *v1a.StatefulSet) (*v1a.StatefulSet, error) {
+func (fake *FakeStatefulSetInterface) Update(arg1 context.Context, arg2 *v1a.StatefulSet, arg3 v1b.UpdateOptions) (*v1a.StatefulSet, error) {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
-		arg1 *v1a.StatefulSet
-	}{arg1})
-	fake.recordInvocation("Update", []interface{}{arg1})
+		arg1 context.Context
+		arg2 *v1a.StatefulSet
+		arg3 v1b.UpdateOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Update", []interface{}{arg1, arg2, arg3})
 	fake.updateMutex.Unlock()
 	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1)
+		return fake.UpdateStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -635,17 +663,17 @@ func (fake *FakeStatefulSetInterface) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeStatefulSetInterface) UpdateCalls(stub func(*v1a.StatefulSet) (*v1a.StatefulSet, error)) {
+func (fake *FakeStatefulSetInterface) UpdateCalls(stub func(context.Context, *v1a.StatefulSet, v1b.UpdateOptions) (*v1a.StatefulSet, error)) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakeStatefulSetInterface) UpdateArgsForCall(i int) *v1a.StatefulSet {
+func (fake *FakeStatefulSetInterface) UpdateArgsForCall(i int) (context.Context, *v1a.StatefulSet, v1b.UpdateOptions) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStatefulSetInterface) UpdateReturns(result1 *v1a.StatefulSet, result2 error) {
@@ -674,17 +702,19 @@ func (fake *FakeStatefulSetInterface) UpdateReturnsOnCall(i int, result1 *v1a.St
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetInterface) UpdateScale(arg1 string, arg2 *v1c.Scale) (*v1c.Scale, error) {
+func (fake *FakeStatefulSetInterface) UpdateScale(arg1 context.Context, arg2 string, arg3 *v1c.Scale, arg4 v1b.UpdateOptions) (*v1c.Scale, error) {
 	fake.updateScaleMutex.Lock()
 	ret, specificReturn := fake.updateScaleReturnsOnCall[len(fake.updateScaleArgsForCall)]
 	fake.updateScaleArgsForCall = append(fake.updateScaleArgsForCall, struct {
-		arg1 string
-		arg2 *v1c.Scale
-	}{arg1, arg2})
-	fake.recordInvocation("UpdateScale", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 *v1c.Scale
+		arg4 v1b.UpdateOptions
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("UpdateScale", []interface{}{arg1, arg2, arg3, arg4})
 	fake.updateScaleMutex.Unlock()
 	if fake.UpdateScaleStub != nil {
-		return fake.UpdateScaleStub(arg1, arg2)
+		return fake.UpdateScaleStub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -699,17 +729,17 @@ func (fake *FakeStatefulSetInterface) UpdateScaleCallCount() int {
 	return len(fake.updateScaleArgsForCall)
 }
 
-func (fake *FakeStatefulSetInterface) UpdateScaleCalls(stub func(string, *v1c.Scale) (*v1c.Scale, error)) {
+func (fake *FakeStatefulSetInterface) UpdateScaleCalls(stub func(context.Context, string, *v1c.Scale, v1b.UpdateOptions) (*v1c.Scale, error)) {
 	fake.updateScaleMutex.Lock()
 	defer fake.updateScaleMutex.Unlock()
 	fake.UpdateScaleStub = stub
 }
 
-func (fake *FakeStatefulSetInterface) UpdateScaleArgsForCall(i int) (string, *v1c.Scale) {
+func (fake *FakeStatefulSetInterface) UpdateScaleArgsForCall(i int) (context.Context, string, *v1c.Scale, v1b.UpdateOptions) {
 	fake.updateScaleMutex.RLock()
 	defer fake.updateScaleMutex.RUnlock()
 	argsForCall := fake.updateScaleArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeStatefulSetInterface) UpdateScaleReturns(result1 *v1c.Scale, result2 error) {
@@ -738,16 +768,18 @@ func (fake *FakeStatefulSetInterface) UpdateScaleReturnsOnCall(i int, result1 *v
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetInterface) UpdateStatus(arg1 *v1a.StatefulSet) (*v1a.StatefulSet, error) {
+func (fake *FakeStatefulSetInterface) UpdateStatus(arg1 context.Context, arg2 *v1a.StatefulSet, arg3 v1b.UpdateOptions) (*v1a.StatefulSet, error) {
 	fake.updateStatusMutex.Lock()
 	ret, specificReturn := fake.updateStatusReturnsOnCall[len(fake.updateStatusArgsForCall)]
 	fake.updateStatusArgsForCall = append(fake.updateStatusArgsForCall, struct {
-		arg1 *v1a.StatefulSet
-	}{arg1})
-	fake.recordInvocation("UpdateStatus", []interface{}{arg1})
+		arg1 context.Context
+		arg2 *v1a.StatefulSet
+		arg3 v1b.UpdateOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("UpdateStatus", []interface{}{arg1, arg2, arg3})
 	fake.updateStatusMutex.Unlock()
 	if fake.UpdateStatusStub != nil {
-		return fake.UpdateStatusStub(arg1)
+		return fake.UpdateStatusStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -762,17 +794,17 @@ func (fake *FakeStatefulSetInterface) UpdateStatusCallCount() int {
 	return len(fake.updateStatusArgsForCall)
 }
 
-func (fake *FakeStatefulSetInterface) UpdateStatusCalls(stub func(*v1a.StatefulSet) (*v1a.StatefulSet, error)) {
+func (fake *FakeStatefulSetInterface) UpdateStatusCalls(stub func(context.Context, *v1a.StatefulSet, v1b.UpdateOptions) (*v1a.StatefulSet, error)) {
 	fake.updateStatusMutex.Lock()
 	defer fake.updateStatusMutex.Unlock()
 	fake.UpdateStatusStub = stub
 }
 
-func (fake *FakeStatefulSetInterface) UpdateStatusArgsForCall(i int) *v1a.StatefulSet {
+func (fake *FakeStatefulSetInterface) UpdateStatusArgsForCall(i int) (context.Context, *v1a.StatefulSet, v1b.UpdateOptions) {
 	fake.updateStatusMutex.RLock()
 	defer fake.updateStatusMutex.RUnlock()
 	argsForCall := fake.updateStatusArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStatefulSetInterface) UpdateStatusReturns(result1 *v1a.StatefulSet, result2 error) {
@@ -801,16 +833,17 @@ func (fake *FakeStatefulSetInterface) UpdateStatusReturnsOnCall(i int, result1 *
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetInterface) Watch(arg1 v1b.ListOptions) (watch.Interface, error) {
+func (fake *FakeStatefulSetInterface) Watch(arg1 context.Context, arg2 v1b.ListOptions) (watch.Interface, error) {
 	fake.watchMutex.Lock()
 	ret, specificReturn := fake.watchReturnsOnCall[len(fake.watchArgsForCall)]
 	fake.watchArgsForCall = append(fake.watchArgsForCall, struct {
-		arg1 v1b.ListOptions
-	}{arg1})
-	fake.recordInvocation("Watch", []interface{}{arg1})
+		arg1 context.Context
+		arg2 v1b.ListOptions
+	}{arg1, arg2})
+	fake.recordInvocation("Watch", []interface{}{arg1, arg2})
 	fake.watchMutex.Unlock()
 	if fake.WatchStub != nil {
-		return fake.WatchStub(arg1)
+		return fake.WatchStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -825,17 +858,17 @@ func (fake *FakeStatefulSetInterface) WatchCallCount() int {
 	return len(fake.watchArgsForCall)
 }
 
-func (fake *FakeStatefulSetInterface) WatchCalls(stub func(v1b.ListOptions) (watch.Interface, error)) {
+func (fake *FakeStatefulSetInterface) WatchCalls(stub func(context.Context, v1b.ListOptions) (watch.Interface, error)) {
 	fake.watchMutex.Lock()
 	defer fake.watchMutex.Unlock()
 	fake.WatchStub = stub
 }
 
-func (fake *FakeStatefulSetInterface) WatchArgsForCall(i int) v1b.ListOptions {
+func (fake *FakeStatefulSetInterface) WatchArgsForCall(i int) (context.Context, v1b.ListOptions) {
 	fake.watchMutex.RLock()
 	defer fake.watchMutex.RUnlock()
 	argsForCall := fake.watchArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeStatefulSetInterface) WatchReturns(result1 watch.Interface, result2 error) {

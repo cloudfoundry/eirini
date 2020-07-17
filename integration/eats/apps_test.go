@@ -1,6 +1,7 @@
 package eats_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -126,7 +127,7 @@ var _ = Describe("Apps", func() {
 
 		When("non-eirini statefulSets exist", func() {
 			BeforeEach(func() {
-				_, err := fixture.Clientset.AppsV1().StatefulSets(fixture.DefaultNamespace).Create(&appsv1.StatefulSet{
+				_, err := fixture.Clientset.AppsV1().StatefulSets(fixture.DefaultNamespace).Create(context.Background(), &appsv1.StatefulSet{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: util.GenerateGUID(),
 					},
@@ -140,7 +141,7 @@ var _ = Describe("Apps", func() {
 							MatchLabels: map[string]string{"foo": "bar"},
 						},
 					},
-				})
+				}, metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -356,7 +357,7 @@ func processGUID(guid, version string) string {
 }
 
 func getStatefulSet(guid, version string) *appsv1.StatefulSet {
-	statefulSets, err := fixture.Clientset.AppsV1().StatefulSets("").List(metav1.ListOptions{
+	statefulSets, err := fixture.Clientset.AppsV1().StatefulSets("").List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, guid, k8s.LabelVersion, version),
 	})
 	Expect(err).NotTo(HaveOccurred())

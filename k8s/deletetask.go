@@ -14,7 +14,7 @@ import (
 //counterfeiter:generate . JobListerDeleter
 type JobListerDeleter interface {
 	List(opts meta_v1.ListOptions) (*batch.JobList, error)
-	Delete(namespace string, name string, options *meta_v1.DeleteOptions) error
+	Delete(namespace string, name string, options meta_v1.DeleteOptions) error
 }
 
 //counterfeiter:generate . SecretsDeleter
@@ -70,7 +70,7 @@ func (d *TaskDeleter) delete(guid, label string) (string, error) {
 
 	callbackURL := job.Annotations[AnnotationCompletionCallback]
 	backgroundPropagation := meta_v1.DeletePropagationBackground
-	return callbackURL, d.jobClient.Delete(job.Namespace, job.Name, &meta_v1.DeleteOptions{
+	return callbackURL, d.jobClient.Delete(job.Namespace, job.Name, meta_v1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
 }

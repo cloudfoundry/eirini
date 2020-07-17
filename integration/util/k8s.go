@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -34,20 +35,20 @@ func CreateRandomNamespace(clientset kubernetes.Interface) string {
 }
 
 func namespaceExists(namespace string, clientset kubernetes.Interface) bool {
-	_, err := clientset.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	_, err := clientset.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
 	return err == nil
 }
 
 func createNamespace(namespace string, clientset kubernetes.Interface) {
 	namespaceSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
 
-	if _, err := clientset.CoreV1().Namespaces().Create(namespaceSpec); err != nil {
+	if _, err := clientset.CoreV1().Namespaces().Create(context.Background(), namespaceSpec, metav1.CreateOptions{}); err != nil {
 		panic(err)
 	}
 }
 
 func CreatePodCreationPSP(namespace, pspName, serviceAccountName string, clientset kubernetes.Interface) error {
-	_, err := clientset.PolicyV1beta1().PodSecurityPolicies().Create(&policyv1.PodSecurityPolicy{
+	_, err := clientset.PolicyV1beta1().PodSecurityPolicies().Create(context.Background(), &policyv1.PodSecurityPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pspName,
 			Annotations: map[string]string{
@@ -73,13 +74,13 @@ func CreatePodCreationPSP(namespace, pspName, serviceAccountName string, clients
 				policyv1.EmptyDir, policyv1.Projected, policyv1.Secret,
 			},
 		},
-	})
+	}, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
 	roleName := "use-psp"
-	_, err = clientset.RbacV1().Roles(namespace).Create(&rbacv1.Role{
+	_, err = clientset.RbacV1().Roles(namespace).Create(context.Background(), &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      roleName,
 			Namespace: namespace,
@@ -92,22 +93,22 @@ func CreatePodCreationPSP(namespace, pspName, serviceAccountName string, clients
 				ResourceNames: []string{pspName},
 			},
 		},
-	})
+	}, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
-	_, err = clientset.CoreV1().ServiceAccounts(namespace).Create(&corev1.ServiceAccount{
+	_, err = clientset.CoreV1().ServiceAccounts(namespace).Create(context.Background(), &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceAccountName,
 			Namespace: namespace,
 		},
-	})
+	}, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
-	_, err = clientset.RbacV1().RoleBindings(namespace).Create(&rbacv1.RoleBinding{
+	_, err = clientset.RbacV1().RoleBindings(namespace).Create(context.Background(), &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "default-account-psp",
 			Namespace: namespace,
@@ -122,37 +123,37 @@ func CreatePodCreationPSP(namespace, pspName, serviceAccountName string, clients
 			Name:      serviceAccountName,
 			Namespace: namespace,
 		}},
-	})
+	}, metav1.CreateOptions{})
 	return err
 }
 
 func CreateEmptySecret(namespace, secretName string, clientset kubernetes.Interface) error {
-	_, err := clientset.CoreV1().Secrets(namespace).Create(&corev1.Secret{
+	_, err := clientset.CoreV1().Secrets(namespace).Create(context.Background(), &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: namespace,
 		},
-	})
+	}, metav1.CreateOptions{})
 	return err
 }
 
 func CreateSecretWithStringData(namespace, secretName string, clientset kubernetes.Interface, stringData map[string]string) error {
-	_, err := clientset.CoreV1().Secrets(namespace).Create(&corev1.Secret{
+	_, err := clientset.CoreV1().Secrets(namespace).Create(context.Background(), &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: namespace,
 		},
 		StringData: stringData,
-	})
+	}, metav1.CreateOptions{})
 	return err
 }
 
 func DeleteNamespace(namespace string, clientset kubernetes.Interface) error {
-	return clientset.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{})
+	return clientset.CoreV1().Namespaces().Delete(context.Background(), namespace, metav1.DeleteOptions{})
 }
 
 func DeletePSP(name string, clientset kubernetes.Interface) error {
-	return clientset.PolicyV1beta1().PodSecurityPolicies().Delete(name, &metav1.DeleteOptions{})
+	return clientset.PolicyV1beta1().PodSecurityPolicies().Delete(context.Background(), name, metav1.DeleteOptions{})
 }
 
 func MakeTestHTTPClient() (*http.Client, error) {

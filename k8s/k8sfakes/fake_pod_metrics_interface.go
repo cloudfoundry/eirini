@@ -2,6 +2,7 @@
 package k8sfakes
 
 import (
+	"context"
 	"sync"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,11 +12,12 @@ import (
 )
 
 type FakePodMetricsInterface struct {
-	GetStub        func(string, v1.GetOptions) (*v1beta1a.PodMetrics, error)
+	GetStub        func(context.Context, string, v1.GetOptions) (*v1beta1a.PodMetrics, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		arg1 string
-		arg2 v1.GetOptions
+		arg1 context.Context
+		arg2 string
+		arg3 v1.GetOptions
 	}
 	getReturns struct {
 		result1 *v1beta1a.PodMetrics
@@ -25,10 +27,11 @@ type FakePodMetricsInterface struct {
 		result1 *v1beta1a.PodMetrics
 		result2 error
 	}
-	ListStub        func(v1.ListOptions) (*v1beta1a.PodMetricsList, error)
+	ListStub        func(context.Context, v1.ListOptions) (*v1beta1a.PodMetricsList, error)
 	listMutex       sync.RWMutex
 	listArgsForCall []struct {
-		arg1 v1.ListOptions
+		arg1 context.Context
+		arg2 v1.ListOptions
 	}
 	listReturns struct {
 		result1 *v1beta1a.PodMetricsList
@@ -38,10 +41,11 @@ type FakePodMetricsInterface struct {
 		result1 *v1beta1a.PodMetricsList
 		result2 error
 	}
-	WatchStub        func(v1.ListOptions) (watch.Interface, error)
+	WatchStub        func(context.Context, v1.ListOptions) (watch.Interface, error)
 	watchMutex       sync.RWMutex
 	watchArgsForCall []struct {
-		arg1 v1.ListOptions
+		arg1 context.Context
+		arg2 v1.ListOptions
 	}
 	watchReturns struct {
 		result1 watch.Interface
@@ -55,17 +59,18 @@ type FakePodMetricsInterface struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePodMetricsInterface) Get(arg1 string, arg2 v1.GetOptions) (*v1beta1a.PodMetrics, error) {
+func (fake *FakePodMetricsInterface) Get(arg1 context.Context, arg2 string, arg3 v1.GetOptions) (*v1beta1a.PodMetrics, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		arg1 string
-		arg2 v1.GetOptions
-	}{arg1, arg2})
-	fake.recordInvocation("Get", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 v1.GetOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Get", []interface{}{arg1, arg2, arg3})
 	fake.getMutex.Unlock()
 	if fake.GetStub != nil {
-		return fake.GetStub(arg1, arg2)
+		return fake.GetStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -80,17 +85,17 @@ func (fake *FakePodMetricsInterface) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
-func (fake *FakePodMetricsInterface) GetCalls(stub func(string, v1.GetOptions) (*v1beta1a.PodMetrics, error)) {
+func (fake *FakePodMetricsInterface) GetCalls(stub func(context.Context, string, v1.GetOptions) (*v1beta1a.PodMetrics, error)) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = stub
 }
 
-func (fake *FakePodMetricsInterface) GetArgsForCall(i int) (string, v1.GetOptions) {
+func (fake *FakePodMetricsInterface) GetArgsForCall(i int) (context.Context, string, v1.GetOptions) {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	argsForCall := fake.getArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakePodMetricsInterface) GetReturns(result1 *v1beta1a.PodMetrics, result2 error) {
@@ -119,16 +124,17 @@ func (fake *FakePodMetricsInterface) GetReturnsOnCall(i int, result1 *v1beta1a.P
 	}{result1, result2}
 }
 
-func (fake *FakePodMetricsInterface) List(arg1 v1.ListOptions) (*v1beta1a.PodMetricsList, error) {
+func (fake *FakePodMetricsInterface) List(arg1 context.Context, arg2 v1.ListOptions) (*v1beta1a.PodMetricsList, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		arg1 v1.ListOptions
-	}{arg1})
-	fake.recordInvocation("List", []interface{}{arg1})
+		arg1 context.Context
+		arg2 v1.ListOptions
+	}{arg1, arg2})
+	fake.recordInvocation("List", []interface{}{arg1, arg2})
 	fake.listMutex.Unlock()
 	if fake.ListStub != nil {
-		return fake.ListStub(arg1)
+		return fake.ListStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -143,17 +149,17 @@ func (fake *FakePodMetricsInterface) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakePodMetricsInterface) ListCalls(stub func(v1.ListOptions) (*v1beta1a.PodMetricsList, error)) {
+func (fake *FakePodMetricsInterface) ListCalls(stub func(context.Context, v1.ListOptions) (*v1beta1a.PodMetricsList, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
 }
 
-func (fake *FakePodMetricsInterface) ListArgsForCall(i int) v1.ListOptions {
+func (fake *FakePodMetricsInterface) ListArgsForCall(i int) (context.Context, v1.ListOptions) {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	argsForCall := fake.listArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakePodMetricsInterface) ListReturns(result1 *v1beta1a.PodMetricsList, result2 error) {
@@ -182,16 +188,17 @@ func (fake *FakePodMetricsInterface) ListReturnsOnCall(i int, result1 *v1beta1a.
 	}{result1, result2}
 }
 
-func (fake *FakePodMetricsInterface) Watch(arg1 v1.ListOptions) (watch.Interface, error) {
+func (fake *FakePodMetricsInterface) Watch(arg1 context.Context, arg2 v1.ListOptions) (watch.Interface, error) {
 	fake.watchMutex.Lock()
 	ret, specificReturn := fake.watchReturnsOnCall[len(fake.watchArgsForCall)]
 	fake.watchArgsForCall = append(fake.watchArgsForCall, struct {
-		arg1 v1.ListOptions
-	}{arg1})
-	fake.recordInvocation("Watch", []interface{}{arg1})
+		arg1 context.Context
+		arg2 v1.ListOptions
+	}{arg1, arg2})
+	fake.recordInvocation("Watch", []interface{}{arg1, arg2})
 	fake.watchMutex.Unlock()
 	if fake.WatchStub != nil {
-		return fake.WatchStub(arg1)
+		return fake.WatchStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -206,17 +213,17 @@ func (fake *FakePodMetricsInterface) WatchCallCount() int {
 	return len(fake.watchArgsForCall)
 }
 
-func (fake *FakePodMetricsInterface) WatchCalls(stub func(v1.ListOptions) (watch.Interface, error)) {
+func (fake *FakePodMetricsInterface) WatchCalls(stub func(context.Context, v1.ListOptions) (watch.Interface, error)) {
 	fake.watchMutex.Lock()
 	defer fake.watchMutex.Unlock()
 	fake.WatchStub = stub
 }
 
-func (fake *FakePodMetricsInterface) WatchArgsForCall(i int) v1.ListOptions {
+func (fake *FakePodMetricsInterface) WatchArgsForCall(i int) (context.Context, v1.ListOptions) {
 	fake.watchMutex.RLock()
 	defer fake.watchMutex.RUnlock()
 	argsForCall := fake.watchArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakePodMetricsInterface) WatchReturns(result1 watch.Interface, result2 error) {

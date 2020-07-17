@@ -2,6 +2,7 @@
 package utilsfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/utils"
@@ -10,11 +11,12 @@ import (
 )
 
 type FakeDeploymentClient struct {
-	GetStub        func(string, v1a.GetOptions) (*v1.Deployment, error)
+	GetStub        func(context.Context, string, v1a.GetOptions) (*v1.Deployment, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		arg1 string
-		arg2 v1a.GetOptions
+		arg1 context.Context
+		arg2 string
+		arg3 v1a.GetOptions
 	}
 	getReturns struct {
 		result1 *v1.Deployment
@@ -28,17 +30,18 @@ type FakeDeploymentClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeDeploymentClient) Get(arg1 string, arg2 v1a.GetOptions) (*v1.Deployment, error) {
+func (fake *FakeDeploymentClient) Get(arg1 context.Context, arg2 string, arg3 v1a.GetOptions) (*v1.Deployment, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		arg1 string
-		arg2 v1a.GetOptions
-	}{arg1, arg2})
-	fake.recordInvocation("Get", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 v1a.GetOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Get", []interface{}{arg1, arg2, arg3})
 	fake.getMutex.Unlock()
 	if fake.GetStub != nil {
-		return fake.GetStub(arg1, arg2)
+		return fake.GetStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -53,17 +56,17 @@ func (fake *FakeDeploymentClient) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
-func (fake *FakeDeploymentClient) GetCalls(stub func(string, v1a.GetOptions) (*v1.Deployment, error)) {
+func (fake *FakeDeploymentClient) GetCalls(stub func(context.Context, string, v1a.GetOptions) (*v1.Deployment, error)) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = stub
 }
 
-func (fake *FakeDeploymentClient) GetArgsForCall(i int) (string, v1a.GetOptions) {
+func (fake *FakeDeploymentClient) GetArgsForCall(i int) (context.Context, string, v1a.GetOptions) {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	argsForCall := fake.getArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeDeploymentClient) GetReturns(result1 *v1.Deployment, result2 error) {

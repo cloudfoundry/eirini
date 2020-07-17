@@ -1,6 +1,7 @@
 package rootfspatcher
 
 import (
+	"context"
 	"fmt"
 
 	"code.cloudfoundry.org/lager"
@@ -13,8 +14,8 @@ const RootfsVersionLabel = "cloudfoundry.org/rootfs-version"
 
 //counterfeiter:generate . StatefulSetUpdaterLister
 type StatefulSetUpdaterLister interface {
-	Update(*apps.StatefulSet) (*apps.StatefulSet, error)
-	List(metav1.ListOptions) (*apps.StatefulSetList, error)
+	Update(context.Context, *apps.StatefulSet, metav1.UpdateOptions) (*apps.StatefulSet, error)
+	List(context.Context, metav1.ListOptions) (*apps.StatefulSetList, error)
 }
 
 type StatefulSetPatcher struct {
@@ -25,7 +26,7 @@ type StatefulSetPatcher struct {
 
 func (p StatefulSetPatcher) Patch() error {
 	listOpts := metav1.ListOptions{}
-	sts, err := p.StatefulSets.List(listOpts)
+	sts, err := p.StatefulSets.List(context.Background(), listOpts)
 	if err != nil {
 		return errors.Wrap(err, "failed to list statefulsets")
 	}
@@ -36,7 +37,7 @@ func (p StatefulSetPatcher) Patch() error {
 		statesfulset := s
 		statesfulset.Labels[RootfsVersionLabel] = p.Version
 		statesfulset.Spec.Template.Labels[RootfsVersionLabel] = p.Version
-		_, err := p.StatefulSets.Update(&statesfulset)
+		_, err := p.StatefulSets.Update(context.Background(), &statesfulset, metav1.UpdateOptions{})
 		if err != nil {
 			p.Logger.Error("failed to patch", err)
 			failuresOccured++

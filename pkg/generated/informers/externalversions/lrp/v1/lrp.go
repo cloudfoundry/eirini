@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	time "time"
 
 	lrpv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
@@ -61,13 +62,13 @@ func NewFilteredLRPInformer(client versioned.Interface, namespace string, resync
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EiriniV1().LRPs(namespace).List(options)
+				return client.EiriniV1().LRPs(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EiriniV1().LRPs(namespace).Watch(options)
+				return client.EiriniV1().LRPs(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&lrpv1.LRP{},

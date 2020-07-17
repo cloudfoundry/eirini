@@ -1,6 +1,7 @@
 package statefulsets_test
 
 import (
+	"context"
 	"fmt"
 
 	testutil "code.cloudfoundry.org/eirini/integration/util"
@@ -102,7 +103,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		It("should create a pod disruption budget for the lrp", func() {
 			statefulset := getStatefulSet(odinLRP)
-			pdb, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
+			pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pdb).NotTo(BeNil())
 		})
@@ -114,7 +115,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 			It("should not create a pod disruption budget for the lrp", func() {
 				statefulset := getStatefulSet(odinLRP)
-				_, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
+				_, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 				Expect(err).To(MatchError(ContainSubstring("not found")))
 			})
 		})
@@ -270,7 +271,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 		It("should delete the pod disruption budget for the lrp", func() {
 			Eventually(func() error {
-				_, err := podDisruptionBudgets().Get(statefulsetName, v1.GetOptions{})
+				_, err := podDisruptionBudgets().Get(context.Background(), statefulsetName, v1.GetOptions{})
 				return err
 			}).Should(MatchError(ContainSubstring("not found")))
 		})
@@ -282,7 +283,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 			It("keep the lrp without a pod disruption budget", func() {
 				Eventually(func() error {
-					_, err := podDisruptionBudgets().Get(statefulsetName, v1.GetOptions{})
+					_, err := podDisruptionBudgets().Get(context.Background(), statefulsetName, v1.GetOptions{})
 					return err
 				}).Should(MatchError(ContainSubstring("not found")))
 			})
@@ -333,7 +334,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 			It("should create a pod disruption budget for the lrp", func() {
 				statefulset := getStatefulSet(odinLRP)
-				pdb, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
+				pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(pdb).NotTo(BeNil())
 			})
@@ -347,7 +348,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 			It("should keep the existing pod disruption budget for the lrp", func() {
 				statefulset := getStatefulSet(odinLRP)
-				pdb, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
+				pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(pdb).NotTo(BeNil())
 			})
@@ -361,7 +362,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 			It("should delete the pod disruption budget for the lrp", func() {
 				statefulset := getStatefulSet(odinLRP)
-				_, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
+				_, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 				Expect(err).To(MatchError(ContainSubstring("not found")))
 			})
 		})
@@ -374,7 +375,7 @@ var _ = Describe("StatefulSet Manager", func() {
 
 			It("should keep the lrp without a pod disruption budget", func() {
 				statefulset := getStatefulSet(odinLRP)
-				_, err := podDisruptionBudgets().Get(statefulset.Name, v1.GetOptions{})
+				_, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 				Expect(err).To(MatchError(ContainSubstring("not found")))
 			})
 		})

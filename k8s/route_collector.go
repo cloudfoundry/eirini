@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -29,7 +30,7 @@ func NewRouteCollector(client kubernetes.Interface, namespace string, logger lag
 }
 
 func (c RouteCollector) Collect() ([]route.Message, error) {
-	pods, err := c.client.CoreV1().Pods(c.namespace).List(metav1.ListOptions{})
+	pods, err := c.client.CoreV1().Pods(c.namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list pods")
 	}
@@ -88,7 +89,7 @@ func (c RouteCollector) getRoutes(pod corev1.Pod, statefulsets map[string]appsv1
 }
 
 func (c RouteCollector) getStatefulSets() (map[string]appsv1.StatefulSet, error) {
-	statefulsetList, err := c.client.AppsV1().StatefulSets(c.namespace).List(metav1.ListOptions{})
+	statefulsetList, err := c.client.AppsV1().StatefulSets(c.namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}

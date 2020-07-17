@@ -2,6 +2,7 @@ package util
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"sync"
@@ -108,7 +109,7 @@ func (f *Fixture) printDebugInfo() error {
 	if _, err := f.Writer.Write([]byte("Jobs:\n")); err != nil {
 		return err
 	}
-	jobs, _ := f.Clientset.BatchV1().Jobs(f.Namespace).List(v1.ListOptions{})
+	jobs, _ := f.Clientset.BatchV1().Jobs(f.Namespace).List(context.Background(), v1.ListOptions{})
 	for _, job := range jobs.Items {
 		fmt.Fprintf(f.Writer, "Job: %s status is: %#v\n", job.Name, job.Status)
 		if _, err := f.Writer.Write([]byte("-----------\n")); err != nil {
@@ -116,7 +117,7 @@ func (f *Fixture) printDebugInfo() error {
 		}
 	}
 
-	statefulsets, _ := f.Clientset.AppsV1().StatefulSets(f.Namespace).List(v1.ListOptions{})
+	statefulsets, _ := f.Clientset.AppsV1().StatefulSets(f.Namespace).List(context.Background(), v1.ListOptions{})
 	if _, err := f.Writer.Write([]byte("StatefulSets:\n")); err != nil {
 		return err
 	}
@@ -127,7 +128,7 @@ func (f *Fixture) printDebugInfo() error {
 		}
 	}
 
-	pods, _ := f.Clientset.CoreV1().Pods(f.Namespace).List(v1.ListOptions{})
+	pods, _ := f.Clientset.CoreV1().Pods(f.Namespace).List(context.Background(), v1.ListOptions{})
 	if _, err := f.Writer.Write([]byte("Pods:\n")); err != nil {
 		return err
 	}
@@ -147,7 +148,7 @@ func (f *Fixture) printDebugInfo() error {
 }
 
 func consumeRequest(request rest.ResponseWrapper, out io.Writer) error {
-	readCloser, err := request.Stream()
+	readCloser, err := request.Stream(context.Background())
 	if err != nil {
 		return err
 	}

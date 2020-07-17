@@ -2,6 +2,7 @@
 package rootfspatcherfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/rootfspatcher"
@@ -10,10 +11,11 @@ import (
 )
 
 type FakeStatefulSetUpdaterLister struct {
-	ListStub        func(v1a.ListOptions) (*v1.StatefulSetList, error)
+	ListStub        func(context.Context, v1a.ListOptions) (*v1.StatefulSetList, error)
 	listMutex       sync.RWMutex
 	listArgsForCall []struct {
-		arg1 v1a.ListOptions
+		arg1 context.Context
+		arg2 v1a.ListOptions
 	}
 	listReturns struct {
 		result1 *v1.StatefulSetList
@@ -23,10 +25,12 @@ type FakeStatefulSetUpdaterLister struct {
 		result1 *v1.StatefulSetList
 		result2 error
 	}
-	UpdateStub        func(*v1.StatefulSet) (*v1.StatefulSet, error)
+	UpdateStub        func(context.Context, *v1.StatefulSet, v1a.UpdateOptions) (*v1.StatefulSet, error)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
-		arg1 *v1.StatefulSet
+		arg1 context.Context
+		arg2 *v1.StatefulSet
+		arg3 v1a.UpdateOptions
 	}
 	updateReturns struct {
 		result1 *v1.StatefulSet
@@ -40,16 +44,17 @@ type FakeStatefulSetUpdaterLister struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetUpdaterLister) List(arg1 v1a.ListOptions) (*v1.StatefulSetList, error) {
+func (fake *FakeStatefulSetUpdaterLister) List(arg1 context.Context, arg2 v1a.ListOptions) (*v1.StatefulSetList, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		arg1 v1a.ListOptions
-	}{arg1})
-	fake.recordInvocation("List", []interface{}{arg1})
+		arg1 context.Context
+		arg2 v1a.ListOptions
+	}{arg1, arg2})
+	fake.recordInvocation("List", []interface{}{arg1, arg2})
 	fake.listMutex.Unlock()
 	if fake.ListStub != nil {
-		return fake.ListStub(arg1)
+		return fake.ListStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -64,17 +69,17 @@ func (fake *FakeStatefulSetUpdaterLister) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakeStatefulSetUpdaterLister) ListCalls(stub func(v1a.ListOptions) (*v1.StatefulSetList, error)) {
+func (fake *FakeStatefulSetUpdaterLister) ListCalls(stub func(context.Context, v1a.ListOptions) (*v1.StatefulSetList, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
 }
 
-func (fake *FakeStatefulSetUpdaterLister) ListArgsForCall(i int) v1a.ListOptions {
+func (fake *FakeStatefulSetUpdaterLister) ListArgsForCall(i int) (context.Context, v1a.ListOptions) {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	argsForCall := fake.listArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeStatefulSetUpdaterLister) ListReturns(result1 *v1.StatefulSetList, result2 error) {
@@ -103,16 +108,18 @@ func (fake *FakeStatefulSetUpdaterLister) ListReturnsOnCall(i int, result1 *v1.S
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetUpdaterLister) Update(arg1 *v1.StatefulSet) (*v1.StatefulSet, error) {
+func (fake *FakeStatefulSetUpdaterLister) Update(arg1 context.Context, arg2 *v1.StatefulSet, arg3 v1a.UpdateOptions) (*v1.StatefulSet, error) {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
-		arg1 *v1.StatefulSet
-	}{arg1})
-	fake.recordInvocation("Update", []interface{}{arg1})
+		arg1 context.Context
+		arg2 *v1.StatefulSet
+		arg3 v1a.UpdateOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Update", []interface{}{arg1, arg2, arg3})
 	fake.updateMutex.Unlock()
 	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1)
+		return fake.UpdateStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -127,17 +134,17 @@ func (fake *FakeStatefulSetUpdaterLister) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeStatefulSetUpdaterLister) UpdateCalls(stub func(*v1.StatefulSet) (*v1.StatefulSet, error)) {
+func (fake *FakeStatefulSetUpdaterLister) UpdateCalls(stub func(context.Context, *v1.StatefulSet, v1a.UpdateOptions) (*v1.StatefulSet, error)) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakeStatefulSetUpdaterLister) UpdateArgsForCall(i int) *v1.StatefulSet {
+func (fake *FakeStatefulSetUpdaterLister) UpdateArgsForCall(i int) (context.Context, *v1.StatefulSet, v1a.UpdateOptions) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStatefulSetUpdaterLister) UpdateReturns(result1 *v1.StatefulSet, result2 error) {

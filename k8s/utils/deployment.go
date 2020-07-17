@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"context"
+
 	"code.cloudfoundry.org/lager"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -8,11 +10,11 @@ import (
 
 //counterfeiter:generate . DeploymentClient
 type DeploymentClient interface {
-	Get(name string, options metav1.GetOptions) (*appsv1.Deployment, error)
+	Get(ctx context.Context, name string, options metav1.GetOptions) (*appsv1.Deployment, error)
 }
 
 func IsReady(client DeploymentClient, logger lager.Logger, deploymentName string) bool {
-	deployment, err := client.Get(deploymentName, metav1.GetOptions{})
+	deployment, err := client.Get(context.Background(), deploymentName, metav1.GetOptions{})
 	if err != nil {
 		logger.Error("failed to list deployments", err)
 		return false

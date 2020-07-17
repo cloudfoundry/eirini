@@ -2,6 +2,7 @@
 package k8sfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s"
@@ -10,10 +11,11 @@ import (
 )
 
 type FakeEventLister struct {
-	ListStub        func(v1a.ListOptions) (*v1.EventList, error)
+	ListStub        func(context.Context, v1a.ListOptions) (*v1.EventList, error)
 	listMutex       sync.RWMutex
 	listArgsForCall []struct {
-		arg1 v1a.ListOptions
+		arg1 context.Context
+		arg2 v1a.ListOptions
 	}
 	listReturns struct {
 		result1 *v1.EventList
@@ -27,16 +29,17 @@ type FakeEventLister struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeEventLister) List(arg1 v1a.ListOptions) (*v1.EventList, error) {
+func (fake *FakeEventLister) List(arg1 context.Context, arg2 v1a.ListOptions) (*v1.EventList, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		arg1 v1a.ListOptions
-	}{arg1})
-	fake.recordInvocation("List", []interface{}{arg1})
+		arg1 context.Context
+		arg2 v1a.ListOptions
+	}{arg1, arg2})
+	fake.recordInvocation("List", []interface{}{arg1, arg2})
 	fake.listMutex.Unlock()
 	if fake.ListStub != nil {
-		return fake.ListStub(arg1)
+		return fake.ListStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -51,17 +54,17 @@ func (fake *FakeEventLister) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakeEventLister) ListCalls(stub func(v1a.ListOptions) (*v1.EventList, error)) {
+func (fake *FakeEventLister) ListCalls(stub func(context.Context, v1a.ListOptions) (*v1.EventList, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
 }
 
-func (fake *FakeEventLister) ListArgsForCall(i int) v1a.ListOptions {
+func (fake *FakeEventLister) ListArgsForCall(i int) (context.Context, v1a.ListOptions) {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	argsForCall := fake.listArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeEventLister) ListReturns(result1 *v1.EventList, result2 error) {

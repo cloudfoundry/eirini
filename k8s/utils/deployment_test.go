@@ -128,7 +128,7 @@ var _ = Describe("Deployment Utils", func() {
 			IsReady(fakeclient, logger, "name")
 
 			Expect(fakeclient.GetCallCount()).To(Equal(1))
-			name, getOptions := fakeclient.GetArgsForCall(0)
+			_, name, getOptions := fakeclient.GetArgsForCall(0)
 			Expect(name).To(Equal("name"))
 			Expect(getOptions).To(Equal(metav1.GetOptions{}))
 		})

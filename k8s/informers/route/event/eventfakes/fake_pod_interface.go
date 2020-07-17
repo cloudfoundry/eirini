@@ -2,6 +2,7 @@
 package eventfakes
 
 import (
+	"context"
 	"sync"
 
 	v1a "k8s.io/api/core/v1"
@@ -14,10 +15,12 @@ import (
 )
 
 type FakePodInterface struct {
-	BindStub        func(*v1a.Binding) error
+	BindStub        func(context.Context, *v1a.Binding, v1b.CreateOptions) error
 	bindMutex       sync.RWMutex
 	bindArgsForCall []struct {
-		arg1 *v1a.Binding
+		arg1 context.Context
+		arg2 *v1a.Binding
+		arg3 v1b.CreateOptions
 	}
 	bindReturns struct {
 		result1 error
@@ -25,10 +28,12 @@ type FakePodInterface struct {
 	bindReturnsOnCall map[int]struct {
 		result1 error
 	}
-	CreateStub        func(*v1a.Pod) (*v1a.Pod, error)
+	CreateStub        func(context.Context, *v1a.Pod, v1b.CreateOptions) (*v1a.Pod, error)
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
-		arg1 *v1a.Pod
+		arg1 context.Context
+		arg2 *v1a.Pod
+		arg3 v1b.CreateOptions
 	}
 	createReturns struct {
 		result1 *v1a.Pod
@@ -38,11 +43,12 @@ type FakePodInterface struct {
 		result1 *v1a.Pod
 		result2 error
 	}
-	DeleteStub        func(string, *v1b.DeleteOptions) error
+	DeleteStub        func(context.Context, string, v1b.DeleteOptions) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
-		arg1 string
-		arg2 *v1b.DeleteOptions
+		arg1 context.Context
+		arg2 string
+		arg3 v1b.DeleteOptions
 	}
 	deleteReturns struct {
 		result1 error
@@ -50,11 +56,12 @@ type FakePodInterface struct {
 	deleteReturnsOnCall map[int]struct {
 		result1 error
 	}
-	DeleteCollectionStub        func(*v1b.DeleteOptions, v1b.ListOptions) error
+	DeleteCollectionStub        func(context.Context, v1b.DeleteOptions, v1b.ListOptions) error
 	deleteCollectionMutex       sync.RWMutex
 	deleteCollectionArgsForCall []struct {
-		arg1 *v1b.DeleteOptions
-		arg2 v1b.ListOptions
+		arg1 context.Context
+		arg2 v1b.DeleteOptions
+		arg3 v1b.ListOptions
 	}
 	deleteCollectionReturns struct {
 		result1 error
@@ -62,10 +69,11 @@ type FakePodInterface struct {
 	deleteCollectionReturnsOnCall map[int]struct {
 		result1 error
 	}
-	EvictStub        func(*v1beta1.Eviction) error
+	EvictStub        func(context.Context, *v1beta1.Eviction) error
 	evictMutex       sync.RWMutex
 	evictArgsForCall []struct {
-		arg1 *v1beta1.Eviction
+		arg1 context.Context
+		arg2 *v1beta1.Eviction
 	}
 	evictReturns struct {
 		result1 error
@@ -73,11 +81,12 @@ type FakePodInterface struct {
 	evictReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetStub        func(string, v1b.GetOptions) (*v1a.Pod, error)
+	GetStub        func(context.Context, string, v1b.GetOptions) (*v1a.Pod, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		arg1 string
-		arg2 v1b.GetOptions
+		arg1 context.Context
+		arg2 string
+		arg3 v1b.GetOptions
 	}
 	getReturns struct {
 		result1 *v1a.Pod
@@ -87,11 +96,12 @@ type FakePodInterface struct {
 		result1 *v1a.Pod
 		result2 error
 	}
-	GetEphemeralContainersStub        func(string, v1b.GetOptions) (*v1a.EphemeralContainers, error)
+	GetEphemeralContainersStub        func(context.Context, string, v1b.GetOptions) (*v1a.EphemeralContainers, error)
 	getEphemeralContainersMutex       sync.RWMutex
 	getEphemeralContainersArgsForCall []struct {
-		arg1 string
-		arg2 v1b.GetOptions
+		arg1 context.Context
+		arg2 string
+		arg3 v1b.GetOptions
 	}
 	getEphemeralContainersReturns struct {
 		result1 *v1a.EphemeralContainers
@@ -113,10 +123,11 @@ type FakePodInterface struct {
 	getLogsReturnsOnCall map[int]struct {
 		result1 *rest.Request
 	}
-	ListStub        func(v1b.ListOptions) (*v1a.PodList, error)
+	ListStub        func(context.Context, v1b.ListOptions) (*v1a.PodList, error)
 	listMutex       sync.RWMutex
 	listArgsForCall []struct {
-		arg1 v1b.ListOptions
+		arg1 context.Context
+		arg2 v1b.ListOptions
 	}
 	listReturns struct {
 		result1 *v1a.PodList
@@ -126,13 +137,15 @@ type FakePodInterface struct {
 		result1 *v1a.PodList
 		result2 error
 	}
-	PatchStub        func(string, types.PatchType, []byte, ...string) (*v1a.Pod, error)
+	PatchStub        func(context.Context, string, types.PatchType, []byte, v1b.PatchOptions, ...string) (*v1a.Pod, error)
 	patchMutex       sync.RWMutex
 	patchArgsForCall []struct {
-		arg1 string
-		arg2 types.PatchType
-		arg3 []byte
-		arg4 []string
+		arg1 context.Context
+		arg2 string
+		arg3 types.PatchType
+		arg4 []byte
+		arg5 v1b.PatchOptions
+		arg6 []string
 	}
 	patchReturns struct {
 		result1 *v1a.Pod
@@ -142,10 +155,12 @@ type FakePodInterface struct {
 		result1 *v1a.Pod
 		result2 error
 	}
-	UpdateStub        func(*v1a.Pod) (*v1a.Pod, error)
+	UpdateStub        func(context.Context, *v1a.Pod, v1b.UpdateOptions) (*v1a.Pod, error)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
-		arg1 *v1a.Pod
+		arg1 context.Context
+		arg2 *v1a.Pod
+		arg3 v1b.UpdateOptions
 	}
 	updateReturns struct {
 		result1 *v1a.Pod
@@ -155,11 +170,13 @@ type FakePodInterface struct {
 		result1 *v1a.Pod
 		result2 error
 	}
-	UpdateEphemeralContainersStub        func(string, *v1a.EphemeralContainers) (*v1a.EphemeralContainers, error)
+	UpdateEphemeralContainersStub        func(context.Context, string, *v1a.EphemeralContainers, v1b.UpdateOptions) (*v1a.EphemeralContainers, error)
 	updateEphemeralContainersMutex       sync.RWMutex
 	updateEphemeralContainersArgsForCall []struct {
-		arg1 string
-		arg2 *v1a.EphemeralContainers
+		arg1 context.Context
+		arg2 string
+		arg3 *v1a.EphemeralContainers
+		arg4 v1b.UpdateOptions
 	}
 	updateEphemeralContainersReturns struct {
 		result1 *v1a.EphemeralContainers
@@ -169,10 +186,12 @@ type FakePodInterface struct {
 		result1 *v1a.EphemeralContainers
 		result2 error
 	}
-	UpdateStatusStub        func(*v1a.Pod) (*v1a.Pod, error)
+	UpdateStatusStub        func(context.Context, *v1a.Pod, v1b.UpdateOptions) (*v1a.Pod, error)
 	updateStatusMutex       sync.RWMutex
 	updateStatusArgsForCall []struct {
-		arg1 *v1a.Pod
+		arg1 context.Context
+		arg2 *v1a.Pod
+		arg3 v1b.UpdateOptions
 	}
 	updateStatusReturns struct {
 		result1 *v1a.Pod
@@ -182,10 +201,11 @@ type FakePodInterface struct {
 		result1 *v1a.Pod
 		result2 error
 	}
-	WatchStub        func(v1b.ListOptions) (watch.Interface, error)
+	WatchStub        func(context.Context, v1b.ListOptions) (watch.Interface, error)
 	watchMutex       sync.RWMutex
 	watchArgsForCall []struct {
-		arg1 v1b.ListOptions
+		arg1 context.Context
+		arg2 v1b.ListOptions
 	}
 	watchReturns struct {
 		result1 watch.Interface
@@ -199,16 +219,18 @@ type FakePodInterface struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePodInterface) Bind(arg1 *v1a.Binding) error {
+func (fake *FakePodInterface) Bind(arg1 context.Context, arg2 *v1a.Binding, arg3 v1b.CreateOptions) error {
 	fake.bindMutex.Lock()
 	ret, specificReturn := fake.bindReturnsOnCall[len(fake.bindArgsForCall)]
 	fake.bindArgsForCall = append(fake.bindArgsForCall, struct {
-		arg1 *v1a.Binding
-	}{arg1})
-	fake.recordInvocation("Bind", []interface{}{arg1})
+		arg1 context.Context
+		arg2 *v1a.Binding
+		arg3 v1b.CreateOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Bind", []interface{}{arg1, arg2, arg3})
 	fake.bindMutex.Unlock()
 	if fake.BindStub != nil {
-		return fake.BindStub(arg1)
+		return fake.BindStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -223,17 +245,17 @@ func (fake *FakePodInterface) BindCallCount() int {
 	return len(fake.bindArgsForCall)
 }
 
-func (fake *FakePodInterface) BindCalls(stub func(*v1a.Binding) error) {
+func (fake *FakePodInterface) BindCalls(stub func(context.Context, *v1a.Binding, v1b.CreateOptions) error) {
 	fake.bindMutex.Lock()
 	defer fake.bindMutex.Unlock()
 	fake.BindStub = stub
 }
 
-func (fake *FakePodInterface) BindArgsForCall(i int) *v1a.Binding {
+func (fake *FakePodInterface) BindArgsForCall(i int) (context.Context, *v1a.Binding, v1b.CreateOptions) {
 	fake.bindMutex.RLock()
 	defer fake.bindMutex.RUnlock()
 	argsForCall := fake.bindArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakePodInterface) BindReturns(result1 error) {
@@ -259,16 +281,18 @@ func (fake *FakePodInterface) BindReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakePodInterface) Create(arg1 *v1a.Pod) (*v1a.Pod, error) {
+func (fake *FakePodInterface) Create(arg1 context.Context, arg2 *v1a.Pod, arg3 v1b.CreateOptions) (*v1a.Pod, error) {
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
-		arg1 *v1a.Pod
-	}{arg1})
-	fake.recordInvocation("Create", []interface{}{arg1})
+		arg1 context.Context
+		arg2 *v1a.Pod
+		arg3 v1b.CreateOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Create", []interface{}{arg1, arg2, arg3})
 	fake.createMutex.Unlock()
 	if fake.CreateStub != nil {
-		return fake.CreateStub(arg1)
+		return fake.CreateStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -283,17 +307,17 @@ func (fake *FakePodInterface) CreateCallCount() int {
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakePodInterface) CreateCalls(stub func(*v1a.Pod) (*v1a.Pod, error)) {
+func (fake *FakePodInterface) CreateCalls(stub func(context.Context, *v1a.Pod, v1b.CreateOptions) (*v1a.Pod, error)) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = stub
 }
 
-func (fake *FakePodInterface) CreateArgsForCall(i int) *v1a.Pod {
+func (fake *FakePodInterface) CreateArgsForCall(i int) (context.Context, *v1a.Pod, v1b.CreateOptions) {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	argsForCall := fake.createArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakePodInterface) CreateReturns(result1 *v1a.Pod, result2 error) {
@@ -322,17 +346,18 @@ func (fake *FakePodInterface) CreateReturnsOnCall(i int, result1 *v1a.Pod, resul
 	}{result1, result2}
 }
 
-func (fake *FakePodInterface) Delete(arg1 string, arg2 *v1b.DeleteOptions) error {
+func (fake *FakePodInterface) Delete(arg1 context.Context, arg2 string, arg3 v1b.DeleteOptions) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
-		arg1 string
-		arg2 *v1b.DeleteOptions
-	}{arg1, arg2})
-	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 v1b.DeleteOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Delete", []interface{}{arg1, arg2, arg3})
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
-		return fake.DeleteStub(arg1, arg2)
+		return fake.DeleteStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -347,17 +372,17 @@ func (fake *FakePodInterface) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakePodInterface) DeleteCalls(stub func(string, *v1b.DeleteOptions) error) {
+func (fake *FakePodInterface) DeleteCalls(stub func(context.Context, string, v1b.DeleteOptions) error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakePodInterface) DeleteArgsForCall(i int) (string, *v1b.DeleteOptions) {
+func (fake *FakePodInterface) DeleteArgsForCall(i int) (context.Context, string, v1b.DeleteOptions) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakePodInterface) DeleteReturns(result1 error) {
@@ -383,17 +408,18 @@ func (fake *FakePodInterface) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakePodInterface) DeleteCollection(arg1 *v1b.DeleteOptions, arg2 v1b.ListOptions) error {
+func (fake *FakePodInterface) DeleteCollection(arg1 context.Context, arg2 v1b.DeleteOptions, arg3 v1b.ListOptions) error {
 	fake.deleteCollectionMutex.Lock()
 	ret, specificReturn := fake.deleteCollectionReturnsOnCall[len(fake.deleteCollectionArgsForCall)]
 	fake.deleteCollectionArgsForCall = append(fake.deleteCollectionArgsForCall, struct {
-		arg1 *v1b.DeleteOptions
-		arg2 v1b.ListOptions
-	}{arg1, arg2})
-	fake.recordInvocation("DeleteCollection", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 v1b.DeleteOptions
+		arg3 v1b.ListOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("DeleteCollection", []interface{}{arg1, arg2, arg3})
 	fake.deleteCollectionMutex.Unlock()
 	if fake.DeleteCollectionStub != nil {
-		return fake.DeleteCollectionStub(arg1, arg2)
+		return fake.DeleteCollectionStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -408,17 +434,17 @@ func (fake *FakePodInterface) DeleteCollectionCallCount() int {
 	return len(fake.deleteCollectionArgsForCall)
 }
 
-func (fake *FakePodInterface) DeleteCollectionCalls(stub func(*v1b.DeleteOptions, v1b.ListOptions) error) {
+func (fake *FakePodInterface) DeleteCollectionCalls(stub func(context.Context, v1b.DeleteOptions, v1b.ListOptions) error) {
 	fake.deleteCollectionMutex.Lock()
 	defer fake.deleteCollectionMutex.Unlock()
 	fake.DeleteCollectionStub = stub
 }
 
-func (fake *FakePodInterface) DeleteCollectionArgsForCall(i int) (*v1b.DeleteOptions, v1b.ListOptions) {
+func (fake *FakePodInterface) DeleteCollectionArgsForCall(i int) (context.Context, v1b.DeleteOptions, v1b.ListOptions) {
 	fake.deleteCollectionMutex.RLock()
 	defer fake.deleteCollectionMutex.RUnlock()
 	argsForCall := fake.deleteCollectionArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakePodInterface) DeleteCollectionReturns(result1 error) {
@@ -444,16 +470,17 @@ func (fake *FakePodInterface) DeleteCollectionReturnsOnCall(i int, result1 error
 	}{result1}
 }
 
-func (fake *FakePodInterface) Evict(arg1 *v1beta1.Eviction) error {
+func (fake *FakePodInterface) Evict(arg1 context.Context, arg2 *v1beta1.Eviction) error {
 	fake.evictMutex.Lock()
 	ret, specificReturn := fake.evictReturnsOnCall[len(fake.evictArgsForCall)]
 	fake.evictArgsForCall = append(fake.evictArgsForCall, struct {
-		arg1 *v1beta1.Eviction
-	}{arg1})
-	fake.recordInvocation("Evict", []interface{}{arg1})
+		arg1 context.Context
+		arg2 *v1beta1.Eviction
+	}{arg1, arg2})
+	fake.recordInvocation("Evict", []interface{}{arg1, arg2})
 	fake.evictMutex.Unlock()
 	if fake.EvictStub != nil {
-		return fake.EvictStub(arg1)
+		return fake.EvictStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -468,17 +495,17 @@ func (fake *FakePodInterface) EvictCallCount() int {
 	return len(fake.evictArgsForCall)
 }
 
-func (fake *FakePodInterface) EvictCalls(stub func(*v1beta1.Eviction) error) {
+func (fake *FakePodInterface) EvictCalls(stub func(context.Context, *v1beta1.Eviction) error) {
 	fake.evictMutex.Lock()
 	defer fake.evictMutex.Unlock()
 	fake.EvictStub = stub
 }
 
-func (fake *FakePodInterface) EvictArgsForCall(i int) *v1beta1.Eviction {
+func (fake *FakePodInterface) EvictArgsForCall(i int) (context.Context, *v1beta1.Eviction) {
 	fake.evictMutex.RLock()
 	defer fake.evictMutex.RUnlock()
 	argsForCall := fake.evictArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakePodInterface) EvictReturns(result1 error) {
@@ -504,17 +531,18 @@ func (fake *FakePodInterface) EvictReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakePodInterface) Get(arg1 string, arg2 v1b.GetOptions) (*v1a.Pod, error) {
+func (fake *FakePodInterface) Get(arg1 context.Context, arg2 string, arg3 v1b.GetOptions) (*v1a.Pod, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		arg1 string
-		arg2 v1b.GetOptions
-	}{arg1, arg2})
-	fake.recordInvocation("Get", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 v1b.GetOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Get", []interface{}{arg1, arg2, arg3})
 	fake.getMutex.Unlock()
 	if fake.GetStub != nil {
-		return fake.GetStub(arg1, arg2)
+		return fake.GetStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -529,17 +557,17 @@ func (fake *FakePodInterface) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
-func (fake *FakePodInterface) GetCalls(stub func(string, v1b.GetOptions) (*v1a.Pod, error)) {
+func (fake *FakePodInterface) GetCalls(stub func(context.Context, string, v1b.GetOptions) (*v1a.Pod, error)) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = stub
 }
 
-func (fake *FakePodInterface) GetArgsForCall(i int) (string, v1b.GetOptions) {
+func (fake *FakePodInterface) GetArgsForCall(i int) (context.Context, string, v1b.GetOptions) {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	argsForCall := fake.getArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakePodInterface) GetReturns(result1 *v1a.Pod, result2 error) {
@@ -568,17 +596,18 @@ func (fake *FakePodInterface) GetReturnsOnCall(i int, result1 *v1a.Pod, result2 
 	}{result1, result2}
 }
 
-func (fake *FakePodInterface) GetEphemeralContainers(arg1 string, arg2 v1b.GetOptions) (*v1a.EphemeralContainers, error) {
+func (fake *FakePodInterface) GetEphemeralContainers(arg1 context.Context, arg2 string, arg3 v1b.GetOptions) (*v1a.EphemeralContainers, error) {
 	fake.getEphemeralContainersMutex.Lock()
 	ret, specificReturn := fake.getEphemeralContainersReturnsOnCall[len(fake.getEphemeralContainersArgsForCall)]
 	fake.getEphemeralContainersArgsForCall = append(fake.getEphemeralContainersArgsForCall, struct {
-		arg1 string
-		arg2 v1b.GetOptions
-	}{arg1, arg2})
-	fake.recordInvocation("GetEphemeralContainers", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 v1b.GetOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("GetEphemeralContainers", []interface{}{arg1, arg2, arg3})
 	fake.getEphemeralContainersMutex.Unlock()
 	if fake.GetEphemeralContainersStub != nil {
-		return fake.GetEphemeralContainersStub(arg1, arg2)
+		return fake.GetEphemeralContainersStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -593,17 +622,17 @@ func (fake *FakePodInterface) GetEphemeralContainersCallCount() int {
 	return len(fake.getEphemeralContainersArgsForCall)
 }
 
-func (fake *FakePodInterface) GetEphemeralContainersCalls(stub func(string, v1b.GetOptions) (*v1a.EphemeralContainers, error)) {
+func (fake *FakePodInterface) GetEphemeralContainersCalls(stub func(context.Context, string, v1b.GetOptions) (*v1a.EphemeralContainers, error)) {
 	fake.getEphemeralContainersMutex.Lock()
 	defer fake.getEphemeralContainersMutex.Unlock()
 	fake.GetEphemeralContainersStub = stub
 }
 
-func (fake *FakePodInterface) GetEphemeralContainersArgsForCall(i int) (string, v1b.GetOptions) {
+func (fake *FakePodInterface) GetEphemeralContainersArgsForCall(i int) (context.Context, string, v1b.GetOptions) {
 	fake.getEphemeralContainersMutex.RLock()
 	defer fake.getEphemeralContainersMutex.RUnlock()
 	argsForCall := fake.getEphemeralContainersArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakePodInterface) GetEphemeralContainersReturns(result1 *v1a.EphemeralContainers, result2 error) {
@@ -693,16 +722,17 @@ func (fake *FakePodInterface) GetLogsReturnsOnCall(i int, result1 *rest.Request)
 	}{result1}
 }
 
-func (fake *FakePodInterface) List(arg1 v1b.ListOptions) (*v1a.PodList, error) {
+func (fake *FakePodInterface) List(arg1 context.Context, arg2 v1b.ListOptions) (*v1a.PodList, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		arg1 v1b.ListOptions
-	}{arg1})
-	fake.recordInvocation("List", []interface{}{arg1})
+		arg1 context.Context
+		arg2 v1b.ListOptions
+	}{arg1, arg2})
+	fake.recordInvocation("List", []interface{}{arg1, arg2})
 	fake.listMutex.Unlock()
 	if fake.ListStub != nil {
-		return fake.ListStub(arg1)
+		return fake.ListStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -717,17 +747,17 @@ func (fake *FakePodInterface) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakePodInterface) ListCalls(stub func(v1b.ListOptions) (*v1a.PodList, error)) {
+func (fake *FakePodInterface) ListCalls(stub func(context.Context, v1b.ListOptions) (*v1a.PodList, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
 }
 
-func (fake *FakePodInterface) ListArgsForCall(i int) v1b.ListOptions {
+func (fake *FakePodInterface) ListArgsForCall(i int) (context.Context, v1b.ListOptions) {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	argsForCall := fake.listArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakePodInterface) ListReturns(result1 *v1a.PodList, result2 error) {
@@ -756,24 +786,26 @@ func (fake *FakePodInterface) ListReturnsOnCall(i int, result1 *v1a.PodList, res
 	}{result1, result2}
 }
 
-func (fake *FakePodInterface) Patch(arg1 string, arg2 types.PatchType, arg3 []byte, arg4 ...string) (*v1a.Pod, error) {
-	var arg3Copy []byte
-	if arg3 != nil {
-		arg3Copy = make([]byte, len(arg3))
-		copy(arg3Copy, arg3)
+func (fake *FakePodInterface) Patch(arg1 context.Context, arg2 string, arg3 types.PatchType, arg4 []byte, arg5 v1b.PatchOptions, arg6 ...string) (*v1a.Pod, error) {
+	var arg4Copy []byte
+	if arg4 != nil {
+		arg4Copy = make([]byte, len(arg4))
+		copy(arg4Copy, arg4)
 	}
 	fake.patchMutex.Lock()
 	ret, specificReturn := fake.patchReturnsOnCall[len(fake.patchArgsForCall)]
 	fake.patchArgsForCall = append(fake.patchArgsForCall, struct {
-		arg1 string
-		arg2 types.PatchType
-		arg3 []byte
-		arg4 []string
-	}{arg1, arg2, arg3Copy, arg4})
-	fake.recordInvocation("Patch", []interface{}{arg1, arg2, arg3Copy, arg4})
+		arg1 context.Context
+		arg2 string
+		arg3 types.PatchType
+		arg4 []byte
+		arg5 v1b.PatchOptions
+		arg6 []string
+	}{arg1, arg2, arg3, arg4Copy, arg5, arg6})
+	fake.recordInvocation("Patch", []interface{}{arg1, arg2, arg3, arg4Copy, arg5, arg6})
 	fake.patchMutex.Unlock()
 	if fake.PatchStub != nil {
-		return fake.PatchStub(arg1, arg2, arg3, arg4...)
+		return fake.PatchStub(arg1, arg2, arg3, arg4, arg5, arg6...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -788,17 +820,17 @@ func (fake *FakePodInterface) PatchCallCount() int {
 	return len(fake.patchArgsForCall)
 }
 
-func (fake *FakePodInterface) PatchCalls(stub func(string, types.PatchType, []byte, ...string) (*v1a.Pod, error)) {
+func (fake *FakePodInterface) PatchCalls(stub func(context.Context, string, types.PatchType, []byte, v1b.PatchOptions, ...string) (*v1a.Pod, error)) {
 	fake.patchMutex.Lock()
 	defer fake.patchMutex.Unlock()
 	fake.PatchStub = stub
 }
 
-func (fake *FakePodInterface) PatchArgsForCall(i int) (string, types.PatchType, []byte, []string) {
+func (fake *FakePodInterface) PatchArgsForCall(i int) (context.Context, string, types.PatchType, []byte, v1b.PatchOptions, []string) {
 	fake.patchMutex.RLock()
 	defer fake.patchMutex.RUnlock()
 	argsForCall := fake.patchArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6
 }
 
 func (fake *FakePodInterface) PatchReturns(result1 *v1a.Pod, result2 error) {
@@ -827,16 +859,18 @@ func (fake *FakePodInterface) PatchReturnsOnCall(i int, result1 *v1a.Pod, result
 	}{result1, result2}
 }
 
-func (fake *FakePodInterface) Update(arg1 *v1a.Pod) (*v1a.Pod, error) {
+func (fake *FakePodInterface) Update(arg1 context.Context, arg2 *v1a.Pod, arg3 v1b.UpdateOptions) (*v1a.Pod, error) {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
-		arg1 *v1a.Pod
-	}{arg1})
-	fake.recordInvocation("Update", []interface{}{arg1})
+		arg1 context.Context
+		arg2 *v1a.Pod
+		arg3 v1b.UpdateOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Update", []interface{}{arg1, arg2, arg3})
 	fake.updateMutex.Unlock()
 	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1)
+		return fake.UpdateStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -851,17 +885,17 @@ func (fake *FakePodInterface) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakePodInterface) UpdateCalls(stub func(*v1a.Pod) (*v1a.Pod, error)) {
+func (fake *FakePodInterface) UpdateCalls(stub func(context.Context, *v1a.Pod, v1b.UpdateOptions) (*v1a.Pod, error)) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakePodInterface) UpdateArgsForCall(i int) *v1a.Pod {
+func (fake *FakePodInterface) UpdateArgsForCall(i int) (context.Context, *v1a.Pod, v1b.UpdateOptions) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakePodInterface) UpdateReturns(result1 *v1a.Pod, result2 error) {
@@ -890,17 +924,19 @@ func (fake *FakePodInterface) UpdateReturnsOnCall(i int, result1 *v1a.Pod, resul
 	}{result1, result2}
 }
 
-func (fake *FakePodInterface) UpdateEphemeralContainers(arg1 string, arg2 *v1a.EphemeralContainers) (*v1a.EphemeralContainers, error) {
+func (fake *FakePodInterface) UpdateEphemeralContainers(arg1 context.Context, arg2 string, arg3 *v1a.EphemeralContainers, arg4 v1b.UpdateOptions) (*v1a.EphemeralContainers, error) {
 	fake.updateEphemeralContainersMutex.Lock()
 	ret, specificReturn := fake.updateEphemeralContainersReturnsOnCall[len(fake.updateEphemeralContainersArgsForCall)]
 	fake.updateEphemeralContainersArgsForCall = append(fake.updateEphemeralContainersArgsForCall, struct {
-		arg1 string
-		arg2 *v1a.EphemeralContainers
-	}{arg1, arg2})
-	fake.recordInvocation("UpdateEphemeralContainers", []interface{}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 *v1a.EphemeralContainers
+		arg4 v1b.UpdateOptions
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("UpdateEphemeralContainers", []interface{}{arg1, arg2, arg3, arg4})
 	fake.updateEphemeralContainersMutex.Unlock()
 	if fake.UpdateEphemeralContainersStub != nil {
-		return fake.UpdateEphemeralContainersStub(arg1, arg2)
+		return fake.UpdateEphemeralContainersStub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -915,17 +951,17 @@ func (fake *FakePodInterface) UpdateEphemeralContainersCallCount() int {
 	return len(fake.updateEphemeralContainersArgsForCall)
 }
 
-func (fake *FakePodInterface) UpdateEphemeralContainersCalls(stub func(string, *v1a.EphemeralContainers) (*v1a.EphemeralContainers, error)) {
+func (fake *FakePodInterface) UpdateEphemeralContainersCalls(stub func(context.Context, string, *v1a.EphemeralContainers, v1b.UpdateOptions) (*v1a.EphemeralContainers, error)) {
 	fake.updateEphemeralContainersMutex.Lock()
 	defer fake.updateEphemeralContainersMutex.Unlock()
 	fake.UpdateEphemeralContainersStub = stub
 }
 
-func (fake *FakePodInterface) UpdateEphemeralContainersArgsForCall(i int) (string, *v1a.EphemeralContainers) {
+func (fake *FakePodInterface) UpdateEphemeralContainersArgsForCall(i int) (context.Context, string, *v1a.EphemeralContainers, v1b.UpdateOptions) {
 	fake.updateEphemeralContainersMutex.RLock()
 	defer fake.updateEphemeralContainersMutex.RUnlock()
 	argsForCall := fake.updateEphemeralContainersArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakePodInterface) UpdateEphemeralContainersReturns(result1 *v1a.EphemeralContainers, result2 error) {
@@ -954,16 +990,18 @@ func (fake *FakePodInterface) UpdateEphemeralContainersReturnsOnCall(i int, resu
 	}{result1, result2}
 }
 
-func (fake *FakePodInterface) UpdateStatus(arg1 *v1a.Pod) (*v1a.Pod, error) {
+func (fake *FakePodInterface) UpdateStatus(arg1 context.Context, arg2 *v1a.Pod, arg3 v1b.UpdateOptions) (*v1a.Pod, error) {
 	fake.updateStatusMutex.Lock()
 	ret, specificReturn := fake.updateStatusReturnsOnCall[len(fake.updateStatusArgsForCall)]
 	fake.updateStatusArgsForCall = append(fake.updateStatusArgsForCall, struct {
-		arg1 *v1a.Pod
-	}{arg1})
-	fake.recordInvocation("UpdateStatus", []interface{}{arg1})
+		arg1 context.Context
+		arg2 *v1a.Pod
+		arg3 v1b.UpdateOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("UpdateStatus", []interface{}{arg1, arg2, arg3})
 	fake.updateStatusMutex.Unlock()
 	if fake.UpdateStatusStub != nil {
-		return fake.UpdateStatusStub(arg1)
+		return fake.UpdateStatusStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -978,17 +1016,17 @@ func (fake *FakePodInterface) UpdateStatusCallCount() int {
 	return len(fake.updateStatusArgsForCall)
 }
 
-func (fake *FakePodInterface) UpdateStatusCalls(stub func(*v1a.Pod) (*v1a.Pod, error)) {
+func (fake *FakePodInterface) UpdateStatusCalls(stub func(context.Context, *v1a.Pod, v1b.UpdateOptions) (*v1a.Pod, error)) {
 	fake.updateStatusMutex.Lock()
 	defer fake.updateStatusMutex.Unlock()
 	fake.UpdateStatusStub = stub
 }
 
-func (fake *FakePodInterface) UpdateStatusArgsForCall(i int) *v1a.Pod {
+func (fake *FakePodInterface) UpdateStatusArgsForCall(i int) (context.Context, *v1a.Pod, v1b.UpdateOptions) {
 	fake.updateStatusMutex.RLock()
 	defer fake.updateStatusMutex.RUnlock()
 	argsForCall := fake.updateStatusArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakePodInterface) UpdateStatusReturns(result1 *v1a.Pod, result2 error) {
@@ -1017,16 +1055,17 @@ func (fake *FakePodInterface) UpdateStatusReturnsOnCall(i int, result1 *v1a.Pod,
 	}{result1, result2}
 }
 
-func (fake *FakePodInterface) Watch(arg1 v1b.ListOptions) (watch.Interface, error) {
+func (fake *FakePodInterface) Watch(arg1 context.Context, arg2 v1b.ListOptions) (watch.Interface, error) {
 	fake.watchMutex.Lock()
 	ret, specificReturn := fake.watchReturnsOnCall[len(fake.watchArgsForCall)]
 	fake.watchArgsForCall = append(fake.watchArgsForCall, struct {
-		arg1 v1b.ListOptions
-	}{arg1})
-	fake.recordInvocation("Watch", []interface{}{arg1})
+		arg1 context.Context
+		arg2 v1b.ListOptions
+	}{arg1, arg2})
+	fake.recordInvocation("Watch", []interface{}{arg1, arg2})
 	fake.watchMutex.Unlock()
 	if fake.WatchStub != nil {
-		return fake.WatchStub(arg1)
+		return fake.WatchStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -1041,17 +1080,17 @@ func (fake *FakePodInterface) WatchCallCount() int {
 	return len(fake.watchArgsForCall)
 }
 
-func (fake *FakePodInterface) WatchCalls(stub func(v1b.ListOptions) (watch.Interface, error)) {
+func (fake *FakePodInterface) WatchCalls(stub func(context.Context, v1b.ListOptions) (watch.Interface, error)) {
 	fake.watchMutex.Lock()
 	defer fake.watchMutex.Unlock()
 	fake.WatchStub = stub
 }
 
-func (fake *FakePodInterface) WatchArgsForCall(i int) v1b.ListOptions {
+func (fake *FakePodInterface) WatchArgsForCall(i int) (context.Context, v1b.ListOptions) {
 	fake.watchMutex.RLock()
 	defer fake.watchMutex.RUnlock()
 	argsForCall := fake.watchArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakePodInterface) WatchReturns(result1 watch.Interface, result2 error) {

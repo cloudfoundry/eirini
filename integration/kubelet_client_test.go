@@ -1,6 +1,8 @@
 package statefulsets_test
 
 import (
+	"context"
+
 	"code.cloudfoundry.org/eirini/k8s/kubelet"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,7 +17,7 @@ var _ = Describe("Kubelet Client", func() {
 	})
 
 	It("should return the stats summary for a node", func() {
-		nodes, err := fixture.Clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+		nodes, err := fixture.Clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(nodes.Items).ToNot(BeEmpty())
 

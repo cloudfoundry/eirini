@@ -10,12 +10,12 @@ import (
 )
 
 type FakeJobListerDeleter struct {
-	DeleteStub        func(string, string, *v1.DeleteOptions) error
+	DeleteStub        func(string, string, v1.DeleteOptions) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
 		arg1 string
 		arg2 string
-		arg3 *v1.DeleteOptions
+		arg3 v1.DeleteOptions
 	}
 	deleteReturns struct {
 		result1 error
@@ -40,13 +40,13 @@ type FakeJobListerDeleter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeJobListerDeleter) Delete(arg1 string, arg2 string, arg3 *v1.DeleteOptions) error {
+func (fake *FakeJobListerDeleter) Delete(arg1 string, arg2 string, arg3 v1.DeleteOptions) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
 		arg1 string
 		arg2 string
-		arg3 *v1.DeleteOptions
+		arg3 v1.DeleteOptions
 	}{arg1, arg2, arg3})
 	fake.recordInvocation("Delete", []interface{}{arg1, arg2, arg3})
 	fake.deleteMutex.Unlock()
@@ -66,13 +66,13 @@ func (fake *FakeJobListerDeleter) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeJobListerDeleter) DeleteCalls(stub func(string, string, *v1.DeleteOptions) error) {
+func (fake *FakeJobListerDeleter) DeleteCalls(stub func(string, string, v1.DeleteOptions) error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakeJobListerDeleter) DeleteArgsForCall(i int) (string, string, *v1.DeleteOptions) {
+func (fake *FakeJobListerDeleter) DeleteArgsForCall(i int) (string, string, v1.DeleteOptions) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]

@@ -1,7 +1,7 @@
 package eats_test
 
 import (
-	"encoding/json"
+	"context"
 
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
@@ -26,7 +26,7 @@ var _ = Describe("Apps CRDs", func() {
 	)
 
 	getStatefulSet := func() *appsv1.StatefulSet {
-		stsList, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(metav1.ListOptions{})
+		stsList, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		if len(stsList.Items) == 0 {
 			return nil
@@ -36,7 +36,7 @@ var _ = Describe("Apps CRDs", func() {
 	}
 
 	getLRP := func() *eiriniv1.LRP {
-		lrp, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Get(lrpName, metav1.GetOptions{})
+		lrp, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Get(context.Background(), lrpName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		return lrp
 	}
@@ -71,7 +71,7 @@ var _ = Describe("Apps CRDs", func() {
 			},
 		}
 
-		_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Create(lrp)
+		_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Create(context.Background(), lrp, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -109,7 +109,7 @@ var _ = Describe("Apps CRDs", func() {
 				}
 				lrp.Spec.LastUpdated = "now"
 
-				_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Update(lrp)
+				_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Update(context.Background(), lrp, metav1.UpdateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -129,7 +129,7 @@ var _ = Describe("Apps CRDs", func() {
 				lrp.Spec.NumInstances = 3
 				lrp.Spec.LastUpdated = "now"
 
-				_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Update(lrp)
+				_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Update(context.Background(), lrp, metav1.UpdateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -147,7 +147,7 @@ var _ = Describe("Apps CRDs", func() {
 				lrp := getLRP()
 				lrp.Spec.NumInstances = 3
 
-				_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Update(lrp)
+				_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Update(context.Background(), lrp, metav1.UpdateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -163,7 +163,7 @@ var _ = Describe("Apps CRDs", func() {
 		BeforeEach(func() {
 			Eventually(getStatefulSet).ShouldNot(BeNil())
 
-			Expect(fixture.LRPClientset.EiriniV1().LRPs(namespace).Delete(lrpName, &metav1.DeleteOptions{})).To(Succeed())
+			Expect(fixture.LRPClientset.EiriniV1().LRPs(namespace).Delete(context.Background(), lrpName, metav1.DeleteOptions{})).To(Succeed())
 		})
 
 		It("deletes the undurlying statefulset", func() {

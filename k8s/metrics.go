@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"strconv"
 
 	"code.cloudfoundry.org/eirini/metrics"
@@ -63,7 +64,7 @@ func NewMetricsCollector(metricsClient metricsv1beta1.PodMetricsInterface,
 }
 
 func (c *metricsCollector) Collect() ([]metrics.Message, error) {
-	pods, err := c.podClient.List(metav1.ListOptions{})
+	pods, err := c.podClient.List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return []metrics.Message{}, errors.Wrap(err, "failed to list pods")
 	}
@@ -122,7 +123,7 @@ func parseMetrics(metric v1beta1.PodMetrics) (cpu float64, memory float64) {
 }
 
 func (c *metricsCollector) getPodMetrics() (map[string]v1beta1.PodMetrics, error) {
-	metricsList, err := c.metricsClient.List(metav1.ListOptions{})
+	metricsList, err := c.metricsClient.List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

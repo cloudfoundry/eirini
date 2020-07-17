@@ -86,7 +86,8 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 			handler.Handle(oldStatefulSet, updatedStatefulSet)
 
 			Expect(podClient.ListCallCount()).To(Equal(1))
-			Expect(podClient.ListArgsForCall(0).LabelSelector).To(Equal("name=the-app-name"))
+			_, listOptions := podClient.ListArgsForCall(0)
+			Expect(listOptions.LabelSelector).To(Equal("name=the-app-name"))
 		})
 
 		It("should emit all routes for each pod", func() {

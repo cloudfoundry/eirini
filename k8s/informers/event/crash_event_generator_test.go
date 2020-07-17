@@ -1,6 +1,7 @@
 package event_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -158,7 +159,7 @@ var _ = Describe("CrashEventGenerator", func() {
 						},
 						Reason: "Killing",
 					}
-					_, clientErr := client.CoreV1().Events("not-default").Create(&event)
+					_, clientErr := client.CoreV1().Events("not-default").Create(context.Background(), &event, meta.CreateOptions{})
 					Expect(clientErr).ToNot(HaveOccurred())
 				})
 

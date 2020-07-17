@@ -1,6 +1,7 @@
 package kubelet
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/pkg/errors"
@@ -24,7 +25,7 @@ func (c Client) StatsSummary(nodename string) (StatsSummary, error) {
 		Resource("nodes").
 		Name(nodename).
 		SubResource("proxy", "stats", "summary").
-		Do()
+		Do(context.Background())
 	body, err := result.Raw()
 	if err != nil {
 		return summary, errors.Wrap(err, "failed to get raw body")

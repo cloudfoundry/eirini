@@ -2,6 +2,7 @@ package opi_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -41,7 +42,7 @@ var _ = Describe("Desire App", func() {
 	})
 
 	It("should create a stateful set for the app", func() {
-		statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(metav1.ListOptions{})
+		statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(statefulsets.Items).To(HaveLen(1))
@@ -68,7 +69,7 @@ var _ = Describe("Desire App", func() {
 		})
 
 		It("should set the annotations to the pod template", func() {
-			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(metav1.ListOptions{})
+			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(statefulsets.Items[0].Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "yes, please"))
 		})
@@ -80,14 +81,14 @@ var _ = Describe("Desire App", func() {
 
 		JustBeforeEach(func() {
 			Eventually(func() ([]corev1.Pod, error) {
-				pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(metav1.ListOptions{})
+				pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 				if err != nil {
 					return nil, err
 				}
 				return pods.Items, nil
 			}).ShouldNot(BeEmpty())
 
-			pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(metav1.ListOptions{})
+			pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pods.Items).To(HaveLen(1))
 
@@ -121,11 +122,11 @@ var _ = Describe("Desire App", func() {
 
 			When("the app service account has its automountServiceAccountToken set to false", func() {
 				BeforeEach(func() {
-					appServiceAccount, err := fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Get(util.GetApplicationServiceAccount(), metav1.GetOptions{})
+					appServiceAccount, err := fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Get(context.Background(), util.GetApplicationServiceAccount(), metav1.GetOptions{})
 					Expect(err).NotTo(HaveOccurred())
 					automountServiceAccountToken := false
 					appServiceAccount.AutomountServiceAccountToken = &automountServiceAccountToken
-					_, err = fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Update(appServiceAccount)
+					_, err = fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Update(context.Background(), appServiceAccount, metav1.UpdateOptions{})
 					Expect(err).NotTo(HaveOccurred())
 				})
 

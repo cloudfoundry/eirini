@@ -56,13 +56,13 @@ var _ = Describe("Patcher", func() {
 
 		It("should update all statefulsets labels with the new version", func() {
 			Expect(patcher.Patch()).To(Succeed())
-			updatedStatefulset := statefulsetUpdaterLister.UpdateArgsForCall(0)
+			_, updatedStatefulset, _ := statefulsetUpdaterLister.UpdateArgsForCall(0)
 			Expect(updatedStatefulset.Labels).To(HaveKeyWithValue(RootfsVersionLabel, newVersion))
 		})
 
 		It("should update all statefulsets template specs with the new version", func() {
 			Expect(patcher.Patch()).To(Succeed())
-			updatedStatefulset := statefulsetUpdaterLister.UpdateArgsForCall(0)
+			_, updatedStatefulset, _ := statefulsetUpdaterLister.UpdateArgsForCall(0)
 			Expect(updatedStatefulset.Spec.Template.Labels).To(HaveKeyWithValue(RootfsVersionLabel, newVersion))
 		})
 
@@ -94,8 +94,8 @@ var _ = Describe("Patcher", func() {
 
 			It("should update all statefulsets labels with the new version", func() {
 				Expect(patcher.Patch()).To(Succeed())
-				updatedStatefulset := statefulsetUpdaterLister.UpdateArgsForCall(0)
-				updatedStatefulset2 := statefulsetUpdaterLister.UpdateArgsForCall(1)
+				_, updatedStatefulset, _ := statefulsetUpdaterLister.UpdateArgsForCall(0)
+				_, updatedStatefulset2, _ := statefulsetUpdaterLister.UpdateArgsForCall(1)
 
 				Expect(updatedStatefulset.Labels).To(HaveKeyWithValue(RootfsVersionLabel, newVersion))
 				Expect(updatedStatefulset2.Labels).To(HaveKeyWithValue(RootfsVersionLabel, newVersion))
@@ -103,8 +103,8 @@ var _ = Describe("Patcher", func() {
 
 			It("should update all statefulsets template specs with the new version", func() {
 				Expect(patcher.Patch()).To(Succeed())
-				updatedStatefulset := statefulsetUpdaterLister.UpdateArgsForCall(0)
-				updatedStatefulset2 := statefulsetUpdaterLister.UpdateArgsForCall(1)
+				_, updatedStatefulset, _ := statefulsetUpdaterLister.UpdateArgsForCall(0)
+				_, updatedStatefulset2, _ := statefulsetUpdaterLister.UpdateArgsForCall(1)
 
 				Expect(updatedStatefulset.Spec.Template.Labels).To(HaveKeyWithValue(RootfsVersionLabel, newVersion))
 				Expect(updatedStatefulset2.Spec.Template.Labels).To(HaveKeyWithValue(RootfsVersionLabel, newVersion))

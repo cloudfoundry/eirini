@@ -1,6 +1,7 @@
 package staging_reporter_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -185,7 +186,7 @@ var _ = Describe("TaskReporter", func() {
 			Expect(registrySecretName).NotTo(BeEmpty())
 
 			Eventually(func() error {
-				_, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Get(registrySecretName, metav1.GetOptions{})
+				_, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Get(context.Background(), registrySecretName, metav1.GetOptions{})
 				return err
 			}).Should(MatchError(ContainSubstring(`secrets "%s" not found`, registrySecretName)))
 		})
@@ -208,7 +209,7 @@ var _ = Describe("TaskReporter", func() {
 
 func getTaskJobsFn(guid string) func() ([]batchv1.Job, error) {
 	return func() ([]batchv1.Job, error) {
-		jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{
+		jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%s=%s, %s=%s", k8s.LabelSourceType, "TASK", k8s.LabelGUID, guid),
 		})
 		return jobs.Items, err

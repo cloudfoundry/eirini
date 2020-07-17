@@ -2,6 +2,7 @@ package opi_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -59,7 +60,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 		It("should create a valid job for the task", func() {
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
-				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 				return jobs.Items, err
 			}).Should(HaveLen(1))
 
@@ -107,7 +108,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 		It("creates the job successfully", func() {
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
-				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 				return jobs.Items, err
 			}).Should(HaveLen(1))
 
@@ -126,7 +127,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 
 			By("completing the task", func() {
 				Eventually(func() []batchv1.JobCondition {
-					jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+					jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 					return jobs.Items[0].Status.Conditions
 				}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(batchv1.JobComplete),
@@ -145,7 +146,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			It("creates a new secret and points the job to it", func() {
 				Eventually(func() ([]batchv1.Job, error) {
 					var err error
-					jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+					jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 					return jobs.Items, err
 				}).Should(HaveLen(1))
 
@@ -158,7 +159,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 				}
 				Expect(registrySecretName).NotTo(BeEmpty())
 
-				secret, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Get(registrySecretName, metav1.GetOptions{})
+				secret, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Get(context.Background(), registrySecretName, metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(secret).NotTo(BeNil())
 				Expect(secret.Data).To(
@@ -174,7 +175,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 
 				By("allowing the task to complete", func() {
 					Eventually(func() []batchv1.JobCondition {
-						jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+						jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 						return jobs.Items[0].Status.Conditions
 					}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(batchv1.JobComplete),
@@ -225,7 +226,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			// Ensure the job is created
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
-				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 				return jobs.Items, err
 			}).Should(HaveLen(1))
 
@@ -245,7 +246,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			// Ensure the job is deleted
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
-				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(metav1.ListOptions{})
+				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 				return jobs.Items, err
 			}).Should(BeEmpty())
 
@@ -261,7 +262,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 
 			It("deletes the docker registry secret", func() {
 				Eventually(func() ([]string, error) {
-					secrets, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).List(metav1.ListOptions{})
+					secrets, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 					if err != nil {
 						return nil, err
 					}

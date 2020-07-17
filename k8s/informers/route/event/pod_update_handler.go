@@ -1,6 +1,7 @@
 package event
 
 import (
+	"context"
 	"encoding/json"
 
 	"code.cloudfoundry.org/eirini/k8s"
@@ -86,7 +87,7 @@ func (h PodUpdateHandler) getOwner(pod *corev1.Pod) (*apps.StatefulSet, error) {
 	}
 	for _, owner := range ownerReferences {
 		if owner.Kind == "StatefulSet" {
-			return h.Client.Get(owner.Name, meta.GetOptions{})
+			return h.Client.Get(context.Background(), owner.Name, meta.GetOptions{})
 		}
 	}
 
