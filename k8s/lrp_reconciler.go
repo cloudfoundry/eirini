@@ -16,6 +16,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+//counterfeiter:generate -o k8sfakes/fake_controller_runtime_client.go ../vendor/sigs.k8s.io/controller-runtime/pkg/client Client
+
+//counterfeiter:generate . LRPDesirer
 type LRPDesirer interface {
 	Desire(namespace string, lrp *opi.LRP, opts ...DesirerOption) error
 	Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
@@ -53,20 +56,20 @@ func (r *LRPReconciler) do(lrp *eiriniv1.LRP) error {
 	})
 	if errors.Is(err, eirini.ErrNotFound) {
 		appLRP, parseErr := toOpiLrp(lrp)
-		if err != nil {
+		if parseErr != nil {
 			return errors.Wrap(parseErr, "failed to parse the crd spec to the lrp model")
 		}
-		return r.desirer.Desire(lrp.Namespace, appLRP, r.setOwnerFn(lrp))
+		return errors.Wrap(r.desirer.Desire(lrp.Namespace, appLRP, r.setOwnerFn(lrp)), "failed to desire lrp")
 	}
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get lrp")
 	}
 
 	appLRP, err := toOpiLrp(lrp)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse the crd spec to the lrp model")
 	}
-	return r.desirer.Update(appLRP)
+	return errors.Wrap(r.desirer.Update(appLRP), "failed to update lrp")
 }
 
 func (r *LRPReconciler) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {
