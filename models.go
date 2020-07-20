@@ -71,7 +71,6 @@ type Properties struct { //nolint:maligned
 	TLSPort        int    `yaml:"tls_port"`
 	PlaintextPort  int    `yaml:"plaintext_port"`
 
-	CCTLSDisabled        bool   `yaml:"cc_tls_disabled"`
 	CCUploaderSecretName string `yaml:"cc_uploader_secret_name"`
 	CCUploaderCertPath   string `yaml:"cc_uploader_cert_path"`
 	CCUploaderKeyPath    string `yaml:"cc_uploader_key_path"`
@@ -91,9 +90,10 @@ type Properties struct { //nolint:maligned
 	ExecutorImage                    string `yaml:"executor_image"`
 	AppMetricsEmissionIntervalInSecs int    `yaml:"app_metrics_emission_interval_in_secs"`
 
-	CCCertPath string `yaml:"cc_cert_path"`
-	CCKeyPath  string `yaml:"cc_key_path"`
-	CCCAPath   string `yaml:"cc_ca_path"`
+	CCTLSDisabled bool   `yaml:"cc_tls_disabled"`
+	CCCertPath    string `yaml:"cc_cert_path"`
+	CCKeyPath     string `yaml:"cc_key_path"`
+	CCCAPath      string `yaml:"cc_ca_path"`
 
 	RootfsVersion string `yaml:"rootfs_version"`
 	DiskLimitMB   int64  `yaml:"disk_limit_mb"`
