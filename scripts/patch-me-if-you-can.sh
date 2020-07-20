@@ -4,7 +4,7 @@ set -euo pipefail
 
 IFS=$'\n\t'
 
-readonly USAGE="Usage: patch-me-if-you-can.sh -c <cluster-name> [ -s ] [ <component-name> ... ]"
+readonly USAGE="Usage: patch-me-if-you-can.sh -c <cluster-name> [ -s ] [ -o <additional-values-yaml> ] [ <component-name> ... ]"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly EIRINI_BASEDIR=$(realpath "$SCRIPT_DIR/..")
 readonly EIRINI_RELEASE_BASEDIR=$(realpath "$SCRIPT_DIR/../../eirini-release")
@@ -20,14 +20,23 @@ main() {
     exit 1
   fi
 
-  local cluster_name skip_docker_build="false"
-  while getopts ":c:s" opt; do
+  local cluster_name additional_values skip_docker_build="false"
+  additional_values=""
+  while getopts ":c:o:s" opt; do
     case ${opt} in
       c)
         cluster_name=$OPTARG
         ;;
       s)
         skip_docker_build="true"
+        ;;
+      o)
+        additional_values=$OPTARG
+        if ! [[ -f $additional_values ]]; then
+          echo "Provided values file does not exist: $additional_values"
+          echo $USAGE
+          exit 1
+        fi
         ;;
       \?)
         echo "Invalid option: $OPTARG" 1>&2
@@ -73,7 +82,7 @@ main() {
   fi
 
   pull_private_config
-  patch_cf_for_k8s
+  patch_cf_for_k8s "$additional_values"
   deploy_cf "$cluster_name" "${extra_args[@]}"
 }
 
@@ -126,7 +135,8 @@ update_image_in_helm_chart() {
 }
 
 patch_cf_for_k8s() {
-  local build_path eirini_values eirini_custom_values
+  local build_path eirini_values eirini_custom_values user_values
+  user_values="$1"
   rm -rf "$CF4K8S_DIR/build/eirini/_vendir/eirini"
 
   build_path="$CF4K8S_DIR/build/eirini/"
@@ -164,6 +174,10 @@ EOF
 
   yq merge --inplace "$eirini_values" "$eirini_custom_values"
   rm "$eirini_custom_values"
+
+  if ! [[ -z "$user_values" ]]; then
+    yq merge --inplace "$eirini_values" "$user_values"
+  fi
 
   cp -r "$EIRINI_RELEASE_BASEDIR/helm/eirini" "$CF4K8S_DIR/build/eirini/_vendir/"
 
