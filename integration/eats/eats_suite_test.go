@@ -171,6 +171,25 @@ func waitOpiReady(httpClient rest.HTTPClient, opiURL string) {
 	}).Should(Succeed())
 }
 
+func desireStaging(stagingRequest cf.StagingRequest) (int, error) {
+	data, err := json.Marshal(stagingRequest)
+	if err != nil {
+		return 0, err
+	}
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/stage/some-guid", opiURL), bytes.NewReader(data))
+	if err != nil {
+		return 0, err
+	}
+
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return 0, err
+	}
+
+	defer response.Body.Close()
+	return response.StatusCode, nil
+}
+
 func getLRP(processGUID, versionGUID string) (cf.DesiredLRP, error) {
 	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps/%s/%s", opiURL, processGUID, versionGUID), nil)
 	if err != nil {
