@@ -16,7 +16,7 @@ rm -rf $EIRINI_ROOT/pkg/generated
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 /bin/bash "${CODEGEN_PKG}/generate-groups.sh" all \
   code.cloudfoundry.org/eirini/pkg/generated code.cloudfoundry.org/eirini/pkg/apis \
-  lrp:v1 \
+  eirini:v1 \
   --output-base "$(dirname "${BASH_SOURCE[0]}")/.." \
   --go-header-file "${EIRINI_ROOT}/hack/boilerplate.go.txt"
 

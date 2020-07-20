@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"code.cloudfoundry.org/eirini/pkg/apis/lrp"
+	eirini "code.cloudfoundry.org/eirini/pkg/apis/eirini"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -10,7 +10,7 @@ import (
 // GroupVersion is the identifier for the API which includes
 // the name of the group and the version of the API
 var SchemeGroupVersion = schema.GroupVersion{
-	Group:   lrp.GroupName,
+	Group:   eirini.GroupName,
 	Version: "v1",
 }
 
@@ -30,6 +30,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		SchemeGroupVersion,
 		&LRP{},
 		&LRPList{},
+		&Task{},
+		&TaskList{},
 	)
 
 	meta_v1.AddToGroupVersion(scheme, SchemeGroupVersion)

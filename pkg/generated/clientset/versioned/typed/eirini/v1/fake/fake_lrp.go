@@ -21,7 +21,7 @@ package fake
 import (
 	"context"
 
-	lrpv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
+	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -41,20 +41,20 @@ var lrpsResource = schema.GroupVersionResource{Group: "eirini.cloudfoundry.org",
 var lrpsKind = schema.GroupVersionKind{Group: "eirini.cloudfoundry.org", Version: "v1", Kind: "LRP"}
 
 // Get takes name of the lRP, and returns the corresponding lRP object, and an error if there is any.
-func (c *FakeLRPs) Get(ctx context.Context, name string, options v1.GetOptions) (result *lrpv1.LRP, err error) {
+func (c *FakeLRPs) Get(ctx context.Context, name string, options v1.GetOptions) (result *eiriniv1.LRP, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(lrpsResource, c.ns, name), &lrpv1.LRP{})
+		Invokes(testing.NewGetAction(lrpsResource, c.ns, name), &eiriniv1.LRP{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*lrpv1.LRP), err
+	return obj.(*eiriniv1.LRP), err
 }
 
 // List takes label and field selectors, and returns the list of LRPs that match those selectors.
-func (c *FakeLRPs) List(ctx context.Context, opts v1.ListOptions) (result *lrpv1.LRPList, err error) {
+func (c *FakeLRPs) List(ctx context.Context, opts v1.ListOptions) (result *eiriniv1.LRPList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(lrpsResource, lrpsKind, c.ns, opts), &lrpv1.LRPList{})
+		Invokes(testing.NewListAction(lrpsResource, lrpsKind, c.ns, opts), &eiriniv1.LRPList{})
 
 	if obj == nil {
 		return nil, err
@@ -64,8 +64,8 @@ func (c *FakeLRPs) List(ctx context.Context, opts v1.ListOptions) (result *lrpv1
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &lrpv1.LRPList{ListMeta: obj.(*lrpv1.LRPList).ListMeta}
-	for _, item := range obj.(*lrpv1.LRPList).Items {
+	list := &eiriniv1.LRPList{ListMeta: obj.(*eiriniv1.LRPList).ListMeta}
+	for _, item := range obj.(*eiriniv1.LRPList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -81,31 +81,31 @@ func (c *FakeLRPs) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interf
 }
 
 // Create takes the representation of a lRP and creates it.  Returns the server's representation of the lRP, and an error, if there is any.
-func (c *FakeLRPs) Create(ctx context.Context, lRP *lrpv1.LRP, opts v1.CreateOptions) (result *lrpv1.LRP, err error) {
+func (c *FakeLRPs) Create(ctx context.Context, lRP *eiriniv1.LRP, opts v1.CreateOptions) (result *eiriniv1.LRP, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(lrpsResource, c.ns, lRP), &lrpv1.LRP{})
+		Invokes(testing.NewCreateAction(lrpsResource, c.ns, lRP), &eiriniv1.LRP{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*lrpv1.LRP), err
+	return obj.(*eiriniv1.LRP), err
 }
 
 // Update takes the representation of a lRP and updates it. Returns the server's representation of the lRP, and an error, if there is any.
-func (c *FakeLRPs) Update(ctx context.Context, lRP *lrpv1.LRP, opts v1.UpdateOptions) (result *lrpv1.LRP, err error) {
+func (c *FakeLRPs) Update(ctx context.Context, lRP *eiriniv1.LRP, opts v1.UpdateOptions) (result *eiriniv1.LRP, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(lrpsResource, c.ns, lRP), &lrpv1.LRP{})
+		Invokes(testing.NewUpdateAction(lrpsResource, c.ns, lRP), &eiriniv1.LRP{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*lrpv1.LRP), err
+	return obj.(*eiriniv1.LRP), err
 }
 
 // Delete takes name of the lRP and deletes it. Returns an error if one occurs.
 func (c *FakeLRPs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(lrpsResource, c.ns, name), &lrpv1.LRP{})
+		Invokes(testing.NewDeleteAction(lrpsResource, c.ns, name), &eiriniv1.LRP{})
 
 	return err
 }
@@ -114,17 +114,17 @@ func (c *FakeLRPs) Delete(ctx context.Context, name string, opts v1.DeleteOption
 func (c *FakeLRPs) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(lrpsResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &lrpv1.LRPList{})
+	_, err := c.Fake.Invokes(action, &eiriniv1.LRPList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched lRP.
-func (c *FakeLRPs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *lrpv1.LRP, err error) {
+func (c *FakeLRPs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *eiriniv1.LRP, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(lrpsResource, c.ns, name, pt, data, subresources...), &lrpv1.LRP{})
+		Invokes(testing.NewPatchSubresourceAction(lrpsResource, c.ns, name, pt, data, subresources...), &eiriniv1.LRP{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*lrpv1.LRP), err
+	return obj.(*eiriniv1.LRP), err
 }

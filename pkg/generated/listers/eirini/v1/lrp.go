@@ -19,7 +19,7 @@ limitations under the License.
 package v1
 
 import (
-	v1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
+	v1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"

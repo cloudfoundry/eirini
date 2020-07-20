@@ -21,7 +21,7 @@ package versioned
 import (
 	"fmt"
 
-	eiriniv1 "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/typed/lrp/v1"
+	eiriniv1 "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/typed/eirini/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

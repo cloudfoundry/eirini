@@ -24,8 +24,8 @@ import (
 	time "time"
 
 	versioned "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
+	eirini "code.cloudfoundry.org/eirini/pkg/generated/informers/externalversions/eirini"
 	internalinterfaces "code.cloudfoundry.org/eirini/pkg/generated/informers/externalversions/internalinterfaces"
-	lrp "code.cloudfoundry.org/eirini/pkg/generated/informers/externalversions/lrp"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -172,9 +172,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Eirini() lrp.Interface
+	Eirini() eirini.Interface
 }
 
-func (f *sharedInformerFactory) Eirini() lrp.Interface {
-	return lrp.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Eirini() eirini.Interface {
+	return eirini.New(f, f.namespace, f.tweakListOptions)
 }

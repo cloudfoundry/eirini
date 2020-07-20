@@ -22,7 +22,7 @@ import (
 	"context"
 	"time"
 
-	v1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
+	v1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	scheme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"

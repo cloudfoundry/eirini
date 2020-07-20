@@ -7,8 +7,8 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/opi"
-	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
-	lrpscheme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
+	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
+	eiriniv1scheme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -32,7 +32,7 @@ var _ = Describe("K8s/LrpReconciler", func() {
 	BeforeEach(func() {
 		controllerClient = new(k8sfakes.FakeClient)
 		desirer = new(k8sfakes.FakeLRPDesirer)
-		scheme = lrpscheme.Scheme
+		scheme = eiriniv1scheme.Scheme
 		reconciler = k8s.NewLRPReconciler(controllerClient, desirer, scheme)
 
 		controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o runtime.Object) error {

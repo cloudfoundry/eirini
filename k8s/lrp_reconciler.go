@@ -7,7 +7,7 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/opi"
-	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
+	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"github.com/jinzhu/copier"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

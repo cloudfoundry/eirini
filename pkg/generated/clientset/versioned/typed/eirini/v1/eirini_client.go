@@ -19,7 +19,7 @@ limitations under the License.
 package v1
 
 import (
-	v1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
+	v1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
@@ -27,6 +27,7 @@ import (
 type EiriniV1Interface interface {
 	RESTClient() rest.Interface
 	LRPsGetter
+	TasksGetter
 }
 
 // EiriniV1Client is used to interact with features provided by the eirini.cloudfoundry.org group.
@@ -36,6 +37,10 @@ type EiriniV1Client struct {
 
 func (c *EiriniV1Client) LRPs(namespace string) LRPInterface {
 	return newLRPs(c, namespace)
+}
+
+func (c *EiriniV1Client) Tasks(namespace string) TaskInterface {
+	return newTasks(c, namespace)
 }
 
 // NewForConfig creates a new EiriniV1Client for the given config.

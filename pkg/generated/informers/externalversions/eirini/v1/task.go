@@ -22,69 +22,69 @@ import (
 	"context"
 	time "time"
 
-	lrpv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
+	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	versioned "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
 	internalinterfaces "code.cloudfoundry.org/eirini/pkg/generated/informers/externalversions/internalinterfaces"
-	v1 "code.cloudfoundry.org/eirini/pkg/generated/listers/lrp/v1"
+	v1 "code.cloudfoundry.org/eirini/pkg/generated/listers/eirini/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// LRPInformer provides access to a shared informer and lister for
-// LRPs.
-type LRPInformer interface {
+// TaskInformer provides access to a shared informer and lister for
+// Tasks.
+type TaskInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.LRPLister
+	Lister() v1.TaskLister
 }
 
-type lRPInformer struct {
+type taskInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewLRPInformer constructs a new informer for LRP type.
+// NewTaskInformer constructs a new informer for Task type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewLRPInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredLRPInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewTaskInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredTaskInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredLRPInformer constructs a new informer for LRP type.
+// NewFilteredTaskInformer constructs a new informer for Task type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredLRPInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredTaskInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EiriniV1().LRPs(namespace).List(context.TODO(), options)
+				return client.EiriniV1().Tasks(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EiriniV1().LRPs(namespace).Watch(context.TODO(), options)
+				return client.EiriniV1().Tasks(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&lrpv1.LRP{},
+		&eiriniv1.Task{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *lRPInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredLRPInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *taskInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredTaskInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *lRPInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&lrpv1.LRP{}, f.defaultInformer)
+func (f *taskInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&eiriniv1.Task{}, f.defaultInformer)
 }
 
-func (f *lRPInformer) Lister() v1.LRPLister {
-	return v1.NewLRPLister(f.Informer().GetIndexer())
+func (f *taskInformer) Lister() v1.TaskLister {
+	return v1.NewTaskLister(f.Informer().GetIndexer())
 }

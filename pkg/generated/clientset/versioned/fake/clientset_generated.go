@@ -20,8 +20,8 @@ package fake
 
 import (
 	clientset "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
-	eiriniv1 "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/typed/lrp/v1"
-	fakeeiriniv1 "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/typed/lrp/v1/fake"
+	eiriniv1 "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/typed/eirini/v1"
+	fakeeiriniv1 "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/typed/eirini/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
+	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

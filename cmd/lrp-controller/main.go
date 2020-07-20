@@ -16,7 +16,7 @@ import (
 	"gopkg.in/yaml.v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
+	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"

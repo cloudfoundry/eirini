@@ -5,7 +5,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
-	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
+	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"

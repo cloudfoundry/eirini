@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// LRPs returns a LRPInformer.
 	LRPs() LRPInformer
+	// Tasks returns a TaskInformer.
+	Tasks() TaskInformer
 }
 
 type version struct {
@@ -42,4 +44,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // LRPs returns a LRPInformer.
 func (v *version) LRPs() LRPInformer {
 	return &lRPInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Tasks returns a TaskInformer.
+func (v *version) Tasks() TaskInformer {
+	return &taskInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

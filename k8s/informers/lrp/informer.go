@@ -1,9 +1,9 @@
 package lrp
 
 import (
-	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
-	lrpclientset "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
-	lrpinformers "code.cloudfoundry.org/eirini/pkg/generated/informers/externalversions"
+	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
+	eiriniclientset "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
+	eiriniinformers "code.cloudfoundry.org/eirini/pkg/generated/informers/externalversions"
 	"code.cloudfoundry.org/lager"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
@@ -17,11 +17,11 @@ type Controller interface {
 
 type Informer struct {
 	logger     lager.Logger
-	client     lrpclientset.Interface
+	client     eiriniclientset.Interface
 	controller Controller
 }
 
-func NewInformer(logger lager.Logger, client lrpclientset.Interface, controller Controller) *Informer {
+func NewInformer(logger lager.Logger, client eiriniclientset.Interface, controller Controller) *Informer {
 	return &Informer{
 		logger:     logger,
 		client:     client,
@@ -30,7 +30,7 @@ func NewInformer(logger lager.Logger, client lrpclientset.Interface, controller 
 }
 
 func (i Informer) Start() {
-	informerFactory := lrpinformers.NewSharedInformerFactory(i.client, 0)
+	informerFactory := eiriniinformers.NewSharedInformerFactory(i.client, 0)
 	informer := informerFactory.Eirini().V1().LRPs().Informer()
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{

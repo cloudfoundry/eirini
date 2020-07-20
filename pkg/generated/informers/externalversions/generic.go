@@ -21,7 +21,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1 "code.cloudfoundry.org/eirini/pkg/apis/lrp/v1"
+	v1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -55,6 +55,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=eirini.cloudfoundry.org, Version=v1
 	case v1.SchemeGroupVersion.WithResource("lrps"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Eirini().V1().LRPs().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("tasks"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Eirini().V1().Tasks().Informer()}, nil
 
 	}
 
