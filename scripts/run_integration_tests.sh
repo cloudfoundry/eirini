@@ -4,7 +4,7 @@ set -euo pipefail
 
 readonly BASEDIR="$(cd "$(dirname "$0")"/.. && pwd)"
 export GO111MODULE=on
-export EIRINIUSER_PASSWORD="$(pass eirini/docker-hub)"
+export EIRINIUSER_PASSWORD="${EIRINIUSER_PASSWORD:-$(pass eirini/docker-hub)}"
 
 main() {
   pushd "$BASEDIR"/integration >/dev/null || exit 1
