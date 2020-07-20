@@ -116,9 +116,9 @@ type StatefulSetDesirer struct {
 //counterfeiter:generate . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-type DesirerOption func(resource interface{}) error
+type DesireOption func(resource interface{}) error
 
-func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP, opts ...DesirerOption) error {
+func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP, opts ...DesireOption) error {
 	if lrp.PrivateRegistry != nil {
 		secret, err := m.generateRegistryCredsSecret(lrp)
 		if err != nil {

@@ -38,7 +38,7 @@ func main() {
 
 type DesirerSimulator struct{}
 
-func (d *DesirerSimulator) Desire(namespace string, klrps *opi.LRP, opts ...k8s.DesirerOption) error {
+func (d *DesirerSimulator) Desire(namespace string, klrps *opi.LRP, opts ...k8s.DesireOption) error {
 	return nil
 }
 

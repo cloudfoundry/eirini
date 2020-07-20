@@ -20,7 +20,7 @@ import (
 
 //counterfeiter:generate . LRPDesirer
 type LRPDesirer interface {
-	Desire(namespace string, lrp *opi.LRP, opts ...DesirerOption) error
+	Desire(namespace string, lrp *opi.LRP, opts ...DesireOption) error
 	Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 	Update(lrp *opi.LRP) error
 }

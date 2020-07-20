@@ -10,12 +10,12 @@ import (
 )
 
 type FakeLRPDesirer struct {
-	DesireStub        func(string, *opi.LRP, ...k8s.DesirerOption) error
+	DesireStub        func(string, *opi.LRP, ...k8s.DesireOption) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
 		arg1 string
 		arg2 *opi.LRP
-		arg3 []k8s.DesirerOption
+		arg3 []k8s.DesireOption
 	}
 	desireReturns struct {
 		result1 error
@@ -99,13 +99,13 @@ type FakeLRPDesirer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeLRPDesirer) Desire(arg1 string, arg2 *opi.LRP, arg3 ...k8s.DesirerOption) error {
+func (fake *FakeLRPDesirer) Desire(arg1 string, arg2 *opi.LRP, arg3 ...k8s.DesireOption) error {
 	fake.desireMutex.Lock()
 	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
 	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
 		arg1 string
 		arg2 *opi.LRP
-		arg3 []k8s.DesirerOption
+		arg3 []k8s.DesireOption
 	}{arg1, arg2, arg3})
 	fake.recordInvocation("Desire", []interface{}{arg1, arg2, arg3})
 	fake.desireMutex.Unlock()
@@ -125,13 +125,13 @@ func (fake *FakeLRPDesirer) DesireCallCount() int {
 	return len(fake.desireArgsForCall)
 }
 
-func (fake *FakeLRPDesirer) DesireCalls(stub func(string, *opi.LRP, ...k8s.DesirerOption) error) {
+func (fake *FakeLRPDesirer) DesireCalls(stub func(string, *opi.LRP, ...k8s.DesireOption) error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = stub
 }
 
-func (fake *FakeLRPDesirer) DesireArgsForCall(i int) (string, *opi.LRP, []k8s.DesirerOption) {
+func (fake *FakeLRPDesirer) DesireArgsForCall(i int) (string, *opi.LRP, []k8s.DesireOption) {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	argsForCall := fake.desireArgsForCall[i]
