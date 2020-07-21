@@ -85,7 +85,7 @@ var _ = Describe("Buildpack task", func() {
 			Expect(actualTaskRequest).To(Equal(taskRequest))
 
 			Expect(taskDesirer.DesireCallCount()).To(Equal(1))
-			namespace, desiredTask := taskDesirer.DesireArgsForCall(0)
+			namespace, desiredTask, _ := taskDesirer.DesireArgsForCall(0)
 			Expect(desiredTask.GUID).To(Equal("my-guid"))
 			Expect(namespace).To(Equal(taskRequest.Namespace))
 		})
@@ -96,7 +96,7 @@ var _ = Describe("Buildpack task", func() {
 			})
 
 			It("desires the task in the default namespace", func() {
-				namespace, _ := taskDesirer.DesireArgsForCall(0)
+				namespace, _, _ := taskDesirer.DesireArgsForCall(0)
 				Expect(namespace).To(Equal("default-namespace"))
 			})
 

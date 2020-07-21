@@ -3,6 +3,7 @@ package bifrost
 import (
 	"context"
 
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"github.com/pkg/errors"
@@ -17,7 +18,7 @@ type TaskConverter interface {
 //counterfeiter:generate . TaskDesirer
 
 type TaskDesirer interface {
-	Desire(namespace string, task *opi.Task) error
+	Desire(namespace string, task *opi.Task, opts ...k8s.DesireOption) error
 }
 
 //counterfeiter:generate . TaskDeleter

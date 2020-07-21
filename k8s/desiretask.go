@@ -9,6 +9,7 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/lager"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -106,11 +107,19 @@ func NewTaskDesirerWithEiriniInstance(
 	return desirer
 }
 
-func (d *TaskDesirer) Desire(namespace string, task *opi.Task) error {
+func (d *TaskDesirer) Desire(namespace string, task *opi.Task, opts ...DesireOption) error {
 	job := d.toTaskJob(task)
 	if imageInPrivateRegistry(task) {
 		if err := d.addImagePullSecret(namespace, task, job); err != nil {
 			return err
+		}
+	}
+	job.Namespace = namespace
+	for _, opt := range opts {
+		err := opt(job)
+		if err != nil {
+			d.logger.Error("failed to apply option", err, lager.Data{"guid": task.GUID, "name": task.Name})
+			return errors.Wrap(err, "failed to apply options")
 		}
 	}
 

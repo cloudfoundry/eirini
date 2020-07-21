@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/k8s"
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/opi"
@@ -36,6 +37,7 @@ var _ = Describe("TaskDesirer", func() {
 		fakeSecretsCreator *k8sfakes.FakeSecretsCreator
 		job                *batch.Job
 		jobNamespace       string
+		desireOpts         []k8s.DesireOption
 	)
 
 	assertGeneralSpec := func(job *batch.Job) {
@@ -152,7 +154,7 @@ var _ = Describe("TaskDesirer", func() {
 		})
 
 		JustBeforeEach(func() {
-			err = desirer.Desire("app-namespace", task)
+			err = desirer.Desire("app-namespace", task, desireOpts...)
 		})
 
 		It("should create a job for the task with the correct attributes", func() {
@@ -226,6 +228,44 @@ var _ = Describe("TaskDesirer", func() {
 			By("not setting staging-specific labels on the job", func() {
 				Expect(job.Labels[LabelSourceType]).NotTo(Equal("STG"))
 				Expect(job.Labels).NotTo(HaveKey(LabelStagingGUID))
+			})
+		})
+
+		When("desire options are passed", func() {
+			var (
+				desireOpt1, desireOpt2 *k8sfakes.FakeDesireOption
+			)
+
+			BeforeEach(func() {
+				desireOpt1 = new(k8sfakes.FakeDesireOption)
+				desireOpt2 = new(k8sfakes.FakeDesireOption)
+				desireOpts = []k8s.DesireOption{desireOpt1.Spy, desireOpt2.Spy}
+			})
+
+			It("executes them all correctly", func() {
+				Expect(desireOpt1.CallCount()).To(Equal(1))
+				obj := desireOpt1.ArgsForCall(0)
+				Expect(obj).To(BeAssignableToTypeOf(&batch.Job{}))
+				Expect(desireOpt2.CallCount()).To(Equal(1))
+			})
+
+			It("has namespace set on the job", func() {
+				Expect(desireOpt1.CallCount()).To(Equal(1))
+				obj := desireOpt1.ArgsForCall(0)
+				Expect(obj).To(BeAssignableToTypeOf(&batch.Job{}))
+				job := obj.(*batch.Job)
+				Expect(job.Namespace).To(Equal("app-namespace"))
+			})
+
+			When("one of the options fails", func() {
+				BeforeEach(func() {
+					desireOpt2.Returns(errors.New("boom"))
+				})
+
+				It("returns an error", func() {
+					Expect(err).To(MatchError(ContainSubstring("boom")))
+				})
+
 			})
 		})
 

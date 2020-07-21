@@ -116,6 +116,8 @@ type StatefulSetDesirer struct {
 //counterfeiter:generate . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
+//counterfeiter:generate . DesireOption
+
 type DesireOption func(resource interface{}) error
 
 func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP, opts ...DesireOption) error {

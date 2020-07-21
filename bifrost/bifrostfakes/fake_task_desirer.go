@@ -5,15 +5,17 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/bifrost"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
 )
 
 type FakeTaskDesirer struct {
-	DesireStub        func(string, *opi.Task) error
+	DesireStub        func(string, *opi.Task, ...k8s.DesireOption) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
 		arg1 string
 		arg2 *opi.Task
+		arg3 []k8s.DesireOption
 	}
 	desireReturns struct {
 		result1 error
@@ -25,17 +27,18 @@ type FakeTaskDesirer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskDesirer) Desire(arg1 string, arg2 *opi.Task) error {
+func (fake *FakeTaskDesirer) Desire(arg1 string, arg2 *opi.Task, arg3 ...k8s.DesireOption) error {
 	fake.desireMutex.Lock()
 	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
 	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
 		arg1 string
 		arg2 *opi.Task
-	}{arg1, arg2})
-	fake.recordInvocation("Desire", []interface{}{arg1, arg2})
+		arg3 []k8s.DesireOption
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Desire", []interface{}{arg1, arg2, arg3})
 	fake.desireMutex.Unlock()
 	if fake.DesireStub != nil {
-		return fake.DesireStub(arg1, arg2)
+		return fake.DesireStub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1
@@ -50,17 +53,17 @@ func (fake *FakeTaskDesirer) DesireCallCount() int {
 	return len(fake.desireArgsForCall)
 }
 
-func (fake *FakeTaskDesirer) DesireCalls(stub func(string, *opi.Task) error) {
+func (fake *FakeTaskDesirer) DesireCalls(stub func(string, *opi.Task, ...k8s.DesireOption) error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = stub
 }
 
-func (fake *FakeTaskDesirer) DesireArgsForCall(i int) (string, *opi.Task) {
+func (fake *FakeTaskDesirer) DesireArgsForCall(i int) (string, *opi.Task, []k8s.DesireOption) {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	argsForCall := fake.desireArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeTaskDesirer) DesireReturns(result1 error) {
