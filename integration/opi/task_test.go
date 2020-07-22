@@ -43,7 +43,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 	Context("buildpack tasks", func() {
 		BeforeEach(func() {
 			request = cf.TaskRequest{
-				GUID:        "the-task-guid",
+				GUID:        util.GenerateGUID(),
 				AppName:     "my_app",
 				SpaceName:   "my_space",
 				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
@@ -92,7 +92,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 	Context("docker tasks", func() {
 		BeforeEach(func() {
 			request = cf.TaskRequest{
-				GUID:        "the-task-guid",
+				GUID:        util.GenerateGUID(),
 				AppName:     "my_app",
 				SpaceName:   "my_space",
 				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
@@ -197,11 +197,13 @@ var _ = Describe("Task Desire and Cancel", func() {
 			Expect(err).ToNot(HaveOccurred())
 			cloudControllerServer.HTTPTestServer.StartTLS()
 
+			guid := util.GenerateGUID()
+
 			cloudControllerServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("POST", "/"),
 					ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
-						TaskGUID:      "cancelled-task-guid",
+						TaskGUID:      guid,
 						Failed:        true,
 						FailureReason: "task was cancelled",
 					}),
@@ -209,7 +211,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			)
 
 			request = cf.TaskRequest{
-				GUID:      "cancelled-task-guid",
+				GUID:      guid,
 				AppName:   "my_app",
 				SpaceName: "my_space",
 				Lifecycle: cf.Lifecycle{
@@ -231,7 +233,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			}).Should(HaveLen(1))
 
 			// Cancel the task
-			httpRequest, err := http.NewRequest("DELETE", fmt.Sprintf("%s/tasks/cancelled-task-guid", url), nil)
+			httpRequest, err := http.NewRequest("DELETE", fmt.Sprintf("%s/tasks/%s", url, request.GUID), nil)
 			Expect(err).NotTo(HaveOccurred())
 			resp, err := httpClient.Do(httpRequest)
 			Expect(err).NotTo(HaveOccurred())
@@ -286,7 +288,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("POST", "/"),
 						ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
-							TaskGUID:      "cancelled-task-guid",
+							TaskGUID:      request.GUID,
 							Failed:        true,
 							FailureReason: "task was cancelled",
 						}),
