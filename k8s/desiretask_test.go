@@ -501,6 +501,7 @@ var _ = Describe("TaskDesirer", func() {
 			Entry("LabelSourceType", LabelSourceType, "STG"),
 			Entry("LabelStagingGUID", LabelStagingGUID, taskGUID),
 			Entry("LabelRootfsVersion", rootfspatcher.RootfsVersionLabel, "rootfs-version"),
+			Entry("LabelEiriniInstance", LabelEiriniInstance, "my-eirini"),
 		)
 
 		DescribeTable("the task should have the expected annotations", func(key, value string) {
@@ -514,10 +515,6 @@ var _ = Describe("TaskDesirer", func() {
 			Entry("AnnotationSpaceGUID", AnnotationSpaceGUID, "space-id"),
 			Entry("SeccompPodAnnotationKey", corev1.SeccompPodAnnotationKey, corev1.SeccompProfileRuntimeDefault),
 		)
-
-		It("does not set the eirini instance label", func() {
-			Expect(job.Labels).NotTo(HaveKey(LabelEiriniInstance))
-		})
 
 		Context("When the staging task already exists", func() {
 			BeforeEach(func() {

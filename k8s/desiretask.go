@@ -128,7 +128,6 @@ func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
 	job.Spec.Template.Spec.ServiceAccountName = d.serviceAccountName
 	job.Labels[LabelSourceType] = taskSourceType
 	job.Labels[LabelName] = task.Name
-	job.Labels[LabelEiriniInstance] = d.eiriniInstance
 	job.Annotations[AnnotationCompletionCallback] = task.CompletionCallback
 	job.Spec.Template.Annotations[AnnotationGUID] = task.GUID
 	job.Spec.Template.Annotations[AnnotationOpiTaskContainerName] = opiTaskContainerName
@@ -366,6 +365,7 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 		LabelGUID:                        task.GUID,
 		LabelAppGUID:                     task.AppGUID,
 		rootfspatcher.RootfsVersionLabel: d.rootfsVersion,
+		LabelEiriniInstance:              d.eiriniInstance,
 	}
 
 	job.Annotations = map[string]string{

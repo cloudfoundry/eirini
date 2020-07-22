@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/onsi/ginkgo"
+
 	"code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/tlsconfig"
@@ -213,6 +215,7 @@ func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 			StagingServiceAccount:     "staging",
 			RegistryAddress:           "registry",
 			RegistrySecretName:        "registry-secret",
+			EiriniInstance:            fmt.Sprintf("%s-%d", GenerateGUID(), ginkgo.GinkgoParallelNode()),
 		},
 	}
 }

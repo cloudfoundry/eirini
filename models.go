@@ -106,6 +106,8 @@ type Properties struct { //nolint:maligned
 	AllowRunImageAsRoot                     bool `yaml:"allow_run_image_as_root"`
 	UnsafeAllowAutomountServiceAccountToken bool `yaml:"unsafe_allow_automount_service_account_token"`
 
+	EiriniInstance string `yaml:"eirini_instance,omitempty"`
+
 	ServePlaintext bool `yaml:"serve_plaintext"`
 }
 

@@ -57,14 +57,14 @@ func launchTaskReporter(clientset kubernetes.Interface, cfg eirini.TaskReporterC
 	reporter := task.StateReporter{
 		Client:      httpClient,
 		Logger:      taskLogger,
-		TaskDeleter: initTaskDeleter(clientset),
+		TaskDeleter: initTaskDeleter(clientset, cfg.EiriniInstance),
 	}
 	taskInformer := task.NewInformer(clientset, 0, cfg.Namespace, reporter, make(chan struct{}), taskLogger, cfg.EiriniInstance)
 
 	taskInformer.Start()
 }
 
-func initTaskDeleter(clientset kubernetes.Interface) task.Deleter {
+func initTaskDeleter(clientset kubernetes.Interface, eiriniInstance string) task.Deleter {
 	logger := lager.NewLogger("task-deleter")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
@@ -72,6 +72,7 @@ func initTaskDeleter(clientset kubernetes.Interface) task.Deleter {
 		logger,
 		k8s.NewJobClient(clientset),
 		k8s.NewSecretsClient(clientset),
+		eiriniInstance,
 	)
 }
 

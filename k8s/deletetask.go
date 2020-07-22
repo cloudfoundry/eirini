@@ -26,17 +26,20 @@ type TaskDeleter struct {
 	logger         lager.Logger
 	jobClient      JobListerDeleter
 	secretsDeleter SecretsDeleter
+	eiriniInstance string
 }
 
 func NewTaskDeleter(
 	logger lager.Logger,
 	jobClient JobListerDeleter,
 	secretsDeleter SecretsDeleter,
+	eiriniInstance string,
 ) *TaskDeleter {
 	return &TaskDeleter{
 		logger:         logger,
 		jobClient:      jobClient,
 		secretsDeleter: secretsDeleter,
+		eiriniInstance: eiriniInstance,
 	}
 }
 
@@ -52,7 +55,10 @@ func (d *TaskDeleter) DeleteStaging(guid string) error {
 func (d *TaskDeleter) delete(guid, label string) (string, error) {
 	logger := d.logger.Session("delete", lager.Data{"guid": guid})
 	jobs, err := d.jobClient.List(meta_v1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", label, guid),
+		LabelSelector: fmt.Sprintf("%s=%s,%s=%s",
+			label, guid,
+			LabelEiriniInstance, d.eiriniInstance,
+		),
 	})
 	if err != nil {
 		logger.Error("failed to list jobs", err)

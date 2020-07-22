@@ -131,7 +131,7 @@ var _ = Describe("TaskReporter", func() {
 	})
 
 	It("deletes the job", func() {
-		Eventually(getTaskJobsFn(task.GUID)).Should(BeEmpty())
+		Eventually(getTaskJobsFn(task.GUID, config.EiriniInstance)).Should(BeEmpty())
 	})
 
 	When("a task job fails", func() {
@@ -154,7 +154,7 @@ var _ = Describe("TaskReporter", func() {
 		})
 
 		It("deletes the job", func() {
-			Eventually(getTaskJobsFn(task.GUID)).Should(BeEmpty())
+			Eventually(getTaskJobsFn(task.GUID, config.EiriniInstance)).Should(BeEmpty())
 		})
 	})
 
@@ -171,7 +171,7 @@ var _ = Describe("TaskReporter", func() {
 
 		It("deletes the docker registry secret", func() {
 			registrySecretPrefix := fmt.Sprintf("%s-%s-registry-secret-", task.AppName, task.SpaceName)
-			jobs, err := getTaskJobsFn(task.GUID)()
+			jobs, err := getTaskJobsFn(task.GUID, config.EiriniInstance)()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(jobs).To(HaveLen(1))
 
@@ -193,7 +193,11 @@ var _ = Describe("TaskReporter", func() {
 	})
 
 	When("the job is labeled with a different eirini instance ID", func() {
+
+		var desirerEiriniInstance string
+
 		BeforeEach(func() {
+			desirerEiriniInstance = config.EiriniInstance
 			config.EiriniInstance = "your-eirini" + util.GenerateGUID()
 		})
 
@@ -202,15 +206,20 @@ var _ = Describe("TaskReporter", func() {
 		})
 
 		It("does not delete the task", func() {
-			Consistently(getTaskJobsFn(task.GUID), "10s").ShouldNot(BeEmpty())
+			Consistently(getTaskJobsFn(task.GUID, desirerEiriniInstance), "10s").ShouldNot(BeEmpty())
 		})
 	})
 })
 
-func getTaskJobsFn(guid string) func() ([]batchv1.Job, error) {
+func getTaskJobsFn(guid, eiriniInstance string) func() ([]batchv1.Job, error) {
 	return func() ([]batchv1.Job, error) {
 		jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s, %s=%s", k8s.LabelSourceType, "TASK", k8s.LabelGUID, guid),
+			LabelSelector: fmt.Sprintf(
+				"%s=%s, %s=%s, %s=%s",
+				k8s.LabelSourceType, "TASK",
+				k8s.LabelGUID, guid,
+				k8s.LabelEiriniInstance, eiriniInstance,
+			),
 		})
 		return jobs.Items, err
 	}

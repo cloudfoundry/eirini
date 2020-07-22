@@ -43,6 +43,7 @@ var _ = Describe("TaskDeleter", func() {
 			lagertest.NewTestLogger("deletetask"),
 			fakeJobClient,
 			fakeSecretsDeleter,
+			"eirini-instance",
 		)
 
 		job :=
@@ -80,7 +81,11 @@ var _ = Describe("TaskDeleter", func() {
 
 			By("selecting the job using the task label guid")
 			Expect(fakeJobClient.ListCallCount()).To(Equal(1))
-			Expect(fakeJobClient.ListArgsForCall(0).LabelSelector).To(Equal(fmt.Sprintf("%s=%s", LabelGUID, taskGUID)))
+			Expect(fakeJobClient.ListArgsForCall(0).LabelSelector).To(Equal(fmt.Sprintf(
+				"%s=%s,%s=%s",
+				LabelGUID, taskGUID,
+				LabelEiriniInstance, "eirini-instance",
+			)))
 		})
 
 		Context("when the job does not exist", func() {
@@ -176,7 +181,11 @@ var _ = Describe("TaskDeleter", func() {
 			Expect(deleter.DeleteStaging(taskGUID)).To(Succeed())
 
 			Expect(fakeJobClient.ListCallCount()).To(Equal(1))
-			Expect(fakeJobClient.ListArgsForCall(0).LabelSelector).To(Equal(fmt.Sprintf("%s=%s", LabelStagingGUID, taskGUID)))
+			Expect(fakeJobClient.ListArgsForCall(0).LabelSelector).To(Equal(fmt.Sprintf(
+				"%s=%s,%s=%s",
+				LabelStagingGUID, taskGUID,
+				LabelEiriniInstance, "eirini-instance",
+			)))
 
 			Expect(fakeJobClient.DeleteCallCount()).To(Equal(1))
 			namespace, jobName, _ := fakeJobClient.DeleteArgsForCall(0)

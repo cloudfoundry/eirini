@@ -140,7 +140,7 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 	logger := lager.NewLogger("task-desirer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	return k8s.NewTaskDesirer(
+	return k8s.NewTaskDesirerWithEiriniInstance(
 		logger,
 		k8s.NewJobClient(clientset),
 		k8s.NewSecretsClient(clientset),
@@ -150,10 +150,11 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 		cfg.Properties.StagingServiceAccount,
 		cfg.Properties.RegistrySecretName,
 		cfg.Properties.RootfsVersion,
+		cfg.Properties.EiriniInstance,
 	)
 }
 
-func initTaskDeleter(clientset kubernetes.Interface) *k8s.TaskDeleter {
+func initTaskDeleter(clientset kubernetes.Interface, eiriniInstance string) *k8s.TaskDeleter {
 	logger := lager.NewLogger("task-desirer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
@@ -161,6 +162,7 @@ func initTaskDeleter(clientset kubernetes.Interface) *k8s.TaskDeleter {
 		logger,
 		k8s.NewJobClient(clientset),
 		k8s.NewSecretsClient(clientset),
+		eiriniInstance,
 	)
 }
 
@@ -169,7 +171,7 @@ func initBuildpackStagingBifrost(cfg *eirini.Config, clientset kubernetes.Interf
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	converter := initConverter(cfg)
 	taskDesirer := initTaskDesirer(cfg, clientset)
-	taskDeleter := initTaskDeleter(clientset)
+	taskDeleter := initTaskDeleter(clientset, cfg.Properties.EiriniInstance)
 	stagingCompleter := initStagingCompleter(cfg, logger)
 
 	return &bifrost.BuildpackStaging{
@@ -196,7 +198,7 @@ func initDockerStagingBifrost(cfg *eirini.Config) *bifrost.DockerStaging {
 func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.Task {
 	converter := initConverter(cfg)
 	taskDesirer := initTaskDesirer(cfg, clientset)
-	taskDeleter := initTaskDeleter(clientset)
+	taskDeleter := initTaskDeleter(clientset, cfg.Properties.EiriniInstance)
 	retryableJSONClient := initRetryableJSONClient(cfg)
 	return &bifrost.Task{
 		DefaultNamespace: cfg.Properties.Namespace,
