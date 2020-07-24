@@ -30,6 +30,7 @@ linters:
     - goerr113
     - noctx
     - gofumpt
+    - godot
 
 issues:
   exclude-use-default: true
