@@ -87,6 +87,7 @@ var _ = Describe("TaskDesirer", func() {
 	BeforeEach(func() {
 		fakeJobCreator = new(k8sfakes.FakeJobCreator)
 		fakeSecretsCreator = new(k8sfakes.FakeSecretsCreator)
+		desireOpts = []k8s.DesireOption{}
 		task = &opi.Task{
 			Image:              Image,
 			CompletionCallback: "cloud-countroller.io/task/completed",
@@ -165,7 +166,7 @@ var _ = Describe("TaskDesirer", func() {
 
 			assertGeneralSpec(job)
 
-			Expect(job.GenerateName).To(HavePrefix("my-app-my-space-"))
+			Expect(job.Name).To(Equal("my-app-my-space-task-name"))
 			Expect(job.Spec.Template.Spec.ServiceAccountName).To(Equal("service-account"))
 			Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
 
@@ -231,6 +232,20 @@ var _ = Describe("TaskDesirer", func() {
 			})
 		})
 
+		When("the app name and space name are too long", func() {
+			BeforeEach(func() {
+				task.AppName = "app-with-very-long-name"
+				task.SpaceName = "space-with-a-very-very-very-very-very-very-long-name"
+			})
+
+			It("should truncate the app and space name", func() {
+				Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
+				_, job = fakeJobCreator.CreateArgsForCall(0)
+				Expect(job.Name).To(Equal("app-with-very-long-name-space-with-a-ver-task-name"))
+			})
+
+		})
+
 		When("desire options are passed", func() {
 			var (
 				desireOpt1, desireOpt2 *k8sfakes.FakeDesireOption
@@ -281,7 +296,7 @@ var _ = Describe("TaskDesirer", func() {
 				Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
 				_, job = fakeJobCreator.CreateArgsForCall(0)
 
-				Expect(job.GenerateName).To(Equal(taskGUID + "-"))
+				Expect(job.Name).To(Equal(fmt.Sprintf("%s-%s", taskGUID, task.Name)))
 			})
 		})
 
@@ -487,6 +502,7 @@ var _ = Describe("TaskDesirer", func() {
 				UploaderImage:   Image,
 				Task:            task,
 			}
+			stagingTask.Name = ""
 			env := stagingTask.Env
 			env[eirini.EnvCompletionCallback] = "example.com/call/me/maybe"
 			env[eirini.EnvEiriniAddress] = "http://opi.cf.internal"
@@ -502,7 +518,7 @@ var _ = Describe("TaskDesirer", func() {
 
 		It("should desire the staging task", func() {
 			Expect(err).NotTo(HaveOccurred())
-			Expect(job.GenerateName).To(Equal("my-app-my-space-"))
+			Expect(job.Name).To(Equal("my-app-my-space"))
 
 			assertGeneralSpec(job)
 			assertStagingSpec(job)
@@ -529,7 +545,7 @@ var _ = Describe("TaskDesirer", func() {
 			})
 
 			It("should use the guid as the prefix instead", func() {
-				Expect(job.GenerateName).To(Equal(taskGUID + "-"))
+				Expect(job.Name).To(Equal(taskGUID))
 			})
 		})
 

@@ -56,7 +56,7 @@ var _ = Describe("Staging", func() {
 		jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(jobs.Items).Should(HaveLen(1))
-		Expect(jobs.Items[0].Name).Should(HavePrefix("my-app-my-space-"))
+		Expect(jobs.Items[0].Name).Should(HavePrefix("my-app-my-space"))
 		Expect(jobs.Items[0].Spec.Template.Spec.ServiceAccountName).To(Equal("staging"))
 	})
 

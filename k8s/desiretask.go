@@ -366,9 +366,12 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 		},
 	}
 
-	namePrefix := fmt.Sprintf("%s-%s", task.AppName, task.SpaceName)
-	namePrefix = fmt.Sprintf("%s-", utils.SanitizeName(namePrefix, task.GUID))
-	job.GenerateName = namePrefix
+	name := fmt.Sprintf("%s-%s", task.AppName, task.SpaceName)
+	sanitizedName := utils.SanitizeName(name, task.GUID)
+	if task.Name != "" {
+		sanitizedName = fmt.Sprintf("%s-%s", sanitizedName, task.Name)
+	}
+	job.Name = utils.SanitizeNameWithMaxStringLen(sanitizedName, task.GUID, 50)
 
 	job.Labels = map[string]string{
 		LabelGUID:                        task.GUID,

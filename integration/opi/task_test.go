@@ -45,6 +45,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			request = cf.TaskRequest{
 				GUID:        util.GenerateGUID(),
 				AppName:     "my_app",
+				Name:        "my_task",
 				SpaceName:   "my_space",
 				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
 				Lifecycle: cf.Lifecycle{
@@ -66,7 +67,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 
 			By("creating a job for the task", func() {
 				Expect(jobs.Items).To(HaveLen(1))
-				Expect(jobs.Items[0].Name).To(HavePrefix("my-app-my-space-"))
+				Expect(jobs.Items[0].Name).To(Equal("my-app-my-space-my-task"))
 			})
 
 			By("using the correct service account", func() {
@@ -94,6 +95,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			request = cf.TaskRequest{
 				GUID:        util.GenerateGUID(),
 				AppName:     "my_app",
+				Name:        "my_task",
 				SpaceName:   "my_space",
 				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
 				Lifecycle: cf.Lifecycle{
@@ -114,7 +116,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 
 			By("creating a job for the task", func() {
 				Expect(jobs.Items).To(HaveLen(1))
-				Expect(jobs.Items[0].Name).To(HavePrefix("my-app-my-space-"))
+				Expect(jobs.Items[0].Name).To(HavePrefix("my-app-my-space-my-task"))
 			})
 
 			By("specifying the right containers", func() {

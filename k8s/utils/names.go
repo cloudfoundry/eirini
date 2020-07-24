@@ -5,13 +5,17 @@ import (
 	"strings"
 )
 
-func SanitizeName(name string, fallback string) string {
+func SanitizeName(name, fallback string) string {
+	return SanitizeNameWithMaxStringLen(name, fallback, 40)
+}
+
+func SanitizeNameWithMaxStringLen(name, fallback string, maxStringLen int) string {
 	validNameRegex := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
 	sanitizedName := strings.ReplaceAll(strings.ToLower(name), "_", "-")
 	if validNameRegex.MatchString(sanitizedName) {
-		return truncateString(sanitizedName, 40)
+		return truncateString(sanitizedName, maxStringLen)
 	}
-	return truncateString(fallback, 40)
+	return truncateString(fallback, maxStringLen)
 }
 
 func truncateString(str string, num int) string {
