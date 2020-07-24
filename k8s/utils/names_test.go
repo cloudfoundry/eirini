@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "code.cloudfoundry.org/eirini/k8s/utils"
+	"code.cloudfoundry.org/eirini/opi"
 )
 
 var _ = Describe("Names", func() {
@@ -23,6 +24,34 @@ var _ = Describe("Names", func() {
 
 		It("removes extra characters", func() {
 			Expect(SanitizeName("1234567890-123456789012345678901234567890123456789123456789123456789000", "guid")).To(HaveLen(40))
+		})
+	})
+
+	Describe("GetStatefulsetName", func() {
+		It("calculates the name of an app's backing statefulset", func() {
+			statefulsetName := GetStatefulsetName(&opi.LRP{
+				LRPIdentifier: opi.LRPIdentifier{
+					GUID:    "guid",
+					Version: "version",
+				},
+				AppName:   "app",
+				SpaceName: "space",
+			})
+			Expect(statefulsetName).To(Equal("app-space-077dc99e95"))
+		})
+
+		When("the prefix is too long", func() {
+			It("calculates the name of an app's backing statefulset", func() {
+				statefulsetName := GetStatefulsetName(&opi.LRP{
+					LRPIdentifier: opi.LRPIdentifier{
+						GUID:    "guid",
+						Version: "version",
+					},
+					AppName:   "very-long-app-name",
+					SpaceName: "space-with-very-very-very-very-very-very-very-very-very-long-name",
+				})
+				Expect(statefulsetName).To(Equal("very-long-app-name-space-with-very-very--077dc99e95"))
+			})
 		})
 	})
 })

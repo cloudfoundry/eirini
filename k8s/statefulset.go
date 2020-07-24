@@ -110,7 +110,6 @@ type StatefulSetDesirer struct {
 	RootfsVersion                     string
 	LivenessProbeCreator              ProbeCreator
 	ReadinessProbeCreator             ProbeCreator
-	Hasher                            util.Hasher
 	Logger                            lager.Logger
 	ApplicationServiceAccount         string
 	AllowAutomountServiceAccountToken bool
@@ -356,7 +355,7 @@ func (m *StatefulSetDesirer) createPodDisruptionBudget(namespace string, lrp *op
 		minAvailable := intstr.FromInt(PdbMinAvailableInstances)
 		_, err := m.PodDisruptionBudets.Create(namespace, &v1beta1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: m.statefulSetName(lrp),
+				Name: utils.GetStatefulsetName(lrp),
 			},
 			Spec: v1beta1.PodDisruptionBudgetSpec{
 				MinAvailable: &minAvailable,
@@ -393,17 +392,6 @@ func (m *StatefulSetDesirer) statefulSetsToLRPs(statefulSets *appsv1.StatefulSet
 	return lrps, nil
 }
 
-func (m *StatefulSetDesirer) statefulSetName(lrp *opi.LRP) string {
-	nameSuffix, err := m.Hasher.Hash(fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version))
-	if err != nil {
-		panic(err)
-	}
-	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
-	namePrefix = utils.SanitizeName(namePrefix, lrp.GUID)
-
-	return fmt.Sprintf("%s-%s", namePrefix, nameSuffix)
-}
-
 func (m *StatefulSetDesirer) privateRegistrySecretName(statefulSetName string) string {
 	return fmt.Sprintf("%s-registry-credentials", statefulSetName)
 }
@@ -422,7 +410,7 @@ func (m *StatefulSetDesirer) generateRegistryCredsSecret(lrp *opi.LRP) (*corev1.
 
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: m.privateRegistrySecretName(m.statefulSetName(lrp)),
+			Name: m.privateRegistrySecretName(utils.GetStatefulsetName(lrp)),
 		},
 		Type: corev1.SecretTypeDockerConfigJson,
 		StringData: map[string]string{
@@ -438,7 +426,7 @@ func (m *StatefulSetDesirer) calculateImagePullSecrets(lrp *opi.LRP) []corev1.Lo
 
 	if lrp.PrivateRegistry != nil {
 		imagePullSecrets = append(imagePullSecrets, corev1.LocalObjectReference{
-			Name: m.privateRegistrySecretName(m.statefulSetName(lrp)),
+			Name: m.privateRegistrySecretName(utils.GetStatefulsetName(lrp)),
 		})
 	}
 	return imagePullSecrets
@@ -499,7 +487,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: m.statefulSetName(lrp),
+			Name: utils.GetStatefulsetName(lrp),
 		},
 		Spec: appsv1.StatefulSetSpec{
 			PodManagementPolicy: "Parallel",

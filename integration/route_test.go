@@ -10,7 +10,6 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/route/routefakes"
-	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
@@ -46,7 +45,6 @@ var _ = Describe("Routes", func() {
 			RootfsVersion:             "rootfsversion",
 			LivenessProbeCreator:      k8s.CreateLivenessProbe,
 			ReadinessProbeCreator:     k8s.CreateReadinessProbe,
-			Hasher:                    util.TruncatedSHA256Hasher{},
 			Logger:                    logger,
 			ApplicationServiceAccount: testutil.GetApplicationServiceAccount(),
 		}

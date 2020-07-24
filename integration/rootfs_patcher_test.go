@@ -12,7 +12,6 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
-	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager/lagertest"
 )
 
@@ -38,7 +37,6 @@ var _ = Describe("RootfsPatcher", func() {
 			RootfsVersion:             "old_rootfsversion",
 			LivenessProbeCreator:      k8s.CreateLivenessProbe,
 			ReadinessProbeCreator:     k8s.CreateReadinessProbe,
-			Hasher:                    util.TruncatedSHA256Hasher{},
 			Logger:                    logger,
 			ApplicationServiceAccount: intutil.GetApplicationServiceAccount(),
 		}

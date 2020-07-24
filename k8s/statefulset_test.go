@@ -11,7 +11,6 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/rootfspatcher"
-	"code.cloudfoundry.org/eirini/util/utilfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -58,10 +57,8 @@ var _ = Describe("Statefulset Desirer", func() {
 		livenessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		mapper = new(k8sfakes.FakeLRPMapper)
-		hasher := new(utilfakes.FakeHasher)
 		pdbClient = new(k8sfakes.FakePodDisruptionBudgetClient)
 
-		hasher.HashReturns("random", nil)
 		logger = lagertest.NewTestLogger("handler-test")
 		statefulSetDesirer = &k8s.StatefulSetDesirer{
 			Pods:                      podClient,
@@ -72,7 +69,6 @@ var _ = Describe("Statefulset Desirer", func() {
 			RootfsVersion:             rootfsVersion,
 			LivenessProbeCreator:      livenessProbeCreator.Spy,
 			ReadinessProbeCreator:     readinessProbeCreator.Spy,
-			Hasher:                    hasher,
 			Logger:                    logger,
 			StatefulSetToLRPMapper:    mapper.Spy,
 			Events:                    eventLister,
@@ -170,7 +166,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		It("should set name for the stateful set", func() {
 			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
-			Expect(statefulSet.Name).To(Equal("baldur-space-foo-random"))
+			Expect(statefulSet.Name).To(Equal("baldur-space-foo-34f869d015"))
 		})
 
 		It("should set namespace for the stateful set", func() {
@@ -361,7 +357,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 			It("should use the guid as a name", func() {
 				_, statefulSet := statefulSetClient.CreateArgsForCall(0)
-				Expect(statefulSet.Name).To(Equal("guid_1234-random"))
+				Expect(statefulSet.Name).To(Equal("guid_1234-34f869d015"))
 			})
 		})
 
@@ -429,7 +425,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				Expect(secretsClient.CreateCallCount()).To(Equal(1))
 				secretNamespace, actualSecret := secretsClient.CreateArgsForCall(0)
 				Expect(secretNamespace).To(Equal("the-namespace"))
-				Expect(actualSecret.Name).To(Equal("baldur-space-foo-random-registry-credentials"))
+				Expect(actualSecret.Name).To(Equal("baldur-space-foo-34f869d015-registry-credentials"))
 				Expect(actualSecret.Type).To(Equal(corev1.SecretTypeDockerConfigJson))
 				Expect(actualSecret.StringData).To(
 					HaveKeyWithValue(
@@ -447,7 +443,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				_, statefulSet := statefulSetClient.CreateArgsForCall(0)
 				Expect(statefulSet.Spec.Template.Spec.ImagePullSecrets).To(HaveLen(2))
 				secret := statefulSet.Spec.Template.Spec.ImagePullSecrets[1]
-				Expect(secret.Name).To(Equal("baldur-space-foo-random-registry-credentials"))
+				Expect(secret.Name).To(Equal("baldur-space-foo-34f869d015-registry-credentials"))
 			})
 
 		})
@@ -581,16 +577,13 @@ var _ = Describe("Statefulset Desirer", func() {
 		Context("when lrp is scaled up to more than 1 instance", func() {
 
 			It("should create a pod disruption budget for the lrp in the same namespace", func() {
-				lrp := opi.LRP{
-					AppName:         "baldur",
-					SpaceName:       "space",
-					TargetInstances: 2,
-				}
-				Expect(statefulSetDesirer.Update(&lrp)).To(Succeed())
+				lrp := createLRP("Baldur", nil)
+				lrp.TargetInstances = 2
+				Expect(statefulSetDesirer.Update(lrp)).To(Succeed())
 				Expect(pdbClient.CreateCallCount()).To(Equal(1))
 				namespace, pdb := pdbClient.CreateArgsForCall(0)
 
-				Expect(pdb.Name).To(Equal("baldur-space-random"))
+				Expect(pdb.Name).To(Equal("baldur-space-foo-34f869d015"))
 				Expect(namespace).To(Equal("the-namespace"))
 			})
 
@@ -867,7 +860,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				Items: []appsv1.StatefulSet{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      "baldur-space-foo-random",
+							Name:      "baldur-space-foo-34f869d015",
 							Namespace: "the-namespace",
 						},
 						Spec: appsv1.StatefulSetSpec{
@@ -888,7 +881,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 			namespace, name := podClient.DeleteArgsForCall(0)
 			Expect(namespace).To(Equal("the-namespace"))
-			Expect(name).To(Equal("baldur-space-foo-random-0"))
+			Expect(name).To(Equal("baldur-space-foo-34f869d015-0"))
 		})
 
 		Context("when there's an internal K8s error", func() {

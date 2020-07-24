@@ -7,7 +7,6 @@ import (
 	testutil "code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
@@ -52,7 +51,6 @@ var _ = Describe("StatefulSet Manager", func() {
 			RootfsVersion:             "rootfsversion",
 			LivenessProbeCreator:      k8s.CreateLivenessProbe,
 			ReadinessProbeCreator:     k8s.CreateReadinessProbe,
-			Hasher:                    util.TruncatedSHA256Hasher{},
 			Logger:                    logger,
 			ApplicationServiceAccount: testutil.GetApplicationServiceAccount(),
 		}

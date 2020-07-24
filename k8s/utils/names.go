@@ -1,8 +1,12 @@
 package utils
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
+
+	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/util"
 )
 
 func SanitizeName(name, fallback string) string {
@@ -23,4 +27,15 @@ func truncateString(str string, num int) string {
 		return str[0:num]
 	}
 	return str
+}
+
+func GetStatefulsetName(lrp *opi.LRP) string {
+	nameSuffix, err := util.Hash(fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version))
+	if err != nil {
+		panic(err)
+	}
+	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
+	namePrefix = SanitizeName(namePrefix, lrp.GUID)
+
+	return fmt.Sprintf("%s-%s", namePrefix, nameSuffix)
 }

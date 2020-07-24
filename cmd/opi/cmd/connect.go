@@ -235,7 +235,6 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 		RootfsVersion:                     cfg.Properties.RootfsVersion,
 		LivenessProbeCreator:              k8s.CreateLivenessProbe,
 		ReadinessProbeCreator:             k8s.CreateReadinessProbe,
-		Hasher:                            util.TruncatedSHA256Hasher{},
 		Logger:                            desireLogger,
 		ApplicationServiceAccount:         cfg.Properties.ApplicationServiceAccount,
 		AllowAutomountServiceAccountToken: cfg.Properties.UnsafeAllowAutomountServiceAccountToken,

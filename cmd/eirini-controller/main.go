@@ -10,7 +10,6 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	eirinischeme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
-	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/jessevdk/go-flags"
 	"github.com/pkg/errors"
@@ -70,7 +69,6 @@ func main() {
 		RootfsVersion:                     eiriniCfg.Properties.RootfsVersion,
 		LivenessProbeCreator:              k8s.CreateLivenessProbe,
 		ReadinessProbeCreator:             k8s.CreateReadinessProbe,
-		Hasher:                            util.TruncatedSHA256Hasher{},
 		Logger:                            logger,
 		ApplicationServiceAccount:         eiriniCfg.Properties.ApplicationServiceAccount,
 		AllowAutomountServiceAccountToken: eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,

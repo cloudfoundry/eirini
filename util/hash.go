@@ -9,16 +9,7 @@ import (
 
 const MaxHashLength = 10
 
-//counterfeiter:generate . Hasher
-
-type Hasher interface {
-	Hash(s string) (string, error)
-}
-
-type TruncatedSHA256Hasher struct {
-}
-
-func (h TruncatedSHA256Hasher) Hash(s string) (string, error) {
+func Hash(s string) (string, error) {
 	sha := sha256.New()
 	_, err := sha.Write([]byte(s))
 	if err != nil {
