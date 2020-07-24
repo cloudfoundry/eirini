@@ -17,19 +17,19 @@ type Task struct {
 }
 
 type TaskSpec struct {
-	GUID               string            `json:"GUID"`
+	GUID               string            `json:"guid"`
 	Name               string            `json:"name"`
 	Image              string            `json:"image"`
-	CompletionCallback string            `json:"completion_callback"`
+	CompletionCallback string            `json:"completionCallback"`
 	PrivateRegistry    *PrivateRegistry  `json:"privateRegistry,omitempty"`
 	Env                map[string]string `json:"env,omitempty"`
 	Command            []string          `json:"command,omitempty"`
 	AppName            string            `json:"appName"`
-	AppGUID            string            `json:"appGUID"`
+	AppGUID            string            `json:"appGuid"`
 	OrgName            string            `json:"orgName"`
-	OrgGUID            string            `json:"orgGUID"`
+	OrgGUID            string            `json:"orgGuid"`
 	SpaceName          string            `json:"spaceName"`
-	SpaceGUID          string            `json:"spaceGUID"`
+	SpaceGUID          string            `json:"spaceGuid"`
 	MemoryMB           int64             `json:"memoryMB"`
 	DiskMB             int64             `json:"diskMB"`
 	CPUWeight          uint8             `json:"cpuWeight"`

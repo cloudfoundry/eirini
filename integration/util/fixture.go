@@ -27,7 +27,7 @@ const (
 
 type Fixture struct {
 	Clientset         kubernetes.Interface
-	LRPClientset      eiriniclient.Interface
+	EiriniClientset   eiriniclient.Interface
 	Namespace         string
 	DefaultNamespace  string
 	PspName           string
@@ -52,7 +52,7 @@ func NewFixture(writer io.Writer) *Fixture {
 	return &Fixture{
 		KubeConfigPath:    kubeConfigPath,
 		Clientset:         clientset,
-		LRPClientset:      lrpclientset,
+		EiriniClientset:   lrpclientset,
 		Writer:            writer,
 		nextAvailablePort: basePortNumber + portRange*GinkgoParallelNode(),
 		portMux:           &sync.Mutex{},

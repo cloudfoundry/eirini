@@ -35,7 +35,7 @@ var _ = Describe("Apps CRDs", func() {
 	}
 
 	getLRP := func() *eiriniv1.LRP {
-		lrp, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Get(context.Background(), lrpName, metav1.GetOptions{})
+		lrp, err := fixture.EiriniClientset.EiriniV1().LRPs(namespace).Get(context.Background(), lrpName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		return lrp
 	}
@@ -67,7 +67,7 @@ var _ = Describe("Apps CRDs", func() {
 			},
 		}
 
-		_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Create(context.Background(), lrp, metav1.CreateOptions{})
+		_, err := fixture.EiriniClientset.EiriniV1().LRPs(namespace).Create(context.Background(), lrp, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -100,7 +100,7 @@ var _ = Describe("Apps CRDs", func() {
 				lrp := getLRP()
 				lrp.Spec.AppRoutes = []eiriniv1.Route{{Hostname: "app-hostname-1", Port: 8080}}
 
-				_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Update(context.Background(), lrp, metav1.UpdateOptions{})
+				_, err := fixture.EiriniClientset.EiriniV1().LRPs(namespace).Update(context.Background(), lrp, metav1.UpdateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -119,7 +119,7 @@ var _ = Describe("Apps CRDs", func() {
 				lrp := getLRP()
 				lrp.Spec.Instances = 3
 
-				_, err := fixture.LRPClientset.EiriniV1().LRPs(namespace).Update(context.Background(), lrp, metav1.UpdateOptions{})
+				_, err := fixture.EiriniClientset.EiriniV1().LRPs(namespace).Update(context.Background(), lrp, metav1.UpdateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -136,7 +136,7 @@ var _ = Describe("Apps CRDs", func() {
 		BeforeEach(func() {
 			Eventually(getStatefulSet).ShouldNot(BeNil())
 
-			Expect(fixture.LRPClientset.EiriniV1().LRPs(namespace).Delete(context.Background(), lrpName, metav1.DeleteOptions{})).To(Succeed())
+			Expect(fixture.EiriniClientset.EiriniV1().LRPs(namespace).Delete(context.Background(), lrpName, metav1.DeleteOptions{})).To(Succeed())
 		})
 
 		It("deletes the undurlying statefulset", func() {

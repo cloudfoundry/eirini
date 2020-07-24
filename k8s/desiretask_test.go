@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/k8s"
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/opi"
@@ -37,7 +36,7 @@ var _ = Describe("TaskDesirer", func() {
 		fakeSecretsCreator *k8sfakes.FakeSecretsCreator
 		job                *batch.Job
 		jobNamespace       string
-		desireOpts         []k8s.DesireOption
+		desireOpts         []DesireOption
 	)
 
 	assertGeneralSpec := func(job *batch.Job) {
@@ -87,7 +86,7 @@ var _ = Describe("TaskDesirer", func() {
 	BeforeEach(func() {
 		fakeJobCreator = new(k8sfakes.FakeJobCreator)
 		fakeSecretsCreator = new(k8sfakes.FakeSecretsCreator)
-		desireOpts = []k8s.DesireOption{}
+		desireOpts = []DesireOption{}
 		task = &opi.Task{
 			Image:              Image,
 			CompletionCallback: "cloud-countroller.io/task/completed",
@@ -254,7 +253,7 @@ var _ = Describe("TaskDesirer", func() {
 			BeforeEach(func() {
 				desireOpt1 = new(k8sfakes.FakeDesireOption)
 				desireOpt2 = new(k8sfakes.FakeDesireOption)
-				desireOpts = []k8s.DesireOption{desireOpt1.Spy, desireOpt2.Spy}
+				desireOpts = []DesireOption{desireOpt1.Spy, desireOpt2.Spy}
 			})
 
 			It("executes them all correctly", func() {
@@ -268,7 +267,7 @@ var _ = Describe("TaskDesirer", func() {
 				Expect(desireOpt1.CallCount()).To(Equal(1))
 				obj := desireOpt1.ArgsForCall(0)
 				Expect(obj).To(BeAssignableToTypeOf(&batch.Job{}))
-				job := obj.(*batch.Job)
+				job = obj.(*batch.Job)
 				Expect(job.Namespace).To(Equal("app-namespace"))
 			})
 

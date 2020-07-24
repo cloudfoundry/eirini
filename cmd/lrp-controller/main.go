@@ -8,7 +8,8 @@ import (
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/k8s"
-	lrpscheme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
+	"code.cloudfoundry.org/eirini/k8s/reconciler"
+	eirinischeme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/jessevdk/go-flags"
@@ -18,6 +19,7 @@ import (
 
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
@@ -32,7 +34,7 @@ type options struct {
 }
 
 func init() {
-	if err := kscheme.AddToScheme(lrpscheme.Scheme); err != nil {
+	if err := kscheme.AddToScheme(eirinischeme.Scheme); err != nil {
 		panic("failed to add the k8s scheme to the LRP CRD scheme")
 	}
 }
@@ -48,7 +50,7 @@ func main() {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", eiriniCfg.Properties.ConfigPath)
 	cmdcommons.ExitIfError(err)
 
-	client, err := client.New(kubeConfig, client.Options{Scheme: lrpscheme.Scheme})
+	client, err := client.New(kubeConfig, client.Options{Scheme: eirinischeme.Scheme})
 	cmdcommons.ExitIfError(err)
 
 	clientset, err := kubernetes.NewForConfig(kubeConfig)
@@ -57,7 +59,7 @@ func main() {
 	logger := lager.NewLogger("lrp-informer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	desirer := &k8s.StatefulSetDesirer{
+	stDesirer := &k8s.StatefulSetDesirer{
 		Pods:                              k8s.NewPodsClient(clientset),
 		Secrets:                           k8s.NewSecretsClient(clientset),
 		StatefulSets:                      k8s.NewStatefulSetClient(clientset),
@@ -74,17 +76,37 @@ func main() {
 		AllowAutomountServiceAccountToken: eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
 	}
 
+	taskDesirer := k8s.NewTaskDesirer(
+		logger,
+		k8s.NewJobClient(clientset),
+		k8s.NewSecretsClient(clientset),
+		"",
+		[]k8s.StagingConfigTLS{},
+		eiriniCfg.Properties.ApplicationServiceAccount,
+		"",
+		eiriniCfg.Properties.RegistrySecretName,
+		eiriniCfg.Properties.RootfsVersion,
+	)
+
 	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
-		Scheme: lrpscheme.Scheme,
+		Scheme: eirinischeme.Scheme,
 	})
 	cmdcommons.ExitIfError(err)
-	lrpReconciler := k8s.NewLRPReconciler(client, desirer, mgr.GetScheme())
+	lrpReconciler := k8s.NewLRPReconciler(client, stDesirer, mgr.GetScheme())
+	taskReconciler := reconciler.NewTask(logger, client, taskDesirer, mgr.GetScheme())
 
 	err = builder.
 		ControllerManagedBy(mgr).
 		For(&eiriniv1.LRP{}).
 		Owns(&appsv1.StatefulSet{}).
 		Complete(lrpReconciler)
+	cmdcommons.ExitIfError(err)
+
+	err = builder.
+		ControllerManagedBy(mgr).
+		For(&eiriniv1.Task{}).
+		Owns(&batchv1.Job{}).
+		Complete(taskReconciler)
 	cmdcommons.ExitIfError(err)
 
 	err = mgr.Start(ctrl.SetupSignalHandler())
