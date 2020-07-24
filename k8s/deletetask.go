@@ -75,6 +75,10 @@ func (d *TaskDeleter) delete(guid, label string) (string, error) {
 	}
 
 	callbackURL := job.Annotations[AnnotationCompletionCallback]
+	if len(job.OwnerReferences) != 0 {
+		return callbackURL, nil
+	}
+
 	backgroundPropagation := meta_v1.DeletePropagationBackground
 	return callbackURL, d.jobClient.Delete(job.Namespace, job.Name, meta_v1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,

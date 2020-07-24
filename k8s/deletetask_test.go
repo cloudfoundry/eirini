@@ -88,6 +88,25 @@ var _ = Describe("TaskDeleter", func() {
 			)))
 		})
 
+		Context("when the job has an owner", func() {
+			BeforeEach(func() {
+				jobs.Items[0].OwnerReferences = []metav1.OwnerReference{
+					{
+						Kind:       "Something",
+						APIVersion: "example.org",
+						Name:       "the-something",
+					},
+				}
+				fakeJobClient.ListReturns(jobs, nil)
+			})
+
+			It("does not delete the job", func() {
+				_, err := deleter.Delete(taskGUID)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(fakeJobClient.DeleteCallCount()).To(Equal(0))
+			})
+		})
+
 		Context("when the job does not exist", func() {
 			BeforeEach(func() {
 				fakeJobClient.ListReturns(&batch.JobList{}, nil)
