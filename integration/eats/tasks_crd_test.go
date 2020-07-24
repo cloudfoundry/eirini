@@ -94,6 +94,7 @@ var _ = Describe("Tasks CRD", func() {
 			})
 
 			It("runs and completes the job", func() {
+				Eventually(listJobs).Should(HaveLen(1))
 				Eventually(getJobConditions).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(batchv1.JobComplete),
 					"Status": Equal(corev1.ConditionTrue),
