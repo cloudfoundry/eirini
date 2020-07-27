@@ -15,11 +15,12 @@ const CrashLoopBackOff = "CrashLoopBackOff"
 const CreateContainerConfigError = "CreateContainerConfigError"
 
 //counterfeiter:generate . CrashEventGenerator
+//counterfeiter:generate . CrashEmitter
+
 type CrashEventGenerator interface {
 	Generate(*v1.Pod, kubernetes.Interface, lager.Logger) (events.CrashEvent, bool)
 }
 
-//counterfeiter:generate . CrashEmitter
 type CrashEmitter interface {
 	Emit(events.CrashEvent) error
 }

@@ -6,6 +6,7 @@ import (
 )
 
 //counterfeiter:generate . Emitter
+
 type Emitter interface {
 	Emit(Message)
 }

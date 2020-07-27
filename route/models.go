@@ -1,5 +1,7 @@
 package route
 
+//counterfeiter:generate . Collector
+
 type Routes struct {
 	RegisteredRoutes   []string
 	UnregisteredRoutes []string
@@ -18,7 +20,6 @@ type Informer interface {
 	Start()
 }
 
-//counterfeiter:generate . Collector
 type Collector interface {
 	Collect() ([]Message, error)
 }

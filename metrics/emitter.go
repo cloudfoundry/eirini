@@ -11,9 +11,11 @@ const (
 )
 
 //counterfeiter:generate . LoggregatorClient
+
 type LoggregatorClient interface {
 	EmitGauge(...loggregator.EmitGaugeOption)
 }
+
 type LoggregatorEmitter struct {
 	client LoggregatorClient
 }

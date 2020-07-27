@@ -8,11 +8,12 @@ import (
 )
 
 //counterfeiter:generate . API
+//counterfeiter:generate . NodeAPI
+
 type API interface {
 	StatsSummary(nodename string) (StatsSummary, error)
 }
 
-//counterfeiter:generate . NodeAPI
 type NodeAPI interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*corev1.NodeList, error)
 }

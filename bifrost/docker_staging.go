@@ -13,13 +13,14 @@ import (
 )
 
 //counterfeiter:generate . ImageMetadataFetcher
+//counterfeiter:generate . ImageRefParser
+
 type ImageMetadataFetcher func(string, types.SystemContext) (*v1.ImageConfig, error)
 
 func (f ImageMetadataFetcher) Fetch(dockerRef string, sysCtx types.SystemContext) (*v1.ImageConfig, error) {
 	return f(dockerRef, sysCtx)
 }
 
-//counterfeiter:generate . ImageRefParser
 type ImageRefParser func(string) (string, error)
 
 func (f ImageRefParser) Parse(img string) (string, error) {

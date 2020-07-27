@@ -10,24 +10,21 @@ import (
 )
 
 //counterfeiter:generate . TaskConverter
+//counterfeiter:generate . TaskDesirer
+//counterfeiter:generate . TaskDeleter
+//counterfeiter:generate . JSONClient
 
 type TaskConverter interface {
 	ConvertTask(taskGUID string, request cf.TaskRequest) (opi.Task, error)
 }
 
-//counterfeiter:generate . TaskDesirer
-
 type TaskDesirer interface {
 	Desire(namespace string, task *opi.Task, opts ...k8s.DesireOption) error
 }
 
-//counterfeiter:generate . TaskDeleter
-
 type TaskDeleter interface {
 	Delete(guid string) (string, error)
 }
-
-//counterfeiter:generate . JSONClient
 
 type JSONClient interface {
 	Post(url string, data interface{}) error

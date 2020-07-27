@@ -10,6 +10,7 @@ import (
 const MaxHashLength = 10
 
 //counterfeiter:generate . Hasher
+
 type Hasher interface {
 	Hash(s string) (string, error)
 }

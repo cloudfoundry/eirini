@@ -12,11 +12,12 @@ import (
 )
 
 //counterfeiter:generate . LRPConverter
+//counterfeiter:generate . LRPDesirer
+
 type LRPConverter interface {
 	ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error)
 }
 
-//counterfeiter:generate . LRPDesirer
 type LRPDesirer interface {
 	Desire(namespace string, lrp *opi.LRP, opts ...k8s.DesireOption) error
 	List() ([]*opi.LRP, error)

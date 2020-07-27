@@ -11,21 +11,22 @@ import (
 )
 
 //counterfeiter:generate . StagingConverter
+//counterfeiter:generate . StagingDesirer
+//counterfeiter:generate . StagingDeleter
+//counterfeiter:generate . StagingCompleter
+
 type StagingConverter interface {
 	ConvertStaging(stagingGUID string, request cf.StagingRequest) (opi.StagingTask, error)
 }
 
-//counterfeiter:generate . StagingDesirer
 type StagingDesirer interface {
 	DesireStaging(task *opi.StagingTask) error
 }
 
-//counterfeiter:generate . StagingDeleter
 type StagingDeleter interface {
 	DeleteStaging(name string) error
 }
 
-//counterfeiter:generate . StagingCompleter
 type StagingCompleter interface {
 	CompleteStaging(cf.StagingCompletedRequest) error
 }

@@ -9,6 +9,7 @@ import (
 type Task func() error
 
 //counterfeiter:generate . TaskScheduler
+
 type TaskScheduler interface {
 	Schedule(task Task)
 }

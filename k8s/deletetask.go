@@ -12,12 +12,13 @@ import (
 )
 
 //counterfeiter:generate . JobListerDeleter
+//counterfeiter:generate . SecretsDeleter
+
 type JobListerDeleter interface {
 	List(opts meta_v1.ListOptions) (*batch.JobList, error)
 	Delete(namespace string, name string, options meta_v1.DeleteOptions) error
 }
 
-//counterfeiter:generate . SecretsDeleter
 type SecretsDeleter interface {
 	Delete(namespace, name string) error
 }

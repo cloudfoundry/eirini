@@ -63,18 +63,24 @@ const (
 )
 
 //counterfeiter:generate . PodListerDeleter
+//counterfeiter:generate . PodDisruptionBudgetClient
+//counterfeiter:generate . StatefulSetClient
+//counterfeiter:generate . SecretsCreatorDeleter
+//counterfeiter:generate . EventLister
+//counterfeiter:generate . LRPMapper
+//counterfeiter:generate . ProbeCreator
+//counterfeiter:generate . DesireOption
+
 type PodListerDeleter interface {
 	List(opts metav1.ListOptions) (*corev1.PodList, error)
 	Delete(namespace, name string) error
 }
 
-//counterfeiter:generate . PodDisruptionBudgetClient
 type PodDisruptionBudgetClient interface {
 	Create(namespace string, podDisruptionBudget *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)
 	Delete(namespace string, name string) error
 }
 
-//counterfeiter:generate . StatefulSetClient
 type StatefulSetClient interface {
 	Create(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
 	Update(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
@@ -82,18 +88,15 @@ type StatefulSetClient interface {
 	List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error)
 }
 
-//counterfeiter:generate . SecretsCreatorDeleter
 type SecretsCreatorDeleter interface {
 	Create(namespace string, secret *corev1.Secret) (*corev1.Secret, error)
 	Delete(namespace string, name string) error
 }
 
-//counterfeiter:generate . EventLister
 type EventLister interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*corev1.EventList, error)
 }
 
-//counterfeiter:generate . LRPMapper
 type LRPMapper func(s appsv1.StatefulSet) (*opi.LRP, error)
 
 type StatefulSetDesirer struct {
@@ -113,10 +116,7 @@ type StatefulSetDesirer struct {
 	AllowAutomountServiceAccountToken bool
 }
 
-//counterfeiter:generate . ProbeCreator
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
-
-//counterfeiter:generate . DesireOption
 
 type DesireOption func(resource interface{}) error
 

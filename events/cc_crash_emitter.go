@@ -6,6 +6,7 @@ import (
 )
 
 //counterfeiter:generate . CcClient
+
 type CcClient interface {
 	AppCrashed(proccessGUID string, crashedRequest cc_messages.AppCrashedRequest, logger lager.Logger) error
 }

@@ -13,11 +13,12 @@ import (
 )
 
 //counterfeiter:generate . StatefulSetUpdateEventHandler
+//counterfeiter:generate . StatefulSetDeleteEventHandler
+
 type StatefulSetUpdateEventHandler interface {
 	Handle(oldObj, updatedObj *appsv1.StatefulSet)
 }
 
-//counterfeiter:generate . StatefulSetDeleteEventHandler
 type StatefulSetDeleteEventHandler interface {
 	Handle(obj *appsv1.StatefulSet)
 }

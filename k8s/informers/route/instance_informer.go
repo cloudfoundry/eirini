@@ -11,6 +11,7 @@ import (
 const NoResync = 0
 
 //counterfeiter:generate . PodUpdateEventHandler
+
 type PodUpdateEventHandler interface {
 	Handle(oldObj, updatedObj *v1.Pod)
 }

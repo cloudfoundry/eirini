@@ -11,6 +11,9 @@ import (
 )
 
 //counterfeiter:generate . LRPBifrost
+//counterfeiter:generate . TaskBifrost
+//counterfeiter:generate . StagingBifrost
+
 type LRPBifrost interface {
 	Transfer(ctx context.Context, request cf.DesireLRPRequest) error
 	List(ctx context.Context) ([]cf.DesiredLRPSchedulingInfo, error)
@@ -21,13 +24,11 @@ type LRPBifrost interface {
 	GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error)
 }
 
-//counterfeiter:generate . TaskBifrost
 type TaskBifrost interface {
 	TransferTask(ctx context.Context, taskGUID string, request cf.TaskRequest) error
 	CancelTask(taskGUID string) error
 }
 
-//counterfeiter:generate . StagingBifrost
 type StagingBifrost interface {
 	TransferStaging(ctx context.Context, stagingGUID string, request cf.StagingRequest) error
 	CompleteStaging(cf.StagingCompletedRequest) error

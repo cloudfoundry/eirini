@@ -25,11 +25,12 @@ const (
 )
 
 //counterfeiter:generate . JobCreator
+//counterfeiter:generate . SecretsCreator
+
 type JobCreator interface {
 	Create(namespace string, job *batch.Job) (*batch.Job, error)
 }
 
-//counterfeiter:generate . SecretsCreator
 type SecretsCreator interface {
 	Create(namespace string, secret *corev1.Secret) (*corev1.Secret, error)
 }

@@ -18,8 +18,8 @@ import (
 )
 
 //counterfeiter:generate -o reconcilerfakes/fake_controller_runtime_client.go ../../vendor/sigs.k8s.io/controller-runtime/pkg/client Client
-
 //counterfeiter:generate . LRPDesirer
+
 type LRPDesirer interface {
 	Desire(namespace string, lrp *opi.LRP, opts ...k8s.DesireOption) error
 	Get(identifier opi.LRPIdentifier) (*opi.LRP, error)

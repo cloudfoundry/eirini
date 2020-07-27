@@ -9,6 +9,7 @@ import (
 )
 
 //counterfeiter:generate . DeploymentClient
+
 type DeploymentClient interface {
 	Get(ctx context.Context, name string, options metav1.GetOptions) (*appsv1.Deployment, error)
 }

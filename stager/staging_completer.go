@@ -11,6 +11,7 @@ import (
 )
 
 //counterfeiter:generate . CallbackClient
+
 type CallbackClient interface {
 	Post(url string, data interface{}) error
 }

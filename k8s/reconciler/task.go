@@ -16,6 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+//counterfeiter:generate . TaskDesirer
+
 type Task struct {
 	client      client.Client
 	taskDesirer TaskDesirer
@@ -31,8 +33,6 @@ func NewTask(logger lager.Logger, client client.Client, taskDesirer TaskDesirer,
 		logger:      logger,
 	}
 }
-
-//counterfeiter:generate . TaskDesirer
 
 type TaskDesirer interface {
 	Desire(namespace string, task *opi.Task, opts ...k8s.DesireOption) error

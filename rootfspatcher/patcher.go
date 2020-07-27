@@ -13,6 +13,7 @@ import (
 const RootfsVersionLabel = "cloudfoundry.org/rootfs-version"
 
 //counterfeiter:generate . StatefulSetUpdaterLister
+
 type StatefulSetUpdaterLister interface {
 	Update(context.Context, *apps.StatefulSet, metav1.UpdateOptions) (*apps.StatefulSet, error)
 	List(context.Context, metav1.ListOptions) (*apps.StatefulSetList, error)
