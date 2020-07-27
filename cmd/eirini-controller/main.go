@@ -30,7 +30,7 @@ import (
 )
 
 type options struct {
-	ConfigFile string `short:"c" long:"config" description:"Config for running lrp-controller"`
+	ConfigFile string `short:"c" long:"config" description:"Config for running eirini-controller"`
 }
 
 func init() {
