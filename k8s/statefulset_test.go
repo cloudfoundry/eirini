@@ -82,18 +82,21 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	Context("When creating an LRP", func() {
 		var (
-			lrp       *opi.LRP
-			desireErr error
+			lrp                        *opi.LRP
+			desireErr                  error
+			desireOptOne, desireOptTwo *k8sfakes.FakeDesireOption
 		)
 
 		BeforeEach(func() {
 			lrp = createLRP("Baldur", []opi.Route{{Hostname: "my.example.route", Port: 1000}})
 			livenessProbeCreator.Returns(&corev1.Probe{})
 			readinessProbeCreator.Returns(&corev1.Probe{})
+			desireOptOne = new(k8sfakes.FakeDesireOption)
+			desireOptTwo = new(k8sfakes.FakeDesireOption)
 		})
 
 		JustBeforeEach(func() {
-			desireErr = statefulSetDesirer.Desire("the-namespace", lrp)
+			desireErr = statefulSetDesirer.Desire("the-namespace", lrp, desireOptOne.Spy, desireOptTwo.Spy)
 		})
 
 		It("should succeed", func() {
@@ -110,6 +113,15 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		It("should create a readiness probe", func() {
 			Expect(readinessProbeCreator.CallCount()).To(Equal(1))
+		})
+
+		It("should invoke the opts with the StatefulSet", func() {
+			Expect(desireOptOne.CallCount()).To(Equal(1))
+			Expect(desireOptTwo.CallCount()).To(Equal(1))
+
+			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(desireOptOne.ArgsForCall(0)).To(Equal(statefulSet))
+			Expect(desireOptTwo.ArgsForCall(0)).To(Equal(statefulSet))
 		})
 
 		DescribeTable("Statefulset Annotations",
@@ -382,6 +394,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				})
 
 			})
+
 			Context("when the statefulset already exists", func() {
 				BeforeEach(func() {
 					statefulSetClient.CreateReturns(nil, k8serrors.NewAlreadyExists(schema.GroupResource{}, "potato"))
@@ -441,7 +454,6 @@ var _ = Describe("Statefulset Desirer", func() {
 	})
 
 	Context("When getting an app", func() {
-
 		BeforeEach(func() {
 			mapper.Returns(&opi.LRP{AppName: "baldur-app"}, nil)
 		})
