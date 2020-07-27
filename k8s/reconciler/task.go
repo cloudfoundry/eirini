@@ -44,7 +44,6 @@ func (t *Task) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	logger.Debug("start")
 
 	err := t.client.Get(context.Background(), request.NamespacedName, task)
-
 	if errors.IsNotFound(err) {
 		logger.Error("no-such-task", err)
 		return reconcile.Result{}, nil
@@ -59,7 +58,6 @@ func (t *Task) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 		logger.Info("task-already-exists")
 		return reconcile.Result{}, nil
 	}
-
 	if err != nil {
 		logger.Error("desire-task-failed", err)
 		return reconcile.Result{}, err

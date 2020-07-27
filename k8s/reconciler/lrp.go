@@ -1,4 +1,4 @@
-package k8s
+package reconciler
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"github.com/jinzhu/copier"
@@ -16,30 +17,30 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-//counterfeiter:generate -o k8sfakes/fake_controller_runtime_client.go ../vendor/sigs.k8s.io/controller-runtime/pkg/client Client
+//counterfeiter:generate -o reconcilerfakes/fake_controller_runtime_client.go ../../vendor/sigs.k8s.io/controller-runtime/pkg/client Client
 
 //counterfeiter:generate . LRPDesirer
 type LRPDesirer interface {
-	Desire(namespace string, lrp *opi.LRP, opts ...DesireOption) error
+	Desire(namespace string, lrp *opi.LRP, opts ...k8s.DesireOption) error
 	Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 	Update(lrp *opi.LRP) error
 }
 
-func NewLRPReconciler(client client.Client, desirer LRPDesirer, scheme *runtime.Scheme) *LRPReconciler {
-	return &LRPReconciler{
+func NewLRP(client client.Client, desirer LRPDesirer, scheme *runtime.Scheme) *LRP {
+	return &LRP{
 		client:  client,
 		desirer: desirer,
 		scheme:  scheme,
 	}
 }
 
-type LRPReconciler struct {
+type LRP struct {
 	client  client.Client
 	desirer LRPDesirer
 	scheme  *runtime.Scheme
 }
 
-func (r *LRPReconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *LRP) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	lrp := &eiriniv1.LRP{}
 	if err := r.client.Get(context.Background(), request.NamespacedName, lrp); err != nil {
 		return reconcile.Result{}, err
@@ -49,7 +50,7 @@ func (r *LRPReconciler) Reconcile(request reconcile.Request) (reconcile.Result, 
 	return reconcile.Result{}, err
 }
 
-func (r *LRPReconciler) do(lrp *eiriniv1.LRP) error {
+func (r *LRP) do(lrp *eiriniv1.LRP) error {
 	_, err := r.desirer.Get(opi.LRPIdentifier{
 		GUID:    lrp.Spec.GUID,
 		Version: lrp.Spec.Version,
@@ -72,7 +73,7 @@ func (r *LRPReconciler) do(lrp *eiriniv1.LRP) error {
 	return errors.Wrap(r.desirer.Update(appLRP), "failed to update lrp")
 }
 
-func (r *LRPReconciler) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {
+func (r *LRP) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {
 	return func(resource interface{}) error {
 		obj := resource.(metav1.Object)
 		if err := ctrl.SetControllerReference(lrp, obj, r.scheme); err != nil {

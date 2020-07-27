@@ -1,11 +1,11 @@
-package k8s_test
+package reconciler_test
 
 import (
 	"context"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
+	"code.cloudfoundry.org/eirini/k8s/reconciler"
+	"code.cloudfoundry.org/eirini/k8s/reconciler/reconcilerfakes"
 	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	eiriniv1scheme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
@@ -19,21 +19,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-var _ = Describe("K8s/LrpReconciler", func() {
+var _ = Describe("reconciler.LRP", func() {
 
 	var (
-		controllerClient *k8sfakes.FakeClient
-		desirer          *k8sfakes.FakeLRPDesirer
+		controllerClient *reconcilerfakes.FakeClient
+		desirer          *reconcilerfakes.FakeLRPDesirer
 		scheme           *runtime.Scheme
-		reconciler       *k8s.LRPReconciler
+		lrpreconciler    *reconciler.LRP
 		resultErr        error
 	)
 
 	BeforeEach(func() {
-		controllerClient = new(k8sfakes.FakeClient)
-		desirer = new(k8sfakes.FakeLRPDesirer)
+		controllerClient = new(reconcilerfakes.FakeClient)
+		desirer = new(reconcilerfakes.FakeLRPDesirer)
 		scheme = eiriniv1scheme.Scheme
-		reconciler = k8s.NewLRPReconciler(controllerClient, desirer, scheme)
+		lrpreconciler = reconciler.NewLRP(controllerClient, desirer, scheme)
 
 		controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o runtime.Object) error {
 			lrp := o.(*eiriniv1.LRP)
@@ -53,7 +53,7 @@ var _ = Describe("K8s/LrpReconciler", func() {
 	})
 
 	JustBeforeEach(func() {
-		_, resultErr = reconciler.Reconcile(reconcile.Request{
+		_, resultErr = lrpreconciler.Reconcile(reconcile.Request{
 			NamespacedName: types.NamespacedName{
 				Namespace: "some-ns",
 				Name:      "app",

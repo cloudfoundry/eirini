@@ -92,7 +92,7 @@ func main() {
 		Scheme: eirinischeme.Scheme,
 	})
 	cmdcommons.ExitIfError(err)
-	lrpReconciler := k8s.NewLRPReconciler(client, stDesirer, mgr.GetScheme())
+	lrpReconciler := reconciler.NewLRP(client, stDesirer, mgr.GetScheme())
 	taskReconciler := reconciler.NewTask(logger, client, taskDesirer, mgr.GetScheme())
 
 	err = builder.
