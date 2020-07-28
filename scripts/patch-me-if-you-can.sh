@@ -156,7 +156,7 @@ EOF
 ---
 opi:
   serviceName: eirini
-  eiriniController:
+  lrpController:
     tls:
       secretName: "eirini-internal-tls-certs"
       keyPath: "tls.key"
