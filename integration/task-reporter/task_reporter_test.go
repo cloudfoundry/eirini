@@ -11,6 +11,7 @@ import (
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -57,8 +58,8 @@ var _ = Describe("TaskReporter", func() {
 
 		taskDesirer = k8s.NewTaskDesirerWithEiriniInstance(
 			lagertest.NewTestLogger("test-task-desirer"),
-			k8s.NewJobClient(fixture.Clientset),
-			k8s.NewSecretsClient(fixture.Clientset),
+			client.NewJob(fixture.Clientset),
+			client.NewSecret(fixture.Clientset),
 			fixture.Namespace,
 			nil,
 			"",

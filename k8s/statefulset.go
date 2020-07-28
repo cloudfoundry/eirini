@@ -70,7 +70,7 @@ const (
 //counterfeiter:generate . LRPMapper
 //counterfeiter:generate . ProbeCreator
 //counterfeiter:generate . DesireOption
-//counterfeiter:generate . StatefulSetDesisrerClient
+//counterfeiter:generate . StatefulSetClient
 
 type PodListerDeleter interface {
 	List(opts metav1.ListOptions) (*corev1.PodList, error)
@@ -82,7 +82,7 @@ type PodDisruptionBudgetClient interface {
 	Delete(namespace string, name string) error
 }
 
-type StatefulSetDesisrerClient interface {
+type StatefulSetClient interface {
 	Create(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
 	Update(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
 	Delete(namespace string, name string, options metav1.DeleteOptions) error
@@ -103,7 +103,7 @@ type LRPMapper func(s appsv1.StatefulSet) (*opi.LRP, error)
 type StatefulSetDesirer struct {
 	Pods                              PodListerDeleter
 	Secrets                           SecretsCreatorDeleter
-	StatefulSets                      StatefulSetDesisrerClient
+	StatefulSets                      StatefulSetClient
 	PodDisruptionBudets               PodDisruptionBudgetClient
 	Events                            EventLister
 	StatefulSetToLRPMapper            LRPMapper

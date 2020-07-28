@@ -9,6 +9,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -50,7 +51,7 @@ var _ = Describe("StagingReporter", func() {
 
 		taskDesirer = k8s.NewTaskDesirer(
 			lagertest.NewTestLogger("staging-reporter-test"),
-			k8s.NewJobClient(fixture.Clientset),
+			client.NewJob(fixture.Clientset),
 			nil,
 			fixture.Namespace,
 			nil,

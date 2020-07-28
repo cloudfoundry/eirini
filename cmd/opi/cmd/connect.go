@@ -12,6 +12,7 @@ import (
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/eirini/stager/docker"
 	"code.cloudfoundry.org/eirini/util"
@@ -142,8 +143,8 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 
 	return k8s.NewTaskDesirerWithEiriniInstance(
 		logger,
-		k8s.NewJobClient(clientset),
-		k8s.NewSecretsClient(clientset),
+		client.NewJob(clientset),
+		client.NewSecret(clientset),
 		cfg.Properties.Namespace,
 		tlsConfigs,
 		cfg.Properties.ApplicationServiceAccount,
@@ -160,8 +161,8 @@ func initTaskDeleter(clientset kubernetes.Interface, eiriniInstance string) *k8s
 
 	return k8s.NewTaskDeleter(
 		logger,
-		k8s.NewJobClient(clientset),
-		k8s.NewSecretsClient(clientset),
+		client.NewJob(clientset),
+		client.NewSecret(clientset),
 		eiriniInstance,
 	)
 }
@@ -225,11 +226,11 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	desirer := &k8s.StatefulSetDesirer{
-		Pods:                              k8s.NewPodsClient(clientset),
-		Secrets:                           k8s.NewSecretsClient(clientset),
-		StatefulSets:                      k8s.NewStatefulSetClient(clientset),
-		PodDisruptionBudets:               k8s.NewPodDisruptionBudgetClient(clientset),
-		Events:                            k8s.NewEventsClient(clientset),
+		Pods:                              client.NewPod(clientset),
+		Secrets:                           client.NewSecret(clientset),
+		StatefulSets:                      client.NewStatefulSet(clientset),
+		PodDisruptionBudets:               client.NewPodDisruptionBudget(clientset),
+		Events:                            client.NewEvent(clientset),
 		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
 		RegistrySecretName:                cfg.Properties.RegistrySecretName,
 		RootfsVersion:                     cfg.Properties.RootfsVersion,

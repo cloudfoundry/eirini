@@ -5,6 +5,7 @@ import (
 
 	testutil "code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/client"
 	informerroute "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/k8s/informers/route/event"
 	"code.cloudfoundry.org/eirini/opi"
@@ -35,11 +36,11 @@ var _ = Describe("Routes", func() {
 		odinLRP = createLRP("ödin")
 		logger := lagertest.NewTestLogger("test")
 		desirer = &k8s.StatefulSetDesirer{
-			Pods:                      k8s.NewPodsClient(fixture.Clientset),
-			Secrets:                   k8s.NewSecretsClient(fixture.Clientset),
-			StatefulSets:              k8s.NewStatefulSetClient(fixture.Clientset),
-			PodDisruptionBudets:       k8s.NewPodDisruptionBudgetClient(fixture.Clientset),
-			Events:                    k8s.NewEventsClient(fixture.Clientset),
+			Pods:                      client.NewPod(fixture.Clientset),
+			Secrets:                   client.NewSecret(fixture.Clientset),
+			StatefulSets:              client.NewStatefulSet(fixture.Clientset),
+			PodDisruptionBudets:       client.NewPodDisruptionBudget(fixture.Clientset),
+			Events:                    client.NewEvent(fixture.Clientset),
 			StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
 			RegistrySecretName:        "registry-secret",
 			RootfsVersion:             "rootfsversion",

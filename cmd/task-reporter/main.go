@@ -9,6 +9,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
@@ -70,8 +71,8 @@ func initTaskDeleter(clientset kubernetes.Interface, eiriniInstance string) task
 
 	return k8s.NewTaskDeleter(
 		logger,
-		k8s.NewJobClient(clientset),
-		k8s.NewSecretsClient(clientset),
+		client.NewJob(clientset),
+		client.NewSecret(clientset),
 		eiriniInstance,
 	)
 }

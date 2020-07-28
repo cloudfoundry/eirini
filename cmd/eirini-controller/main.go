@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	eirinischeme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
 	"code.cloudfoundry.org/lager"
@@ -23,7 +24,7 @@ import (
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -49,7 +50,7 @@ func main() {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", eiriniCfg.Properties.ConfigPath)
 	cmdcommons.ExitIfError(err)
 
-	client, err := client.New(kubeConfig, client.Options{Scheme: eirinischeme.Scheme})
+	controllerClient, err := runtimeclient.New(kubeConfig, runtimeclient.Options{Scheme: eirinischeme.Scheme})
 	cmdcommons.ExitIfError(err)
 
 	clientset, err := kubernetes.NewForConfig(kubeConfig)
@@ -59,11 +60,11 @@ func main() {
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	stDesirer := &k8s.StatefulSetDesirer{
-		Pods:                              k8s.NewPodsClient(clientset),
-		Secrets:                           k8s.NewSecretsClient(clientset),
-		StatefulSets:                      k8s.NewStatefulSetClient(clientset),
-		PodDisruptionBudets:               k8s.NewPodDisruptionBudgetClient(clientset),
-		Events:                            k8s.NewEventsClient(clientset),
+		Pods:                              client.NewPod(clientset),
+		Secrets:                           client.NewSecret(clientset),
+		StatefulSets:                      client.NewStatefulSet(clientset),
+		PodDisruptionBudets:               client.NewPodDisruptionBudget(clientset),
+		Events:                            client.NewEvent(clientset),
 		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
 		RegistrySecretName:                eiriniCfg.Properties.RegistrySecretName,
 		RootfsVersion:                     eiriniCfg.Properties.RootfsVersion,
@@ -76,8 +77,8 @@ func main() {
 
 	taskDesirer := k8s.NewTaskDesirer(
 		logger.Session("task-desirer"),
-		k8s.NewJobClient(clientset),
-		k8s.NewSecretsClient(clientset),
+		client.NewJob(clientset),
+		client.NewSecret(clientset),
 		"",
 		[]k8s.StagingConfigTLS{},
 		eiriniCfg.Properties.ApplicationServiceAccount,
@@ -90,8 +91,8 @@ func main() {
 		Scheme: eirinischeme.Scheme,
 	})
 	cmdcommons.ExitIfError(err)
-	lrpReconciler := reconciler.NewLRP(logger.Session("lrp-reconciler"), client, stDesirer, k8s.NewStatefulSetClient(clientset), mgr.GetScheme())
-	taskReconciler := reconciler.NewTask(logger.Session("task-reconciler"), client, taskDesirer, mgr.GetScheme())
+	lrpReconciler := reconciler.NewLRP(logger.Session("lrp-reconciler"), controllerClient, stDesirer, client.NewStatefulSet(clientset), mgr.GetScheme())
+	taskReconciler := reconciler.NewTask(logger.Session("task-reconciler"), controllerClient, taskDesirer, mgr.GetScheme())
 
 	err = builder.
 		ControllerManagedBy(mgr).
