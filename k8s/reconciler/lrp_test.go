@@ -9,6 +9,7 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	eiriniv1scheme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -22,18 +23,24 @@ import (
 var _ = Describe("reconciler.LRP", func() {
 
 	var (
-		controllerClient *reconcilerfakes.FakeClient
-		desirer          *reconcilerfakes.FakeLRPDesirer
-		scheme           *runtime.Scheme
-		lrpreconciler    *reconciler.LRP
-		resultErr        error
+		logger            *lagertest.TestLogger
+		controllerClient  *reconcilerfakes.FakeClient
+		statusClient      *reconcilerfakes.FakeStatusWriter
+		statefulsetGetter *reconcilerfakes.FakeStatefulSetGetter
+		desirer           *reconcilerfakes.FakeLRPDesirer
+		scheme            *runtime.Scheme
+		lrpreconciler     *reconciler.LRP
+		resultErr         error
 	)
 
 	BeforeEach(func() {
 		controllerClient = new(reconcilerfakes.FakeClient)
 		desirer = new(reconcilerfakes.FakeLRPDesirer)
+		statusClient = new(reconcilerfakes.FakeStatusWriter)
+		statefulsetGetter = new(reconcilerfakes.FakeStatefulSetGetter)
+		logger = lagertest.NewTestLogger("lrp-reconciler")
 		scheme = eiriniv1scheme.Scheme
-		lrpreconciler = reconciler.NewLRP(controllerClient, desirer, scheme)
+		lrpreconciler = reconciler.NewLRP(logger, controllerClient, desirer, statefulsetGetter, scheme)
 
 		controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o runtime.Object) error {
 			lrp := o.(*eiriniv1.LRP)
@@ -49,6 +56,8 @@ var _ = Describe("reconciler.LRP", func() {
 
 			return nil
 		}
+		controllerClient.StatusReturns(statusClient)
+		statefulsetGetter.GetReturns(&appsv1.StatefulSet{}, nil)
 		desirer.GetReturns(nil, eirini.ErrNotFound)
 	})
 
@@ -111,7 +120,57 @@ var _ = Describe("reconciler.LRP", func() {
 				opi.Route{Hostname: "bar.io", Port: 9090},
 			))
 		})
+	})
 
+	When("an app instance becomes unready", func() {
+
+		var statusWriter *reconcilerfakes.FakeStatusWriter
+
+		BeforeEach(func() {
+			statusWriter = new(reconcilerfakes.FakeStatusWriter)
+			controllerClient.StatusReturns(statusWriter)
+
+			desirer.GetReturns(nil, nil)
+			statefulsetGetter.GetReturns(&appsv1.StatefulSet{Status: appsv1.StatefulSetStatus{ReadyReplicas: 9}}, nil)
+		})
+
+		It("the CRD status is updated accordingly", func() {
+			Expect(resultErr).NotTo(HaveOccurred())
+
+			Expect(statusWriter.UpdateCallCount()).To(Equal(1))
+			_, obj, _ := statusWriter.UpdateArgsForCall(0)
+			lrp := obj.(*eiriniv1.LRP)
+			Expect(lrp.Status).To(Equal(eiriniv1.LRPStatus{
+				Replicas: 9,
+			}))
+		})
+
+		When("statefulset getter fails to get the statefulset", func() {
+
+			BeforeEach(func() {
+				statefulsetGetter.GetReturns(nil, errors.New("boom"))
+			})
+
+			It("does not update the statefulset status", func() {
+				Expect(resultErr).To(MatchError(ContainSubstring("boom")))
+
+				Expect(statusWriter.UpdateCallCount()).To(Equal(0))
+				Expect(desirer.UpdateCallCount()).To(Equal(1))
+			})
+		})
+
+		When("the controller client fails to update the LRP status", func() {
+			BeforeEach(func() {
+				statusWriter.UpdateReturns(errors.New("bom"))
+			})
+
+			It("does not update the statefulset status", func() {
+				Expect(resultErr).To(MatchError(ContainSubstring("bom")))
+
+				Expect(statusWriter.UpdateCallCount()).To(Equal(1))
+				Expect(desirer.UpdateCallCount()).To(Equal(1))
+			})
+		})
 	})
 
 	When("the controller client fails to get the CRD", func() {
@@ -153,7 +212,7 @@ var _ = Describe("reconciler.LRP", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(resultErr).To(MatchError("failed to update lrp: boom"))
+			Expect(resultErr).To(MatchError(ContainSubstring("boom")))
 		})
 	})
 

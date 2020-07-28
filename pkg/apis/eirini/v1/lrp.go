@@ -4,16 +4,17 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// +genclient
-// +genclient:noStatus
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // LRP describes an Long Running Process
+
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:subresource:status
 type LRP struct {
 	meta_v1.TypeMeta   `json:",inline"`
 	meta_v1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec LRPSpec `json:"spec"`
+	Spec   LRPSpec   `json:"spec"`
+	Status LRPStatus `json:"status"`
 }
 
 type LRPSpec struct {
@@ -41,6 +42,10 @@ type LRPSpec struct {
 	LastUpdated            string            `json:"lastUpdated"`
 	UserDefinedAnnotations map[string]string `json:"userDefinedAnnotations,omitempty"`
 	AppRoutes              []Route           `json:"appRoutes"`
+}
+
+type LRPStatus struct {
+	Replicas int32 `json:"replicas"`
 }
 
 type Route struct {

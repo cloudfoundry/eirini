@@ -55,7 +55,7 @@ func main() {
 	clientset, err := kubernetes.NewForConfig(kubeConfig)
 	cmdcommons.ExitIfError(err)
 
-	logger := lager.NewLogger("lrp-informer")
+	logger := lager.NewLogger("eirini-informer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	stDesirer := &k8s.StatefulSetDesirer{
@@ -69,13 +69,13 @@ func main() {
 		RootfsVersion:                     eiriniCfg.Properties.RootfsVersion,
 		LivenessProbeCreator:              k8s.CreateLivenessProbe,
 		ReadinessProbeCreator:             k8s.CreateReadinessProbe,
-		Logger:                            logger,
+		Logger:                            logger.Session("statefulset-desirer"),
 		ApplicationServiceAccount:         eiriniCfg.Properties.ApplicationServiceAccount,
 		AllowAutomountServiceAccountToken: eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
 	}
 
 	taskDesirer := k8s.NewTaskDesirer(
-		logger,
+		logger.Session("task-desirer"),
 		k8s.NewJobClient(clientset),
 		k8s.NewSecretsClient(clientset),
 		"",
@@ -90,8 +90,8 @@ func main() {
 		Scheme: eirinischeme.Scheme,
 	})
 	cmdcommons.ExitIfError(err)
-	lrpReconciler := reconciler.NewLRP(client, stDesirer, mgr.GetScheme())
-	taskReconciler := reconciler.NewTask(logger, client, taskDesirer, mgr.GetScheme())
+	lrpReconciler := reconciler.NewLRP(logger.Session("lrp-reconciler"), client, stDesirer, k8s.NewStatefulSetClient(clientset), mgr.GetScheme())
+	taskReconciler := reconciler.NewTask(logger.Session("task-reconciler"), client, taskDesirer, mgr.GetScheme())
 
 	err = builder.
 		ControllerManagedBy(mgr).

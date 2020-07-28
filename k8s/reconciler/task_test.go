@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	"code.cloudfoundry.org/eirini/k8s/reconciler/reconcilerfakes"
 	"code.cloudfoundry.org/eirini/opi"
@@ -28,14 +27,14 @@ var _ = Describe("Task", func() {
 		taskReconciler   *reconciler.Task
 		reconcileResult  reconcile.Result
 		reconcileErr     error
-		controllerClient *k8sfakes.FakeClient
+		controllerClient *reconcilerfakes.FakeClient
 		namespacedName   types.NamespacedName
 		taskDesirer      *reconcilerfakes.FakeTaskDesirer
 		scheme           *runtime.Scheme
 	)
 
 	BeforeEach(func() {
-		controllerClient = new(k8sfakes.FakeClient)
+		controllerClient = new(reconcilerfakes.FakeClient)
 		namespacedName = types.NamespacedName{
 			Namespace: "my-namespace",
 			Name:      "my-name",

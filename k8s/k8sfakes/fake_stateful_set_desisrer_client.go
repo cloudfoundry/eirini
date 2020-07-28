@@ -9,7 +9,7 @@ import (
 	v1a "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type FakeStatefulSetClient struct {
+type FakeStatefulSetDesisrerClient struct {
 	CreateStub        func(string, *v1.StatefulSet) (*v1.StatefulSet, error)
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
@@ -68,7 +68,7 @@ type FakeStatefulSetClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetClient) Create(arg1 string, arg2 *v1.StatefulSet) (*v1.StatefulSet, error) {
+func (fake *FakeStatefulSetDesisrerClient) Create(arg1 string, arg2 *v1.StatefulSet) (*v1.StatefulSet, error) {
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
@@ -87,26 +87,26 @@ func (fake *FakeStatefulSetClient) Create(arg1 string, arg2 *v1.StatefulSet) (*v
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeStatefulSetClient) CreateCallCount() int {
+func (fake *FakeStatefulSetDesisrerClient) CreateCallCount() int {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakeStatefulSetClient) CreateCalls(stub func(string, *v1.StatefulSet) (*v1.StatefulSet, error)) {
+func (fake *FakeStatefulSetDesisrerClient) CreateCalls(stub func(string, *v1.StatefulSet) (*v1.StatefulSet, error)) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = stub
 }
 
-func (fake *FakeStatefulSetClient) CreateArgsForCall(i int) (string, *v1.StatefulSet) {
+func (fake *FakeStatefulSetDesisrerClient) CreateArgsForCall(i int) (string, *v1.StatefulSet) {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	argsForCall := fake.createArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeStatefulSetClient) CreateReturns(result1 *v1.StatefulSet, result2 error) {
+func (fake *FakeStatefulSetDesisrerClient) CreateReturns(result1 *v1.StatefulSet, result2 error) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = nil
@@ -116,7 +116,7 @@ func (fake *FakeStatefulSetClient) CreateReturns(result1 *v1.StatefulSet, result
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetClient) CreateReturnsOnCall(i int, result1 *v1.StatefulSet, result2 error) {
+func (fake *FakeStatefulSetDesisrerClient) CreateReturnsOnCall(i int, result1 *v1.StatefulSet, result2 error) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = nil
@@ -132,7 +132,7 @@ func (fake *FakeStatefulSetClient) CreateReturnsOnCall(i int, result1 *v1.Statef
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetClient) Delete(arg1 string, arg2 string, arg3 v1a.DeleteOptions) error {
+func (fake *FakeStatefulSetDesisrerClient) Delete(arg1 string, arg2 string, arg3 v1a.DeleteOptions) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
@@ -152,26 +152,26 @@ func (fake *FakeStatefulSetClient) Delete(arg1 string, arg2 string, arg3 v1a.Del
 	return fakeReturns.result1
 }
 
-func (fake *FakeStatefulSetClient) DeleteCallCount() int {
+func (fake *FakeStatefulSetDesisrerClient) DeleteCallCount() int {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeStatefulSetClient) DeleteCalls(stub func(string, string, v1a.DeleteOptions) error) {
+func (fake *FakeStatefulSetDesisrerClient) DeleteCalls(stub func(string, string, v1a.DeleteOptions) error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakeStatefulSetClient) DeleteArgsForCall(i int) (string, string, v1a.DeleteOptions) {
+func (fake *FakeStatefulSetDesisrerClient) DeleteArgsForCall(i int) (string, string, v1a.DeleteOptions) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeStatefulSetClient) DeleteReturns(result1 error) {
+func (fake *FakeStatefulSetDesisrerClient) DeleteReturns(result1 error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = nil
@@ -180,7 +180,7 @@ func (fake *FakeStatefulSetClient) DeleteReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeStatefulSetClient) DeleteReturnsOnCall(i int, result1 error) {
+func (fake *FakeStatefulSetDesisrerClient) DeleteReturnsOnCall(i int, result1 error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = nil
@@ -194,7 +194,7 @@ func (fake *FakeStatefulSetClient) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeStatefulSetClient) List(arg1 v1a.ListOptions) (*v1.StatefulSetList, error) {
+func (fake *FakeStatefulSetDesisrerClient) List(arg1 v1a.ListOptions) (*v1.StatefulSetList, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
@@ -212,26 +212,26 @@ func (fake *FakeStatefulSetClient) List(arg1 v1a.ListOptions) (*v1.StatefulSetLi
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeStatefulSetClient) ListCallCount() int {
+func (fake *FakeStatefulSetDesisrerClient) ListCallCount() int {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakeStatefulSetClient) ListCalls(stub func(v1a.ListOptions) (*v1.StatefulSetList, error)) {
+func (fake *FakeStatefulSetDesisrerClient) ListCalls(stub func(v1a.ListOptions) (*v1.StatefulSetList, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
 }
 
-func (fake *FakeStatefulSetClient) ListArgsForCall(i int) v1a.ListOptions {
+func (fake *FakeStatefulSetDesisrerClient) ListArgsForCall(i int) v1a.ListOptions {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	argsForCall := fake.listArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeStatefulSetClient) ListReturns(result1 *v1.StatefulSetList, result2 error) {
+func (fake *FakeStatefulSetDesisrerClient) ListReturns(result1 *v1.StatefulSetList, result2 error) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
@@ -241,7 +241,7 @@ func (fake *FakeStatefulSetClient) ListReturns(result1 *v1.StatefulSetList, resu
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetClient) ListReturnsOnCall(i int, result1 *v1.StatefulSetList, result2 error) {
+func (fake *FakeStatefulSetDesisrerClient) ListReturnsOnCall(i int, result1 *v1.StatefulSetList, result2 error) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
@@ -257,7 +257,7 @@ func (fake *FakeStatefulSetClient) ListReturnsOnCall(i int, result1 *v1.Stateful
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetClient) Update(arg1 string, arg2 *v1.StatefulSet) (*v1.StatefulSet, error) {
+func (fake *FakeStatefulSetDesisrerClient) Update(arg1 string, arg2 *v1.StatefulSet) (*v1.StatefulSet, error) {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
@@ -276,26 +276,26 @@ func (fake *FakeStatefulSetClient) Update(arg1 string, arg2 *v1.StatefulSet) (*v
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeStatefulSetClient) UpdateCallCount() int {
+func (fake *FakeStatefulSetDesisrerClient) UpdateCallCount() int {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeStatefulSetClient) UpdateCalls(stub func(string, *v1.StatefulSet) (*v1.StatefulSet, error)) {
+func (fake *FakeStatefulSetDesisrerClient) UpdateCalls(stub func(string, *v1.StatefulSet) (*v1.StatefulSet, error)) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakeStatefulSetClient) UpdateArgsForCall(i int) (string, *v1.StatefulSet) {
+func (fake *FakeStatefulSetDesisrerClient) UpdateArgsForCall(i int) (string, *v1.StatefulSet) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeStatefulSetClient) UpdateReturns(result1 *v1.StatefulSet, result2 error) {
+func (fake *FakeStatefulSetDesisrerClient) UpdateReturns(result1 *v1.StatefulSet, result2 error) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = nil
@@ -305,7 +305,7 @@ func (fake *FakeStatefulSetClient) UpdateReturns(result1 *v1.StatefulSet, result
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetClient) UpdateReturnsOnCall(i int, result1 *v1.StatefulSet, result2 error) {
+func (fake *FakeStatefulSetDesisrerClient) UpdateReturnsOnCall(i int, result1 *v1.StatefulSet, result2 error) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = nil
@@ -321,7 +321,7 @@ func (fake *FakeStatefulSetClient) UpdateReturnsOnCall(i int, result1 *v1.Statef
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetClient) Invocations() map[string][][]interface{} {
+func (fake *FakeStatefulSetDesisrerClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.createMutex.RLock()
@@ -339,7 +339,7 @@ func (fake *FakeStatefulSetClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeStatefulSetClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakeStatefulSetDesisrerClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -351,4 +351,4 @@ func (fake *FakeStatefulSetClient) recordInvocation(key string, args []interface
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ k8s.StatefulSetClient = new(FakeStatefulSetClient)
+var _ k8s.StatefulSetDesisrerClient = new(FakeStatefulSetDesisrerClient)

@@ -3,13 +3,17 @@ package reconciler
 import (
 	"context"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
+	"code.cloudfoundry.org/lager"
 	"github.com/jinzhu/copier"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -17,8 +21,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-//counterfeiter:generate -o reconcilerfakes/fake_controller_runtime_client.go ../../vendor/sigs.k8s.io/controller-runtime/pkg/client Client
 //counterfeiter:generate . LRPDesirer
+//counterfeiter:generate -o reconcilerfakes/fake_controller_runtime_client.go ../../vendor/sigs.k8s.io/controller-runtime/pkg/client Client
+//counterfeiter:generate -o reconcilerfakes/fake_status_writer.go ../../vendor/sigs.k8s.io/controller-runtime/pkg/client StatusWriter
+//counterfeiter:generate . StatefulSetGetter
 
 type LRPDesirer interface {
 	Desire(namespace string, lrp *opi.LRP, opts ...k8s.DesireOption) error
@@ -26,27 +32,45 @@ type LRPDesirer interface {
 	Update(lrp *opi.LRP) error
 }
 
-func NewLRP(client client.Client, desirer LRPDesirer, scheme *runtime.Scheme) *LRP {
+type StatefulSetGetter interface {
+	Get(namespace, name string) (*appsv1.StatefulSet, error)
+}
+
+func NewLRP(logger lager.Logger, lrps client.Client, desirer LRPDesirer, statefulsetGetter StatefulSetGetter, scheme *runtime.Scheme) *LRP {
 	return &LRP{
-		client:  client,
-		desirer: desirer,
-		scheme:  scheme,
+		logger:            logger,
+		lrps:              lrps,
+		desirer:           desirer,
+		scheme:            scheme,
+		statefulsetGetter: statefulsetGetter,
 	}
 }
 
 type LRP struct {
-	client  client.Client
-	desirer LRPDesirer
-	scheme  *runtime.Scheme
+	logger            lager.Logger
+	lrps              client.Client
+	desirer           LRPDesirer
+	scheme            *runtime.Scheme
+	statefulsetGetter StatefulSetGetter
 }
 
 func (r *LRP) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	logger := r.logger.Session("lrp-reconciler",
+		lager.Data{
+			"name":      request.NamespacedName.Name,
+			"namespace": request.NamespacedName.Namespace,
+		})
+
 	lrp := &eiriniv1.LRP{}
-	if err := r.client.Get(context.Background(), request.NamespacedName, lrp); err != nil {
+	if err := r.lrps.Get(context.Background(), request.NamespacedName, lrp); err != nil {
+		logger.Error("failed-to-get-lrp", err)
 		return reconcile.Result{}, err
 	}
 
 	err := r.do(lrp)
+	if err != nil {
+		logger.Error("failed-to-reconcile", err)
+	}
 	return reconcile.Result{}, err
 }
 
@@ -70,7 +94,26 @@ func (r *LRP) do(lrp *eiriniv1.LRP) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to parse the crd spec to the lrp model")
 	}
-	return errors.Wrap(r.desirer.Update(appLRP), "failed to update lrp")
+
+	var errs *multierror.Error
+
+	err = r.updateStatus(lrp, appLRP)
+	errs = multierror.Append(errs, errors.Wrap(err, "failed to update lrp status"))
+
+	err = r.desirer.Update(appLRP)
+	errs = multierror.Append(errs, errors.Wrap(err, "failed to update app"))
+
+	return errs.ErrorOrNil()
+}
+
+func (r *LRP) updateStatus(lrp *eiriniv1.LRP, appLRP *opi.LRP) error {
+	st, err := r.statefulsetGetter.Get(lrp.Namespace, utils.GetStatefulsetName(appLRP))
+	if err != nil {
+		return err
+	}
+	lrp.Status.Replicas = st.Status.ReadyReplicas
+
+	return r.lrps.Status().Update(context.Background(), lrp)
 }
 
 func (r *LRP) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {

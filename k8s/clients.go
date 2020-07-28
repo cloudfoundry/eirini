@@ -43,27 +43,31 @@ func (c *podDisruptionBudgetClient) Delete(namespace string, name string) error 
 	return c.clientSet.PolicyV1beta1().PodDisruptionBudgets(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
 }
 
-type statefulSetClient struct {
+type StatefulSetClient struct {
 	clientSet kubernetes.Interface
 }
 
-func NewStatefulSetClient(clientSet kubernetes.Interface) StatefulSetClient {
-	return &statefulSetClient{clientSet: clientSet}
+func NewStatefulSetClient(clientSet kubernetes.Interface) *StatefulSetClient {
+	return &StatefulSetClient{clientSet: clientSet}
 }
 
-func (c *statefulSetClient) Create(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error) {
+func (c *StatefulSetClient) Create(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error) {
 	return c.clientSet.AppsV1().StatefulSets(namespace).Create(context.Background(), statefulSet, metav1.CreateOptions{})
 }
 
-func (c *statefulSetClient) Update(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error) {
+func (c *StatefulSetClient) Get(namespace, name string) (*appsv1.StatefulSet, error) {
+	return c.clientSet.AppsV1().StatefulSets(namespace).Get(context.Background(), name, metav1.GetOptions{})
+}
+
+func (c *StatefulSetClient) Update(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error) {
 	return c.clientSet.AppsV1().StatefulSets(namespace).Update(context.Background(), statefulSet, metav1.UpdateOptions{})
 }
 
-func (c *statefulSetClient) Delete(namespace string, name string, options metav1.DeleteOptions) error {
+func (c *StatefulSetClient) Delete(namespace string, name string, options metav1.DeleteOptions) error {
 	return c.clientSet.AppsV1().StatefulSets(namespace).Delete(context.Background(), name, options)
 }
 
-func (c *statefulSetClient) List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error) {
+func (c *StatefulSetClient) List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error) {
 	return c.clientSet.AppsV1().StatefulSets("").List(context.Background(), opts)
 }
 

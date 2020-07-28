@@ -25,7 +25,11 @@ var _ = Describe("Apps CRDs", func() {
 	)
 
 	getStatefulSet := func() *appsv1.StatefulSet {
-		stsList, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+		stsList, err := fixture.Clientset.
+			AppsV1().
+			StatefulSets(fixture.Namespace).
+			List(context.Background(), metav1.ListOptions{})
+
 		Expect(err).NotTo(HaveOccurred())
 		if len(stsList.Items) == 0 {
 			return nil
@@ -34,8 +38,25 @@ var _ = Describe("Apps CRDs", func() {
 		return &stsList.Items[0]
 	}
 
+	getStatefulSetPods := func() []corev1.Pod {
+		podList, err := fixture.Clientset.
+			CoreV1().
+			Pods(fixture.Namespace).
+			List(context.Background(), metav1.ListOptions{})
+
+		Expect(err).NotTo(HaveOccurred())
+		if len(podList.Items) == 0 {
+			return nil
+		}
+		return podList.Items
+	}
+
 	getLRP := func() *eiriniv1.LRP {
-		lrp, err := fixture.EiriniClientset.EiriniV1().LRPs(namespace).Get(context.Background(), lrpName, metav1.GetOptions{})
+		lrp, err := fixture.EiriniClientset.
+			EiriniV1().
+			LRPs(namespace).
+			Get(context.Background(), lrpName, metav1.GetOptions{})
+
 		Expect(err).NotTo(HaveOccurred())
 		return lrp
 	}
@@ -58,6 +79,9 @@ var _ = Describe("Apps CRDs", func() {
 				SpaceName:              "s",
 				OrgName:                "o",
 				Env:                    map[string]string{"FOO": "BAR"},
+				MemoryMB:               256,
+				DiskMB:                 256,
+				CPUWeight:              10,
 				Instances:              1,
 				LastUpdated:            "a long time ago in a galaxy far, far away",
 				Ports:                  []int32{8080},
@@ -67,15 +91,21 @@ var _ = Describe("Apps CRDs", func() {
 			},
 		}
 
-		_, err := fixture.EiriniClientset.EiriniV1().LRPs(namespace).Create(context.Background(), lrp, metav1.CreateOptions{})
+		_, err := fixture.EiriniClientset.
+			EiriniV1().
+			LRPs(namespace).
+			Create(context.Background(), lrp, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Describe("Desiring an app", func() {
 		It("deploys the app to the same namespace as the CRD", func() {
 			Eventually(getStatefulSet).ShouldNot(BeNil())
-			st := getStatefulSet()
+			Eventually(func() bool {
+				return getPodReadiness(lrpGUID, lrpVersion)
+			}).Should(BeTrue(), "LRP Pod not ready")
 
+			st := getStatefulSet()
 			Expect(st.Labels).To(SatisfyAll(
 				HaveKeyWithValue(k8s.LabelGUID, lrpGUID),
 				HaveKeyWithValue(k8s.LabelVersion, lrpVersion),
@@ -85,22 +115,30 @@ var _ = Describe("Apps CRDs", func() {
 			Expect(st.Spec.Replicas).To(PointTo(Equal(int32(1))))
 			Expect(st.Spec.Template.Spec.Containers[0].Image).To(Equal("eirini/dorini"))
 			Expect(st.Spec.Template.Spec.Containers[0].Env).To(ContainElement(corev1.EnvVar{Name: "FOO", Value: "BAR"}))
+		})
 
-			Eventually(func() bool {
-				return getPodReadiness(lrpGUID, lrpVersion)
-			}).Should(BeTrue(), "LRP Pod not ready")
+		It("updates the CRD status", func() {
+			Eventually(func() int32 {
+				return getLRP().Status.Replicas
+			}).Should(Equal(int32(1)))
 		})
 	})
 
 	Describe("Update an app", func() {
 		When("routes are updated", func() {
 			BeforeEach(func() {
-				Eventually(getStatefulSet).ShouldNot(BeNil())
+				Eventually(func() int32 {
+					return getLRP().Status.Replicas
+				}).Should(Equal(int32(1)))
 
 				lrp := getLRP()
 				lrp.Spec.AppRoutes = []eiriniv1.Route{{Hostname: "app-hostname-1", Port: 8080}}
 
-				_, err := fixture.EiriniClientset.EiriniV1().LRPs(namespace).Update(context.Background(), lrp, metav1.UpdateOptions{})
+				_, err := fixture.EiriniClientset.
+					EiriniV1().
+					LRPs(namespace).
+					Update(context.Background(), lrp, metav1.UpdateOptions{})
+
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -119,13 +157,21 @@ var _ = Describe("Apps CRDs", func() {
 				lrp := getLRP()
 				lrp.Spec.Instances = 3
 
-				_, err := fixture.EiriniClientset.EiriniV1().LRPs(namespace).Update(context.Background(), lrp, metav1.UpdateOptions{})
+				_, err := fixture.EiriniClientset.
+					EiriniV1().
+					LRPs(namespace).
+					Update(context.Background(), lrp, metav1.UpdateOptions{})
+
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("updates the underlying statefulset", func() {
 				Eventually(func() int32 {
 					return *getStatefulSet().Spec.Replicas
+				}).Should(Equal(int32(3)))
+
+				Eventually(func() int32 {
+					return getLRP().Status.Replicas
 				}).Should(Equal(int32(3)))
 			})
 		})
@@ -136,11 +182,46 @@ var _ = Describe("Apps CRDs", func() {
 		BeforeEach(func() {
 			Eventually(getStatefulSet).ShouldNot(BeNil())
 
-			Expect(fixture.EiriniClientset.EiriniV1().LRPs(namespace).Delete(context.Background(), lrpName, metav1.DeleteOptions{})).To(Succeed())
+			Expect(fixture.EiriniClientset.
+				EiriniV1().
+				LRPs(namespace).
+				Delete(context.Background(), lrpName, metav1.DeleteOptions{}),
+			).To(Succeed())
 		})
 
 		It("deletes the undurlying statefulset", func() {
 			Eventually(getStatefulSet).Should(BeNil())
+		})
+	})
+
+	Describe("App status", func() {
+		When("an app instance becomes unready", func() {
+
+			BeforeEach(func() {
+				Eventually(getStatefulSet).ShouldNot(BeNil())
+				Eventually(func() int32 {
+					return getStatefulSet().Status.ReadyReplicas
+				}).Should(Equal(int32(1)))
+
+				pods := getStatefulSetPods()
+				Expect(pods).To(HaveLen(1))
+				pod := pods[0]
+				Expect(fixture.Clientset.
+					CoreV1().
+					Pods(fixture.Namespace).
+					Delete(context.Background(), pod.Name, metav1.DeleteOptions{}),
+				).To(Succeed())
+			})
+
+			It("is reflected in the LRP status", func() {
+				Eventually(func() int32 {
+					return getLRP().Status.Replicas
+				}).Should(Equal(int32(0)))
+
+				Eventually(func() int32 {
+					return getLRP().Status.Replicas
+				}).Should(Equal(int32(1)))
+			})
 		})
 	})
 })

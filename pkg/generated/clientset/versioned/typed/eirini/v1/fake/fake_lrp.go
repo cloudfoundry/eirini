@@ -102,6 +102,18 @@ func (c *FakeLRPs) Update(ctx context.Context, lRP *eiriniv1.LRP, opts v1.Update
 	return obj.(*eiriniv1.LRP), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeLRPs) UpdateStatus(ctx context.Context, lRP *eiriniv1.LRP, opts v1.UpdateOptions) (*eiriniv1.LRP, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(lrpsResource, "status", c.ns, lRP), &eiriniv1.LRP{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*eiriniv1.LRP), err
+}
+
 // Delete takes name of the lRP and deletes it. Returns an error if one occurs.
 func (c *FakeLRPs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
