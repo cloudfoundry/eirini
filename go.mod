@@ -76,12 +76,12 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	go.uber.org/multierr v1.5.0
-	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899 // indirect
-	golang.org/x/sys v0.0.0-20200722175500-76b94024e4b6 // indirect
+	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
+	golang.org/x/sys v0.0.0-20200728102440-3e129f6d46b1 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	golang.org/x/tools v0.0.0-20200723000907-a7c6fd066f6d // indirect
+	golang.org/x/tools v0.0.0-20200728222617-0dd562f37406 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
-	google.golang.org/genproto v0.0.0-20200722002428-88e341933a54 // indirect
+	google.golang.org/genproto v0.0.0-20200728010541-3dc8dca74b7b // indirect
 	google.golang.org/grpc v1.30.0
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.6
@@ -91,8 +91,8 @@ require (
 	k8s.io/code-generator v0.18.6
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.3.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20200615155156-dffdd1682719 // indirect
+	k8s.io/kube-openapi v0.0.0-20200727223308-4c7aaf529f79 // indirect
 	k8s.io/metrics v0.18.6
-	k8s.io/utils v0.0.0-20200720150651-0bdb4ca86cbc // indirect
+	k8s.io/utils v0.0.0-20200724153422-f32512634ab7 // indirect
 	sigs.k8s.io/controller-runtime v0.6.1
 )
