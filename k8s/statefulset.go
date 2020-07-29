@@ -301,21 +301,21 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 
 func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
 	if _, err := m.Get(identifier); err == eirini.ErrNotFound {
-		return []*opi.Instance{}, err
+		return nil, err
 	}
 
 	pods, err := m.Pods.List(metav1.ListOptions{
 		LabelSelector: labelSelectorString(identifier),
 	})
 	if err != nil {
-		return []*opi.Instance{}, errors.Wrap(err, "failed to list pods")
+		return nil, errors.Wrap(err, "failed to list pods")
 	}
 
 	instances := []*opi.Instance{}
 	for _, pod := range pods.Items {
 		events, err := GetEvents(m.Events, pod)
 		if err != nil {
-			return []*opi.Instance{}, errors.Wrapf(err, "failed to get events for pod %s", pod.Name)
+			return nil, errors.Wrapf(err, "failed to get events for pod %s", pod.Name)
 		}
 
 		if IsStopped(events) {
@@ -324,7 +324,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 
 		index, err := util.ParseAppIndex(pod.Name)
 		if err != nil {
-			return []*opi.Instance{}, err
+			return nil, err
 		}
 
 		since := int64(0)
