@@ -18,7 +18,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("StatefulSet Manager", func() {
+var _ = Describe("StatefulSetDesirer", func() {
 
 	var (
 		desirer *k8s.StatefulSetDesirer
@@ -57,8 +57,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		}
 	})
 
-	Context("When creating a LRP", func() {
-
+	Describe("Desire", func() {
 		JustBeforeEach(func() {
 			err := desirer.Desire(fixture.Namespace, odinLRP)
 			Expect(err).ToNot(HaveOccurred())
@@ -237,9 +236,21 @@ var _ = Describe("StatefulSet Manager", func() {
 				}).Should(BeNumerically("==", odinLRP.TargetInstances))
 			})
 		})
+
+		Context("when the LRP has 0 target instances", func() {
+			BeforeEach(func() {
+				odinLRP.TargetInstances = 0
+			})
+
+			It("still creates a statefulset, with 0 replicas", func() {
+				statefulset := getStatefulSet(odinLRP)
+				Expect(statefulset.Name).To(ContainSubstring(odinLRP.GUID))
+				Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(0)))
+			})
+		})
 	})
 
-	Context("When stopping a LRP", func() {
+	Describe("Stop", func() {
 		var statefulsetName string
 
 		JustBeforeEach(func() {
@@ -311,7 +322,7 @@ var _ = Describe("StatefulSet Manager", func() {
 		})
 	})
 
-	Context("When updating a LRP", func() {
+	Describe("Update", func() {
 		var (
 			instancesBefore int
 			instancesAfter  int
@@ -378,10 +389,9 @@ var _ = Describe("StatefulSet Manager", func() {
 				Expect(err).To(MatchError(ContainSubstring("not found")))
 			})
 		})
-
 	})
 
-	Context("When getting a LRP", func() {
+	Describe("Get", func() {
 		numberOfInstancesFn := func() int {
 			lrp, err := desirer.Get(odinLRP.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
@@ -423,8 +433,56 @@ fi;`,
 				Consistently(numberOfInstancesFn, "10s").Should(Equal(1), fmt.Sprintf("pod %#v did not keep running", odinLRP.LRPIdentifier))
 			})
 		})
+
+		Context("when the LRP has 0 target instances", func() {
+			BeforeEach(func() {
+				odinLRP.TargetInstances = 0
+			})
+
+			It("can still get the LRP", func() {
+				lrp, err := desirer.Get(odinLRP.LRPIdentifier)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(lrp.GUID).To(Equal(odinLRP.GUID))
+			})
+		})
 	})
 
+	Describe("GetInstances", func() {
+		instancesFn := func() []*opi.Instance {
+			instances, err := desirer.GetInstances(odinLRP.LRPIdentifier)
+			Expect(err).ToNot(HaveOccurred())
+			return instances
+		}
+
+		JustBeforeEach(func() {
+			err := desirer.Desire(fixture.Namespace, odinLRP)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("correctly reports the running instances", func() {
+			Eventually(instancesFn).Should(HaveLen(odinLRP.TargetInstances))
+			Consistently(instancesFn, "10s").Should(HaveLen(odinLRP.TargetInstances))
+			Eventually(func() bool {
+				instances := instancesFn()
+				for _, instance := range instances {
+					if instance.State != opi.RunningState {
+						return false
+					}
+				}
+				return true
+			}).Should(BeTrue())
+		})
+
+		Context("when the LRP has 0 target instances", func() {
+			BeforeEach(func() {
+				odinLRP.TargetInstances = 0
+			})
+
+			It("returns an empty list", func() {
+				Consistently(instancesFn, "10s").Should(BeEmpty())
+			})
+		})
+	})
 })
 
 func int32ptr(i int) *int32 {
