@@ -47,12 +47,16 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 	var privateRegistry *opi.PrivateRegistry
 	var runsAsRoot bool
 
-	port := request.Ports[0]
 	env = map[string]string{
-		"LANG":                    "en_US.UTF-8",
-		eirini.EnvCFInstanceAddr:  fmt.Sprintf("0.0.0.0:%d", port),
-		eirini.EnvCFInstancePort:  fmt.Sprintf("%d", port),
-		eirini.EnvCFInstancePorts: fmt.Sprintf(`[{"external":%d,"internal":%d}]`, port, port),
+		"LANG": "en_US.UTF-8",
+	}
+
+	var port int32
+	if len(request.Ports) != 0 {
+		port = request.Ports[0]
+		env[eirini.EnvCFInstanceAddr] = fmt.Sprintf("0.0.0.0:%d", port)
+		env[eirini.EnvCFInstancePort] = fmt.Sprintf("%d", port)
+		env[eirini.EnvCFInstancePorts] = fmt.Sprintf(`[{"external":%d,"internal":%d}]`, port, port)
 	}
 
 	healthcheck := opi.Healtcheck{

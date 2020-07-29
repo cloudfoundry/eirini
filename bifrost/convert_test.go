@@ -118,6 +118,9 @@ var _ = Describe("OPI Converter", func() {
 				UserDefinedAnnotations: map[string]string{
 					"prometheus.io/scrape": "scrape",
 				},
+				Lifecycle: cf.Lifecycle{
+					BuildpackLifecycle: &cf.BuildpackLifecycle{},
+				},
 			}
 		})
 
@@ -125,161 +128,282 @@ var _ = Describe("OPI Converter", func() {
 			lrp, err = converter.ConvertLRP(desireLRPRequest)
 		})
 
-		Context("When request is converted successfully", func() {
-			verifyLRPConvertedSuccessfully := func() {
-				It("should set the app name", func() {
-					Expect(lrp.AppName).To(Equal("bumblebee"))
-				})
+		It("should not error", func() {
+			Expect(err).ToNot(HaveOccurred())
+		})
 
-				It("should set the app guid", func() {
-					Expect(lrp.AppGUID).To(Equal("app-guid-69da097fc360"))
-				})
+		It("should set the app name", func() {
+			Expect(lrp.AppName).To(Equal("bumblebee"))
+		})
 
-				It("should set the space name", func() {
-					Expect(lrp.SpaceName).To(Equal("transformers"))
-				})
+		It("should set the app guid", func() {
+			Expect(lrp.AppGUID).To(Equal("app-guid-69da097fc360"))
+		})
 
-				It("should set the org name", func() {
-					Expect(lrp.OrgName).To(Equal("marvel"))
-				})
+		It("should set the space name", func() {
+			Expect(lrp.SpaceName).To(Equal("transformers"))
+		})
 
-				It("should set the correct TargetInstances", func() {
-					Expect(lrp.TargetInstances).To(Equal(3))
-				})
+		It("should set the org name", func() {
+			Expect(lrp.OrgName).To(Equal("marvel"))
+		})
 
-				It("should set the correct identifier", func() {
-					Expect(lrp.GUID).To(Equal("capi-process-guid-01cba02034f1"))
-					Expect(lrp.Version).To(Equal("capi-process-version-87d0124c433a"))
-				})
+		It("should set the correct TargetInstances", func() {
+			Expect(lrp.TargetInstances).To(Equal(3))
+		})
 
-				It("should set the process type", func() {
-					Expect(lrp.ProcessType).To(Equal("web"))
-				})
+		It("should set the correct identifier", func() {
+			Expect(lrp.GUID).To(Equal("capi-process-guid-01cba02034f1"))
+			Expect(lrp.Version).To(Equal("capi-process-version-87d0124c433a"))
+		})
 
-				It("should set the lrp memory", func() {
-					Expect(lrp.CPUWeight).To(Equal(uint8(50)))
-				})
+		It("should set the process type", func() {
+			Expect(lrp.ProcessType).To(Equal("web"))
+		})
 
-				It("should set the lrp memory", func() {
-					Expect(lrp.MemoryMB).To(Equal(int64(456)))
-				})
+		It("should set the lrp memory", func() {
+			Expect(lrp.CPUWeight).To(Equal(uint8(50)))
+		})
 
-				It("should set the lrp disk", func() {
-					Expect(lrp.DiskMB).To(Equal(int64(256)))
-				})
+		It("should set the lrp memory", func() {
+			Expect(lrp.MemoryMB).To(Equal(int64(456)))
+		})
 
-				It("should set the app name", func() {
-					Expect(lrp.AppName).To(Equal("bumblebee"))
-				})
+		It("should set the lrp disk", func() {
+			Expect(lrp.DiskMB).To(Equal(int64(256)))
+		})
 
-				It("should set the app guid", func() {
-					Expect(lrp.AppGUID).To(Equal("app-guid-69da097fc360"))
-				})
+		It("should set the app name", func() {
+			Expect(lrp.AppName).To(Equal("bumblebee"))
+		})
 
-				It("should store the last updated timestamp in metadata", func() {
-					Expect(lrp.LastUpdated).To(Equal("23534635232.3"))
-				})
+		It("should set the app guid", func() {
+			Expect(lrp.AppGUID).To(Equal("app-guid-69da097fc360"))
+		})
 
-				It("should set the environment variables provided by cloud controller", func() {
-					Expect(lrp.Env).To(HaveKeyWithValue("VAR_FROM_CC", desireLRPRequest.Environment["VAR_FROM_CC"]))
-				})
+		It("should store the last updated timestamp in metadata", func() {
+			Expect(lrp.LastUpdated).To(Equal("23534635232.3"))
+		})
 
-				It("should set CF_INSTANCE_* env variables", func() {
-					Expect(lrp.Env).To(HaveKeyWithValue(eirini.EnvCFInstanceAddr, "0.0.0.0:8000"))
-					Expect(lrp.Env).To(HaveKeyWithValue(eirini.EnvCFInstancePort, "8000"))
-					Expect(lrp.Env).To(HaveKeyWithValue(eirini.EnvCFInstancePorts, MatchJSON(`[{"external": 8000, "internal": 8000}]`)))
-				})
+		It("should set the environment variables provided by cloud controller", func() {
+			Expect(lrp.Env).To(HaveKeyWithValue("VAR_FROM_CC", desireLRPRequest.Environment["VAR_FROM_CC"]))
+		})
 
-				It("should set LANG env variable", func() {
-					Expect(lrp.Env).To(HaveKeyWithValue("LANG", "en_US.UTF-8"))
-				})
+		It("should set CF_INSTANCE_* env variables", func() {
+			Expect(lrp.Env).To(HaveKeyWithValue(eirini.EnvCFInstanceAddr, "0.0.0.0:8000"))
+			Expect(lrp.Env).To(HaveKeyWithValue(eirini.EnvCFInstancePort, "8000"))
+			Expect(lrp.Env).To(HaveKeyWithValue(eirini.EnvCFInstancePorts, MatchJSON(`[{"external": 8000, "internal": 8000}]`)))
+		})
 
-				It("sets the app routes", func() {
-					Expect(lrp.AppURIs).To(ConsistOf(
-						opi.Route{Hostname: "bumblebee.example.com", Port: 8000},
-						opi.Route{Hostname: "transformers.example.com", Port: 7070},
-					))
-				})
+		It("should set LANG env variable", func() {
+			Expect(lrp.Env).To(HaveKeyWithValue("LANG", "en_US.UTF-8"))
+		})
 
-				It("should set the ports", func() {
-					Expect(lrp.Ports).To(Equal([]int32{8000, 8888}))
-				})
+		It("sets the app routes", func() {
+			Expect(lrp.AppURIs).To(ConsistOf(
+				opi.Route{Hostname: "bumblebee.example.com", Port: 8000},
+				opi.Route{Hostname: "transformers.example.com", Port: 7070},
+			))
+		})
 
-				It("should set the volume mounts", func() {
-					volumes := lrp.VolumeMounts
-					Expect(len(volumes)).To(Equal(2))
-					Expect(volumes).To(ContainElement(opi.VolumeMount{
-						ClaimName: "claim-one",
-						MountPath: "/path/one",
-					}))
-					Expect(volumes).To(ContainElement(opi.VolumeMount{
-						ClaimName: "claim-two",
-						MountPath: "/path/two",
-					}))
-				})
+		It("should set the ports", func() {
+			Expect(lrp.Ports).To(Equal([]int32{8000, 8888}))
+		})
 
-				It("should set the LRP request", func() {
-					Expect(lrp.LRP).To(Equal("full LRP request"))
-				})
+		It("should set the volume mounts", func() {
+			volumes := lrp.VolumeMounts
+			Expect(len(volumes)).To(Equal(2))
+			Expect(volumes).To(ContainElement(opi.VolumeMount{
+				ClaimName: "claim-one",
+				MountPath: "/path/one",
+			}))
+			Expect(volumes).To(ContainElement(opi.VolumeMount{
+				ClaimName: "claim-two",
+				MountPath: "/path/two",
+			}))
+		})
 
-				It("should set user defined annotation", func() {
-					Expect(lrp.UserDefinedAnnotations["prometheus.io/scrape"]).To(Equal("scrape"))
-				})
+		It("should set the LRP request", func() {
+			Expect(lrp.LRP).To(Equal("full LRP request"))
+		})
 
-				It("should not error", func() {
-					Expect(err).ToNot(HaveOccurred())
-				})
-			}
+		It("should set user defined annotation", func() {
+			Expect(lrp.UserDefinedAnnotations["prometheus.io/scrape"]).To(Equal("scrape"))
+		})
 
-			Context("when the disk quota is not provided", func() {
-				BeforeEach(func() {
-					desireLRPRequest.Lifecycle = cf.Lifecycle{
-						BuildpackLifecycle: &cf.BuildpackLifecycle{},
-					}
-					desireLRPRequest.DiskMB = 0
-				})
-
-				It("should use the default disk quota", func() {
-					Expect(lrp.DiskMB).To(Equal(defaultDiskQuota))
-				})
-
+		Context("when no ports are specified", func() {
+			BeforeEach(func() {
+				desireLRPRequest.Ports = []int32{}
 			})
 
-			Context("When the app is using docker lifecycle", func() {
+			It("should not error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should not set the port-dependent env vars", func() {
+				Expect(lrp.Env).NotTo(HaveKey(eirini.EnvCFInstanceAddr))
+				Expect(lrp.Env).NotTo(HaveKey(eirini.EnvCFInstancePort))
+				Expect(lrp.Env).NotTo(HaveKey(eirini.EnvCFInstancePorts))
+			})
+
+			It("defaults the healthcheck port to 0", func() {
+				Expect(lrp.Health.Port).To(BeZero())
+			})
+		})
+
+		Context("when the disk quota is not provided", func() {
+			BeforeEach(func() {
+				desireLRPRequest.DiskMB = 0
+			})
+
+			It("should use the default disk quota", func() {
+				Expect(lrp.DiskMB).To(Equal(defaultDiskQuota))
+			})
+		})
+
+		Context("When the app is using docker lifecycle", func() {
+			BeforeEach(func() {
+				desireLRPRequest.Lifecycle = cf.Lifecycle{
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image:   "the-image-url",
+						Command: []string{"command-in-docker"},
+					},
+				}
+			})
+
+			It("should directly convert DockerImageURL", func() {
+				Expect(lrp.Image).To(Equal("the-image-url"))
+			})
+
+			It("should set command from docker lifecycle", func() {
+				Expect(lrp.Command).To(Equal([]string{"command-in-docker"}))
+			})
+
+			It("sets the healthcheck information", func() {
+				health := lrp.Health
+				Expect(health.Type).To(Equal("http"))
+				Expect(health.Port).To(Equal(int32(8000)))
+				Expect(health.Endpoint).To(Equal("/heat"))
+				Expect(health.TimeoutMs).To(Equal(uint(400)))
+			})
+
+			It("shouldn't set privateRegistry information", func() {
+				Expect(lrp.PrivateRegistry).To(BeNil())
+			})
+
+			It("assumes that the pod should run as root", func() {
+				Expect(lrp.RunsAsRoot).To(BeFalse())
+			})
+
+			Context("when the image lives in a private registry", func() {
 				BeforeEach(func() {
 					desireLRPRequest.Lifecycle = cf.Lifecycle{
 						DockerLifecycle: &cf.DockerLifecycle{
-							Image:   "the-image-url",
-							Command: []string{"command-in-docker"},
+							Image:            "my-secret-docker-registry.docker.io:5000/repo/the-mighty-image:not-latest",
+							Command:          []string{"command-in-docker"},
+							RegistryUsername: "super-user",
+							RegistryPassword: "super-password",
 						},
 					}
 				})
 
-				It("should directly convert DockerImageURL", func() {
-					Expect(lrp.Image).To(Equal("the-image-url"))
+				It("should set the docker image url", func() {
+					Expect(lrp.Image).To(Equal("my-secret-docker-registry.docker.io:5000/repo/the-mighty-image:not-latest"))
 				})
 
-				It("should set command from docker lifecycle", func() {
-					Expect(lrp.Command).To(Equal([]string{"command-in-docker"}))
+				It("should provide information about the private regisry", func() {
+					Expect(lrp.PrivateRegistry).ToNot(BeNil())
+					Expect(lrp.PrivateRegistry.Username).To(Equal("super-user"))
+					Expect(lrp.PrivateRegistry.Password).To(Equal("super-password"))
+					Expect(lrp.PrivateRegistry.Server).To(Equal("my-secret-docker-registry.docker.io"))
 				})
 
-				It("sets the healthcheck information", func() {
-					health := lrp.Health
-					Expect(health.Type).To(Equal("http"))
-					Expect(health.Port).To(Equal(int32(8000)))
-					Expect(health.Endpoint).To(Equal("/heat"))
-					Expect(health.TimeoutMs).To(Equal(uint(400)))
+				Context("and the registry URL does not contain a host", func() {
+					BeforeEach(func() {
+						desireLRPRequest.Lifecycle = cf.Lifecycle{
+							DockerLifecycle: &cf.DockerLifecycle{
+								Image:            "repo/the-mighty-image:not-latest",
+								Command:          []string{"command-in-docker"},
+								RegistryUsername: "super-user",
+								RegistryPassword: "super-password",
+							},
+						}
+					})
+
+					It("should default to the docker hub", func() {
+						Expect(lrp.PrivateRegistry.Server).To(Equal("index.docker.io/v1/"))
+					})
+				})
+			})
+
+			Context("when running docker images with root user is allowed", func() {
+				BeforeEach(func() {
+					allowRunImageAsRoot = true
+					imgMetadataFetcher.Returns(&v1.ImageConfig{}, nil)
+					imgRefParser.Returns("//some-docker-image-ref", nil)
 				})
 
-				It("shouldn't set privateRegistry information", func() {
-					Expect(lrp.PrivateRegistry).To(BeNil())
+				It("should parse the docker image ref", func() {
+					Expect(imgRefParser.CallCount()).To(Equal(1))
+					Expect(imgRefParser.ArgsForCall(0)).To(Equal(lrp.Image))
 				})
 
-				It("assumes that the pod should run as root", func() {
-					Expect(lrp.RunsAsRoot).To(BeFalse())
+				It("should fetch the image metadata", func() {
+					Expect(imgMetadataFetcher.CallCount()).To(Equal(1))
+					dockerRef, sysCtx := imgMetadataFetcher.ArgsForCall(0)
+
+					Expect(dockerRef).To(Equal("//some-docker-image-ref"))
+					Expect(sysCtx.DockerAuthConfig.Username).To(BeEmpty())
+					Expect(sysCtx.DockerAuthConfig.Password).To(BeEmpty())
 				})
 
-				verifyLRPConvertedSuccessfully()
+				Context("and the image user is root", func() {
+					BeforeEach(func() {
+						imgMetadataFetcher.Returns(&v1.ImageConfig{
+							User: "root",
+						}, nil)
+					})
+
+					It("should be allowed to run as root", func() {
+						Expect(lrp.RunsAsRoot).To(BeTrue())
+					})
+				})
+
+				Context("and the image user is empty", func() {
+					BeforeEach(func() {
+						imgMetadataFetcher.Returns(&v1.ImageConfig{
+							User: "",
+						}, nil)
+					})
+
+					It("should be allowed to run as root", func() {
+						Expect(lrp.RunsAsRoot).To(BeTrue())
+					})
+				})
+
+				Context("and the image user is UID 0", func() {
+					BeforeEach(func() {
+						imgMetadataFetcher.Returns(&v1.ImageConfig{
+							User: "0",
+						}, nil)
+					})
+
+					It("should be allowed to run as root", func() {
+						Expect(lrp.RunsAsRoot).To(BeTrue())
+					})
+				})
+
+				Context("and the image user is not root", func() {
+					BeforeEach(func() {
+						imgMetadataFetcher.Returns(&v1.ImageConfig{
+							User: "vcap",
+						}, nil)
+					})
+
+					It("should not be allowed to run as root", func() {
+						Expect(lrp.RunsAsRoot).To(BeFalse())
+					})
+				})
 
 				Context("when the image lives in a private registry", func() {
 					BeforeEach(func() {
@@ -293,149 +417,32 @@ var _ = Describe("OPI Converter", func() {
 						}
 					})
 
-					It("should set the docker image url", func() {
-						Expect(lrp.Image).To(Equal("my-secret-docker-registry.docker.io:5000/repo/the-mighty-image:not-latest"))
+					It("should provide username & password", func() {
+						Expect(imgMetadataFetcher.CallCount()).To(Equal(1))
+						_, sysCtx := imgMetadataFetcher.ArgsForCall(0)
+
+						Expect(sysCtx.DockerAuthConfig.Username).To(Equal("super-user"))
+						Expect(sysCtx.DockerAuthConfig.Password).To(Equal("super-password"))
 					})
-
-					It("should provide information about the private regisry", func() {
-						Expect(lrp.PrivateRegistry).ToNot(BeNil())
-						Expect(lrp.PrivateRegistry.Username).To(Equal("super-user"))
-						Expect(lrp.PrivateRegistry.Password).To(Equal("super-password"))
-						Expect(lrp.PrivateRegistry.Server).To(Equal("my-secret-docker-registry.docker.io"))
-					})
-
-					Context("and the registry URL does not contain a host", func() {
-						BeforeEach(func() {
-							desireLRPRequest.Lifecycle = cf.Lifecycle{
-								DockerLifecycle: &cf.DockerLifecycle{
-									Image:            "repo/the-mighty-image:not-latest",
-									Command:          []string{"command-in-docker"},
-									RegistryUsername: "super-user",
-									RegistryPassword: "super-password",
-								},
-							}
-						})
-
-						It("should default to the docker hub", func() {
-							Expect(lrp.PrivateRegistry.Server).To(Equal("index.docker.io/v1/"))
-						})
-					})
-
-					verifyLRPConvertedSuccessfully()
 				})
 
-				Context("when running docker images with root user is allowed", func() {
+				Context("when image ref parsing fails", func() {
 					BeforeEach(func() {
-						allowRunImageAsRoot = true
-						imgMetadataFetcher.Returns(&v1.ImageConfig{}, nil)
-						imgRefParser.Returns("//some-docker-image-ref", nil)
+						imgRefParser.Returns("", errors.New("uh-oh-parsing-failed"))
 					})
 
-					It("should parse the docker image ref", func() {
-						Expect(imgRefParser.CallCount()).To(Equal(1))
-						Expect(imgRefParser.ArgsForCall(0)).To(Equal(lrp.Image))
+					It("should propagate the error", func() {
+						Expect(err).To(MatchError(ContainSubstring("uh-oh-parsing-failed")))
+					})
+				})
+
+				Context("when metadata fetching fails", func() {
+					BeforeEach(func() {
+						imgMetadataFetcher.Returns(nil, errors.New("uh-oh-fetching-failed"))
 					})
 
-					It("should fetch the image metadata", func() {
-						Expect(imgMetadataFetcher.CallCount()).To(Equal(1))
-						dockerRef, sysCtx := imgMetadataFetcher.ArgsForCall(0)
-
-						Expect(dockerRef).To(Equal("//some-docker-image-ref"))
-						Expect(sysCtx.DockerAuthConfig.Username).To(BeEmpty())
-						Expect(sysCtx.DockerAuthConfig.Password).To(BeEmpty())
-					})
-
-					Context("and the image user is root", func() {
-						BeforeEach(func() {
-							imgMetadataFetcher.Returns(&v1.ImageConfig{
-								User: "root",
-							}, nil)
-						})
-
-						It("should be allowed to run as root", func() {
-							Expect(lrp.RunsAsRoot).To(BeTrue())
-						})
-					})
-
-					Context("and the image user is empty", func() {
-
-						BeforeEach(func() {
-							imgMetadataFetcher.Returns(&v1.ImageConfig{
-								User: "",
-							}, nil)
-						})
-
-						It("should be allowed to run as root", func() {
-							Expect(lrp.RunsAsRoot).To(BeTrue())
-						})
-					})
-
-					Context("and the image user is UID 0", func() {
-
-						BeforeEach(func() {
-							imgMetadataFetcher.Returns(&v1.ImageConfig{
-								User: "0",
-							}, nil)
-						})
-
-						It("should be allowed to run as root", func() {
-							Expect(lrp.RunsAsRoot).To(BeTrue())
-						})
-					})
-
-					Context("and the image user is not root", func() {
-
-						BeforeEach(func() {
-							imgMetadataFetcher.Returns(&v1.ImageConfig{
-								User: "vcap",
-							}, nil)
-						})
-
-						It("should not be allowed to run as root", func() {
-							Expect(lrp.RunsAsRoot).To(BeFalse())
-						})
-					})
-
-					Context("when the image lives in a private registry", func() {
-
-						BeforeEach(func() {
-							desireLRPRequest.Lifecycle = cf.Lifecycle{
-								DockerLifecycle: &cf.DockerLifecycle{
-									Image:            "my-secret-docker-registry.docker.io:5000/repo/the-mighty-image:not-latest",
-									Command:          []string{"command-in-docker"},
-									RegistryUsername: "super-user",
-									RegistryPassword: "super-password",
-								},
-							}
-						})
-
-						It("should provide username & password", func() {
-							Expect(imgMetadataFetcher.CallCount()).To(Equal(1))
-							_, sysCtx := imgMetadataFetcher.ArgsForCall(0)
-
-							Expect(sysCtx.DockerAuthConfig.Username).To(Equal("super-user"))
-							Expect(sysCtx.DockerAuthConfig.Password).To(Equal("super-password"))
-						})
-					})
-
-					Context("when image ref parsing fails", func() {
-						BeforeEach(func() {
-							imgRefParser.Returns("", errors.New("uh-oh-parsing-failed"))
-						})
-
-						It("should propagate the error", func() {
-							Expect(err).To(MatchError(ContainSubstring("uh-oh-parsing-failed")))
-						})
-					})
-
-					Context("when metadata fetching fails", func() {
-						BeforeEach(func() {
-							imgMetadataFetcher.Returns(nil, errors.New("uh-oh-fetching-failed"))
-						})
-
-						It("should propagate the error", func() {
-							Expect(err).To(MatchError(ContainSubstring("uh-oh-fetching-failed")))
-						})
+					It("should propagate the error", func() {
+						Expect(err).To(MatchError(ContainSubstring("uh-oh-fetching-failed")))
 					})
 				})
 			})
@@ -474,8 +481,6 @@ var _ = Describe("OPI Converter", func() {
 				It("assumes that the pod should not run as root", func() {
 					Expect(lrp.RunsAsRoot).To(BeFalse())
 				})
-
-				verifyLRPConvertedSuccessfully()
 			})
 		})
 	})
