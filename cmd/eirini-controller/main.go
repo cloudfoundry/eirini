@@ -21,6 +21,7 @@ import (
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
@@ -57,40 +58,12 @@ func main() {
 	logger := lager.NewLogger("eirini-informer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	stDesirer := &k8s.StatefulSetDesirer{
-		Pods:                              client.NewPod(clientset),
-		Secrets:                           client.NewSecret(clientset),
-		StatefulSets:                      client.NewStatefulSet(clientset),
-		PodDisruptionBudets:               client.NewPodDisruptionBudget(clientset),
-		Events:                            client.NewEvent(clientset),
-		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
-		RegistrySecretName:                eiriniCfg.Properties.RegistrySecretName,
-		RootfsVersion:                     eiriniCfg.Properties.RootfsVersion,
-		LivenessProbeCreator:              k8s.CreateLivenessProbe,
-		ReadinessProbeCreator:             k8s.CreateReadinessProbe,
-		Logger:                            logger.Session("statefulset-desirer"),
-		ApplicationServiceAccount:         eiriniCfg.Properties.ApplicationServiceAccount,
-		AllowAutomountServiceAccountToken: eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
-	}
-
-	taskDesirer := k8s.NewTaskDesirer(
-		logger.Session("task-desirer"),
-		client.NewJob(clientset),
-		client.NewSecret(clientset),
-		"",
-		[]k8s.StagingConfigTLS{},
-		eiriniCfg.Properties.ApplicationServiceAccount,
-		"",
-		eiriniCfg.Properties.RegistrySecretName,
-		eiriniCfg.Properties.RootfsVersion,
-	)
-
 	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
 		Scheme: eirinischeme.Scheme,
 	})
 	cmdcommons.ExitIfError(err)
-	lrpReconciler := reconciler.NewLRP(logger.Session("lrp-reconciler"), controllerClient, stDesirer, client.NewStatefulSet(clientset), mgr.GetScheme())
-	taskReconciler := reconciler.NewTask(logger.Session("task-reconciler"), controllerClient, taskDesirer, mgr.GetScheme())
+	lrpReconciler := createLRPReconciler(logger.Session("lrp-reconciler"), controllerClient, clientset, eiriniCfg, mgr.GetScheme())
+	taskReconciler := createTaskReconciler(logger.Session("task-reconciler"), controllerClient, clientset, eiriniCfg, mgr.GetScheme())
 
 	err = builder.
 		ControllerManagedBy(mgr).
@@ -119,4 +92,50 @@ func readConfigFile(path string) (*eirini.Config, error) {
 	var conf eirini.Config
 	err = yaml.Unmarshal(fileBytes, &conf)
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
+}
+
+func createLRPReconciler(
+	logger lager.Logger,
+	controllerClient runtimeclient.Client,
+	clientset kubernetes.Interface,
+	eiriniCfg *eirini.Config,
+	scheme *runtime.Scheme) *reconciler.LRP {
+	stDesirer := &k8s.StatefulSetDesirer{
+		Pods:                              client.NewPod(clientset),
+		Secrets:                           client.NewSecret(clientset),
+		StatefulSets:                      client.NewStatefulSet(clientset),
+		PodDisruptionBudets:               client.NewPodDisruptionBudget(clientset),
+		Events:                            client.NewEvent(clientset),
+		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
+		RegistrySecretName:                eiriniCfg.Properties.RegistrySecretName,
+		RootfsVersion:                     eiriniCfg.Properties.RootfsVersion,
+		LivenessProbeCreator:              k8s.CreateLivenessProbe,
+		ReadinessProbeCreator:             k8s.CreateReadinessProbe,
+		Logger:                            logger,
+		ApplicationServiceAccount:         eiriniCfg.Properties.ApplicationServiceAccount,
+		AllowAutomountServiceAccountToken: eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
+	}
+
+	return reconciler.NewLRP(logger, controllerClient, stDesirer, client.NewStatefulSet(clientset), scheme)
+}
+
+func createTaskReconciler(
+	logger lager.Logger,
+	controllerClient runtimeclient.Client,
+	clientset kubernetes.Interface,
+	eiriniCfg *eirini.Config,
+	scheme *runtime.Scheme) *reconciler.Task {
+	taskDesirer := k8s.NewTaskDesirer(
+		logger,
+		client.NewJob(clientset),
+		client.NewSecret(clientset),
+		"",
+		[]k8s.StagingConfigTLS{},
+		eiriniCfg.Properties.ApplicationServiceAccount,
+		"",
+		eiriniCfg.Properties.RegistrySecretName,
+		eiriniCfg.Properties.RootfsVersion,
+	)
+
+	return reconciler.NewTask(logger, controllerClient, taskDesirer, scheme)
 }

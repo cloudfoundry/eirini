@@ -478,7 +478,7 @@ func (m *StatefulSetDesirer) calculateImagePullSecrets(lrp *opi.LRP) []corev1.Lo
 	return imagePullSecrets
 }
 
-func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
+func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet { //nolint:funlen // this is a boilerplate function, its length is fine
 	envs := MapToEnvVar(lrp.Env)
 	fieldEnvs := []corev1.EnvVar{
 		{

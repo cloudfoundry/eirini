@@ -18,6 +18,14 @@ const DockerHubHost = "index.docker.io/v1/"
 
 var dockerRX = regexp.MustCompile(`([a-zA-Z0-9.-]+)(:([0-9]+))?/(\S+/\S+)`) //nolint:gochecknoglobals
 
+type lifecycleOptions struct {
+	command         []string
+	env             map[string]string
+	image           string
+	privateRegistry *opi.PrivateRegistry
+	runsAsRoot      bool
+}
+
 type OPIConverter struct {
 	logger               lager.Logger
 	registryIP           string
@@ -41,13 +49,7 @@ func NewOPIConverter(logger lager.Logger, registryIP string, diskLimitMB int64, 
 }
 
 func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) {
-	var command []string
-	var env map[string]string
-	var image string
-	var privateRegistry *opi.PrivateRegistry
-	var runsAsRoot bool
-
-	env = map[string]string{
+	env := map[string]string{
 		"LANG": "en_US.UTF-8",
 	}
 
@@ -66,62 +68,20 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 		Port:      port,
 	}
 
-	switch {
-	case request.Lifecycle.DockerLifecycle != nil:
-		var err error
-		lifecycle := request.Lifecycle.DockerLifecycle
-		image = lifecycle.Image
-		command = lifecycle.Command
-		registryUsername := lifecycle.RegistryUsername
-		registryPassword := lifecycle.RegistryPassword
-		runsAsRoot, err = c.isAllowedToRunAsRoot(lifecycle)
-		if err != nil {
-			return opi.LRP{}, errors.Wrap(err, "failed to verify if docker image needs root user")
-		}
-
-		if registryUsername != "" || registryPassword != "" {
-			privateRegistry = &opi.PrivateRegistry{
-				Server:   parseRegistryHost(image),
-				Username: registryUsername,
-				Password: registryPassword,
-			}
-		}
-
-	case request.Lifecycle.BuildpackLifecycle != nil:
-		var buildpackEnv map[string]string
-		lifecycle := request.Lifecycle.BuildpackLifecycle
-		image, command, buildpackEnv = c.buildpackProperties(lifecycle.DropletGUID, lifecycle.DropletHash, lifecycle.StartCommand)
-		env = mergeMaps(env, buildpackEnv)
-		runsAsRoot = false
-
-	default:
-		return opi.LRP{}, fmt.Errorf("missing lifecycle data")
+	lrpLifecycleOptions, err := c.getLifecycleOptions(request)
+	if err != nil {
+		return opi.LRP{}, err
 	}
-
-	routes := getRequestedRoutes(request)
 
 	identifier := opi.LRPIdentifier{
 		GUID:    request.GUID,
 		Version: request.Version,
 	}
 
-	volumeMounts := []opi.VolumeMount{}
-
-	for _, vm := range request.VolumeMounts {
-		volumeMounts = append(volumeMounts, opi.VolumeMount{
-			MountPath: vm.MountDir,
-			ClaimName: vm.VolumeID,
-		})
-	}
-	diskMB := c.diskLimitMB
-	if request.DiskMB != 0 {
-		diskMB = request.DiskMB
-	}
-
 	return opi.LRP{
 		AppName:                request.AppName,
 		AppGUID:                request.AppGUID,
-		AppURIs:                routes,
+		AppURIs:                getRequestedRoutes(request),
 		LastUpdated:            request.LastUpdated,
 		OrgName:                request.OrganizationName,
 		OrgGUID:                request.OrganizationGUID,
@@ -129,20 +89,20 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 		SpaceGUID:              request.SpaceGUID,
 		LRPIdentifier:          identifier,
 		ProcessType:            request.ProcessType,
-		Image:                  image,
+		Image:                  lrpLifecycleOptions.image,
 		TargetInstances:        request.NumInstances,
-		Command:                command,
-		Env:                    mergeMaps(request.Environment, env),
+		Command:                lrpLifecycleOptions.command,
+		Env:                    mergeMaps(request.Environment, env, lrpLifecycleOptions.env),
 		Health:                 healthcheck,
 		Ports:                  request.Ports,
 		MemoryMB:               request.MemoryMB,
-		DiskMB:                 diskMB,
+		DiskMB:                 c.computeDiskSize(request),
 		CPUWeight:              request.CPUWeight,
-		VolumeMounts:           volumeMounts,
+		VolumeMounts:           convertVolumeMounts(request),
 		LRP:                    request.LRP,
 		UserDefinedAnnotations: request.UserDefinedAnnotations,
-		PrivateRegistry:        privateRegistry,
-		RunsAsRoot:             runsAsRoot,
+		PrivateRegistry:        lrpLifecycleOptions.privateRegistry,
+		RunsAsRoot:             lrpLifecycleOptions.runsAsRoot,
 	}, nil
 }
 
@@ -275,21 +235,6 @@ func (c *OPIConverter) getImageUser(lifecycle *cf.DockerLifecycle) (string, erro
 	return imgMetadata.User, nil
 }
 
-func (c *OPIConverter) buildpackProperties(dropletGUID, dropletHash, startCommand string) (string, []string, map[string]string) {
-	image := c.imageURI(dropletGUID, dropletHash)
-	command := []string{"dumb-init", "--", "/lifecycle/launch"}
-	buildpackEnv := map[string]string{
-		"HOME":          "/home/vcap/app",
-		"PATH":          "/usr/local/bin:/usr/bin:/bin",
-		"USER":          "vcap",
-		"PWD":           "/home/vcap/app",
-		"TMPDIR":        "/home/vcap/tmp",
-		"START_COMMAND": startCommand,
-	}
-
-	return image, command, buildpackEnv
-}
-
 func getRequestedRoutes(request cf.DesireLRPRequest) []opi.Route {
 	jsonRoutes := request.Routes
 	if jsonRoutes == nil {
@@ -343,4 +288,67 @@ func mergeEnvs(requestEnv []cf.EnvironmentVariable, appliedEnv map[string]string
 	}
 
 	return result
+}
+
+func (c *OPIConverter) getLifecycleOptions(request cf.DesireLRPRequest) (*lifecycleOptions, error) {
+	options := &lifecycleOptions{}
+	switch {
+	case request.Lifecycle.DockerLifecycle != nil:
+		var err error
+		lifecycle := request.Lifecycle.DockerLifecycle
+		options.image = lifecycle.Image
+		options.command = lifecycle.Command
+		options.runsAsRoot, err = c.isAllowedToRunAsRoot(lifecycle)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to verify if docker image needs root user")
+		}
+
+		registryUsername := lifecycle.RegistryUsername
+		registryPassword := lifecycle.RegistryPassword
+		if registryUsername != "" || registryPassword != "" {
+			options.privateRegistry = &opi.PrivateRegistry{
+				Server:   parseRegistryHost(options.image),
+				Username: registryUsername,
+				Password: registryPassword,
+			}
+		}
+
+	case request.Lifecycle.BuildpackLifecycle != nil:
+		lifecycle := request.Lifecycle.BuildpackLifecycle
+
+		options.image = c.imageURI(lifecycle.DropletGUID, lifecycle.DropletHash)
+		options.command = []string{"dumb-init", "--", "/lifecycle/launch"}
+		options.env = map[string]string{
+			"HOME":          "/home/vcap/app",
+			"PATH":          "/usr/local/bin:/usr/bin:/bin",
+			"USER":          "vcap",
+			"PWD":           "/home/vcap/app",
+			"TMPDIR":        "/home/vcap/tmp",
+			"START_COMMAND": lifecycle.StartCommand,
+		}
+		options.runsAsRoot = false
+
+	default:
+		return nil, fmt.Errorf("missing lifecycle data")
+	}
+
+	return options, nil
+}
+
+func convertVolumeMounts(request cf.DesireLRPRequest) []opi.VolumeMount {
+	volumeMounts := []opi.VolumeMount{}
+	for _, vm := range request.VolumeMounts {
+		volumeMounts = append(volumeMounts, opi.VolumeMount{
+			MountPath: vm.MountDir,
+			ClaimName: vm.VolumeID,
+		})
+	}
+	return volumeMounts
+}
+
+func (c *OPIConverter) computeDiskSize(request cf.DesireLRPRequest) int64 {
+	if request.DiskMB != 0 {
+		return request.DiskMB
+	}
+	return c.diskLimitMB
 }

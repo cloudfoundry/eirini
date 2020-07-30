@@ -200,7 +200,7 @@ func (d *TaskDesirer) createTaskSecret(namespace string, task *opi.Task) (*corev
 	return d.secretsCreator.Create(namespace, secret)
 }
 
-func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job {
+func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job { //nolint:funlen // Boilerplate function, size is ok.
 	job := d.toJob(task.Task)
 
 	job.Spec.Template.Spec.ServiceAccountName = d.stagingServiceAccountName

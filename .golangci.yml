@@ -23,7 +23,6 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - funlen
     - wsl
     - goerr113
     - noctx
@@ -48,6 +47,7 @@ issues:
     - path: integration/util/k8s\.go
       linters:
       - gomnd
+      - funlen
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 
