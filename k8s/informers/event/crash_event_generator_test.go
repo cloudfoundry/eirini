@@ -25,14 +25,16 @@ var crashTime = meta.Time{Time: time.Now()}
 
 var _ = Describe("CrashEventGenerator", func() {
 	var (
-		client *fake.Clientset
-		logger *lagertest.TestLogger
-		pod    *v1.Pod
+		client    *fake.Clientset
+		logger    *lagertest.TestLogger
+		pod       *v1.Pod
+		generator event.DefaultCrashEventGenerator
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("crash-event-logger-test")
 		client = fake.NewSimpleClientset()
+		generator = event.NewDefaultCrashEventGenerator(client.CoreV1().Events(""))
 	})
 
 	Context("When app is in CrashLoopBackOff", func() {
@@ -42,8 +44,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 
 			It("should return a crashed report", func() {
-				generator := event.DefaultCrashEventGenerator{}
-				report, returned := generator.Generate(pod, client, logger)
+				report, returned := generator.Generate(pod, logger)
 				Expect(returned).To(BeTrue())
 				Expect(report).To(Equal(events.CrashEvent{
 					ProcessGUID: "test-pod-anno",
@@ -66,8 +67,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 
 			It("should return a crashed report", func() {
-				generator := event.DefaultCrashEventGenerator{}
-				report, returned := generator.Generate(pod, client, logger)
+				report, returned := generator.Generate(pod, logger)
 				Expect(returned).To(BeTrue())
 				Expect(report).To(Equal(events.CrashEvent{
 					ProcessGUID: "test-pod-anno",
@@ -92,8 +92,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 
 			It("should generate a crashed report", func() {
-				generator := event.DefaultCrashEventGenerator{}
-				report, returned := generator.Generate(pod, client, logger)
+				report, returned := generator.Generate(pod, logger)
 				Expect(returned).To(BeTrue())
 				Expect(report).To(Equal(events.CrashEvent{
 					ProcessGUID: "test-pod-anno",
@@ -116,8 +115,7 @@ var _ = Describe("CrashEventGenerator", func() {
 				})
 
 				It("should not generate the report", func() {
-					generator := event.DefaultCrashEventGenerator{}
-					_, returned := generator.Generate(pod, client, logger)
+					_, returned := generator.Generate(pod, logger)
 					Expect(returned).To(BeFalse())
 				})
 
@@ -130,14 +128,12 @@ var _ = Describe("CrashEventGenerator", func() {
 				})
 
 				It("should not generate", func() {
-					generator := event.DefaultCrashEventGenerator{}
-					_, returned := generator.Generate(pod, client, logger)
+					_, returned := generator.Generate(pod, logger)
 					Expect(returned).To(BeFalse())
 				})
 
 				It("should provide a helpful log message", func() {
-					generator := event.DefaultCrashEventGenerator{}
-					generator.Generate(pod, client, logger)
+					generator.Generate(pod, logger)
 
 					logs := logger.Logs()
 					Expect(logs).To(HaveLen(1))
@@ -164,8 +160,7 @@ var _ = Describe("CrashEventGenerator", func() {
 				})
 
 				It("should not emit a crashed event", func() {
-					generator := event.DefaultCrashEventGenerator{}
-					_, returned := generator.Generate(pod, client, logger)
+					_, returned := generator.Generate(pod, logger)
 					Expect(returned).To(BeFalse())
 				})
 			})
@@ -179,14 +174,12 @@ var _ = Describe("CrashEventGenerator", func() {
 				})
 
 				It("should not emit a crashed event", func() {
-					generator := event.DefaultCrashEventGenerator{}
-					_, returned := generator.Generate(pod, client, logger)
+					_, returned := generator.Generate(pod, logger)
 					Expect(returned).To(BeFalse())
 				})
 
 				It("should provide a helpful log message", func() {
-					generator := event.DefaultCrashEventGenerator{}
-					generator.Generate(pod, client, logger)
+					generator.Generate(pod, logger)
 					logs := logger.Logs()
 					Expect(logs).To(HaveLen(1))
 					log := logs[0]
@@ -201,8 +194,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 
 			It("should generate a crashed report", func() {
-				generator := event.DefaultCrashEventGenerator{}
-				report, returned := generator.Generate(pod, client, logger)
+				report, returned := generator.Generate(pod, logger)
 				Expect(returned).To(BeTrue())
 				Expect(report).To(Equal(events.CrashEvent{
 					ProcessGUID: "test-pod-anno",
@@ -236,8 +228,7 @@ var _ = Describe("CrashEventGenerator", func() {
 		})
 
 		It("should return a crashed report", func() {
-			generator := event.DefaultCrashEventGenerator{}
-			report, returned := generator.Generate(pod, client, logger)
+			report, returned := generator.Generate(pod, logger)
 			Expect(returned).To(BeTrue())
 			Expect(report).To(Equal(events.CrashEvent{
 				ProcessGUID: "test-pod-anno",
@@ -258,8 +249,7 @@ var _ = Describe("CrashEventGenerator", func() {
 		})
 
 		It("should not send reports", func() {
-			generator := event.DefaultCrashEventGenerator{}
-			_, returned := generator.Generate(pod, client, logger)
+			_, returned := generator.Generate(pod, logger)
 			Expect(returned).To(BeFalse())
 		})
 
@@ -277,8 +267,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 
 			It("should not send any reports", func() {
-				generator := event.DefaultCrashEventGenerator{}
-				_, returned := generator.Generate(pod, client, logger)
+				_, returned := generator.Generate(pod, logger)
 				Expect(returned).To(BeFalse())
 			})
 		})
@@ -289,8 +278,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 
 			It("should not send any reports", func() {
-				generator := event.DefaultCrashEventGenerator{}
-				_, returned := generator.Generate(pod, client, logger)
+				_, returned := generator.Generate(pod, logger)
 				Expect(returned).To(BeFalse())
 			})
 		})

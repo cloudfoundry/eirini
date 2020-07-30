@@ -9,6 +9,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/events"
+	k8sclient "code.cloudfoundry.org/eirini/k8s/client"
 	k8sevent "code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/tps/cc_client"
@@ -59,7 +60,7 @@ func launchEventReporter(clientset kubernetes.Interface, uri string, tlsDisabled
 
 	crashLogger := lager.NewLogger("instance-crash-informer")
 	crashLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, make(chan struct{}), crashLogger, k8sevent.DefaultCrashEventGenerator{}, emitter)
+	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, make(chan struct{}), crashLogger, k8sevent.NewDefaultCrashEventGenerator(k8sclient.NewEvent(clientset)), emitter)
 
 	crashInformer.Start()
 }

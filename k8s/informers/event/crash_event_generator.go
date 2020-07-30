@@ -7,12 +7,19 @@ import (
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
-type DefaultCrashEventGenerator struct{}
+type DefaultCrashEventGenerator struct {
+	eventLister k8s.EventLister
+}
 
-func (DefaultCrashEventGenerator) Generate(pod *v1.Pod, clientset kubernetes.Interface, logger lager.Logger) (events.CrashEvent, bool) {
+func NewDefaultCrashEventGenerator(eventLister k8s.EventLister) DefaultCrashEventGenerator {
+	return DefaultCrashEventGenerator{
+		eventLister: eventLister,
+	}
+}
+
+func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (events.CrashEvent, bool) {
 	statuses := pod.Status.ContainerStatuses
 	if len(statuses) == 0 {
 		return events.CrashEvent{}, false
@@ -25,7 +32,7 @@ func (DefaultCrashEventGenerator) Generate(pod *v1.Pod, clientset kubernetes.Int
 	}
 
 	if status := getTerminatedContainerStatusIfAny(pod.Status.ContainerStatuses); status != nil {
-		return generateReportForTerminatedPod(pod, status, clientset, logger)
+		return g.generateReportForTerminatedPod(pod, status, logger)
 	}
 
 	if container := getMisconfiguredContainerStatusIfAny(pod.Status.ContainerStatuses); container != nil {
@@ -42,8 +49,8 @@ func (DefaultCrashEventGenerator) Generate(pod *v1.Pod, clientset kubernetes.Int
 	return events.CrashEvent{}, false
 }
 
-func generateReportForTerminatedPod(pod *v1.Pod, status *v1.ContainerStatus, clientset kubernetes.Interface, logger lager.Logger) (events.CrashEvent, bool) {
-	podEvents, err := k8s.GetEvents(clientset.CoreV1().Events(pod.Namespace), *pod)
+func (g DefaultCrashEventGenerator) generateReportForTerminatedPod(pod *v1.Pod, status *v1.ContainerStatus, logger lager.Logger) (events.CrashEvent, bool) {
+	podEvents, err := k8s.GetEvents(g.eventLister, *pod)
 	if err != nil {
 		logger.Error("failed-to-get-k8s-events", err, lager.Data{"guid": pod.Annotations[k8s.AnnotationProcessGUID]})
 		return events.CrashEvent{}, false

@@ -8,16 +8,14 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/lager"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 type FakeCrashEventGenerator struct {
-	GenerateStub        func(*v1.Pod, kubernetes.Interface, lager.Logger) (events.CrashEvent, bool)
+	GenerateStub        func(*v1.Pod, lager.Logger) (events.CrashEvent, bool)
 	generateMutex       sync.RWMutex
 	generateArgsForCall []struct {
 		arg1 *v1.Pod
-		arg2 kubernetes.Interface
-		arg3 lager.Logger
+		arg2 lager.Logger
 	}
 	generateReturns struct {
 		result1 events.CrashEvent
@@ -31,18 +29,17 @@ type FakeCrashEventGenerator struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCrashEventGenerator) Generate(arg1 *v1.Pod, arg2 kubernetes.Interface, arg3 lager.Logger) (events.CrashEvent, bool) {
+func (fake *FakeCrashEventGenerator) Generate(arg1 *v1.Pod, arg2 lager.Logger) (events.CrashEvent, bool) {
 	fake.generateMutex.Lock()
 	ret, specificReturn := fake.generateReturnsOnCall[len(fake.generateArgsForCall)]
 	fake.generateArgsForCall = append(fake.generateArgsForCall, struct {
 		arg1 *v1.Pod
-		arg2 kubernetes.Interface
-		arg3 lager.Logger
-	}{arg1, arg2, arg3})
-	fake.recordInvocation("Generate", []interface{}{arg1, arg2, arg3})
+		arg2 lager.Logger
+	}{arg1, arg2})
+	fake.recordInvocation("Generate", []interface{}{arg1, arg2})
 	fake.generateMutex.Unlock()
 	if fake.GenerateStub != nil {
-		return fake.GenerateStub(arg1, arg2, arg3)
+		return fake.GenerateStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -57,17 +54,17 @@ func (fake *FakeCrashEventGenerator) GenerateCallCount() int {
 	return len(fake.generateArgsForCall)
 }
 
-func (fake *FakeCrashEventGenerator) GenerateCalls(stub func(*v1.Pod, kubernetes.Interface, lager.Logger) (events.CrashEvent, bool)) {
+func (fake *FakeCrashEventGenerator) GenerateCalls(stub func(*v1.Pod, lager.Logger) (events.CrashEvent, bool)) {
 	fake.generateMutex.Lock()
 	defer fake.generateMutex.Unlock()
 	fake.GenerateStub = stub
 }
 
-func (fake *FakeCrashEventGenerator) GenerateArgsForCall(i int) (*v1.Pod, kubernetes.Interface, lager.Logger) {
+func (fake *FakeCrashEventGenerator) GenerateArgsForCall(i int) (*v1.Pod, lager.Logger) {
 	fake.generateMutex.RLock()
 	defer fake.generateMutex.RUnlock()
 	argsForCall := fake.generateArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeCrashEventGenerator) GenerateReturns(result1 events.CrashEvent, result2 bool) {
