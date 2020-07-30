@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -33,15 +34,12 @@ type options struct {
 	ConfigFile string `short:"c" long:"config" description:"Config for running eirini-controller"`
 }
 
-func init() {
-	if err := kscheme.AddToScheme(eirinischeme.Scheme); err != nil {
-		panic("failed to add the k8s scheme to the LRP CRD scheme")
-	}
-}
-
 func main() {
+	err := kscheme.AddToScheme(eirinischeme.Scheme)
+	cmdcommons.ExitIfError(fmt.Errorf("failed to add the k8s scheme to the LRP CRD scheme: %w", err))
+
 	var opts options
-	_, err := flags.ParseArgs(&opts, os.Args)
+	_, err = flags.ParseArgs(&opts, os.Args)
 	cmdcommons.ExitIfError(err)
 
 	eiriniCfg, err := readConfigFile(opts.ConfigFile)

@@ -23,7 +23,6 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - gochecknoinits
     - funlen
     - wsl
     - goerr113
