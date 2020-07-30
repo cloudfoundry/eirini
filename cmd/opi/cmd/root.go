@@ -7,17 +7,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "opi",
-	Short: "put a K8s behind CF",
-}
-
-func init() {
-	initConnect()
-	rootCmd.AddCommand(connectCmd)
-}
-
 func Execute() {
+	rootCmd := &cobra.Command{
+		Use:   "opi",
+		Short: "put a K8s behind CF",
+	}
+
+	connectCmd := &cobra.Command{
+		Use:   "connect",
+		Short: "connects CloudFoundry with Kubernetes",
+		Run:   connect,
+	}
+	connectCmd.Flags().StringP("config", "c", "", "Path to the Eirini config file")
+
+	rootCmd.AddCommand(connectCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

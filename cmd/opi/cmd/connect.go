@@ -29,12 +29,6 @@ import (
 	"code.cloudfoundry.org/tlsconfig"
 )
 
-var connectCmd = &cobra.Command{
-	Use:   "connect",
-	Short: "connects CloudFoundry with Kubernetes",
-	Run:   connect,
-}
-
 func connect(cmd *cobra.Command, args []string) {
 	path, err := cmd.Flags().GetString("config")
 	cmdcommons.ExitIfError(err)
@@ -268,8 +262,4 @@ func initConverter(cfg *eirini.Config) *bifrost.OPIConverter {
 		cfg.Properties.AllowRunImageAsRoot,
 		stagerCfg,
 	)
-}
-
-func initConnect() {
-	connectCmd.Flags().StringP("config", "c", "", "Path to the Eirini config file")
 }

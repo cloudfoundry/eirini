@@ -23,7 +23,6 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - gochecknoglobals
     - gochecknoinits
     - funlen
     - wsl
@@ -40,6 +39,10 @@ issues:
       - goconst
       - dupl
       - gomnd
+      - gochecknoglobals
+    - path: _suite_test\.go
+      linters:
+      - gochecknoglobals
     - path: cmd/simulator/main\.go
       linters:
       - gomnd
