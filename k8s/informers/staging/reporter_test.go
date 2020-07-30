@@ -110,7 +110,7 @@ var _ = Describe("FailedStagingReporter", func() {
 				logs := logger.Logs()
 				Expect(logs).To(HaveLen(1))
 				log := logs[0]
-				Expect(log.Message).To(Equal("staging-reporter-test.staging pod failed"))
+				Expect(log.Message).To(Equal("staging-reporter-test.report.staging-pod-failed"))
 				Expect(log.Data).To(HaveKeyWithValue("error", "Container 'failing-container' in Pod 'not-feeling-well' failed: ErrImagePull"))
 			})
 		})
@@ -131,7 +131,7 @@ var _ = Describe("FailedStagingReporter", func() {
 				logs := logger.Logs()
 				Expect(logs).To(HaveLen(1))
 				log := logs[0]
-				Expect(log.Message).To(Equal("staging-reporter-test.staging pod failed"))
+				Expect(log.Message).To(Equal("staging-reporter-test.report.staging-pod-failed"))
 				Expect(log.Data).To(HaveKeyWithValue("error", "Container 'failing-container' in Pod 'not-feeling-well' failed: ErrImagePull"))
 			})
 		})
@@ -163,7 +163,7 @@ var _ = Describe("FailedStagingReporter", func() {
 				logs := logger.Logs()
 				Expect(logs).To(HaveLen(1))
 				log := logs[0]
-				Expect(log.Message).To(Equal("staging-reporter-test.getting env variable 'COMPLETION_CALLBACK' failed"))
+				Expect(log.Message).To(Equal("staging-reporter-test.report.failed-to-get-completion-callback"))
 			})
 
 			It("should not talk to Eirini", func() {
@@ -187,7 +187,7 @@ var _ = Describe("FailedStagingReporter", func() {
 				logs := logger.Logs()
 				Expect(logs).To(HaveLen(1))
 				log := logs[0]
-				Expect(log.Message).To(Equal("staging-reporter-test.getting env variable 'EIRINI_ADDRESS' failed"))
+				Expect(log.Message).To(Equal("staging-reporter-test.report.failed-to-get-eirini-address"))
 			})
 
 			It("should not talk to Eirini", func() {

@@ -75,7 +75,7 @@ func (c *CrashInformer) updateFunc(_ interface{}, newObj interface{}) {
 	event, send := c.eventGenerator.Generate(pod, c.clientset, c.logger)
 	if send {
 		if err := c.crashEmitter.Emit(event); err != nil {
-			c.logger.Error("Failed to emit crash event", err)
+			c.logger.Error("failed-to-emit-crash-event", err)
 		}
 	}
 }

@@ -849,7 +849,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 			It("logs useful information", func() {
 				_ = statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "missing_guid", Version: "some_version"})
-				Expect(logger).To(gbytes.Say("statefulset does not exist.*missing_guid.*some_version"))
+				Expect(logger).To(gbytes.Say("statefulset-does-not-exist.*missing_guid.*some_version"))
 			})
 		})
 	})

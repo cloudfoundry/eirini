@@ -60,6 +60,8 @@ type executionMetadata struct {
 }
 
 func (s DockerStaging) TransferStaging(ctx context.Context, stagingGUID string, request cf.StagingRequest) error {
+	logger := s.Logger.Session("transfer-staging", lager.Data{"staging-guid": stagingGUID})
+
 	taskCallbackResponse := cf.StagingCompletedRequest{
 		TaskGUID:   stagingGUID,
 		Annotation: fmt.Sprintf(`{"completion_callback": "%s"}`, request.CompletionCallback),
@@ -67,19 +69,19 @@ func (s DockerStaging) TransferStaging(ctx context.Context, stagingGUID string, 
 
 	imageConfig, err := s.getImageConfig(request.Lifecycle.DockerLifecycle)
 	if err != nil {
-		s.Logger.Error("failed to get image config", err)
+		logger.Error("failed-to-get-image-config", err)
 		return s.respondWithFailure(taskCallbackResponse, errors.Wrap(err, "failed to get image config"))
 	}
 
 	ports, err := parseExposedPorts(imageConfig)
 	if err != nil {
-		s.Logger.Error("failed to parse exposed ports", err)
+		logger.Error("failed-to-parse-exposed-ports", err)
 		return s.respondWithFailure(taskCallbackResponse, errors.Wrap(err, "failed to parse exposed ports"))
 	}
 
 	stagingResult, err := buildStagingResult(request.Lifecycle.DockerLifecycle.Image, ports)
 	if err != nil {
-		s.Logger.Error("failed to build staging result", err)
+		logger.Error("failed-to-build-staging-result", err)
 		return s.respondWithFailure(taskCallbackResponse, errors.Wrap(err, "failed to build staging result"))
 	}
 

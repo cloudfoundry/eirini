@@ -350,7 +350,7 @@ var _ = Describe("TaskDesirer", func() {
 				})
 
 				It("returns an error", func() {
-					Expect(err).To(MatchError("create-secret-err"))
+					Expect(err).To(MatchError(ContainSubstring("create-secret-err")))
 				})
 			})
 		})

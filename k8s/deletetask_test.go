@@ -163,7 +163,7 @@ var _ = Describe("TaskDeleter", func() {
 
 				It("returns the error", func() {
 					_, err := deleter.Delete(task.GUID)
-					Expect(err).To(MatchError("docker-secret-delete-failure"))
+					Expect(err).To(MatchError(ContainSubstring("docker-secret-delete-failure")))
 				})
 			})
 		})
@@ -264,7 +264,7 @@ var _ = Describe("TaskDeleter", func() {
 				})
 
 				It("returns the error", func() {
-					Expect(deleter.DeleteStaging(task.GUID)).To(MatchError("docker-secret-delete-failure"))
+					Expect(deleter.DeleteStaging(task.GUID)).To(MatchError(ContainSubstring("docker-secret-delete-failure")))
 				})
 			})
 		})

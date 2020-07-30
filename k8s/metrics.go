@@ -69,18 +69,20 @@ func (c *metricsCollector) Collect() ([]metrics.Message, error) {
 	if err != nil {
 		return []metrics.Message{}, errors.Wrap(err, "failed to list pods")
 	}
+
 	return c.collectMetrics(pods.Items), nil
 }
 
 func (c *metricsCollector) collectMetrics(pods []apiv1.Pod) []metrics.Message {
+	logger := c.logger.Session("collect")
 	diskMetrics, err := c.diskClient.GetPodMetrics()
 	if err != nil {
-		c.logger.Error("failed-to-get-disk-metrics", err, lager.Data{})
+		logger.Error("failed-to-get-disk-metrics", err, lager.Data{})
 	}
 	messages := []metrics.Message{}
 	podMetrics, err := c.getPodMetrics()
 	if err != nil {
-		c.logger.Error("Failed to get metrics from Kubernetes", err, lager.Data{})
+		logger.Error("failed-to-get-metrics-from-kubernetes", err, lager.Data{})
 	}
 
 	for _, pod := range pods {

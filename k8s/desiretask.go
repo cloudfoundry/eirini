@@ -109,9 +109,12 @@ func NewTaskDesirerWithEiriniInstance(
 }
 
 func (d *TaskDesirer) Desire(namespace string, task *opi.Task, opts ...DesireOption) error {
+	logger := d.logger.Session("desire", lager.Data{"guid": task.GUID, "name": task.Name, "namespace": namespace})
+
 	job := d.toTaskJob(task)
 	if imageInPrivateRegistry(task) {
 		if err := d.addImagePullSecret(namespace, task, job); err != nil {
+			logger.Error("failed-to-add-image-pull-secret", err)
 			return err
 		}
 	}
@@ -119,18 +122,28 @@ func (d *TaskDesirer) Desire(namespace string, task *opi.Task, opts ...DesireOpt
 	for _, opt := range opts {
 		err := opt(job)
 		if err != nil {
-			d.logger.Error("failed to apply option", err, lager.Data{"guid": task.GUID, "name": task.Name})
+			logger.Error("failed-to-apply-option", err)
 			return errors.Wrap(err, "failed to apply options")
 		}
 	}
 
 	_, err := d.jobCreator.Create(namespace, job)
-	return err
+	if err != nil {
+		logger.Error("failed-to-create-job", err)
+		return err
+	}
+	return nil
 }
 
 func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
+	logger := d.logger.Session("desire-staging", lager.Data{"guid": task.GUID, "name": task.Name})
+
 	_, err := d.jobCreator.Create(d.defaultStagingNamespace, d.toStagingJob(task))
-	return err
+	if err != nil {
+		logger.Error("failed-to-create-job", err)
+		return err
+	}
+	return nil
 }
 
 func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
@@ -178,7 +191,7 @@ func (d *TaskDesirer) createTaskSecret(namespace string, task *opi.Task) (*corev
 	)
 	dockerConfigJSON, err := dockerConfig.JSON()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed-to-get-docker-config")
 	}
 	secret.StringData = map[string]string{
 		dockerutils.DockerConfigKey: dockerConfigJSON,
@@ -400,7 +413,7 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 func (d *TaskDesirer) addImagePullSecret(namespace string, task *opi.Task, job *batch.Job) error {
 	createdSecret, err := d.createTaskSecret(namespace, task)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create task secret")
 	}
 
 	spec := &job.Spec.Template.Spec

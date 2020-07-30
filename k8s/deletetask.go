@@ -6,6 +6,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/lager"
+	"github.com/pkg/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	batch "k8s.io/api/batch/v1"
@@ -45,16 +46,17 @@ func NewTaskDeleter(
 }
 
 func (d *TaskDeleter) Delete(guid string) (string, error) {
-	return d.delete(guid, LabelGUID)
+	logger := d.logger.Session("delete", lager.Data{"guid": guid})
+	return d.delete(logger, guid, LabelGUID)
 }
 
 func (d *TaskDeleter) DeleteStaging(guid string) error {
-	_, err := d.delete(guid, LabelStagingGUID)
+	logger := d.logger.Session("delete-staging", lager.Data{"guid": guid})
+	_, err := d.delete(logger, guid, LabelStagingGUID)
 	return err
 }
 
-func (d *TaskDeleter) delete(guid, label string) (string, error) {
-	logger := d.logger.Session("delete", lager.Data{"guid": guid})
+func (d *TaskDeleter) delete(logger lager.Logger, guid, label string) (string, error) {
 	jobs, err := d.jobClient.List(meta_v1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s,%s=%s",
 			label, guid,
@@ -62,16 +64,16 @@ func (d *TaskDeleter) delete(guid, label string) (string, error) {
 		),
 	})
 	if err != nil {
-		logger.Error("failed to list jobs", err)
+		logger.Error("failed-to-list-jobs", err)
 		return "", err
 	}
 	if len(jobs.Items) != 1 {
-		logger.Error("job with guid does not have 1 instance", nil, lager.Data{"instances": len(jobs.Items)})
+		logger.Error("job-does-not-have-1-instance", nil, lager.Data{"instances": len(jobs.Items)})
 		return "", fmt.Errorf("job with guid %s should have 1 instance, but it has: %d", guid, len(jobs.Items))
 	}
 
 	job := jobs.Items[0]
-	if err := d.deleteDockerRegistrySecret(job); err != nil {
+	if err = d.deleteDockerRegistrySecret(logger, job); err != nil {
 		return "", err
 	}
 
@@ -81,12 +83,18 @@ func (d *TaskDeleter) delete(guid, label string) (string, error) {
 	}
 
 	backgroundPropagation := meta_v1.DeletePropagationBackground
-	return callbackURL, d.jobClient.Delete(job.Namespace, job.Name, meta_v1.DeleteOptions{
+	err = d.jobClient.Delete(job.Namespace, job.Name, meta_v1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
+	if err != nil {
+		logger.Error("failed-to-delete-job", err)
+		return "", err
+	}
+
+	return callbackURL, nil
 }
 
-func (d *TaskDeleter) deleteDockerRegistrySecret(job batch.Job) error {
+func (d *TaskDeleter) deleteDockerRegistrySecret(logger lager.Logger, job batch.Job) error {
 	dockerSecretNamePrefix := dockerImagePullSecretNamePrefix(
 		job.Annotations[AnnotationAppName],
 		job.Annotations[AnnotationSpaceName],
@@ -98,7 +106,8 @@ func (d *TaskDeleter) deleteDockerRegistrySecret(job batch.Job) error {
 			continue
 		}
 		if err := d.secretsDeleter.Delete(job.Namespace, secret.Name); err != nil {
-			return err
+			logger.Error("failed-to-delete-secret", err, lager.Data{"name": secret.Name, "namespace": job.Namespace})
+			return errors.Wrap(err, "failed to delete secret")
 		}
 	}
 

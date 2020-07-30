@@ -26,27 +26,29 @@ func (r StateReporter) Report(oldPod, pod *corev1.Pod) {
 	taskGUID := pod.Annotations[k8s.AnnotationGUID]
 	uri := pod.Annotations[k8s.AnnotationCompletionCallback]
 
-	if !r.taskContainerHasJustTerminated(taskGUID, oldPod, pod) {
+	logger := r.Logger.Session("report", lager.Data{"task-guid": taskGUID})
+
+	if !r.taskContainerHasJustTerminated(logger, oldPod, pod) {
 		return
 	}
 
-	req := r.generateTaskCompletedRequest(taskGUID, pod)
+	req := r.generateTaskCompletedRequest(logger, taskGUID, pod)
 
 	if err := utils.Post(r.Client, uri, req); err != nil {
-		r.Logger.Error("cannot send task status response", err, lager.Data{"taskGuid": taskGUID})
+		logger.Error("cannot-send-task-status-response", err)
 	}
 
 	if _, err := r.TaskDeleter.Delete(taskGUID); err != nil {
-		r.Logger.Error("cannot delete job", err, lager.Data{"taskGuid": taskGUID})
+		logger.Error("cannot-delete-job", err)
 	}
 }
 
-func (r StateReporter) taskContainerHasJustTerminated(taskGUID string, oldPod, pod *corev1.Pod) bool {
+func (r StateReporter) taskContainerHasJustTerminated(logger lager.Logger, oldPod, pod *corev1.Pod) bool {
 	oldTaskContainerStatus, hasOldTaskContainerStatus := getTaskContainerStatus(oldPod)
 	taskContainerStatus, hasTaskContainerStatus := getTaskContainerStatus(pod)
 
 	if !hasTaskContainerStatus {
-		r.Logger.Info("updated pod has no task container status", nil, lager.Data{"taskGuid": taskGUID})
+		logger.Info("updated-pod-has-no-task-container-status")
 		return false
 	}
 
@@ -61,7 +63,7 @@ func isTerminatedStatus(status corev1.ContainerStatus) bool {
 	return status.State.Terminated != nil
 }
 
-func (r StateReporter) generateTaskCompletedRequest(guid string, pod *corev1.Pod) cf.TaskCompletedRequest {
+func (r StateReporter) generateTaskCompletedRequest(logger lager.Logger, guid string, pod *corev1.Pod) cf.TaskCompletedRequest {
 	res := cf.TaskCompletedRequest{
 		TaskGUID: guid,
 	}
@@ -71,10 +73,9 @@ func (r StateReporter) generateTaskCompletedRequest(guid string, pod *corev1.Pod
 	if terminated.ExitCode != 0 {
 		res.Failed = true
 		res.FailureReason = terminated.Reason
-		r.Logger.Error("job failed", nil, lager.Data{
-			"taskGuid":       guid,
-			"failureReason":  terminated.Reason,
-			"failureMessage": terminated.Message,
+		logger.Error("job-failed", nil, lager.Data{
+			"failure-reason":  terminated.Reason,
+			"failure-message": terminated.Message,
 		})
 	}
 

@@ -232,7 +232,7 @@ var _ = Describe("Reporter", func() {
 			logs := logger.Logs()
 			Expect(logs).To(HaveLen(1))
 			log := logs[0]
-			Expect(log.Message).To(Equal("task-reporter-test.cannot send task status response"))
+			Expect(log.Message).To(Equal("task-reporter-test.report.cannot-send-task-status-response"))
 			Expect(log.Data).To(HaveKeyWithValue("error", "request not successful: status=502 potato"))
 		})
 

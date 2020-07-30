@@ -24,6 +24,8 @@ type FailedStagingReporter struct {
 func (r FailedStagingReporter) Report(pod *v1.Pod) {
 	stagingGUID := pod.Labels[k8s.LabelStagingGUID]
 
+	logger := r.Logger.Session("report", lager.Data{"staging-guid": stagingGUID})
+
 	status := getFailedContainerStatusIfAny(append(
 		pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...,
 	))
@@ -33,12 +35,12 @@ func (r FailedStagingReporter) Report(pod *v1.Pod) {
 
 	completionCallback, err := utils.GetEnvVarValue("COMPLETION_CALLBACK", pod.Spec.Containers[0].Env)
 	if err != nil {
-		r.Logger.Error("getting env variable 'COMPLETION_CALLBACK' failed", err)
+		logger.Error("failed-to-get-completion-callback", err)
 		return
 	}
 	eiriniAddr, err := utils.GetEnvVarValue("EIRINI_ADDRESS", pod.Spec.Containers[0].Env)
 	if err != nil {
-		r.Logger.Error("getting env variable 'EIRINI_ADDRESS' failed", err)
+		logger.Error("failed-to-get-eirini-address", err)
 		return
 	}
 
@@ -47,17 +49,17 @@ func (r FailedStagingReporter) Report(pod *v1.Pod) {
 		pod.Name,
 		status.State.Waiting.Reason,
 	)
-	r.Logger.Error("staging pod failed", errors.New(reason))
+	logger.Error("staging-pod-failed", errors.New(reason))
 
 	completionRequest, err := r.createFailureCompletionRequest(reason, stagingGUID, completionCallback)
 	if err != nil {
-		r.Logger.Error("cannot send failed staging completion request", err)
+		logger.Error("cannot-send-failed-staging-completion-request", err)
 		return
 	}
 
 	uri := fmt.Sprintf("%s/stage/%s/completed", eiriniAddr, completionRequest.TaskGUID)
 	if err := utils.Put(r.Client, uri, completionRequest); err != nil {
-		r.Logger.Error("cannot send failed staging response", err)
+		logger.Error("cannot-send-failed-staging-response", err)
 	}
 }
 

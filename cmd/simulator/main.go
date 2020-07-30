@@ -33,7 +33,7 @@ func main() {
 	handler := handler.New(lrpBifrost, stager, stager, task, handlerLogger)
 
 	fmt.Println("Starting to listen at 127.0.0.1:8085")
-	handlerLogger.Fatal("simulator-crahsed", http.ListenAndServe("127.0.0.1:8085", handler))
+	handlerLogger.Fatal("simulator-crashed", http.ListenAndServe("127.0.0.1:8085", handler))
 }
 
 type DesirerSimulator struct{}
