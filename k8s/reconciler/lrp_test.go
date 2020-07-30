@@ -14,8 +14,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -68,8 +70,8 @@ var _ = Describe("reconciler.LRP", func() {
 				Name:      "app",
 			},
 		})
-
 	})
+
 	It("creates a statefulset for each CRD", func() {
 		Expect(resultErr).NotTo(HaveOccurred())
 
@@ -171,6 +173,19 @@ var _ = Describe("reconciler.LRP", func() {
 				Expect(desirer.UpdateCallCount()).To(Equal(1))
 			})
 		})
+	})
+
+	When("the LRP doesn't exist", func() {
+		BeforeEach(func() {
+			controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o runtime.Object) error {
+				return apierrors.NewNotFound(schema.GroupResource{}, "my-lrp")
+			}
+		})
+
+		It("does not return an error", func() {
+			Expect(resultErr).NotTo(HaveOccurred())
+		})
+
 	})
 
 	When("the controller client fails to get the CRD", func() {

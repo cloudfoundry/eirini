@@ -3,17 +3,17 @@ package reconciler
 import (
 	"context"
 
-	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
-
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/lager"
+	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -63,6 +63,10 @@ func (r *LRP) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 
 	lrp := &eiriniv1.LRP{}
 	if err := r.lrps.Get(context.Background(), request.NamespacedName, lrp); err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Error("lrp-not-found", err)
+			return reconcile.Result{}, nil
+		}
 		logger.Error("failed-to-get-lrp", err)
 		return reconcile.Result{}, err
 	}
