@@ -46,6 +46,7 @@ func main() {
 
 func launchEventReporter(clientset kubernetes.Interface, uri string, tlsDisabled bool, ca, cert, key, namespace string) {
 	tlsConf := &tls.Config{}
+
 	if !tlsDisabled {
 		var err error
 		tlsConf, err = cc_client.NewTLSConfig(cert, key, ca)
@@ -73,5 +74,6 @@ func readConfigFile(path string) (*eirini.EventReporterConfig, error) {
 
 	var conf eirini.EventReporterConfig
 	err = yaml.Unmarshal(fileBytes, &conf)
+
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
 }

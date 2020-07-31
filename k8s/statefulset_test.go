@@ -1147,11 +1147,13 @@ func randStringBytes() string {
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
+
 	return string(b)
 }
 
 func createLRP(name string, routes []opi.Route) *opi.LRP {
 	lastUpdated := randStringBytes()
+
 	return &opi.LRP{
 		LRPIdentifier: opi.LRPIdentifier{
 			GUID:    "guid_1234",

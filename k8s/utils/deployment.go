@@ -31,11 +31,13 @@ func IsReady(client DeploymentClient, logger lager.Logger, deploymentName string
 		"deploymentGeneration": deployment.Generation,
 	}
 	logger.Debug("Deployment is updated and ready", debugData)
+
 	return true
 }
 
 func podsReady(d appsv1.Deployment) bool {
 	desiredReplicas := *d.Spec.Replicas
+
 	return d.Status.ReadyReplicas == desiredReplicas &&
 		d.Status.UpdatedReplicas == desiredReplicas &&
 		d.Status.AvailableReplicas == desiredReplicas &&

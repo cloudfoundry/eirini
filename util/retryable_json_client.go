@@ -17,12 +17,14 @@ func NewRetryableJSONClientWithConfig(httpClient *http.Client, retries int, maxD
 	client := NewRetryableJSONClient(httpClient)
 	client.httpClient.RetryMax = retries
 	client.httpClient.RetryWaitMax = maxDelay
+
 	return client
 }
 
 func NewRetryableJSONClient(httpClient *http.Client) *RetryableJSONClient {
 	retryableHTTPClient := retryablehttp.NewClient()
 	retryableHTTPClient.HTTPClient = httpClient
+
 	return &RetryableJSONClient{
 		httpClient: retryableHTTPClient,
 	}

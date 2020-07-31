@@ -129,6 +129,7 @@ func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP, opts ...Desi
 			logger.Error("failed-to-generate-private-registry-secret", err)
 			return errors.Wrap(err, "failed to generate private registry secret for statefulset")
 		}
+
 		if _, err := m.Secrets.Create(namespace, secret); err != nil {
 			logger.Error("failed-to-create-private-registry-secret", err)
 			return errors.Wrap(err, "failed to create private registry secret for statefulset")
@@ -137,6 +138,7 @@ func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP, opts ...Desi
 
 	st := m.toStatefulSet(lrp)
 	st.Namespace = namespace
+
 	for _, opt := range opts {
 		if err := opt(st); err != nil {
 			logger.Error("failed-to-apply-option", err)
@@ -150,6 +152,7 @@ func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP, opts ...Desi
 			logger.Debug("statefulset-already-exists", lager.Data{"error": err.Error()})
 			return nil
 		}
+
 		return errors.Wrap(err, "failed to create statefulset")
 	}
 
@@ -166,6 +169,7 @@ func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 	statefulsets, err := m.StatefulSets.List(metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", LabelSourceType, appSourceType),
 	})
+
 	if err != nil {
 		logger.Error("failed-to-list-statefulsets", err)
 		return nil, errors.Wrap(err, "failed to list statefulsets")
@@ -184,16 +188,19 @@ func (m *StatefulSetDesirer) Stop(identifier opi.LRPIdentifier) error {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		return m.stop(identifier)
 	})
+
 	return errors.Wrap(err, "failed to delete statefulset")
 }
 
 func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 	logger := m.Logger.Session("stop", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
 	statefulSet, err := m.getStatefulSet(identifier)
+
 	if errors.Is(err, eirini.ErrNotFound) {
 		logger.Debug("statefulset-does-not-exist")
 		return nil
 	}
+
 	if err != nil {
 		logger.Error("failed-to-get-statefulset", err)
 		return err
@@ -212,6 +219,7 @@ func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 	}
 
 	backgroundPropagation := metav1.DeletePropagationBackground
+
 	if err := m.StatefulSets.Delete(statefulSet.Namespace, statefulSet.Name, metav1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	}); err != nil {
@@ -235,10 +243,12 @@ func (m *StatefulSetDesirer) deletePrivateRegistrySecret(statefulSet *appsv1.Sta
 func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index uint) error {
 	logger := m.Logger.Session("stopInstance", lager.Data{"guid": identifier.GUID, "version": identifier.Version, "index": index})
 	statefulset, err := m.getStatefulSet(identifier)
+
 	if errors.Is(err, eirini.ErrNotFound) {
 		logger.Debug("statefulset-does-not-exist")
 		return nil
 	}
+
 	if err != nil {
 		logger.Debug("failed-to-get-statefulset", lager.Data{"error": err.Error()})
 		return err
@@ -253,6 +263,7 @@ func (m *StatefulSetDesirer) StopInstance(identifier opi.LRPIdentifier, index ui
 		logger.Debug("pod-does-not-exist")
 		return nil
 	}
+
 	return errors.Wrap(err, "failed to delete pod")
 }
 
@@ -260,17 +271,21 @@ func (m *StatefulSetDesirer) Update(lrp *opi.LRP) error {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		return m.update(lrp)
 	})
+
 	return errors.Wrap(err, "failed to update statefulset")
 }
 
 func (m *StatefulSetDesirer) update(lrp *opi.LRP) error {
 	logger := m.Logger.Session("update", lager.Data{"guid": lrp.GUID, "version": lrp.Version})
 	statefulSet, err := m.getStatefulSet(opi.LRPIdentifier{GUID: lrp.GUID, Version: lrp.Version})
+
 	if err != nil {
 		logger.Error("failed-to-get-statefulset", err)
 		return err
 	}
+
 	uris, err := json.Marshal(lrp.AppURIs)
+
 	if err != nil {
 		panic("failed to marshal routes")
 	}
@@ -292,13 +307,17 @@ func (m *StatefulSetDesirer) update(lrp *opi.LRP) error {
 			logger.Error("failed-to-delete-disruption-budget", err, lager.Data{"namespace": statefulSet.Namespace})
 			return err
 		}
+
 		return nil
 	}
+
 	err = m.createPodDisruptionBudget(statefulSet.Namespace, lrp)
+
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		logger.Error("failed-to-create-disruption-budget", err, lager.Data{"namespace": statefulSet.Namespace})
 		return err
 	}
+
 	return nil
 }
 
@@ -319,6 +338,7 @@ func (m *StatefulSetDesirer) getLRP(logger lager.Logger, identifier opi.LRPIdent
 		logger.Error("failed-to-map-statefulset-to-lrp", err)
 		return nil, err
 	}
+
 	return lrp, nil
 }
 
@@ -329,6 +349,7 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}
+
 	statefulsets := statefulSet.Items
 	switch len(statefulsets) {
 	case 0:
@@ -355,6 +376,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	}
 
 	instances := []*opi.Instance{}
+
 	for _, pod := range pods.Items {
 		events, err := GetEvents(m.Events, pod)
 		if err != nil {
@@ -408,6 +430,7 @@ func (m *StatefulSetDesirer) createPodDisruptionBudget(namespace string, lrp *op
 				Selector:     m.labelSelector(lrp),
 			},
 		})
+
 		return err
 	}
 
@@ -422,19 +445,23 @@ func hasInsufficientMemory(eventList *corev1.EventList) bool {
 	}
 
 	event := events[len(events)-1]
+
 	return (event.Reason == eventFailedScheduling || event.Reason == eventFailedScaleUp) &&
 		strings.Contains(event.Message, "Insufficient memory")
 }
 
 func (m *StatefulSetDesirer) statefulSetsToLRPs(statefulSets *appsv1.StatefulSetList) ([]*opi.LRP, error) {
 	lrps := []*opi.LRP{}
+
 	for _, s := range statefulSets.Items {
 		lrp, err := m.StatefulSetToLRPMapper(s)
 		if err != nil {
 			return nil, err
 		}
+
 		lrps = append(lrps, lrp)
 	}
+
 	return lrps, nil
 }
 
@@ -475,6 +502,7 @@ func (m *StatefulSetDesirer) calculateImagePullSecrets(lrp *opi.LRP) []corev1.Lo
 			Name: m.privateRegistrySecretName(utils.GetStatefulsetName(lrp)),
 		})
 	}
+
 	return imagePullSecrets
 }
 
@@ -517,6 +545,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet { /
 
 	envs = append(envs, fieldEnvs...)
 	ports := []corev1.ContainerPort{}
+
 	for _, port := range lrp.Ports {
 		ports = append(ports, corev1.ContainerPort{ContainerPort: port})
 	}
@@ -576,6 +605,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet { /
 	}
 
 	automountServiceAccountToken := false
+
 	if !m.AllowAutomountServiceAccountToken {
 		statefulSet.Spec.Template.Spec.AutomountServiceAccountToken = &automountServiceAccountToken
 	}
@@ -614,6 +644,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet { /
 	if err != nil {
 		panic("failed to marshal routes")
 	}
+
 	annotations := map[string]string{
 		AnnotationSpaceName:        lrp.SpaceName,
 		AnnotationSpaceGUID:        lrp.SpaceGUID,
@@ -657,6 +688,7 @@ func toLabelSelectorRequirements(selector *metav1.LabelSelector) []metav1.LabelS
 func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount) {
 	volumes := []corev1.Volume{}
 	volumeMounts := []corev1.VolumeMount{}
+
 	for _, vm := range lrpVolumeMounts {
 		volumes = append(volumes, corev1.Volume{
 			Name: vm.ClaimName,
@@ -666,11 +698,13 @@ func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev
 				},
 			},
 		})
+
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      vm.ClaimName,
 			MountPath: vm.MountPath,
 		})
 	}
+
 	return volumes, volumeMounts
 }
 
@@ -688,7 +722,9 @@ func (m *StatefulSetDesirer) getGetSecurityContext(lrp *opi.LRP) *corev1.PodSecu
 	if lrp.RunsAsRoot {
 		return nil
 	}
+
 	runAsNonRoot := true
+
 	return &corev1.PodSecurityContext{
 		RunAsNonRoot: &runAsNonRoot,
 		RunAsUser:    int64ptr(VcapUID),

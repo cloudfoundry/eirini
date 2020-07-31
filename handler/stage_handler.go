@@ -36,6 +36,7 @@ func (s *Stage) Stage(resp http.ResponseWriter, req *http.Request, ps httprouter
 	if err := json.NewDecoder(req.Body).Decode(&stagingRequest); err != nil {
 		logger.Error("staging-request-body-decoding-failed", err)
 		writeErrorResponse(resp, http.StatusBadRequest, err)
+
 		return
 	}
 
@@ -43,6 +44,7 @@ func (s *Stage) Stage(resp http.ResponseWriter, req *http.Request, ps httprouter
 		reason := fmt.Sprintf("staging task with guid %s failed to start", stagingGUID)
 		logger.Error("staging-failed", errors.Wrap(err, reason))
 		writeErrorResponse(resp, http.StatusInternalServerError, errors.New(reason))
+
 		return
 	}
 
@@ -53,6 +55,7 @@ func (s *Stage) stage(stagingGUID string, stagingRequest cf.StagingRequest) erro
 	if stagingRequest.Lifecycle.DockerLifecycle != nil {
 		return s.dockerStagingBifrost.TransferStaging(context.Background(), stagingGUID, stagingRequest)
 	}
+
 	return s.buildpackStagingBifrost.TransferStaging(context.Background(), stagingGUID, stagingRequest)
 }
 
@@ -62,15 +65,18 @@ func (s *Stage) CompleteStaging(res http.ResponseWriter, req *http.Request, ps h
 
 	taskCompletedRequest := cf.StagingCompletedRequest{}
 	err := json.NewDecoder(req.Body).Decode(&taskCompletedRequest)
+
 	if err != nil {
 		logger.Error("parsing-incoming-task-failed", err)
 		res.WriteHeader(http.StatusBadRequest)
+
 		return
 	}
 
 	if err = s.buildpackStagingBifrost.CompleteStaging(taskCompletedRequest); err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
 		logger.Error("staging-completion-failed", err)
+
 		return
 	}
 
@@ -80,6 +86,7 @@ func (s *Stage) CompleteStaging(res http.ResponseWriter, req *http.Request, ps h
 func writeErrorResponse(resp http.ResponseWriter, status int, err error) {
 	resp.WriteHeader(status)
 	encodingErr := json.NewEncoder(resp).Encode(&cf.Error{Message: err.Error()})
+
 	if encodingErr != nil {
 		panic(encodingErr)
 	}

@@ -32,6 +32,7 @@ import (
 func connect(cmd *cobra.Command, args []string) {
 	path, err := cmd.Flags().GetString("config")
 	cmdcommons.ExitIfError(err)
+
 	if path == "" {
 		cmdcommons.Exitf("--config is missing")
 	}
@@ -47,11 +48,12 @@ func connect(cmd *cobra.Command, args []string) {
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	handler := handler.New(bifrost, buildpackStagingBifrost, dockerStagingBifrost, taskBifrost, handlerLogger)
-
 	handlerLogger.Info("opi-connected")
+
 	if cfg.Properties.ServePlaintext {
 		servePlaintext(cfg, handler, handlerLogger)
 	}
+
 	serveTLS(cfg, handler, handlerLogger)
 }
 
@@ -84,6 +86,7 @@ func servePlaintext(cfg *eirini.Config, handler http.Handler, logger lager.Logge
 
 func initRetryableJSONClient(cfg *eirini.Config) *util.RetryableJSONClient {
 	httpClient := http.DefaultClient
+
 	if !cfg.Properties.CCTLSDisabled {
 		var err error
 		httpClient, err = util.CreateTLSHTTPClient(
@@ -95,6 +98,7 @@ func initRetryableJSONClient(cfg *eirini.Config) *util.RetryableJSONClient {
 				},
 			},
 		)
+
 		if err != nil {
 			panic(errors.Wrap(err, "failed to create stager http client"))
 		}
@@ -164,6 +168,7 @@ func initTaskDeleter(clientset kubernetes.Interface, eiriniInstance string) *k8s
 func initBuildpackStagingBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.BuildpackStaging {
 	logger := lager.NewLogger("buildpack-staging-bifrost")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+
 	converter := initConverter(cfg)
 	taskDesirer := initTaskDesirer(cfg, clientset)
 	taskDeleter := initTaskDeleter(clientset, cfg.Properties.EiriniInstance)
@@ -182,6 +187,7 @@ func initDockerStagingBifrost(cfg *eirini.Config) *bifrost.DockerStaging {
 	logger := lager.NewLogger("docker-staging-bifrost")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	stagingCompleter := initStagingCompleter(cfg, logger)
+
 	return &bifrost.DockerStaging{
 		Logger:               logger,
 		ImageMetadataFetcher: docker.Fetch,
@@ -195,6 +201,7 @@ func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifros
 	taskDesirer := initTaskDesirer(cfg, clientset)
 	taskDeleter := initTaskDeleter(clientset, cfg.Properties.EiriniInstance)
 	retryableJSONClient := initRetryableJSONClient(cfg)
+
 	return &bifrost.Task{
 		DefaultNamespace: cfg.Properties.Namespace,
 		Converter:        converter,
@@ -219,6 +226,7 @@ func setConfigFromFile(path string) *eirini.Config {
 func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost.LRP {
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+
 	desirer := &k8s.StatefulSetDesirer{
 		Pods:                              client.NewPod(clientset),
 		Secrets:                           client.NewSecret(clientset),
@@ -253,6 +261,7 @@ func initConverter(cfg *eirini.Config) *bifrost.OPIConverter {
 		UploaderImage:   cfg.Properties.UploaderImage,
 		ExecutorImage:   cfg.Properties.ExecutorImage,
 	}
+
 	return bifrost.NewOPIConverter(
 		convertLogger,
 		cfg.Properties.RegistryAddress,

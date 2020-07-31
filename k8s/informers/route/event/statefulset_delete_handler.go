@@ -35,6 +35,7 @@ func (h StatefulSetDeleteHandler) Handle(deletedStatefulSet *appsv1.StatefulSet)
 		deletedStatefulSet,
 		routeGroups,
 	)
+
 	for _, route := range routes {
 		h.RouteEmitter.Emit(*route)
 	}
@@ -51,6 +52,7 @@ func (h StatefulSetDeleteHandler) createRoutesOnDelete(loggerSession lager.Logge
 	for _, pod := range pods {
 		resultRoutes = append(resultRoutes, createRouteMessages(loggerSession, pod, grouped)...)
 	}
+
 	return resultRoutes
 }
 
@@ -58,8 +60,10 @@ func getChildrenPods(podClient typedv1.PodInterface, st *appsv1.StatefulSet) ([]
 	set := labels.Set(st.Spec.Selector.MatchLabels)
 	opts := metav1.ListOptions{LabelSelector: set.AsSelector().String()}
 	podlist, err := podClient.List(context.Background(), opts)
+
 	if err != nil {
 		return []corev1.Pod{}, err
 	}
+
 	return podlist.Items, nil
 }

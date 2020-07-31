@@ -370,6 +370,7 @@ func newMultiContainerCrashedPod() *v1.Pod {
 
 func newPod(statuses []v1.ContainerStatus) *v1.Pod {
 	name := "test-pod"
+
 	return &v1.Pod{
 		ObjectMeta: meta.ObjectMeta{
 			Name: fmt.Sprintf("%s-%d", name, 0),

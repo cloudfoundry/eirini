@@ -15,6 +15,7 @@ func GenerateKeyPair(name string) (string, string) {
 
 	certData, keyData, err := cert.CertificatePEMAndPrivateKey()
 	Expect(err).NotTo(HaveOccurred())
+
 	metricsCertPath := WriteTempFile(certData, fmt.Sprintf("%s-cert", name))
 	metricsKeyPath := WriteTempFile(keyData, fmt.Sprintf("%s-key", name))
 

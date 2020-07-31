@@ -39,10 +39,13 @@ func (l *LRP) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to convert request")
 	}
+
 	namespace := l.DefaultNamespace
+
 	if request.Namespace != "" {
 		namespace = request.Namespace
 	}
+
 	return errors.Wrap(l.Desirer.Desire(namespace, &desiredLRP), "failed to desire")
 }
 
@@ -57,6 +60,7 @@ func (l *LRP) List(ctx context.Context) ([]cf.DesiredLRPSchedulingInfo, error) {
 
 func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []cf.DesiredLRPSchedulingInfo {
 	infos := []cf.DesiredLRPSchedulingInfo{}
+
 	for _, l := range lrps {
 		info := cf.DesiredLRPSchedulingInfo{}
 		info.DesiredLRPKey.ProcessGUID = l.LRPIdentifier.ProcessGUID()
@@ -65,6 +69,7 @@ func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []cf.DesiredLRPSchedulingInfo {
 		info.Annotation = l.LastUpdated
 		infos = append(infos, info)
 	}
+
 	return infos
 }
 
@@ -83,6 +88,7 @@ func (l *LRP) Update(ctx context.Context, request cf.UpdateDesiredLRPRequest) er
 	lrp.LastUpdated = request.Update.Annotation
 
 	lrp.AppURIs = getURIs(request.Update)
+
 	return errors.Wrap(l.Desirer.Update(lrp), "failed to update")
 }
 
@@ -103,6 +109,7 @@ func (l *LRP) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (cf.Desi
 		if err != nil {
 			return cf.DesiredLRP{}, errors.Wrap(err, "failed to marshal app uris")
 		}
+
 		lrpRoutes := map[string]json.RawMessage{"cf-router": data}
 		desiredLRP.Routes = lrpRoutes
 	}
@@ -118,6 +125,7 @@ func (l *LRP) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, in
 	if err := l.Desirer.StopInstance(identifier, index); err != nil {
 		return errors.Wrap(err, "failed to stop instance")
 	}
+
 	return nil
 }
 
@@ -148,6 +156,7 @@ func getURIs(update cf.DesiredLRPUpdate) []opi.Route {
 
 	var routes []opi.Route
 	err := json.Unmarshal(cfRouterRoutes, &routes)
+
 	if err != nil {
 		panic("This should never happen")
 	}

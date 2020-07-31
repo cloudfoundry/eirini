@@ -105,6 +105,7 @@ func NewTaskDesirerWithEiriniInstance(
 		rootfsVersion,
 	)
 	desirer.eiriniInstance = eiriniInstance
+
 	return desirer
 }
 
@@ -112,13 +113,16 @@ func (d *TaskDesirer) Desire(namespace string, task *opi.Task, opts ...DesireOpt
 	logger := d.logger.Session("desire", lager.Data{"guid": task.GUID, "name": task.Name, "namespace": namespace})
 
 	job := d.toTaskJob(task)
+
 	if imageInPrivateRegistry(task) {
 		if err := d.addImagePullSecret(namespace, task, job); err != nil {
 			logger.Error("failed-to-add-image-pull-secret", err)
 			return err
 		}
 	}
+
 	job.Namespace = namespace
+
 	for _, opt := range opts {
 		err := opt(job)
 		if err != nil {
@@ -132,6 +136,7 @@ func (d *TaskDesirer) Desire(namespace string, task *opi.Task, opts ...DesireOpt
 		logger.Error("failed-to-create-job", err)
 		return err
 	}
+
 	return nil
 }
 
@@ -143,6 +148,7 @@ func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 		logger.Error("failed-to-create-job", err)
 		return err
 	}
+
 	return nil
 }
 
@@ -190,9 +196,11 @@ func (d *TaskDesirer) createTaskSecret(namespace string, task *opi.Task) (*corev
 		task.PrivateRegistry.Password,
 	)
 	dockerConfigJSON, err := dockerConfig.JSON()
+
 	if err != nil {
 		return nil, errors.Wrap(err, "failed-to-get-docker-config")
 	}
+
 	secret.StringData = map[string]string{
 		dockerutils.DockerConfigKey: dockerConfigJSON,
 	}
@@ -283,11 +291,13 @@ func (d *TaskDesirer) toStagingJob(task *opi.StagingTask) *batch.Job { //nolint:
 
 func (d *TaskDesirer) getVolumeSources() []corev1.VolumeProjection {
 	volumeSources := []corev1.VolumeProjection{}
+
 	for _, conf := range d.tlsConfig {
 		keyToPaths := []corev1.KeyToPath{}
 		for _, keyPath := range conf.KeyPaths {
 			keyToPaths = append(keyToPaths, corev1.KeyToPath{Key: keyPath.Key, Path: keyPath.Path})
 		}
+
 		volumeSources = append(volumeSources, corev1.VolumeProjection{
 			Secret: &corev1.SecretProjection{
 				LocalObjectReference: corev1.LocalObjectReference{
@@ -342,6 +352,7 @@ func getEnvs(task *opi.Task) []corev1.EnvVar {
 	}
 
 	envs = append(envs, fieldEnvs...)
+
 	return envs
 }
 
@@ -382,9 +393,11 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 
 	name := fmt.Sprintf("%s-%s", task.AppName, task.SpaceName)
 	sanitizedName := utils.SanitizeName(name, task.GUID)
+
 	if task.Name != "" {
 		sanitizedName = fmt.Sprintf("%s-%s", sanitizedName, task.Name)
 	}
+
 	job.Name = utils.SanitizeNameWithMaxStringLen(sanitizedName, task.GUID, 50)
 
 	job.Labels = map[string]string{
@@ -420,6 +433,7 @@ func (d *TaskDesirer) addImagePullSecret(namespace string, task *opi.Task, job *
 	spec.ImagePullSecrets = append(spec.ImagePullSecrets, corev1.LocalObjectReference{
 		Name: createdSecret.Name,
 	})
+
 	return nil
 }
 

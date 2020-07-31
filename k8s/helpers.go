@@ -11,10 +11,12 @@ import (
 
 func MapToEnvVar(env map[string]string) []v1.EnvVar {
 	envVars := []v1.EnvVar{}
+
 	for k, v := range env {
 		envVar := v1.EnvVar{Name: k, Value: v}
 		envVars = append(envVars, envVar)
 	}
+
 	return envVars
 }
 
@@ -40,6 +42,7 @@ func IsStopped(eventList *v1.EventList) bool {
 	}
 
 	event := events[len(events)-1]
+
 	return event.Reason == eventKilling
 }
 

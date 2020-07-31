@@ -67,7 +67,9 @@ func (r *LRP) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 			logger.Error("lrp-not-found", err)
 			return reconcile.Result{}, nil
 		}
+
 		logger.Error("failed-to-get-lrp", err)
+
 		return reconcile.Result{}, err
 	}
 
@@ -75,6 +77,7 @@ func (r *LRP) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	if err != nil {
 		logger.Error("failed-to-reconcile", err)
 	}
+
 	return reconcile.Result{}, err
 }
 
@@ -88,8 +91,10 @@ func (r *LRP) do(lrp *eiriniv1.LRP) error {
 		if parseErr != nil {
 			return errors.Wrap(parseErr, "failed to parse the crd spec to the lrp model")
 		}
+
 		return errors.Wrap(r.desirer.Desire(lrp.Namespace, appLRP, r.setOwnerFn(lrp)), "failed to desire lrp")
 	}
+
 	if err != nil {
 		return errors.Wrap(err, "failed to get lrp")
 	}
@@ -115,6 +120,7 @@ func (r *LRP) updateStatus(lrp *eiriniv1.LRP, appLRP *opi.LRP) error {
 	if err != nil {
 		return err
 	}
+
 	lrp.Status.Replicas = st.Status.ReadyReplicas
 
 	return r.lrps.Status().Update(context.Background(), lrp)
@@ -126,6 +132,7 @@ func (r *LRP) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {
 		if err := ctrl.SetControllerReference(lrp, obj, r.scheme); err != nil {
 			return err
 		}
+
 		return nil
 	}
 }
@@ -135,7 +142,9 @@ func toOpiLrp(lrp *eiriniv1.LRP) (*opi.LRP, error) {
 	if err := copier.Copy(opiLrp, lrp.Spec); err != nil {
 		return nil, err
 	}
+
 	opiLrp.TargetInstances = lrp.Spec.Instances
+
 	if err := copier.Copy(&opiLrp.AppURIs, lrp.Spec.AppRoutes); err != nil {
 		return nil, err
 	}

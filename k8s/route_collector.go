@@ -34,10 +34,13 @@ func (c RouteCollector) Collect() ([]route.Message, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list pods")
 	}
+
 	statefulsets, err := c.getStatefulSets()
+
 	if err != nil {
 		return nil, err
 	}
+
 	routeMessages := []route.Message{}
 
 	for _, p := range pods.Items {
@@ -61,6 +64,7 @@ func (c RouteCollector) Collect() ([]route.Message, error) {
 			routeMessages = append(routeMessages, routeMessage)
 		}
 	}
+
 	return routeMessages, nil
 }
 
@@ -68,19 +72,27 @@ func (c RouteCollector) getRoutes(pod corev1.Pod, statefulsets map[string]appsv1
 	if !podReady(pod) {
 		return nil, fmt.Errorf("pod %s is not ready", pod.Name)
 	}
+
 	ssName, err := getStatefulSetName(pod)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get statefulset name for pod %s", pod.Name)
 	}
+
 	s, ok := statefulsets[ssName]
+
 	if !ok {
 		return nil, fmt.Errorf("statefulset for pod %s not found", pod.Name)
 	}
+
 	routeJSON, ok := s.Annotations[AnnotationRegisteredRoutes]
+
 	if !ok {
 		return nil, fmt.Errorf("pod %s has no registered routes annotation", pod.Name)
 	}
+
 	var routes []cf.Route
+
 	if json.Unmarshal([]byte(routeJSON), &routes) != nil {
 		return nil, fmt.Errorf("failed to unmarshal routes for pod %s", pod.Name)
 	}
@@ -93,7 +105,9 @@ func (c RouteCollector) getStatefulSets() (map[string]appsv1.StatefulSet, error)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}
+
 	statefulsetsMap := make(map[string]appsv1.StatefulSet)
+
 	for _, s := range statefulsetList.Items {
 		statefulsetsMap[s.Name] = s
 	}
@@ -107,6 +121,7 @@ func podReady(pod corev1.Pod) bool {
 			return c.Status == corev1.ConditionTrue
 		}
 	}
+
 	return false
 }
 
@@ -120,5 +135,6 @@ func getStatefulSetName(pod corev1.Pod) (string, error) {
 			return owner.Name, nil
 		}
 	}
+
 	return "", fmt.Errorf("pod %s doesn't have an owner statefulset", pod.Name)
 }

@@ -44,8 +44,10 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 		exitStatus := int(container.LastTerminationState.Terminated.ExitCode)
 		exitDescription := container.LastTerminationState.Terminated.Reason
 		crashTimestamp := int64(container.LastTerminationState.Terminated.StartedAt.Second())
+
 		return generateReport(pod, container.State.Waiting.Reason, exitStatus, exitDescription, crashTimestamp, int(container.RestartCount)), true
 	}
+
 	return events.CrashEvent{}, false
 }
 
@@ -55,6 +57,7 @@ func (g DefaultCrashEventGenerator) generateReportForTerminatedPod(pod *v1.Pod, 
 		logger.Error("failed-to-get-k8s-events", err, lager.Data{"guid": pod.Annotations[k8s.AnnotationProcessGUID]})
 		return events.CrashEvent{}, false
 	}
+
 	if k8s.IsStopped(podEvents) {
 		return events.CrashEvent{}, false
 	}

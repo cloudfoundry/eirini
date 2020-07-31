@@ -139,6 +139,7 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 		lifecycle := request.Lifecycle.DockerLifecycle
 		task.Command = lifecycle.Command
 		task.Image = lifecycle.Image
+
 		if lifecycle.RegistryUsername != "" || lifecycle.RegistryPassword != "" {
 			task.PrivateRegistry = &opi.PrivateRegistry{
 				Server:   parseRegistryHost(lifecycle.Image),
@@ -160,7 +161,9 @@ func (c *OPIConverter) ConvertStaging(stagingGUID string, request cf.StagingRequ
 	if lifecycleData == nil {
 		lifecycleData = request.Lifecycle.BuildpackLifecycle
 	}
+
 	buildpacksJSON, err := json.Marshal(lifecycleData.Buildpacks)
+
 	if err != nil {
 		return opi.StagingTask{}, err
 	}
@@ -201,6 +204,7 @@ func (c *OPIConverter) ConvertStaging(stagingGUID string, request cf.StagingRequ
 			CPUWeight: request.CPUWeight,
 		},
 	}
+
 	return stagingTask, nil
 }
 
@@ -222,12 +226,14 @@ func (c *OPIConverter) getImageUser(lifecycle *cf.DockerLifecycle) (string, erro
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse image ref")
 	}
+
 	imgMetadata, err := c.imageMetadataFetcher.Fetch(dockerRef, types.SystemContext{
 		DockerAuthConfig: &types.DockerAuthConfig{
 			Username: lifecycle.RegistryUsername,
 			Password: lifecycle.RegistryPassword,
 		},
 	})
+
 	if err != nil {
 		return "", errors.Wrap(err, "failed to fetch image metadata")
 	}
@@ -240,12 +246,15 @@ func getRequestedRoutes(request cf.DesireLRPRequest) []opi.Route {
 	if jsonRoutes == nil {
 		return []opi.Route{}
 	}
+
 	if _, ok := jsonRoutes["cf-router"]; !ok {
 		return []opi.Route{}
 	}
 
 	cfRouterRoutes := jsonRoutes["cf-router"]
+
 	var routes []opi.Route
+
 	err := json.Unmarshal(cfRouterRoutes, &routes)
 	if err != nil {
 		panic("This should never happen!")
@@ -260,11 +269,13 @@ func (c *OPIConverter) imageURI(dropletGUID, dropletHash string) string {
 
 func mergeMaps(maps ...map[string]string) map[string]string {
 	result := make(map[string]string)
+
 	for _, m := range maps {
 		for k, v := range m {
 			result[k] = v
 		}
 	}
+
 	return result
 }
 
@@ -274,6 +285,7 @@ func parseRegistryHost(imageURL string) string {
 	}
 
 	matches := dockerRX.FindStringSubmatch(imageURL)
+
 	return matches[1]
 }
 
@@ -292,19 +304,23 @@ func mergeEnvs(requestEnv []cf.EnvironmentVariable, appliedEnv map[string]string
 
 func (c *OPIConverter) getLifecycleOptions(request cf.DesireLRPRequest) (*lifecycleOptions, error) {
 	options := &lifecycleOptions{}
+
 	switch {
 	case request.Lifecycle.DockerLifecycle != nil:
 		var err error
+
 		lifecycle := request.Lifecycle.DockerLifecycle
 		options.image = lifecycle.Image
 		options.command = lifecycle.Command
 		options.runsAsRoot, err = c.isAllowedToRunAsRoot(lifecycle)
+
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to verify if docker image needs root user")
 		}
 
 		registryUsername := lifecycle.RegistryUsername
 		registryPassword := lifecycle.RegistryPassword
+
 		if registryUsername != "" || registryPassword != "" {
 			options.privateRegistry = &opi.PrivateRegistry{
 				Server:   parseRegistryHost(options.image),
@@ -343,6 +359,7 @@ func convertVolumeMounts(request cf.DesireLRPRequest) []opi.VolumeMount {
 			ClaimName: vm.VolumeID,
 		})
 	}
+
 	return volumeMounts
 }
 
@@ -350,5 +367,6 @@ func (c *OPIConverter) computeDiskSize(request cf.DesireLRPRequest) int64 {
 	if request.DiskMB != 0 {
 		return request.DiskMB
 	}
+
 	return c.diskLimitMB
 }

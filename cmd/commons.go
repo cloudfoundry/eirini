@@ -16,6 +16,7 @@ import (
 func CreateMetricsClient(kubeConfigPath string) metricsclientset.Interface {
 	klog.SetOutput(os.Stdout)
 	klog.SetOutputBySeverity("Fatal", os.Stderr)
+
 	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
 	ExitIfError(err)
 
@@ -28,6 +29,7 @@ func CreateMetricsClient(kubeConfigPath string) metricsclientset.Interface {
 func CreateKubeClient(kubeConfigPath string) kubernetes.Interface {
 	klog.SetOutput(os.Stdout)
 	klog.SetOutputBySeverity("Fatal", os.Stderr)
+
 	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
 	ExitIfError(err)
 

@@ -86,12 +86,14 @@ func (s DockerStaging) TransferStaging(ctx context.Context, stagingGUID string, 
 	}
 
 	taskCallbackResponse.Result = stagingResult
+
 	return s.CompleteStaging(taskCallbackResponse)
 }
 
 func (s DockerStaging) respondWithFailure(taskCompletedRequest cf.StagingCompletedRequest, err error) error {
 	taskCompletedRequest.Failed = true
 	taskCompletedRequest.FailureReason = err.Error()
+
 	return s.CompleteStaging(taskCompletedRequest)
 }
 
@@ -125,16 +127,19 @@ func parseExposedPorts(imageConfig *v1.ImageConfig) ([]port, error) {
 	)
 
 	ports := make([]port, 0, len(imageConfig.ExposedPorts))
+
 	for imagePort := range imageConfig.ExposedPorts {
 		_, err := fmt.Sscanf(imagePort, "%d/%s", &portNum, &protocol)
 		if err != nil {
 			return []port{}, err
 		}
+
 		ports = append(ports, port{
 			Port:     portNum,
 			Protocol: protocol,
 		})
 	}
+
 	return ports, nil
 }
 

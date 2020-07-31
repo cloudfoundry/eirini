@@ -28,17 +28,21 @@ type StatefulSetPatcher struct {
 func (p StatefulSetPatcher) Patch() error {
 	listOpts := metav1.ListOptions{}
 	sts, err := p.StatefulSets.List(context.Background(), listOpts)
+
 	if err != nil {
 		return errors.Wrap(err, "failed to list statefulsets")
 	}
 
 	failuresOccured := 0
+
 	p.Logger.Info(fmt.Sprintf("found %d stateful sets to patch", len(sts.Items)))
+
 	for _, s := range sts.Items {
 		statesfulset := s
 		statesfulset.Labels[RootfsVersionLabel] = p.Version
 		statesfulset.Spec.Template.Labels[RootfsVersionLabel] = p.Version
 		_, err := p.StatefulSets.Update(context.Background(), &statesfulset, metav1.UpdateOptions{})
+
 		if err != nil {
 			p.Logger.Error("failed to patch", err)
 			failuresOccured++

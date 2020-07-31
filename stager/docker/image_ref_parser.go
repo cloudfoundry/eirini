@@ -12,5 +12,6 @@ func Parse(img string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse image ref")
 	}
+
 	return fmt.Sprintf("//%s", named.String()), nil
 }

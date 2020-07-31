@@ -48,6 +48,7 @@ func (t *Task) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 		logger.Error("no-such-task", err)
 		return reconcile.Result{}, nil
 	}
+
 	if err != nil {
 		logger.Error("task-get-failed", err)
 		return reconcile.Result{}, fmt.Errorf("could not fetch task: %+v", err)
@@ -58,12 +59,14 @@ func (t *Task) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 		logger.Info("task-already-exists")
 		return reconcile.Result{}, nil
 	}
+
 	if err != nil {
 		logger.Error("desire-task-failed", err)
 		return reconcile.Result{}, err
 	}
 
 	logger.Debug("task-desired-successfully")
+
 	return reconcile.Result{}, nil
 }
 
@@ -73,6 +76,7 @@ func (t *Task) setOwnerFn(task *eiriniv1.Task) func(interface{}) error {
 		if err := ctrl.SetControllerReference(task, obj, t.scheme); err != nil {
 			return err
 		}
+
 		return nil
 	}
 }
@@ -103,5 +107,6 @@ func toOpiTask(task *eiriniv1.Task) *opi.Task {
 			Password: task.Spec.PrivateRegistry.Password,
 		}
 	}
+
 	return opiTask
 }

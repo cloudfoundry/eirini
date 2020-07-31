@@ -222,6 +222,7 @@ func getTaskJobsFn(guid, eiriniInstance string) func() ([]batchv1.Job, error) {
 				k8s.LabelEiriniInstance, eiriniInstance,
 			),
 		})
+
 		return jobs.Items, err
 	}
 }

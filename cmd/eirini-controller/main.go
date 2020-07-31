@@ -62,6 +62,7 @@ func main() {
 		Scheme: eirinischeme.Scheme,
 	})
 	cmdcommons.ExitIfError(err)
+
 	lrpReconciler := createLRPReconciler(logger.Session("lrp-reconciler"), controllerClient, clientset, eiriniCfg, mgr.GetScheme())
 	taskReconciler := createTaskReconciler(logger.Session("task-reconciler"), controllerClient, clientset, eiriniCfg, mgr.GetScheme())
 
@@ -91,6 +92,7 @@ func readConfigFile(path string) (*eirini.Config, error) {
 
 	var conf eirini.Config
 	err = yaml.Unmarshal(fileBytes, &conf)
+
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
 }
 

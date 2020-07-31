@@ -37,5 +37,6 @@ func (c *Config) JSON() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return string(jsonBytes), nil
 }

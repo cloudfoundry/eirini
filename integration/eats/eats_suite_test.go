@@ -153,6 +153,7 @@ func makeTestHTTPClient(certPath, keyPath string) (*http.Client, error) {
 	if !certPool.AppendCertsFromPEM(bs) {
 		return nil, err
 	}
+
 	tlsConfig := &tls.Config{
 		RootCAs:      certPool,
 		Certificates: []tls.Certificate{clientCert},
@@ -176,7 +177,9 @@ func desireStaging(stagingRequest cf.StagingRequest) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	request, err := http.NewRequest("POST", fmt.Sprintf("%s/stage/some-guid", opiURL), bytes.NewReader(data))
+
 	if err != nil {
 		return 0, err
 	}
@@ -187,6 +190,7 @@ func desireStaging(stagingRequest cf.StagingRequest) (int, error) {
 	}
 
 	defer response.Body.Close()
+
 	return response.StatusCode, nil
 }
 
@@ -231,9 +235,11 @@ func getLRPs() ([]cf.DesiredLRPSchedulingInfo, error) {
 	}
 
 	var desiredLRPSchedulingInfoResponse cf.DesiredLRPSchedulingInfosResponse
+
 	decoder := json.NewDecoder(response.Body)
 	err = decoder.Decode(&desiredLRPSchedulingInfoResponse)
 	Expect(err).ToNot(HaveOccurred())
+
 	return desiredLRPSchedulingInfoResponse.DesiredLrpSchedulingInfos, nil
 }
 
@@ -242,6 +248,7 @@ func getPodReadiness(lrpGUID, lrpVersion string) bool {
 		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, lrpGUID, k8s.LabelVersion, lrpVersion),
 	})
 	Expect(err).NotTo(HaveOccurred())
+
 	if len(pods.Items) != 1 {
 		return false
 	}
@@ -268,6 +275,7 @@ func getInstances(processGUID, versionGUID string) (*cf.GetInstancesResponse, er
 
 	var instancesResponse *cf.GetInstancesResponse
 	err = json.NewDecoder(response.Body).Decode(&instancesResponse)
+
 	if err != nil {
 		return nil, err
 	}
@@ -286,6 +294,7 @@ func desireLRP(lrpRequest cf.DesireLRPRequest) *http.Response {
 	Expect(err).NotTo(HaveOccurred())
 	response, err := httpClient.Do(desireLrpReq)
 	Expect(err).NotTo(HaveOccurred())
+
 	return response
 }
 
@@ -294,6 +303,7 @@ func stopLRP(httpClient rest.HTTPClient, opiURL, processGUID, versionGUID string
 	if err != nil {
 		return nil, err
 	}
+
 	return httpClient.Do(request)
 }
 
@@ -302,6 +312,7 @@ func stopLRPInstance(processGUID, versionGUID string, instance int) (*http.Respo
 	if err != nil {
 		return nil, err
 	}
+
 	return httpClient.Do(request)
 }
 
@@ -310,9 +321,12 @@ func updateLRP(updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error)
 	if err != nil {
 		return nil, err
 	}
+
 	updateLrpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/apps/%s", opiURL, updateRequest.GUID), bytes.NewReader(body))
+
 	if err != nil {
 		return nil, err
 	}
+
 	return httpClient.Do(updateLrpReq)
 }

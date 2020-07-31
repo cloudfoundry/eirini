@@ -13,6 +13,7 @@ func main() {
 	}
 
 	http.HandleFunc("/", HelloServer)
+
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
 		panic(err)
 	}

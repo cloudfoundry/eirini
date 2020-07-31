@@ -33,6 +33,7 @@ func CreateRandomNamespace(clientset kubernetes.Interface) string {
 		namespace = fmt.Sprintf("opi-integration-test-%d-%d", rand.Intn(randUpperBound), ginkgoconfig.GinkgoConfig.ParallelNode)
 	}
 	createNamespace(namespace, clientset)
+
 	return namespace
 }
 
@@ -96,6 +97,7 @@ func CreatePodCreationPSP(namespace, pspName, serviceAccountName string, clients
 			},
 		},
 	}, metav1.CreateOptions{})
+
 	if err != nil {
 		return err
 	}
@@ -126,6 +128,7 @@ func CreatePodCreationPSP(namespace, pspName, serviceAccountName string, clients
 			Namespace: namespace,
 		}},
 	}, metav1.CreateOptions{})
+
 	return err
 }
 
@@ -136,6 +139,7 @@ func CreateEmptySecret(namespace, secretName string, clientset kubernetes.Interf
 			Namespace: namespace,
 		},
 	}, metav1.CreateOptions{})
+
 	return err
 }
 
@@ -147,6 +151,7 @@ func CreateSecretWithStringData(namespace, secretName string, clientset kubernet
 		},
 		StringData: stringData,
 	}, metav1.CreateOptions{})
+
 	return err
 }
 
@@ -173,6 +178,7 @@ func MakeTestHTTPClient() (*http.Client, error) {
 	if !certPool.AppendCertsFromPEM(bs) {
 		return nil, err
 	}
+
 	tlsConfig := &tls.Config{
 		RootCAs:      certPool,
 		Certificates: []tls.Certificate{clientCert},
@@ -232,6 +238,7 @@ func CreateConfigFile(config interface{}) (*os.File, error) {
 	}
 
 	err = ioutil.WriteFile(configFile.Name(), yamlBytes, os.ModePerm)
+
 	return configFile, err
 }
 
@@ -240,6 +247,7 @@ func PathToTestFixture(relativePath string) string {
 	if err != nil {
 		panic(err)
 	}
+
 	return fmt.Sprintf("%s/../fixtures/%s", cwd, relativePath)
 }
 

@@ -63,12 +63,15 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 
 	pod := &corev1.Pod{}
 	ctx := context.Background()
+
 	if err := r.pods.Get(ctx, request.NamespacedName, pod); err != nil {
 		if apierrors.IsNotFound(err) {
 			r.logger.Error("pod does not exist", err)
 			return reconcile.Result{}, nil
 		}
+
 		r.logger.Error("failed to get pod", err)
+
 		return reconcile.Result{}, err
 	}
 
@@ -101,6 +104,7 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 		r.logger.Error("failed-to-create-event", err)
 		return reconcile.Result{}, errors.Wrap(err, "failed to create event")
 	}
+
 	r.logger.Debug("event-created", lager.Data{"name": event.Name, "namespace": event.Namespace})
 
 	return reconcile.Result{}, nil
@@ -151,5 +155,6 @@ func (r PodCrash) getOwner(obj metav1.Object, kind string) (metav1.OwnerReferenc
 			return ref, nil
 		}
 	}
+
 	return metav1.OwnerReference{}, fmt.Errorf("no owner of kind %q", kind)
 }

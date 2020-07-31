@@ -51,6 +51,7 @@ type Binary struct {
 func NewBinary(packagePath, binsPath string, extraArgs []string) Binary {
 	paths := strings.Split(packagePath, "/")
 	binName := paths[len(paths)-1]
+
 	return Binary{
 		PackagePath: packagePath,
 		BinPath:     filepath.Join(binsPath, binName),
@@ -77,16 +78,19 @@ func (b *Binary) runWithConfig(configFilePath string, envVars ...string) *gexec.
 	if configFilePath != "" {
 		args = append(args, "-c", configFilePath)
 	}
+
 	command := exec.Command(b.BinPath, args...) //#nosec G204
 	command.Env = envVars
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
+
 	return session
 }
 
 func (b *Binary) Restart(configFilePath string, runningSession *gexec.Session) *gexec.Session {
 	envVars := runningSession.Command.Env
 	runningSession.Kill().Wait()
+
 	return b.runWithConfig(configFilePath, envVars...)
 }
 
@@ -118,5 +122,6 @@ func (b *Binary) build() {
 		// A neighbour Ginkgo node has built the binary in the meanwhile, that's fine
 		return
 	}
+
 	Expect(err).NotTo(HaveOccurred())
 }

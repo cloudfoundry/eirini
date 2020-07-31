@@ -135,6 +135,7 @@ func newGrpcServer(cert, key, ca, addr string) (*grpc.Server, net.Listener) {
 
 	listener, err := net.Listen("tcp", addr)
 	Expect(err).ToNot(HaveOccurred())
+
 	return grpc.NewServer(grpc.Creds(creds)), listener
 }
 
@@ -162,6 +163,7 @@ func runMetronStub(certPath, keyPath string, envelopes chan *loggregator_v2.Enve
 	ingressServer := new(fakes.FakeIngressServer)
 	ingressServer.BatchSenderStub = batchSenderStub(envelopes)
 	loggregator_v2.RegisterIngressServer(grpcServer, ingressServer)
+
 	go grpcServer.Serve(grpcListener) //nolint:errcheck
 
 	return grpcServer, grpcListener.Addr().String()
@@ -170,11 +172,13 @@ func runMetronStub(certPath, keyPath string, envelopes chan *loggregator_v2.Enve
 func batchSenderStub(envelopes chan *loggregator_v2.Envelope) BatchSenderStub {
 	return func(server loggregator_v2.Ingress_BatchSenderServer) error {
 		defer close(envelopes)
+
 		for {
 			batch, err := server.Recv()
 			if err != nil {
 				return nil
 			}
+
 			for _, envelope := range batch.Batch {
 				envelopes <- envelope
 			}

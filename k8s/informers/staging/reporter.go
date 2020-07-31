@@ -38,7 +38,9 @@ func (r FailedStagingReporter) Report(pod *v1.Pod) {
 		logger.Error("failed-to-get-completion-callback", err)
 		return
 	}
+
 	eiriniAddr, err := utils.GetEnvVarValue("EIRINI_ADDRESS", pod.Spec.Containers[0].Env)
+
 	if err != nil {
 		logger.Error("failed-to-get-eirini-address", err)
 		return
@@ -70,6 +72,7 @@ func getFailedContainerStatusIfAny(statuses []v1.ContainerStatus) *v1.ContainerS
 			return &status
 		}
 	}
+
 	return nil
 }
 

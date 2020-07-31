@@ -93,6 +93,7 @@ func (f *Fixture) TearDown() {
 func (f *Fixture) configureNewNamespace() string {
 	namespace := CreateRandomNamespace(f.Clientset)
 	Expect(CreatePodCreationPSP(namespace, getPspName(namespace), GetApplicationServiceAccount(), f.Clientset)).To(Succeed(), "failed to create pod creation PSP")
+
 	return namespace
 }
 
@@ -109,36 +110,47 @@ func (f *Fixture) printDebugInfo() error {
 	if _, err := f.Writer.Write([]byte("Jobs:\n")); err != nil {
 		return err
 	}
+
 	jobs, _ := f.Clientset.BatchV1().Jobs(f.Namespace).List(context.Background(), v1.ListOptions{})
+
 	for _, job := range jobs.Items {
 		fmt.Fprintf(f.Writer, "Job: %s status is: %#v\n", job.Name, job.Status)
+
 		if _, err := f.Writer.Write([]byte("-----------\n")); err != nil {
 			return err
 		}
 	}
 
 	statefulsets, _ := f.Clientset.AppsV1().StatefulSets(f.Namespace).List(context.Background(), v1.ListOptions{})
+
 	if _, err := f.Writer.Write([]byte("StatefulSets:\n")); err != nil {
 		return err
 	}
+
 	for _, s := range statefulsets.Items {
 		fmt.Fprintf(f.Writer, "StatefulSet: %s status is: %#v\n", s.Name, s.Status)
+
 		if _, err := f.Writer.Write([]byte("-----------\n")); err != nil {
 			return err
 		}
 	}
 
 	pods, _ := f.Clientset.CoreV1().Pods(f.Namespace).List(context.Background(), v1.ListOptions{})
+
 	if _, err := f.Writer.Write([]byte("Pods:\n")); err != nil {
 		return err
 	}
+
 	for _, p := range pods.Items {
 		fmt.Fprintf(f.Writer, "Pod: %s status is: %#v\n", p.Name, p.Status)
+
 		if _, err := f.Writer.Write([]byte("-----------\n")); err != nil {
 			return err
 		}
+
 		fmt.Fprintf(f.Writer, "Pod: %s logs are: \n", p.Name)
 		logsReq := f.Clientset.CoreV1().Pods(f.Namespace).GetLogs(p.Name, &corev1.PodLogOptions{})
+
 		if err := consumeRequest(logsReq, f.Writer); err != nil {
 			fmt.Fprintf(f.Writer, "Failed to get logs for Pod: %s becase: %v \n", p.Name, err)
 		}
@@ -155,6 +167,7 @@ func consumeRequest(request rest.ResponseWrapper, out io.Writer) error {
 	defer readCloser.Close()
 
 	r := bufio.NewReader(readCloser)
+
 	for {
 		bytes, err := r.ReadBytes('\n')
 		if _, writeErr := out.Write(bytes); writeErr != nil {
@@ -165,6 +178,7 @@ func consumeRequest(request rest.ResponseWrapper, out io.Writer) error {
 			if err != io.EOF {
 				return err
 			}
+
 			return nil
 		}
 	}

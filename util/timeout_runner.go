@@ -11,6 +11,7 @@ type Timeoutable = func(stop <-chan interface{})
 
 func RunWithTimeout(f Timeoutable, d time.Duration) error {
 	t := time.NewTimer(d)
+
 	if d < 0 {
 		return errors.New("provided timeout is not valid")
 	}
@@ -19,8 +20,10 @@ func RunWithTimeout(f Timeoutable, d time.Duration) error {
 	defer close(stop)
 
 	ready := make(chan interface{}, 1)
+
 	go func() {
 		f(stop)
+
 		defer close(ready)
 	}()
 

@@ -16,8 +16,10 @@ func GetKubeconfig() string {
 		if err != nil {
 			ginkgo.Fail("INTEGRATION_KUBECONFIG not provided, failed to use default: " + err.Error())
 		}
+
 		return filepath.Join(homeDir, ".kube", "config")
 	}
+
 	return kubeconf
 }
 
@@ -26,6 +28,7 @@ func GetEiriniDockerHubPassword() string {
 	if password == "" {
 		ginkgo.Skip("eiriniuser password not provided. Please export EIRINIUSER_PASSWORD")
 	}
+
 	return password
 }
 
@@ -34,5 +37,6 @@ func GetApplicationServiceAccount() string {
 	if serviceAccountName != "" {
 		return serviceAccountName
 	}
+
 	return DefaultApplicationServiceAccount
 }

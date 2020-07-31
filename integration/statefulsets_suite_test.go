@@ -57,6 +57,7 @@ func statefulSets() appsv1_types.StatefulSetInterface {
 func getStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
 	ss, getErr := statefulSets().List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector(lrp.LRPIdentifier)})
 	Expect(getErr).NotTo(HaveOccurred())
+
 	return &ss.Items[0]
 }
 
@@ -89,6 +90,7 @@ func listAllStatefulSets(lrp1, lrp2 *opi.LRP) []appsv1.StatefulSet {
 
 	list, err := statefulSets().List(context.Background(), metav1.ListOptions{LabelSelector: labels})
 	Expect(err).NotTo(HaveOccurred())
+
 	return list.Items
 }
 
@@ -96,12 +98,14 @@ func listStatefulSets(appName string) []appsv1.StatefulSet {
 	labelSelector := fmt.Sprintf("name=%s", appName)
 	list, err := statefulSets().List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
 	Expect(err).NotTo(HaveOccurred())
+
 	return list.Items
 }
 
 func listPodsByLabel(labelSelector string) []corev1.Pod {
 	pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
 	Expect(err).NotTo(HaveOccurred())
+
 	return pods.Items
 }
 
@@ -114,23 +118,27 @@ func podNamesFromPods(pods []corev1.Pod) []string {
 	for _, p := range pods {
 		names = append(names, p.Name)
 	}
+
 	return names
 }
 
 func nodeNamesFromPods(pods []corev1.Pod) []string {
 	names := []string{}
+
 	for _, p := range pods {
 		nodeName := p.Spec.NodeName
 		if nodeName != "" {
 			names = append(names, nodeName)
 		}
 	}
+
 	return names
 }
 
 func getNodeCount() int {
 	nodeList, err := fixture.Clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred())
+
 	return len(nodeList.Items)
 }
 
@@ -138,8 +146,10 @@ func podCrashed(pod corev1.Pod) bool {
 	if len(pod.Status.ContainerStatuses) == 0 {
 		return false
 	}
+
 	terminated := pod.Status.ContainerStatuses[0].State.Terminated
 	waiting := pod.Status.ContainerStatuses[0].State.Waiting
+
 	return terminated != nil || waiting != nil && waiting.Reason == "CrashLoopBackOff"
 }
 
@@ -149,6 +159,7 @@ func podReady(pod corev1.Pod) bool {
 			return c.Status == corev1.ConditionTrue
 		}
 	}
+
 	return false
 }
 

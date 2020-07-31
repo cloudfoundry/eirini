@@ -28,6 +28,7 @@ func do(method string, client *http.Client, uri string, body interface{}) error 
 	if err != nil {
 		return errors.Wrap(err, "failed to create request")
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
@@ -38,10 +39,13 @@ func do(method string, client *http.Client, uri string, body interface{}) error 
 
 	if resp.StatusCode >= http.StatusBadRequest {
 		body, err := ioutil.ReadAll(resp.Body)
+
 		var message string
+
 		if err == nil {
 			message = string(body)
 		}
+
 		return fmt.Errorf("request not successful: status=%d %s", resp.StatusCode, message)
 	}
 

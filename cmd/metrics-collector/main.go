@@ -83,6 +83,7 @@ func launchMetricsEmitter(
 	if metricsEmissionInterval > 0 {
 		tickerInterval = metricsEmissionInterval
 	}
+
 	collectorScheduler := &util.TickerTaskScheduler{
 		Ticker: time.NewTicker(time.Duration(tickerInterval) * time.Second),
 		Logger: metricsLogger.Session("collector.scheduler"),
@@ -112,5 +113,6 @@ func readMetricsCollectorConfigFromFile(path string) (*eirini.MetricsCollectorCo
 
 	var conf eirini.MetricsCollectorConfig
 	err = yaml.Unmarshal(fileBytes, &conf)
+
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
 }

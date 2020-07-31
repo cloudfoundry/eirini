@@ -305,6 +305,7 @@ func receivedMessage(channel <-chan *nats.Msg) route.RegistryMessage {
 
 	Eventually(channel).Should(Receive(&msg))
 	Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
+
 	return actualMessage
 }
 
@@ -326,6 +327,7 @@ func marshalRoutes(routes []routeInfo) json.RawMessage {
 
 	rawMessage := json.RawMessage{}
 	Expect(rawMessage.UnmarshalJSON(bytes)).To(Succeed())
+
 	return rawMessage
 }
 
@@ -358,5 +360,6 @@ func runNatsTestServer(opts *server.Options) (server *server.Server, err error) 
 	}()
 
 	server = natstest.RunServer(opts)
+
 	return server, nil
 }

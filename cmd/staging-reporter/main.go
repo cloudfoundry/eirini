@@ -53,6 +53,7 @@ func launchStagingReporter(clientset kubernetes.Interface, ca, eiriniCert, eirin
 
 	stagingLogger := lager.NewLogger("staging-informer")
 	stagingLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
+
 	reporter := staging.FailedStagingReporter{
 		Client: httpClient,
 		Logger: stagingLogger,
@@ -70,5 +71,6 @@ func readConfigFile(path string) (*eirini.StagingReporterConfig, error) {
 
 	var conf eirini.StagingReporterConfig
 	err = yaml.Unmarshal(fileBytes, &conf)
+
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
 }

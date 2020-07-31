@@ -105,5 +105,6 @@ func (e MessageEmitter) publish(subject string, route Message) error {
 	if err = e.publisher.Publish(subject, routeJSON); err != nil {
 		return err
 	}
+
 	return nil
 }

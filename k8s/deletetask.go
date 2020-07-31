@@ -53,6 +53,7 @@ func (d *TaskDeleter) Delete(guid string) (string, error) {
 func (d *TaskDeleter) DeleteStaging(guid string) error {
 	logger := d.logger.Session("delete-staging", lager.Data{"guid": guid})
 	_, err := d.delete(logger, guid, LabelStagingGUID)
+
 	return err
 }
 
@@ -67,6 +68,7 @@ func (d *TaskDeleter) delete(logger lager.Logger, guid, label string) (string, e
 		logger.Error("failed-to-list-jobs", err)
 		return "", err
 	}
+
 	if len(jobs.Items) != 1 {
 		logger.Error("job-does-not-have-1-instance", nil, lager.Data{"instances": len(jobs.Items)})
 		return "", fmt.Errorf("job with guid %s should have 1 instance, but it has: %d", guid, len(jobs.Items))
@@ -78,6 +80,7 @@ func (d *TaskDeleter) delete(logger lager.Logger, guid, label string) (string, e
 	}
 
 	callbackURL := job.Annotations[AnnotationCompletionCallback]
+
 	if len(job.OwnerReferences) != 0 {
 		return callbackURL, nil
 	}
@@ -86,6 +89,7 @@ func (d *TaskDeleter) delete(logger lager.Logger, guid, label string) (string, e
 	err = d.jobClient.Delete(job.Namespace, job.Name, meta_v1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
+
 	if err != nil {
 		logger.Error("failed-to-delete-job", err)
 		return "", err
@@ -105,6 +109,7 @@ func (d *TaskDeleter) deleteDockerRegistrySecret(logger lager.Logger, job batch.
 		if !strings.HasPrefix(secret.Name, dockerSecretNamePrefix) {
 			continue
 		}
+
 		if err := d.secretsDeleter.Delete(job.Namespace, secret.Name); err != nil {
 			logger.Error("failed-to-delete-secret", err, lager.Data{"name": secret.Name, "namespace": job.Namespace})
 			return errors.Wrap(err, "failed to delete secret")

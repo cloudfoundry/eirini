@@ -32,5 +32,6 @@ func readRouteEmitterConfigFromFile(path string) (*eirini.RouteEmitterConfig, er
 
 	var conf eirini.RouteEmitterConfig
 	err = yaml.Unmarshal(fileBytes, &conf)
+
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
 }

@@ -23,7 +23,6 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - wsl
     - goerr113
     - noctx
     - gofumpt

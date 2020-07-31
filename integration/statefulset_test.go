@@ -493,6 +493,7 @@ func int32ptr(i int) *int32 {
 func getPodPhase(index int, id opi.LRPIdentifier) string {
 	pod := listPods(id)[index]
 	status := pod.Status
+
 	if status.Phase != corev1.PodRunning {
 		return fmt.Sprintf("Pod - %s", status.Phase)
 	}
@@ -505,6 +506,7 @@ func getPodPhase(index int, id opi.LRPIdentifier) string {
 		if containerStatus.State.Running == nil {
 			return fmt.Sprintf("Container %s - %v", containerStatus.Name, containerStatus.State)
 		}
+
 		if !containerStatus.Ready {
 			return fmt.Sprintf("Container %s is not Ready", containerStatus.Name)
 		}

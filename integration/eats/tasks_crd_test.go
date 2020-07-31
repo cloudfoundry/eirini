@@ -140,13 +140,17 @@ var _ = Describe("Tasks CRD", func() {
 func getRegistrySecretName() string {
 	jobs := listJobs()
 	imagePullSecrets := jobs[0].Spec.Template.Spec.ImagePullSecrets
+
 	var registrySecretName string
+
 	for _, imagePullSecret := range imagePullSecrets {
 		if strings.HasPrefix(imagePullSecret.Name, "wavey-the-space-registry-secret") {
 			registrySecretName = imagePullSecret.Name
 		}
 	}
+
 	Expect(registrySecretName).NotTo(BeEmpty())
+
 	return registrySecretName
 }
 
@@ -162,5 +166,6 @@ func listJobs() []batchv1.Job {
 		List(context.Background(), metav1.ListOptions{})
 
 	Expect(err).NotTo(HaveOccurred())
+
 	return jobs.Items
 }

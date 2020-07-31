@@ -300,12 +300,14 @@ func desireApp(appGUID, version string) *http.Response {
 func desireAppWithInstances(appGUID, version string, instances int) *http.Response {
 	lrp := createLrpRequest(appGUID, version)
 	lrp.NumInstances = instances
+
 	return desireLRP(lrp)
 }
 
 func desireAppInNamespace(appGUID, version, namespace string) *http.Response {
 	lrp := createLrpRequest(appGUID, version)
 	lrp.Namespace = namespace
+
 	return desireLRP(lrp)
 }
 
@@ -336,6 +338,7 @@ func updateApp(appGUID, version string, instances int, annotation string, routes
 		},
 	})
 	Expect(err).NotTo(HaveOccurred())
+
 	return resp
 }
 
@@ -344,11 +347,13 @@ func getRunningInstances(appGUID, version string) []*cf.Instance {
 	Expect(err).NotTo(HaveOccurred())
 
 	runningInstances := []*cf.Instance{}
+
 	for _, i := range instancesResp.Instances {
 		if i.State == "RUNNING" {
 			runningInstances = append(runningInstances, i)
 		}
 	}
+
 	return runningInstances
 }
 
@@ -362,5 +367,6 @@ func getStatefulSet(guid, version string) *appsv1.StatefulSet {
 	})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(statefulSets.Items).To(HaveLen(1))
+
 	return &statefulSets.Items[0]
 }

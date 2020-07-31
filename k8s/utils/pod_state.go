@@ -14,6 +14,7 @@ func GetPodState(pod corev1.Pod) string {
 		if containersHaveBrokenImage(pod.Status.ContainerStatuses) {
 			return opi.CrashedState
 		}
+
 		return opi.PendingState
 	}
 
@@ -55,6 +56,7 @@ func containersHaveBrokenImage(statuses []corev1.ContainerStatus) bool {
 		if status.State.Waiting == nil {
 			continue
 		}
+
 		if status.State.Waiting.Reason == "ErrImagePull" || status.State.Waiting.Reason == "ImagePullBackOff" {
 			return true
 		}

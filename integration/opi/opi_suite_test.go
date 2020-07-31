@@ -97,7 +97,9 @@ var _ = AfterEach(func() {
 func restartWithConfig(updateConfig func(cfg eirini.Config) eirini.Config) string {
 	configBytes, err := ioutil.ReadFile(eiriniConfigFilePath)
 	Expect(err).NotTo(HaveOccurred())
+
 	var eiriniConfig eirini.Config
+
 	Expect(yaml.Unmarshal(configBytes, &eiriniConfig)).To(Succeed())
 
 	newConfig := updateConfig(eiriniConfig)
@@ -109,6 +111,7 @@ func restartWithConfig(updateConfig func(cfg eirini.Config) eirini.Config) strin
 	Expect(ioutil.WriteFile(newConfigFile.Name(), configBytes, 0600)).To(Succeed())
 
 	session = eiriniBins.OPI.Restart(newConfigFile.Name(), session)
+
 	Eventually(func() error {
 		resp, getErr := httpClient.Get(url)
 		if getErr == nil {
@@ -116,5 +119,6 @@ func restartWithConfig(updateConfig func(cfg eirini.Config) eirini.Config) strin
 		}
 		return getErr
 	}).Should(Succeed())
+
 	return newConfigFile.Name()
 }

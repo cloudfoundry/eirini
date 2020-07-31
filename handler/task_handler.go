@@ -29,12 +29,14 @@ func (t *Task) Run(resp http.ResponseWriter, req *http.Request, ps httprouter.Pa
 	if err := json.NewDecoder(req.Body).Decode(&taskRequest); err != nil {
 		logger.Error("task-request-body-decoding-failed", err)
 		writeErrorResponse(resp, http.StatusBadRequest, err)
+
 		return
 	}
 
 	if err := t.taskBifrost.TransferTask(req.Context(), taskGUID, taskRequest); err != nil {
 		logger.Error("task-request-task-create-failed", err)
 		writeErrorResponse(resp, http.StatusInternalServerError, err)
+
 		return
 	}
 
@@ -48,6 +50,7 @@ func (t *Task) CancelTask(resp http.ResponseWriter, req *http.Request, ps httpro
 	if err := t.taskBifrost.CancelTask(taskGUID); err != nil {
 		logger.Error("task-request-task-delete-failed", err)
 		writeErrorResponse(resp, http.StatusInternalServerError, err)
+
 		return
 	}
 

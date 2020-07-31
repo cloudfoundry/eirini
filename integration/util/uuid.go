@@ -8,5 +8,6 @@ import (
 func GenerateGUID() string {
 	guid, err := uuid.GenerateUUID()
 	Expect(err).NotTo(HaveOccurred())
+
 	return guid[:30]
 }

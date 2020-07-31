@@ -11,5 +11,6 @@ func GenerateNatsURL(natsPassword, natsIP string, natsPort int) string {
 		Host:   fmt.Sprintf("%s:%d", natsIP, natsPort),
 		User:   url.UserPassword("nats", natsPassword),
 	}
+
 	return natsURL.String()
 }

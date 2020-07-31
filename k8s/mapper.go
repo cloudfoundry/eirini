@@ -11,7 +11,9 @@ import (
 
 func StatefulSetToLRP(s appsv1.StatefulSet) (*opi.LRP, error) {
 	stRoutes := s.Annotations[AnnotationRegisteredRoutes]
+
 	var uris []opi.Route
+
 	err := json.Unmarshal([]byte(stRoutes), &uris)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal uris")
@@ -27,6 +29,7 @@ func StatefulSetToLRP(s appsv1.StatefulSet) (*opi.LRP, error) {
 	memory := container.Resources.Requests.Memory().ScaledValue(resource.Mega)
 	disk := container.Resources.Limits.StorageEphemeral().ScaledValue(resource.Mega)
 	volMounts := []opi.VolumeMount{}
+
 	for _, vol := range container.VolumeMounts {
 		volMounts = append(volMounts, opi.VolumeMount{
 			ClaimName: vol.Name,

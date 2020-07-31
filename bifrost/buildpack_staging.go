@@ -51,6 +51,7 @@ func (b *BuildpackStaging) TransferStaging(ctx context.Context, stagingGUID stri
 func (b *BuildpackStaging) CompleteStaging(taskCompletedRequest cf.StagingCompletedRequest) error {
 	l := b.Logger.Session("complete-staging", lager.Data{"task-guid": taskCompletedRequest.TaskGUID})
 	l.Debug("Complete staging")
+
 	return multierr.Combine(
 		b.StagingCompleter.CompleteStaging(taskCompletedRequest),
 		b.StagingDeleter.DeleteStaging(taskCompletedRequest.TaskGUID),

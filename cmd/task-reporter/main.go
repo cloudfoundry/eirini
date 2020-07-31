@@ -38,6 +38,7 @@ func main() {
 
 func launchTaskReporter(clientset kubernetes.Interface, cfg eirini.TaskReporterConfig) {
 	httpClient := http.DefaultClient
+
 	if !cfg.CCTLSDisabled {
 		var err error
 		httpClient, err = util.CreateTLSHTTPClient(
@@ -85,5 +86,6 @@ func readConfigFile(path string) (eirini.TaskReporterConfig, error) {
 
 	var conf eirini.TaskReporterConfig
 	err = yaml.Unmarshal(fileBytes, &conf)
+
 	return conf, errors.Wrap(err, "failed to unmarshal yaml")
 }

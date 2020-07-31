@@ -683,5 +683,6 @@ func readBody(body *bytes.Buffer) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return bytes, nil
 }

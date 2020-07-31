@@ -73,6 +73,7 @@ func (r StateReporter) generateTaskCompletedRequest(logger lager.Logger, guid st
 	if terminated.ExitCode != 0 {
 		res.Failed = true
 		res.FailureReason = terminated.Reason
+
 		logger.Error("job-failed", nil, lager.Data{
 			"failure-reason":  terminated.Reason,
 			"failure-message": terminated.Message,
@@ -89,5 +90,6 @@ func getTaskContainerStatus(pod *corev1.Pod) (corev1.ContainerStatus, bool) {
 			return status, true
 		}
 	}
+
 	return corev1.ContainerStatus{}, false
 }

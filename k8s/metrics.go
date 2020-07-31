@@ -42,6 +42,7 @@ func ForwardMetricsToEmitter(collector MetricsCollector, emitter Emitter) error 
 	for _, m := range messages {
 		emitter.Emit(m)
 	}
+
 	return nil
 }
 
@@ -76,11 +77,14 @@ func (c *metricsCollector) Collect() ([]metrics.Message, error) {
 func (c *metricsCollector) collectMetrics(pods []apiv1.Pod) []metrics.Message {
 	logger := c.logger.Session("collect")
 	diskMetrics, err := c.diskClient.GetPodMetrics()
+
 	if err != nil {
 		logger.Error("failed-to-get-disk-metrics", err, lager.Data{})
 	}
+
 	messages := []metrics.Message{}
 	podMetrics, err := c.getPodMetrics()
+
 	if err != nil {
 		logger.Error("failed-to-get-metrics-from-kubernetes", err, lager.Data{})
 	}
@@ -90,6 +94,7 @@ func (c *metricsCollector) collectMetrics(pods []apiv1.Pod) []metrics.Message {
 		if err != nil {
 			continue
 		}
+
 		cpuPercentage, memoryValue := parseMetrics(podMetrics[pod.Name])
 
 		appContainer := pod.Spec.Containers[0]
@@ -108,6 +113,7 @@ func (c *metricsCollector) collectMetrics(pods []apiv1.Pod) []metrics.Message {
 			DiskQuota:   float64(diskLimit.Value()),
 		})
 	}
+
 	return messages
 }
 
@@ -122,6 +128,7 @@ func parseMetrics(metric v1beta1.PodMetrics) (cpu float64, memory float64) {
 	cpu = toCPUPercentage(res.MilliValue())
 	res = usage[apiv1.ResourceMemory]
 	memory = float64(res.Value())
+
 	return
 }
 
@@ -130,7 +137,9 @@ func (c *metricsCollector) getPodMetrics() (map[string]v1beta1.PodMetrics, error
 	if err != nil {
 		return nil, err
 	}
+
 	metricsMap := make(map[string]v1beta1.PodMetrics)
+
 	for _, m := range metricsList.Items {
 		metricsMap[m.Name] = m
 	}

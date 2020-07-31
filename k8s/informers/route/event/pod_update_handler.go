@@ -36,6 +36,7 @@ func (h PodUpdateHandler) Handle(oldPod, updatedPod *corev1.Pod) {
 	if markedForDeletion(*updatedPod) || (!isReady(updatedPod.Status.Conditions) && isReady(oldPod.Status.Conditions)) {
 		loggerSession.Debug("pod-not-ready", lager.Data{"statuses": updatedPod.Status.Conditions, "deletion-timestamp": updatedPod.DeletionTimestamp})
 		h.unregisterPodRoutes(oldPod, userDefinedRoutes)
+
 		return
 	}
 
@@ -49,6 +50,7 @@ func (h PodUpdateHandler) Handle(oldPod, updatedPod *corev1.Pod) {
 			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
 			continue
 		}
+
 		h.RouteEmitter.Emit(*routes)
 	}
 }
@@ -66,6 +68,7 @@ func (h PodUpdateHandler) unregisterPodRoutes(pod *corev1.Pod, userDefinedRoutes
 			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
 			continue
 		}
+
 		h.RouteEmitter.Emit(*routes)
 	}
 }
@@ -85,6 +88,7 @@ func (h PodUpdateHandler) getOwner(pod *corev1.Pod) (*apps.StatefulSet, error) {
 	if len(ownerReferences) == 0 {
 		return nil, errors.New("there are no owners")
 	}
+
 	for _, owner := range ownerReferences {
 		if owner.Kind == "StatefulSet" {
 			return h.Client.Get(context.Background(), owner.Name, meta.GetOptions{})
@@ -100,6 +104,7 @@ func isReady(conditions []corev1.PodCondition) bool {
 			return c.Status == corev1.ConditionTrue
 		}
 	}
+
 	return false
 }
 

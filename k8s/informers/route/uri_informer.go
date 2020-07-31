@@ -94,5 +94,6 @@ func isReady(conditions []corev1.PodCondition) bool {
 			return c.Status == corev1.ConditionTrue
 		}
 	}
+
 	return false
 }

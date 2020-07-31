@@ -67,37 +67,45 @@ func (h URIAnnotationUpdateHandler) createRoutesOnUpdate(loggerSession lager.Log
 	}
 
 	resultRoutes := []*eiriniroute.Message{}
+
 	for _, pod := range pods {
 		if markedForDeletion(pod) {
 			loggerSession.Debug("skipping pod marked for deletion")
 			continue
 		}
+
 		resultRoutes = append(resultRoutes, createRouteMessages(loggerSession, pod, grouped)...)
 	}
+
 	return resultRoutes
 }
 
 func createRouteMessages(loggerSession lager.Logger, pod corev1.Pod, grouped portGroup) []*eiriniroute.Message {
 	resultRoutes := []*eiriniroute.Message{}
+
 	for port, routes := range grouped {
 		podRoute, err := route.NewRouteMessage(&pod, uint32(port), routes)
 		if err != nil {
 			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
 			continue
 		}
+
 		resultRoutes = append(resultRoutes, podRoute)
 	}
+
 	return resultRoutes
 }
 
 func groupRoutesByPort(remove, add set.Set) portGroup {
 	group := make(portGroup)
+
 	for _, toAdd := range add.ToSlice() {
 		current := toAdd.(cf.Route)
 		routes := group[current.Port]
 		routes.RegisteredRoutes = append(routes.RegisteredRoutes, current.Hostname)
 		group[current.Port] = routes
 	}
+
 	for _, toRemove := range remove.ToSlice() {
 		current := toRemove.(cf.Route)
 		routes := group[current.Port]
@@ -111,6 +119,7 @@ func groupRoutesByPort(remove, add set.Set) portGroup {
 func decodeRoutesAsSet(statefulset *appsv1.StatefulSet) (set.Set, error) {
 	routes := set.NewSet()
 	updatedUserDefinedRoutes, err := decodeRoutes(statefulset.Annotations[k8s.AnnotationRegisteredRoutes])
+
 	if err != nil {
 		return set.NewSet(), err
 	}
@@ -118,5 +127,6 @@ func decodeRoutesAsSet(statefulset *appsv1.StatefulSet) (set.Set, error) {
 	for _, r := range updatedUserDefinedRoutes {
 		routes.Add(r)
 	}
+
 	return routes, nil
 }

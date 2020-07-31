@@ -73,6 +73,7 @@ func (c *CrashInformer) Start() {
 func (c *CrashInformer) updateFunc(_ interface{}, newObj interface{}) {
 	pod := newObj.(*v1.Pod)
 	event, send := c.eventGenerator.Generate(pod, c.logger)
+
 	if send {
 		if err := c.crashEmitter.Emit(event); err != nil {
 			c.logger.Error("failed-to-emit-crash-event", err)
