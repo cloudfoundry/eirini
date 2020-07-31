@@ -36,7 +36,7 @@ type options struct {
 
 func main() {
 	if err := kscheme.AddToScheme(eirinischeme.Scheme); err != nil {
-		cmdcommons.Exitf("failed to add the k8s scheme to the LRP CRD scheme: %w", err)
+		cmdcommons.Exitf("failed to add the k8s scheme to the LRP CRD scheme: %v", err)
 	}
 
 	var opts options
