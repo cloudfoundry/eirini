@@ -168,6 +168,7 @@ func waitOpiReady(httpClient rest.HTTPClient, opiURL string) {
 		desireAppReq, err := http.NewRequest("GET", fmt.Sprintf("%s/apps", opiURL), bytes.NewReader([]byte{}))
 		Expect(err).ToNot(HaveOccurred())
 		_, err = httpClient.Do(desireAppReq) //nolint:bodyclose
+
 		return err
 	}).Should(Succeed())
 }

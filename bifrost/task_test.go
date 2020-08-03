@@ -194,6 +194,7 @@ var _ = Describe("Buildpack task", func() {
 			It("still succeeds", func(done Done) {
 				jsonClient.PostStub = func(string, interface{}) error {
 					<-make(chan interface{}) // block forever
+
 					return nil
 				}
 

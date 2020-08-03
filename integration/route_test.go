@@ -66,6 +66,7 @@ var _ = Describe("Routes", func() {
 					if len(pods) < 1 {
 						return false
 					}
+
 					return podReady(pods[0])
 				}).Should(BeTrue())
 
@@ -109,6 +110,7 @@ fi;`,
 						if len(pods) < 2 {
 							return false
 						}
+
 						return podCrashed(pods[0]) && podReady(pods[1])
 					}).Should(BeTrue())
 				})
@@ -147,6 +149,7 @@ fi;`,
 				if len(pods) < 2 {
 					return false
 				}
+
 				return podReady(pods[0]) && podReady(pods[1])
 			}).Should(BeTrue())
 
@@ -264,6 +267,7 @@ fi;`,
 				if len(pods) < 2 {
 					return false
 				}
+
 				return podReady(pods[0]) && podReady(pods[1])
 			}).Should(BeTrue())
 

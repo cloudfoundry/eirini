@@ -201,6 +201,7 @@ var _ = Describe("Staging", func() {
 					cfg.Properties.CCCertPath = ""
 					cfg.Properties.CCKeyPath = ""
 					cfg.Properties.CCCAPath = ""
+
 					return cfg
 				})
 				stagingGUID = "completion-guid-2"

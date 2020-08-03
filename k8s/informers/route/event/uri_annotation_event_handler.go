@@ -38,6 +38,7 @@ func (h URIAnnotationUpdateHandler) onUpdate(oldStatefulSet, updatedStatefulSet 
 	updatedSet, err := decodeRoutesAsSet(updatedStatefulSet)
 	if err != nil {
 		loggerSession.Error("failed-to-decode-updated-user-defined-routes", err)
+
 		return
 	}
 
@@ -63,6 +64,7 @@ func (h URIAnnotationUpdateHandler) createRoutesOnUpdate(loggerSession lager.Log
 	pods, err := getChildrenPods(h.Pods, statefulset)
 	if err != nil {
 		loggerSession.Error("failed-to-get-child-pods", err)
+
 		return []*eiriniroute.Message{}
 	}
 
@@ -71,6 +73,7 @@ func (h URIAnnotationUpdateHandler) createRoutesOnUpdate(loggerSession lager.Log
 	for _, pod := range pods {
 		if markedForDeletion(pod) {
 			loggerSession.Debug("skipping pod marked for deletion")
+
 			continue
 		}
 
@@ -87,6 +90,7 @@ func createRouteMessages(loggerSession lager.Logger, pod corev1.Pod, grouped por
 		podRoute, err := route.NewRouteMessage(&pod, uint32(port), routes)
 		if err != nil {
 			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
+
 			continue
 		}
 

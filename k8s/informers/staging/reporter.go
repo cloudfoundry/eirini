@@ -36,6 +36,7 @@ func (r FailedStagingReporter) Report(pod *v1.Pod) {
 	completionCallback, err := utils.GetEnvVarValue("COMPLETION_CALLBACK", pod.Spec.Containers[0].Env)
 	if err != nil {
 		logger.Error("failed-to-get-completion-callback", err)
+
 		return
 	}
 
@@ -43,6 +44,7 @@ func (r FailedStagingReporter) Report(pod *v1.Pod) {
 
 	if err != nil {
 		logger.Error("failed-to-get-eirini-address", err)
+
 		return
 	}
 
@@ -56,6 +58,7 @@ func (r FailedStagingReporter) Report(pod *v1.Pod) {
 	completionRequest, err := r.createFailureCompletionRequest(reason, stagingGUID, completionCallback)
 	if err != nil {
 		logger.Error("cannot-send-failed-staging-completion-request", err)
+
 		return
 	}
 

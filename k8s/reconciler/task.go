@@ -46,22 +46,26 @@ func (t *Task) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	err := t.client.Get(context.Background(), request.NamespacedName, task)
 	if errors.IsNotFound(err) {
 		logger.Error("no-such-task", err)
+
 		return reconcile.Result{}, nil
 	}
 
 	if err != nil {
 		logger.Error("task-get-failed", err)
+
 		return reconcile.Result{}, fmt.Errorf("could not fetch task: %+v", err)
 	}
 
 	err = t.taskDesirer.Desire(task.Namespace, toOpiTask(task), t.setOwnerFn(task))
 	if errors.IsAlreadyExists(err) {
 		logger.Info("task-already-exists")
+
 		return reconcile.Result{}, nil
 	}
 
 	if err != nil {
 		logger.Error("desire-task-failed", err)
+
 		return reconcile.Result{}, err
 	}
 

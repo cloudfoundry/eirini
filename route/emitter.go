@@ -54,6 +54,7 @@ func NewEmitterFromConfig(natsIP string, natsPort int, natsPassword string, logg
 func (e MessageEmitter) Emit(route Message) {
 	if len(route.Address) == 0 {
 		e.logger.Debug("route-address-missing", lager.Data{"app-name": route.Name, "instance-id": route.InstanceID})
+
 		return
 	}
 

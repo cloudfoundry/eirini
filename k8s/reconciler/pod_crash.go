@@ -67,6 +67,7 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 	if err := r.pods.Get(ctx, request.NamespacedName, pod); err != nil {
 		if apierrors.IsNotFound(err) {
 			r.logger.Error("pod does not exist", err)
+
 			return reconcile.Result{}, nil
 		}
 
@@ -84,24 +85,28 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 	statefulSetRef, err := r.getOwner(pod, "StatefulSet")
 	if err != nil {
 		r.logger.Debug("pod-without-statefulset-owner")
+
 		return reconcile.Result{}, nil
 	}
 
 	statefulSet, err := r.statefulSetGetter.Get(pod.Namespace, statefulSetRef.Name)
 	if err != nil {
 		r.logger.Error("failed-to-get-stateful-set", err)
+
 		return reconcile.Result{}, err
 	}
 
 	lrpRef, err := r.getOwner(statefulSet, "LRP")
 	if err != nil {
 		r.logger.Debug("statefulset-without-lrp-owner", lager.Data{"statefulset-name": statefulSet.Name})
+
 		return reconcile.Result{}, nil
 	}
 
 	event := r.makeEvent(crashEvent, pod.Namespace, lrpRef)
 	if event, err = r.eventsClient.Create(ctx, event, metav1.CreateOptions{}); err != nil {
 		r.logger.Error("failed-to-create-event", err)
+
 		return reconcile.Result{}, errors.Wrap(err, "failed to create event")
 	}
 

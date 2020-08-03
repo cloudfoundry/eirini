@@ -87,6 +87,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 			pod.Namespace = "some-ns"
 			pod.Name = "app-instance"
 			pod.OwnerReferences = podOwners
+
 			return podGetError
 		}
 		_, resultErr = podCrashReconciler.Reconcile(reconcile.Request{

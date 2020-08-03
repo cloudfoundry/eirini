@@ -28,6 +28,7 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 	_, err := util.ParseAppIndex(pod.Name)
 	if err != nil {
 		logger.Error("failed-to-parse-app-index", err, lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[k8s.AnnotationProcessGUID]})
+
 		return events.CrashEvent{}, false
 	}
 
@@ -37,6 +38,7 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 
 	if container := getMisconfiguredContainerStatusIfAny(pod.Status.ContainerStatuses); container != nil {
 		exitDescription := container.State.Waiting.Message
+
 		return generateReport(pod, container.State.Waiting.Reason, 0, exitDescription, 0, int(container.RestartCount)), true
 	}
 
@@ -55,6 +57,7 @@ func (g DefaultCrashEventGenerator) generateReportForTerminatedPod(pod *v1.Pod, 
 	podEvents, err := k8s.GetEvents(g.eventLister, *pod)
 	if err != nil {
 		logger.Error("failed-to-get-k8s-events", err, lager.Data{"guid": pod.Annotations[k8s.AnnotationProcessGUID]})
+
 		return events.CrashEvent{}, false
 	}
 

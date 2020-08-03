@@ -116,6 +116,7 @@ func (d *TaskDesirer) Desire(namespace string, task *opi.Task, opts ...DesireOpt
 	if imageInPrivateRegistry(task) {
 		if err := d.addImagePullSecret(namespace, task, job); err != nil {
 			logger.Error("failed-to-add-image-pull-secret", err)
+
 			return err
 		}
 	}
@@ -126,6 +127,7 @@ func (d *TaskDesirer) Desire(namespace string, task *opi.Task, opts ...DesireOpt
 		err := opt(job)
 		if err != nil {
 			logger.Error("failed-to-apply-option", err)
+
 			return errors.Wrap(err, "failed to apply options")
 		}
 	}
@@ -133,6 +135,7 @@ func (d *TaskDesirer) Desire(namespace string, task *opi.Task, opts ...DesireOpt
 	_, err := d.jobCreator.Create(namespace, job)
 	if err != nil {
 		logger.Error("failed-to-create-job", err)
+
 		return err
 	}
 
@@ -145,6 +148,7 @@ func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 	_, err := d.jobCreator.Create(d.defaultStagingNamespace, d.toStagingJob(task))
 	if err != nil {
 		logger.Error("failed-to-create-job", err)
+
 		return err
 	}
 

@@ -85,6 +85,7 @@ var _ = Describe("Desire App", func() {
 				if err != nil {
 					return nil, err
 				}
+
 				return pods.Items, nil
 			}).ShouldNot(BeEmpty())
 
@@ -108,6 +109,7 @@ var _ = Describe("Desire App", func() {
 			BeforeEach(func() {
 				newConfigPath = restartWithConfig(func(config eirini.Config) eirini.Config {
 					config.Properties.UnsafeAllowAutomountServiceAccountToken = true
+
 					return config
 				})
 			})

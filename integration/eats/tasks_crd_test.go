@@ -156,6 +156,7 @@ func getRegistrySecretName() string {
 
 func getJobConditions() []batchv1.JobCondition {
 	jobs := listJobs()
+
 	return jobs[0].Status.Conditions
 }
 

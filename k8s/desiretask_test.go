@@ -585,5 +585,6 @@ var _ = Describe("TaskDesirer", func() {
 
 func int32ptr(i int) *int32 {
 	u := int32(i)
+
 	return &u
 }

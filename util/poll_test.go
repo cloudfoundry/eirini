@@ -17,6 +17,7 @@ var _ = Describe("Poll", func() {
 		called := false
 		f := func() bool {
 			called = true
+
 			return true
 		}
 
@@ -31,6 +32,7 @@ var _ = Describe("Poll", func() {
 		calledTimes := 0
 		f := func() bool {
 			calledTimes++
+
 			return calledTimes == 2
 		}
 
@@ -66,6 +68,7 @@ var _ = Describe("Poll", func() {
 		atomic.StoreInt32(&funcCalledTimes, 0)
 		f := func() bool {
 			atomic.AddInt32(&funcCalledTimes, 1)
+
 			return false
 		}
 

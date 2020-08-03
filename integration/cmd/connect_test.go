@@ -25,11 +25,13 @@ var _ = Describe("connect command", func() {
 
 	getRootError := func() error {
 		_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
+
 		return err
 	}
 
 	getRoot := func() *http.Response {
 		resp, _ := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
+
 		return resp
 	}
 
@@ -157,6 +159,7 @@ var _ = Describe("connect command", func() {
 
 				Eventually(func() error {
 					_, err := plaintextClient.Get(fmt.Sprintf("http://localhost:%d/", config.Properties.PlaintextPort))
+
 					return err
 				}, "10s").Should(Succeed())
 			})

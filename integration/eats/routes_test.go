@@ -48,6 +48,7 @@ var _ = Describe("Routes", func() {
 		Eventually(func() error {
 			var err error
 			natsServer, err = runNatsTestServer(natsConfig)
+
 			return err
 		}, "1m").Should(Succeed())
 		natsClient = subscribeToNats(natsConfig, registerChan, unregisterChan)
@@ -152,6 +153,7 @@ var _ = Describe("Routes", func() {
 			Eventually(registerChan).Should(Receive(&msg))
 			Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
 			emittedRoutes = append(emittedRoutes, actualMessage.URIs...)
+
 			return emittedRoutes
 		}
 
@@ -202,6 +204,7 @@ var _ = Describe("Routes", func() {
 
 					Eventually(unregisterChan).Should(Receive(&msg))
 					Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
+
 					return actualMessage.URIs
 				}).Should(ConsistOf("app-hostname-1"))
 			})

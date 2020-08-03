@@ -22,11 +22,13 @@ func MapToEnvVar(env map[string]string) []v1.EnvVar {
 
 func int32ptr(i int) *int32 {
 	u := int32(i)
+
 	return &u
 }
 
 func int64ptr(i int) *int64 {
 	u := int64(i)
+
 	return &u
 }
 

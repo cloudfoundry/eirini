@@ -30,6 +30,7 @@ func (h PodUpdateHandler) Handle(oldPod, updatedPod *corev1.Pod) {
 	userDefinedRoutes, err := h.getUserDefinedRoutes(updatedPod)
 	if err != nil {
 		loggerSession.Debug("failed-to-get-user-defined-routes", lager.Data{"error": err.Error()})
+
 		return
 	}
 
@@ -48,6 +49,7 @@ func (h PodUpdateHandler) Handle(oldPod, updatedPod *corev1.Pod) {
 		)
 		if err != nil {
 			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
+
 			continue
 		}
 
@@ -66,6 +68,7 @@ func (h PodUpdateHandler) unregisterPodRoutes(pod *corev1.Pod, userDefinedRoutes
 		)
 		if err != nil {
 			loggerSession.Debug("failed-to-construct-a-route-message", lager.Data{"error": err.Error()})
+
 			continue
 		}
 

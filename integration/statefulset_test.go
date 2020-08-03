@@ -80,6 +80,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 
 			Eventually(func() []string {
 				podNames = podNamesFromPods(listPods(odinLRP.LRPIdentifier))
+
 				return podNames
 			}).Should(HaveLen(odinLRP.TargetInstances))
 
@@ -160,6 +161,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 				var nodeNames []string
 				Eventually(func() []string {
 					nodeNames = nodeNamesFromPods(listPods(odinLRP.LRPIdentifier))
+
 					return nodeNames
 				}).Should(HaveLen(2))
 				Expect(nodeNames[0]).ToNot(Equal(nodeNames[1]))
@@ -219,6 +221,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 
 				Eventually(func() []string {
 					podNames = podNamesFromPods(listPods(odinLRP.LRPIdentifier))
+
 					return podNames
 				}).Should(HaveLen(odinLRP.TargetInstances))
 
@@ -231,6 +234,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 
 				Eventually(func() int32 {
 					statefulset := getStatefulSet(odinLRP)
+
 					return statefulset.Status.ReadyReplicas
 				}).Should(BeNumerically("==", odinLRP.TargetInstances))
 			})
@@ -281,6 +285,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 		It("should delete the pod disruption budget for the lrp", func() {
 			Eventually(func() error {
 				_, err := podDisruptionBudgets().Get(context.Background(), statefulsetName, v1.GetOptions{})
+
 				return err
 			}).Should(MatchError(ContainSubstring("not found")))
 		})
@@ -293,6 +298,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 			It("keep the lrp without a pod disruption budget", func() {
 				Eventually(func() error {
 					_, err := podDisruptionBudgets().Get(context.Background(), statefulsetName, v1.GetOptions{})
+
 					return err
 				}).Should(MatchError(ContainSubstring("not found")))
 			})
@@ -394,6 +400,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 		numberOfInstancesFn := func() int {
 			lrp, err := desirer.Get(odinLRP.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
+
 			return lrp.RunningInstances
 		}
 
@@ -450,6 +457,7 @@ fi;`,
 		instancesFn := func() []*opi.Instance {
 			instances, err := desirer.GetInstances(odinLRP.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
+
 			return instances
 		}
 
@@ -468,6 +476,7 @@ fi;`,
 						return false
 					}
 				}
+
 				return true
 			}).Should(BeTrue())
 		})
@@ -486,6 +495,7 @@ fi;`,
 
 func int32ptr(i int) *int32 {
 	i32 := int32(i)
+
 	return &i32
 }
 

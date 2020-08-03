@@ -35,6 +35,7 @@ var _ = Describe("Apps CRDs", func() {
 			return nil
 		}
 		Expect(stsList.Items).To(HaveLen(1))
+
 		return &stsList.Items[0]
 	}
 
@@ -48,6 +49,7 @@ var _ = Describe("Apps CRDs", func() {
 		if len(podList.Items) == 0 {
 			return nil
 		}
+
 		return podList.Items
 	}
 
@@ -58,6 +60,7 @@ var _ = Describe("Apps CRDs", func() {
 			Get(context.Background(), lrpName, metav1.GetOptions{})
 
 		Expect(err).NotTo(HaveOccurred())
+
 		return lrp
 	}
 

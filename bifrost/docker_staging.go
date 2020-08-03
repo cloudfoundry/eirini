@@ -70,18 +70,21 @@ func (s DockerStaging) TransferStaging(ctx context.Context, stagingGUID string, 
 	imageConfig, err := s.getImageConfig(request.Lifecycle.DockerLifecycle)
 	if err != nil {
 		logger.Error("failed-to-get-image-config", err)
+
 		return s.respondWithFailure(taskCallbackResponse, errors.Wrap(err, "failed to get image config"))
 	}
 
 	ports, err := parseExposedPorts(imageConfig)
 	if err != nil {
 		logger.Error("failed-to-parse-exposed-ports", err)
+
 		return s.respondWithFailure(taskCallbackResponse, errors.Wrap(err, "failed to parse exposed ports"))
 	}
 
 	stagingResult, err := buildStagingResult(request.Lifecycle.DockerLifecycle.Image, ports)
 	if err != nil {
 		logger.Error("failed-to-build-staging-result", err)
+
 		return s.respondWithFailure(taskCallbackResponse, errors.Wrap(err, "failed to build staging result"))
 	}
 

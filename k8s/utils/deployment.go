@@ -18,6 +18,7 @@ func IsReady(client DeploymentClient, logger lager.Logger, deploymentName string
 	deployment, err := client.Get(context.Background(), deploymentName, metav1.GetOptions{})
 	if err != nil {
 		logger.Error("failed to list deployments", err)
+
 		return false
 	}
 

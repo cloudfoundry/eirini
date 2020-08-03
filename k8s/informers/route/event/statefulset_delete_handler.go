@@ -26,6 +26,7 @@ func (h StatefulSetDeleteHandler) Handle(deletedStatefulSet *appsv1.StatefulSet)
 	routeSet, err := decodeRoutesAsSet(deletedStatefulSet)
 	if err != nil {
 		loggerSession.Error("failed-to-decode-deleted-user-defined-routes", err)
+
 		return
 	}
 
@@ -45,6 +46,7 @@ func (h StatefulSetDeleteHandler) createRoutesOnDelete(loggerSession lager.Logge
 	pods, err := getChildrenPods(h.Pods, statefulset)
 	if err != nil {
 		loggerSession.Error("failed-to-get-child-pods", err)
+
 		return []*eiriniroute.Message{}
 	}
 

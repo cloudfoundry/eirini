@@ -46,6 +46,7 @@ func NewTaskDeleter(
 
 func (d *TaskDeleter) Delete(guid string) (string, error) {
 	logger := d.logger.Session("delete", lager.Data{"guid": guid})
+
 	return d.delete(logger, guid, LabelGUID)
 }
 
@@ -65,11 +66,13 @@ func (d *TaskDeleter) delete(logger lager.Logger, guid, label string) (string, e
 	})
 	if err != nil {
 		logger.Error("failed-to-list-jobs", err)
+
 		return "", err
 	}
 
 	if len(jobs.Items) != 1 {
 		logger.Error("job-does-not-have-1-instance", nil, lager.Data{"instances": len(jobs.Items)})
+
 		return "", fmt.Errorf("job with guid %s should have 1 instance, but it has: %d", guid, len(jobs.Items))
 	}
 
@@ -91,6 +94,7 @@ func (d *TaskDeleter) delete(logger lager.Logger, guid, label string) (string, e
 
 	if err != nil {
 		logger.Error("failed-to-delete-job", err)
+
 		return "", err
 	}
 
@@ -111,6 +115,7 @@ func (d *TaskDeleter) deleteDockerRegistrySecret(logger lager.Logger, job batch.
 
 		if err := d.secretsDeleter.Delete(job.Namespace, secret.Name); err != nil {
 			logger.Error("failed-to-delete-secret", err, lager.Data{"name": secret.Name, "namespace": job.Namespace})
+
 			return errors.Wrap(err, "failed to delete secret")
 		}
 	}
@@ -120,5 +125,6 @@ func (d *TaskDeleter) deleteDockerRegistrySecret(logger lager.Logger, job batch.
 
 func dockerImagePullSecretNamePrefix(appName, spaceName, taskGUID string) string {
 	secretNamePrefix := fmt.Sprintf("%s-%s", appName, spaceName)
+
 	return fmt.Sprintf("%s-registry-secret-", utils.SanitizeName(secretNamePrefix, taskGUID))
 }

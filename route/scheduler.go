@@ -26,6 +26,7 @@ func (c CollectorScheduler) Start() {
 		for _, r := range routes {
 			c.Emitter.Emit(r)
 		}
+
 		return nil
 	})
 }

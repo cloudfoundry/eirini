@@ -39,6 +39,7 @@ var _ = Describe("Scheduler", func() {
 				scheduler := &TickerTaskScheduler{Ticker: ticker, Logger: logger}
 				task := func() error {
 					atomic.AddInt32(&count, 1)
+
 					return nil
 				}
 				go scheduler.Schedule(task)
@@ -85,6 +86,7 @@ var _ = Describe("Scheduler", func() {
 			task = func() error {
 				time.Sleep(2 * time.Millisecond)
 				workChan <- 42
+
 				return nil
 			}
 		})
@@ -106,6 +108,7 @@ var _ = Describe("Scheduler", func() {
 		It("should call the provided function until the stop chanel is closed", func() {
 			Consistently(func() error {
 				Eventually(workChan).Should(Receive())
+
 				return nil
 			}, "150ms", "5s").Should(Succeed())
 		})

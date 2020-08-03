@@ -59,6 +59,7 @@ var _ = Describe("RootfsPatcher", func() {
 			for _, p := range pods {
 				result = append(result, utils.GetPodState(p))
 			}
+
 			return result
 		}).Should(ConsistOf(opi.RunningState, opi.RunningState, opi.RunningState, opi.RunningState))
 

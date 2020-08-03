@@ -65,6 +65,7 @@ func (r *LRP) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	if err := r.lrps.Get(context.Background(), request.NamespacedName, lrp); err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Error("lrp-not-found", err)
+
 			return reconcile.Result{}, nil
 		}
 

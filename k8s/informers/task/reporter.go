@@ -49,6 +49,7 @@ func (r StateReporter) taskContainerHasJustTerminated(logger lager.Logger, oldPo
 
 	if !hasTaskContainerStatus {
 		logger.Info("updated-pod-has-no-task-container-status")
+
 		return false
 	}
 

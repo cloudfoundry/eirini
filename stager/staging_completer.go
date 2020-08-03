@@ -34,6 +34,7 @@ func (s *CallbackStagingCompleter) CompleteStaging(taskCompletedRequest cf.Stagi
 	callbackURI, err := s.getCallbackURI(taskCompletedRequest)
 	if err != nil {
 		l.Error("failed-to-parse-callback-uri", err)
+
 		return err
 	}
 
@@ -67,6 +68,7 @@ func (s *CallbackStagingCompleter) getCallbackURI(taskCompletedRequest cf.Stagin
 	var annotation cc_messages.StagingTaskAnnotation
 	if err := json.Unmarshal([]byte(taskCompletedRequest.Annotation), &annotation); err != nil {
 		s.logger.Error("failed-to-parse-annotation", err)
+
 		return "", err
 	}
 

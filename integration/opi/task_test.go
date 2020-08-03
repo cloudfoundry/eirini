@@ -62,6 +62,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
 				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+
 				return jobs.Items, err
 			}).Should(HaveLen(1))
 
@@ -111,6 +112,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
 				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+
 				return jobs.Items, err
 			}).Should(HaveLen(1))
 
@@ -130,6 +132,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			By("completing the task", func() {
 				Eventually(func() []batchv1.JobCondition {
 					jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+
 					return jobs.Items[0].Status.Conditions
 				}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(batchv1.JobComplete),
@@ -149,6 +152,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 				Eventually(func() ([]batchv1.Job, error) {
 					var err error
 					jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+
 					return jobs.Items, err
 				}).Should(HaveLen(1))
 
@@ -178,6 +182,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 				By("allowing the task to complete", func() {
 					Eventually(func() []batchv1.JobCondition {
 						jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+
 						return jobs.Items[0].Status.Conditions
 					}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(batchv1.JobComplete),
@@ -231,6 +236,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
 				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+
 				return jobs.Items, err
 			}).Should(HaveLen(1))
 
@@ -251,6 +257,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
 				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+
 				return jobs.Items, err
 			}).Should(BeEmpty())
 
@@ -275,6 +282,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 					for _, secret := range secrets.Items {
 						secretNames = append(secretNames, secret.Name)
 					}
+
 					return secretNames, nil
 				}).Should(Not(ContainElement(HavePrefix("my-app-my-space-registry-secret-"))))
 			})
@@ -302,6 +310,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 					cfg.Properties.CCCertPath = ""
 					cfg.Properties.CCKeyPath = ""
 					cfg.Properties.CCCAPath = ""
+
 					return cfg
 				})
 

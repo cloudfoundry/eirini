@@ -141,6 +141,7 @@ var _ = Describe("Events", func() {
 					cfg.CCKeyPath = ""
 					cfg.CCCAPath = ""
 					cfg.CcInternalAPI = capiServer.URL()
+
 					return cfg
 				})
 

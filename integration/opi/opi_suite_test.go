@@ -82,6 +82,7 @@ var _ = BeforeEach(func() {
 	url = fmt.Sprintf("https://localhost:%d/", eiriniConfig.Properties.TLSPort)
 	Eventually(func() error {
 		_, getErr := httpClient.Get(url)
+
 		return getErr
 	}).Should(Succeed())
 })
@@ -116,6 +117,7 @@ func restartWithConfig(updateConfig func(cfg eirini.Config) eirini.Config) strin
 		if getErr == nil {
 			defer resp.Body.Close()
 		}
+
 		return getErr
 	}).Should(Succeed())
 

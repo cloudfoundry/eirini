@@ -47,6 +47,7 @@ func (c RouteCollector) Collect() ([]route.Message, error) {
 		routes, err := c.getRoutes(p, statefulsets)
 		if err != nil {
 			c.logger.Debug("collect.failed-to-get-routes", lager.Data{"error": err.Error()})
+
 			continue
 		}
 

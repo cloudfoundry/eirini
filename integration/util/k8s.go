@@ -38,6 +38,7 @@ func CreateRandomNamespace(clientset kubernetes.Interface) string {
 
 func namespaceExists(namespace string, clientset kubernetes.Interface) bool {
 	_, err := clientset.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
+
 	return err == nil
 }
 

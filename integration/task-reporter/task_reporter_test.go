@@ -181,6 +181,7 @@ var _ = Describe("TaskReporter", func() {
 			for _, imagePullSecret := range imagePullSecrets {
 				if strings.HasPrefix(imagePullSecret.Name, registrySecretPrefix) {
 					registrySecretName = imagePullSecret.Name
+
 					break
 				}
 			}
@@ -188,6 +189,7 @@ var _ = Describe("TaskReporter", func() {
 
 			Eventually(func() error {
 				_, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Get(context.Background(), registrySecretName, metav1.GetOptions{})
+
 				return err
 			}).Should(MatchError(ContainSubstring(`secrets "%s" not found`, registrySecretName)))
 		})

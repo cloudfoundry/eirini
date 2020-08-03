@@ -107,6 +107,7 @@ func initRetryableJSONClient(cfg *eirini.Config) *util.RetryableJSONClient {
 
 func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) *stager.CallbackStagingCompleter {
 	retryableJSONClient := initRetryableJSONClient(cfg)
+
 	return stager.NewCallbackStagingCompleter(logger, retryableJSONClient)
 }
 
