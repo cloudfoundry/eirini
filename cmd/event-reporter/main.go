@@ -45,7 +45,7 @@ func main() {
 }
 
 func launchEventReporter(clientset kubernetes.Interface, uri string, tlsDisabled bool, ca, cert, key, namespace string) {
-	tlsConf := &tls.Config{}
+	tlsConf := &tls.Config{} // nolint:gosec // No need to check for min version as the empty config is only used when tls is disabled
 
 	if !tlsDisabled {
 		var err error

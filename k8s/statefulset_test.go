@@ -1,10 +1,11 @@
 package k8s_test
 
 import (
+	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/big"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
@@ -1144,7 +1145,12 @@ const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 func randStringBytes() string {
 	b := make([]byte, 10)
 	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		randomNumber, err := rand.Int(rand.Reader, big.NewInt(int64(len(letterBytes))))
+		if err != nil {
+			panic(fmt.Errorf("Could not generate a random number: %w", err))
+		}
+
+		b[i] = letterBytes[randomNumber.Int64()]
 	}
 
 	return string(b)

@@ -47,6 +47,10 @@ issues:
       linters:
       - gomnd
       - funlen
+      - gosec
+    - path: integration/eats/eats_suite_test.go
+      linters:
+      - gosec
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 
