@@ -4,10 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
+	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 )
 
 var _ = Describe("Docker Config", func() {

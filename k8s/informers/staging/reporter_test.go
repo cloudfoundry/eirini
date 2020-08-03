@@ -3,15 +3,14 @@ package staging_test
 import (
 	"net/http"
 
+	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/informers/staging"
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/k8s/informers/staging"
-	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("FailedStagingReporter", func() {

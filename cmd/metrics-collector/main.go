@@ -19,7 +19,6 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
-
 	metricsclientset "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 

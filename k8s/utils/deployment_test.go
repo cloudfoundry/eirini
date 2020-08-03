@@ -3,14 +3,13 @@ package utils_test
 import (
 	"errors"
 
+	. "code.cloudfoundry.org/eirini/k8s/utils"
+	"code.cloudfoundry.org/eirini/k8s/utils/utilsfakes"
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	. "code.cloudfoundry.org/eirini/k8s/utils"
-	"code.cloudfoundry.org/eirini/k8s/utils/utilsfakes"
-	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("Deployment Utils", func() {

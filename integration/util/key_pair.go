@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/tlsconfig/certtest"
-	. "github.com/onsi/gomega" //nolint:golint,stylecheck
+
+	// nolint:golint,stylecheck
+	. "github.com/onsi/gomega"
 )
 
 func GenerateKeyPair(name string) (string, string) {

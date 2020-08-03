@@ -1,11 +1,10 @@
 package utils_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	. "code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Names", func() {

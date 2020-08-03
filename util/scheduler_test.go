@@ -5,12 +5,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	. "code.cloudfoundry.org/eirini/util"
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-
-	. "code.cloudfoundry.org/eirini/util"
-	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("Scheduler", func() {

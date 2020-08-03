@@ -15,7 +15,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"gopkg.in/yaml.v2"
-
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 

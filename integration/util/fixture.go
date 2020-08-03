@@ -7,17 +7,19 @@ import (
 	"io"
 	"sync"
 
+	eiriniclient "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
 	"github.com/hashicorp/go-multierror"
 
-	eiriniclient "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
+	// nolint:golint,stylecheck
+	. "github.com/onsi/ginkgo"
+
+	// nolint:golint,stylecheck
+	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-
-	. "github.com/onsi/ginkgo" //nolint:golint,stylecheck
-	. "github.com/onsi/gomega" //nolint:golint,stylecheck
 )
 
 const (

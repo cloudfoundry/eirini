@@ -17,16 +17,14 @@ import (
 	"code.cloudfoundry.org/eirini/stager/docker"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/tlsconfig"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
-
 	"k8s.io/client-go/kubernetes"
 
 	// For gcp and oidc authentication
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-	"code.cloudfoundry.org/tlsconfig"
 )
 
 func connect(cmd *cobra.Command, args []string) {

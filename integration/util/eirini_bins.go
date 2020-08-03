@@ -6,8 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	. "github.com/onsi/ginkgo" //nolint:golint,stylecheck
-	. "github.com/onsi/gomega" //nolint:golint,stylecheck
+	// nolint:golint,stylecheck
+	. "github.com/onsi/ginkgo"
+
+	// nolint:golint,stylecheck
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"gopkg.in/yaml.v2"
 )

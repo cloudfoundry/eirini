@@ -9,10 +9,9 @@ import (
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/handler/handlerfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
+	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"code.cloudfoundry.org/lager/lagertest"
 )
 
 var _ = Describe("TaskHandler", func() {

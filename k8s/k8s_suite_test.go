@@ -1,11 +1,11 @@
 package k8s_test
 
 import (
+	"testing"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
-
-	"testing"
 )
 
 func TestK8s(t *testing.T) {

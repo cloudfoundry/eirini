@@ -1,15 +1,14 @@
 package k8s_test
 
 import (
+	. "code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	. "code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/opi"
 )
 
 var _ = Describe("Mapper", func() {

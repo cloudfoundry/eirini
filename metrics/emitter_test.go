@@ -3,12 +3,11 @@ package metrics_test
 import (
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/metrics/metricsfakes"
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("emitter", func() {

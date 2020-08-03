@@ -2,7 +2,9 @@ package util
 
 import (
 	"github.com/hashicorp/go-uuid"
-	. "github.com/onsi/gomega" //nolint:golint,stylecheck
+
+	// nolint:golint,stylecheck
+	. "github.com/onsi/gomega"
 )
 
 func GenerateGUID() string {

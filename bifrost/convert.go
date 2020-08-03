@@ -3,7 +3,6 @@ package bifrost
 import (
 	"encoding/json"
 	"fmt"
-
 	"regexp"
 
 	"code.cloudfoundry.org/eirini"

@@ -7,18 +7,16 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/tlsconfig"
-
 	"code.cloudfoundry.org/eirini/integration/eats/fakes"
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
+	"code.cloudfoundry.org/tlsconfig"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 

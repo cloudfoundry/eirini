@@ -10,10 +10,9 @@ import (
 	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
+	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-
-	batch "k8s.io/api/batch/v1"
 )
 
 const (

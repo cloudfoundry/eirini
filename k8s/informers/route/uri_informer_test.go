@@ -1,6 +1,7 @@
 package route_test
 
 import (
+	. "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/k8s/informers/route/routefakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -10,8 +11,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	testcore "k8s.io/client-go/testing"
-
-	. "code.cloudfoundry.org/eirini/k8s/informers/route"
 )
 
 var _ = Describe("URIChangeInformer", func() {

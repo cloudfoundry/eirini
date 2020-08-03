@@ -1,10 +1,9 @@
 package util_test
 
 import (
+	"code.cloudfoundry.org/eirini/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"code.cloudfoundry.org/eirini/util"
 )
 
 var _ = Describe("Hash", func() {

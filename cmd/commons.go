@@ -5,12 +5,12 @@ import (
 	"os"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/klog"
-	metricsclientset "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	// Kubernetes has a tricky way to add authentication
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
+	metricsclientset "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
 func CreateMetricsClient(kubeConfigPath string) metricsclientset.Interface {

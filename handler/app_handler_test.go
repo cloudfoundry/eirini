@@ -9,8 +9,6 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"code.cloudfoundry.org/eirini"
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/handler/handlerfakes"
@@ -19,6 +17,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 )
 
 var _ = Describe("AppHandler", func() {

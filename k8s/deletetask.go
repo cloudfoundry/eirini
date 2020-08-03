@@ -7,9 +7,8 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	batch "k8s.io/api/batch/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //counterfeiter:generate . JobListerDeleter

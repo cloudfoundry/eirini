@@ -4,7 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	. "github.com/onsi/gomega" //nolint:golint,stylecheck
+	// nolint:golint,stylecheck
+	. "github.com/onsi/gomega"
 )
 
 func WriteTempFile(content []byte, fileName string) string {

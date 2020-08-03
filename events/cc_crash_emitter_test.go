@@ -3,13 +3,12 @@ package events_test
 import (
 	"errors"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	. "code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/events/eventsfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Crashreporter", func() {

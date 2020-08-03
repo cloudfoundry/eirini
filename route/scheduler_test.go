@@ -3,12 +3,11 @@ package route_test
 import (
 	"errors"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	. "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/route/routefakes"
 	"code.cloudfoundry.org/eirini/util/utilfakes"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Scheduler", func() {

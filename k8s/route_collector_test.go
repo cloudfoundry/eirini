@@ -6,6 +6,9 @@ import (
 	"errors"
 	"fmt"
 
+	. "code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/models/cf"
+	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
@@ -15,10 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
-
-	. "code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/route"
 	testcore "k8s.io/client-go/testing"
 )
 

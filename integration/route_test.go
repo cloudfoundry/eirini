@@ -12,7 +12,6 @@ import (
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/route/routefakes"
 	"code.cloudfoundry.org/lager/lagertest"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"

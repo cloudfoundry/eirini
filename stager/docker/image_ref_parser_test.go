@@ -1,10 +1,9 @@
 package docker_test
 
 import (
+	"code.cloudfoundry.org/eirini/stager/docker"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"code.cloudfoundry.org/eirini/stager/docker"
 )
 
 var _ = Describe("ImageRefParser", func() {
