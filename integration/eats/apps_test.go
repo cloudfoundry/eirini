@@ -298,8 +298,9 @@ var _ = Describe("Apps", func() {
 	})
 })
 
-func desireApp(appGUID, version string) *http.Response {
-	return desireAppWithInstances(appGUID, version, 1)
+func desireApp(appGUID, version string) {
+	resp := desireAppWithInstances(appGUID, version, 1)
+	defer resp.Body.Close()
 }
 
 func desireAppWithInstances(appGUID, version string, instances int) *http.Response {

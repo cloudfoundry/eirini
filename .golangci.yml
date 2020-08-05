@@ -48,6 +48,8 @@ issues:
       - gomnd
       - funlen
       - gosec
+      - golint
+      - stylecheck
     - path: integration/eats/eats_suite_test.go
       linters:
       - gosec

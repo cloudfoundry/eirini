@@ -93,9 +93,11 @@ func (f *Fixture) TearDown() {
 	var errs *multierror.Error
 	errs = multierror.Append(errs, f.printDebugInfo())
 	errs = multierror.Append(errs, f.deleteNamespace(f.Namespace))
+
 	if !IsUsingDeployedEirini() {
 		errs = multierror.Append(errs, f.deleteNamespace(f.DefaultNamespace))
 	}
+
 	Expect(errs.ErrorOrNil()).NotTo(HaveOccurred())
 }
 
