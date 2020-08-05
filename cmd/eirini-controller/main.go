@@ -9,6 +9,7 @@ import (
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
+	eirinievent "code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	eirinischeme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
@@ -18,6 +19,7 @@ import (
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
@@ -27,6 +29,7 @@ import (
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 type options struct {
@@ -58,9 +61,12 @@ func main() {
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
-		Scheme: eirinischeme.Scheme,
+		// do not serve prometheus metrics; disabled because port clashes during integration tests
+		MetricsBindAddress: "0",
+		Scheme:             eirinischeme.Scheme,
 	})
 	cmdcommons.ExitIfError(err)
+
 	lrpReconciler := createLRPReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
 	taskReconciler := createTaskReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
 	podCrashReconciler := createPodCrashReconciler(logger, controllerClient, clientset)
@@ -77,6 +83,13 @@ func main() {
 		For(&eiriniv1.Task{}).
 		Owns(&batchv1.Job{}).
 		Complete(taskReconciler)
+	cmdcommons.ExitIfError(err)
+
+	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate("APP")}
+	err = builder.
+		ControllerManagedBy(mgr).
+		For(&corev1.Pod{}, builder.WithPredicates(predicates...)).
+		Complete(podCrashReconciler)
 	cmdcommons.ExitIfError(err)
 
 	err = mgr.Start(ctrl.SetupSignalHandler())
@@ -139,4 +152,15 @@ func createTaskReconciler(
 	)
 
 	return reconciler.NewTask(logger, controllerClient, taskDesirer, scheme)
+}
+
+func createPodCrashReconciler(
+	logger lager.Logger,
+	controllerClient runtimeclient.Client,
+	clientset kubernetes.Interface) *reconciler.PodCrash {
+	eventsClient := client.NewEvent(clientset)
+	statefulSetClient := client.NewStatefulSet(clientset)
+	crashEventGenerator := eirinievent.NewDefaultCrashEventGenerator(eventsClient)
+
+	return reconciler.NewPodCrash(logger, controllerClient, crashEventGenerator, eventsClient, statefulSetClient)
 }

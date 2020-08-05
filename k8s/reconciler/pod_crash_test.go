@@ -62,6 +62,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 			},
 		}
 		statefulSetGetter.GetReturns(&statefulSet, nil)
+		eventsClient.ListReturns(&corev1.EventList{Items: []corev1.Event{}}, nil)
 
 		podGetError = nil
 		t := true
@@ -132,9 +133,8 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 				AppCrashedRequest: cc_messages.AppCrashedRequest{
 					Instance:        "instance-name",
 					Index:           3,
-					CellID:          "cell-id",
-					Reason:          "it crashed",
-					ExitStatus:      1,
+					Reason:          "Error",
+					ExitStatus:      6,
 					ExitDescription: "oops",
 					CrashTimestamp:  timestamp.Unix(),
 				},
@@ -147,15 +147,18 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 
 		It("creates a k8s event", func() {
 			Expect(eventsClient.CreateCallCount()).To(Equal(1))
-			_, event, _ := eventsClient.CreateArgsForCall(0)
-			Expect(event.Namespace).To(Equal("some-ns"))
-			Expect(event.GenerateName).To(Equal("instance-name"))
+			namespace, event := eventsClient.CreateArgsForCall(0)
+			Expect(namespace).To(Equal("some-ns"))
+			Expect(event.GenerateName).To(Equal("instance-name-"))
 			Expect(event.Labels).To(HaveKeyWithValue("cloudfoundry.org/instance_index", "3"))
 			Expect(event.Annotations).To(HaveKeyWithValue("cloudfoundry.org/process_guid", "process-guid"))
 
 			Expect(event.LastTimestamp).To(Equal(metav1.NewTime(timestamp)))
 			Expect(event.FirstTimestamp).To(Equal(metav1.NewTime(timestamp)))
-			Expect(event.EventTime).To(Equal(metav1.NewMicroTime(timestamp)))
+			Expect(event.EventTime.Time).To(SatisfyAll(
+				BeTemporally(">", timestamp),
+				BeTemporally("<", time.Now()),
+			))
 			Expect(event.InvolvedObject).To(Equal(corev1.ObjectReference{
 				Kind:            "LRP",
 				Namespace:       "some-ns",
@@ -165,8 +168,8 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 				ResourceVersion: "",
 				FieldPath:       "spec.containers{opi}",
 			}))
-			Expect(event.Reason).To(Equal("it crashed"))
-			Expect(event.Message).To(Equal("exit code: 1, message: oops"))
+			Expect(event.Reason).To(Equal("Container: Error"))
+			Expect(event.Message).To(Equal("Container terminated with exit code: 6"))
 			Expect(event.Count).To(Equal(int32(1)))
 			Expect(event.Source).To(Equal(corev1.EventSource{Component: "eirini-controller"}))
 			Expect(event.Type).To(Equal("Warning"))
@@ -222,6 +225,112 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 
 			It("requeues the request", func() {
 				Expect(resultErr).To(MatchError(ContainSubstring("failed to create event")))
+			})
+		})
+	})
+
+	When("a crash has occurred multiple times", func() {
+
+		var (
+			timestampFirst  time.Time
+			timestampSecond time.Time
+			eventTime       metav1.MicroTime
+		)
+
+		BeforeEach(func() {
+			timestampFirst = time.Unix(time.Now().Unix(), 0)
+			timestampSecond = timestampFirst.Add(10 * time.Second)
+
+			crashEventGenerator.GenerateReturns(events.CrashEvent{
+				ProcessGUID: "process-guid",
+				AppCrashedRequest: cc_messages.AppCrashedRequest{
+					Instance:        "instance-name",
+					Index:           3,
+					Reason:          "Error",
+					ExitStatus:      6,
+					ExitDescription: "oops",
+					CrashTimestamp:  timestampFirst.Unix(),
+				},
+			}, true)
+
+			crashEventGenerator.GenerateReturnsOnCall(1, events.CrashEvent{
+				ProcessGUID: "process-guid",
+				AppCrashedRequest: cc_messages.AppCrashedRequest{
+					Instance:        "instance-name",
+					Index:           3,
+					Reason:          "Error",
+					ExitStatus:      6,
+					ExitDescription: "oops",
+					CrashTimestamp:  timestampSecond.Unix(),
+				},
+			}, true)
+
+			eventTime = metav1.MicroTime{Time: timestampFirst.Add(time.Second)}
+			eventsClient.ListReturnsOnCall(1, &corev1.EventList{
+				Items: []corev1.Event{
+					{
+						ObjectMeta:     metav1.ObjectMeta{Name: "instance-name", Namespace: "some-ns"},
+						Count:          1,
+						Reason:         "Container: Error",
+						Message:        "Container terminated with exit code: 6",
+						FirstTimestamp: metav1.Time{Time: timestampFirst},
+						LastTimestamp:  metav1.Time{Time: timestampFirst},
+						EventTime:      eventTime,
+					},
+				},
+			}, nil)
+
+		})
+
+		It("updates the existing event", func() {
+			_, resultErr = podCrashReconciler.Reconcile(reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: "some-ns",
+					Name:      "app-instance",
+				},
+			})
+
+			Expect(eventsClient.ListCallCount()).To(Equal(2))
+			Expect(eventsClient.ListArgsForCall(0)).To(Equal(metav1.ListOptions{
+				FieldSelector: "involvedObject.kind=LRP,involvedObject.name=parent-lrp,involvedObject.namespace=some-ns,reason=Container: Error",
+				LabelSelector: "cloudfoundry.org/instance_index=3",
+			}))
+
+			Expect(eventsClient.UpdateCallCount()).To(Equal(1))
+			ns, event := eventsClient.UpdateArgsForCall(0)
+
+			Expect(ns).To(Equal("some-ns"))
+			Expect(event.Reason).To(Equal("Container: Error"))
+			Expect(event.Message).To(Equal("Container terminated with exit code: 6"))
+			Expect(event.Count).To(BeNumerically("==", 2))
+			Expect(event.FirstTimestamp).To(Equal(metav1.NewTime(timestampFirst)))
+			Expect(event.LastTimestamp).To(Equal(metav1.NewTime(timestampSecond)))
+			Expect(event.EventTime).To(Equal(eventTime))
+		})
+
+		When("listing events errors", func() {
+
+			BeforeEach(func() {
+				eventsClient.ListReturns(nil, errors.New("oof"))
+			})
+
+			It("does not create an event", func() {
+				Expect(eventsClient.CreateCallCount()).To(Equal(0))
+			})
+
+			It("requeues the request", func() {
+				Expect(resultErr).To(HaveOccurred())
+			})
+		})
+
+		When("updating the event errors", func() {
+			BeforeEach(func() {
+				eventsClient.ListReturns(&corev1.EventList{Items: []corev1.Event{{}}}, nil)
+				eventsClient.UpdateReturns(nil, errors.New("oof"))
+			})
+
+			It("requeues the request", func() {
+				Expect(resultErr).To(HaveOccurred())
 			})
 		})
 	})

@@ -46,6 +46,7 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 		exitStatus := int(container.LastTerminationState.Terminated.ExitCode)
 		exitDescription := container.LastTerminationState.Terminated.Reason
 		crashTimestamp := container.LastTerminationState.Terminated.StartedAt.Unix()
+
 		return generateReport(pod, container.State.Waiting.Reason, exitStatus, exitDescription, crashTimestamp, int(container.RestartCount)), true
 	}
 

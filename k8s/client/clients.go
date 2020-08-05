@@ -127,6 +127,15 @@ func NewEvent(clientSet kubernetes.Interface) *Event {
 	return &Event{clientSet: clientSet}
 }
 
-func (c *Event) List(ctx context.Context, opts metav1.ListOptions) (*corev1.EventList, error) {
-	return c.clientSet.CoreV1().Events("").List(ctx, opts)
+func (c *Event) List(opts metav1.ListOptions) (*corev1.EventList, error) {
+	return c.clientSet.CoreV1().Events("").List(context.Background(), opts)
+}
+
+func (c *Event) Create(namespace string, event *corev1.Event) (*corev1.Event, error) {
+	ctx := context.Background()
+	return c.clientSet.CoreV1().Events(namespace).Create(ctx, event, metav1.CreateOptions{})
+}
+
+func (c *Event) Update(namespace string, event *corev1.Event) (*corev1.Event, error) {
+	return c.clientSet.CoreV1().Events(namespace).Update(context.Background(), event, metav1.UpdateOptions{})
 }

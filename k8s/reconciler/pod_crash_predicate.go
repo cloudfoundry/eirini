@@ -1,0 +1,33 @@
+package reconciler
+
+import (
+	"code.cloudfoundry.org/eirini/k8s"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+)
+
+type SourceTypeUpdatePredicate struct {
+	sourceType string
+}
+
+func NewSourceTypeUpdatePredicate(sourceType string) SourceTypeUpdatePredicate {
+	return SourceTypeUpdatePredicate{sourceType: sourceType}
+}
+
+func (p SourceTypeUpdatePredicate) Update(e event.UpdateEvent) bool {
+	obj := e.MetaNew
+	labels := obj.GetLabels()
+
+	return labels[k8s.LabelSourceType] == p.sourceType
+}
+
+func (SourceTypeUpdatePredicate) Create(event.CreateEvent) bool {
+	return false
+}
+
+func (SourceTypeUpdatePredicate) Delete(event.DeleteEvent) bool {
+	return false
+}
+
+func (SourceTypeUpdatePredicate) Generic(event.GenericEvent) bool {
+	return false
+}
