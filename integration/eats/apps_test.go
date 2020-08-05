@@ -39,6 +39,11 @@ var _ = Describe("Apps", func() {
 			desireResp = desireAppInNamespace(lrpGUID, lrpVersion, namespace)
 		})
 
+		AfterEach(func() {
+			_, err := stopLRP(httpClient, opiURL, lrpGUID, lrpVersion)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("succeeds", func() {
 			Expect(desireResp.StatusCode).To(Equal(http.StatusAccepted))
 		})
@@ -62,7 +67,7 @@ var _ = Describe("Apps", func() {
 
 		When("the app already exist", func() {
 			It("returns 202", func() {
-				resp := desireApp(lrpGUID, lrpVersion)
+				resp := desireAppInNamespace(lrpGUID, lrpVersion, namespace)
 				Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 			})
 		})
@@ -127,7 +132,7 @@ var _ = Describe("Apps", func() {
 
 		When("non-eirini statefulSets exist", func() {
 			BeforeEach(func() {
-				_, err := fixture.Clientset.AppsV1().StatefulSets(fixture.DefaultNamespace).Create(context.Background(), &appsv1.StatefulSet{
+				_, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).Create(context.Background(), &appsv1.StatefulSet{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: util.GenerateGUID(),
 					},

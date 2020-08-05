@@ -58,7 +58,7 @@ var _ = Describe("Events", func() {
 
 		config := &eirini.EventReporterConfig{
 			KubeConfig: eirini.KubeConfig{
-				Namespace:  fixture.DefaultNamespace,
+				Namespace:  fixture.Namespace,
 				ConfigPath: fixture.KubeConfigPath,
 			},
 			CcInternalAPI: capiServer.URL(),
@@ -88,6 +88,7 @@ var _ = Describe("Events", func() {
 				GUID:         "the-app-guid",
 				Version:      "the-version",
 				NumInstances: 1,
+				Namespace:    fixture.Namespace,
 				Ports:        []int32{8080},
 				Lifecycle: cf.Lifecycle{
 					DockerLifecycle: &cf.DockerLifecycle{

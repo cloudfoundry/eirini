@@ -40,3 +40,9 @@ func GetApplicationServiceAccount() string {
 
 	return DefaultApplicationServiceAccount
 }
+
+func IsUsingDeployedEirini() bool {
+	_, set := os.LookupEnv("USE_DEPLOYED_EIRINI")
+
+	return set
+}

@@ -45,7 +45,7 @@ var _ = Describe("Metrics", func() {
 
 		config := &eirini.MetricsCollectorConfig{
 			KubeConfig: eirini.KubeConfig{
-				Namespace:  fixture.DefaultNamespace,
+				Namespace:  fixture.Namespace,
 				ConfigPath: fixture.KubeConfigPath,
 			},
 			LoggregatorAddress:               metronAddress,
@@ -74,6 +74,7 @@ var _ = Describe("Metrics", func() {
 				GUID:         "the-app-guid",
 				Version:      "0.0.0",
 				NumInstances: 1,
+				Namespace:    fixture.Namespace,
 				Ports:        []int32{8080},
 				Lifecycle: cf.Lifecycle{
 					DockerLifecycle: &cf.DockerLifecycle{

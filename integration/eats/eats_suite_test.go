@@ -76,23 +76,37 @@ var _ = SynchronizedAfterSuite(func() {}, func() {
 var _ = BeforeEach(func() {
 	fixture.SetUp()
 
-	localhostCertPath, localhostKeyPath = util.GenerateKeyPair("localhost")
-
 	var err error
-	httpClient, err = makeTestHTTPClient(localhostCertPath, localhostKeyPath)
-	Expect(err).ToNot(HaveOccurred())
+	if util.IsUsingDeployedEirini() {
+		localhostCertPath, localhostKeyPath = util.DownloadEiriniCertificates()
 
-	opiSession, opiConfig, opiURL = runOpi(localhostCertPath, localhostKeyPath)
-	waitOpiReady(httpClient, opiURL)
+		httpClient, err = makeTestHTTPClient(localhostCertPath, localhostKeyPath)
+		Expect(err).ToNot(HaveOccurred())
+
+		opiHost := util.KubeCtl("get svc -n eirini-core eirini-external -o jsonpath=\"{.status.loadBalancer.ingress[0].ip}\"")
+		opiURL = fmt.Sprintf("https://%s:8085", opiHost)
+	} else {
+		localhostCertPath, localhostKeyPath = util.GenerateKeyPair("localhost")
+
+		opiSession, opiConfig, opiURL = runOpi(localhostCertPath, localhostKeyPath)
+
+		httpClient, err = makeTestHTTPClient(localhostCertPath, localhostKeyPath)
+		Expect(err).ToNot(HaveOccurred())
+
+		waitOpiReady(httpClient, opiURL)
+	}
 })
 
 var _ = AfterEach(func() {
 	fixture.TearDown()
 
-	if opiSession != nil {
-		opiSession.Kill()
+	if !util.IsUsingDeployedEirini() {
+		if opiSession != nil {
+			opiSession.Kill()
+		}
+		Expect(os.Remove(opiConfig)).To(Succeed())
 	}
-	Expect(os.Remove(opiConfig)).To(Succeed())
+
 	Expect(os.Remove(localhostCertPath)).To(Succeed())
 	Expect(os.Remove(localhostKeyPath)).To(Succeed())
 })

@@ -62,7 +62,12 @@ func NewFixture(writer io.Writer) *Fixture {
 }
 
 func (f *Fixture) SetUp() {
-	f.DefaultNamespace = f.configureNewNamespace()
+	if IsUsingDeployedEirini() {
+		f.DefaultNamespace = GetApplicationNamespace()
+	} else {
+		f.DefaultNamespace = f.configureNewNamespace()
+	}
+
 	f.Namespace = f.configureNewNamespace()
 }
 
@@ -88,7 +93,9 @@ func (f *Fixture) TearDown() {
 	var errs *multierror.Error
 	errs = multierror.Append(errs, f.printDebugInfo())
 	errs = multierror.Append(errs, f.deleteNamespace(f.Namespace))
-	errs = multierror.Append(errs, f.deleteNamespace(f.DefaultNamespace))
+	if !IsUsingDeployedEirini() {
+		errs = multierror.Append(errs, f.deleteNamespace(f.DefaultNamespace))
+	}
 	Expect(errs.ErrorOrNil()).NotTo(HaveOccurred())
 }
 

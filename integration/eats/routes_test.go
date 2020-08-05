@@ -60,7 +60,7 @@ var _ = Describe("Routes", func() {
 			EmitPeriodInSeconds: 1,
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: fixture.KubeConfigPath,
-				Namespace:  fixture.DefaultNamespace,
+				Namespace:  fixture.Namespace,
 			},
 		}
 		collectorSession, collectorConfig = eiriniBins.RouteCollector.Run(eiriniRouteConfig)
@@ -71,6 +71,7 @@ var _ = Describe("Routes", func() {
 			GUID:         util.GenerateGUID(),
 			Version:      util.GenerateGUID(),
 			NumInstances: 1,
+			Namespace:    fixture.Namespace,
 			Routes: map[string]json.RawMessage{
 				"cf-router": marshalRoutes([]routeInfo{
 					{Hostname: "app-hostname-1", Port: 8080},
