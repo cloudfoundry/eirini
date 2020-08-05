@@ -11,7 +11,7 @@ replace (
 )
 
 require (
-	cloud.google.com/go v0.61.0 // indirect
+	cloud.google.com/go v0.62.0 // indirect
 	code.cloudfoundry.org/bbs v0.0.0-20200615191359-7b6fa295fa8d // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
@@ -44,11 +44,9 @@ require (
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-test/deep v1.0.4 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
-	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/googleapis/gnostic v0.5.1 // indirect
 	github.com/gophercloud/gophercloud v0.12.0 // indirect
 	github.com/gorilla/mux v1.7.4 // indirect
-	github.com/hashicorp/consul/api v1.3.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.6.6
 	github.com/hashicorp/go-uuid v1.0.2
@@ -70,22 +68,21 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.7.1 // indirect
+	github.com/prometheus/common v0.11.1 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
-	github.com/sirupsen/logrus v1.6.0 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	go.uber.org/multierr v1.5.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
-	golang.org/x/sys v0.0.0-20200728102440-3e129f6d46b1 // indirect
+	golang.org/x/sys v0.0.0-20200803210538-64077c9b5642 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	golang.org/x/tools v0.0.0-20200728222617-0dd562f37406 // indirect
+	golang.org/x/tools v0.0.0-20200804234916-fec4f28ebb08 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
-	google.golang.org/genproto v0.0.0-20200728010541-3dc8dca74b7b // indirect
-	google.golang.org/grpc v1.30.0
+	google.golang.org/genproto v0.0.0-20200804151602-45615f50871c // indirect
+	google.golang.org/grpc v1.31.0
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.6
-	k8s.io/apiextensions-apiserver v0.18.6 // indirect
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v1.5.1
 	k8s.io/code-generator v0.18.6
@@ -93,6 +90,6 @@ require (
 	k8s.io/klog/v2 v2.3.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20200727223308-4c7aaf529f79 // indirect
 	k8s.io/metrics v0.18.6
-	k8s.io/utils v0.0.0-20200724153422-f32512634ab7 // indirect
-	sigs.k8s.io/controller-runtime v0.6.1
+	k8s.io/utils v0.0.0-20200731180307-f00132d28269 // indirect
+	sigs.k8s.io/controller-runtime v0.6.2
 )
