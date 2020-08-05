@@ -154,9 +154,7 @@ var _ = Describe("Apps CRDs", func() {
 		})
 
 		When("instance count is updated", func() {
-			BeforeEach(func() {
-				Eventually(getStatefulSet).ShouldNot(BeNil())
-
+			updateLRP := func() error {
 				lrp := getLRP()
 				lrp.Spec.Instances = 3
 
@@ -165,7 +163,12 @@ var _ = Describe("Apps CRDs", func() {
 					LRPs(namespace).
 					Update(context.Background(), lrp, metav1.UpdateOptions{})
 
-				Expect(err).NotTo(HaveOccurred())
+				return err
+			}
+
+			BeforeEach(func() {
+				Eventually(getStatefulSet).ShouldNot(BeNil())
+				Eventually(updateLRP).Should(Succeed())
 			})
 
 			It("updates the underlying statefulset", func() {
