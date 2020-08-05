@@ -55,7 +55,7 @@ var _ = Describe("CrashEventGenerator", func() {
 						ExitStatus:      1,
 						ExitDescription: "better luck next time",
 						CrashCount:      3,
-						CrashTimestamp:  int64(crashTime.Time.Second()),
+						CrashTimestamp:  crashTime.Time.Unix(),
 					},
 				}))
 			})
@@ -78,7 +78,7 @@ var _ = Describe("CrashEventGenerator", func() {
 						ExitStatus:      1,
 						ExitDescription: "better luck next time",
 						CrashCount:      3,
-						CrashTimestamp:  int64(crashTime.Time.Second()),
+						CrashTimestamp:  crashTime.Time.Unix(),
 					},
 				}))
 			})
@@ -103,7 +103,7 @@ var _ = Describe("CrashEventGenerator", func() {
 						ExitStatus:      1,
 						ExitDescription: "better luck next time",
 						CrashCount:      8,
-						CrashTimestamp:  int64(crashTime.Time.Second()),
+						CrashTimestamp:  crashTime.Time.Unix(),
 					},
 				}))
 			})
@@ -205,7 +205,7 @@ var _ = Describe("CrashEventGenerator", func() {
 						ExitStatus:      1,
 						ExitDescription: "better luck next time",
 						CrashCount:      8,
-						CrashTimestamp:  int64(crashTime.Time.Second()),
+						CrashTimestamp:  crashTime.Time.Unix(),
 					},
 				}))
 			})
