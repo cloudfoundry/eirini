@@ -54,16 +54,16 @@ func main() {
 	clientset, err := kubernetes.NewForConfig(kubeConfig)
 	cmdcommons.ExitIfError(err)
 
-	logger := lager.NewLogger("eirini-informer")
+	logger := lager.NewLogger("eirini-controller")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
 		Scheme: eirinischeme.Scheme,
 	})
 	cmdcommons.ExitIfError(err)
-
-	lrpReconciler := createLRPReconciler(logger.Session("lrp-reconciler"), controllerClient, clientset, eiriniCfg, mgr.GetScheme())
-	taskReconciler := createTaskReconciler(logger.Session("task-reconciler"), controllerClient, clientset, eiriniCfg, mgr.GetScheme())
+	lrpReconciler := createLRPReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
+	taskReconciler := createTaskReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
+	podCrashReconciler := createPodCrashReconciler(logger, controllerClient, clientset)
 
 	err = builder.
 		ControllerManagedBy(mgr).
@@ -112,7 +112,7 @@ func createLRPReconciler(
 		RootfsVersion:                     eiriniCfg.Properties.RootfsVersion,
 		LivenessProbeCreator:              k8s.CreateLivenessProbe,
 		ReadinessProbeCreator:             k8s.CreateReadinessProbe,
-		Logger:                            logger,
+		Logger:                            logger.Session("stateful-set-desirer"),
 		ApplicationServiceAccount:         eiriniCfg.Properties.ApplicationServiceAccount,
 		AllowAutomountServiceAccountToken: eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
 	}

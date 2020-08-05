@@ -55,7 +55,7 @@ type LRP struct {
 }
 
 func (r *LRP) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	logger := r.logger.Session("lrp-reconciler",
+	logger := r.logger.Session("reconcile-lrp",
 		lager.Data{
 			"name":      request.NamespacedName.Name,
 			"namespace": request.NamespacedName.Namespace,
