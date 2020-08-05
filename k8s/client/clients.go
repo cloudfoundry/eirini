@@ -132,8 +132,7 @@ func (c *Event) List(opts metav1.ListOptions) (*corev1.EventList, error) {
 }
 
 func (c *Event) Create(namespace string, event *corev1.Event) (*corev1.Event, error) {
-	ctx := context.Background()
-	return c.clientSet.CoreV1().Events(namespace).Create(ctx, event, metav1.CreateOptions{})
+	return c.clientSet.CoreV1().Events(namespace).Create(context.Background(), event, metav1.CreateOptions{})
 }
 
 func (c *Event) Update(namespace string, event *corev1.Event) (*corev1.Event, error) {

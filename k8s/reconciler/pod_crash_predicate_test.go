@@ -1,14 +1,13 @@
 package reconciler_test
 
 import (
+	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-
-	"code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/k8s/reconciler"
 )
 
 var _ = Describe("PodCrashPredicate", func() {

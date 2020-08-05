@@ -64,11 +64,10 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 	logger := r.logger.Session("crash-event-reconciler", lager.Data{"namespace": request.Namespace, "name": request.Name})
 
 	pod := &corev1.Pod{}
-	ctx := context.Background()
-
-	if err := r.pods.Get(ctx, request.NamespacedName, pod); err != nil {
+	if err := r.pods.Get(context.Background(), request.NamespacedName, pod); err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Error("pod does not exist", err)
+
 			return reconcile.Result{}, nil
 		}
 
@@ -85,24 +84,28 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 	statefulSetRef, err := r.getOwner(pod, statefulSetKind)
 	if err != nil {
 		logger.Debug("pod-without-statefulset-owner")
+
 		return reconcile.Result{}, nil
 	}
 
 	statefulSet, err := r.statefulSetGetter.Get(pod.Namespace, statefulSetRef.Name)
 	if err != nil {
 		logger.Error("failed-to-get-stateful-set", err)
+
 		return reconcile.Result{}, err
 	}
 
 	lrpRef, err := r.getOwner(statefulSet, lrpKind)
 	if err != nil {
 		logger.Debug("statefulset-without-lrp-owner", lager.Data{"statefulset-name": statefulSet.Name})
+
 		return reconcile.Result{}, nil
 	}
 
 	kubeEvent, exists, err := r.getExistingEvent(lrpRef, request.Namespace, crashEvent)
 	if err != nil {
 		logger.Error("failed-to-get-existing-event", err)
+
 		return reconcile.Result{}, err
 	}
 
@@ -110,15 +113,7 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 		return r.updateEvent(logger, kubeEvent, crashEvent, request.Namespace)
 	}
 
-	event := r.makeEvent(crashEvent, pod.Namespace, lrpRef)
-	if event, err = r.eventsClient.Create(pod.Namespace, event); err != nil {
-		logger.Error("failed-to-create-event", err)
-		return reconcile.Result{}, errors.Wrap(err, "failed to create event")
-	}
-
-	logger.Debug("event-created", lager.Data{"name": event.Name, "namespace": event.Namespace})
-
-	return reconcile.Result{}, nil
+	return r.createEvent(logger, lrpRef, crashEvent, request.Namespace)
 }
 
 func (r PodCrash) getExistingEvent(ownerRef metav1.OwnerReference, namespace string, crashEvent events.CrashEvent) (*corev1.Event, bool, error) {
@@ -144,12 +139,28 @@ func (r PodCrash) getExistingEvent(ownerRef metav1.OwnerReference, namespace str
 	return nil, false, nil
 }
 
+func (r PodCrash) createEvent(logger lager.Logger, ownerRef metav1.OwnerReference, crashEvent events.CrashEvent, namespace string) (reconcile.Result, error) {
+	var err error
+
+	event := r.makeEvent(crashEvent, namespace, ownerRef)
+	if event, err = r.eventsClient.Create(namespace, event); err != nil {
+		logger.Error("failed-to-create-event", err)
+
+		return reconcile.Result{}, errors.Wrap(err, "failed to create event")
+	}
+
+	logger.Debug("event-created", lager.Data{"name": event.Name, "namespace": event.Namespace})
+
+	return reconcile.Result{}, nil
+}
+
 func (r PodCrash) updateEvent(logger lager.Logger, kubeEvent *corev1.Event, crashEvent events.CrashEvent, namespace string) (reconcile.Result, error) {
 	kubeEvent.Count++
 	kubeEvent.LastTimestamp = metav1.NewTime(time.Unix(crashEvent.CrashTimestamp, 0))
 
 	if _, err := r.eventsClient.Update(namespace, kubeEvent); err != nil {
 		logger.Error("failed-to-update-event", err)
+
 		return reconcile.Result{}, errors.Wrap(err, "failed to update event")
 	}
 

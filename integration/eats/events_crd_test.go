@@ -66,6 +66,7 @@ var _ = Describe("PodCrashEvents", func() {
 					FieldSelector: "involvedObject.kind=LRP",
 				})
 				Expect(err).NotTo(HaveOccurred())
+
 				return eventList.Items
 			}
 			Eventually(getEvents).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
@@ -80,6 +81,7 @@ var _ = Describe("PodCrashEvents", func() {
 					FieldSelector: "involvedObject.kind=LRP",
 				})
 				Expect(err).NotTo(HaveOccurred())
+
 				return eventList.Items
 			}
 			Eventually(getEvents).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
@@ -96,6 +98,7 @@ var _ = Describe("PodCrashEvents", func() {
 				})
 				Expect(err).NotTo(HaveOccurred())
 				events = eventList.Items
+
 				return len(events)
 			}
 			Eventually(getEvents).Should(BeNumerically(">", 0))
@@ -123,6 +126,7 @@ var _ = Describe("PodCrashEvents", func() {
 					FieldSelector: "involvedObject.kind=LRP",
 				})
 				Expect(err).NotTo(HaveOccurred())
+
 				return eventList.Items
 			}
 			Eventually(getEvents).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
