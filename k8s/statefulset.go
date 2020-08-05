@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -95,7 +94,7 @@ type SecretsCreatorDeleter interface {
 }
 
 type EventLister interface {
-	List(ctx context.Context, opts metav1.ListOptions) (*corev1.EventList, error)
+	List(opts metav1.ListOptions) (*corev1.EventList, error)
 }
 
 type LRPMapper func(s appsv1.StatefulSet) (*opi.LRP, error)

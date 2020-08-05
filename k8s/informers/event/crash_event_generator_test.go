@@ -8,6 +8,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
@@ -24,7 +25,7 @@ var crashTime = meta.Time{Time: time.Now()}
 
 var _ = Describe("CrashEventGenerator", func() {
 	var (
-		client    *fake.Clientset
+		clientset *fake.Clientset
 		logger    *lagertest.TestLogger
 		pod       *v1.Pod
 		generator event.DefaultCrashEventGenerator
@@ -32,8 +33,8 @@ var _ = Describe("CrashEventGenerator", func() {
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("crash-event-logger-test")
-		client = fake.NewSimpleClientset()
-		generator = event.NewDefaultCrashEventGenerator(client.CoreV1().Events(""))
+		clientset = fake.NewSimpleClientset()
+		generator = event.NewDefaultCrashEventGenerator(client.NewEvent(clientset))
 	})
 
 	Context("When app is in CrashLoopBackOff", func() {
@@ -154,7 +155,7 @@ var _ = Describe("CrashEventGenerator", func() {
 						},
 						Reason: "Killing",
 					}
-					_, clientErr := client.CoreV1().Events("not-default").Create(context.Background(), &event, meta.CreateOptions{})
+					_, clientErr := clientset.CoreV1().Events("not-default").Create(context.Background(), &event, meta.CreateOptions{})
 					Expect(clientErr).ToNot(HaveOccurred())
 				})
 
@@ -169,7 +170,7 @@ var _ = Describe("CrashEventGenerator", func() {
 					reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
 						return true, nil, errors.New("boom")
 					}
-					client.PrependReactor("list", "events", reaction)
+					clientset.PrependReactor("list", "events", reaction)
 				})
 
 				It("should not emit a crashed event", func() {

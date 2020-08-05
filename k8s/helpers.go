@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"context"
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
@@ -33,7 +32,7 @@ func int64ptr(i int) *int64 {
 }
 
 func GetEvents(client EventLister, pod v1.Pod) (*v1.EventList, error) {
-	return client.List(context.Background(), meta.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s", pod.Namespace, string(pod.UID), pod.Name)})
+	return client.List(meta.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s", pod.Namespace, string(pod.UID), pod.Name)})
 }
 
 func IsStopped(eventList *v1.EventList) bool {
