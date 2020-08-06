@@ -20,6 +20,10 @@ var _ = Describe("Docker Staging", func() {
 	var capiServer *ghttp.Server
 
 	BeforeEach(func() {
+		if util.IsUsingDeployedEirini() {
+			Skip("Skipping because currently untestable on deployment")
+		}
+
 		var err error
 		capiServer, err = util.CreateTestServer(
 			localhostCertPath, localhostKeyPath, localhostCertPath,
