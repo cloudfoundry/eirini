@@ -64,7 +64,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			Pods:                      podClient,
 			Secrets:                   secretsClient,
 			StatefulSets:              statefulSetClient,
-			PodDisruptionBudets:       pdbClient,
+			PodDisruptionBudgets:      pdbClient,
 			RegistrySecretName:        registrySecretName,
 			RootfsVersion:             rootfsVersion,
 			LivenessProbeCreator:      livenessProbeCreator.Spy,

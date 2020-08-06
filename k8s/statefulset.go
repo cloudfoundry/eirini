@@ -103,7 +103,7 @@ type StatefulSetDesirer struct {
 	Pods                              PodListerDeleter
 	Secrets                           SecretsCreatorDeleter
 	StatefulSets                      StatefulSetClient
-	PodDisruptionBudets               PodDisruptionBudgetClient
+	PodDisruptionBudgets              PodDisruptionBudgetClient
 	Events                            EventLister
 	StatefulSetToLRPMapper            LRPMapper
 	RegistrySecretName                string
@@ -214,7 +214,7 @@ func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 		return err
 	}
 
-	err = m.PodDisruptionBudets.Delete(statefulSet.Namespace, statefulSet.Name)
+	err = m.PodDisruptionBudgets.Delete(statefulSet.Namespace, statefulSet.Name)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		logger.Error("failed-to-delete-disruption-budget", err)
 
@@ -318,7 +318,7 @@ func (m *StatefulSetDesirer) update(lrp *opi.LRP) error {
 	}
 
 	if lrp.TargetInstances <= 1 {
-		err = m.PodDisruptionBudets.Delete(statefulSet.Namespace, statefulSet.Name)
+		err = m.PodDisruptionBudgets.Delete(statefulSet.Namespace, statefulSet.Name)
 		if err != nil && !k8serrors.IsNotFound(err) {
 			logger.Error("failed-to-delete-disruption-budget", err, lager.Data{"namespace": statefulSet.Namespace})
 
@@ -445,7 +445,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 func (m *StatefulSetDesirer) createPodDisruptionBudget(namespace string, lrp *opi.LRP) error {
 	if lrp.TargetInstances > 1 {
 		minAvailable := intstr.FromInt(PdbMinAvailableInstances)
-		_, err := m.PodDisruptionBudets.Create(namespace, &v1beta1.PodDisruptionBudget{
+		_, err := m.PodDisruptionBudgets.Create(namespace, &v1beta1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: utils.GetStatefulsetName(lrp),
 			},
