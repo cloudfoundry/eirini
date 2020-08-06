@@ -2,7 +2,10 @@ package client
 
 import (
 	"context"
+	"fmt"
 
+	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/opi"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -19,8 +22,28 @@ func NewPod(clientSet kubernetes.Interface) *Pod {
 	return &Pod{clientSet: clientSet}
 }
 
-func (c *Pod) List(opts metav1.ListOptions) (*corev1.PodList, error) {
-	return c.clientSet.CoreV1().Pods("").List(context.Background(), opts)
+func (c *Pod) GetAll() ([]corev1.Pod, error) {
+	podList, err := c.clientSet.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return podList.Items, nil
+}
+
+func (c *Pod) GetByLRPIdentifier(id opi.LRPIdentifier) ([]corev1.Pod, error) {
+	podList, err := c.clientSet.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf(
+			"%s=%s,%s=%s",
+			k8s.LabelGUID, id.GUID,
+			k8s.LabelVersion, id.Version,
+		),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return podList.Items, nil
 }
 
 func (c *Pod) Delete(namespace, name string) error {

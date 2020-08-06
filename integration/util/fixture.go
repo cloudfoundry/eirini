@@ -40,6 +40,7 @@ type Fixture struct {
 	Writer            io.Writer
 	nextAvailablePort int
 	portMux           *sync.Mutex
+	extraNamespaces   []string
 }
 
 func NewFixture(writer io.Writer) *Fixture {
@@ -122,6 +123,17 @@ func (f *Fixture) TearDown() {
 	}
 
 	Expect(errs.ErrorOrNil()).NotTo(HaveOccurred())
+
+	for _, ns := range f.extraNamespaces {
+		errs = multierror.Append(errs, f.deleteNamespace(ns))
+	}
+}
+
+func (f *Fixture) CreateExtraNamespace() string {
+	name := f.configureNewNamespace()
+	f.extraNamespaces = append(f.extraNamespaces, name)
+
+	return name
 }
 
 func (f Fixture) getApplicationNamespace() string {

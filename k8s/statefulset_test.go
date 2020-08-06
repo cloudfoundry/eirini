@@ -35,7 +35,7 @@ const (
 
 var _ = Describe("Statefulset Desirer", func() {
 	var (
-		podClient             *k8sfakes.FakePodListerDeleter
+		podsClient            *k8sfakes.FakePodsClient
 		eventLister           *k8sfakes.FakeEventLister
 		secretsClient         *k8sfakes.FakeSecretsCreatorDeleter
 		statefulSetClient     *k8sfakes.FakeStatefulSetClient
@@ -48,7 +48,7 @@ var _ = Describe("Statefulset Desirer", func() {
 	)
 
 	BeforeEach(func() {
-		podClient = new(k8sfakes.FakePodListerDeleter)
+		podsClient = new(k8sfakes.FakePodsClient)
 		statefulSetClient = new(k8sfakes.FakeStatefulSetClient)
 		secretsClient = new(k8sfakes.FakeSecretsCreatorDeleter)
 		eventLister = new(k8sfakes.FakeEventLister)
@@ -60,7 +60,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		logger = lagertest.NewTestLogger("handler-test")
 		statefulSetDesirer = &k8s.StatefulSetDesirer{
-			Pods:                      podClient,
+			Pods:                      podsClient,
 			Secrets:                   secretsClient,
 			StatefulSets:              statefulSetClient,
 			PodDisruptionBudgets:      pdbClient,
@@ -863,9 +863,9 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 0)).
 				To(Succeed())
 
-			Expect(podClient.DeleteCallCount()).To(Equal(1))
+			Expect(podsClient.DeleteCallCount()).To(Equal(1))
 
-			namespace, name := podClient.DeleteArgsForCall(0)
+			namespace, name := podsClient.DeleteArgsForCall(0)
 			Expect(namespace).To(Equal("the-namespace"))
 			Expect(name).To(Equal("baldur-space-foo-34f869d015-0"))
 		})
@@ -887,7 +887,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when the instance index is invalid", func() {
 			It("returns an error", func() {
-				podClient.DeleteReturns(errors.New("boom"))
+				podsClient.DeleteReturns(errors.New("boom"))
 				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 42)).
 					To(MatchError(eirini.ErrInvalidInstanceIndex))
 			})
@@ -895,7 +895,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when the instance is already stopped", func() {
 			BeforeEach(func() {
-				podClient.DeleteReturns(k8serrors.NewNotFound(schema.GroupResource{}, "potato"))
+				podsClient.DeleteReturns(k8serrors.NewNotFound(schema.GroupResource{}, "potato"))
 			})
 
 			It("succeeds", func() {
@@ -911,32 +911,28 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		It("should list the correct pods", func() {
-			pods := &corev1.PodList{
-				Items: []corev1.Pod{
-					{ObjectMeta: metav1.ObjectMeta{Name: "whatever-0"}},
-					{ObjectMeta: metav1.ObjectMeta{Name: "whatever-1"}},
-					{ObjectMeta: metav1.ObjectMeta{Name: "whatever-2"}},
-				},
+			pods := []corev1.Pod{
+				{ObjectMeta: metav1.ObjectMeta{Name: "whatever-0"}},
+				{ObjectMeta: metav1.ObjectMeta{Name: "whatever-1"}},
+				{ObjectMeta: metav1.ObjectMeta{Name: "whatever-2"}},
 			}
-			podClient.ListReturns(pods, nil)
+			podsClient.GetByLRPIdentifierReturns(pods, nil)
 			eventLister.ListReturns(&corev1.EventList{}, nil)
 
 			_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(podClient.ListCallCount()).To(Equal(1))
-			Expect(podClient.ListArgsForCall(0).LabelSelector).To(Equal("cloudfoundry.org/guid=guid_1234,cloudfoundry.org/version=version_1234"))
+			Expect(podsClient.GetByLRPIdentifierCallCount()).To(Equal(1))
+			Expect(podsClient.GetByLRPIdentifierArgsForCall(0)).To(Equal(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}))
 		})
 
 		It("should return the correct number of instances", func() {
-			pods := &corev1.PodList{
-				Items: []corev1.Pod{
-					{ObjectMeta: metav1.ObjectMeta{Name: "whatever-0"}},
-					{ObjectMeta: metav1.ObjectMeta{Name: "whatever-1"}},
-					{ObjectMeta: metav1.ObjectMeta{Name: "whatever-2"}},
-				},
+			pods := []corev1.Pod{
+				{ObjectMeta: metav1.ObjectMeta{Name: "whatever-0"}},
+				{ObjectMeta: metav1.ObjectMeta{Name: "whatever-1"}},
+				{ObjectMeta: metav1.ObjectMeta{Name: "whatever-2"}},
 			}
-			podClient.ListReturns(pods, nil)
+			podsClient.GetByLRPIdentifierReturns(pods, nil)
 			eventLister.ListReturns(&corev1.EventList{}, nil)
 			instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
 			Expect(err).ToNot(HaveOccurred())
@@ -945,27 +941,25 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		It("should return the correct instances information", func() {
 			m := metav1.Unix(123, 0)
-			pods := &corev1.PodList{
-				Items: []corev1.Pod{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "whatever-1",
-						},
-						Status: corev1.PodStatus{
-							StartTime: &m,
-							Phase:     corev1.PodRunning,
-							ContainerStatuses: []corev1.ContainerStatus{
-								{
-									State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
-									Ready: true,
-								},
+			pods := []corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "whatever-1",
+					},
+					Status: corev1.PodStatus{
+						StartTime: &m,
+						Phase:     corev1.PodRunning,
+						ContainerStatuses: []corev1.ContainerStatus{
+							{
+								State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+								Ready: true,
 							},
 						},
 					},
 				},
 			}
 
-			podClient.ListReturns(pods, nil)
+			podsClient.GetByLRPIdentifierReturns(pods, nil)
 			eventLister.ListReturns(&corev1.EventList{}, nil)
 			instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 
@@ -979,7 +973,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when pod list fails", func() {
 			It("should return a meaningful error", func() {
-				podClient.ListReturns(nil, errors.New("boom"))
+				podsClient.GetByLRPIdentifierReturns(nil, errors.New("boom"))
 
 				_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
 				Expect(err).To(MatchError(ContainSubstring("failed to list pods")))
@@ -997,12 +991,10 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when getting events fails", func() {
 			It("should return a meaningful error", func() {
-				pods := &corev1.PodList{
-					Items: []corev1.Pod{
-						{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
-					},
+				pods := []corev1.Pod{
+					{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
 				}
-				podClient.ListReturns(pods, nil)
+				podsClient.GetByLRPIdentifierReturns(pods, nil)
 
 				eventLister.ListReturns(nil, errors.New("I am error"))
 
@@ -1013,12 +1005,10 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("and time since creation is not available yet", func() {
 			It("should return a default value", func() {
-				pods := &corev1.PodList{
-					Items: []corev1.Pod{
-						{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
-					},
+				pods := []corev1.Pod{
+					{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
 				}
-				podClient.ListReturns(pods, nil)
+				podsClient.GetByLRPIdentifierReturns(pods, nil)
 				eventLister.ListReturns(&corev1.EventList{}, nil)
 
 				instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
@@ -1030,12 +1020,10 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("and pods needs too much resources", func() {
 			BeforeEach(func() {
-				pods := &corev1.PodList{
-					Items: []corev1.Pod{
-						{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
-					},
+				pods := []corev1.Pod{
+					{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
 				}
-				podClient.ListReturns(pods, nil)
+				podsClient.GetByLRPIdentifierReturns(pods, nil)
 			})
 
 			Context("and the cluster has autoscaler", func() {
@@ -1104,12 +1092,10 @@ var _ = Describe("Statefulset Desirer", func() {
 					},
 				}, nil)
 
-				pods := &corev1.PodList{
-					Items: []corev1.Pod{
-						{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
-					},
+				pods := []corev1.Pod{
+					{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
 				}
-				podClient.ListReturns(pods, nil)
+				podsClient.GetByLRPIdentifierReturns(pods, nil)
 
 				instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
 				Expect(err).ToNot(HaveOccurred())

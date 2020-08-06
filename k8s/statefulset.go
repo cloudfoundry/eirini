@@ -61,7 +61,7 @@ const (
 	PodAffinityTermWeight    = 100
 )
 
-//counterfeiter:generate . PodListerDeleter
+//counterfeiter:generate . PodsClient
 //counterfeiter:generate . PodDisruptionBudgetClient
 //counterfeiter:generate . StatefulSetClient
 //counterfeiter:generate . SecretsCreatorDeleter
@@ -71,8 +71,9 @@ const (
 //counterfeiter:generate . DesireOption
 //counterfeiter:generate . StatefulSetClient
 
-type PodListerDeleter interface {
-	List(opts metav1.ListOptions) (*corev1.PodList, error)
+type PodsClient interface {
+	GetAll() ([]corev1.Pod, error)
+	GetByLRPIdentifier(opi.LRPIdentifier) ([]corev1.Pod, error)
 	Delete(namespace, name string) error
 }
 
@@ -100,7 +101,7 @@ type EventLister interface {
 type LRPMapper func(s appsv1.StatefulSet) (*opi.LRP, error)
 
 type StatefulSetDesirer struct {
-	Pods                              PodListerDeleter
+	Pods                              PodsClient
 	Secrets                           SecretsCreatorDeleter
 	StatefulSets                      StatefulSetClient
 	PodDisruptionBudgets              PodDisruptionBudgetClient
@@ -364,7 +365,11 @@ func (m *StatefulSetDesirer) getLRP(logger lager.Logger, identifier opi.LRPIdent
 
 func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error) {
 	statefulSet, err := m.StatefulSets.List(metav1.ListOptions{
-		LabelSelector: labelSelectorString(identifier),
+		LabelSelector: fmt.Sprintf(
+			"%s=%s,%s=%s",
+			LabelGUID, identifier.GUID,
+			LabelVersion, identifier.Version,
+		),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
@@ -387,9 +392,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 		return nil, err
 	}
 
-	pods, err := m.Pods.List(metav1.ListOptions{
-		LabelSelector: labelSelectorString(identifier),
-	})
+	pods, err := m.Pods.GetByLRPIdentifier(identifier)
 	if err != nil {
 		logger.Error("failed-to-list-pods", err)
 
@@ -398,7 +401,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 
 	instances := []*opi.Instance{}
 
-	for _, pod := range pods.Items {
+	for _, pod := range pods {
 		events, err := GetEvents(m.Events, pod)
 		if err != nil {
 			logger.Error("failed-to-get-events", err)
@@ -752,12 +755,4 @@ func (m *StatefulSetDesirer) getGetSecurityContext(lrp *opi.LRP) *corev1.PodSecu
 		RunAsNonRoot: &runAsNonRoot,
 		RunAsUser:    int64ptr(VcapUID),
 	}
-}
-
-func labelSelectorString(id opi.LRPIdentifier) string {
-	return fmt.Sprintf(
-		"%s=%s,%s=%s",
-		LabelGUID, id.GUID,
-		LabelVersion, id.Version,
-	)
 }

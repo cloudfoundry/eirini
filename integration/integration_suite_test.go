@@ -111,6 +111,10 @@ func listPods(lrpIdentifier opi.LRPIdentifier) []corev1.Pod {
 	return listPodsByLabel(labelSelector(lrpIdentifier))
 }
 
+func listAllPods() []corev1.Pod {
+	return listPodsByLabel("")
+}
+
 func podNamesFromPods(pods []corev1.Pod) []string {
 	names := []string{}
 	for _, p := range pods {
@@ -118,6 +122,31 @@ func podNamesFromPods(pods []corev1.Pod) []string {
 	}
 
 	return names
+}
+
+func createPods(ns string, names ...string) {
+	for _, name := range names {
+		createPod(ns, name, map[string]string{})
+	}
+}
+
+func createPod(ns, name string, labels map[string]string) {
+	_, err := fixture.Clientset.CoreV1().Pods(ns).Create(context.Background(), &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   name,
+			Labels: labels,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "busybox",
+					Image: "busybox",
+				},
+			},
+		},
+	}, metav1.CreateOptions{})
+
+	Expect(err).NotTo(HaveOccurred())
 }
 
 func nodeNamesFromPods(pods []corev1.Pod) []string {
