@@ -1,4 +1,4 @@
-package statefulsets_test
+package integration_test
 
 import (
 	"sync"
