@@ -55,32 +55,11 @@ var ErrNotFound = errors.New("not found")
 
 var ErrInvalidInstanceIndex = errors.New("invalid instance index")
 
-type Config struct {
-	Properties Properties `yaml:"opi"`
-}
+type Config struct { //nolint:maligned
+	KubeConfig `yaml:",inline"`
 
-type KubeConfig struct {
-	Namespace  string `yaml:"app_namespace"`
-	ConfigPath string `yaml:"kube_config_path"`
-}
-
-type Properties struct { //nolint:maligned
-	ClientCAPath   string `yaml:"client_ca_path"`
-	ServerCertPath string `yaml:"server_cert_path"`
-	ServerKeyPath  string `yaml:"server_key_path"`
-	TLSPort        int    `yaml:"tls_port"`
-	PlaintextPort  int    `yaml:"plaintext_port"`
-
-	CCUploaderSecretName string `yaml:"cc_uploader_secret_name"`
-	CCUploaderCertPath   string `yaml:"cc_uploader_cert_path"`
-	CCUploaderKeyPath    string `yaml:"cc_uploader_key_path"`
-
-	ClientCertsSecretName string `yaml:"client_certs_secret_name"`
-	ClientCertPath        string `yaml:"client_cert_path"`
-	ClientKeyPath         string `yaml:"client_key_path"`
-
-	CACertSecretName string `yaml:"ca_cert_secret_name"`
-	CACertPath       string `yaml:"ca_cert_path"`
+	TLSPort       int `yaml:"tls_port"`
+	PlaintextPort int `yaml:"plaintext_port"`
 
 	RegistryAddress                  string `yaml:"registry_address"`
 	RegistrySecretName               string `yaml:"registry_secret_name"`
@@ -90,15 +69,17 @@ type Properties struct { //nolint:maligned
 	ExecutorImage                    string `yaml:"executor_image"`
 	AppMetricsEmissionIntervalInSecs int    `yaml:"app_metrics_emission_interval_in_secs"`
 
-	CCTLSDisabled bool   `yaml:"cc_tls_disabled"`
-	CCCertPath    string `yaml:"cc_cert_path"`
-	CCKeyPath     string `yaml:"cc_key_path"`
-	CCCAPath      string `yaml:"cc_ca_path"`
+	CCTLSDisabled bool `yaml:"cc_tls_disabled"`
+
+	CCCertPath     string
+	CCKeyPath      string
+	CCCAPath       string
+	ClientCAPath   string
+	ServerCertPath string
+	ServerKeyPath  string
 
 	RootfsVersion string `yaml:"rootfs_version"`
 	DiskLimitMB   int64  `yaml:"disk_limit_mb"`
-
-	KubeConfig `yaml:",inline"`
 
 	ApplicationServiceAccount string `yaml:"application_service_account"`
 	StagingServiceAccount     string `yaml:"staging_service_account"`
@@ -109,6 +90,11 @@ type Properties struct { //nolint:maligned
 	EiriniInstance string `yaml:"eirini_instance,omitempty"`
 
 	ServePlaintext bool `yaml:"serve_plaintext"`
+}
+
+type KubeConfig struct {
+	Namespace  string `yaml:"app_namespace"`
+	ConfigPath string `yaml:"kube_config_path"`
 }
 
 type EventReporterConfig struct {

@@ -24,13 +24,13 @@ var _ = Describe("connect command", func() {
 	)
 
 	getRootError := func() error {
-		_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
+		_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.TLSPort))
 
 		return err
 	}
 
 	getRoot := func() *http.Response {
-		resp, _ := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
+		resp, _ := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.TLSPort))
 
 		return resp
 	}
@@ -124,9 +124,9 @@ var _ = Describe("connect command", func() {
 
 		BeforeEach(func() {
 			config = util.DefaultEiriniConfig("test-ns", fixture.NextAvailablePort())
-			config.Properties.ClientCAPath = ""
-			config.Properties.ServerCertPath = ""
-			config.Properties.ServerKeyPath = ""
+			config.ClientCAPath = ""
+			config.ServerCertPath = ""
+			config.ServerKeyPath = ""
 
 			configFile, err := util.CreateConfigFile(config)
 			Expect(err).ToNot(HaveOccurred())
@@ -142,11 +142,11 @@ var _ = Describe("connect command", func() {
 		Context("eirini is configured to serve plaintext", func() {
 			BeforeEach(func() {
 				config = util.DefaultEiriniConfig("test-ns", fixture.NextAvailablePort())
-				config.Properties.ClientCAPath = ""
-				config.Properties.ServerCertPath = ""
-				config.Properties.ServerKeyPath = ""
-				config.Properties.ServePlaintext = true
-				config.Properties.PlaintextPort = fixture.NextAvailablePort()
+				config.ClientCAPath = ""
+				config.ServerCertPath = ""
+				config.ServerKeyPath = ""
+				config.ServePlaintext = true
+				config.PlaintextPort = fixture.NextAvailablePort()
 
 				configFile, err := util.CreateConfigFile(config)
 				Expect(err).ToNot(HaveOccurred())
@@ -158,7 +158,7 @@ var _ = Describe("connect command", func() {
 				plaintextClient := &http.Client{}
 
 				Eventually(func() error {
-					_, err := plaintextClient.Get(fmt.Sprintf("http://localhost:%d/", config.Properties.PlaintextPort))
+					_, err := plaintextClient.Get(fmt.Sprintf("http://localhost:%d/", config.PlaintextPort))
 
 					return err
 				}, "10s").Should(Succeed())

@@ -126,7 +126,7 @@ var _ = Describe("TaskReporter", func() {
 			task.CompletionCallback = fmt.Sprintf("%s/the-callback", cloudControllerServer.URL())
 		})
 
-		It("does something", func() {
+		It("still gets notified", func() {
 			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
 		})
 	})

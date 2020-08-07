@@ -194,39 +194,29 @@ func MakeTestHTTPClient() (*http.Client, error) {
 
 func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 	return &eirini.Config{
-		Properties: eirini.Properties{
-			KubeConfig: eirini.KubeConfig{
-				ConfigPath: GetKubeconfig(),
-				Namespace:  namespace,
-			},
-			CCCAPath:             PathToTestFixture("cert"),
-			CCCertPath:           PathToTestFixture("cert"),
-			CCKeyPath:            PathToTestFixture("key"),
-			ServerCertPath:       PathToTestFixture("cert"),
-			ServerKeyPath:        PathToTestFixture("key"),
-			ClientCAPath:         PathToTestFixture("cert"),
-			TLSPort:              tlsPort,
-			CCUploaderSecretName: "cc-uploader-secret",
-			CCUploaderCertPath:   "path-to-crt",
-			CCUploaderKeyPath:    "path-to-key",
-
-			ClientCertsSecretName: "eirini-client-secret",
-			ClientKeyPath:         "path-to-key",
-			ClientCertPath:        "path-to-crt",
-
-			CACertSecretName: "global-ca-secret",
-			CACertPath:       "path-to-ca",
-
-			DownloaderImage: "docker.io/eirini/integration_test_staging",
-			ExecutorImage:   "docker.io/eirini/integration_test_staging",
-			UploaderImage:   "docker.io/eirini/integration_test_staging",
-
-			ApplicationServiceAccount: GetApplicationServiceAccount(),
-			StagingServiceAccount:     "staging",
-			RegistryAddress:           "registry",
-			RegistrySecretName:        "registry-secret",
-			EiriniInstance:            fmt.Sprintf("%s-%d", GenerateGUID(), ginkgo.GinkgoParallelNode()),
+		KubeConfig: eirini.KubeConfig{
+			ConfigPath: GetKubeconfig(),
+			Namespace:  namespace,
 		},
+
+		CCCAPath:       PathToTestFixture("cert"),
+		CCCertPath:     PathToTestFixture("cert"),
+		CCKeyPath:      PathToTestFixture("key"),
+		ServerCertPath: PathToTestFixture("cert"),
+		ServerKeyPath:  PathToTestFixture("key"),
+		ClientCAPath:   PathToTestFixture("cert"),
+
+		TLSPort: tlsPort,
+
+		DownloaderImage: "docker.io/eirini/integration_test_staging",
+		ExecutorImage:   "docker.io/eirini/integration_test_staging",
+		UploaderImage:   "docker.io/eirini/integration_test_staging",
+
+		ApplicationServiceAccount: GetApplicationServiceAccount(),
+		StagingServiceAccount:     "staging",
+		RegistryAddress:           "registry",
+		RegistrySecretName:        "registry-secret",
+		EiriniInstance:            fmt.Sprintf("%s-%d", GenerateGUID(), ginkgo.GinkgoParallelNode()),
 	}
 }
 
@@ -285,7 +275,7 @@ func GetApplicationNamespace() string {
 	config := eirini.Config{}
 	Expect(yaml.Unmarshal([]byte(opiYml), &config)).To(Succeed())
 
-	return config.Properties.Namespace
+	return config.Namespace
 }
 
 func GetSecret(secretName, secretPath string) string {
@@ -305,7 +295,7 @@ func DownloadEiriniCertificates() (string, string) {
 
 	defer certFile.Close()
 
-	_, err = certFile.WriteString(GetSecret("eirini-tls", "tls.crt"))
+	_, err = certFile.WriteString(GetSecret("eirini-certs", "tls.crt"))
 	Expect(err).NotTo(HaveOccurred())
 
 	keyFile, err := ioutil.TempFile("", "key-")
@@ -313,7 +303,7 @@ func DownloadEiriniCertificates() (string, string) {
 
 	defer keyFile.Close()
 
-	_, err = keyFile.WriteString(GetSecret("eirini-tls", "tls.key"))
+	_, err = keyFile.WriteString(GetSecret("eirini-certs", "tls.key"))
 	Expect(err).NotTo(HaveOccurred())
 
 	return certFile.Name(), keyFile.Name()

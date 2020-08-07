@@ -306,10 +306,10 @@ var _ = Describe("Task Desire and Cancel", func() {
 				)
 
 				newConfigPath = restartWithConfig(func(cfg eirini.Config) eirini.Config {
-					cfg.Properties.CCTLSDisabled = true
-					cfg.Properties.CCCertPath = ""
-					cfg.Properties.CCKeyPath = ""
-					cfg.Properties.CCCAPath = ""
+					cfg.CCTLSDisabled = true
+					cfg.CCCertPath = ""
+					cfg.CCKeyPath = ""
+					cfg.CCCAPath = ""
 
 					return cfg
 				})

@@ -48,7 +48,7 @@ func main() {
 	eiriniCfg, err := readConfigFile(opts.ConfigFile)
 	cmdcommons.ExitIfError(err)
 
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", eiriniCfg.Properties.ConfigPath)
+	kubeConfig, err := clientcmd.BuildConfigFromFlags("", eiriniCfg.ConfigPath)
 	cmdcommons.ExitIfError(err)
 
 	controllerClient, err := runtimeclient.New(kubeConfig, runtimeclient.Options{Scheme: eirinischeme.Scheme})
@@ -121,13 +121,13 @@ func createLRPReconciler(
 		PodDisruptionBudgets:              client.NewPodDisruptionBudget(clientset),
 		Events:                            client.NewEvent(clientset),
 		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
-		RegistrySecretName:                eiriniCfg.Properties.RegistrySecretName,
-		RootfsVersion:                     eiriniCfg.Properties.RootfsVersion,
+		RegistrySecretName:                eiriniCfg.RegistrySecretName,
+		RootfsVersion:                     eiriniCfg.RootfsVersion,
 		LivenessProbeCreator:              k8s.CreateLivenessProbe,
 		ReadinessProbeCreator:             k8s.CreateReadinessProbe,
 		Logger:                            logger.Session("stateful-set-desirer"),
-		ApplicationServiceAccount:         eiriniCfg.Properties.ApplicationServiceAccount,
-		AllowAutomountServiceAccountToken: eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
+		ApplicationServiceAccount:         eiriniCfg.ApplicationServiceAccount,
+		AllowAutomountServiceAccountToken: eiriniCfg.UnsafeAllowAutomountServiceAccountToken,
 	}
 
 	return reconciler.NewLRP(logger, controllerClient, stDesirer, client.NewStatefulSet(clientset), scheme)
@@ -145,10 +145,10 @@ func createTaskReconciler(
 		client.NewSecret(clientset),
 		"",
 		[]k8s.StagingConfigTLS{},
-		eiriniCfg.Properties.ApplicationServiceAccount,
+		eiriniCfg.ApplicationServiceAccount,
 		"",
-		eiriniCfg.Properties.RegistrySecretName,
-		eiriniCfg.Properties.RootfsVersion,
+		eiriniCfg.RegistrySecretName,
+		eiriniCfg.RootfsVersion,
 	)
 
 	return reconciler.NewTask(logger, controllerClient, taskDesirer, scheme)

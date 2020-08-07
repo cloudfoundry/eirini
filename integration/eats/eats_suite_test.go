@@ -113,41 +113,29 @@ var _ = AfterEach(func() {
 
 func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
 	eiriniConfig := &eirini.Config{
-		Properties: eirini.Properties{
-			KubeConfig: eirini.KubeConfig{
-				ConfigPath: fixture.KubeConfigPath,
-				Namespace:  fixture.DefaultNamespace,
-			},
-			CCCAPath:             certPath,
-			CCCertPath:           certPath,
-			CCKeyPath:            keyPath,
-			ServerCertPath:       certPath,
-			ServerKeyPath:        keyPath,
-			ClientCAPath:         certPath,
-			DiskLimitMB:          500,
-			TLSPort:              fixture.NextAvailablePort(),
-			CCUploaderSecretName: "cc-uploader-secret",
-			CCUploaderCertPath:   "path-to-crt",
-			CCUploaderKeyPath:    "path-to-key",
-
-			ClientCertsSecretName: "eirini-client-secret",
-			ClientKeyPath:         "path-to-key",
-			ClientCertPath:        "path-to-crt",
-
-			CACertSecretName: "global-ca-secret",
-			CACertPath:       "path-to-ca",
-
-			DownloaderImage: "docker.io/eirini/integration_test_staging",
-			ExecutorImage:   "docker.io/eirini/integration_test_staging",
-			UploaderImage:   "docker.io/eirini/integration_test_staging",
-
-			ApplicationServiceAccount: util.GetApplicationServiceAccount(),
+		KubeConfig: eirini.KubeConfig{
+			ConfigPath: fixture.KubeConfigPath,
+			Namespace:  fixture.DefaultNamespace,
 		},
+		CCCAPath:       certPath,
+		CCCertPath:     certPath,
+		CCKeyPath:      keyPath,
+		ServerCertPath: certPath,
+		ServerKeyPath:  keyPath,
+		ClientCAPath:   certPath,
+		DiskLimitMB:    500,
+		TLSPort:        fixture.NextAvailablePort(),
+
+		DownloaderImage: "docker.io/eirini/integration_test_staging",
+		ExecutorImage:   "docker.io/eirini/integration_test_staging",
+		UploaderImage:   "docker.io/eirini/integration_test_staging",
+
+		ApplicationServiceAccount: util.GetApplicationServiceAccount(),
 	}
 
 	eiriniSession, eiriniConfigFilePath := eiriniBins.OPI.Run(eiriniConfig)
 
-	url := fmt.Sprintf("https://localhost:%d", eiriniConfig.Properties.TLSPort)
+	url := fmt.Sprintf("https://localhost:%d", eiriniConfig.TLSPort)
 
 	return eiriniSession, eiriniConfigFilePath, url
 }
