@@ -12,16 +12,15 @@ import (
 	"code.cloudfoundry.org/eirini"
 	eiriniclient "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
 	"github.com/hashicorp/go-multierror"
-	"gopkg.in/yaml.v2"
 
 	// nolint:golint,stylecheck
 	. "github.com/onsi/ginkgo"
 
 	// nolint:golint,stylecheck
 	. "github.com/onsi/gomega"
+	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -129,9 +128,10 @@ func (f *Fixture) TearDown() {
 func (f Fixture) getApplicationNamespace() string {
 	cm, err := f.Clientset.CoreV1().ConfigMaps("eirini-core").Get(context.Background(), "eirini", metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
-	opiYml := cm.Data["opi.yml"]
 
+	opiYml := cm.Data["opi.yml"]
 	config := eirini.Config{}
+
 	Expect(yaml.Unmarshal([]byte(opiYml), &config)).To(Succeed())
 
 	return config.Properties.Namespace
@@ -170,7 +170,7 @@ func (f *Fixture) printDebugInfo() error {
 		return err
 	}
 
-	jobs, _ := f.Clientset.BatchV1().Jobs(f.Namespace).List(context.Background(), v1.ListOptions{})
+	jobs, _ := f.Clientset.BatchV1().Jobs(f.Namespace).List(context.Background(), metav1.ListOptions{})
 
 	for _, job := range jobs.Items {
 		fmt.Fprintf(f.Writer, "Job: %s status is: %#v\n", job.Name, job.Status)
@@ -180,7 +180,7 @@ func (f *Fixture) printDebugInfo() error {
 		}
 	}
 
-	statefulsets, _ := f.Clientset.AppsV1().StatefulSets(f.Namespace).List(context.Background(), v1.ListOptions{})
+	statefulsets, _ := f.Clientset.AppsV1().StatefulSets(f.Namespace).List(context.Background(), metav1.ListOptions{})
 
 	if _, err := f.Writer.Write([]byte("StatefulSets:\n")); err != nil {
 		return err
@@ -194,7 +194,7 @@ func (f *Fixture) printDebugInfo() error {
 		}
 	}
 
-	pods, _ := f.Clientset.CoreV1().Pods(f.Namespace).List(context.Background(), v1.ListOptions{})
+	pods, _ := f.Clientset.CoreV1().Pods(f.Namespace).List(context.Background(), metav1.ListOptions{})
 
 	if _, err := f.Writer.Write([]byte("Pods:\n")); err != nil {
 		return err

@@ -83,8 +83,8 @@ var _ = BeforeEach(func() {
 		httpClient, err = makeTestHTTPClient(localhostCertPath, localhostKeyPath)
 		Expect(err).ToNot(HaveOccurred())
 
-		svc, err := fixture.Clientset.CoreV1().Services("eirini-core").Get(context.Background(), "eirini-external", metav1.GetOptions{})
-		Expect(err).ToNot(HaveOccurred())
+		svc, getErr := fixture.Clientset.CoreV1().Services("eirini-core").Get(context.Background(), "eirini-external", metav1.GetOptions{})
+		Expect(getErr).ToNot(HaveOccurred())
 
 		host := svc.Status.LoadBalancer.Ingress[0].IP
 		opiURL = fmt.Sprintf("https://%s:8085", host)

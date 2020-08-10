@@ -15,7 +15,6 @@ import (
 	"code.cloudfoundry.org/tlsconfig"
 	"github.com/onsi/ginkgo"
 	ginkgoconfig "github.com/onsi/ginkgo/config"
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
