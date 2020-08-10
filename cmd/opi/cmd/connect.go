@@ -147,8 +147,8 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 		{
 			SecretName: EiriniClientSecretName,
 			KeyPaths: []k8s.KeyPath{
-				{Key: TLSSecretKey, Path: eirini.EiriniClientCert},
-				{Key: TLSSecretCert, Path: eirini.EiriniClientKey},
+				{Key: TLSSecretKey, Path: eirini.EiriniClientKey},
+				{Key: TLSSecretCert, Path: eirini.EiriniClientCert},
 			},
 		},
 		{

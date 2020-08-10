@@ -3,6 +3,9 @@
 set -xeuo pipefail
 IFS=$'\n\t'
 
+declare -A key_map
+key_map=(["cc-server-crt"]="tls.crt" ["cc-server-crt-key"]="tls.key" ["internal-ca-cert"]="ca.crt" ["eirini-client-crt"]="tls.crt" ["eirini-client-crt-key"]="tls.key")
+
 main() {
   create-registry-secret
   create-image-pull-secret
@@ -23,22 +26,33 @@ create-image-pull-secret() {
 }
 
 get-secret() {
-  local id secret
+  local id new_id secret
   id=${1}
+  new_id=${2}
   secret="$(kubectl get secret "$SECRET_NAME" --namespace="$SCF_NAMESPACE" -ojsonpath=\"{.data.$id}\")"
-  echo "  $id: $secret"
+  echo "  $new_id: $secret"
 }
 
 get-secrets() {
   local id
-  for id in cc-certs-volume cc-server-crt cc-server-crt-key cc-uploader-crt cc-uploader-crt-key internal-ca-cert eirini-client-crt eirini-client-crt-key; do
-    get-secret $id
+  for id in $@; do
+    get-secret $id ${key_map[$id]}
   done
 }
 
 create-registry-secret() {
-  local scf_secrets secret_file_path
-  scf_secrets="$(get-secrets)"
+  cc_keys=("cc-server-crt" "cc-server-crt-key" "internal-ca-cert")
+  apply-secret "cc-uploader-certs" ${cc_keys[@]}
+
+  eirini_keys=("eirini-client-crt" "eirini-client-crt-key" "internal-ca-cert")
+  apply-secret "eirini-client-certs" ${eirini_keys[@]}
+}
+
+apply-secret() {
+  local secret_name scf_secrets
+  secret_name="$1"
+  shift 1
+  scf_secrets="$(get-secrets $@)"
   secret_file_path=/tmp/secret.yml
 
   cat <<EOT >>$secret_file_path
@@ -46,7 +60,7 @@ create-registry-secret() {
 apiVersion: v1
 kind: Secret
 metadata:
-  name: $SECRET_NAME
+  name: $secret_name
 type: Opaque
 data:
 ${scf_secrets}
