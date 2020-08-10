@@ -4,14 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
-	"os/exec"
-	"strings"
 
 	"code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/eirini"
@@ -260,51 +257,4 @@ func CreateTestServer(certPath, keyPath, caCertPath string) (*ghttp.Server, erro
 	testServer.HTTPTestServer.TLS = tlsConf
 
 	return testServer, nil
-}
-
-func KubeCtl(args string) string {
-	command := exec.Command("/bin/sh", "-c", "kubectl "+args) //#nosec G204
-	output, err := command.CombinedOutput()
-	Expect(err).NotTo(HaveOccurred())
-
-	return string(output)
-}
-
-func GetApplicationNamespace() string {
-	opiYml := KubeCtl(`get configmap -n eirini-core eirini -o jsonpath="{.data['opi\.yml']}"`)
-	config := eirini.Config{}
-	Expect(yaml.Unmarshal([]byte(opiYml), &config)).To(Succeed())
-
-	return config.Properties.Namespace
-}
-
-func GetSecret(secretName, secretPath string) string {
-	escapedSecretPath := strings.ReplaceAll(secretPath, ".", "\\.")
-	kubectlArgs := fmt.Sprintf("-n eirini-core get secret %s -o jsonpath=\"{.data['%s']}\"", secretName, escapedSecretPath)
-
-	secret := KubeCtl(kubectlArgs)
-	decodedBytes, err := base64.StdEncoding.DecodeString(secret)
-	Expect(err).NotTo(HaveOccurred())
-
-	return string(decodedBytes)
-}
-
-func DownloadEiriniCertificates() (string, string) {
-	certFile, err := ioutil.TempFile("", "cert-")
-	Expect(err).NotTo(HaveOccurred())
-
-	defer certFile.Close()
-
-	_, err = certFile.WriteString(GetSecret("eirini-certs", "tls.crt"))
-	Expect(err).NotTo(HaveOccurred())
-
-	keyFile, err := ioutil.TempFile("", "key-")
-	Expect(err).NotTo(HaveOccurred())
-
-	defer keyFile.Close()
-
-	_, err = keyFile.WriteString(GetSecret("eirini-certs", "tls.key"))
-	Expect(err).NotTo(HaveOccurred())
-
-	return certFile.Name(), keyFile.Name()
 }

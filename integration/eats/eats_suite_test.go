@@ -78,13 +78,16 @@ var _ = BeforeEach(func() {
 
 	var err error
 	if util.IsUsingDeployedEirini() {
-		localhostCertPath, localhostKeyPath = util.DownloadEiriniCertificates()
+		localhostCertPath, localhostKeyPath = fixture.DownloadEiriniCertificates()
 
 		httpClient, err = makeTestHTTPClient(localhostCertPath, localhostKeyPath)
 		Expect(err).ToNot(HaveOccurred())
 
-		opiHost := util.KubeCtl("get svc -n eirini-core eirini-external -o jsonpath=\"{.status.loadBalancer.ingress[0].ip}\"")
-		opiURL = fmt.Sprintf("https://%s:8085", opiHost)
+		svc, err := fixture.Clientset.CoreV1().Services("eirini-core").Get(context.Background(), "eirini-external", metav1.GetOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		host := svc.Status.LoadBalancer.Ingress[0].IP
+		opiURL = fmt.Sprintf("https://%s:8085", host)
 	} else {
 		localhostCertPath, localhostKeyPath = util.GenerateKeyPair("localhost")
 
