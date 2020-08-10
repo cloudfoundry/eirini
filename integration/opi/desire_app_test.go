@@ -108,7 +108,7 @@ var _ = Describe("Desire App", func() {
 
 			BeforeEach(func() {
 				newConfigPath = restartWithConfig(func(config eirini.Config) eirini.Config {
-					config.UnsafeAllowAutomountServiceAccountToken = true
+					config.Properties.UnsafeAllowAutomountServiceAccountToken = true
 
 					return config
 				})

@@ -113,29 +113,30 @@ var _ = AfterEach(func() {
 
 func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
 	eiriniConfig := &eirini.Config{
-		KubeConfig: eirini.KubeConfig{
-			ConfigPath: fixture.KubeConfigPath,
-			Namespace:  fixture.DefaultNamespace,
+		Properties: eirini.Properties{
+			KubeConfig: eirini.KubeConfig{
+				ConfigPath: fixture.KubeConfigPath,
+				Namespace:  fixture.DefaultNamespace,
+			},
+			CCCAPath:        certPath,
+			CCCertPath:      certPath,
+			CCKeyPath:       keyPath,
+			ServerCertPath:  certPath,
+			ServerKeyPath:   keyPath,
+			ClientCAPath:    certPath,
+			DiskLimitMB:     500,
+			TLSPort:         fixture.NextAvailablePort(),
+			DownloaderImage: "docker.io/eirini/integration_test_staging",
+			ExecutorImage:   "docker.io/eirini/integration_test_staging",
+			UploaderImage:   "docker.io/eirini/integration_test_staging",
+
+			ApplicationServiceAccount: util.GetApplicationServiceAccount(),
 		},
-		CCCAPath:       certPath,
-		CCCertPath:     certPath,
-		CCKeyPath:      keyPath,
-		ServerCertPath: certPath,
-		ServerKeyPath:  keyPath,
-		ClientCAPath:   certPath,
-		DiskLimitMB:    500,
-		TLSPort:        fixture.NextAvailablePort(),
-
-		DownloaderImage: "docker.io/eirini/integration_test_staging",
-		ExecutorImage:   "docker.io/eirini/integration_test_staging",
-		UploaderImage:   "docker.io/eirini/integration_test_staging",
-
-		ApplicationServiceAccount: util.GetApplicationServiceAccount(),
 	}
 
 	eiriniSession, eiriniConfigFilePath := eiriniBins.OPI.Run(eiriniConfig)
 
-	url := fmt.Sprintf("https://localhost:%d", eiriniConfig.TLSPort)
+	url := fmt.Sprintf("https://localhost:%d", eiriniConfig.Properties.TLSPort)
 
 	return eiriniSession, eiriniConfigFilePath, url
 }

@@ -55,9 +55,16 @@ var ErrNotFound = errors.New("not found")
 
 var ErrInvalidInstanceIndex = errors.New("invalid instance index")
 
-type Config struct { //nolint:maligned
-	KubeConfig `yaml:",inline"`
+type Config struct {
+	Properties Properties `yaml:"opi"`
+}
 
+type KubeConfig struct {
+	Namespace  string `yaml:"app_namespace"`
+	ConfigPath string `yaml:"kube_config_path"`
+}
+
+type Properties struct { //nolint:maligned
 	TLSPort       int `yaml:"tls_port"`
 	PlaintextPort int `yaml:"plaintext_port"`
 
@@ -81,6 +88,8 @@ type Config struct { //nolint:maligned
 	RootfsVersion string `yaml:"rootfs_version"`
 	DiskLimitMB   int64  `yaml:"disk_limit_mb"`
 
+	KubeConfig `yaml:",inline"`
+
 	ApplicationServiceAccount string `yaml:"application_service_account"`
 	StagingServiceAccount     string `yaml:"staging_service_account"`
 
@@ -90,11 +99,6 @@ type Config struct { //nolint:maligned
 	EiriniInstance string `yaml:"eirini_instance,omitempty"`
 
 	ServePlaintext bool `yaml:"serve_plaintext"`
-}
-
-type KubeConfig struct {
-	Namespace  string `yaml:"app_namespace"`
-	ConfigPath string `yaml:"kube_config_path"`
 }
 
 type EventReporterConfig struct {

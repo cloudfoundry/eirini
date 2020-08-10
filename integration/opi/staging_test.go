@@ -197,10 +197,10 @@ var _ = Describe("Staging", func() {
 
 			BeforeEach(func() {
 				newConfigPath = restartWithConfig(func(cfg eirini.Config) eirini.Config {
-					cfg.CCTLSDisabled = true
-					cfg.CCCertPath = ""
-					cfg.CCKeyPath = ""
-					cfg.CCCAPath = ""
+					cfg.Properties.CCTLSDisabled = true
+					cfg.Properties.CCCertPath = ""
+					cfg.Properties.CCKeyPath = ""
+					cfg.Properties.CCCAPath = ""
 
 					return cfg
 				})

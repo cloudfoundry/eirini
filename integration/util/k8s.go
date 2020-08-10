@@ -194,29 +194,29 @@ func MakeTestHTTPClient() (*http.Client, error) {
 
 func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 	return &eirini.Config{
-		KubeConfig: eirini.KubeConfig{
-			ConfigPath: GetKubeconfig(),
-			Namespace:  namespace,
+		Properties: eirini.Properties{
+			KubeConfig: eirini.KubeConfig{
+				ConfigPath: GetKubeconfig(),
+				Namespace:  namespace,
+			},
+			CCCAPath:       PathToTestFixture("cert"),
+			CCCertPath:     PathToTestFixture("cert"),
+			CCKeyPath:      PathToTestFixture("key"),
+			ServerCertPath: PathToTestFixture("cert"),
+			ServerKeyPath:  PathToTestFixture("key"),
+			ClientCAPath:   PathToTestFixture("cert"),
+			TLSPort:        tlsPort,
+
+			DownloaderImage: "docker.io/eirini/integration_test_staging",
+			ExecutorImage:   "docker.io/eirini/integration_test_staging",
+			UploaderImage:   "docker.io/eirini/integration_test_staging",
+
+			ApplicationServiceAccount: GetApplicationServiceAccount(),
+			StagingServiceAccount:     "staging",
+			RegistryAddress:           "registry",
+			RegistrySecretName:        "registry-secret",
+			EiriniInstance:            fmt.Sprintf("%s-%d", GenerateGUID(), ginkgo.GinkgoParallelNode()),
 		},
-
-		CCCAPath:       PathToTestFixture("cert"),
-		CCCertPath:     PathToTestFixture("cert"),
-		CCKeyPath:      PathToTestFixture("key"),
-		ServerCertPath: PathToTestFixture("cert"),
-		ServerKeyPath:  PathToTestFixture("key"),
-		ClientCAPath:   PathToTestFixture("cert"),
-
-		TLSPort: tlsPort,
-
-		DownloaderImage: "docker.io/eirini/integration_test_staging",
-		ExecutorImage:   "docker.io/eirini/integration_test_staging",
-		UploaderImage:   "docker.io/eirini/integration_test_staging",
-
-		ApplicationServiceAccount: GetApplicationServiceAccount(),
-		StagingServiceAccount:     "staging",
-		RegistryAddress:           "registry",
-		RegistrySecretName:        "registry-secret",
-		EiriniInstance:            fmt.Sprintf("%s-%d", GenerateGUID(), ginkgo.GinkgoParallelNode()),
 	}
 }
 
@@ -271,11 +271,11 @@ func KubeCtl(args string) string {
 }
 
 func GetApplicationNamespace() string {
-	opiYml := KubeCtl(`get configmap -n eirini-core opi -o jsonpath="{.data['opi\.yml']}"`)
+	opiYml := KubeCtl(`get configmap -n eirini-core eirini -o jsonpath="{.data['opi\.yml']}"`)
 	config := eirini.Config{}
 	Expect(yaml.Unmarshal([]byte(opiYml), &config)).To(Succeed())
 
-	return config.Namespace
+	return config.Properties.Namespace
 }
 
 func GetSecret(secretName, secretPath string) string {

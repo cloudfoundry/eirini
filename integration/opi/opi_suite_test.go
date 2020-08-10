@@ -73,13 +73,13 @@ var _ = BeforeEach(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	eiriniConfig := util.DefaultEiriniConfig(fixture.Namespace, fixture.NextAvailablePort())
-	eiriniConfig.CCCertPath = certPath
-	eiriniConfig.CCKeyPath = keyPath
-	eiriniConfig.CCCAPath = certPath
+	eiriniConfig.Properties.CCCertPath = certPath
+	eiriniConfig.Properties.CCKeyPath = keyPath
+	eiriniConfig.Properties.CCCAPath = certPath
 
 	session, eiriniConfigFilePath = eiriniBins.OPI.Run(eiriniConfig)
 
-	url = fmt.Sprintf("https://localhost:%d/", eiriniConfig.TLSPort)
+	url = fmt.Sprintf("https://localhost:%d/", eiriniConfig.Properties.TLSPort)
 	Eventually(func() error {
 		_, getErr := httpClient.Get(url)
 
