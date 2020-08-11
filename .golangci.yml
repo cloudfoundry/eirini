@@ -23,9 +23,20 @@ linters-settings:
 linters:
   enable-all: true
   disable:
+    # goerr113 requires to not use errors.New, instead it wants us to define
+    # package-level errors and wrap them. This feels to be an overkill so we
+    # are skipping it for now.
     - goerr113
+    # noctx requires using a context when constructing an http.Request.
+    # However, as for the time being we are not passing contexts to our
+    # functions, so just using `context.Background` to make the linter happy
+    # does not really make sense
     - noctx
     - gofumpt
+    # godot requires that top-level comments end with a dot. This is useful for
+    # documentation purposes when documentation is generated automatically.
+    # However, we do not document our code and therefore this linter has no
+    # value for us.
     - godot
 
 issues:
