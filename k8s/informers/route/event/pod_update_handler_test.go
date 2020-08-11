@@ -21,7 +21,6 @@ import (
 )
 
 var _ = Describe("UpdateEventHandler", func() {
-
 	var (
 		statefulSetClient *eventfakes.FakeStatefulSetInterface
 		logger            *lagertest.TestLogger
@@ -122,7 +121,6 @@ var _ = Describe("UpdateEventHandler", func() {
 	})
 
 	Context("When an ip is assigned to a pod", func() {
-
 		It("should send all routes", func() {
 			handler.Handle(pod, updatedPod)
 
@@ -150,11 +148,9 @@ var _ = Describe("UpdateEventHandler", func() {
 				TLSPort:    0,
 			}))
 		})
-
 	})
 
 	Context("When there is no owner for a pod", func() {
-
 		It("should not send routes for the pod", func() {
 			updatedPod.OwnerReferences = []metav1.OwnerReference{}
 
@@ -178,7 +174,6 @@ var _ = Describe("UpdateEventHandler", func() {
 	})
 
 	Context("When there are multiple pod owners", func() {
-
 		It("should find the StatefulSet owner and send the route", func() {
 			updatedPod.OwnerReferences = append(updatedPod.OwnerReferences, metav1.OwnerReference{
 				Kind: "extraterrestrial",
@@ -218,7 +213,6 @@ var _ = Describe("UpdateEventHandler", func() {
 			Expect(log.Data).To(HaveKeyWithValue("guid", "mr-stateful-0-anno"))
 			Expect(log.Data).To(HaveKeyWithValue("error", ContainSubstring("there are no statefulset owners")))
 		})
-
 	})
 
 	Context("When a pod is marked for deletion", func() {
@@ -263,7 +257,6 @@ var _ = Describe("UpdateEventHandler", func() {
 					TLSPort:    0,
 				},
 			))
-
 		})
 
 		It("should provide a helpful error message", func() {
@@ -287,7 +280,6 @@ var _ = Describe("UpdateEventHandler", func() {
 			Expect(conditions).To(HaveLen(1))
 			Expect(conditions[0].Status).To(Equal(corev1.ConditionTrue))
 		})
-
 	})
 
 	Context("When pod is not ready", func() {

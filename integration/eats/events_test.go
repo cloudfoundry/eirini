@@ -40,7 +40,7 @@ var _ = Describe("Events", func() {
 		Expect(err).NotTo(HaveOccurred())
 		newConfigFile, err := ioutil.TempFile("", "")
 		Expect(err).NotTo(HaveOccurred())
-		Expect(ioutil.WriteFile(newConfigFile.Name(), configBytes, 0600)).To(Succeed())
+		Expect(ioutil.WriteFile(newConfigFile.Name(), configBytes, 0o600)).To(Succeed())
 
 		eventsSession = eiriniBins.EventsReporter.Restart(newConfigFile.Name(), eventsSession)
 
@@ -80,7 +80,6 @@ var _ = Describe("Events", func() {
 	})
 
 	Context("When an app crashes", func() {
-
 		var lrp cf.DesireLRPRequest
 
 		BeforeEach(func() {
@@ -128,9 +127,7 @@ var _ = Describe("Events", func() {
 		})
 
 		When("CC TLS is disabled in the config", func() {
-			var (
-				configPath string
-			)
+			var configPath string
 
 			BeforeEach(func() {
 				capiServer.Close()
@@ -145,7 +142,6 @@ var _ = Describe("Events", func() {
 
 					return cfg
 				})
-
 			})
 			AfterEach(func() {
 				os.RemoveAll(configPath)

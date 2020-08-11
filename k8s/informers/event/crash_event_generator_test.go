@@ -109,7 +109,6 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 
 			Context("with zero exit status", func() {
-
 				BeforeEach(func() {
 					pod.Status.ContainerStatuses[0].State.Terminated.ExitCode = 0
 				})
@@ -118,11 +117,9 @@ var _ = Describe("CrashEventGenerator", func() {
 					_, returned := generator.Generate(pod, logger)
 					Expect(returned).To(BeFalse())
 				})
-
 			})
 
 			Context("When a pod name does not have index", func() {
-
 				BeforeEach(func() {
 					pod.Name = "naughty-pod"
 				})
@@ -142,11 +139,9 @@ var _ = Describe("CrashEventGenerator", func() {
 					Expect(log.Data).To(HaveKeyWithValue("pod-name", "naughty-pod"))
 					Expect(log.Data).To(HaveKeyWithValue("guid", "test-pod-anno"))
 				})
-
 			})
 
 			Context("When pod is stopped", func() {
-
 				BeforeEach(func() {
 					event := v1.Event{
 						InvolvedObject: v1.ObjectReference{
@@ -242,7 +237,6 @@ var _ = Describe("CrashEventGenerator", func() {
 	})
 
 	Context("When app is waiting for any insignificant reason", func() {
-
 		BeforeEach(func() {
 			pod = newCrashedPod()
 			pod.Status.ContainerStatuses[0].State.Waiting.Reason = "Monday"
@@ -252,11 +246,9 @@ var _ = Describe("CrashEventGenerator", func() {
 			_, returned := generator.Generate(pod, logger)
 			Expect(returned).To(BeFalse())
 		})
-
 	})
 
 	Context("When a pod has no container statuses", func() {
-
 		BeforeEach(func() {
 			pod = newCrashedPod()
 		})
@@ -283,7 +275,6 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 		})
 	})
-
 })
 
 func newTerminatedPod() *v1.Pod {

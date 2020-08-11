@@ -212,7 +212,6 @@ var _ = Describe("Routes", func() {
 		})
 
 		When("an app is scaled up", func() {
-
 			BeforeEach(func() {
 				instances = lrp.NumInstances + 1
 				desiredRoutes = []routeInfo{
@@ -227,12 +226,10 @@ var _ = Describe("Routes", func() {
 					"URIs":              ConsistOf("app-hostname-1"),
 					"PrivateInstanceID": SatisfyAll(ContainSubstring(lrp.GUID), MatchRegexp("-1$")),
 				}))
-
 			})
 		})
 
 		When("an app is scaled down", func() {
-
 			BeforeEach(func() {
 				instances = 0
 				desiredRoutes = []routeInfo{
@@ -247,13 +244,11 @@ var _ = Describe("Routes", func() {
 					"URIs":              ConsistOf("app-hostname-1"),
 					"PrivateInstanceID": SatisfyAll(ContainSubstring(lrp.GUID), MatchRegexp("-0$")),
 				}))
-
 			})
 		})
 	})
 
 	Describe("Stopping an app", func() {
-
 		JustBeforeEach(func() {
 			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
 			Eventually(registerChan).Should(Receive())
@@ -273,7 +268,6 @@ var _ = Describe("Routes", func() {
 	})
 
 	Describe("Stopping an app instance", func() {
-
 		JustBeforeEach(func() {
 			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
 			Eventually(registerChan).Should(Receive())
@@ -298,7 +292,6 @@ var _ = Describe("Routes", func() {
 			}))
 		})
 	})
-
 })
 
 func receivedMessage(channel <-chan *nats.Msg) route.RegistryMessage {

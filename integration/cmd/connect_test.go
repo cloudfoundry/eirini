@@ -81,7 +81,6 @@ var _ = Describe("connect command", func() {
 		})
 
 		Context("send a request with an invalid client certificate", func() {
-
 			var clientCert tls.Certificate
 
 			BeforeEach(func() {
@@ -121,7 +120,6 @@ var _ = Describe("connect command", func() {
 	})
 
 	Context("invoke connect command without TLS config", func() {
-
 		BeforeEach(func() {
 			config = util.DefaultEiriniConfig("test-ns", fixture.NextAvailablePort())
 			config.Properties.ClientCAPath = ""
@@ -136,7 +134,6 @@ var _ = Describe("connect command", func() {
 		It("fails", func() {
 			Eventually(session, "10s").Should(gexec.Exit())
 			Expect(session.ExitCode()).NotTo(BeZero())
-
 		})
 
 		Context("eirini is configured to serve plaintext", func() {
@@ -151,7 +148,6 @@ var _ = Describe("connect command", func() {
 				configFile, err := util.CreateConfigFile(config)
 				Expect(err).ToNot(HaveOccurred())
 				configFilePath = configFile.Name()
-
 			})
 
 			It("starts a plaintext http connection", func() {

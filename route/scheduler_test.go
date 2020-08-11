@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("Scheduler", func() {
-
 	var (
 		collectorScheduler CollectorScheduler
 		collector          *routefakes.FakeCollector
@@ -46,7 +45,6 @@ var _ = Describe("Scheduler", func() {
 		Expect(emitter.EmitCallCount()).To(Equal(2))
 		Expect(emitter.EmitArgsForCall(0)).To(Equal(Message{Name: "ama"}))
 		Expect(emitter.EmitArgsForCall(1)).To(Equal(Message{Name: "zashto"}))
-
 	})
 
 	It("should propagate errors to the Scheduler", func() {

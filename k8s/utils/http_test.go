@@ -109,5 +109,4 @@ var _ = Describe("Utils/Http", func() {
 			})
 		})
 	})
-
 })

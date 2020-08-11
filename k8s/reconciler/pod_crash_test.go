@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("K8s/Reconciler/AppCrash", func() {
-
 	var (
 		podCrashReconciler  *reconciler.PodCrash
 		controllerClient    *reconcilerfakes.FakeClient
@@ -79,7 +78,6 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 				UID:        "sdfp",
 			},
 		}
-
 	})
 
 	JustBeforeEach(func() {
@@ -122,9 +120,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 	})
 
 	When("a crash has occurred", func() {
-		var (
-			timestamp time.Time
-		)
+		var timestamp time.Time
 
 		BeforeEach(func() {
 			timestamp = time.Unix(time.Now().Unix(), 0)
@@ -230,7 +226,6 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 	})
 
 	When("a crash has occurred multiple times", func() {
-
 		var (
 			timestampFirst  time.Time
 			timestampSecond time.Time
@@ -279,7 +274,6 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 					},
 				},
 			}, nil)
-
 		})
 
 		It("updates the existing event", func() {
@@ -309,7 +303,6 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 		})
 
 		When("listing events errors", func() {
-
 			BeforeEach(func() {
 				eventsClient.ListReturns(nil, errors.New("oof"))
 			})
@@ -364,5 +357,4 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 			})
 		})
 	})
-
 })

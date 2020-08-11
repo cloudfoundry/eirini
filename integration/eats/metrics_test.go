@@ -25,7 +25,6 @@ import (
 type BatchSenderStub func(server loggregator_v2.Ingress_BatchSenderServer) error
 
 var _ = Describe("Metrics", func() {
-
 	var (
 		metricsConfigFile string
 		metricsSession    *gexec.Session
@@ -149,7 +148,6 @@ func newServerCredentials(
 	).Server(
 		tlsconfig.WithClientAuthenticationFromFile(caCertFile),
 	)
-
 	if err != nil {
 		return nil, err
 	}

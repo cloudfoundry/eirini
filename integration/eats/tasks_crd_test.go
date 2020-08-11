@@ -16,10 +16,7 @@ import (
 )
 
 var _ = Describe("Tasks CRD", func() {
-
-	var (
-		task *eiriniv1.Task
-	)
+	var task *eiriniv1.Task
 
 	BeforeEach(func() {
 		task = &eiriniv1.Task{
@@ -99,7 +96,6 @@ var _ = Describe("Tasks CRD", func() {
 					"Type":   Equal(batchv1.JobComplete),
 					"Status": Equal(corev1.ConditionTrue),
 				})))
-
 			})
 
 			It("creates a ImagePullSecret with the credentials", func() {
@@ -120,7 +116,6 @@ var _ = Describe("Tasks CRD", func() {
 	})
 
 	Describe("Deleting the Task CRD", func() {
-
 		JustBeforeEach(func() {
 			Eventually(listJobs).Should(HaveLen(1))
 

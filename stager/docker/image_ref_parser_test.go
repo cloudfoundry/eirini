@@ -7,7 +7,6 @@ import (
 )
 
 var _ = Describe("ImageRefParser", func() {
-
 	It("should create image ref for an image in dockerhub", func() {
 		ref, err := docker.Parse("eirini/some-app:some-tag")
 
@@ -34,5 +33,4 @@ var _ = Describe("ImageRefParser", func() {
 
 		Expect(err).To(HaveOccurred())
 	})
-
 })

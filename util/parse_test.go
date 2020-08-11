@@ -17,7 +17,6 @@ var _ = Describe("Parse", func() {
 
 			Expect(err).To(HaveOccurred())
 		})
-
 	})
 
 	Context("when the last part in pod name is not a number", func() {
@@ -26,7 +25,5 @@ var _ = Describe("Parse", func() {
 
 			Expect(err).To(HaveOccurred())
 		})
-
 	})
-
 })

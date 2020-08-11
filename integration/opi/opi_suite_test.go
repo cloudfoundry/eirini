@@ -108,7 +108,7 @@ func restartWithConfig(updateConfig func(cfg eirini.Config) eirini.Config) strin
 	Expect(err).NotTo(HaveOccurred())
 	newConfigFile, err := ioutil.TempFile("", "")
 	Expect(err).NotTo(HaveOccurred())
-	Expect(ioutil.WriteFile(newConfigFile.Name(), configBytes, 0600)).To(Succeed())
+	Expect(ioutil.WriteFile(newConfigFile.Name(), configBytes, 0o600)).To(Succeed())
 
 	session = eiriniBins.OPI.Restart(newConfigFile.Name(), session)
 

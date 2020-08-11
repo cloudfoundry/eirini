@@ -32,7 +32,6 @@ linters:
     # functions, so just using `context.Background` to make the linter happy
     # does not really make sense
     - noctx
-    - gofumpt
     # godot requires that top-level comments end with a dot. This is useful for
     # documentation purposes when documentation is generated automatically.
     # However, we do not document our code and therefore this linter has no

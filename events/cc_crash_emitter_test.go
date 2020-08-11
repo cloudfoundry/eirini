@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("Crashreporter", func() {
-
 	var (
 		crashEmitter *CcCrashEmitter
 		ccClient     *eventsfakes.FakeCcClient
@@ -64,7 +63,6 @@ var _ = Describe("Crashreporter", func() {
 		})
 
 		Context("event could not be submitted", func() {
-
 			BeforeEach(func() {
 				ccClient.AppCrashedReturns(errors.New("boom"))
 			})

@@ -154,8 +154,8 @@ func getURIs(update cf.DesiredLRPUpdate) []opi.Route {
 	}
 
 	var routes []opi.Route
-	err := json.Unmarshal(cfRouterRoutes, &routes)
 
+	err := json.Unmarshal(cfRouterRoutes, &routes)
 	if err != nil {
 		panic("This should never happen")
 	}

@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("Docker Staging", func() {
-
 	var capiServer *ghttp.Server
 
 	BeforeEach(func() {
@@ -70,7 +69,6 @@ var _ = Describe("Docker Staging", func() {
 	})
 
 	When("image lives in a private registry", func() {
-
 		BeforeEach(func() {
 			capiServer.RouteToHandler(
 				"POST",
@@ -105,7 +103,6 @@ var _ = Describe("Docker Staging", func() {
 
 			Expect(capiServer.ReceivedRequests()).To(HaveLen(1))
 		})
-
 	})
 
 	When("the callback uri is invalid", func() {
@@ -124,7 +121,6 @@ var _ = Describe("Docker Staging", func() {
 	})
 
 	When("the image is invalid", func() {
-
 		BeforeEach(func() {
 			capiServer.RouteToHandler(
 				"POST",
@@ -153,7 +149,5 @@ var _ = Describe("Docker Staging", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(code).To(Equal(http.StatusAccepted))
 		})
-
 	})
-
 })

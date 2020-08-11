@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("MessageEmitter", func() {
-
 	var (
 		publisher *routefakes.FakePublisher
 		logger    *lagertest.TestLogger
@@ -61,7 +60,6 @@ var _ = Describe("MessageEmitter", func() {
 	})
 
 	Context("When MessageEmitter is started", func() {
-
 		It("should publish the registered routes", func() {
 			messageEmitter.Emit(routes)
 			assertPublishedRoutes("router.register", "route1.my.app.com", 0)
@@ -73,7 +71,6 @@ var _ = Describe("MessageEmitter", func() {
 		})
 
 		Context("When there are no unregistered routes", func() {
-
 			BeforeEach(func() {
 				routes.UnregisteredRoutes = []string{}
 				publishCount = 1
@@ -86,7 +83,6 @@ var _ = Describe("MessageEmitter", func() {
 		})
 
 		Context("When there are no registered routes", func() {
-
 			BeforeEach(func() {
 				routes.RegisteredRoutes = []string{}
 				publishCount = 1
@@ -99,7 +95,6 @@ var _ = Describe("MessageEmitter", func() {
 		})
 
 		Context("When the publisher returns an error", func() {
-
 			BeforeEach(func() {
 				publisher.PublishReturns(errors.New("Failed to publish message"))
 			})
@@ -129,7 +124,6 @@ var _ = Describe("MessageEmitter", func() {
 	})
 
 	Context("When the route message is missing an address", func() {
-
 		BeforeEach(func() {
 			routes.Address = ""
 		})
@@ -149,6 +143,5 @@ var _ = Describe("MessageEmitter", func() {
 			Expect(log.Data).To(HaveKeyWithValue("app-name", "app1"))
 			Expect(log.Data).To(HaveKeyWithValue("instance-id", "instance-id"))
 		})
-
 	})
 })

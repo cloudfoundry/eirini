@@ -9,9 +9,7 @@ import (
 )
 
 var _ = Describe("Fetch Docker Image Metadata", func() {
-
 	Context("public image from DockerHub", func() {
-
 		It("should return the correct exposed ports", func() {
 			imgConfig, err := docker.Fetch("//docker.io/eirini/custom-port:latest", types.SystemContext{})
 
@@ -31,7 +29,6 @@ var _ = Describe("Fetch Docker Image Metadata", func() {
 		})
 
 		Context("private image from DockerHub", func() {
-
 			It("should return the correct exposed ports", func() {
 				imgConfig, err := docker.Fetch("//docker.io/eiriniuser/notdora:custom-port", types.SystemContext{
 					DockerAuthConfig: &types.DockerAuthConfig{
@@ -47,5 +44,4 @@ var _ = Describe("Fetch Docker Image Metadata", func() {
 			})
 		})
 	})
-
 })

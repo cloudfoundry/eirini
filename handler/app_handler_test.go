@@ -161,7 +161,6 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		Context("When Bifrost fails to handle desire request", func() {
-
 			BeforeEach(func() {
 				lrpBifrost.TransferReturns(errors.New("aaargh"))
 			})
@@ -188,7 +187,6 @@ var _ = Describe("AppHandler", func() {
 				Expect(lrpBifrost.TransferCallCount()).To(Equal(0))
 			})
 		})
-
 	})
 
 	Context("List Apps", func() {
@@ -227,7 +225,6 @@ var _ = Describe("AppHandler", func() {
 
 				Expect(strings.Trim(string(body), "\n")).To(Equal(expectedJSONResponse))
 			})
-
 		})
 
 		Context("When there are no existing apps", func() {
@@ -244,7 +241,6 @@ var _ = Describe("AppHandler", func() {
 
 				Expect(strings.Trim(string(body), "\n")).To(Equal(expectedJSONResponse))
 			})
-
 		})
 
 		Context("When bifrost returns an error", func() {
@@ -301,7 +297,6 @@ var _ = Describe("AppHandler", func() {
 			client := &http.Client{}
 			response, err = client.Do(req)
 			Expect(err).ToNot(HaveOccurred())
-
 		})
 
 		It("should use the bifrost to get the app", func() {
@@ -333,7 +328,6 @@ var _ = Describe("AppHandler", func() {
 				Expect(actualLRP.ProcessGUID).To(Equal("guid_1234-version_1234"))
 				Expect(actualLRP.Instances).To(Equal(int32(5)))
 			})
-
 		})
 
 		Context("when the app does not exist", func() {
@@ -528,7 +522,6 @@ var _ = Describe("AppHandler", func() {
 			It("shoud return a response object containing the error", func() {
 				verifyResponseObject()
 			})
-
 		})
 	})
 

@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("PodCrashPredicate", func() {
-
 	var predicate reconciler.SourceTypeUpdatePredicate
 
 	BeforeEach(func() {
@@ -49,5 +48,4 @@ var _ = Describe("PodCrashPredicate", func() {
 			MetaNew: p.GetObjectMeta(),
 		})).To(BeTrue())
 	})
-
 })

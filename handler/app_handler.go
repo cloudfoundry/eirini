@@ -62,7 +62,6 @@ func (a *App) List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	loggerSession.Debug("requested")
 
 	desiredLRPSchedulingInfos, err := a.lrpBifrost.List(r.Context())
-
 	if err != nil {
 		loggerSession.Error("bifrost-failed", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -97,8 +96,8 @@ func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
 	}
-	desiredLRP, err := a.lrpBifrost.GetApp(r.Context(), identifier)
 
+	desiredLRP, err := a.lrpBifrost.GetApp(r.Context(), identifier)
 	if err != nil {
 		loggerSession.Error("failed-to-get-lrp", err, lager.Data{"guid": identifier.GUID})
 		w.WriteHeader(http.StatusNotFound)

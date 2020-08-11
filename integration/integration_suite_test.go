@@ -20,9 +20,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-var (
-	fixture *util.Fixture
-)
+var fixture *util.Fixture
 
 var _ = BeforeSuite(func() {
 	fixture = util.NewFixture(GinkgoWriter)

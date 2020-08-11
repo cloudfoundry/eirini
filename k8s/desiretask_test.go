@@ -242,13 +242,10 @@ var _ = Describe("TaskDesirer", func() {
 				_, job = fakeJobCreator.CreateArgsForCall(0)
 				Expect(job.Name).To(Equal("app-with-very-long-name-space-with-a-ver-task-name"))
 			})
-
 		})
 
 		When("desire options are passed", func() {
-			var (
-				desireOpt1, desireOpt2 *k8sfakes.FakeDesireOption
-			)
+			var desireOpt1, desireOpt2 *k8sfakes.FakeDesireOption
 
 			BeforeEach(func() {
 				desireOpt1 = new(k8sfakes.FakeDesireOption)
@@ -279,7 +276,6 @@ var _ = Describe("TaskDesirer", func() {
 				It("returns an error", func() {
 					Expect(err).To(MatchError(ContainSubstring("boom")))
 				})
-
 			})
 		})
 

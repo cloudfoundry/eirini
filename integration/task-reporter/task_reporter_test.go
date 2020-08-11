@@ -196,7 +196,6 @@ var _ = Describe("TaskReporter", func() {
 	})
 
 	When("the job is labeled with a different eirini instance ID", func() {
-
 		var desirerEiriniInstance string
 
 		BeforeEach(func() {

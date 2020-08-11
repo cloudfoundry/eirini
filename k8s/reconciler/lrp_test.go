@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("reconciler.LRP", func() {
-
 	var (
 		logger            *lagertest.TestLogger
 		controllerClient  *reconcilerfakes.FakeClient
@@ -106,7 +105,6 @@ var _ = Describe("reconciler.LRP", func() {
 	})
 
 	When("a CRD for this app already exists", func() {
-
 		BeforeEach(func() {
 			desirer.GetReturns(nil, nil)
 		})
@@ -125,7 +123,6 @@ var _ = Describe("reconciler.LRP", func() {
 	})
 
 	When("an app instance becomes unready", func() {
-
 		var statusWriter *reconcilerfakes.FakeStatusWriter
 
 		BeforeEach(func() {
@@ -148,7 +145,6 @@ var _ = Describe("reconciler.LRP", func() {
 		})
 
 		When("statefulset getter fails to get the statefulset", func() {
-
 			BeforeEach(func() {
 				statefulsetGetter.GetReturns(nil, errors.New("boom"))
 			})
@@ -185,7 +181,6 @@ var _ = Describe("reconciler.LRP", func() {
 		It("does not return an error", func() {
 			Expect(resultErr).NotTo(HaveOccurred())
 		})
-
 	})
 
 	When("the controller client fails to get the CRD", func() {
@@ -230,5 +225,4 @@ var _ = Describe("reconciler.LRP", func() {
 			Expect(resultErr).To(MatchError(ContainSubstring("boom")))
 		})
 	})
-
 })

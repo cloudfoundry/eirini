@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Deployment Utils", func() {
-
 	var (
 		fakeclient *utilsfakes.FakeDeploymentClient
 		logger     *lagertest.TestLogger
@@ -131,7 +130,6 @@ var _ = Describe("Deployment Utils", func() {
 			Expect(name).To(Equal("name"))
 			Expect(getOptions).To(Equal(metav1.GetOptions{}))
 		})
-
 	})
 })
 

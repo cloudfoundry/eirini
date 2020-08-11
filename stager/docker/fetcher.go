@@ -17,8 +17,8 @@ func Fetch(dockerRef string, sysCtx types.SystemContext) (*v1.ImageConfig, error
 	}
 
 	ctx := context.Background()
-	imgSrc, err := ref.NewImageSource(ctx, &sysCtx)
 
+	imgSrc, err := ref.NewImageSource(ctx, &sysCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get image source")
 	}

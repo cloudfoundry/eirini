@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("StagingCompleter", func() {
-
 	var (
 		taskCompletedRequest cf.StagingCompletedRequest
 		callbackClient       *stagerfakes.FakeCallbackClient

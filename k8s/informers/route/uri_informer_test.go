@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("URIChangeInformer", func() {
-
 	const (
 		namespace = "test-me"
 	)
@@ -88,7 +87,6 @@ var _ = Describe("URIChangeInformer", func() {
 			Expect(oldStatefulSet.Annotations).To(HaveKeyWithValue("somewhere", "over"))
 			Expect(updatedStatefulSet.Annotations).To(HaveKeyWithValue("the", "rainbow"))
 		})
-
 	})
 
 	When("a statefulset gets deleted", func() {
@@ -113,6 +111,5 @@ var _ = Describe("URIChangeInformer", func() {
 			Expect(deletedStatefulSet.Name).To(Equal("mr-stateful"))
 			Expect(deletedStatefulSet.Annotations).To(HaveKeyWithValue("somewhere", "over"))
 		})
-
 	})
 })

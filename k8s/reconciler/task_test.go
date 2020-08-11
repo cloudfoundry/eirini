@@ -22,7 +22,6 @@ import (
 )
 
 var _ = Describe("Task", func() {
-
 	var (
 		taskReconciler   *reconciler.Task
 		reconcileResult  reconcile.Result

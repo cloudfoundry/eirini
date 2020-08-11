@@ -27,8 +27,8 @@ func NewDiskMetricsClient(nodeClient NodeAPI, kubeletClient API, namespace strin
 func (d DiskMetricsClient) GetPodMetrics() (map[string]float64, error) {
 	metrics := map[string]float64{}
 	pods := []PodStats{}
-	nodes, err := d.nodeClient.List(context.Background(), metav1.ListOptions{})
 
+	nodes, err := d.nodeClient.List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return metrics, errors.Wrap(err, "failed to list nodes")
 	}

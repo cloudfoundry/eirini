@@ -96,7 +96,6 @@ var _ = Describe("Stats", func() {
 	})
 
 	When("the node client return an error", func() {
-
 		It("should return an error", func() {
 			nodeClient.ListReturns(&corev1.NodeList{}, errors.New("oopsie"))
 			_, err := diskMetricsClient.GetPodMetrics()
@@ -106,7 +105,6 @@ var _ = Describe("Stats", func() {
 	})
 
 	When("there are no containers in the pod stats", func() {
-
 		It("the pod should be ignored", func() {
 			nodeClient.ListReturns(&corev1.NodeList{
 				Items: []corev1.Node{

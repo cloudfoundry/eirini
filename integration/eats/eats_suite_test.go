@@ -186,7 +186,6 @@ func desireStaging(stagingRequest cf.StagingRequest) (int, error) {
 	}
 
 	request, err := http.NewRequest("POST", fmt.Sprintf("%s/stage/some-guid", opiURL), bytes.NewReader(data))
-
 	if err != nil {
 		return 0, err
 	}
@@ -330,7 +329,6 @@ func updateLRP(updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error)
 	}
 
 	updateLrpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/apps/%s", opiURL, updateRequest.GUID), bytes.NewReader(body))
-
 	if err != nil {
 		return nil, err
 	}

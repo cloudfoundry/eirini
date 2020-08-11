@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("DockerStager", func() {
-
 	var (
 		stager           bifrost.DockerStaging
 		fetcher          *bifrostfakes.FakeImageMetadataFetcher
@@ -24,7 +23,6 @@ var _ = Describe("DockerStager", func() {
 	)
 
 	Context("Stage a docker image", func() {
-
 		var (
 			stagingErr     error
 			stagingRequest cf.StagingRequest
@@ -94,7 +92,6 @@ var _ = Describe("DockerStager", func() {
 			Expect(payload.LifecycleMetadata.DockerImage).To(Equal("eirini/some-app:some-tag"))
 			Expect(payload.ProcessTypes.Web).To(BeEmpty())
 			Expect(payload.ExecutionMetadata).To(Equal(`{"cmd":[],"ports":[{"Port":8888,"Protocol":"tcp"}]}`))
-
 		})
 
 		Context("when the image is from a private registry", func() {
@@ -102,7 +99,6 @@ var _ = Describe("DockerStager", func() {
 				stagingRequest.Lifecycle.DockerLifecycle.Image = "private-registry.io/user/repo"
 				stagingRequest.Lifecycle.DockerLifecycle.RegistryUsername = "some-user"
 				stagingRequest.Lifecycle.DockerLifecycle.RegistryPassword = "thepasswrd"
-
 			})
 
 			It("should succeed", func() {
@@ -206,5 +202,4 @@ var _ = Describe("DockerStager", func() {
 			})
 		})
 	})
-
 })

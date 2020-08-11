@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("Docker Config", func() {
-
 	var config *dockerutils.Config
 
 	BeforeEach(func() {

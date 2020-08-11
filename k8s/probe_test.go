@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("PrrobeCreator", func() {
-
 	var (
 		probe *v1.Probe
 		lrp   *opi.LRP
@@ -28,13 +27,11 @@ var _ = Describe("PrrobeCreator", func() {
 	})
 
 	Context("LivenessProbeCreator", func() {
-
 		JustBeforeEach(func() {
 			probe = CreateLivenessProbe(lrp)
 		})
 
 		Context("When healthcheck type is HTTP", func() {
-
 			BeforeEach(func() {
 				lrp.Health.Type = "http"
 			})
@@ -51,11 +48,9 @@ var _ = Describe("PrrobeCreator", func() {
 					FailureThreshold:    4,
 				}))
 			})
-
 		})
 
 		Context("When healthcheck type is Port", func() {
-
 			BeforeEach(func() {
 				lrp.Health.Type = "port"
 			})
@@ -74,7 +69,6 @@ var _ = Describe("PrrobeCreator", func() {
 		})
 
 		Context("When timeout is not a whole number", func() {
-
 			BeforeEach(func() {
 				lrp.Health.Type = "http"
 				lrp.Health.TimeoutMs = 5700
@@ -83,11 +77,9 @@ var _ = Describe("PrrobeCreator", func() {
 			It("rounds it down", func() {
 				Expect(probe.InitialDelaySeconds).To(Equal(int32(5)))
 			})
-
 		})
 
 		Context("When healthcheck information is missing", func() {
-
 			BeforeEach(func() {
 				lrp = &opi.LRP{}
 			})
@@ -95,18 +87,15 @@ var _ = Describe("PrrobeCreator", func() {
 			It("returns nil", func() {
 				Expect(probe).To(BeNil())
 			})
-
 		})
 	})
 
 	Context("ReadinessProbeCreator", func() {
-
 		JustBeforeEach(func() {
 			probe = CreateReadinessProbe(lrp)
 		})
 
 		Context("When Healtcheck type is HTTP", func() {
-
 			BeforeEach(func() {
 				lrp.Health.Type = "http"
 			})
@@ -126,7 +115,6 @@ var _ = Describe("PrrobeCreator", func() {
 		})
 
 		Context("When Healthcheck type is Port", func() {
-
 			BeforeEach(func() {
 				lrp.Health.Type = "port"
 			})
@@ -145,7 +133,6 @@ var _ = Describe("PrrobeCreator", func() {
 		})
 
 		Context("When healthcheck information is missing", func() {
-
 			BeforeEach(func() {
 				lrp = &opi.LRP{}
 			})

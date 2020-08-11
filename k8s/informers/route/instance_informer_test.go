@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("InstanceChangeInformer", func() {
-
 	const (
 		namespace = "test-me"
 	)
@@ -79,5 +78,4 @@ var _ = Describe("InstanceChangeInformer", func() {
 			Expect(newPod.Status.PodIP).To(Equal("10.20.30.40"))
 		})
 	})
-
 })

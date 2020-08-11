@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("Handler", func() {
-
 	var (
 		ts                      *httptest.Server
 		client                  *http.Client
@@ -41,7 +40,6 @@ var _ = Describe("Handler", func() {
 	})
 
 	Context("Routes", func() {
-
 		var (
 			method         string
 			path           string
@@ -62,7 +60,6 @@ var _ = Describe("Handler", func() {
 		})
 
 		Context("PUT /apps/:process_guid", func() {
-
 			BeforeEach(func() {
 				method = "PUT"
 				path = "/apps/myguid"
@@ -75,7 +72,6 @@ var _ = Describe("Handler", func() {
 		})
 
 		Context("GET /apps", func() {
-
 			BeforeEach(func() {
 				method = "GET"
 				path = "/apps"
@@ -88,7 +84,6 @@ var _ = Describe("Handler", func() {
 		})
 
 		Context("POST /apps/:process_guid", func() {
-
 			BeforeEach(func() {
 				method = "POST"
 				path = "/apps/myguid"
@@ -101,7 +96,6 @@ var _ = Describe("Handler", func() {
 		})
 
 		Context("GET /apps/:process_guid", func() {
-
 			BeforeEach(func() {
 				method = "GET"
 				path = "/apps/myguid/myversion"
@@ -125,11 +119,9 @@ var _ = Describe("Handler", func() {
 			It("serves the endpoint", func() {
 				assertEndpoint()
 			})
-
 		})
 
 		Context("PUT /apps/:process_guid/stop", func() {
-
 			BeforeEach(func() {
 				method = "PUT"
 				path = "/apps/myguid/myversion/stop"
@@ -142,7 +134,6 @@ var _ = Describe("Handler", func() {
 		})
 
 		Context("PUT /apps/:process_guid/stop/:instance", func() {
-
 			BeforeEach(func() {
 				method = "PUT"
 				path = "/apps/myguid/myversion/stop/1"
@@ -155,7 +146,6 @@ var _ = Describe("Handler", func() {
 		})
 
 		Context("POST /stage/:staging_guid", func() {
-
 			BeforeEach(func() {
 				method = "POST"
 				path = "/stage/stage_123"
@@ -168,7 +158,6 @@ var _ = Describe("Handler", func() {
 		})
 
 		Context("PUT /stage/:staging_guid/completed", func() {
-
 			BeforeEach(func() {
 				method = "PUT"
 				path = "/stage/stage_123/completed"
@@ -181,7 +170,6 @@ var _ = Describe("Handler", func() {
 		})
 
 		Context("POST /tasks/:id", func() {
-
 			BeforeEach(func() {
 				method = "POST"
 				path = "/tasks/stage_123"
@@ -191,7 +179,6 @@ var _ = Describe("Handler", func() {
 					  "start_command": "cmd"
 					}
 				}}`
-
 			})
 
 			It("serves the endpoint", func() {

@@ -8,7 +8,6 @@ import (
 )
 
 var _ = Describe("EnvVar", func() {
-
 	It("returns the env value", func() {
 		value, err := utils.GetEnvVarValue("foo", []corev1.EnvVar{
 			{Name: "foo", Value: "bar"},

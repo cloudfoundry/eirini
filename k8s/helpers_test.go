@@ -8,9 +8,7 @@ import (
 )
 
 var _ = Describe("Helpers", func() {
-
 	Context("Map to Kuberentes EnvVar", func() {
-
 		var (
 			env     map[string]string
 			envVars []v1.EnvVar
@@ -32,7 +30,6 @@ var _ = Describe("Helpers", func() {
 		})
 
 		Context("when env map is empty", func() {
-
 			BeforeEach(func() {
 				env = map[string]string{}
 			})

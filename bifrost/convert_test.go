@@ -454,7 +454,8 @@ var _ = Describe("OPI Converter", func() {
 							DropletHash:  "the-droplet-hash",
 							DropletGUID:  "the-droplet-guid",
 							StartCommand: "start me",
-						}}
+						},
+					}
 				})
 
 				It("sets the healthcheck information", func() {

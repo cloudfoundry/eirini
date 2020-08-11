@@ -13,10 +13,8 @@ import (
 )
 
 var _ = Describe("Scheduler", func() {
-
 	Describe("TickerTaskScheduler", func() {
 		Context("When task is Scheduled", func() {
-
 			var (
 				ticker   *time.Ticker
 				duration time.Duration
@@ -129,8 +127,6 @@ var _ = Describe("Scheduler", func() {
 				Expect(log.Message).To(Equal("scheduler-test.task-failed"))
 				Expect(log.Data).To(HaveKeyWithValue("error", "failed to task"))
 			})
-
 		})
-
 	})
 })

@@ -38,6 +38,7 @@ type KeyPath struct {
 	Key  string
 	Path string
 }
+
 type StagingConfigTLS struct {
 	SecretName string
 	KeyPaths   []KeyPath
@@ -198,8 +199,8 @@ func (d *TaskDesirer) createTaskSecret(namespace string, task *opi.Task) (*corev
 		task.PrivateRegistry.Username,
 		task.PrivateRegistry.Password,
 	)
-	dockerConfigJSON, err := dockerConfig.JSON()
 
+	dockerConfigJSON, err := dockerConfig.JSON()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed-to-get-docker-config")
 	}

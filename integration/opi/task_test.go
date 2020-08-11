@@ -194,9 +194,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 	})
 
 	Describe("cancelling", func() {
-		var (
-			cloudControllerServer *ghttp.Server
-		)
+		var cloudControllerServer *ghttp.Server
 
 		BeforeEach(func() {
 			var err error

@@ -11,7 +11,6 @@ import (
 )
 
 var _ = Describe("emitter", func() {
-
 	It("should forward source info to loggregator", func() {
 		fakeClient := new(metricsfakes.FakeLoggregatorClient)
 		emitter := metrics.NewLoggregatorEmitter(fakeClient)

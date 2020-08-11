@@ -36,7 +36,6 @@ func (c RouteCollector) Collect() ([]route.Message, error) {
 	}
 
 	statefulsets, err := c.getStatefulSets()
-
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +74,6 @@ func (c RouteCollector) getRoutes(pod corev1.Pod, statefulsets map[string]appsv1
 	}
 
 	ssName, err := getStatefulSetName(pod)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get statefulset name for pod %s", pod.Name)
 	}

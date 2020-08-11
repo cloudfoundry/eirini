@@ -52,7 +52,6 @@ var _ = Describe("TaskHandler", func() {
 	})
 
 	Describe("Run", func() {
-
 		BeforeEach(func() {
 			method = "POST"
 			path = "/tasks/guid_1234"

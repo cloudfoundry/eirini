@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("Patcher", func() {
-
 	var (
 		statefulsetUpdaterLister *rootfspatcherfakes.FakeStatefulSetUpdaterLister
 		patcher                  StatefulSetPatcher

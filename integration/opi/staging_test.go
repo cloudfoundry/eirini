@@ -23,7 +23,6 @@ import (
 )
 
 var _ = Describe("Staging", func() {
-
 	var (
 		job         batch.Job
 		body        string
@@ -70,7 +69,6 @@ var _ = Describe("Staging", func() {
 	})
 
 	Context("when resource constrains are provided", func() {
-
 		BeforeEach(func() {
 			body = `{
 				"memory_mb": 100,
@@ -95,7 +93,6 @@ var _ = Describe("Staging", func() {
 	})
 
 	Context("when app information is provided", func() {
-
 		BeforeEach(func() {
 			body = `{
 				"app_name": "my-app",
@@ -108,7 +105,6 @@ var _ = Describe("Staging", func() {
 					"buildpack_lifecycle": {}
 				}
 			}`
-
 		})
 
 		DescribeTable("it should add Annotations accordingly", func(key, value string) {
@@ -132,7 +128,7 @@ var _ = Describe("Staging", func() {
 		)
 	})
 
-	var _ = Describe("staging completion", func() {
+	_ = Describe("staging completion", func() {
 		var (
 			cloudControllerServer *ghttp.Server
 			completionRequest     cf.StagingCompletedRequest
@@ -191,9 +187,7 @@ var _ = Describe("Staging", func() {
 		})
 
 		When("CC TLS is disabled and CC certs not configured", func() {
-			var (
-				newConfigPath string
-			)
+			var newConfigPath string
 
 			BeforeEach(func() {
 				newConfigPath = restartWithConfig(func(cfg eirini.Config) eirini.Config {

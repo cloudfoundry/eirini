@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("Bifrost LRP", func() {
-
 	var (
 		err          error
 		lrpBifrost   *bifrost.LRP
@@ -41,7 +40,6 @@ var _ = Describe("Bifrost LRP", func() {
 	})
 
 	Describe("Transfer LRP", func() {
-
 		Context("When lrp is transferred successfully", func() {
 			var lrp opi.LRP
 			JustBeforeEach(func() {
@@ -110,7 +108,6 @@ var _ = Describe("Bifrost LRP", func() {
 					Expect(lrpBifrost.Transfer(context.Background(), request)).ToNot(Succeed())
 					Expect(lrpDesirer.DesireCallCount()).To(Equal(0))
 				})
-
 			})
 
 			Context("When Desirer fails", func() {
@@ -123,7 +120,6 @@ var _ = Describe("Bifrost LRP", func() {
 				})
 			})
 		})
-
 	})
 
 	Describe("List LRP", func() {
@@ -188,10 +184,7 @@ var _ = Describe("Bifrost LRP", func() {
 	})
 
 	Describe("Update an app", func() {
-
-		var (
-			updateRequest cf.UpdateDesiredLRPRequest
-		)
+		var updateRequest cf.UpdateDesiredLRPRequest
 
 		BeforeEach(func() {
 			updateRequest = cf.UpdateDesiredLRPRequest{
@@ -205,7 +198,6 @@ var _ = Describe("Bifrost LRP", func() {
 		})
 
 		Context("when the app exists", func() {
-
 			BeforeEach(func() {
 				lrp := opi.LRP{
 					TargetInstances: 2,
@@ -324,7 +316,6 @@ var _ = Describe("Bifrost LRP", func() {
 		})
 
 		Context("when the app does not exist", func() {
-
 			BeforeEach(func() {
 				lrpDesirer.GetReturns(nil, errors.New("app does not exist"))
 			})
@@ -334,7 +325,6 @@ var _ = Describe("Bifrost LRP", func() {
 				identifier := lrpDesirer.GetArgsForCall(0)
 				Expect(identifier.GUID).To(Equal("guid_1234"))
 				Expect(identifier.Version).To(Equal("version_1234"))
-
 			})
 
 			It("should not submit anything to be updated", func() {
@@ -358,7 +348,6 @@ var _ = Describe("Bifrost LRP", func() {
 				GUID:    "guid_1234",
 				Version: "version_1234",
 			}
-
 		})
 
 		Context("when the app exists", func() {
@@ -405,7 +394,6 @@ var _ = Describe("Bifrost LRP", func() {
 	})
 
 	Describe("Stop an app", func() {
-
 		JustBeforeEach(func() {
 			err = lrpBifrost.Stop(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 		})
@@ -421,7 +409,6 @@ var _ = Describe("Bifrost LRP", func() {
 		})
 
 		Context("when desirer's stop fails", func() {
-
 			BeforeEach(func() {
 				lrpDesirer.StopReturns(errors.New("failed-to-stop"))
 			})
@@ -433,7 +420,6 @@ var _ = Describe("Bifrost LRP", func() {
 	})
 
 	Describe("Stop an app instance", func() {
-
 		JustBeforeEach(func() {
 			err = lrpBifrost.StopInstance(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
 		})
@@ -508,7 +494,5 @@ var _ = Describe("Bifrost LRP", func() {
 				Expect(err).To(MatchError(ContainSubstring("failed to get instances for app")))
 			})
 		})
-
 	})
-
 })

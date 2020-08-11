@@ -3,7 +3,7 @@ package eirini
 import "errors"
 
 const (
-	//Environment Variable Names
+	// Environment Variable Names
 	EnvEiriniNamespace                 = "EIRINI_NAMESPACE"
 	EnvDownloadURL                     = "DOWNLOAD_URL"
 	EnvBuildpacks                      = "BUILDPACKS"
@@ -39,7 +39,7 @@ const (
 
 	AppMetricsEmissionIntervalInSecs = 15
 
-	//Staging TLS:
+	// Staging TLS:
 	CertsMountPath   = "/etc/config/certs"
 	CertsVolumeName  = "certs-volume"
 	CACertName       = "internal-ca-cert"

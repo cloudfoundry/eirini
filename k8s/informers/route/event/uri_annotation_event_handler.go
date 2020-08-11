@@ -122,8 +122,8 @@ func groupRoutesByPort(remove, add set.Set) portGroup {
 
 func decodeRoutesAsSet(statefulset *appsv1.StatefulSet) (set.Set, error) {
 	routes := set.NewSet()
-	updatedUserDefinedRoutes, err := decodeRoutes(statefulset.Annotations[k8s.AnnotationRegisteredRoutes])
 
+	updatedUserDefinedRoutes, err := decodeRoutes(statefulset.Annotations[k8s.AnnotationRegisteredRoutes])
 	if err != nil {
 		return set.NewSet(), err
 	}

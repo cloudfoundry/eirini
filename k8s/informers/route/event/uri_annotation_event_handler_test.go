@@ -21,7 +21,6 @@ import (
 )
 
 var _ = Describe("StatefulsetAnnotationEventHandler", func() {
-
 	var (
 		handler            route.StatefulSetUpdateEventHandler
 		podClient          *eventfakes.FakePodInterface
@@ -46,7 +45,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 	})
 
 	Context("When a new route is added by the user", func() {
-
 		BeforeEach(func() {
 			oldStatefulSet = createStatefulSetWithRoutes(`[
 						{
@@ -72,7 +70,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 							"port": 6565
 						}
 					]`)
-
 		})
 
 		It("should get all children pods of the statefulset", func() {
@@ -173,7 +170,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 		})
 
 		Context("and a pod is marked for deletion", func() {
-
 			It("should not send routes for the pod", func() {
 				now := metav1.Time{Time: time.Now()}
 				pod0 := createPod("mr-stateful-0", "10.20.30.40")
@@ -200,7 +196,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 		})
 
 		Context("and a pod is not ready", func() {
-
 			It("should not send routes for the pod", func() {
 				pod1 := createPod("mr-stateful-1", "50.60.70.80")
 				pod1.Status.Conditions[0].Status = corev1.ConditionFalse
@@ -226,7 +221,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 		})
 
 		Context("and a pod has no ip", func() {
-
 			It("should not send routes for the pod", func() {
 				pod1 := createPod("mr-stateful-1", "50.60.70.80")
 				pod1.Status.PodIP = ""
@@ -325,7 +319,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 	})
 
 	Context("When a route is removed by the user", func() {
-
 		BeforeEach(func() {
 			oldStatefulSet = createStatefulSetWithRoutes(`[
 						{
@@ -390,7 +383,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 	})
 
 	Context("when the port of a route is changed", func() {
-
 		BeforeEach(func() {
 			oldStatefulSet = createStatefulSetWithRoutes(`[
 						{
@@ -487,7 +479,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 	})
 
 	Context("When a route shares a port with another route", func() {
-
 		BeforeEach(func() {
 			oldStatefulSet = createStatefulSetWithRoutes(`[
 						{
@@ -547,7 +538,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 	})
 
 	Context("When decoding updated user defined routes fails", func() {
-
 		BeforeEach(func() {
 			oldStatefulSet = createStatefulSetWithRoutes(`[]`)
 			updatedStatefulSet = createStatefulSetWithRoutes(`[`)
@@ -571,7 +561,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 	})
 
 	Context("When decoding old user defined routes fails", func() {
-
 		BeforeEach(func() {
 			oldStatefulSet = createStatefulSetWithRoutes(`[`)
 			updatedStatefulSet = createStatefulSetWithRoutes(`[
@@ -629,11 +618,9 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 			Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
 			Expect(log.Data).To(HaveKeyWithValue("error", "unexpected end of JSON input"))
 		})
-
 	})
 
 	Context("When the pods cannot be listed", func() {
-
 		BeforeEach(func() {
 			oldStatefulSet = createStatefulSetWithRoutes(`[
 						{
@@ -672,7 +659,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 	})
 
 	Context("When a pod is not ready", func() {
-
 		BeforeEach(func() {
 			oldStatefulSet = createStatefulSetWithRoutes(`[
 						{
@@ -729,7 +715,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 					Port:       8080,
 					TLSPort:    0,
 				}))
-
 		})
 
 		It("should register the new route for the other pod", func() {
@@ -761,11 +746,9 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 					TLSPort:    0,
 				}))
 		})
-
 	})
 
 	Context("When the annotations are not updated", func() {
-
 		BeforeEach(func() {
 			oldStatefulSet = createStatefulSetWithRoutes(`[
 						{
@@ -800,7 +783,6 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 			Expect(logCount).To(BeZero())
 		})
 	})
-
 })
 
 func createStatefulSetWithRoutes(routes string) *appsv1.StatefulSet {

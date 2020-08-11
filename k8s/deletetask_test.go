@@ -69,7 +69,6 @@ var _ = Describe("TaskDeleter", func() {
 	})
 
 	Describe("Delete", func() {
-
 		It("deletes the job", func() {
 			completionCallback, err := deleter.Delete(taskGUID)
 
@@ -179,7 +178,6 @@ var _ = Describe("TaskDeleter", func() {
 				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
 				Expect(fakeJobClient.DeleteCallCount()).To(BeZero())
 			})
-
 		})
 
 		Context("when the delete fails", func() {
@@ -195,7 +193,6 @@ var _ = Describe("TaskDeleter", func() {
 	})
 
 	Describe("DeleteStaging", func() {
-
 		It("daletes the job", func() {
 			Expect(deleter.DeleteStaging(taskGUID)).To(Succeed())
 
@@ -279,7 +276,6 @@ var _ = Describe("TaskDeleter", func() {
 				Expect(fakeJobClient.ListCallCount()).To(Equal(1))
 				Expect(fakeJobClient.DeleteCallCount()).To(BeZero())
 			})
-
 		})
 
 		Context("when the delete fails", func() {

@@ -114,7 +114,6 @@ var _ = Describe("StagingReporter", func() {
 					Expect(taskCompletedRequest.Annotation).To(ContainSubstring(`"completion_callback":"the-cloud-controller-address/staging/complete"`))
 				},
 			)
-
 		})
 
 		It("notifies eirini of a staging failure", func() {

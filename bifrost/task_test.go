@@ -42,9 +42,7 @@ var _ = Describe("Buildpack task", func() {
 	})
 
 	Describe("Transfer Task", func() {
-		var (
-			taskRequest cf.TaskRequest
-		)
+		var taskRequest cf.TaskRequest
 
 		BeforeEach(func() {
 			taskRequest = cf.TaskRequest{
@@ -68,7 +66,6 @@ var _ = Describe("Buildpack task", func() {
 			}
 			task := opi.Task{GUID: "my-guid"}
 			taskConverter.ConvertTaskReturns(task, nil)
-
 		})
 
 		JustBeforeEach(func() {
@@ -98,7 +95,6 @@ var _ = Describe("Buildpack task", func() {
 				namespace, _, _ := taskDesirer.DesireArgsForCall(0)
 				Expect(namespace).To(Equal("default-namespace"))
 			})
-
 		})
 
 		When("converting the task fails", func() {

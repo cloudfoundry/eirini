@@ -11,8 +11,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-const CrashLoopBackOff = "CrashLoopBackOff"
-const CreateContainerConfigError = "CreateContainerConfigError"
+const (
+	CrashLoopBackOff           = "CrashLoopBackOff"
+	CreateContainerConfigError = "CreateContainerConfigError"
+)
 
 //counterfeiter:generate . CrashEventGenerator
 //counterfeiter:generate . CrashEmitter

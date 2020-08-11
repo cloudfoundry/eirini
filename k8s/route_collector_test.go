@@ -70,7 +70,6 @@ var _ = Describe("RouteCollector", func() {
 				},
 			},
 		}
-
 	}
 
 	BeforeEach(func() {
@@ -216,10 +215,8 @@ var _ = Describe("RouteCollector", func() {
 					},
 				}))
 			})
-
 		})
 		Context("and there is a pod which has no condition statuses", func() {
-
 			BeforeEach(func() {
 				pods[0].Status.Conditions[0].Type = corev1.PodInitialized
 			})
@@ -377,7 +374,6 @@ var _ = Describe("RouteCollector", func() {
 			It("should return error if listing pods fails", func() {
 				Expect(err).To(MatchError(ContainSubstring("failed to list pods: boom")))
 			})
-
 		})
 
 		Context("when listing statefulsets fails", func() {
@@ -393,5 +389,4 @@ var _ = Describe("RouteCollector", func() {
 			})
 		})
 	})
-
 })

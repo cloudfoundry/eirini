@@ -118,7 +118,7 @@ func (b *Binary) buildIfNecessary() {
 func (b *Binary) build() {
 	compiledPath, err := gexec.Build(b.PackagePath)
 	Expect(err).NotTo(HaveOccurred())
-	Expect(os.MkdirAll(filepath.Dir(b.BinPath), 0755)).To(Succeed())
+	Expect(os.MkdirAll(filepath.Dir(b.BinPath), 0o755)).To(Succeed())
 
 	err = os.Symlink(compiledPath, b.BinPath)
 	if os.IsExist(err) {

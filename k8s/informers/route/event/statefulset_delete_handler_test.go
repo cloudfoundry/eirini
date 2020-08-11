@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("StatefulsetDeleteHandler", func() {
-
 	var (
 		handler            route.StatefulSetDeleteEventHandler
 		podClient          *eventfakes.FakePodInterface
@@ -108,7 +107,6 @@ var _ = Describe("StatefulsetDeleteHandler", func() {
 	}
 
 	Context("When the app is deleted", func() {
-
 		BeforeEach(func() {
 			podClient.ListReturns(&corev1.PodList{Items: []corev1.Pod{
 				createPod("mr-stateful-0", "10.20.30.40"),
@@ -122,7 +120,6 @@ var _ = Describe("StatefulsetDeleteHandler", func() {
 		})
 
 		Context("and a pod is not ready", func() {
-
 			BeforeEach(func() {
 				pod := createPod("mr-stateful-0", "10.20.30.40")
 				pod.Status.Conditions[0].Status = corev1.ConditionFalse
@@ -140,7 +137,6 @@ var _ = Describe("StatefulsetDeleteHandler", func() {
 		})
 
 		Context("and the pod is marked for deletion", func() {
-
 			BeforeEach(func() {
 				pod := createPod("mr-stateful-0", "10.20.30.40")
 				pod.DeletionTimestamp = &metav1.Time{Time: time.Now()}
@@ -155,7 +151,6 @@ var _ = Describe("StatefulsetDeleteHandler", func() {
 				handler.Handle(deletedStatefulSet)
 				assertUnregisteredRoutesForAllPods()
 			})
-
 		})
 
 		Context("and decoding routes fails", func() {

@@ -17,14 +17,12 @@ import (
 )
 
 var _ = Describe("Metrics", func() {
-
 	const (
 		podName1 = "thor-thunder-9000"
 		podName2 = "loki-thunder-8000"
 	)
 
 	Describe("Collect", func() {
-
 		var (
 			podClient        *k8sfakes.FakePodInterface
 			podMetricsClient *k8sfakes.FakePodMetricsInterface
@@ -137,9 +135,7 @@ var _ = Describe("Metrics", func() {
 						Disk:        0,
 						DiskQuota:   10000000,
 					}))
-
 			})
-
 		})
 		When("listing pods returns an error", func() {
 			It("should return an error", func() {
@@ -272,7 +268,6 @@ var _ = Describe("Metrics", func() {
 			})
 		})
 	})
-
 })
 
 var _ = Describe("ForwardMetricsToEmitter", func() {

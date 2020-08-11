@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("Reporter", func() {
-
 	var (
 		reporter    task.StateReporter
 		server      *ghttp.Server
@@ -28,17 +27,17 @@ var _ = Describe("Reporter", func() {
 		handlers    []http.HandlerFunc
 	)
 	createPod := func(taskState corev1.ContainerState) *corev1.Pod {
-
-		return &corev1.Pod{ObjectMeta: v1.ObjectMeta{
-			Labels: map[string]string{
-				k8s.LabelSourceType: "TASK",
+		return &corev1.Pod{
+			ObjectMeta: v1.ObjectMeta{
+				Labels: map[string]string{
+					k8s.LabelSourceType: "TASK",
+				},
+				Annotations: map[string]string{
+					k8s.AnnotationOpiTaskContainerName: "opi-task",
+					k8s.AnnotationGUID:                 "the-task-guid",
+					k8s.AnnotationCompletionCallback:   fmt.Sprintf("%s/the-callback-url", server.URL()),
+				},
 			},
-			Annotations: map[string]string{
-				k8s.AnnotationOpiTaskContainerName: "opi-task",
-				k8s.AnnotationGUID:                 "the-task-guid",
-				k8s.AnnotationCompletionCallback:   fmt.Sprintf("%s/the-callback-url", server.URL()),
-			},
-		},
 			Status: corev1.PodStatus{
 				ContainerStatuses: []corev1.ContainerStatus{
 					{
@@ -213,7 +212,6 @@ var _ = Describe("Reporter", func() {
 		It("doesn't send delete the job on kubernetes", func() {
 			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
 		})
-
 	})
 
 	When("the cloud controller returns an unexpected status code", func() {

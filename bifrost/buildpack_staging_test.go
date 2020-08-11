@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("Staging", func() {
-
 	var (
 		err                     error
 		buildpackStagingBifrost *bifrost.BuildpackStaging
@@ -101,10 +100,7 @@ var _ = Describe("Staging", func() {
 	})
 
 	Describe("Complete Staging", func() {
-
-		var (
-			taskCompletedRequest cf.StagingCompletedRequest
-		)
+		var taskCompletedRequest cf.StagingCompletedRequest
 
 		BeforeEach(func() {
 			annotation := `{"completion_callback": "some-cc-endpoint.io/call/me/maybe"}`

@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("FailedStagingReporter", func() {
-
 	var (
 		reporter staging.FailedStagingReporter
 		server   *ghttp.Server
@@ -36,7 +35,6 @@ var _ = Describe("FailedStagingReporter", func() {
 	})
 
 	Describe("Reporting status to Eirini", func() {
-
 		var (
 			thePod                               *v1.Pod
 			containerStatus, initContainerStatus v1.ContainerStatus
@@ -98,7 +96,6 @@ var _ = Describe("FailedStagingReporter", func() {
 		})
 
 		Context("When a container is failing", func() {
-
 			It("should report the correct container failure reason to Eirini", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})

@@ -162,7 +162,6 @@ func (c *OPIConverter) ConvertStaging(stagingGUID string, request cf.StagingRequ
 	}
 
 	buildpacksJSON, err := json.Marshal(lifecycleData.Buildpacks)
-
 	if err != nil {
 		return opi.StagingTask{}, err
 	}
@@ -232,7 +231,6 @@ func (c *OPIConverter) getImageUser(lifecycle *cf.DockerLifecycle) (string, erro
 			Password: lifecycle.RegistryPassword,
 		},
 	})
-
 	if err != nil {
 		return "", errors.Wrap(err, "failed to fetch image metadata")
 	}

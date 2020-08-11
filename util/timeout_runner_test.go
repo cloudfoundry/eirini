@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("TimeoutRunner", func() {
-
 	It("should execute the function passed to it", func() {
 		var callCount int32
 		atomic.StoreInt32(&callCount, 0)

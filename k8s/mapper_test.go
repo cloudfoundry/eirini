@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("Mapper", func() {
-
 	var lrp *opi.LRP
 
 	BeforeEach(func() {

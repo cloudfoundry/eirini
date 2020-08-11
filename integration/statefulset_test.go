@@ -18,7 +18,6 @@ import (
 )
 
 var _ = Describe("StatefulSetDesirer", func() {
-
 	var (
 		desirer *k8s.StatefulSetDesirer
 		odinLRP *opi.LRP

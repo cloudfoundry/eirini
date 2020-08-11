@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("StageHandler", func() {
-
 	var (
 		ts     *httptest.Server
 		logger *lagertest.TestLogger
@@ -260,8 +259,6 @@ var _ = Describe("StageHandler", func() {
 			It("should return a 500 Internal Server Error response code", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
 			})
-
 		})
 	})
-
 })

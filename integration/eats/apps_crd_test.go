@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("Apps CRDs", func() {
-
 	const lrpName = "lrp-name-irrelevant"
 
 	var (
@@ -150,7 +149,6 @@ var _ = Describe("Apps CRDs", func() {
 					return getStatefulSet().Annotations[k8s.AnnotationRegisteredRoutes]
 				}).Should(MatchJSON(`[{"hostname": "app-hostname-1", "port": 8080}]`))
 			})
-
 		})
 
 		When("instance count is updated", func() {
@@ -181,7 +179,6 @@ var _ = Describe("Apps CRDs", func() {
 				}).Should(Equal(int32(3)))
 			})
 		})
-
 	})
 
 	Describe("Stop an app", func() {
@@ -202,7 +199,6 @@ var _ = Describe("Apps CRDs", func() {
 
 	Describe("App status", func() {
 		When("an app instance becomes unready", func() {
-
 			BeforeEach(func() {
 				Eventually(getStatefulSet).ShouldNot(BeNil())
 				Eventually(func() int32 {

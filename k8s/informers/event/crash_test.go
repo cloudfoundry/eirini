@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("Event", func() {
-
 	var (
 		client          *fake.Clientset
 		informerStopper chan struct{}
@@ -96,7 +95,6 @@ var _ = Describe("Event", func() {
 			inputPod, inputLogger := eventGenerator.GenerateArgsForCall(0)
 			Expect(inputPod).To(Equal(pod))
 			Expect(inputLogger).To(Equal(logger))
-
 		})
 
 		It("should send a crash event", func() {

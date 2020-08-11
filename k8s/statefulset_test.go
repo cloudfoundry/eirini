@@ -34,7 +34,6 @@ const (
 )
 
 var _ = Describe("Statefulset Desirer", func() {
-
 	var (
 		podClient             *k8sfakes.FakePodListerDeleter
 		eventLister           *k8sfakes.FakeEventLister
@@ -270,7 +269,6 @@ var _ = Describe("Statefulset Desirer", func() {
 		It("should run it with non-root user", func() {
 			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
 			Expect(statefulSet.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(Equal(true)))
-
 		})
 
 		It("should run it as vcap user with numerical ID 2000", func() {
@@ -347,7 +345,6 @@ var _ = Describe("Statefulset Desirer", func() {
 				_, statefulSet := statefulSetClient.CreateArgsForCall(0)
 				Expect(statefulSet.Spec.Template.Spec.SecurityContext).To(BeNil())
 			})
-
 		})
 
 		Context("When the app name contains unsupported characters", func() {
@@ -380,7 +377,6 @@ var _ = Describe("Statefulset Desirer", func() {
 			})
 
 			Context("when pod disruption budget creation fails", func() {
-
 				BeforeEach(func() {
 					pdbClient.CreateReturns(nil, errors.New("boom"))
 				})
@@ -388,7 +384,6 @@ var _ = Describe("Statefulset Desirer", func() {
 				It("should propagate the error", func() {
 					Expect(desireErr).To(MatchError(ContainSubstring("boom")))
 				})
-
 			})
 
 			Context("when the statefulset already exists", func() {
@@ -445,7 +440,6 @@ var _ = Describe("Statefulset Desirer", func() {
 				secret := statefulSet.Spec.Template.Spec.ImagePullSecrets[1]
 				Expect(secret.Name).To(Equal("baldur-space-foo-34f869d015-registry-credentials"))
 			})
-
 		})
 	})
 
@@ -472,7 +466,6 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		Context("when the app does not exist", func() {
-
 			BeforeEach(func() {
 				statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
 			})
@@ -484,7 +477,6 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		Context("when statefulsets cannot be listed", func() {
-
 			BeforeEach(func() {
 				statefulSetClient.ListReturns(nil, errors.New("who is this?"))
 			})
@@ -497,7 +489,6 @@ var _ = Describe("Statefulset Desirer", func() {
 	})
 
 	Context("When updating an app", func() {
-
 		BeforeEach(func() {
 			replicas := int32(3)
 			st := &appsv1.StatefulSetList{
@@ -541,7 +532,6 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		Context("when lrp is scaled down to 1 instance", func() {
-
 			It("should delete the pod disruption budget for the lrp", func() {
 				Expect(statefulSetDesirer.Update(&opi.LRP{TargetInstances: 1})).To(Succeed())
 				Expect(pdbClient.DeleteCallCount()).To(Equal(1))
@@ -575,7 +565,6 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		Context("when lrp is scaled up to more than 1 instance", func() {
-
 			It("should create a pod disruption budget for the lrp in the same namespace", func() {
 				lrp := createLRP("Baldur", nil)
 				lrp.TargetInstances = 2
@@ -609,7 +598,6 @@ var _ = Describe("Statefulset Desirer", func() {
 					Expect(statefulSetDesirer.Update(&opi.LRP{TargetInstances: 2})).To(MatchError(ContainSubstring("boom")))
 				})
 			})
-
 		})
 
 		Context("when update fails", func() {
@@ -649,7 +637,6 @@ var _ = Describe("Statefulset Desirer", func() {
 					To(HaveOccurred())
 				Expect(statefulSetClient.UpdateCallCount()).To(Equal(0))
 			})
-
 		})
 	})
 
@@ -701,13 +688,11 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		Context("fails to list the statefulsets", func() {
-
 			It("should return a meaningful error", func() {
 				statefulSetClient.ListReturns(nil, errors.New("who is this?"))
 				_, err := statefulSetDesirer.List()
 				Expect(err).To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
-
 		})
 	})
 
@@ -728,7 +713,8 @@ var _ = Describe("Statefulset Desirer", func() {
 			statefulSetClient.ListReturns(statefulSets, nil)
 			pdbClient.DeleteReturns(k8serrors.NewNotFound(schema.GroupResource{
 				Group:    "policy/v1beta1",
-				Resource: "PodDisruptionBudet"},
+				Resource: "PodDisruptionBudet",
+			},
 				"foo"))
 		})
 
@@ -920,7 +906,6 @@ var _ = Describe("Statefulset Desirer", func() {
 	})
 
 	Context("Get LRP instances", func() {
-
 		BeforeEach(func() {
 			statefulSetClient.ListReturns(&appsv1.StatefulSetList{Items: []appsv1.StatefulSet{{}}}, nil)
 		})
@@ -993,7 +978,6 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		Context("when pod list fails", func() {
-
 			It("should return a meaningful error", func() {
 				podClient.ListReturns(nil, errors.New("boom"))
 
@@ -1012,7 +996,6 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		Context("when getting events fails", func() {
-
 			It("should return a meaningful error", func() {
 				pods := &corev1.PodList{
 					Items: []corev1.Pod{
@@ -1026,11 +1009,9 @@ var _ = Describe("Statefulset Desirer", func() {
 				_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("failed to get events for pod %s", "odin-0"))))
 			})
-
 		})
 
 		Context("and time since creation is not available yet", func() {
-
 			It("should return a default value", func() {
 				pods := &corev1.PodList{
 					Items: []corev1.Pod{
@@ -1099,7 +1080,6 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		Context("and the StatefulSet was deleted/stopped", func() {
-
 			It("should return a default value", func() {
 				event1 := corev1.Event{
 					Reason: "Killing",
@@ -1136,7 +1116,6 @@ var _ = Describe("Statefulset Desirer", func() {
 				Expect(instances).To(HaveLen(0))
 			})
 		})
-
 	})
 })
 

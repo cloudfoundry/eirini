@@ -61,8 +61,8 @@ func (h StatefulSetDeleteHandler) createRoutesOnDelete(loggerSession lager.Logge
 func getChildrenPods(podClient typedv1.PodInterface, st *appsv1.StatefulSet) ([]corev1.Pod, error) {
 	set := labels.Set(st.Spec.Selector.MatchLabels)
 	opts := metav1.ListOptions{LabelSelector: set.AsSelector().String()}
-	podlist, err := podClient.List(context.Background(), opts)
 
+	podlist, err := podClient.List(context.Background(), opts)
 	if err != nil {
 		return []corev1.Pod{}, err
 	}

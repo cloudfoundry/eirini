@@ -119,7 +119,6 @@ var _ = Describe("PodState", func() {
 				Expect(GetPodState(pod)).To(Equal(opi.CrashedState))
 			})
 		})
-
 	})
 
 	When("the pod phase is Running", func() {

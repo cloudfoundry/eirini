@@ -64,8 +64,8 @@ func (s *Stage) CompleteStaging(res http.ResponseWriter, req *http.Request, ps h
 	logger := s.logger.Session("staging-complete", lager.Data{"staging-guid": stagingGUID})
 
 	taskCompletedRequest := cf.StagingCompletedRequest{}
-	err := json.NewDecoder(req.Body).Decode(&taskCompletedRequest)
 
+	err := json.NewDecoder(req.Body).Decode(&taskCompletedRequest)
 	if err != nil {
 		logger.Error("parsing-incoming-task-failed", err)
 		res.WriteHeader(http.StatusBadRequest)

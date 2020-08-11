@@ -27,8 +27,8 @@ func (c Client) StatsSummary(nodename string) (StatsSummary, error) {
 		Name(nodename).
 		SubResource("proxy", "stats", "summary").
 		Do(context.Background())
-	body, err := result.Raw()
 
+	body, err := result.Raw()
 	if err != nil {
 		return summary, errors.Wrap(err, "failed to get raw body")
 	}
