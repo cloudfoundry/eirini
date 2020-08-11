@@ -3,7 +3,6 @@ package util
 import (
 	"bufio"
 	"context"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -141,12 +140,7 @@ func (f Fixture) getSecret(secretName, secretPath string) string {
 	secret, err := f.Clientset.CoreV1().Secrets("eirini-core").Get(context.Background(), secretName, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
-	data := secret.Data[secretPath]
-
-	decodedBytes, err := base64.StdEncoding.DecodeString(string(data))
-	Expect(err).NotTo(HaveOccurred())
-
-	return string(decodedBytes)
+	return string(secret.Data[secretPath])
 }
 
 func (f *Fixture) configureNewNamespace() string {
