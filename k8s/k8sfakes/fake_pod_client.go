@@ -9,7 +9,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type FakePodsClient struct {
+type FakePodClient struct {
 	DeleteStub        func(string, string) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
@@ -51,7 +51,7 @@ type FakePodsClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePodsClient) Delete(arg1 string, arg2 string) error {
+func (fake *FakePodClient) Delete(arg1 string, arg2 string) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
@@ -70,26 +70,26 @@ func (fake *FakePodsClient) Delete(arg1 string, arg2 string) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakePodsClient) DeleteCallCount() int {
+func (fake *FakePodClient) DeleteCallCount() int {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakePodsClient) DeleteCalls(stub func(string, string) error) {
+func (fake *FakePodClient) DeleteCalls(stub func(string, string) error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakePodsClient) DeleteArgsForCall(i int) (string, string) {
+func (fake *FakePodClient) DeleteArgsForCall(i int) (string, string) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakePodsClient) DeleteReturns(result1 error) {
+func (fake *FakePodClient) DeleteReturns(result1 error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = nil
@@ -98,7 +98,7 @@ func (fake *FakePodsClient) DeleteReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakePodsClient) DeleteReturnsOnCall(i int, result1 error) {
+func (fake *FakePodClient) DeleteReturnsOnCall(i int, result1 error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = nil
@@ -112,7 +112,7 @@ func (fake *FakePodsClient) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakePodsClient) GetAll() ([]v1.Pod, error) {
+func (fake *FakePodClient) GetAll() ([]v1.Pod, error) {
 	fake.getAllMutex.Lock()
 	ret, specificReturn := fake.getAllReturnsOnCall[len(fake.getAllArgsForCall)]
 	fake.getAllArgsForCall = append(fake.getAllArgsForCall, struct {
@@ -129,19 +129,19 @@ func (fake *FakePodsClient) GetAll() ([]v1.Pod, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakePodsClient) GetAllCallCount() int {
+func (fake *FakePodClient) GetAllCallCount() int {
 	fake.getAllMutex.RLock()
 	defer fake.getAllMutex.RUnlock()
 	return len(fake.getAllArgsForCall)
 }
 
-func (fake *FakePodsClient) GetAllCalls(stub func() ([]v1.Pod, error)) {
+func (fake *FakePodClient) GetAllCalls(stub func() ([]v1.Pod, error)) {
 	fake.getAllMutex.Lock()
 	defer fake.getAllMutex.Unlock()
 	fake.GetAllStub = stub
 }
 
-func (fake *FakePodsClient) GetAllReturns(result1 []v1.Pod, result2 error) {
+func (fake *FakePodClient) GetAllReturns(result1 []v1.Pod, result2 error) {
 	fake.getAllMutex.Lock()
 	defer fake.getAllMutex.Unlock()
 	fake.GetAllStub = nil
@@ -151,7 +151,7 @@ func (fake *FakePodsClient) GetAllReturns(result1 []v1.Pod, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakePodsClient) GetAllReturnsOnCall(i int, result1 []v1.Pod, result2 error) {
+func (fake *FakePodClient) GetAllReturnsOnCall(i int, result1 []v1.Pod, result2 error) {
 	fake.getAllMutex.Lock()
 	defer fake.getAllMutex.Unlock()
 	fake.GetAllStub = nil
@@ -167,7 +167,7 @@ func (fake *FakePodsClient) GetAllReturnsOnCall(i int, result1 []v1.Pod, result2
 	}{result1, result2}
 }
 
-func (fake *FakePodsClient) GetByLRPIdentifier(arg1 opi.LRPIdentifier) ([]v1.Pod, error) {
+func (fake *FakePodClient) GetByLRPIdentifier(arg1 opi.LRPIdentifier) ([]v1.Pod, error) {
 	fake.getByLRPIdentifierMutex.Lock()
 	ret, specificReturn := fake.getByLRPIdentifierReturnsOnCall[len(fake.getByLRPIdentifierArgsForCall)]
 	fake.getByLRPIdentifierArgsForCall = append(fake.getByLRPIdentifierArgsForCall, struct {
@@ -185,26 +185,26 @@ func (fake *FakePodsClient) GetByLRPIdentifier(arg1 opi.LRPIdentifier) ([]v1.Pod
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakePodsClient) GetByLRPIdentifierCallCount() int {
+func (fake *FakePodClient) GetByLRPIdentifierCallCount() int {
 	fake.getByLRPIdentifierMutex.RLock()
 	defer fake.getByLRPIdentifierMutex.RUnlock()
 	return len(fake.getByLRPIdentifierArgsForCall)
 }
 
-func (fake *FakePodsClient) GetByLRPIdentifierCalls(stub func(opi.LRPIdentifier) ([]v1.Pod, error)) {
+func (fake *FakePodClient) GetByLRPIdentifierCalls(stub func(opi.LRPIdentifier) ([]v1.Pod, error)) {
 	fake.getByLRPIdentifierMutex.Lock()
 	defer fake.getByLRPIdentifierMutex.Unlock()
 	fake.GetByLRPIdentifierStub = stub
 }
 
-func (fake *FakePodsClient) GetByLRPIdentifierArgsForCall(i int) opi.LRPIdentifier {
+func (fake *FakePodClient) GetByLRPIdentifierArgsForCall(i int) opi.LRPIdentifier {
 	fake.getByLRPIdentifierMutex.RLock()
 	defer fake.getByLRPIdentifierMutex.RUnlock()
 	argsForCall := fake.getByLRPIdentifierArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakePodsClient) GetByLRPIdentifierReturns(result1 []v1.Pod, result2 error) {
+func (fake *FakePodClient) GetByLRPIdentifierReturns(result1 []v1.Pod, result2 error) {
 	fake.getByLRPIdentifierMutex.Lock()
 	defer fake.getByLRPIdentifierMutex.Unlock()
 	fake.GetByLRPIdentifierStub = nil
@@ -214,7 +214,7 @@ func (fake *FakePodsClient) GetByLRPIdentifierReturns(result1 []v1.Pod, result2 
 	}{result1, result2}
 }
 
-func (fake *FakePodsClient) GetByLRPIdentifierReturnsOnCall(i int, result1 []v1.Pod, result2 error) {
+func (fake *FakePodClient) GetByLRPIdentifierReturnsOnCall(i int, result1 []v1.Pod, result2 error) {
 	fake.getByLRPIdentifierMutex.Lock()
 	defer fake.getByLRPIdentifierMutex.Unlock()
 	fake.GetByLRPIdentifierStub = nil
@@ -230,7 +230,7 @@ func (fake *FakePodsClient) GetByLRPIdentifierReturnsOnCall(i int, result1 []v1.
 	}{result1, result2}
 }
 
-func (fake *FakePodsClient) Invocations() map[string][][]interface{} {
+func (fake *FakePodClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.deleteMutex.RLock()
@@ -246,7 +246,7 @@ func (fake *FakePodsClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakePodsClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakePodClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -258,4 +258,4 @@ func (fake *FakePodsClient) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ k8s.PodsClient = new(FakePodsClient)
+var _ k8s.PodClient = new(FakePodClient)

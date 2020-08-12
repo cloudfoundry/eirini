@@ -61,7 +61,7 @@ const (
 	PodAffinityTermWeight    = 100
 )
 
-//counterfeiter:generate . PodsClient
+//counterfeiter:generate . PodClient
 //counterfeiter:generate . PodDisruptionBudgetClient
 //counterfeiter:generate . StatefulSetClient
 //counterfeiter:generate . SecretsCreatorDeleter
@@ -71,7 +71,7 @@ const (
 //counterfeiter:generate . DesireOption
 //counterfeiter:generate . StatefulSetClient
 
-type PodsClient interface {
+type PodClient interface {
 	GetAll() ([]corev1.Pod, error)
 	GetByLRPIdentifier(opi.LRPIdentifier) ([]corev1.Pod, error)
 	Delete(namespace, name string) error
@@ -101,7 +101,7 @@ type EventLister interface {
 type LRPMapper func(s appsv1.StatefulSet) (*opi.LRP, error)
 
 type StatefulSetDesirer struct {
-	Pods                              PodsClient
+	Pods                              PodClient
 	Secrets                           SecretsCreatorDeleter
 	StatefulSets                      StatefulSetClient
 	PodDisruptionBudgets              PodDisruptionBudgetClient

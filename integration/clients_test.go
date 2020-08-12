@@ -10,11 +10,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ = Describe("Pods", func() {
-	var podsClient *client.Pod
+var _ = Describe("Pod", func() {
+	var podClient *client.Pod
 
 	BeforeEach(func() {
-		podsClient = client.NewPod(fixture.Clientset)
+		podClient = client.NewPod(fixture.Clientset)
 	})
 
 	Describe("GetAll", func() {
@@ -28,7 +28,7 @@ var _ = Describe("Pods", func() {
 		})
 
 		It("lists all pods across all namespaces", func() {
-			pods, err := podsClient.GetAll()
+			pods, err := podClient.GetAll()
 
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() []string { return names(pods) }).Should(ContainElements("one", "two", "three", "four", "five", "six"))
@@ -61,7 +61,7 @@ var _ = Describe("Pods", func() {
 		})
 
 		It("lists all pods across all namespaces", func() {
-			pods, err := podsClient.GetByLRPIdentifier(opi.LRPIdentifier{GUID: guid, Version: "42"})
+			pods, err := podClient.GetByLRPIdentifier(opi.LRPIdentifier{GUID: guid, Version: "42"})
 
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() []string { return names(pods) }).Should(ConsistOf("four", "five", "six"))
@@ -76,7 +76,7 @@ var _ = Describe("Pods", func() {
 		It("deletes a pod", func() {
 			Eventually(func() []string { return names(listAllPods()) }).Should(ContainElement("foo"))
 
-			err := podsClient.Delete(fixture.Namespace, "foo")
+			err := podClient.Delete(fixture.Namespace, "foo")
 
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() []string { return names(listAllPods()) }).ShouldNot(ContainElement("foo"))
@@ -84,7 +84,7 @@ var _ = Describe("Pods", func() {
 
 		Context("when it fails", func() {
 			It("returns the error", func() {
-				err := podsClient.Delete(fixture.Namespace, "bar")
+				err := podClient.Delete(fixture.Namespace, "bar")
 
 				Expect(err).To(MatchError(ContainSubstring(`"bar" not found`)))
 			})
