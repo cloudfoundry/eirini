@@ -35,7 +35,7 @@ const (
 
 var _ = Describe("Statefulset Desirer", func() {
 	var (
-		podsClient            *k8sfakes.FakePodsClient
+		podsClient            *k8sfakes.FakePodClient
 		eventLister           *k8sfakes.FakeEventLister
 		secretsClient         *k8sfakes.FakeSecretsCreatorDeleter
 		statefulSetClient     *k8sfakes.FakeStatefulSetClient
@@ -48,7 +48,7 @@ var _ = Describe("Statefulset Desirer", func() {
 	)
 
 	BeforeEach(func() {
-		podsClient = new(k8sfakes.FakePodsClient)
+		podsClient = new(k8sfakes.FakePodClient)
 		statefulSetClient = new(k8sfakes.FakeStatefulSetClient)
 		secretsClient = new(k8sfakes.FakeSecretsCreatorDeleter)
 		eventLister = new(k8sfakes.FakeEventLister)

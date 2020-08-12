@@ -13,10 +13,11 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	appsv1_types "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1_types "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/kubernetes/typed/policy/v1beta1"
+	policyv1beta1_types "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
@@ -67,7 +68,7 @@ func labelSelector(identifier opi.LRPIdentifier) string {
 	)
 }
 
-func podDisruptionBudgets() v1beta1.PodDisruptionBudgetInterface {
+func podDisruptionBudgets() policyv1beta1_types.PodDisruptionBudgetInterface {
 	return fixture.Clientset.PolicyV1beta1().PodDisruptionBudgets(fixture.Namespace)
 }
 
@@ -206,4 +207,24 @@ func createLRP(name string) *opi.LRP {
 		LRP:             "metadata",
 		DiskMB:          2047,
 	}
+}
+
+func listPDBs(ns string) []policyv1beta1.PodDisruptionBudget {
+	pdbs, err := fixture.Clientset.PolicyV1beta1().PodDisruptionBudgets(ns).List(context.Background(), metav1.ListOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	return pdbs.Items
+}
+
+func createPDB(ns, name string) {
+	_, err := fixture.Clientset.PolicyV1beta1().PodDisruptionBudgets(ns).Create(
+		context.Background(),
+		&policyv1beta1.PodDisruptionBudget{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: name,
+			},
+		},
+		metav1.CreateOptions{},
+	)
+	Expect(err).NotTo(HaveOccurred())
 }
