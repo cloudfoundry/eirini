@@ -1,0 +1,14 @@
+language: go
+go:
+  - "1.13"
+services:
+    - docker
+env:
+  - GO111MODULE=on
+before_install:
+  - make tools
+script:
+  - make test-unit test-integration
+after_success:
+  - go test -coverprofile=coverage.txt -covermode=atomic
+  - bash <(curl -s https://codecov.io/bash)
