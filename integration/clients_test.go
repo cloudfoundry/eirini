@@ -93,9 +93,9 @@ var _ = Describe("Pods", func() {
 })
 
 func names(pods []corev1.Pod) []string {
-	names := make([]string, len(pods))
-	for i, pod := range pods {
-		names[i] = pod.Name
+	names := make([]string, 0, len(pods))
+	for _, pod := range pods {
+		names = append(names, pod.Name)
 	}
 
 	return names
