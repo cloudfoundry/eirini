@@ -103,11 +103,12 @@ var _ = Describe("PodDisruptionBudgets", func() {
 
 	Describe("Create", func() {
 		It("creates a PDB", func() {
-			pdbClient.Create(fixture.Namespace, &policyv1beta1.PodDisruptionBudget{
+			_, err := pdbClient.Create(fixture.Namespace, &policyv1beta1.PodDisruptionBudget{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
 			})
+			Expect(err).NotTo(HaveOccurred())
 
 			pdbs := listPDBs(fixture.Namespace)
 
