@@ -15,7 +15,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	appsv1_types "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1_types "k8s.io/client-go/kubernetes/typed/core/v1"
 	policyv1beta1_types "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -49,12 +48,10 @@ func getSecret(name string) (*corev1.Secret, error) {
 	return secrets().Get(context.Background(), name, metav1.GetOptions{})
 }
 
-func statefulSets() appsv1_types.StatefulSetInterface {
-	return fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace)
-}
-
 func getStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
-	ss, getErr := statefulSets().List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector(lrp.LRPIdentifier)})
+	ss, getErr := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: labelSelector(lrp.LRPIdentifier),
+	})
 	Expect(getErr).NotTo(HaveOccurred())
 
 	return &ss.Items[0]
@@ -76,26 +73,27 @@ func cleanupStatefulSet(lrp *opi.LRP) {
 	backgroundPropagation := metav1.DeletePropagationBackground
 	deleteOptions := metav1.DeleteOptions{PropagationPolicy: &backgroundPropagation}
 	listOptions := metav1.ListOptions{LabelSelector: labelSelector(lrp.LRPIdentifier)}
-	err := statefulSets().DeleteCollection(context.Background(), deleteOptions, listOptions)
+	err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).DeleteCollection(context.Background(), deleteOptions, listOptions)
 	Expect(err).ToNot(HaveOccurred())
 }
 
 func listAllStatefulSets(lrp1, lrp2 *opi.LRP) []appsv1.StatefulSet {
-	labels := fmt.Sprintf(
-		"%s in (%s, %s),%s in (%s, %s)",
-		k8s.LabelGUID, lrp1.LRPIdentifier.GUID, lrp2.LRPIdentifier.GUID,
-		k8s.LabelVersion, lrp1.LRPIdentifier.Version, lrp2.LRPIdentifier.Version,
-	)
-
-	list, err := statefulSets().List(context.Background(), metav1.ListOptions{LabelSelector: labels})
+	list, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf(
+			"%s in (%s, %s),%s in (%s, %s)",
+			k8s.LabelGUID, lrp1.LRPIdentifier.GUID, lrp2.LRPIdentifier.GUID,
+			k8s.LabelVersion, lrp1.LRPIdentifier.Version, lrp2.LRPIdentifier.Version,
+		),
+	})
 	Expect(err).NotTo(HaveOccurred())
 
 	return list.Items
 }
 
 func listStatefulSets(appName string) []appsv1.StatefulSet {
-	labelSelector := fmt.Sprintf("name=%s", appName)
-	list, err := statefulSets().List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
+	list, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("name=%s", appName),
+	})
 	Expect(err).NotTo(HaveOccurred())
 
 	return list.Items
