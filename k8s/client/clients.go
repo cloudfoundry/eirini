@@ -82,16 +82,38 @@ func (c *StatefulSet) Get(namespace, name string) (*appsv1.StatefulSet, error) {
 	return c.clientSet.AppsV1().StatefulSets(namespace).Get(context.Background(), name, metav1.GetOptions{})
 }
 
+func (c *StatefulSet) GetBySourceType(sourceType string) ([]appsv1.StatefulSet, error) {
+	statefulSetList, err := c.clientSet.AppsV1().StatefulSets("").List(context.Background(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=APP", k8s.LabelSourceType),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return statefulSetList.Items, nil
+}
+
+func (c *StatefulSet) GetByLRPIdentifier(id opi.LRPIdentifier) ([]appsv1.StatefulSet, error) {
+	statefulSetList, err := c.clientSet.AppsV1().StatefulSets("").List(context.Background(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf(
+			"%s=%s,%s=%s",
+			k8s.LabelGUID, id.GUID,
+			k8s.LabelVersion, id.Version,
+		),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return statefulSetList.Items, nil
+}
+
 func (c *StatefulSet) Update(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error) {
 	return c.clientSet.AppsV1().StatefulSets(namespace).Update(context.Background(), statefulSet, metav1.UpdateOptions{})
 }
 
 func (c *StatefulSet) Delete(namespace string, name string, options metav1.DeleteOptions) error {
 	return c.clientSet.AppsV1().StatefulSets(namespace).Delete(context.Background(), name, options)
-}
-
-func (c *StatefulSet) List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error) {
-	return c.clientSet.AppsV1().StatefulSets("").List(context.Background(), opts)
 }
 
 type Job struct {

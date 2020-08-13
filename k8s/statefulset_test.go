@@ -449,17 +449,13 @@ var _ = Describe("Statefulset Desirer", func() {
 		})
 
 		It("should use mapper to get LRP", func() {
-			st := &appsv1.StatefulSetList{
-				Items: []appsv1.StatefulSet{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "baldur",
-						},
-					},
+			st := appsv1.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "baldur",
 				},
 			}
 
-			statefulSetClient.ListReturns(st, nil)
+			statefulSetClient.GetByLRPIdentifierReturns([]appsv1.StatefulSet{st}, nil)
 			lrp, _ := statefulSetDesirer.Get(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 			Expect(mapper.CallCount()).To(Equal(1))
 			Expect(lrp.AppName).To(Equal("baldur-app"))
@@ -467,7 +463,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
+				statefulSetClient.GetByLRPIdentifierReturns([]appsv1.StatefulSet{}, nil)
 			})
 
 			It("should return an error", func() {
@@ -478,7 +474,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when statefulsets cannot be listed", func() {
 			BeforeEach(func() {
-				statefulSetClient.ListReturns(nil, errors.New("who is this?"))
+				statefulSetClient.GetByLRPIdentifierReturns(nil, errors.New("who is this?"))
 			})
 
 			It("should return an error", func() {
@@ -491,26 +487,24 @@ var _ = Describe("Statefulset Desirer", func() {
 	Context("When updating an app", func() {
 		BeforeEach(func() {
 			replicas := int32(3)
-			st := &appsv1.StatefulSetList{
-				Items: []appsv1.StatefulSet{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "baldur",
-							Namespace: "the-namespace",
-							Annotations: map[string]string{
-								k8s.AnnotationProcessGUID:      "Baldur-guid",
-								k8s.AnnotationLastUpdated:      "never",
-								k8s.AnnotationRegisteredRoutes: `[{"hostname":"myroute.io","port":1000}]`,
-							},
+			st := []appsv1.StatefulSet{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "baldur",
+						Namespace: "the-namespace",
+						Annotations: map[string]string{
+							k8s.AnnotationProcessGUID:      "Baldur-guid",
+							k8s.AnnotationLastUpdated:      "never",
+							k8s.AnnotationRegisteredRoutes: `[{"hostname":"myroute.io","port":1000}]`,
 						},
-						Spec: appsv1.StatefulSetSpec{
-							Replicas: &replicas,
-						},
+					},
+					Spec: appsv1.StatefulSetSpec{
+						Replicas: &replicas,
 					},
 				},
 			}
 
-			statefulSetClient.ListReturns(st, nil)
+			statefulSetClient.GetByLRPIdentifierReturns(st, nil)
 		})
 
 		It("updates the statefulset", func() {
@@ -624,7 +618,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				statefulSetClient.ListReturns(nil, errors.New("sorry"))
+				statefulSetClient.GetByLRPIdentifierReturns(nil, errors.New("sorry"))
 			})
 
 			It("should return an error", func() {
@@ -642,46 +636,44 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	Context("When listing apps", func() {
 		It("translates all existing statefulSets to opi.LRPs", func() {
-			st := &appsv1.StatefulSetList{
-				Items: []appsv1.StatefulSet{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "odin",
-						},
+			st := []appsv1.StatefulSet{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "odin",
 					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "thor",
-						},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "thor",
 					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "baldur",
-						},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "baldur",
 					},
 				},
 			}
 
-			statefulSetClient.ListReturns(st, nil)
+			statefulSetClient.GetBySourceTypeReturns(st, nil)
 
 			Expect(statefulSetDesirer.List()).To(HaveLen(3))
 			Expect(mapper.CallCount()).To(Equal(3))
 		})
 
 		It("lists all statefulSets with APP source_type", func() {
-			statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
+			statefulSetClient.GetBySourceTypeReturns([]appsv1.StatefulSet{}, nil)
 			_, err := statefulSetDesirer.List()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(statefulSetClient.ListCallCount()).To(Equal(1))
+			Expect(statefulSetClient.GetBySourceTypeCallCount()).To(Equal(1))
 
-			listOpts := statefulSetClient.ListArgsForCall(0)
-			Expect(listOpts.LabelSelector).To(Equal("cloudfoundry.org/source_type=APP"))
+			sourceType := statefulSetClient.GetBySourceTypeArgsForCall(0)
+			Expect(sourceType).To(Equal("APP"))
 		})
 
 		Context("no statefulSets exist", func() {
 			It("returns an empy list of LRPs", func() {
-				statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
+				statefulSetClient.GetByLRPIdentifierReturns([]appsv1.StatefulSet{}, nil)
 				Expect(statefulSetDesirer.List()).To(BeEmpty())
 				Expect(mapper.CallCount()).To(Equal(0))
 			})
@@ -689,7 +681,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("fails to list the statefulsets", func() {
 			It("should return a meaningful error", func() {
-				statefulSetClient.ListReturns(nil, errors.New("who is this?"))
+				statefulSetClient.GetBySourceTypeReturns(nil, errors.New("who is this?"))
 				_, err := statefulSetDesirer.List()
 				Expect(err).To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
@@ -697,20 +689,18 @@ var _ = Describe("Statefulset Desirer", func() {
 	})
 
 	Context("Stop an LRP", func() {
-		var statefulSets *appsv1.StatefulSetList
+		var statefulSets []appsv1.StatefulSet
 
 		BeforeEach(func() {
-			statefulSets = &appsv1.StatefulSetList{
-				Items: []appsv1.StatefulSet{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "baldur",
-							Namespace: "the-namespace",
-						},
+			statefulSets = []appsv1.StatefulSet{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "baldur",
+						Namespace: "the-namespace",
 					},
 				},
 			}
-			statefulSetClient.ListReturns(statefulSets, nil)
+			statefulSetClient.GetByLRPIdentifierReturns(statefulSets, nil)
 			pdbClient.DeleteReturns(k8serrors.NewNotFound(schema.GroupResource{
 				Group:    "policy/v1beta1",
 				Resource: "PodDisruptionBudet",
@@ -737,7 +727,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when the stateful set runs an image from a private registry", func() {
 			BeforeEach(func() {
-				statefulSets.Items[0].Spec = appsv1.StatefulSetSpec{
+				statefulSets[0].Spec = appsv1.StatefulSetSpec{
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							ImagePullSecrets: []corev1.LocalObjectReference{
@@ -793,11 +783,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when deletion of stateful set conflicts", func() {
 			It("should retry", func() {
-				st := &appsv1.StatefulSetList{
-					Items: []appsv1.StatefulSet{{}},
-				}
-
-				statefulSetClient.ListReturns(st, nil)
+				statefulSetClient.GetByLRPIdentifierReturns([]appsv1.StatefulSet{{}}, nil)
 				statefulSetClient.DeleteReturnsOnCall(0, k8serrors.NewConflict(schema.GroupResource{}, "foo", errors.New("boom")))
 				statefulSetClient.DeleteReturnsOnCall(1, nil)
 				Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
@@ -815,7 +801,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when kubernetes fails to list statefulsets", func() {
 			BeforeEach(func() {
-				statefulSetClient.ListReturns(nil, errors.New("who is this?"))
+				statefulSetClient.GetByLRPIdentifierReturns(nil, errors.New("who is this?"))
 			})
 
 			It("should return a meaningful error", func() {
@@ -826,7 +812,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when the statefulSet does not exist", func() {
 			BeforeEach(func() {
-				statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
+				statefulSetClient.GetByLRPIdentifierReturns([]appsv1.StatefulSet{}, nil)
 			})
 
 			It("succeeds", func() {
@@ -842,21 +828,19 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	Context("Stop an LRP instance", func() {
 		BeforeEach(func() {
-			st := &appsv1.StatefulSetList{
-				Items: []appsv1.StatefulSet{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "baldur-space-foo-34f869d015",
-							Namespace: "the-namespace",
-						},
-						Spec: appsv1.StatefulSetSpec{
-							Replicas: int32ptr(2),
-						},
+			st := []appsv1.StatefulSet{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "baldur-space-foo-34f869d015",
+						Namespace: "the-namespace",
+					},
+					Spec: appsv1.StatefulSetSpec{
+						Replicas: int32ptr(2),
 					},
 				},
 			}
 
-			statefulSetClient.ListReturns(st, nil)
+			statefulSetClient.GetByLRPIdentifierReturns(st, nil)
 		})
 
 		It("deletes a pod instance", func() {
@@ -872,7 +856,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when there's an internal K8s error", func() {
 			It("should return an error", func() {
-				statefulSetClient.ListReturns(nil, errors.New("boom"))
+				statefulSetClient.GetByLRPIdentifierReturns(nil, errors.New("boom"))
 				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)).
 					To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
@@ -880,7 +864,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when the statefulset does not exist", func() {
 			It("succeeds", func() {
-				statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
+				statefulSetClient.GetByLRPIdentifierReturns([]appsv1.StatefulSet{}, nil)
 				Expect(statefulSetDesirer.StopInstance(opi.LRPIdentifier{GUID: "some", Version: "thing"}, 1)).To(Succeed())
 			})
 		})
@@ -907,7 +891,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 	Context("Get LRP instances", func() {
 		BeforeEach(func() {
-			statefulSetClient.ListReturns(&appsv1.StatefulSetList{Items: []appsv1.StatefulSet{{}}}, nil)
+			statefulSetClient.GetByLRPIdentifierReturns([]appsv1.StatefulSet{{}}, nil)
 		})
 
 		It("should list the correct pods", func() {
@@ -982,7 +966,7 @@ var _ = Describe("Statefulset Desirer", func() {
 
 		Context("when the app does not exist", func() {
 			It("should return an error", func() {
-				statefulSetClient.ListReturns(&appsv1.StatefulSetList{}, nil)
+				statefulSetClient.GetByLRPIdentifierReturns([]appsv1.StatefulSet{}, nil)
 
 				_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "does-not", Version: "exist"})
 				Expect(err).To(Equal(eirini.ErrNotFound))

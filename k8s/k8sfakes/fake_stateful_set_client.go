@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/opi"
 	v1 "k8s.io/api/apps/v1"
 	v1a "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -37,17 +38,30 @@ type FakeStatefulSetClient struct {
 	deleteReturnsOnCall map[int]struct {
 		result1 error
 	}
-	ListStub        func(v1a.ListOptions) (*v1.StatefulSetList, error)
-	listMutex       sync.RWMutex
-	listArgsForCall []struct {
-		arg1 v1a.ListOptions
+	GetByLRPIdentifierStub        func(opi.LRPIdentifier) ([]v1.StatefulSet, error)
+	getByLRPIdentifierMutex       sync.RWMutex
+	getByLRPIdentifierArgsForCall []struct {
+		arg1 opi.LRPIdentifier
 	}
-	listReturns struct {
-		result1 *v1.StatefulSetList
+	getByLRPIdentifierReturns struct {
+		result1 []v1.StatefulSet
 		result2 error
 	}
-	listReturnsOnCall map[int]struct {
-		result1 *v1.StatefulSetList
+	getByLRPIdentifierReturnsOnCall map[int]struct {
+		result1 []v1.StatefulSet
+		result2 error
+	}
+	GetBySourceTypeStub        func(string) ([]v1.StatefulSet, error)
+	getBySourceTypeMutex       sync.RWMutex
+	getBySourceTypeArgsForCall []struct {
+		arg1 string
+	}
+	getBySourceTypeReturns struct {
+		result1 []v1.StatefulSet
+		result2 error
+	}
+	getBySourceTypeReturnsOnCall map[int]struct {
+		result1 []v1.StatefulSet
 		result2 error
 	}
 	UpdateStub        func(string, *v1.StatefulSet) (*v1.StatefulSet, error)
@@ -194,65 +208,128 @@ func (fake *FakeStatefulSetClient) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeStatefulSetClient) List(arg1 v1a.ListOptions) (*v1.StatefulSetList, error) {
-	fake.listMutex.Lock()
-	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
-	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		arg1 v1a.ListOptions
+func (fake *FakeStatefulSetClient) GetByLRPIdentifier(arg1 opi.LRPIdentifier) ([]v1.StatefulSet, error) {
+	fake.getByLRPIdentifierMutex.Lock()
+	ret, specificReturn := fake.getByLRPIdentifierReturnsOnCall[len(fake.getByLRPIdentifierArgsForCall)]
+	fake.getByLRPIdentifierArgsForCall = append(fake.getByLRPIdentifierArgsForCall, struct {
+		arg1 opi.LRPIdentifier
 	}{arg1})
-	fake.recordInvocation("List", []interface{}{arg1})
-	fake.listMutex.Unlock()
-	if fake.ListStub != nil {
-		return fake.ListStub(arg1)
+	fake.recordInvocation("GetByLRPIdentifier", []interface{}{arg1})
+	fake.getByLRPIdentifierMutex.Unlock()
+	if fake.GetByLRPIdentifierStub != nil {
+		return fake.GetByLRPIdentifierStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listReturns
+	fakeReturns := fake.getByLRPIdentifierReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeStatefulSetClient) ListCallCount() int {
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
-	return len(fake.listArgsForCall)
+func (fake *FakeStatefulSetClient) GetByLRPIdentifierCallCount() int {
+	fake.getByLRPIdentifierMutex.RLock()
+	defer fake.getByLRPIdentifierMutex.RUnlock()
+	return len(fake.getByLRPIdentifierArgsForCall)
 }
 
-func (fake *FakeStatefulSetClient) ListCalls(stub func(v1a.ListOptions) (*v1.StatefulSetList, error)) {
-	fake.listMutex.Lock()
-	defer fake.listMutex.Unlock()
-	fake.ListStub = stub
+func (fake *FakeStatefulSetClient) GetByLRPIdentifierCalls(stub func(opi.LRPIdentifier) ([]v1.StatefulSet, error)) {
+	fake.getByLRPIdentifierMutex.Lock()
+	defer fake.getByLRPIdentifierMutex.Unlock()
+	fake.GetByLRPIdentifierStub = stub
 }
 
-func (fake *FakeStatefulSetClient) ListArgsForCall(i int) v1a.ListOptions {
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
-	argsForCall := fake.listArgsForCall[i]
+func (fake *FakeStatefulSetClient) GetByLRPIdentifierArgsForCall(i int) opi.LRPIdentifier {
+	fake.getByLRPIdentifierMutex.RLock()
+	defer fake.getByLRPIdentifierMutex.RUnlock()
+	argsForCall := fake.getByLRPIdentifierArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeStatefulSetClient) ListReturns(result1 *v1.StatefulSetList, result2 error) {
-	fake.listMutex.Lock()
-	defer fake.listMutex.Unlock()
-	fake.ListStub = nil
-	fake.listReturns = struct {
-		result1 *v1.StatefulSetList
+func (fake *FakeStatefulSetClient) GetByLRPIdentifierReturns(result1 []v1.StatefulSet, result2 error) {
+	fake.getByLRPIdentifierMutex.Lock()
+	defer fake.getByLRPIdentifierMutex.Unlock()
+	fake.GetByLRPIdentifierStub = nil
+	fake.getByLRPIdentifierReturns = struct {
+		result1 []v1.StatefulSet
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetClient) ListReturnsOnCall(i int, result1 *v1.StatefulSetList, result2 error) {
-	fake.listMutex.Lock()
-	defer fake.listMutex.Unlock()
-	fake.ListStub = nil
-	if fake.listReturnsOnCall == nil {
-		fake.listReturnsOnCall = make(map[int]struct {
-			result1 *v1.StatefulSetList
+func (fake *FakeStatefulSetClient) GetByLRPIdentifierReturnsOnCall(i int, result1 []v1.StatefulSet, result2 error) {
+	fake.getByLRPIdentifierMutex.Lock()
+	defer fake.getByLRPIdentifierMutex.Unlock()
+	fake.GetByLRPIdentifierStub = nil
+	if fake.getByLRPIdentifierReturnsOnCall == nil {
+		fake.getByLRPIdentifierReturnsOnCall = make(map[int]struct {
+			result1 []v1.StatefulSet
 			result2 error
 		})
 	}
-	fake.listReturnsOnCall[i] = struct {
-		result1 *v1.StatefulSetList
+	fake.getByLRPIdentifierReturnsOnCall[i] = struct {
+		result1 []v1.StatefulSet
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStatefulSetClient) GetBySourceType(arg1 string) ([]v1.StatefulSet, error) {
+	fake.getBySourceTypeMutex.Lock()
+	ret, specificReturn := fake.getBySourceTypeReturnsOnCall[len(fake.getBySourceTypeArgsForCall)]
+	fake.getBySourceTypeArgsForCall = append(fake.getBySourceTypeArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("GetBySourceType", []interface{}{arg1})
+	fake.getBySourceTypeMutex.Unlock()
+	if fake.GetBySourceTypeStub != nil {
+		return fake.GetBySourceTypeStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.getBySourceTypeReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeStatefulSetClient) GetBySourceTypeCallCount() int {
+	fake.getBySourceTypeMutex.RLock()
+	defer fake.getBySourceTypeMutex.RUnlock()
+	return len(fake.getBySourceTypeArgsForCall)
+}
+
+func (fake *FakeStatefulSetClient) GetBySourceTypeCalls(stub func(string) ([]v1.StatefulSet, error)) {
+	fake.getBySourceTypeMutex.Lock()
+	defer fake.getBySourceTypeMutex.Unlock()
+	fake.GetBySourceTypeStub = stub
+}
+
+func (fake *FakeStatefulSetClient) GetBySourceTypeArgsForCall(i int) string {
+	fake.getBySourceTypeMutex.RLock()
+	defer fake.getBySourceTypeMutex.RUnlock()
+	argsForCall := fake.getBySourceTypeArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeStatefulSetClient) GetBySourceTypeReturns(result1 []v1.StatefulSet, result2 error) {
+	fake.getBySourceTypeMutex.Lock()
+	defer fake.getBySourceTypeMutex.Unlock()
+	fake.GetBySourceTypeStub = nil
+	fake.getBySourceTypeReturns = struct {
+		result1 []v1.StatefulSet
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeStatefulSetClient) GetBySourceTypeReturnsOnCall(i int, result1 []v1.StatefulSet, result2 error) {
+	fake.getBySourceTypeMutex.Lock()
+	defer fake.getBySourceTypeMutex.Unlock()
+	fake.GetBySourceTypeStub = nil
+	if fake.getBySourceTypeReturnsOnCall == nil {
+		fake.getBySourceTypeReturnsOnCall = make(map[int]struct {
+			result1 []v1.StatefulSet
+			result2 error
+		})
+	}
+	fake.getBySourceTypeReturnsOnCall[i] = struct {
+		result1 []v1.StatefulSet
 		result2 error
 	}{result1, result2}
 }
@@ -328,8 +405,10 @@ func (fake *FakeStatefulSetClient) Invocations() map[string][][]interface{} {
 	defer fake.createMutex.RUnlock()
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
+	fake.getByLRPIdentifierMutex.RLock()
+	defer fake.getByLRPIdentifierMutex.RUnlock()
+	fake.getBySourceTypeMutex.RLock()
+	defer fake.getBySourceTypeMutex.RUnlock()
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -134,10 +135,87 @@ var _ = Describe("PodDisruptionBudgets", func() {
 	})
 })
 
+var _ = Describe("StatefulSets", func() {
+	var statefulSetClient *client.StatefulSet
+
+	BeforeEach(func() {
+		statefulSetClient = client.NewStatefulSet(fixture.Clientset)
+	})
+
+	Describe("GetBySourceType", func() {
+		var extraNs string
+
+		BeforeEach(func() {
+			createStatefulSet(fixture.Namespace, "one", map[string]string{
+				k8s.LabelSourceType: "APP",
+			})
+			createStatefulSet(fixture.Namespace, "two", map[string]string{
+				k8s.LabelSourceType: "TASK",
+			})
+
+			extraNs = fixture.CreateExtraNamespace()
+
+			createStatefulSet(extraNs, "three", map[string]string{
+				k8s.LabelSourceType: "APP",
+			})
+		})
+
+		It("lists all StatefulSets with the specified source type", func() {
+			Eventually(func() []string {
+				statefulSets, err := statefulSetClient.GetBySourceType("APP")
+				Expect(err).NotTo(HaveOccurred())
+				return statefulSetNames(statefulSets)
+			}).Should(ContainElements("one", "three"))
+
+			Consistently(func() []string {
+				statefulSets, err := statefulSetClient.GetBySourceType("APP")
+				Expect(err).NotTo(HaveOccurred())
+				return statefulSetNames(statefulSets)
+			}).ShouldNot(ContainElements("two"))
+		})
+	})
+
+	Describe("GetByLRPIdentifier", func() {
+		var guid, extraNs string
+
+		BeforeEach(func() {
+			guid = util.GenerateGUID()
+
+			createStatefulSet(fixture.Namespace, "one", map[string]string{
+				k8s.LabelGUID:    guid,
+				k8s.LabelVersion: "42",
+			})
+
+			extraNs = fixture.CreateExtraNamespace()
+
+			createStatefulSet(extraNs, "two", map[string]string{
+				k8s.LabelGUID:    guid,
+				k8s.LabelVersion: "42",
+			})
+		})
+
+		It("lists all StatefulSets matching the specified LRP identifier", func() {
+			statefulSets, err := statefulSetClient.GetByLRPIdentifier(opi.LRPIdentifier{GUID: guid, Version: "42"})
+
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() []string { return statefulSetNames(statefulSets) }).Should(ConsistOf("one", "two"))
+		})
+	})
+})
+
 func podNames(pods []corev1.Pod) []string {
 	names := make([]string, 0, len(pods))
 	for _, pod := range pods {
 		names = append(names, pod.Name)
+	}
+
+	return names
+}
+
+func statefulSetNames(statefulSets []appsv1.StatefulSet) []string {
+	names := make([]string, 0, len(statefulSets))
+	for _, statefulSet := range statefulSets {
+		names = append(names, statefulSet.Name)
 	}
 
 	return names

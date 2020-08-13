@@ -88,7 +88,8 @@ type StatefulSetClient interface {
 	Create(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
 	Update(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
 	Delete(namespace string, name string, options metav1.DeleteOptions) error
-	List(opts metav1.ListOptions) (*appsv1.StatefulSetList, error)
+	GetBySourceType(sourceType string) ([]appsv1.StatefulSet, error)
+	GetByLRPIdentifier(id opi.LRPIdentifier) ([]appsv1.StatefulSet, error)
 }
 
 type SecretsCreatorDeleter interface {
@@ -174,9 +175,7 @@ func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP, opts ...Desi
 func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 	logger := m.Logger.Session("list")
 
-	statefulsets, err := m.StatefulSets.List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", LabelSourceType, appSourceType),
-	})
+	statefulsets, err := m.StatefulSets.GetBySourceType(appSourceType)
 	if err != nil {
 		logger.Error("failed-to-list-statefulsets", err)
 
@@ -366,23 +365,16 @@ func (m *StatefulSetDesirer) getLRP(logger lager.Logger, identifier opi.LRPIdent
 }
 
 func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error) {
-	statefulSet, err := m.StatefulSets.List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf(
-			"%s=%s,%s=%s",
-			LabelGUID, identifier.GUID,
-			LabelVersion, identifier.Version,
-		),
-	})
+	statefulSets, err := m.StatefulSets.GetByLRPIdentifier(identifier)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}
 
-	statefulsets := statefulSet.Items
-	switch len(statefulsets) {
+	switch len(statefulSets) {
 	case 0:
 		return nil, eirini.ErrNotFound
 	case 1:
-		return &statefulsets[0], nil
+		return &statefulSets[0], nil
 	default:
 		panic(fmt.Sprintf("more than one was identified as %+v", identifier))
 	}
@@ -478,10 +470,10 @@ func hasInsufficientMemory(eventList *corev1.EventList) bool {
 		strings.Contains(event.Message, "Insufficient memory")
 }
 
-func (m *StatefulSetDesirer) statefulSetsToLRPs(statefulSets *appsv1.StatefulSetList) ([]*opi.LRP, error) {
+func (m *StatefulSetDesirer) statefulSetsToLRPs(statefulSets []appsv1.StatefulSet) ([]*opi.LRP, error) {
 	lrps := []*opi.LRP{}
 
-	for _, s := range statefulSets.Items {
+	for _, s := range statefulSets {
 		lrp, err := m.StatefulSetToLRPMapper(s)
 		if err != nil {
 			return nil, err
