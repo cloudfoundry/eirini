@@ -30,10 +30,11 @@ var _ = Describe("Pod", func() {
 		})
 
 		It("lists all pods across all namespaces", func() {
-			pods, err := podClient.GetAll()
-
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(func() []string { return podNames(pods) }).Should(ContainElements("one", "two", "three", "four", "five", "six"))
+			Eventually(func() []string {
+				pods, err := podClient.GetAll()
+				Expect(err).NotTo(HaveOccurred())
+				return podNames(pods)
+			}).Should(ContainElements("one", "two", "three", "four", "five", "six"))
 		})
 	})
 
