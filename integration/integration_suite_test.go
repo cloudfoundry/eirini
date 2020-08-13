@@ -57,6 +57,12 @@ func getStatefulSetForLRP(lrp *opi.LRP) *appsv1.StatefulSet {
 	return &ss.Items[0]
 }
 
+func getStatefulSet(ns, name string) *appsv1.StatefulSet {
+	ss, err := fixture.Clientset.AppsV1().StatefulSets(ns).Get(context.Background(), name, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	return ss
+}
+
 func labelSelector(identifier opi.LRPIdentifier) string {
 	return fmt.Sprintf(
 		"%s=%s,%s=%s",

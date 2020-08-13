@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Pod", func() {
+var _ = FDescribe("Pod", func() {
 	var podClient *client.Pod
 
 	BeforeEach(func() {
@@ -96,7 +96,7 @@ var _ = Describe("Pod", func() {
 	})
 })
 
-var _ = Describe("PodDisruptionBudgets", func() {
+var _ = FDescribe("PodDisruptionBudgets", func() {
 	var pdbClient *client.PodDisruptionBudget
 
 	BeforeEach(func() {
@@ -135,11 +135,65 @@ var _ = Describe("PodDisruptionBudgets", func() {
 	})
 })
 
-var _ = Describe("StatefulSets", func() {
+var _ = FDescribe("StatefulSets", func() {
 	var statefulSetClient *client.StatefulSet
 
 	BeforeEach(func() {
 		statefulSetClient = client.NewStatefulSet(fixture.Clientset)
+	})
+
+	Describe("Create", func() {
+		It("creates a StatefulSet", func() {
+			_, err := statefulSetClient.Create(fixture.Namespace, &appsv1.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: appsv1.StatefulSetSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "foo",
+						},
+					},
+					Template: corev1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{
+								"app": "foo",
+							},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			statefulSets := listStatefulSets(fixture.Namespace)
+
+			Expect(statefulSets).To(HaveLen(1))
+			Expect(statefulSets[0].Name).To(Equal("foo"))
+		})
+	})
+
+	Describe("Get", func() {
+		var guid, extraNs string
+
+		BeforeEach(func() {
+			guid = util.GenerateGUID()
+
+			createStatefulSet(fixture.Namespace, "foo", map[string]string{
+				k8s.LabelGUID: guid,
+			})
+
+			extraNs = fixture.CreateExtraNamespace()
+
+			createStatefulSet(extraNs, "foo", nil)
+		})
+
+		It("retrieves a StatefulSet by namespace and name", func() {
+			statefulSet, err := statefulSetClient.Get(fixture.Namespace, "foo")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(statefulSet.Name).To(Equal("foo"))
+			Expect(statefulSet.Labels[k8s.LabelGUID]).To(Equal(guid))
+		})
 	})
 
 	Describe("GetBySourceType", func() {
@@ -199,6 +253,24 @@ var _ = Describe("StatefulSets", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() []string { return statefulSetNames(statefulSets) }).Should(ConsistOf("one", "two"))
+		})
+	})
+
+	Describe("Update", func() {
+		var statefulSet *appsv1.StatefulSet
+
+		BeforeEach(func() {
+			statefulSet = createStatefulSet(fixture.Namespace, "foo", map[string]string{
+				"label": "old-value",
+			})
+		})
+
+		It("updates a StatefulSet", func() {
+			statefulSet.Labels["label"] = "new-value"
+
+			statefulSetClient.Update(fixture.Namespace, statefulSet)
+
+			Eventually(func() string { return getStatefulSet(fixture.Namespace, "foo").Labels["label"] }).Should(Equal("new-value"))
 		})
 	})
 
