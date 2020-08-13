@@ -33,7 +33,7 @@ var _ = Describe("Pod", func() {
 			pods, err := podClient.GetAll()
 
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(func() []string { return names(pods) }).Should(ContainElements("one", "two", "three", "four", "five", "six"))
+			Eventually(func() []string { return podNames(pods) }).Should(ContainElements("one", "two", "three", "four", "five", "six"))
 		})
 	})
 
@@ -66,7 +66,7 @@ var _ = Describe("Pod", func() {
 			pods, err := podClient.GetByLRPIdentifier(opi.LRPIdentifier{GUID: guid, Version: "42"})
 
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(func() []string { return names(pods) }).Should(ConsistOf("four", "five", "six"))
+			Eventually(func() []string { return podNames(pods) }).Should(ConsistOf("four", "five", "six"))
 		})
 	})
 
@@ -76,12 +76,12 @@ var _ = Describe("Pod", func() {
 		})
 
 		It("deletes a pod", func() {
-			Eventually(func() []string { return names(listAllPods()) }).Should(ContainElement("foo"))
+			Eventually(func() []string { return podNames(listAllPods()) }).Should(ContainElement("foo"))
 
 			err := podClient.Delete(fixture.Namespace, "foo")
 
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(func() []string { return names(listAllPods()) }).ShouldNot(ContainElement("foo"))
+			Eventually(func() []string { return podNames(listAllPods()) }).ShouldNot(ContainElement("foo"))
 		})
 
 		Context("when it fails", func() {
@@ -133,7 +133,7 @@ var _ = Describe("PodDisruptionBudgets", func() {
 	})
 })
 
-func names(pods []corev1.Pod) []string {
+func podNames(pods []corev1.Pod) []string {
 	names := make([]string, 0, len(pods))
 	for _, pod := range pods {
 		names = append(names, pod.Name)
