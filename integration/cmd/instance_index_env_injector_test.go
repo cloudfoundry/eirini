@@ -45,6 +45,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 			Expect(session.Command.Process.Signal(syscall.Signal(0))).To(Succeed())
 			Eventually(func() error {
 				_, err := net.Dial("tcp", fmt.Sprintf(":%d", config.ServicePort))
+
 				return err
 			}).Should(Succeed())
 		})

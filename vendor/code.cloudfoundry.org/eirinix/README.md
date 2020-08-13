@@ -1,7 +1,7 @@
 # Eirinix
-[![godoc](https://godoc.org/github.com/SUSE/eirinix?status.svg)](https://godoc.org/github.com/SUSE/eirinix)
+[![godoc](https://godoc.org/code.cloudfoundry.org/eirinix?status.svg)](https://godoc.org/code.cloudfoundry.org/eirinix)
 [![Build Status](https://travis-ci.org/SUSE/eirinix.svg?branch=master)](https://travis-ci.org/SUSE/eirinix)
-[![go report card](https://goreportcard.com/badge/github.com/SUSE/eirinix)](https://goreportcard.com/report/github.com/SUSE/eirinix)
+[![go report card](https://goreportcard.com/badge/code.cloudfoundry.org/eirinix)](https://goreportcard.com/report/code.cloudfoundry.org/eirinix)
 [![codecov](https://codecov.io/gh/SUSE/eirinix/branch/master/graph/badge.svg)](https://codecov.io/gh/SUSE/eirinix)
 
 Extensions Library for Cloud Foundry Eirini
@@ -10,7 +10,7 @@ Extensions Library for Cloud Foundry Eirini
 
 
 ### Install
-    go get -u github.com/SUSE/eirinix
+    go get -u code.cloudfoundry.org/eirinix
 
 ### Write your extension
 
@@ -40,7 +40,7 @@ func (e *MyExtension) Handle(context.Context, eirinix.Manager, *corev1.Pod, admi
 
 ```golang
 
-import "github.com/SUSE/eirinix"
+import "code.cloudfoundry.org/eirinix"
 
 func main() {
     x := eirinix.NewManager(
@@ -76,7 +76,7 @@ You can do that by specifying a `ServiceName` instead:
 
 ```golang
 
-import "github.com/SUSE/eirinix"
+import "code.cloudfoundry.org/eirinix"
 
 func main() {
     x := eirinix.NewManager(
@@ -110,7 +110,7 @@ To register only the extension, you can run the manager with the same option, bu
 
 ```golang
 
-import "github.com/SUSE/eirinix"
+import "code.cloudfoundry.org/eirinix"
 
 func main() {
     x := eirinix.NewManager(
@@ -133,7 +133,7 @@ Now we can run the Extension in a separate binary, by disabling the registration
 
 ```golang
 
-import "github.com/SUSE/eirinix"
+import "code.cloudfoundry.org/eirinix"
 
 func main() {
     RegisterWebhooks := false
@@ -165,8 +165,8 @@ In order to trigger re-generation of the mutating webhook certificate, we have t
 #### Fix on redeploy on an existing k8s (which had a scf deployed before):
 - In case of multiple re-deployments on the same cluster it can happen that old secrets are still present on the cluster. The eirinix library then tries to reuse those, resulting in a failed connection since the service will have a different IP-address.
 
-- Before redeploying run `kubectl get secrets -n eirini`, if there is an `eirini-x-setupcertificate` (the name may vary depending on the operator fingerprint set on the extension, see [https://godoc.org/github.com/SUSE/eirinix#ManagerOptions
-](https://godoc.org/github.com/SUSE/eirinix#ManagerOptions
+- Before redeploying run `kubectl get secrets -n eirini`, if there is an `eirini-x-setupcertificate` (the name may vary depending on the operator fingerprint set on the extension, see [https://godoc.org/code.cloudfoundry.org/eirinix#ManagerOptions
+](https://godoc.org/code.cloudfoundry.org/eirinix#ManagerOptions
 ) for details) present, delete it using `kubectl delete secret eirini-x-setupcertificate -n eirini`
 
   We need also to remove the older mutatingwebhook:

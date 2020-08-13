@@ -57,6 +57,7 @@ type MutatingWebhook interface {
 	GetRules() []admissionregistrationv1beta1.RuleWithOperations
 	GetFailurePolicy() admissionregistrationv1beta1.FailurePolicyType
 	GetNamespaceSelector() *metav1.LabelSelector
+	GetLabelSelector() *metav1.LabelSelector
 	GetHandler() admission.Handler
 	GetWebhook() *webhook.Admission
 }

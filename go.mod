@@ -3,7 +3,6 @@ module code.cloudfoundry.org/eirini
 go 1.13
 
 replace (
-	code.cloudfoundry.org/eirinix => ../eirinix
 	github.com/go-logr/logr => github.com/go-logr/logr v0.1.0
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
 	k8s.io/client-go => k8s.io/client-go v0.18.6
@@ -18,6 +17,7 @@ require (
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	code.cloudfoundry.org/consuladapter v0.0.0-20190222031846-a0ec466a22b6 // indirect
 	code.cloudfoundry.org/diego-logging-client v0.0.0-20190918155030-cd01d2d2c629 // indirect
+	code.cloudfoundry.org/eirinix v0.3.1-0.20200813115927-6a0925613552
 	code.cloudfoundry.org/executor v0.0.0-20191210222949-67a08c48e56c // indirect
 	code.cloudfoundry.org/garden v0.0.0-20191128141255-60b076cc4749 // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20190809170250-f77fb823c7ee // indirect
@@ -43,8 +43,6 @@ require (
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/go-logr/logr v0.2.0 // indirect
-	github.com/go-logr/zapr v0.1.1 // indirect
-	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/go-test/deep v1.0.5 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
@@ -60,7 +58,6 @@ require (
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/lib/pq v1.2.0 // indirect
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3
 	github.com/mitchellh/mapstructure v1.2.2 // indirect
 	github.com/nats-io/jwt v1.0.1 // indirect
@@ -78,11 +75,11 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	go.uber.org/multierr v1.5.0
-	go.uber.org/zap v1.15.0 // indirect
+	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
 	golang.org/x/sys v0.0.0-20200810151505-1b9f1253b3ed // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
+	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/grpc v1.31.0
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.6

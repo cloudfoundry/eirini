@@ -1,4 +1,4 @@
-module github.com/SUSE/eirinix
+module code.cloudfoundry.org/eirinix
 
 require (
 	code.cloudfoundry.org/quarks-utils v0.0.0-20200807095127-abd23fde8bb1

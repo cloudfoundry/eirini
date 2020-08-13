@@ -46,9 +46,11 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 				if e.Name != eirini.EnvCFInstanceIndex {
 					continue
 				}
+
 				return e.Value
 			}
 		}
+
 		return ""
 	}
 

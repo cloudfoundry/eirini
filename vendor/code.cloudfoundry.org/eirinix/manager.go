@@ -11,7 +11,7 @@ import (
 	"code.cloudfoundry.org/quarks-utils/pkg/credsgen"
 	inmemorycredgen "code.cloudfoundry.org/quarks-utils/pkg/credsgen/in_memory_generator"
 	kubeConfig "code.cloudfoundry.org/quarks-utils/pkg/kubeconfig"
-	"github.com/SUSE/eirinix/util/ctxlog"
+	"code.cloudfoundry.org/eirinix/util/ctxlog"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"

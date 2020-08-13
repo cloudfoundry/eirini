@@ -72,6 +72,15 @@ func (w *DefaultMutatingWebhook) GetNamespaceSelector() *metav1.LabelSelector {
 	return w.NamespaceSelector
 }
 
+func (w *DefaultMutatingWebhook) GetLabelSelector() *metav1.LabelSelector {
+	if w.FilterEiriniApps {
+		return &metav1.LabelSelector{
+			MatchLabels: map[string]string{LabelSourceType: "APP"},
+		}
+	}
+	return nil
+}
+
 func (w *DefaultMutatingWebhook) GetHandler() admission.Handler {
 	return w.Handler
 }
@@ -177,20 +186,6 @@ func (w *DefaultMutatingWebhook) InjectDecoder(d *admission.Decoder) error {
 
 // Handle delegates the Handle function to the Eirini Extension
 func (w *DefaultMutatingWebhook) Handle(ctx context.Context, req admission.Request) admission.Response {
-
 	pod, _ := w.GetPod(req)
-
-	// Don't filter the pod if We are not handling pods or filtering is disabled
-	if pod == nil || !w.FilterEiriniApps {
-		return w.EiriniExtension.Handle(ctx, w.EiriniExtensionManager, pod, req)
-	}
-
-	podCopy := pod.DeepCopy()
-
-	// Patch only applications pod created by Eirini
-	if v, ok := pod.GetLabels()[LabelSourceType]; ok && v == "APP" {
-		return w.EiriniExtension.Handle(ctx, w.EiriniExtensionManager, pod, req)
-	}
-
-	return w.EiriniExtensionManager.PatchFromPod(req, podCopy)
+	return w.EiriniExtension.Handle(ctx, w.EiriniExtensionManager, pod, req)
 }

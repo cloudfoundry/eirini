@@ -22,7 +22,7 @@ import (
 	machinerytypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/SUSE/eirinix/util/ctxlog"
+	"code.cloudfoundry.org/eirinix/util/ctxlog"
 )
 
 // WebhookConfig generates certificates and the configuration for the webhook server
@@ -208,6 +208,7 @@ func (f *WebhookConfig) GenerateAdmissionWebhook(webhooks []MutatingWebhook) []a
 			FailurePolicy:     &p,
 			NamespaceSelector: webhook.GetNamespaceSelector(),
 			ClientConfig:      clientConfig,
+			ObjectSelector:    webhook.GetLabelSelector(),
 		}
 
 		mutatingHooks = append(mutatingHooks, wh)
