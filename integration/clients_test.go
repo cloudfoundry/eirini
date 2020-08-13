@@ -62,7 +62,7 @@ var _ = Describe("Pod", func() {
 			})
 		})
 
-		It("lists all pods across all namespaces", func() {
+		It("lists all pods matching the specified LRP identifier", func() {
 			pods, err := podClient.GetByLRPIdentifier(opi.LRPIdentifier{GUID: guid, Version: "42"})
 
 			Expect(err).NotTo(HaveOccurred())
