@@ -201,6 +201,21 @@ var _ = Describe("StatefulSets", func() {
 			Eventually(func() []string { return statefulSetNames(statefulSets) }).Should(ConsistOf("one", "two"))
 		})
 	})
+
+	Describe("Delete", func() {
+		BeforeEach(func() {
+			createStatefulSet(fixture.Namespace, "foo", nil)
+		})
+
+		It("deletes a StatefulSet", func() {
+			Eventually(func() []appsv1.StatefulSet { return listStatefulSets(fixture.Namespace) }).ShouldNot(BeEmpty())
+
+			err := statefulSetClient.Delete(fixture.Namespace, "foo")
+
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() []appsv1.StatefulSet { return listStatefulSets(fixture.Namespace) }).Should(BeEmpty())
+		})
+	})
 })
 
 func podNames(pods []corev1.Pod) []string {

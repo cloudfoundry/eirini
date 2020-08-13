@@ -112,8 +112,11 @@ func (c *StatefulSet) Update(namespace string, statefulSet *appsv1.StatefulSet) 
 	return c.clientSet.AppsV1().StatefulSets(namespace).Update(context.Background(), statefulSet, metav1.UpdateOptions{})
 }
 
-func (c *StatefulSet) Delete(namespace string, name string, options metav1.DeleteOptions) error {
-	return c.clientSet.AppsV1().StatefulSets(namespace).Delete(context.Background(), name, options)
+func (c *StatefulSet) Delete(namespace string, name string) error {
+	backgroundPropagation := metav1.DeletePropagationBackground
+	return c.clientSet.AppsV1().StatefulSets(namespace).Delete(context.Background(), name, metav1.DeleteOptions{
+		PropagationPolicy: &backgroundPropagation,
+	})
 }
 
 type Job struct {

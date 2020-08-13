@@ -711,10 +711,9 @@ var _ = Describe("Statefulset Desirer", func() {
 		It("deletes the statefulSet", func() {
 			Expect(statefulSetDesirer.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 			Expect(statefulSetClient.DeleteCallCount()).To(Equal(1))
-			namespace, name, opts := statefulSetClient.DeleteArgsForCall(0)
+			namespace, name := statefulSetClient.DeleteArgsForCall(0)
 			Expect(namespace).To(Equal("the-namespace"))
 			Expect(name).To(Equal("baldur"))
-			Expect(opts.PropagationPolicy).To(PointTo(Equal(metav1.DeletePropagationBackground)))
 		})
 
 		It("should delete any corresponding pod disruption budgets", func() {

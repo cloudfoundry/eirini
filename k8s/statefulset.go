@@ -87,7 +87,7 @@ type PodDisruptionBudgetClient interface {
 type StatefulSetClient interface {
 	Create(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
 	Update(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
-	Delete(namespace string, name string, options metav1.DeleteOptions) error
+	Delete(namespace string, name string) error
 	GetBySourceType(sourceType string) ([]appsv1.StatefulSet, error)
 	GetByLRPIdentifier(id opi.LRPIdentifier) ([]appsv1.StatefulSet, error)
 }
@@ -230,11 +230,7 @@ func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 		return err
 	}
 
-	backgroundPropagation := metav1.DeletePropagationBackground
-
-	if err := m.StatefulSets.Delete(statefulSet.Namespace, statefulSet.Name, metav1.DeleteOptions{
-		PropagationPolicy: &backgroundPropagation,
-	}); err != nil {
+	if err := m.StatefulSets.Delete(statefulSet.Namespace, statefulSet.Name); err != nil {
 		logger.Error("failed-to-delete-statefulset", err)
 
 		return err

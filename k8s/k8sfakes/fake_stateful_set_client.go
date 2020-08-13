@@ -7,7 +7,6 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
 	v1 "k8s.io/api/apps/v1"
-	v1a "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type FakeStatefulSetClient struct {
@@ -25,12 +24,11 @@ type FakeStatefulSetClient struct {
 		result1 *v1.StatefulSet
 		result2 error
 	}
-	DeleteStub        func(string, string, v1a.DeleteOptions) error
+	DeleteStub        func(string, string) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
 		arg1 string
 		arg2 string
-		arg3 v1a.DeleteOptions
 	}
 	deleteReturns struct {
 		result1 error
@@ -146,18 +144,17 @@ func (fake *FakeStatefulSetClient) CreateReturnsOnCall(i int, result1 *v1.Statef
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetClient) Delete(arg1 string, arg2 string, arg3 v1a.DeleteOptions) error {
+func (fake *FakeStatefulSetClient) Delete(arg1 string, arg2 string) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
 		arg1 string
 		arg2 string
-		arg3 v1a.DeleteOptions
-	}{arg1, arg2, arg3})
-	fake.recordInvocation("Delete", []interface{}{arg1, arg2, arg3})
+	}{arg1, arg2})
+	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
-		return fake.DeleteStub(arg1, arg2, arg3)
+		return fake.DeleteStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -172,17 +169,17 @@ func (fake *FakeStatefulSetClient) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeStatefulSetClient) DeleteCalls(stub func(string, string, v1a.DeleteOptions) error) {
+func (fake *FakeStatefulSetClient) DeleteCalls(stub func(string, string) error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakeStatefulSetClient) DeleteArgsForCall(i int) (string, string, v1a.DeleteOptions) {
+func (fake *FakeStatefulSetClient) DeleteArgsForCall(i int) (string, string) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeStatefulSetClient) DeleteReturns(result1 error) {

@@ -234,9 +234,9 @@ func createPDB(ns, name string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func createStatefulSet(ns, name string, labels map[string]string) {
+func createStatefulSet(ns, name string, labels map[string]string) *appsv1.StatefulSet {
 	id := util.GenerateGUID()
-	_, err := fixture.Clientset.AppsV1().StatefulSets(ns).Create(context.Background(), &appsv1.StatefulSet{
+	statefulSet, err := fixture.Clientset.AppsV1().StatefulSets(ns).Create(context.Background(), &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
 			Labels: labels,
@@ -258,4 +258,6 @@ func createStatefulSet(ns, name string, labels map[string]string) {
 	}, metav1.CreateOptions{})
 
 	Expect(err).NotTo(HaveOccurred())
+
+	return statefulSet
 }
