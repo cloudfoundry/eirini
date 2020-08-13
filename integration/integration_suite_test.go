@@ -90,10 +90,17 @@ func listAllStatefulSets(lrp1, lrp2 *opi.LRP) []appsv1.StatefulSet {
 	return list.Items
 }
 
-func listStatefulSets(appName string) []appsv1.StatefulSet {
+func listStatefulSetsForApp(appName string) []appsv1.StatefulSet {
 	list, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("name=%s", appName),
 	})
+	Expect(err).NotTo(HaveOccurred())
+
+	return list.Items
+}
+
+func listStatefulSets(ns string) []appsv1.StatefulSet {
+	list, err := fixture.Clientset.AppsV1().StatefulSets(ns).List(context.Background(), metav1.ListOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	return list.Items
