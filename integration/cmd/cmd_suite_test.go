@@ -116,3 +116,17 @@ func defaultReporterConfig() *eirini.TaskReporterConfig {
 
 	return config
 }
+
+func defaultInstanceIndexEnvInjectorConfig() *eirini.InstanceIndexEnvInjectorConfig {
+	config := &eirini.InstanceIndexEnvInjectorConfig{
+		KubeConfig: eirini.KubeConfig{
+			ConfigPath: pathToTestFixture("kube.conf"),
+		},
+		ServiceName:                "foo",
+		ServiceNamespace:           "default",
+		ServicePort:                8080,
+		EiriniXOperatorFingerprint: "cmd-test",
+	}
+
+	return config
+}

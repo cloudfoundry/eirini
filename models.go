@@ -21,6 +21,7 @@ const (
 
 	EnvPodName              = "POD_NAME"
 	EnvCFInstanceIP         = "CF_INSTANCE_IP"
+	EnvCFInstanceIndex      = "CF_INSTANCE_INDEX"
 	EnvCFInstanceGUID       = "CF_INSTANCE_GUID"
 	EnvCFInstanceInternalIP = "CF_INSTANCE_INTERNAL_IP"
 	EnvCFInstanceAddr       = "CF_INSTANCE_ADDR"
@@ -154,4 +155,13 @@ type StagerConfig struct {
 	DownloaderImage string
 	UploaderImage   string
 	ExecutorImage   string
+}
+
+type InstanceIndexEnvInjectorConfig struct {
+	ServiceName                string `yaml:"service_name"`
+	ServiceNamespace           string `yaml:"service_namespace"`
+	ServicePort                int32  `yaml:"service_port"`
+	EiriniXOperatorFingerprint string
+
+	KubeConfig `yaml:",inline"`
 }

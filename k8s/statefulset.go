@@ -56,6 +56,8 @@ const (
 
 	LabelStagingGUID = "cloudfoundry.org/staging_guid"
 
+	OPIContainerName = "opi"
+
 	VcapUID                  = 2000
 	PdbMinAvailableInstances = 1
 	PodAffinityTermWeight    = 100
@@ -598,7 +600,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet { /
 					ImagePullSecrets: m.calculateImagePullSecrets(lrp),
 					Containers: []corev1.Container{
 						{
-							Name:            "opi",
+							Name:            OPIContainerName,
 							Image:           lrp.Image,
 							ImagePullPolicy: corev1.PullAlways,
 							Command:         lrp.Command,
