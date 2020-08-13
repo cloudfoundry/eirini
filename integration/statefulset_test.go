@@ -65,7 +65,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 
 		// join all tests in a single with By()
 		It("should create a StatefulSet object", func() {
-			statefulset := getStatefulSet(odinLRP)
+			statefulset := getStatefulSetForLRP(odinLRP)
 			Expect(statefulset.Name).To(ContainSubstring(odinLRP.GUID))
 			Expect(statefulset.Namespace).To(Equal(fixture.Namespace))
 			Expect(statefulset.Spec.Template.Spec.Containers[0].Command).To(Equal(odinLRP.Command))
@@ -92,14 +92,14 @@ var _ = Describe("StatefulSetDesirer", func() {
 				}).Should(Equal("Ready"))
 			}
 
-			statefulset := getStatefulSet(odinLRP)
+			statefulset := getStatefulSetForLRP(odinLRP)
 			Eventually(func() int32 {
-				return getStatefulSet(odinLRP).Status.ReadyReplicas
+				return getStatefulSetForLRP(odinLRP).Status.ReadyReplicas
 			}).Should(Equal(*statefulset.Spec.Replicas))
 		})
 
 		It("should create a pod disruption budget for the lrp", func() {
-			statefulset := getStatefulSet(odinLRP)
+			statefulset := getStatefulSetForLRP(odinLRP)
 			pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pdb).NotTo(BeNil())
@@ -111,7 +111,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 			})
 
 			It("should not create a pod disruption budget for the lrp", func() {
-				statefulset := getStatefulSet(odinLRP)
+				statefulset := getStatefulSetForLRP(odinLRP)
 				_, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 				Expect(err).To(MatchError(ContainSubstring("not found")))
 			})
@@ -126,7 +126,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 			})
 
 			DescribeTable("sets appropriate annotations to statefulset", func(key, value string) {
-				statefulset := getStatefulSet(odinLRP)
+				statefulset := getStatefulSetForLRP(odinLRP)
 				Expect(statefulset.Annotations).To(HaveKeyWithValue(key, value))
 			},
 				Entry("SpaceName", k8s.AnnotationSpaceName, "odin-space"),
@@ -136,7 +136,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 			)
 
 			It("sets appropriate labels to statefulset", func() {
-				statefulset := getStatefulSet(odinLRP)
+				statefulset := getStatefulSetForLRP(odinLRP)
 				Expect(statefulset.Labels).To(HaveKeyWithValue(k8s.LabelGUID, odinLRP.LRPIdentifier.GUID))
 				Expect(statefulset.Labels).To(HaveKeyWithValue(k8s.LabelVersion, odinLRP.LRPIdentifier.Version))
 				Expect(statefulset.Labels).To(HaveKeyWithValue(k8s.LabelSourceType, "APP"))
@@ -179,7 +179,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 			})
 
 			It("creates a private registry secret", func() {
-				statefulset := getStatefulSet(odinLRP)
+				statefulset := getStatefulSetForLRP(odinLRP)
 				secret, err := getSecret(privateRegistrySecretName(statefulset.Name))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(secret).NotTo(BeNil())
@@ -232,7 +232,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 				}
 
 				Eventually(func() int32 {
-					statefulset := getStatefulSet(odinLRP)
+					statefulset := getStatefulSetForLRP(odinLRP)
 
 					return statefulset.Status.ReadyReplicas
 				}).Should(BeNumerically("==", odinLRP.TargetInstances))
@@ -245,7 +245,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 			})
 
 			It("still creates a statefulset, with 0 replicas", func() {
-				statefulset := getStatefulSet(odinLRP)
+				statefulset := getStatefulSetForLRP(odinLRP)
 				Expect(statefulset.Name).To(ContainSubstring(odinLRP.GUID))
 				Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(0)))
 			})
@@ -263,7 +263,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 				return listPods(odinLRP.LRPIdentifier)
 			}).Should(HaveLen(odinLRP.TargetInstances))
 
-			statefulsetName = getStatefulSet(odinLRP).Name
+			statefulsetName = getStatefulSetForLRP(odinLRP).Name
 
 			err = desirer.Stop(odinLRP.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
@@ -271,7 +271,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 
 		It("should delete the StatefulSet object", func() {
 			Eventually(func() []appsv1.StatefulSet {
-				return listStatefulSets("odin")
+				return listStatefulSetsForApp("odin")
 			}).Should(BeEmpty())
 		})
 
@@ -315,7 +315,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 
 			It("should delete the StatefulSet object", func() {
 				Eventually(func() []appsv1.StatefulSet {
-					return listStatefulSets("odin")
+					return listStatefulSetsForApp("odin")
 				}).Should(BeEmpty())
 			})
 
@@ -347,7 +347,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 			})
 
 			It("should create a pod disruption budget for the lrp", func() {
-				statefulset := getStatefulSet(odinLRP)
+				statefulset := getStatefulSetForLRP(odinLRP)
 				pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(pdb).NotTo(BeNil())
@@ -361,7 +361,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 			})
 
 			It("should keep the existing pod disruption budget for the lrp", func() {
-				statefulset := getStatefulSet(odinLRP)
+				statefulset := getStatefulSetForLRP(odinLRP)
 				pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(pdb).NotTo(BeNil())
@@ -375,7 +375,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 			})
 
 			It("should delete the pod disruption budget for the lrp", func() {
-				statefulset := getStatefulSet(odinLRP)
+				statefulset := getStatefulSetForLRP(odinLRP)
 				_, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 				Expect(err).To(MatchError(ContainSubstring("not found")))
 			})
@@ -388,7 +388,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 			})
 
 			It("should keep the lrp without a pod disruption budget", func() {
-				statefulset := getStatefulSet(odinLRP)
+				statefulset := getStatefulSetForLRP(odinLRP)
 				_, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 				Expect(err).To(MatchError(ContainSubstring("not found")))
 			})

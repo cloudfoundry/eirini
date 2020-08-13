@@ -48,7 +48,7 @@ func getSecret(name string) (*corev1.Secret, error) {
 	return secrets().Get(context.Background(), name, metav1.GetOptions{})
 }
 
-func getStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet {
+func getStatefulSetForLRP(lrp *opi.LRP) *appsv1.StatefulSet {
 	ss, getErr := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: labelSelector(lrp.LRPIdentifier),
 	})
