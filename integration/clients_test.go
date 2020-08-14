@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = FDescribe("Pod", func() {
+var _ = Describe("Pod", func() {
 	var podClient *client.Pod
 
 	BeforeEach(func() {
@@ -97,7 +97,7 @@ var _ = FDescribe("Pod", func() {
 	})
 })
 
-var _ = FDescribe("PodDisruptionBudgets", func() {
+var _ = Describe("PodDisruptionBudgets", func() {
 	var pdbClient *client.PodDisruptionBudget
 
 	BeforeEach(func() {
@@ -136,7 +136,7 @@ var _ = FDescribe("PodDisruptionBudgets", func() {
 	})
 })
 
-var _ = FDescribe("StatefulSets", func() {
+var _ = Describe("StatefulSets", func() {
 	var statefulSetClient *client.StatefulSet
 
 	BeforeEach(func() {
@@ -273,9 +273,11 @@ var _ = FDescribe("StatefulSets", func() {
 
 			newStatefulSet, err := statefulSetClient.Update(fixture.Namespace, statefulSet)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(newStatefulSet.Labels["foo"]).To(Equal("new-value"))
+			Expect(newStatefulSet.Labels["label"]).To(Equal("new-value"))
 
-			Eventually(func() string { return getStatefulSet(fixture.Namespace, "foo").Labels["label"] }).Should(Equal("new-value"))
+			Eventually(func() string {
+				return getStatefulSet(fixture.Namespace, "foo").Labels["label"]
+			}).Should(Equal("new-value"))
 		})
 	})
 
