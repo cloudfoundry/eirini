@@ -47,7 +47,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 				_, err := net.Dial("tcp", fmt.Sprintf(":%d", config.ServicePort))
 
 				return err
-			}).Should(Succeed())
+			}, "5s").Should(Succeed())
 		})
 	})
 })
