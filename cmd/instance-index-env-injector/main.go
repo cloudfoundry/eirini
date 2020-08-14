@@ -41,6 +41,7 @@ func main() {
 			FilterEiriniApps:    &filterEiriniApps,
 			RegisterWebHook:     &register,
 			OperatorFingerprint: cfg.EiriniXOperatorFingerprint,
+			KubeConfig:          cfg.ConfigPath,
 		})
 
 	manager.AddExtension(webhook.NewInstanceIndexEnvInjector(log))

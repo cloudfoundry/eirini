@@ -120,7 +120,7 @@ func defaultReporterConfig() *eirini.TaskReporterConfig {
 func defaultInstanceIndexEnvInjectorConfig() *eirini.InstanceIndexEnvInjectorConfig {
 	config := &eirini.InstanceIndexEnvInjectorConfig{
 		KubeConfig: eirini.KubeConfig{
-			ConfigPath: pathToTestFixture("kube.conf"),
+			ConfigPath: util.GetKubeconfig(),
 		},
 		ServiceName:                "foo",
 		ServiceNamespace:           "default",
