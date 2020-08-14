@@ -60,6 +60,7 @@ func getStatefulSetForLRP(lrp *opi.LRP) *appsv1.StatefulSet {
 func getStatefulSet(ns, name string) *appsv1.StatefulSet {
 	ss, err := fixture.Clientset.AppsV1().StatefulSets(ns).Get(context.Background(), name, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
+
 	return ss
 }
 

@@ -34,6 +34,7 @@ var _ = FDescribe("Pod", func() {
 			Eventually(func() []string {
 				pods, err := podClient.GetAll()
 				Expect(err).NotTo(HaveOccurred())
+
 				return podNames(pods)
 			}).Should(ContainElements("one", "two", "three", "four", "five", "six"))
 		})
@@ -218,12 +219,14 @@ var _ = FDescribe("StatefulSets", func() {
 			Eventually(func() []string {
 				statefulSets, err := statefulSetClient.GetBySourceType("APP")
 				Expect(err).NotTo(HaveOccurred())
+
 				return statefulSetNames(statefulSets)
 			}).Should(ContainElements("one", "three"))
 
 			Consistently(func() []string {
 				statefulSets, err := statefulSetClient.GetBySourceType("APP")
 				Expect(err).NotTo(HaveOccurred())
+
 				return statefulSetNames(statefulSets)
 			}).ShouldNot(ContainElements("two"))
 		})
@@ -268,7 +271,9 @@ var _ = FDescribe("StatefulSets", func() {
 		It("updates a StatefulSet", func() {
 			statefulSet.Labels["label"] = "new-value"
 
-			statefulSetClient.Update(fixture.Namespace, statefulSet)
+			newStatefulSet, err := statefulSetClient.Update(fixture.Namespace, statefulSet)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(newStatefulSet.Labels["foo"]).To(Equal("new-value"))
 
 			Eventually(func() string { return getStatefulSet(fixture.Namespace, "foo").Labels["label"] }).Should(Equal("new-value"))
 		})

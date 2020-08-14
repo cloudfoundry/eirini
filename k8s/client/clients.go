@@ -114,6 +114,7 @@ func (c *StatefulSet) Update(namespace string, statefulSet *appsv1.StatefulSet) 
 
 func (c *StatefulSet) Delete(namespace string, name string) error {
 	backgroundPropagation := metav1.DeletePropagationBackground
+
 	return c.clientSet.AppsV1().StatefulSets(namespace).Delete(context.Background(), name, metav1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
