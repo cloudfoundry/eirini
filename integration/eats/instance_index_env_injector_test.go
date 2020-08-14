@@ -92,7 +92,6 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 	})
 
 	It("creates pods with CF_INSTANCE_INDEX set to 0, 1 and 2", func() {
-		Skip("waiting for component to be included successfully in helm")
 		Eventually(getStatefulSetPods, "30s").Should(HaveLen(3))
 
 		envVars := []string{}
