@@ -44,16 +44,14 @@ var _ = Describe("TaskReporter", func() {
 		Expect(err).ToNot(HaveOccurred())
 		cloudControllerServer.HTTPTestServer.StartTLS()
 
-		eiriniInstance := fmt.Sprintf("%s-%d", tests.GenerateGUID(), GinkgoParallelNode())
 		config = &eirini.TaskReporterConfig{
 			KubeConfig: eirini.KubeConfig{
 				Namespace:  fixture.Namespace,
 				ConfigPath: fixture.KubeConfigPath,
 			},
-			CCCertPath:     certPath,
-			CAPath:         certPath,
-			CCKeyPath:      keyPath,
-			EiriniInstance: eiriniInstance,
+			CCCertPath: certPath,
+			CAPath:     certPath,
+			CCKeyPath:  keyPath,
 		}
 
 		taskDesirer = k8s.NewTaskDesirerWithEiriniInstance(
@@ -66,7 +64,6 @@ var _ = Describe("TaskReporter", func() {
 			"",
 			"",
 			"",
-			eiriniInstance,
 			false,
 		)
 
@@ -134,7 +131,7 @@ var _ = Describe("TaskReporter", func() {
 	})
 
 	It("deletes the job", func() {
-		Eventually(getTaskJobsFn(task.GUID, config.EiriniInstance)).Should(BeEmpty())
+		Eventually(getTaskJobsFn(task.GUID)).Should(BeEmpty())
 	})
 
 	When("a task job fails", func() {
@@ -157,7 +154,7 @@ var _ = Describe("TaskReporter", func() {
 		})
 
 		It("deletes the job", func() {
-			Eventually(getTaskJobsFn(task.GUID, config.EiriniInstance)).Should(BeEmpty())
+			Eventually(getTaskJobsFn(task.GUID)).Should(BeEmpty())
 		})
 	})
 
@@ -174,7 +171,7 @@ var _ = Describe("TaskReporter", func() {
 
 		It("deletes the docker registry secret", func() {
 			registrySecretPrefix := fmt.Sprintf("%s-%s-registry-secret-", task.AppName, task.SpaceName)
-			jobs, err := getTaskJobsFn(task.GUID, config.EiriniInstance)()
+			jobs, err := getTaskJobsFn(task.GUID)()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(jobs).To(HaveLen(1))
 
@@ -196,33 +193,15 @@ var _ = Describe("TaskReporter", func() {
 			}).Should(MatchError(ContainSubstring(`secrets "%s" not found`, registrySecretName)))
 		})
 	})
-
-	When("the job is labeled with a different eirini instance ID", func() {
-		var desirerEiriniInstance string
-
-		BeforeEach(func() {
-			desirerEiriniInstance = config.EiriniInstance
-			config.EiriniInstance = "your-eirini" + tests.GenerateGUID()
-		})
-
-		It("does not notify the cloud controller", func() {
-			Consistently(cloudControllerServer.ReceivedRequests, "10s").Should(BeEmpty())
-		})
-
-		It("does not delete the task", func() {
-			Consistently(getTaskJobsFn(task.GUID, desirerEiriniInstance), "10s").ShouldNot(BeEmpty())
-		})
-	})
 })
 
-func getTaskJobsFn(guid, eiriniInstance string) func() ([]batchv1.Job, error) {
+func getTaskJobsFn(guid string) func() ([]batchv1.Job, error) {
 	return func() ([]batchv1.Job, error) {
 		jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{
 			LabelSelector: fmt.Sprintf(
-				"%s=%s, %s=%s, %s=%s",
+				"%s=%s, %s=%s",
 				k8s.LabelSourceType, "TASK",
 				k8s.LabelGUID, guid,
-				k8s.LabelEiriniInstance, eiriniInstance,
 			),
 		})
 

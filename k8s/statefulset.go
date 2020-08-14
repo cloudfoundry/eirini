@@ -46,13 +46,12 @@ const (
 
 	AnnotationStagingGUID = "cloudfoundry.org/staging_guid"
 
-	LabelGUID           = AnnotationGUID
-	LabelName           = "cloudfoundry.org/name"
-	LabelVersion        = "cloudfoundry.org/version"
-	LabelAppGUID        = "cloudfoundry.org/app_guid"
-	LabelProcessType    = "cloudfoundry.org/process_type"
-	LabelSourceType     = "cloudfoundry.org/source_type"
-	LabelEiriniInstance = "cloudfoundry.org/internal_eirini_instance"
+	LabelGUID        = AnnotationGUID
+	LabelName        = "cloudfoundry.org/name"
+	LabelVersion     = "cloudfoundry.org/version"
+	LabelAppGUID     = "cloudfoundry.org/app_guid"
+	LabelProcessType = "cloudfoundry.org/process_type"
+	LabelSourceType  = "cloudfoundry.org/source_type"
 
 	LabelStagingGUID = "cloudfoundry.org/staging_guid"
 

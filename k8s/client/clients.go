@@ -158,9 +158,8 @@ func (c *Job) Delete(namespace string, name string) error {
 
 func (c *Job) GetByGUID(guid string) ([]batchv1.Job, error) {
 	listOpts := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s",
+		LabelSelector: fmt.Sprintf("%s=%s",
 			c.guidLabel, guid,
-			k8s.LabelEiriniInstance, c.eiriniInstance,
 		),
 	}
 	jobs, err := c.clientSet.BatchV1().Jobs("").List(context.Background(), listOpts)

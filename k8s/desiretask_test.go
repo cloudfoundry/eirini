@@ -142,7 +142,6 @@ var _ = Describe("TaskDesirer", func() {
 			"staging-service-account",
 			"registry-secret",
 			"rootfs-version",
-			"my-eirini",
 			false,
 		)
 	})
@@ -198,7 +197,6 @@ var _ = Describe("TaskDesirer", func() {
 					HaveKeyWithValue(LabelGUID, "task-123"),
 					HaveKeyWithValue(LabelSourceType, "TASK"),
 					HaveKeyWithValue(LabelName, "task-name"),
-					HaveKeyWithValue(LabelEiriniInstance, "my-eirini"),
 					HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, "rootfs-version"),
 				))
 			})
@@ -244,7 +242,6 @@ var _ = Describe("TaskDesirer", func() {
 					"staging-service-account",
 					"registry-secret",
 					"rootfs-version",
-					"my-eirini",
 					true,
 				)
 			})
@@ -580,7 +577,6 @@ var _ = Describe("TaskDesirer", func() {
 			Entry("LabelSourceType", LabelSourceType, "STG"),
 			Entry("LabelStagingGUID", LabelStagingGUID, taskGUID),
 			Entry("LabelRootfsVersion", rootfspatcher.RootfsVersionLabel, "rootfs-version"),
-			Entry("LabelEiriniInstance", LabelEiriniInstance, "my-eirini"),
 		)
 
 		DescribeTable("the task should have the expected annotations", func(key, value string) {

@@ -18,13 +18,12 @@ type Reporter interface {
 }
 
 type Informer struct {
-	clientset      kubernetes.Interface
-	syncPeriod     time.Duration
-	namespace      string
-	reporter       Reporter
-	stopperChan    chan struct{}
-	logger         lager.Logger
-	eiriniInstance string
+	clientset   kubernetes.Interface
+	syncPeriod  time.Duration
+	namespace   string
+	reporter    Reporter
+	stopperChan chan struct{}
+	logger      lager.Logger
 }
 
 func NewInformer(
@@ -34,16 +33,14 @@ func NewInformer(
 	reporter Reporter,
 	stopperChan chan struct{},
 	logger lager.Logger,
-	eiriniInstance string,
 ) *Informer {
 	return &Informer{
-		clientset:      client,
-		syncPeriod:     syncPeriod,
-		namespace:      namespace,
-		reporter:       reporter,
-		stopperChan:    stopperChan,
-		logger:         logger,
-		eiriniInstance: eiriniInstance,
+		clientset:   client,
+		syncPeriod:  syncPeriod,
+		namespace:   namespace,
+		reporter:    reporter,
+		stopperChan: stopperChan,
+		logger:      logger,
 	}
 }
 
@@ -70,8 +67,7 @@ func (c *Informer) updateFunc(oldObj interface{}, newObj interface{}) {
 
 func (c *Informer) tweakListOpts(opts *metav1.ListOptions) {
 	opts.LabelSelector = fmt.Sprintf(
-		"%s=%s,%s=%s",
+		"%s=%s",
 		k8s.LabelSourceType, "TASK",
-		k8s.LabelEiriniInstance, c.eiriniInstance,
 	)
 }

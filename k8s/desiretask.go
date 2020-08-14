@@ -53,7 +53,6 @@ type TaskDesirer struct {
 	serviceAccountName                string
 	stagingServiceAccountName         string
 	registrySecretName                string
-	eiriniInstance                    string
 	rootfsVersion                     string
 	allowAutomountServiceAccountToken bool
 }
@@ -94,7 +93,6 @@ func NewTaskDesirerWithEiriniInstance(
 	stagingServiceAccountName string,
 	registrySecretName string,
 	rootfsVersion string,
-	eiriniInstance string,
 	allowAutomountServiceAccountToken bool,
 ) *TaskDesirer {
 	desirer := NewTaskDesirer(
@@ -109,7 +107,6 @@ func NewTaskDesirerWithEiriniInstance(
 		rootfsVersion,
 		allowAutomountServiceAccountToken,
 	)
-	desirer.eiriniInstance = eiriniInstance
 
 	return desirer
 }
@@ -416,7 +413,6 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 		LabelGUID:                        task.GUID,
 		LabelAppGUID:                     task.AppGUID,
 		rootfspatcher.RootfsVersionLabel: d.rootfsVersion,
-		LabelEiriniInstance:              d.eiriniInstance,
 	}
 
 	job.Annotations = map[string]string{

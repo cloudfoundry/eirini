@@ -97,8 +97,6 @@ type Properties struct { //nolint:maligned
 	AllowRunImageAsRoot                     bool `yaml:"allow_run_image_as_root"`
 	UnsafeAllowAutomountServiceAccountToken bool `yaml:"unsafe_allow_automount_service_account_token"`
 
-	EiriniInstance string `yaml:"eirini_instance,omitempty"`
-
 	ServePlaintext bool `yaml:"serve_plaintext"`
 }
 
@@ -133,11 +131,10 @@ type MetricsCollectorConfig struct {
 }
 
 type TaskReporterConfig struct {
-	CCTLSDisabled  bool   `yaml:"cc_tls_disabled"`
-	CCCertPath     string `yaml:"cc_cert_path"`
-	CCKeyPath      string `yaml:"cc_key_path"`
-	CAPath         string `yaml:"ca_path"`
-	EiriniInstance string `yaml:"eirini_instance,omitempty"`
+	CCTLSDisabled bool   `yaml:"cc_tls_disabled"`
+	CCCertPath    string `yaml:"cc_cert_path"`
+	CCKeyPath     string `yaml:"cc_key_path"`
+	CAPath        string `yaml:"ca_path"`
 
 	KubeConfig `yaml:",inline"`
 }
