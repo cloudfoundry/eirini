@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -297,6 +298,84 @@ var _ = Describe("StatefulSets", func() {
 	})
 })
 
+var _ = Describe("Jobs", func() {
+	var jobsClient *client.Job
+
+	BeforeEach(func() {
+		jobsClient = client.NewJob(fixture.Clientset)
+	})
+
+	Describe("Create", func() {
+		It("creates a Job", func() {
+			runAsNonRoot := true
+			runAsUser := int64(2000)
+			_, err := jobsClient.Create(fixture.Namespace, &batchv1.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "foo",
+				},
+				Spec: batchv1.JobSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							RestartPolicy: corev1.RestartPolicyNever,
+							SecurityContext: &corev1.PodSecurityContext{
+								RunAsNonRoot: &runAsNonRoot,
+								RunAsUser:    &runAsUser,
+							},
+							Containers: []corev1.Container{
+								{
+									Name:            "test",
+									Image:           "busybox",
+									ImagePullPolicy: corev1.PullAlways,
+									Command:         []string{"echo", "hi"},
+								},
+							},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			jobs := listJobs(fixture.Namespace)
+
+			Expect(jobs).To(HaveLen(1))
+			Expect(jobs[0].Name).To(Equal("foo"))
+		})
+	})
+
+	Describe("Delete", func() {
+		BeforeEach(func() {
+			createJob(fixture.Namespace, "foo", nil)
+		})
+
+		It("deletes a StatefulSet", func() {
+			Eventually(func() []batchv1.Job { return listJobs(fixture.Namespace) }).ShouldNot(BeEmpty())
+
+			err := jobsClient.Delete(fixture.Namespace, "foo")
+
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() []batchv1.Job { return listJobs(fixture.Namespace) }).Should(BeEmpty())
+		})
+	})
+
+	Describe("GetByGUID", func() {
+		BeforeEach(func() {
+			createJob(fixture.Namespace, "foo", map[string]string{
+				k8s.LabelGUID:           "bar",
+				k8s.LabelEiriniInstance: "my-eirini",
+			})
+		})
+
+		It("gets all jobs matching the specified guid and eirini instance id", func() {
+			Eventually(func() []string {
+				jobs, err := jobsClient.GetByGUID("bar", "my-eirini")
+				Expect(err).NotTo(HaveOccurred())
+
+				return jobNames(jobs)
+			}).Should(ContainElements("foo"))
+		})
+	})
+})
+
 func podNames(pods []corev1.Pod) []string {
 	names := make([]string, 0, len(pods))
 	for _, pod := range pods {
@@ -310,6 +389,15 @@ func statefulSetNames(statefulSets []appsv1.StatefulSet) []string {
 	names := make([]string, 0, len(statefulSets))
 	for _, statefulSet := range statefulSets {
 		names = append(names, statefulSet.Name)
+	}
+
+	return names
+}
+
+func jobNames(jobs []batchv1.Job) []string {
+	names := make([]string, 0, len(jobs))
+	for _, job := range jobs {
+		names = append(names, job.Name)
 	}
 
 	return names

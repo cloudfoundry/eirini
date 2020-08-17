@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -107,10 +108,10 @@ func listStatefulSetsForApp(appName string) []appsv1.StatefulSet {
 }
 
 func listStatefulSets(ns string) []appsv1.StatefulSet {
-	list, err := fixture.Clientset.AppsV1().StatefulSets(ns).List(context.Background(), metav1.ListOptions{})
+	statfulSets, err := fixture.Clientset.AppsV1().StatefulSets(ns).List(context.Background(), metav1.ListOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
-	return list.Items
+	return statfulSets.Items
 }
 
 func listPodsByLabel(labelSelector string) []corev1.Pod {
@@ -126,6 +127,13 @@ func listPods(lrpIdentifier opi.LRPIdentifier) []corev1.Pod {
 
 func listAllPods() []corev1.Pod {
 	return listPodsByLabel("")
+}
+
+func listJobs(ns string) []batchv1.Job {
+	jobs, err := fixture.Clientset.BatchV1().Jobs(ns).List(context.Background(), metav1.ListOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	return jobs.Items
 }
 
 func podNamesFromPods(pods []corev1.Pod) []string {
@@ -258,6 +266,40 @@ func createStatefulSet(ns, name string, labels map[string]string) *appsv1.Statef
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"id": id,
+					},
+				},
+			},
+		},
+	}, metav1.CreateOptions{})
+
+	Expect(err).NotTo(HaveOccurred())
+
+	return statefulSet
+}
+
+func createJob(ns, name string, labels map[string]string) *batchv1.Job {
+	runAsNonRoot := true
+	runAsUser := int64(2000)
+	statefulSet, err := fixture.Clientset.BatchV1().Jobs(ns).Create(context.Background(), &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   name,
+			Labels: labels,
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					RestartPolicy: corev1.RestartPolicyNever,
+					SecurityContext: &corev1.PodSecurityContext{
+						RunAsNonRoot: &runAsNonRoot,
+						RunAsUser:    &runAsUser,
+					},
+					Containers: []corev1.Container{
+						{
+							Name:            "test",
+							Image:           "busybox",
+							ImagePullPolicy: corev1.PullAlways,
+							Command:         []string{"echo", "hi"},
+						},
 					},
 				},
 			},

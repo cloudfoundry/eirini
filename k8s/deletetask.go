@@ -8,15 +8,14 @@ import (
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	batch "k8s.io/api/batch/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //counterfeiter:generate . JobListerDeleter
 //counterfeiter:generate . SecretsDeleter
 
 type JobListerDeleter interface {
-	List(opts meta_v1.ListOptions) (*batch.JobList, error)
-	Delete(namespace string, name string, options meta_v1.DeleteOptions) error
+	GetByGUID(guid, eiriniInstance string) ([]batch.Job, error)
+	Delete(namespace string, name string) error
 }
 
 type SecretsDeleter interface {
@@ -57,26 +56,22 @@ func (d *TaskDeleter) DeleteStaging(guid string) error {
 	return err
 }
 
-func (d *TaskDeleter) delete(logger lager.Logger, guid, label string) (string, error) {
-	jobs, err := d.jobClient.List(meta_v1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s",
-			label, guid,
-			LabelEiriniInstance, d.eiriniInstance,
-		),
-	})
+func (d *TaskDeleter) delete(logger lager.Logger, guid, eiriniInstance string) (string, error) {
+	jobs, err := d.jobClient.GetByGUID(guid, d.eiriniInstance)
 	if err != nil {
 		logger.Error("failed-to-list-jobs", err)
 
 		return "", err
 	}
 
-	if len(jobs.Items) != 1 {
-		logger.Error("job-does-not-have-1-instance", nil, lager.Data{"instances": len(jobs.Items)})
+	if len(jobs) != 1 {
+		logger.Error("job-does-not-have-1-instance", nil, lager.Data{"instances": len(jobs)})
 
-		return "", fmt.Errorf("job with guid %s should have 1 instance, but it has: %d", guid, len(jobs.Items))
+		return "", fmt.Errorf("job with guid %s should have 1 instance, but it has: %d", guid, len(jobs))
 	}
 
-	job := jobs.Items[0]
+	job := jobs[0]
+
 	if err = d.deleteDockerRegistrySecret(logger, job); err != nil {
 		return "", err
 	}
@@ -87,14 +82,8 @@ func (d *TaskDeleter) delete(logger lager.Logger, guid, label string) (string, e
 		return callbackURL, nil
 	}
 
-	backgroundPropagation := meta_v1.DeletePropagationBackground
-	err = d.jobClient.Delete(job.Namespace, job.Name, meta_v1.DeleteOptions{
-		PropagationPolicy: &backgroundPropagation,
-	})
-
-	if err != nil {
+	if err = d.jobClient.Delete(job.Namespace, job.Name); err != nil {
 		logger.Error("failed-to-delete-job", err)
-
 		return "", err
 	}
 

@@ -132,16 +132,23 @@ func (c *Job) Create(namespace string, job *batchv1.Job) (*batchv1.Job, error) {
 	return c.clientSet.BatchV1().Jobs(namespace).Create(context.Background(), job, metav1.CreateOptions{})
 }
 
-func (c *Job) Update(namespace string, job *batchv1.Job) (*batchv1.Job, error) {
-	return c.clientSet.BatchV1().Jobs(namespace).Update(context.Background(), job, metav1.UpdateOptions{})
+func (c *Job) Delete(namespace string, name string) error {
+	backgroundPropagation := metav1.DeletePropagationBackground
+	deleteOpts := metav1.DeleteOptions{
+		PropagationPolicy: &backgroundPropagation,
+	}
+	return c.clientSet.BatchV1().Jobs(namespace).Delete(context.Background(), name, deleteOpts)
 }
 
-func (c *Job) Delete(namespace string, name string, options metav1.DeleteOptions) error {
-	return c.clientSet.BatchV1().Jobs(namespace).Delete(context.Background(), name, options)
-}
-
-func (c *Job) List(opts metav1.ListOptions) (*batchv1.JobList, error) {
-	return c.clientSet.BatchV1().Jobs("").List(context.Background(), opts)
+func (c *Job) GetByGUID(guid, eiriniInstance string) ([]batchv1.Job, error) {
+	listOpts := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s,%s=%s",
+			k8s.LabelGUID, guid,
+			k8s.LabelEiriniInstance, eiriniInstance,
+		),
+	}
+	jobs, err := c.clientSet.BatchV1().Jobs("").List(context.Background(), listOpts)
+	return jobs.Items, err
 }
 
 type Secret struct {
