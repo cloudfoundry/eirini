@@ -54,9 +54,9 @@ var _ = Describe("TaskReporter", func() {
 			CCKeyPath:  keyPath,
 		}
 
-		taskDesirer = k8s.NewTaskDesirerWithEiriniInstance(
+		taskDesirer = k8s.NewTaskDesirer(
 			lagertest.NewTestLogger("test-task-desirer"),
-			client.NewJob(fixture.Clientset, eiriniInstance),
+			client.NewJob(fixture.Clientset),
 			client.NewSecret(fixture.Clientset),
 			fixture.Namespace,
 			nil,
@@ -191,6 +191,24 @@ var _ = Describe("TaskReporter", func() {
 
 				return err
 			}).Should(MatchError(ContainSubstring(`secrets "%s" not found`, registrySecretName)))
+		})
+	})
+
+	When("the reporter is monitoring a single namespace", func() {
+		BeforeEach(func() {
+			config.Namespace = fixture.DefaultNamespace
+		})
+
+		It("does not receive events from another namespace", func() {
+			// Here we verify that the informer gets no events as the test task
+			// is created in `fixture.Namespace` while the informer operates in
+			// `fixture.DefaultNamespace`. It is not great to verify that
+			// nothing happens but we cannot think of any other way to test
+			// this. It would be great if we could force K8S reconcile loop and
+			// perform the verification immediately without using
+			// `Consistently`. If the consistently timeout gets too low, the
+			// test would always succeed even if there is a problem.
+			Consistently(func() int { return len(cloudControllerServer.ReceivedRequests()) }, "1m").Should(BeZero())
 		})
 	})
 })

@@ -49,6 +49,7 @@ func (c *Informer) Start() {
 		c.clientset,
 		c.syncPeriod,
 		informers.WithTweakListOptions(c.tweakListOpts),
+		informers.WithNamespace(c.namespace),
 	)
 
 	informer := factory.Core().V1().Pods().Informer()

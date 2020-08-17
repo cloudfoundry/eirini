@@ -154,14 +154,3 @@ func getJobConditions() []batchv1.JobCondition {
 
 	return jobs[0].Status.Conditions
 }
-
-func listJobs() []batchv1.Job {
-	jobs, err := fixture.Clientset.
-		BatchV1().
-		Jobs(fixture.Namespace).
-		List(context.Background(), metav1.ListOptions{})
-
-	Expect(err).NotTo(HaveOccurred())
-
-	return jobs.Items
-}

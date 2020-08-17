@@ -72,7 +72,7 @@ func initTaskDeleter(clientset kubernetes.Interface) task.Deleter {
 
 	return k8s.NewTaskDeleter(
 		logger,
-		client.NewJob(clientset, eiriniInstance),
+		client.NewJob(clientset),
 		client.NewSecret(clientset),
 	)
 }

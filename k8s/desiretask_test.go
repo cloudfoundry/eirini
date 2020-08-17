@@ -132,7 +132,7 @@ var _ = Describe("TaskDesirer", func() {
 			},
 		}
 
-		desirer = NewTaskDesirerWithEiriniInstance(
+		desirer = NewTaskDesirer(
 			lagertest.NewTestLogger("desiretask"),
 			fakeJobCreator,
 			fakeSecretsCreator,

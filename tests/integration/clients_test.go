@@ -305,7 +305,7 @@ var _ = Describe("Jobs", func() {
 	var jobsClient *client.Job
 
 	BeforeEach(func() {
-		jobsClient = client.NewJob(fixture.Clientset, "my-eirini")
+		jobsClient = client.NewJob(fixture.Clientset)
 	})
 
 	Describe("Create", func() {
@@ -363,12 +363,11 @@ var _ = Describe("Jobs", func() {
 	Describe("GetByGUID", func() {
 		BeforeEach(func() {
 			createJob(fixture.Namespace, "foo", map[string]string{
-				k8s.LabelGUID:           "bar",
-				k8s.LabelEiriniInstance: "my-eirini",
+				k8s.LabelGUID: "bar",
 			})
 		})
 
-		It("gets all jobs matching the specified guid and eirini instance id", func() {
+		It("gets all jobs matching the specified guid", func() {
 			Eventually(func() []string {
 				jobs, err := jobsClient.GetByGUID("bar")
 				Expect(err).NotTo(HaveOccurred())
@@ -383,18 +382,17 @@ var _ = Describe("StagingJobs", func() {
 	var jobsClient *client.Job
 
 	BeforeEach(func() {
-		jobsClient = client.NewStagingJob(fixture.Clientset, "my-eirini")
+		jobsClient = client.NewStagingJob(fixture.Clientset)
 	})
 
 	Describe("GetByGUID", func() {
 		BeforeEach(func() {
 			createJob(fixture.Namespace, "foo", map[string]string{
-				k8s.LabelStagingGUID:    "bar",
-				k8s.LabelEiriniInstance: "my-eirini",
+				k8s.LabelStagingGUID: "bar",
 			})
 		})
 
-		It("gets all jobs matching the specified guid and eirini instance id", func() {
+		It("gets all jobs matching the specified guid", func() {
 			Eventually(func() []string {
 				jobs, err := jobsClient.GetByGUID("bar")
 				Expect(err).NotTo(HaveOccurred())

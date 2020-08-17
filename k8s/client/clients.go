@@ -122,24 +122,21 @@ func (c *StatefulSet) Delete(namespace string, name string) error {
 }
 
 type Job struct {
-	clientSet      kubernetes.Interface
-	guidLabel      string
-	eiriniInstance string
+	clientSet kubernetes.Interface
+	guidLabel string
 }
 
-func NewJob(clientSet kubernetes.Interface, eiriniInstance string) *Job {
+func NewJob(clientSet kubernetes.Interface) *Job {
 	return &Job{
-		clientSet:      clientSet,
-		guidLabel:      k8s.LabelGUID,
-		eiriniInstance: eiriniInstance,
+		clientSet: clientSet,
+		guidLabel: k8s.LabelGUID,
 	}
 }
 
-func NewStagingJob(clientSet kubernetes.Interface, eiriniInstance string) *Job {
+func NewStagingJob(clientSet kubernetes.Interface) *Job {
 	return &Job{
-		clientSet:      clientSet,
-		guidLabel:      k8s.LabelStagingGUID,
-		eiriniInstance: eiriniInstance,
+		clientSet: clientSet,
+		guidLabel: k8s.LabelStagingGUID,
 	}
 }
 
@@ -158,9 +155,7 @@ func (c *Job) Delete(namespace string, name string) error {
 
 func (c *Job) GetByGUID(guid string) ([]batchv1.Job, error) {
 	listOpts := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s",
-			c.guidLabel, guid,
-		),
+		LabelSelector: fmt.Sprintf("%s=%s", c.guidLabel, guid),
 	}
 	jobs, err := c.clientSet.BatchV1().Jobs("").List(context.Background(), listOpts)
 

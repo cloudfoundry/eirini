@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
@@ -336,4 +337,15 @@ func updateLRP(updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error)
 	}
 
 	return httpClient.Do(updateLrpReq)
+}
+
+func listJobs() []batchv1.Job {
+	jobs, err := fixture.Clientset.
+		BatchV1().
+		Jobs(fixture.Namespace).
+		List(context.Background(), metav1.ListOptions{})
+
+	Expect(err).NotTo(HaveOccurred())
+
+	return jobs.Items
 }
