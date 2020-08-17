@@ -202,29 +202,29 @@ var _ = Describe("StatefulSets", func() {
 
 		BeforeEach(func() {
 			createStatefulSet(fixture.Namespace, "one", map[string]string{
-				k8s.LabelSourceType: "APP",
+				k8s.LabelSourceType: "FOO",
 			})
 			createStatefulSet(fixture.Namespace, "two", map[string]string{
-				k8s.LabelSourceType: "TASK",
+				k8s.LabelSourceType: "BAR",
 			})
 
 			extraNs = fixture.CreateExtraNamespace()
 
 			createStatefulSet(extraNs, "three", map[string]string{
-				k8s.LabelSourceType: "APP",
+				k8s.LabelSourceType: "FOO",
 			})
 		})
 
 		It("lists all StatefulSets with the specified source type", func() {
 			Eventually(func() []string {
-				statefulSets, err := statefulSetClient.GetBySourceType("APP")
+				statefulSets, err := statefulSetClient.GetBySourceType("FOO")
 				Expect(err).NotTo(HaveOccurred())
 
 				return statefulSetNames(statefulSets)
 			}).Should(ContainElements("one", "three"))
 
 			Consistently(func() []string {
-				statefulSets, err := statefulSetClient.GetBySourceType("APP")
+				statefulSets, err := statefulSetClient.GetBySourceType("FOO")
 				Expect(err).NotTo(HaveOccurred())
 
 				return statefulSetNames(statefulSets)

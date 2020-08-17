@@ -84,7 +84,7 @@ func (c *StatefulSet) Get(namespace, name string) (*appsv1.StatefulSet, error) {
 
 func (c *StatefulSet) GetBySourceType(sourceType string) ([]appsv1.StatefulSet, error) {
 	statefulSetList, err := c.clientSet.AppsV1().StatefulSets("").List(context.Background(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=APP", k8s.LabelSourceType),
+		LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelSourceType, sourceType),
 	})
 	if err != nil {
 		return nil, err
