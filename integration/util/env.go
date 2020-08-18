@@ -4,29 +4,38 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 const DefaultApplicationServiceAccount = "eirini"
 
 func GetKubeconfig() string {
-	kubeconf := os.Getenv("INTEGRATION_KUBECONFIG")
-	if kubeconf == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			ginkgo.Fail("INTEGRATION_KUBECONFIG not provided, failed to use default: " + err.Error())
-		}
-
-		return filepath.Join(homeDir, ".kube", "config")
+	kubeconfPath := os.Getenv("INTEGRATION_KUBECONFIG")
+	if kubeconfPath != "" {
+		return kubeconfPath
 	}
 
-	return kubeconf
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		Fail("INTEGRATION_KUBECONFIG not provided, failed to use default: " + err.Error())
+	}
+
+	kubeconfPath = filepath.Join(homeDir, ".kube", "config")
+
+	_, err = os.Stat(kubeconfPath)
+	if os.IsNotExist(err) {
+		return ""
+	}
+	Expect(err).NotTo(HaveOccurred())
+
+	return kubeconfPath
 }
 
 func GetEiriniDockerHubPassword() string {
 	password := os.Getenv("EIRINIUSER_PASSWORD")
 	if password == "" {
-		ginkgo.Skip("eiriniuser password not provided. Please export EIRINIUSER_PASSWORD")
+		Skip("eiriniuser password not provided. Please export EIRINIUSER_PASSWORD")
 	}
 
 	return password

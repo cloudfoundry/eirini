@@ -8,7 +8,7 @@ export EIRINIUSER_PASSWORD="${EIRINIUSER_PASSWORD:-$(pass eirini/docker-hub)}"
 
 main() {
   pushd "$BASEDIR"/integration >/dev/null || exit 1
-  ginkgo -mod=vendor -p -r -keepGoing -tags=integration -randomizeAllSpecs -randomizeSuites -timeout=20m "$@"
+  ginkgo -mod=vendor -p -r -keepGoing -tags=integration -randomizeAllSpecs -randomizeSuites -timeout=20m -skipPackage='eats' "$@"
   popd >/dev/null || exit 1
 }
 
