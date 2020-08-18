@@ -67,7 +67,7 @@ const (
 //counterfeiter:generate . PodDisruptionBudgetClient
 //counterfeiter:generate . StatefulSetClient
 //counterfeiter:generate . SecretsCreatorDeleter
-//counterfeiter:generate . EventLister
+//counterfeiter:generate . EventsClient
 //counterfeiter:generate . LRPMapper
 //counterfeiter:generate . ProbeCreator
 //counterfeiter:generate . DesireOption
@@ -97,8 +97,8 @@ type SecretsCreatorDeleter interface {
 	Delete(namespace string, name string) error
 }
 
-type EventLister interface {
-	List(opts metav1.ListOptions) (*corev1.EventList, error)
+type EventsClient interface {
+	GetByPod(pod corev1.Pod) ([]corev1.Event, error)
 }
 
 type LRPMapper func(s appsv1.StatefulSet) (*opi.LRP, error)
@@ -108,7 +108,7 @@ type StatefulSetDesirer struct {
 	Secrets                           SecretsCreatorDeleter
 	StatefulSets                      StatefulSetClient
 	PodDisruptionBudgets              PodDisruptionBudgetClient
-	Events                            EventLister
+	EventsClient                      EventsClient
 	StatefulSetToLRPMapper            LRPMapper
 	RegistrySecretName                string
 	RootfsVersion                     string
@@ -392,7 +392,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	instances := []*opi.Instance{}
 
 	for _, pod := range pods {
-		events, err := GetEvents(m.Events, pod)
+		events, err := m.EventsClient.GetByPod(pod)
 		if err != nil {
 			logger.Error("failed-to-get-events", err)
 
@@ -453,9 +453,7 @@ func (m *StatefulSetDesirer) createPodDisruptionBudget(namespace string, lrp *op
 	return nil
 }
 
-func hasInsufficientMemory(eventList *corev1.EventList) bool {
-	events := eventList.Items
-
+func hasInsufficientMemory(events []corev1.Event) bool {
 	if len(events) == 0 {
 		return false
 	}

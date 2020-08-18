@@ -10,12 +10,12 @@ import (
 )
 
 type DefaultCrashEventGenerator struct {
-	eventLister k8s.EventLister
+	eventsClient k8s.EventsClient
 }
 
-func NewDefaultCrashEventGenerator(eventLister k8s.EventLister) DefaultCrashEventGenerator {
+func NewDefaultCrashEventGenerator(eventsClient k8s.EventsClient) DefaultCrashEventGenerator {
 	return DefaultCrashEventGenerator{
-		eventLister: eventLister,
+		eventsClient: eventsClient,
 	}
 }
 
@@ -54,7 +54,7 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 }
 
 func (g DefaultCrashEventGenerator) generateReportForTerminatedPod(pod *v1.Pod, status *v1.ContainerStatus, logger lager.Logger) (events.CrashEvent, bool) {
-	podEvents, err := k8s.GetEvents(g.eventLister, *pod)
+	podEvents, err := g.eventsClient.GetByPod(*pod)
 	if err != nil {
 		logger.Error("failed-to-get-k8s-events", err, lager.Data{"guid": pod.Annotations[k8s.AnnotationProcessGUID]})
 

@@ -119,7 +119,7 @@ func createLRPReconciler(
 		Secrets:                           client.NewSecret(clientset),
 		StatefulSets:                      client.NewStatefulSet(clientset),
 		PodDisruptionBudgets:              client.NewPodDisruptionBudget(clientset),
-		Events:                            client.NewEvent(clientset),
+		EventsClient:                      client.NewEvent(clientset),
 		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
 		RegistrySecretName:                eiriniCfg.Properties.RegistrySecretName,
 		RootfsVersion:                     eiriniCfg.Properties.RootfsVersion,

@@ -1,11 +1,8 @@
 package k8s
 
 import (
-	"fmt"
-
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func MapToEnvVar(env map[string]string) []v1.EnvVar {
@@ -31,13 +28,7 @@ func int64ptr(i int) *int64 {
 	return &u
 }
 
-func GetEvents(client EventLister, pod v1.Pod) (*v1.EventList, error) {
-	return client.List(meta.ListOptions{FieldSelector: fmt.Sprintf("involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s", pod.Namespace, string(pod.UID), pod.Name)})
-}
-
-func IsStopped(eventList *v1.EventList) bool {
-	events := eventList.Items
-
+func IsStopped(events []v1.Event) bool {
 	if len(events) == 0 {
 		return false
 	}

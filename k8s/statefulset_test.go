@@ -36,7 +36,7 @@ const (
 var _ = Describe("Statefulset Desirer", func() {
 	var (
 		podsClient            *k8sfakes.FakePodClient
-		eventLister           *k8sfakes.FakeEventLister
+		eventsClient          *k8sfakes.FakeEventsClient
 		secretsClient         *k8sfakes.FakeSecretsCreatorDeleter
 		statefulSetClient     *k8sfakes.FakeStatefulSetClient
 		statefulSetDesirer    *k8s.StatefulSetDesirer
@@ -51,7 +51,7 @@ var _ = Describe("Statefulset Desirer", func() {
 		podsClient = new(k8sfakes.FakePodClient)
 		statefulSetClient = new(k8sfakes.FakeStatefulSetClient)
 		secretsClient = new(k8sfakes.FakeSecretsCreatorDeleter)
-		eventLister = new(k8sfakes.FakeEventLister)
+		eventsClient = new(k8sfakes.FakeEventsClient)
 
 		livenessProbeCreator = new(k8sfakes.FakeProbeCreator)
 		readinessProbeCreator = new(k8sfakes.FakeProbeCreator)
@@ -70,7 +70,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			ReadinessProbeCreator:     readinessProbeCreator.Spy,
 			Logger:                    logger,
 			StatefulSetToLRPMapper:    mapper.Spy,
-			Events:                    eventLister,
+			EventsClient:              eventsClient,
 			ApplicationServiceAccount: "eirini",
 		}
 	})
@@ -900,7 +900,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				{ObjectMeta: metav1.ObjectMeta{Name: "whatever-2"}},
 			}
 			podsClient.GetByLRPIdentifierReturns(pods, nil)
-			eventLister.ListReturns(&corev1.EventList{}, nil)
+			eventsClient.GetByPodReturns([]corev1.Event{}, nil)
 
 			_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 
@@ -916,7 +916,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				{ObjectMeta: metav1.ObjectMeta{Name: "whatever-2"}},
 			}
 			podsClient.GetByLRPIdentifierReturns(pods, nil)
-			eventLister.ListReturns(&corev1.EventList{}, nil)
+			eventsClient.GetByPodReturns([]corev1.Event{}, nil)
 			instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(instances).To(HaveLen(3))
@@ -943,7 +943,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			}
 
 			podsClient.GetByLRPIdentifierReturns(pods, nil)
-			eventLister.ListReturns(&corev1.EventList{}, nil)
+			eventsClient.GetByPodReturns([]corev1.Event{}, nil)
 			instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 
 			Expect(err).ToNot(HaveOccurred())
@@ -979,7 +979,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				}
 				podsClient.GetByLRPIdentifierReturns(pods, nil)
 
-				eventLister.ListReturns(nil, errors.New("I am error"))
+				eventsClient.GetByPodReturns(nil, errors.New("I am error"))
 
 				_, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("failed to get events for pod %s", "odin-0"))))
@@ -992,7 +992,7 @@ var _ = Describe("Statefulset Desirer", func() {
 					{ObjectMeta: metav1.ObjectMeta{Name: "odin-0"}},
 				}
 				podsClient.GetByLRPIdentifierReturns(pods, nil)
-				eventLister.ListReturns(&corev1.EventList{}, nil)
+				eventsClient.GetByPodReturns([]corev1.Event{}, nil)
 
 				instances, err := statefulSetDesirer.GetInstances(opi.LRPIdentifier{})
 				Expect(err).ToNot(HaveOccurred())
@@ -1011,12 +1011,10 @@ var _ = Describe("Statefulset Desirer", func() {
 
 			Context("and the cluster has autoscaler", func() {
 				BeforeEach(func() {
-					eventLister.ListReturns(&corev1.EventList{
-						Items: []corev1.Event{
-							{
-								Reason:  "NotTriggerScaleUp",
-								Message: "pod didn't trigger scale-up (it wouldn't fit if a new node is added): 1 Insufficient memory",
-							},
+					eventsClient.GetByPodReturns([]corev1.Event{
+						{
+							Reason:  "NotTriggerScaleUp",
+							Message: "pod didn't trigger scale-up (it wouldn't fit if a new node is added): 1 Insufficient memory",
 						},
 					}, nil)
 				})
@@ -1031,12 +1029,10 @@ var _ = Describe("Statefulset Desirer", func() {
 
 			Context("and the cluster does not have autoscaler", func() {
 				BeforeEach(func() {
-					eventLister.ListReturns(&corev1.EventList{
-						Items: []corev1.Event{
-							{
-								Reason:  "FailedScheduling",
-								Message: "0/3 nodes are available: 3 Insufficient memory.",
-							},
+					eventsClient.GetByPodReturns([]corev1.Event{
+						{
+							Reason:  "FailedScheduling",
+							Message: "0/3 nodes are available: 3 Insufficient memory.",
 						},
 					}, nil)
 				})
@@ -1068,11 +1064,9 @@ var _ = Describe("Statefulset Desirer", func() {
 						UID:       "odin-1-uid",
 					},
 				}
-				eventLister.ListReturns(&corev1.EventList{
-					Items: []corev1.Event{
-						event1,
-						event2,
-					},
+				eventsClient.GetByPodReturns([]corev1.Event{
+					event1,
+					event2,
 				}, nil)
 
 				pods := []corev1.Pod{

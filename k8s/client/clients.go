@@ -6,6 +6,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -199,8 +200,43 @@ func NewEvent(clientSet kubernetes.Interface) *Event {
 	return &Event{clientSet: clientSet}
 }
 
-func (c *Event) List(opts metav1.ListOptions) (*corev1.EventList, error) {
-	return c.clientSet.CoreV1().Events("").List(context.Background(), opts)
+func (c *Event) GetByPod(pod corev1.Pod) ([]corev1.Event, error) {
+	eventList, err := c.clientSet.CoreV1().Events("").List(context.Background(), metav1.ListOptions{
+		FieldSelector: fmt.Sprintf(
+			"involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s",
+			pod.Namespace,
+			string(pod.UID),
+			pod.Name,
+		),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return eventList.Items, nil
+}
+
+func (c *Event) GetByInstanceAndReason(namespace string, ownerRef metav1.OwnerReference, instanceIndex int, reason string) (*corev1.Event, error) {
+	fieldSelector := fmt.Sprintf("involvedObject.kind=%s,involvedObject.name=%s,involvedObject.namespace=%s,reason=%s",
+		ownerRef.Kind,
+		ownerRef.Name,
+		namespace,
+		reason)
+	labelSelector := fmt.Sprintf("cloudfoundry.org/instance_index=%d", instanceIndex)
+
+	kubeEvents, err := c.clientSet.CoreV1().Events("").List(context.Background(), metav1.ListOptions{
+		FieldSelector: fieldSelector,
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list events")
+	}
+
+	if len(kubeEvents.Items) == 1 {
+		return &kubeEvents.Items[0], nil
+	}
+
+	return nil, nil
 }
 
 func (c *Event) Create(namespace string, event *corev1.Event) (*corev1.Event, error) {

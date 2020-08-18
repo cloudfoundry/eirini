@@ -24,17 +24,20 @@ type FakeEventsClient struct {
 		result1 *v1.Event
 		result2 error
 	}
-	ListStub        func(v1a.ListOptions) (*v1.EventList, error)
-	listMutex       sync.RWMutex
-	listArgsForCall []struct {
-		arg1 v1a.ListOptions
+	GetByInstanceAndReasonStub        func(string, v1a.OwnerReference, int, string) (*v1.Event, error)
+	getByInstanceAndReasonMutex       sync.RWMutex
+	getByInstanceAndReasonArgsForCall []struct {
+		arg1 string
+		arg2 v1a.OwnerReference
+		arg3 int
+		arg4 string
 	}
-	listReturns struct {
-		result1 *v1.EventList
+	getByInstanceAndReasonReturns struct {
+		result1 *v1.Event
 		result2 error
 	}
-	listReturnsOnCall map[int]struct {
-		result1 *v1.EventList
+	getByInstanceAndReasonReturnsOnCall map[int]struct {
+		result1 *v1.Event
 		result2 error
 	}
 	UpdateStub        func(string, *v1.Event) (*v1.Event, error)
@@ -119,65 +122,68 @@ func (fake *FakeEventsClient) CreateReturnsOnCall(i int, result1 *v1.Event, resu
 	}{result1, result2}
 }
 
-func (fake *FakeEventsClient) List(arg1 v1a.ListOptions) (*v1.EventList, error) {
-	fake.listMutex.Lock()
-	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
-	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		arg1 v1a.ListOptions
-	}{arg1})
-	fake.recordInvocation("List", []interface{}{arg1})
-	fake.listMutex.Unlock()
-	if fake.ListStub != nil {
-		return fake.ListStub(arg1)
+func (fake *FakeEventsClient) GetByInstanceAndReason(arg1 string, arg2 v1a.OwnerReference, arg3 int, arg4 string) (*v1.Event, error) {
+	fake.getByInstanceAndReasonMutex.Lock()
+	ret, specificReturn := fake.getByInstanceAndReasonReturnsOnCall[len(fake.getByInstanceAndReasonArgsForCall)]
+	fake.getByInstanceAndReasonArgsForCall = append(fake.getByInstanceAndReasonArgsForCall, struct {
+		arg1 string
+		arg2 v1a.OwnerReference
+		arg3 int
+		arg4 string
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("GetByInstanceAndReason", []interface{}{arg1, arg2, arg3, arg4})
+	fake.getByInstanceAndReasonMutex.Unlock()
+	if fake.GetByInstanceAndReasonStub != nil {
+		return fake.GetByInstanceAndReasonStub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listReturns
+	fakeReturns := fake.getByInstanceAndReasonReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeEventsClient) ListCallCount() int {
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
-	return len(fake.listArgsForCall)
+func (fake *FakeEventsClient) GetByInstanceAndReasonCallCount() int {
+	fake.getByInstanceAndReasonMutex.RLock()
+	defer fake.getByInstanceAndReasonMutex.RUnlock()
+	return len(fake.getByInstanceAndReasonArgsForCall)
 }
 
-func (fake *FakeEventsClient) ListCalls(stub func(v1a.ListOptions) (*v1.EventList, error)) {
-	fake.listMutex.Lock()
-	defer fake.listMutex.Unlock()
-	fake.ListStub = stub
+func (fake *FakeEventsClient) GetByInstanceAndReasonCalls(stub func(string, v1a.OwnerReference, int, string) (*v1.Event, error)) {
+	fake.getByInstanceAndReasonMutex.Lock()
+	defer fake.getByInstanceAndReasonMutex.Unlock()
+	fake.GetByInstanceAndReasonStub = stub
 }
 
-func (fake *FakeEventsClient) ListArgsForCall(i int) v1a.ListOptions {
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
-	argsForCall := fake.listArgsForCall[i]
-	return argsForCall.arg1
+func (fake *FakeEventsClient) GetByInstanceAndReasonArgsForCall(i int) (string, v1a.OwnerReference, int, string) {
+	fake.getByInstanceAndReasonMutex.RLock()
+	defer fake.getByInstanceAndReasonMutex.RUnlock()
+	argsForCall := fake.getByInstanceAndReasonArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
-func (fake *FakeEventsClient) ListReturns(result1 *v1.EventList, result2 error) {
-	fake.listMutex.Lock()
-	defer fake.listMutex.Unlock()
-	fake.ListStub = nil
-	fake.listReturns = struct {
-		result1 *v1.EventList
+func (fake *FakeEventsClient) GetByInstanceAndReasonReturns(result1 *v1.Event, result2 error) {
+	fake.getByInstanceAndReasonMutex.Lock()
+	defer fake.getByInstanceAndReasonMutex.Unlock()
+	fake.GetByInstanceAndReasonStub = nil
+	fake.getByInstanceAndReasonReturns = struct {
+		result1 *v1.Event
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeEventsClient) ListReturnsOnCall(i int, result1 *v1.EventList, result2 error) {
-	fake.listMutex.Lock()
-	defer fake.listMutex.Unlock()
-	fake.ListStub = nil
-	if fake.listReturnsOnCall == nil {
-		fake.listReturnsOnCall = make(map[int]struct {
-			result1 *v1.EventList
+func (fake *FakeEventsClient) GetByInstanceAndReasonReturnsOnCall(i int, result1 *v1.Event, result2 error) {
+	fake.getByInstanceAndReasonMutex.Lock()
+	defer fake.getByInstanceAndReasonMutex.Unlock()
+	fake.GetByInstanceAndReasonStub = nil
+	if fake.getByInstanceAndReasonReturnsOnCall == nil {
+		fake.getByInstanceAndReasonReturnsOnCall = make(map[int]struct {
+			result1 *v1.Event
 			result2 error
 		})
 	}
-	fake.listReturnsOnCall[i] = struct {
-		result1 *v1.EventList
+	fake.getByInstanceAndReasonReturnsOnCall[i] = struct {
+		result1 *v1.Event
 		result2 error
 	}{result1, result2}
 }
@@ -251,8 +257,8 @@ func (fake *FakeEventsClient) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
+	fake.getByInstanceAndReasonMutex.RLock()
+	defer fake.getByInstanceAndReasonMutex.RUnlock()
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

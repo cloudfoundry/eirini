@@ -37,7 +37,7 @@ type CrashEventGenerator interface {
 type EventsClient interface {
 	Create(namespace string, event *corev1.Event) (*corev1.Event, error)
 	Update(namespace string, event *corev1.Event) (*corev1.Event, error)
-	List(metav1.ListOptions) (*corev1.EventList, error)
+	GetByInstanceAndReason(namespace string, ownerRef metav1.OwnerReference, instanceIndex int, reason string) (*corev1.Event, error)
 }
 
 type PodCrash struct {
@@ -102,41 +102,18 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 		return reconcile.Result{}, nil
 	}
 
-	kubeEvent, exists, err := r.getExistingEvent(lrpRef, request.Namespace, crashEvent)
+	kubeEvent, err := r.eventsClient.GetByInstanceAndReason(request.Namespace, lrpRef, crashEvent.Index, failureReason(crashEvent))
 	if err != nil {
 		logger.Error("failed-to-get-existing-event", err)
 
 		return reconcile.Result{}, err
 	}
 
-	if exists {
+	if kubeEvent != nil {
 		return r.updateEvent(logger, kubeEvent, crashEvent, request.Namespace)
 	}
 
 	return r.createEvent(logger, lrpRef, crashEvent, request.Namespace)
-}
-
-func (r PodCrash) getExistingEvent(ownerRef metav1.OwnerReference, namespace string, crashEvent events.CrashEvent) (*corev1.Event, bool, error) {
-	fieldSelector := fmt.Sprintf("involvedObject.kind=%s,involvedObject.name=%s,involvedObject.namespace=%s,reason=%s",
-		ownerRef.Kind,
-		ownerRef.Name,
-		namespace,
-		failureReason(crashEvent))
-	labelSelector := fmt.Sprintf("cloudfoundry.org/instance_index=%d", crashEvent.Index)
-
-	kubeEvents, err := r.eventsClient.List(metav1.ListOptions{
-		FieldSelector: fieldSelector,
-		LabelSelector: labelSelector,
-	})
-	if err != nil {
-		return nil, false, errors.Wrap(err, "failed to list events")
-	}
-
-	if len(kubeEvents.Items) == 1 {
-		return &kubeEvents.Items[0], true, nil
-	}
-
-	return nil, false, nil
 }
 
 func (r PodCrash) createEvent(logger lager.Logger, ownerRef metav1.OwnerReference, crashEvent events.CrashEvent, namespace string) (reconcile.Result, error) {

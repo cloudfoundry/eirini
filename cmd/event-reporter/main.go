@@ -61,7 +61,17 @@ func launchEventReporter(clientset kubernetes.Interface, uri string, tlsDisabled
 
 	crashLogger := lager.NewLogger("instance-crash-informer")
 	crashLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	crashInformer := k8sevent.NewCrashInformer(clientset, 0, namespace, make(chan struct{}), crashLogger, k8sevent.NewDefaultCrashEventGenerator(k8sclient.NewEvent(clientset)), emitter)
+	crashInformer := k8sevent.NewCrashInformer(
+		clientset,
+		0,
+		namespace,
+		make(chan struct{}),
+		crashLogger,
+		k8sevent.NewDefaultCrashEventGenerator(
+			k8sclient.NewEvent(clientset),
+		),
+		emitter,
+	)
 
 	crashInformer.Start()
 }

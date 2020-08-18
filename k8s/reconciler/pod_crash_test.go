@@ -61,7 +61,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 			},
 		}
 		statefulSetGetter.GetReturns(&statefulSet, nil)
-		eventsClient.ListReturns(&corev1.EventList{Items: []corev1.Event{}}, nil)
+		eventsClient.GetByInstanceAndReasonReturns(nil, nil)
 
 		podGetError = nil
 		t := true
@@ -261,18 +261,14 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 			}, true)
 
 			eventTime = metav1.MicroTime{Time: timestampFirst.Add(time.Second)}
-			eventsClient.ListReturnsOnCall(1, &corev1.EventList{
-				Items: []corev1.Event{
-					{
-						ObjectMeta:     metav1.ObjectMeta{Name: "instance-name", Namespace: "some-ns"},
-						Count:          1,
-						Reason:         "Container: Error",
-						Message:        "Container terminated with exit code: 6",
-						FirstTimestamp: metav1.Time{Time: timestampFirst},
-						LastTimestamp:  metav1.Time{Time: timestampFirst},
-						EventTime:      eventTime,
-					},
-				},
+			eventsClient.GetByInstanceAndReasonReturnsOnCall(1, &corev1.Event{
+				ObjectMeta:     metav1.ObjectMeta{Name: "instance-name", Namespace: "some-ns"},
+				Count:          1,
+				Reason:         "Container: Error",
+				Message:        "Container terminated with exit code: 6",
+				FirstTimestamp: metav1.Time{Time: timestampFirst},
+				LastTimestamp:  metav1.Time{Time: timestampFirst},
+				EventTime:      eventTime,
 			}, nil)
 		})
 
@@ -284,11 +280,13 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 				},
 			})
 
-			Expect(eventsClient.ListCallCount()).To(Equal(2))
-			Expect(eventsClient.ListArgsForCall(0)).To(Equal(metav1.ListOptions{
-				FieldSelector: "involvedObject.kind=LRP,involvedObject.name=parent-lrp,involvedObject.namespace=some-ns,reason=Container: Error",
-				LabelSelector: "cloudfoundry.org/instance_index=3",
-			}))
+			Expect(eventsClient.GetByInstanceAndReasonCallCount()).To(Equal(2))
+			namespace, ownerRef, instanceIndex, reason := eventsClient.GetByInstanceAndReasonArgsForCall(0)
+			Expect(namespace).To(Equal("some-ns"))
+			Expect(ownerRef.Kind).To(Equal("LRP"))
+			Expect(ownerRef.Name).To(Equal("parent-lrp"))
+			Expect(instanceIndex).To(Equal(3))
+			Expect(reason).To(Equal("Container: Error"))
 
 			Expect(eventsClient.UpdateCallCount()).To(Equal(1))
 			ns, event := eventsClient.UpdateArgsForCall(0)
@@ -304,7 +302,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 
 		When("listing events errors", func() {
 			BeforeEach(func() {
-				eventsClient.ListReturns(nil, errors.New("oof"))
+				eventsClient.GetByInstanceAndReasonReturns(nil, errors.New("oof"))
 			})
 
 			It("does not create an event", func() {
@@ -318,7 +316,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 
 		When("updating the event errors", func() {
 			BeforeEach(func() {
-				eventsClient.ListReturns(&corev1.EventList{Items: []corev1.Event{{}}}, nil)
+				eventsClient.GetByInstanceAndReasonReturns(&corev1.Event{}, nil)
 				eventsClient.UpdateReturns(nil, errors.New("oof"))
 			})
 

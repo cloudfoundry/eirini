@@ -256,7 +256,7 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 		Secrets:                           client.NewSecret(clientset),
 		StatefulSets:                      client.NewStatefulSet(clientset),
 		PodDisruptionBudgets:              client.NewPodDisruptionBudget(clientset),
-		Events:                            client.NewEvent(clientset),
+		EventsClient:                      client.NewEvent(clientset),
 		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
 		RegistrySecretName:                cfg.Properties.RegistrySecretName,
 		RootfsVersion:                     cfg.Properties.RootfsVersion,

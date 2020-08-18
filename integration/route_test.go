@@ -38,7 +38,7 @@ var _ = Describe("Routes", func() {
 			Secrets:                   client.NewSecret(fixture.Clientset),
 			StatefulSets:              client.NewStatefulSet(fixture.Clientset),
 			PodDisruptionBudgets:      client.NewPodDisruptionBudget(fixture.Clientset),
-			Events:                    client.NewEvent(fixture.Clientset),
+			EventsClient:              client.NewEvent(fixture.Clientset),
 			StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
 			RegistrySecretName:        "registry-secret",
 			RootfsVersion:             "rootfsversion",
