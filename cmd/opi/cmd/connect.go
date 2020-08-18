@@ -164,7 +164,7 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 
 	return k8s.NewTaskDesirerWithEiriniInstance(
 		logger,
-		client.NewJob(clientset),
+		client.NewJob(clientset, cfg.Properties.EiriniInstance),
 		client.NewSecret(clientset),
 		cfg.Properties.Namespace,
 		tlsConfigs,
@@ -176,15 +176,14 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 	)
 }
 
-func initTaskDeleter(clientset kubernetes.Interface, eiriniInstance string) *k8s.TaskDeleter {
+func initTaskDeleter(clientset kubernetes.Interface, jobClient k8s.JobClient) *k8s.TaskDeleter {
 	logger := lager.NewLogger("task-desirer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	return k8s.NewTaskDeleter(
 		logger,
-		client.NewJob(clientset),
+		jobClient,
 		client.NewSecret(clientset),
-		eiriniInstance,
 	)
 }
 
@@ -194,7 +193,8 @@ func initBuildpackStagingBifrost(cfg *eirini.Config, clientset kubernetes.Interf
 
 	converter := initConverter(cfg)
 	taskDesirer := initTaskDesirer(cfg, clientset)
-	taskDeleter := initTaskDeleter(clientset, cfg.Properties.EiriniInstance)
+	stagingJobClient := client.NewStagingJob(clientset, cfg.Properties.EiriniInstance)
+	taskDeleter := initTaskDeleter(clientset, stagingJobClient)
 	stagingCompleter := initStagingCompleter(cfg, logger)
 
 	return &bifrost.BuildpackStaging{
@@ -222,7 +222,8 @@ func initDockerStagingBifrost(cfg *eirini.Config) *bifrost.DockerStaging {
 func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.Task {
 	converter := initConverter(cfg)
 	taskDesirer := initTaskDesirer(cfg, clientset)
-	taskDeleter := initTaskDeleter(clientset, cfg.Properties.EiriniInstance)
+	jobClient := client.NewJob(clientset, cfg.Properties.EiriniInstance)
+	taskDeleter := initTaskDeleter(clientset, jobClient)
 	retryableJSONClient := initRetryableJSONClient(cfg)
 
 	return &bifrost.Task{

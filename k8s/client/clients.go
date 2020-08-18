@@ -121,11 +121,25 @@ func (c *StatefulSet) Delete(namespace string, name string) error {
 }
 
 type Job struct {
-	clientSet kubernetes.Interface
+	clientSet      kubernetes.Interface
+	guidLabel      string
+	eiriniInstance string
 }
 
-func NewJob(clientSet kubernetes.Interface) *Job {
-	return &Job{clientSet: clientSet}
+func NewJob(clientSet kubernetes.Interface, eiriniInstance string) *Job {
+	return &Job{
+		clientSet:      clientSet,
+		guidLabel:      k8s.LabelGUID,
+		eiriniInstance: eiriniInstance,
+	}
+}
+
+func NewStagingJob(clientSet kubernetes.Interface, eiriniInstance string) *Job {
+	return &Job{
+		clientSet:      clientSet,
+		guidLabel:      k8s.LabelStagingGUID,
+		eiriniInstance: eiriniInstance,
+	}
 }
 
 func (c *Job) Create(namespace string, job *batchv1.Job) (*batchv1.Job, error) {
@@ -137,17 +151,19 @@ func (c *Job) Delete(namespace string, name string) error {
 	deleteOpts := metav1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	}
+
 	return c.clientSet.BatchV1().Jobs(namespace).Delete(context.Background(), name, deleteOpts)
 }
 
-func (c *Job) GetByGUID(guid, eiriniInstance string) ([]batchv1.Job, error) {
+func (c *Job) GetByGUID(guid string) ([]batchv1.Job, error) {
 	listOpts := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s,%s=%s",
-			k8s.LabelGUID, guid,
-			k8s.LabelEiriniInstance, eiriniInstance,
+			c.guidLabel, guid,
+			k8s.LabelEiriniInstance, c.eiriniInstance,
 		),
 	}
 	jobs, err := c.clientSet.BatchV1().Jobs("").List(context.Background(), listOpts)
+
 	return jobs.Items, err
 }
 

@@ -7,14 +7,14 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
-	batch "k8s.io/api/batch/v1"
+	batchv1 "k8s.io/api/batch/v1"
 )
 
-//counterfeiter:generate . JobListerDeleter
+//counterfeiter:generate . JobClient
 //counterfeiter:generate . SecretsDeleter
 
-type JobListerDeleter interface {
-	GetByGUID(guid, eiriniInstance string) ([]batch.Job, error)
+type JobClient interface {
+	GetByGUID(guid string) ([]batchv1.Job, error)
 	Delete(namespace string, name string) error
 }
 
@@ -24,55 +24,58 @@ type SecretsDeleter interface {
 
 type TaskDeleter struct {
 	logger         lager.Logger
-	jobClient      JobListerDeleter
+	jobClient      JobClient
 	secretsDeleter SecretsDeleter
-	eiriniInstance string
 }
 
 func NewTaskDeleter(
 	logger lager.Logger,
-	jobClient JobListerDeleter,
+	jobClient JobClient,
 	secretsDeleter SecretsDeleter,
-	eiriniInstance string,
 ) *TaskDeleter {
 	return &TaskDeleter{
 		logger:         logger,
 		jobClient:      jobClient,
 		secretsDeleter: secretsDeleter,
-		eiriniInstance: eiriniInstance,
 	}
 }
 
 func (d *TaskDeleter) Delete(guid string) (string, error) {
 	logger := d.logger.Session("delete", lager.Data{"guid": guid})
 
-	return d.delete(logger, guid, LabelGUID)
+	job, err := d.getJobByGUID(logger, guid)
+	if err != nil {
+		return "", err
+	}
+
+	return d.delete(logger, job)
 }
 
 func (d *TaskDeleter) DeleteStaging(guid string) error {
-	logger := d.logger.Session("delete-staging", lager.Data{"guid": guid})
-	_, err := d.delete(logger, guid, LabelStagingGUID)
+	_, err := d.Delete(guid)
 
 	return err
 }
 
-func (d *TaskDeleter) delete(logger lager.Logger, guid, eiriniInstance string) (string, error) {
-	jobs, err := d.jobClient.GetByGUID(guid, d.eiriniInstance)
+func (d *TaskDeleter) getJobByGUID(logger lager.Logger, guid string) (batchv1.Job, error) {
+	jobs, err := d.jobClient.GetByGUID(guid)
 	if err != nil {
 		logger.Error("failed-to-list-jobs", err)
 
-		return "", err
+		return batchv1.Job{}, err
 	}
 
 	if len(jobs) != 1 {
 		logger.Error("job-does-not-have-1-instance", nil, lager.Data{"instances": len(jobs)})
 
-		return "", fmt.Errorf("job with guid %s should have 1 instance, but it has: %d", guid, len(jobs))
+		return batchv1.Job{}, fmt.Errorf("job with guid %s should have 1 instance, but it has: %d", guid, len(jobs))
 	}
 
-	job := jobs[0]
+	return jobs[0], nil
+}
 
-	if err = d.deleteDockerRegistrySecret(logger, job); err != nil {
+func (d *TaskDeleter) delete(logger lager.Logger, job batchv1.Job) (string, error) {
+	if err := d.deleteDockerRegistrySecret(logger, job); err != nil {
 		return "", err
 	}
 
@@ -82,15 +85,16 @@ func (d *TaskDeleter) delete(logger lager.Logger, guid, eiriniInstance string) (
 		return callbackURL, nil
 	}
 
-	if err = d.jobClient.Delete(job.Namespace, job.Name); err != nil {
+	if err := d.jobClient.Delete(job.Namespace, job.Name); err != nil {
 		logger.Error("failed-to-delete-job", err)
+
 		return "", err
 	}
 
 	return callbackURL, nil
 }
 
-func (d *TaskDeleter) deleteDockerRegistrySecret(logger lager.Logger, job batch.Job) error {
+func (d *TaskDeleter) deleteDockerRegistrySecret(logger lager.Logger, job batchv1.Job) error {
 	dockerSecretNamePrefix := dockerImagePullSecretNamePrefix(
 		job.Annotations[AnnotationAppName],
 		job.Annotations[AnnotationSpaceName],

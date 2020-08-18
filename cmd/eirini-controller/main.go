@@ -141,7 +141,7 @@ func createTaskReconciler(
 	scheme *runtime.Scheme) *reconciler.Task {
 	taskDesirer := k8s.NewTaskDesirer(
 		logger,
-		client.NewJob(clientset),
+		client.NewJob(clientset, eiriniCfg.Properties.EiriniInstance),
 		client.NewSecret(clientset),
 		"",
 		[]k8s.StagingConfigTLS{},

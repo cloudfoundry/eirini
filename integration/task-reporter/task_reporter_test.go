@@ -58,7 +58,7 @@ var _ = Describe("TaskReporter", func() {
 
 		taskDesirer = k8s.NewTaskDesirerWithEiriniInstance(
 			lagertest.NewTestLogger("test-task-desirer"),
-			client.NewJob(fixture.Clientset),
+			client.NewJob(fixture.Clientset, eiriniInstance),
 			client.NewSecret(fixture.Clientset),
 			fixture.Namespace,
 			nil,
