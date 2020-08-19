@@ -180,7 +180,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 
 			It("creates a private registry secret", func() {
 				statefulset := getStatefulSetForLRP(odinLRP)
-				secret, err := getSecret(privateRegistrySecretName(statefulset.Name))
+				secret, err := getSecret(fixture.Namespace, privateRegistrySecretName(statefulset.Name))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(secret).NotTo(BeNil())
 			})
@@ -320,7 +320,7 @@ var _ = Describe("StatefulSetDesirer", func() {
 			})
 
 			It("should delete the private registry secret", func() {
-				_, err := getSecret(privateRegistrySecretName(statefulsetName))
+				_, err := getSecret(fixture.Namespace, privateRegistrySecretName(statefulsetName))
 				Expect(err).To(MatchError(ContainSubstring("not found")))
 			})
 		})

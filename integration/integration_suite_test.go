@@ -16,7 +16,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1_types "k8s.io/client-go/kubernetes/typed/core/v1"
 	policyv1beta1_types "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
@@ -39,14 +38,6 @@ func TestIntegration(t *testing.T) {
 	SetDefaultEventuallyTimeout(4 * time.Minute)
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Integration Suite")
-}
-
-func secrets() corev1_types.SecretInterface {
-	return fixture.Clientset.CoreV1().Secrets(fixture.Namespace)
-}
-
-func getSecret(name string) (*corev1.Secret, error) {
-	return secrets().Get(context.Background(), name, metav1.GetOptions{})
 }
 
 func getStatefulSetForLRP(lrp *opi.LRP) *appsv1.StatefulSet {
@@ -277,6 +268,18 @@ func createStatefulSet(ns, name string, labels map[string]string) *appsv1.Statef
 	return statefulSet
 }
 
+func createSecret(ns, name string, labels map[string]string) *corev1.Secret {
+	secret, err := fixture.Clientset.CoreV1().Secrets(ns).Create(context.Background(), &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   name,
+			Labels: labels,
+		},
+	}, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	return secret
+}
+
 func createJob(ns, name string, labels map[string]string) *batchv1.Job {
 	runAsNonRoot := true
 	runAsUser := int64(2000)
@@ -309,4 +312,15 @@ func createJob(ns, name string, labels map[string]string) *batchv1.Job {
 	Expect(err).NotTo(HaveOccurred())
 
 	return statefulSet
+}
+
+func listSecrets(ns string) []corev1.Secret {
+	secrets, err := fixture.Clientset.CoreV1().Secrets(ns).List(context.Background(), metav1.ListOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	return secrets.Items
+}
+
+func getSecret(ns, name string) (*corev1.Secret, error) {
+	return fixture.Clientset.CoreV1().Secrets(ns).Get(context.Background(), name, metav1.GetOptions{})
 }
