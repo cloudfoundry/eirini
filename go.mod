@@ -6,6 +6,7 @@ replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/go-logr/logr => github.com/go-logr/logr v0.1.0
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
+	google.golang.org/grpc => google.golang.org/grpc v1.29.1
 	k8s.io/client-go => k8s.io/client-go v0.18.6
 	k8s.io/klog/v2 => k8s.io/klog/v2 v2.1.0
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe
