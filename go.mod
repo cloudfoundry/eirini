@@ -3,6 +3,7 @@ module code.cloudfoundry.org/eirini
 go 1.13
 
 replace (
+	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/go-logr/logr => github.com/go-logr/logr v0.1.0
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
 	k8s.io/client-go => k8s.io/client-go v0.18.6
