@@ -3,7 +3,7 @@ language: go
 dist: trusty
 
 go:
-  - "1.12.x"
+  - "1.13.x"
 
 script:
   # Fast-fail on non-zero exit codes
@@ -14,6 +14,8 @@ script:
   - make format-check
   # Run unit tests
   - make test
+  # Run integration tests
+  - make integration PARALLELISM=3
 
 notifications:
   email:
