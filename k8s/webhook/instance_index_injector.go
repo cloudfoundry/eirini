@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-//counterfeiter:generate -o webhookfakes/fake_manager.go ../../vendor/code.cloudfoundry.org/eirinix Manager
+//counterfeiter:generate -o webhookfakes/fake_manager.go code.cloudfoundry.org/eirinix.Manager
 
 type InstanceIndexEnvInjector struct {
 	logger lager.Logger

@@ -20,7 +20,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-//counterfeiter:generate -o fakes/fake_ingress_server.go ../../vendor/code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2/ingress.pb.go IngressServer
+//counterfeiter:generate -o fakes/fake_ingress_server.go code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2.IngressServer
 
 type BatchSenderStub func(server loggregator_v2.Ingress_BatchSenderServer) error
 

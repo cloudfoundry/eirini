@@ -22,8 +22,8 @@ import (
 )
 
 //counterfeiter:generate . LRPDesirer
-//counterfeiter:generate -o reconcilerfakes/fake_controller_runtime_client.go ../../vendor/sigs.k8s.io/controller-runtime/pkg/client Client
-//counterfeiter:generate -o reconcilerfakes/fake_status_writer.go ../../vendor/sigs.k8s.io/controller-runtime/pkg/client StatusWriter
+//counterfeiter:generate -o reconcilerfakes/fake_controller_runtime_client.go sigs.k8s.io/controller-runtime/pkg/client.Client
+//counterfeiter:generate -o reconcilerfakes/fake_status_writer.go sigs.k8s.io/controller-runtime/pkg/client.StatusWriter
 //counterfeiter:generate . StatefulSetGetter
 
 type LRPDesirer interface {
