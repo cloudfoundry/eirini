@@ -221,7 +221,8 @@ func (c *Event) GetByInstanceAndReason(namespace string, ownerRef metav1.OwnerRe
 		ownerRef.Kind,
 		ownerRef.Name,
 		namespace,
-		reason)
+		reason,
+	)
 	labelSelector := fmt.Sprintf("cloudfoundry.org/instance_index=%d", instanceIndex)
 
 	kubeEvents, err := c.clientSet.CoreV1().Events("").List(context.Background(), metav1.ListOptions{

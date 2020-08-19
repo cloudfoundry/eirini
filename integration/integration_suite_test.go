@@ -3,9 +3,11 @@ package integration_test
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
+	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/integration/util"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/opi"
@@ -284,6 +286,36 @@ func createSecret(ns, name string, labels map[string]string) *corev1.Secret {
 	return secret
 }
 
+func createEvent(ns, name string, involvedObject corev1.ObjectReference) *corev1.Event {
+	event, err := fixture.Clientset.CoreV1().Events(ns).Create(context.Background(), &corev1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+		InvolvedObject: involvedObject,
+	}, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	return event
+}
+
+func createCrashEvent(ns, name string, involvedObject corev1.ObjectReference, crash events.CrashEvent) *corev1.Event {
+	event, err := fixture.Clientset.CoreV1().Events(ns).Create(context.Background(), &corev1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+			Labels: map[string]string{
+				"cloudfoundry.org/instance_index": strconv.Itoa(crash.Index),
+			},
+		},
+		InvolvedObject: involvedObject,
+		Reason:         crash.Reason,
+	}, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	return event
+}
+
 func createJob(ns, name string, labels map[string]string) *batchv1.Job {
 	runAsNonRoot := true
 	runAsUser := int64(2000)
@@ -325,6 +357,17 @@ func listSecrets(ns string) []corev1.Secret {
 	return secrets.Items
 }
 
+func listEvents(ns string) []corev1.Event {
+	events, err := fixture.Clientset.CoreV1().Events(ns).List(context.Background(), metav1.ListOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	return events.Items
+}
+
 func getSecret(ns, name string) (*corev1.Secret, error) {
 	return fixture.Clientset.CoreV1().Secrets(ns).Get(context.Background(), name, metav1.GetOptions{})
+}
+
+func getEvent(ns, name string) (*corev1.Event, error) {
+	return fixture.Clientset.CoreV1().Events(ns).Get(context.Background(), name, metav1.GetOptions{})
 }
