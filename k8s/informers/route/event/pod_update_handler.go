@@ -16,7 +16,7 @@ import (
 	types "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
 
-//counterfeiter:generate -o eventfakes/fake_statefulset_interface.go k8s.io/client-go/kubernetes/typed/apps/v1/statefulset.StatefulSetInterface
+//counterfeiter:generate -o eventfakes/fake_statefulset_interface.go k8s.io/client-go/kubernetes/typed/apps/v1.StatefulSetInterface
 
 type PodUpdateHandler struct {
 	Client       types.StatefulSetInterface
