@@ -38,7 +38,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	fixture = util.NewFixture(GinkgoWriter)
 })
 
-var _ = SynchronizedAfterSuite(func() {}, func() {
+var _ = SynchronizedAfterSuite(func() {
+	fixture.Destroy()
+}, func() {
 	eiriniBins.TearDown()
 	Expect(os.RemoveAll(binsPath)).To(Succeed())
 })
