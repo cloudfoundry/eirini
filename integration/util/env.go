@@ -4,7 +4,10 @@ import (
 	"os"
 	"path/filepath"
 
+	// nolint:golint,stylecheck
 	. "github.com/onsi/ginkgo"
+
+	// nolint:golint,stylecheck
 	. "github.com/onsi/gomega"
 )
 
@@ -27,6 +30,7 @@ func GetKubeconfig() string {
 	if os.IsNotExist(err) {
 		return ""
 	}
+
 	Expect(err).NotTo(HaveOccurred())
 
 	return kubeconfPath
