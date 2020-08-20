@@ -34,7 +34,7 @@ prompt-push() {
 
 fly-login() {
   if ! flightattendant -target eirini; then
-    fly -t eirini login --team-name main --concourse-url https://jetson.eirini.cf-app.com/
+    fly -t eirini login --team-name main --concourse-url https://jetson.eirini.cf-app.com/ </dev/tty
   fi
 }
 
@@ -43,7 +43,8 @@ check-pipeline() {
   pipeline_name="$1"
   echo "Checking https://jetson.eirini.cf-app.com/teams/main/pipelines/$pipeline_name ..."
   fly-login
-  fly -t eirini jobs -p "$1" | grep -Eq "failed|error"
+  output=$(fly -t eirini jobs -p "$1")
+  echo "$output" | grep -Eq "failed|error"
 }
 
 main
