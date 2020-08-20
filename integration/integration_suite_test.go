@@ -34,6 +34,10 @@ var _ = AfterEach(func() {
 	fixture.TearDown()
 })
 
+var _ = AfterSuite(func() {
+	fixture.Destroy()
+})
+
 func TestIntegration(t *testing.T) {
 	SetDefaultEventuallyTimeout(4 * time.Minute)
 	RegisterFailHandler(Fail)

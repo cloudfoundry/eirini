@@ -277,7 +277,7 @@ var _ = Describe("Routes", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
 
-		It("unregisteres the app route", func() {
+		It("unregisters the app route", func() {
 			Eventually(func() route.RegistryMessage {
 				return receivedMessage(unregisterChan)
 			}).Should(MatchFields(IgnoreExtras, Fields{

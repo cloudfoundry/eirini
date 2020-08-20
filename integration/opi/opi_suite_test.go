@@ -58,7 +58,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	certPath, keyPath = util.GenerateKeyPair("capi")
 })
 
-var _ = SynchronizedAfterSuite(func() {}, func() {
+var _ = SynchronizedAfterSuite(func() {
+	fixture.Destroy()
+}, func() {
 	eiriniBins.TearDown()
 	Expect(os.RemoveAll(binsPath)).To(Succeed())
 })

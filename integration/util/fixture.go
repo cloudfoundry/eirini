@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"sync"
 
 	"code.cloudfoundry.org/eirini"
@@ -43,9 +44,25 @@ type Fixture struct {
 	extraNamespaces   []string
 }
 
-func NewFixture(writer io.Writer) *Fixture {
-	kubeConfigPath := GetKubeconfig()
+func makeKubeConfigCopy() string {
+	tmpKubeConfig, err := ioutil.TempFile("", "kube.cfg")
+	Expect(err).NotTo(HaveOccurred())
 
+	defer tmpKubeConfig.Close()
+
+	kubeConfigContents, err := os.Open(GetKubeconfig())
+	Expect(err).NotTo(HaveOccurred())
+
+	defer kubeConfigContents.Close()
+
+	_, err = io.Copy(tmpKubeConfig, kubeConfigContents)
+	Expect(err).NotTo(HaveOccurred())
+
+	return tmpKubeConfig.Name()
+}
+
+func NewFixture(writer io.Writer) *Fixture {
+	kubeConfigPath := makeKubeConfigCopy()
 	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
 	Expect(err).NotTo(HaveOccurred(), "failed to build config from flags")
 
@@ -125,8 +142,12 @@ func (f *Fixture) TearDown() {
 	Expect(errs.ErrorOrNil()).NotTo(HaveOccurred())
 
 	for _, ns := range f.extraNamespaces {
-		errs = multierror.Append(errs, f.deleteNamespace(ns))
+		_ = f.deleteNamespace(ns)
 	}
+}
+
+func (f *Fixture) Destroy() {
+	Expect(os.RemoveAll(f.KubeConfigPath)).To(Succeed())
 }
 
 func (f *Fixture) CreateExtraNamespace() string {
