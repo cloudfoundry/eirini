@@ -143,6 +143,7 @@ var _ = Describe("TaskDesirer", func() {
 			"registry-secret",
 			"rootfs-version",
 			"my-eirini",
+			false,
 		)
 	})
 
@@ -228,6 +229,33 @@ var _ = Describe("TaskDesirer", func() {
 			By("not setting staging-specific labels on the job", func() {
 				Expect(job.Labels[LabelSourceType]).NotTo(Equal("STG"))
 				Expect(job.Labels).NotTo(HaveKey(LabelStagingGUID))
+			})
+		})
+
+		When("allowAutomountServiceAccountToken is true", func() {
+			BeforeEach(func() {
+				desirer = NewTaskDesirerWithEiriniInstance(
+					lagertest.NewTestLogger("desiretask"),
+					fakeJobCreator,
+					fakeSecretsCreator,
+					defaultNamespace,
+					[]StagingConfigTLS{},
+					"service-account",
+					"staging-service-account",
+					"registry-secret",
+					"rootfs-version",
+					"my-eirini",
+					true,
+				)
+			})
+
+			It("does not set automountServiceAccountToken on the pod spec", func() {
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
+				_, job = fakeJobCreator.CreateArgsForCall(0)
+
+				Expect(job.Spec.Template.Spec.AutomountServiceAccountToken).To(BeNil())
 			})
 		})
 

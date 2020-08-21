@@ -28,6 +28,8 @@ var _ = Describe("Task Desire and Cancel", func() {
 		jobs    *batchv1.JobList
 	)
 
+	const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
+
 	JustBeforeEach(func() {
 		body, err := json.Marshal(request)
 		Expect(err).NotTo(HaveOccurred())
@@ -88,6 +90,27 @@ var _ = Describe("Task Desire and Cancel", func() {
 				Expect(jobContainers[0].Image).To(Equal("registry/cloudfoundry/bar:foo"))
 				Expect(jobContainers[0].Command).To(ConsistOf("/lifecycle/launch"))
 			})
+
+			By("not mounting the service account token", func() {
+				Eventually(func() ([]corev1.Pod, error) {
+					pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+					if err != nil {
+						return nil, err
+					}
+
+					return pods.Items, nil
+				}).ShouldNot(BeEmpty())
+
+				pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(pods.Items).To(HaveLen(1))
+
+				podMountPaths := []string{}
+				for _, podMount := range pods.Items[0].Spec.Containers[0].VolumeMounts {
+					podMountPaths = append(podMountPaths, podMount.MountPath)
+				}
+				Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
+			})
 		})
 	})
 
@@ -127,6 +150,27 @@ var _ = Describe("Task Desire and Cancel", func() {
 				Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
 				Expect(jobContainers[0].Image).To(Equal("busybox"))
 				Expect(jobContainers[0].Command).To(ConsistOf("/bin/echo", "hello"))
+			})
+
+			By("not mounting the service account token", func() {
+				Eventually(func() ([]corev1.Pod, error) {
+					pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+					if err != nil {
+						return nil, err
+					}
+
+					return pods.Items, nil
+				}).ShouldNot(BeEmpty())
+
+				pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(pods.Items).To(HaveLen(1))
+
+				podMountPaths := []string{}
+				for _, podMount := range pods.Items[0].Spec.Containers[0].VolumeMounts {
+					podMountPaths = append(podMountPaths, podMount.MountPath)
+				}
+				Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
 			})
 
 			By("completing the task", func() {
@@ -188,6 +232,72 @@ var _ = Describe("Task Desire and Cancel", func() {
 						"Type":   Equal(batchv1.JobComplete),
 						"Status": Equal(corev1.ConditionTrue),
 					})))
+				})
+			})
+		})
+
+		When("unsafe_allow_automount_service_account_token is set", func() {
+			var newConfigPath string
+
+			BeforeEach(func() {
+				newConfigPath = restartWithConfig(func(config eirini.Config) eirini.Config {
+					config.Properties.UnsafeAllowAutomountServiceAccountToken = true
+
+					return config
+				})
+			})
+
+			AfterEach(func() {
+				os.RemoveAll(newConfigPath)
+			})
+
+			getPods := func() []corev1.Pod {
+				var podItems []corev1.Pod
+				Eventually(func() ([]corev1.Pod, error) {
+					var err error
+					pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+					if err != nil {
+						return nil, err
+					}
+
+					podItems = pods.Items
+
+					return podItems, nil
+				}).ShouldNot(BeEmpty())
+
+				return podItems
+			}
+
+			It("mounts the service account token (because this is how K8S works by default)", func() {
+				pods := getPods()
+				Expect(pods).To(HaveLen(1))
+
+				podMountPaths := []string{}
+				for _, podMount := range pods[0].Spec.Containers[0].VolumeMounts {
+					podMountPaths = append(podMountPaths, podMount.MountPath)
+				}
+				Expect(podMountPaths).To(ContainElement(serviceAccountTokenMountPath))
+			})
+
+			When("the app/task service account has its automountServiceAccountToken set to false", func() {
+				BeforeEach(func() {
+					appServiceAccount, err := fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Get(context.Background(), util.GetApplicationServiceAccount(), metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+					automountServiceAccountToken := false
+					appServiceAccount.AutomountServiceAccountToken = &automountServiceAccountToken
+					_, err = fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Update(context.Background(), appServiceAccount, metav1.UpdateOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("does not mount the service account token", func() {
+					pods := getPods()
+					Expect(pods).To(HaveLen(1))
+
+					podMountPaths := []string{}
+					for _, podMount := range pods[0].Spec.Containers[0].VolumeMounts {
+						podMountPaths = append(podMountPaths, podMount.MountPath)
+					}
+					Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
 				})
 			})
 		})

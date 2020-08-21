@@ -149,6 +149,7 @@ func createTaskReconciler(
 		"",
 		eiriniCfg.Properties.RegistrySecretName,
 		eiriniCfg.Properties.RootfsVersion,
+		eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
 	)
 
 	return reconciler.NewTask(logger, controllerClient, taskDesirer, scheme)

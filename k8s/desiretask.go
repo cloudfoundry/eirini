@@ -45,16 +45,17 @@ type StagingConfigTLS struct {
 }
 
 type TaskDesirer struct {
-	logger                    lager.Logger
-	jobCreator                JobCreator
-	secretsCreator            SecretsCreator
-	defaultStagingNamespace   string
-	tlsConfig                 []StagingConfigTLS
-	serviceAccountName        string
-	stagingServiceAccountName string
-	registrySecretName        string
-	eiriniInstance            string
-	rootfsVersion             string
+	logger                            lager.Logger
+	jobCreator                        JobCreator
+	secretsCreator                    SecretsCreator
+	defaultStagingNamespace           string
+	tlsConfig                         []StagingConfigTLS
+	serviceAccountName                string
+	stagingServiceAccountName         string
+	registrySecretName                string
+	eiriniInstance                    string
+	rootfsVersion                     string
+	allowAutomountServiceAccountToken bool
 }
 
 func NewTaskDesirer(
@@ -67,17 +68,19 @@ func NewTaskDesirer(
 	stagingServiceAccountName string,
 	registrySecretName string,
 	rootfsVersion string,
+	allowAutomountServiceAccountToken bool,
 ) *TaskDesirer {
 	return &TaskDesirer{
-		logger:                    logger.Session("task-desirer"),
-		jobCreator:                jobClient,
-		secretsCreator:            secretsCreator,
-		defaultStagingNamespace:   defaultStagingNamespace,
-		tlsConfig:                 tlsConfig,
-		serviceAccountName:        serviceAccountName,
-		stagingServiceAccountName: stagingServiceAccountName,
-		registrySecretName:        registrySecretName,
-		rootfsVersion:             rootfsVersion,
+		logger:                            logger.Session("task-desirer"),
+		jobCreator:                        jobClient,
+		secretsCreator:                    secretsCreator,
+		defaultStagingNamespace:           defaultStagingNamespace,
+		tlsConfig:                         tlsConfig,
+		serviceAccountName:                serviceAccountName,
+		stagingServiceAccountName:         stagingServiceAccountName,
+		registrySecretName:                registrySecretName,
+		rootfsVersion:                     rootfsVersion,
+		allowAutomountServiceAccountToken: allowAutomountServiceAccountToken,
 	}
 }
 
@@ -92,6 +95,7 @@ func NewTaskDesirerWithEiriniInstance(
 	registrySecretName string,
 	rootfsVersion string,
 	eiriniInstance string,
+	allowAutomountServiceAccountToken bool,
 ) *TaskDesirer {
 	desirer := NewTaskDesirer(
 		logger,
@@ -103,6 +107,7 @@ func NewTaskDesirerWithEiriniInstance(
 		stagingServiceAccountName,
 		registrySecretName,
 		rootfsVersion,
+		allowAutomountServiceAccountToken,
 	)
 	desirer.eiriniInstance = eiriniInstance
 
@@ -374,7 +379,6 @@ func getVolume(name, path string) (corev1.Volume, corev1.VolumeMount) {
 }
 
 func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
-	automountServiceAccountToken := false
 	runAsNonRoot := true
 
 	job := &batch.Job{
@@ -384,8 +388,7 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 			BackoffLimit: int32ptr(0),
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
-					AutomountServiceAccountToken: &automountServiceAccountToken,
-					RestartPolicy:                corev1.RestartPolicyNever,
+					RestartPolicy: corev1.RestartPolicyNever,
 					SecurityContext: &corev1.PodSecurityContext{
 						RunAsNonRoot: &runAsNonRoot,
 						RunAsUser:    int64ptr(VcapUID),
@@ -393,6 +396,11 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 				},
 			},
 		},
+	}
+
+	if !d.allowAutomountServiceAccountToken {
+		automountServiceAccountToken := false
+		job.Spec.Template.Spec.AutomountServiceAccountToken = &automountServiceAccountToken
 	}
 
 	name := fmt.Sprintf("%s-%s", task.AppName, task.SpaceName)

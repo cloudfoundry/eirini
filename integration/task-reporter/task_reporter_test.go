@@ -66,7 +66,9 @@ var _ = Describe("TaskReporter", func() {
 			"",
 			"",
 			"",
-			eiriniInstance)
+			eiriniInstance,
+			false,
+		)
 
 		taskGUID := util.GenerateGUID()
 		task = &opi.Task{
