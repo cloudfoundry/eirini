@@ -47,6 +47,13 @@ func (r StateReporter) taskContainerHasJustTerminated(logger lager.Logger, oldPo
 	oldTaskContainerStatus, hasOldTaskContainerStatus := getTaskContainerStatus(oldPod)
 	taskContainerStatus, hasTaskContainerStatus := getTaskContainerStatus(pod)
 
+	logger.Debug("checking-task-status", lager.Data{
+		"old-pod-has-status": hasOldTaskContainerStatus,
+		"old-status":         oldTaskContainerStatus,
+		"new-pod-has-status": hasTaskContainerStatus,
+		"new-status":         taskContainerStatus,
+	})
+
 	if !hasTaskContainerStatus {
 		logger.Info("updated-pod-has-no-task-container-status")
 

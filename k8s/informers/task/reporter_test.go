@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
+	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -226,11 +227,10 @@ var _ = Describe("Reporter", func() {
 		})
 
 		It("logs the error", func() {
-			logs := logger.Logs()
-			Expect(logs).To(HaveLen(1))
-			log := logs[0]
-			Expect(log.Message).To(Equal("task-reporter-test.report.cannot-send-task-status-response"))
-			Expect(log.Data).To(HaveKeyWithValue("error", "request not successful: status=502 potato"))
+			Expect(logger.Logs()).To(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Message": Equal("task-reporter-test.report.cannot-send-task-status-response"),
+				"Data":    HaveKeyWithValue("error", "request not successful: status=502 potato"),
+			})))
 		})
 
 		It("still deletes the job on kubernetes", func() {

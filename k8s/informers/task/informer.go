@@ -57,6 +57,9 @@ func (c *Informer) Start() {
 		UpdateFunc: c.updateFunc,
 	})
 
+	c.logger.Info("starting-informer")
+	defer c.logger.Info("stopping-informer")
+
 	informer.Run(c.stopperChan)
 }
 
