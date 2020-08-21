@@ -21,7 +21,16 @@ check-ci() {
   echo "CI is green"
 }
 
+ensure-tty() {
+  if ! exec 1001</dev/tty; then
+    echo "not in a terminal - giving up. Please retry from the command line"
+    exit 3
+  fi
+  1001<&-
+}
+
 prompt-push() {
+  ensure-tty
   read -r -p "Do you want to push in eirini? [y/N]" yn </dev/tty
   case $yn in
     [Yy]) exit 0 ;;
@@ -34,6 +43,8 @@ prompt-push() {
 
 fly-login() {
   if ! flightattendant -target eirini; then
+    echo "not logged in to concourse - attempting to log in"
+    ensure-tty
     fly -t eirini login --team-name main --concourse-url https://jetson.eirini.cf-app.com/ </dev/tty
   fi
 }
