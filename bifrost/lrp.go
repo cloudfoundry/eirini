@@ -85,8 +85,8 @@ func (l *LRP) Update(ctx context.Context, request cf.UpdateDesiredLRPRequest) er
 
 	lrp.TargetInstances = request.Update.Instances
 	lrp.LastUpdated = request.Update.Annotation
-
 	lrp.AppURIs = getURIs(request.Update)
+	lrp.Image = request.Update.Image
 
 	return errors.Wrap(l.Desirer.Update(lrp), "failed to update")
 }
@@ -101,6 +101,7 @@ func (l *LRP) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (cf.Desi
 		ProcessGUID: identifier.ProcessGUID(),
 		Instances:   int32(lrp.TargetInstances),
 		Annotation:  lrp.LastUpdated,
+		Image:       lrp.Image,
 	}
 
 	if len(lrp.AppURIs) > 0 {

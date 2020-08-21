@@ -476,6 +476,11 @@ var _ = Describe("Statefulset Desirer", func() {
 	})
 
 	Context("When updating an app", func() {
+		var (
+			updatedLRP *opi.LRP
+			err        error
+		)
+
 		BeforeEach(func() {
 			replicas := int32(3)
 			st := []appsv1.StatefulSet{
@@ -491,21 +496,43 @@ var _ = Describe("Statefulset Desirer", func() {
 					},
 					Spec: appsv1.StatefulSetSpec{
 						Replicas: &replicas,
+						Template: corev1.PodTemplateSpec{
+							Spec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{Name: "another-container", Image: "another/image"},
+									{Name: k8s.OPIContainerName, Image: "old/image"},
+								},
+							},
+						},
 					},
 				},
 			}
 
 			statefulSetClient.GetByLRPIdentifierReturns(st, nil)
-		})
 
-		It("updates the statefulset", func() {
-			lrp := &opi.LRP{
+			updatedLRP = &opi.LRP{
+				LRPIdentifier: opi.LRPIdentifier{
+					GUID:    "guid_1234",
+					Version: "version_1234",
+				},
+				AppName:         "baldur",
+				SpaceName:       "space-foo",
 				TargetInstances: 5,
 				LastUpdated:     "now",
 				AppURIs:         []opi.Route{{Hostname: "new-route.io", Port: 6666}},
+				Image:           "new/image",
 			}
+		})
 
-			Expect(statefulSetDesirer.Update(lrp)).To(Succeed())
+		JustBeforeEach(func() {
+			err = statefulSetDesirer.Update(updatedLRP)
+		})
+
+		It("succeeds", func() {
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("updates the statefulset", func() {
 			Expect(statefulSetClient.UpdateCallCount()).To(Equal(1))
 
 			namespace, st := statefulSetClient.UpdateArgsForCall(0)
@@ -514,11 +541,33 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(st.GetAnnotations()).To(HaveKeyWithValue(k8s.AnnotationRegisteredRoutes, `[{"hostname":"new-route.io","port":6666}]`))
 			Expect(st.GetAnnotations()).NotTo(HaveKey("another"))
 			Expect(*st.Spec.Replicas).To(Equal(int32(5)))
+			Expect(st.Spec.Template.Spec.Containers[0].Image).To(Equal("another/image"))
+			Expect(st.Spec.Template.Spec.Containers[1].Image).To(Equal("new/image"))
+		})
+
+		Context("when the image is missing", func() {
+			BeforeEach(func() {
+				updatedLRP.Image = ""
+			})
+
+			It("succeeds", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("doesn't reset the image", func() {
+				Expect(statefulSetClient.UpdateCallCount()).To(Equal(1))
+
+				_, st := statefulSetClient.UpdateArgsForCall(0)
+				Expect(st.Spec.Template.Spec.Containers[1].Image).To(Equal("old/image"))
+			})
 		})
 
 		Context("when lrp is scaled down to 1 instance", func() {
+			BeforeEach(func() {
+				updatedLRP.TargetInstances = 1
+			})
+
 			It("should delete the pod disruption budget for the lrp", func() {
-				Expect(statefulSetDesirer.Update(&opi.LRP{TargetInstances: 1})).To(Succeed())
 				Expect(pdbClient.DeleteCallCount()).To(Equal(1))
 				pdbNamespace, pdbName := pdbClient.DeleteArgsForCall(0)
 				Expect(pdbNamespace).To(Equal("the-namespace"))
@@ -534,7 +583,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				})
 
 				It("should ignore the error", func() {
-					Expect(statefulSetDesirer.Update(&opi.LRP{TargetInstances: 1})).To(Succeed())
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 
@@ -544,16 +593,17 @@ var _ = Describe("Statefulset Desirer", func() {
 				})
 
 				It("should propagate the error", func() {
-					Expect(statefulSetDesirer.Update(&opi.LRP{TargetInstances: 1})).To(MatchError(ContainSubstring("pow")))
+					Expect(err).To(MatchError(ContainSubstring("pow")))
 				})
 			})
 		})
 
 		Context("when lrp is scaled up to more than 1 instance", func() {
+			BeforeEach(func() {
+				updatedLRP.TargetInstances = 2
+			})
+
 			It("should create a pod disruption budget for the lrp in the same namespace", func() {
-				lrp := createLRP("Baldur", nil)
-				lrp.TargetInstances = 2
-				Expect(statefulSetDesirer.Update(lrp)).To(Succeed())
 				Expect(pdbClient.CreateCallCount()).To(Equal(1))
 				namespace, pdb := pdbClient.CreateArgsForCall(0)
 
@@ -570,7 +620,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				})
 
 				It("should ignore the error", func() {
-					Expect(statefulSetDesirer.Update(&opi.LRP{TargetInstances: 2})).To(Succeed())
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 
@@ -580,7 +630,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				})
 
 				It("should propagate the error", func() {
-					Expect(statefulSetDesirer.Update(&opi.LRP{TargetInstances: 2})).To(MatchError(ContainSubstring("boom")))
+					Expect(err).To(MatchError(ContainSubstring("boom")))
 				})
 			})
 		})
@@ -591,7 +641,7 @@ var _ = Describe("Statefulset Desirer", func() {
 			})
 
 			It("should return a meaningful message", func() {
-				Expect(statefulSetDesirer.Update(&opi.LRP{})).To(MatchError(ContainSubstring("failed to update statefulset")))
+				Expect(err).To(MatchError(ContainSubstring("failed to update statefulset")))
 			})
 		})
 
@@ -602,7 +652,6 @@ var _ = Describe("Statefulset Desirer", func() {
 			})
 
 			It("should retry", func() {
-				Expect(statefulSetDesirer.Update(&opi.LRP{})).To(Succeed())
 				Expect(statefulSetClient.UpdateCallCount()).To(Equal(2))
 			})
 		})
@@ -613,13 +662,10 @@ var _ = Describe("Statefulset Desirer", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(statefulSetDesirer.Update(&opi.LRP{})).
-					To(MatchError(ContainSubstring("failed to list statefulsets")))
+				Expect(err).To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
 
 			It("should not create the app", func() {
-				Expect(statefulSetDesirer.Update(&opi.LRP{})).
-					To(HaveOccurred())
 				Expect(statefulSetClient.UpdateCallCount()).To(Equal(0))
 			})
 		})

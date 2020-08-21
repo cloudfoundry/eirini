@@ -187,144 +187,97 @@ var _ = Describe("Bifrost LRP", func() {
 		var updateRequest cf.UpdateDesiredLRPRequest
 
 		BeforeEach(func() {
+			updatedRoutes := []map[string]interface{}{
+				{
+					"hostname": "my.route",
+					"port":     8080,
+				},
+				{
+					"hostname": "my.other.route",
+					"port":     7777,
+				},
+			}
+
+			routesJSON, marshalErr := json.Marshal(updatedRoutes)
+			Expect(marshalErr).ToNot(HaveOccurred())
+
 			updateRequest = cf.UpdateDesiredLRPRequest{
 				GUID:    "guid_1234",
 				Version: "version_1234",
+				Update: cf.DesiredLRPUpdate{
+					Instances:  5,
+					Annotation: "21421321.3",
+					Routes: map[string]json.RawMessage{
+						"cf-router": json.RawMessage(routesJSON),
+					},
+					Image: "the/image",
+				},
 			}
+
+			lrpDesirer.GetReturns(&opi.LRP{
+				TargetInstances: 2,
+				LastUpdated:     "whenever",
+				AppURIs: []opi.Route{
+					{Hostname: "my.route", Port: 8080},
+					{Hostname: "your.route", Port: 5555},
+				},
+			}, nil)
+
+			lrpDesirer.UpdateReturns(nil)
 		})
 
 		JustBeforeEach(func() {
 			err = lrpBifrost.Update(context.Background(), updateRequest)
 		})
 
-		Context("when the app exists", func() {
+		It("should not return an error", func() {
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should get the existing LRP", func() {
+			Expect(lrpDesirer.GetCallCount()).To(Equal(1))
+			identifier := lrpDesirer.GetArgsForCall(0)
+			Expect(identifier.GUID).To(Equal("guid_1234"))
+			Expect(identifier.Version).To(Equal("version_1234"))
+		})
+
+		It("should submit the updated LRP", func() {
+			Expect(lrpDesirer.UpdateCallCount()).To(Equal(1))
+			lrp := lrpDesirer.UpdateArgsForCall(0)
+			Expect(lrp.TargetInstances).To(Equal(int(5)))
+			Expect(lrp.LastUpdated).To(Equal("21421321.3"))
+			Expect(lrp.AppURIs).To(Equal([]opi.Route{
+				{Hostname: "my.route", Port: 8080},
+				{Hostname: "my.other.route", Port: 7777},
+			}))
+			Expect(lrp.Image).To(Equal("the/image"))
+		})
+
+		Context("when the update fails", func() {
 			BeforeEach(func() {
-				lrp := opi.LRP{
-					TargetInstances: 2,
-					LastUpdated:     "whenever",
-					AppURIs: []opi.Route{
-						{Hostname: "my.route", Port: 8080},
-						{Hostname: "your.route", Port: 5555},
-					},
-				}
-				lrpDesirer.GetReturns(&lrp, nil)
+				lrpDesirer.UpdateReturns(errors.New("your app is bad"))
 			})
 
-			Context("with instance count modified", func() {
-				BeforeEach(func() {
-					updateRequest.Update.Instances = 5
-					updateRequest.Update.Annotation = "21421321.3"
-					lrpDesirer.UpdateReturns(nil)
-				})
+			It("should propagate the error", func() {
+				Expect(err).To(MatchError(ContainSubstring("failed to update")))
+			})
+		})
 
-				It("should get the existing LRP", func() {
-					Expect(lrpDesirer.GetCallCount()).To(Equal(1))
-					identifier := lrpDesirer.GetArgsForCall(0)
-					Expect(identifier.GUID).To(Equal("guid_1234"))
-					Expect(identifier.Version).To(Equal("version_1234"))
-				})
-
-				It("should submit the updated LRP", func() {
-					Expect(lrpDesirer.UpdateCallCount()).To(Equal(1))
-					lrp := lrpDesirer.UpdateArgsForCall(0)
-					Expect(lrp.TargetInstances).To(Equal(int(5)))
-					Expect(lrp.LastUpdated).To(Equal("21421321.3"))
-				})
-
-				It("should not return an error", func() {
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				Context("when the update fails", func() {
-					BeforeEach(func() {
-						lrpDesirer.UpdateReturns(errors.New("your app is bad"))
-					})
-
-					It("should propagate the error", func() {
-						Expect(err).To(MatchError(ContainSubstring("failed to update")))
-					})
-				})
+		Context("When there are no routes provided", func() {
+			BeforeEach(func() {
+				updateRequest.Update.Routes = map[string]json.RawMessage{}
 			})
 
-			Context("When the routes are updated", func() {
-				BeforeEach(func() {
-					updatedRoutes := []map[string]interface{}{
-						{
-							"hostname": "my.route",
-							"port":     8080,
-						},
-						{
-							"hostname": "my.other.route",
-							"port":     7777,
-						},
-					}
-
-					routesJSON, marshalErr := json.Marshal(updatedRoutes)
-					Expect(marshalErr).ToNot(HaveOccurred())
-
-					rawJSON := json.RawMessage(routesJSON)
-
-					updatedInstances := 5
-					updatedTimestamp := "23456.7"
-					updateRequest.Update = cf.DesiredLRPUpdate{
-						Routes: map[string]json.RawMessage{
-							"cf-router": rawJSON,
-						},
-					}
-					updateRequest.Update.Instances = updatedInstances
-					updateRequest.Update.Annotation = updatedTimestamp
-
-					lrpDesirer.UpdateReturns(nil)
-				})
-
-				It("should get the existing LRP", func() {
-					Expect(lrpDesirer.GetCallCount()).To(Equal(1))
-					identifier := lrpDesirer.GetArgsForCall(0)
-					Expect(identifier.GUID).To(Equal("guid_1234"))
-					Expect(identifier.Version).To(Equal("version_1234"))
-				})
-
-				It("should have the updated routes", func() {
-					Expect(lrpDesirer.UpdateCallCount()).To(Equal(1))
-					lrp := lrpDesirer.UpdateArgsForCall(0)
-					Expect(lrp.AppURIs).To(Equal([]opi.Route{
-						{Hostname: "my.route", Port: 8080},
-						{Hostname: "my.other.route", Port: 7777},
-					}))
-				})
-
-				Context("When there are no routes provided", func() {
-					BeforeEach(func() {
-						updatedRoutes := []map[string]interface{}{}
-
-						routesJSON, marshalErr := json.Marshal(updatedRoutes)
-						Expect(marshalErr).ToNot(HaveOccurred())
-
-						rawJSON := json.RawMessage(routesJSON)
-						updateRequest.Update.Routes = map[string]json.RawMessage{
-							"cf-router": rawJSON,
-						}
-					})
-
-					It("should update it to an empty array", func() {
-						Expect(lrpDesirer.UpdateCallCount()).To(Equal(1))
-						lrp := lrpDesirer.UpdateArgsForCall(0)
-						Expect(lrp.AppURIs).To(BeEmpty())
-					})
-				})
+			It("should update it to an empty array", func() {
+				Expect(lrpDesirer.UpdateCallCount()).To(Equal(1))
+				lrp := lrpDesirer.UpdateArgsForCall(0)
+				Expect(lrp.AppURIs).To(BeEmpty())
 			})
 		})
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
 				lrpDesirer.GetReturns(nil, errors.New("app does not exist"))
-			})
-
-			It("should try to get the LRP", func() {
-				Expect(lrpDesirer.GetCallCount()).To(Equal(1))
-				identifier := lrpDesirer.GetArgsForCall(0)
-				Expect(identifier.GUID).To(Equal("guid_1234"))
-				Expect(identifier.Version).To(Equal("version_1234"))
 			})
 
 			It("should not submit anything to be updated", func() {
@@ -359,6 +312,7 @@ var _ = Describe("Bifrost LRP", func() {
 						{Hostname: "route1.io", Port: 6666},
 						{Hostname: "route2.io", Port: 9999},
 					},
+					Image: "the/image",
 				}
 
 				lrpDesirer.GetReturns(lrp, nil)
@@ -378,6 +332,7 @@ var _ = Describe("Bifrost LRP", func() {
 				Expect(desiredLRP.Instances).To(Equal(int32(5)))
 				Expect(desiredLRP.Annotation).To(Equal("1234.5"))
 				Expect(desiredLRP.Routes).To(HaveKeyWithValue("cf-router", json.RawMessage(`[{"hostname":"route1.io","port":6666},{"hostname":"route2.io","port":9999}]`)))
+				Expect(desiredLRP.Image).To(Equal("the/image"))
 			})
 		})
 

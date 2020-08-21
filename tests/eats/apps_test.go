@@ -74,23 +74,82 @@ var _ = Describe("Apps", func() {
 	})
 
 	Describe("Update an app", func() {
+		var (
+			desiredLRPUpdate cf.DesiredLRPUpdate
+			lrp              cf.DesiredLRP
+		)
+
 		BeforeEach(func() {
 			desireApp(lrpGUID, lrpVersion, namespace)
 		})
 
-		It("successfully updates the app", func() {
-			updatedRoutes := []tests.RouteInfo{{Hostname: "updated-host", Port: 4321}}
-			updateResp := updateApp(lrpGUID, lrpVersion, 2, "333333", updatedRoutes)
-			Expect(updateResp.StatusCode).To(Equal(http.StatusOK))
-			lrp, err := getLRP(lrpGUID, lrpVersion)
+		JustBeforeEach(func() {
+			updateResp, err := updateLRP(cf.UpdateDesiredLRPRequest{
+				GUID:    lrpGUID,
+				Version: lrpVersion,
+				Update:  desiredLRPUpdate,
+			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(lrp.Instances).To(BeNumerically("==", 2))
-			Expect(lrp.Annotation).To(Equal("333333"))
+			Expect(updateResp.StatusCode).To(Equal(http.StatusOK))
 
-			Expect(lrp.Routes).To(SatisfyAll(
-				HaveLen(1),
-				HaveKeyWithValue("cf-router", tests.MarshalRoutes(updatedRoutes))),
-			)
+			lrp, err = getLRP(lrpGUID, lrpVersion)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		When("updating the instance number", func() {
+			BeforeEach(func() {
+				desiredLRPUpdate = cf.DesiredLRPUpdate{
+					Instances: 2,
+				}
+			})
+
+			It("successfully updates the LRP", func() {
+				Expect(lrp.Instances).To(BeNumerically("==", 2))
+			})
+		})
+
+		When("updating the routes", func() {
+			var updatedRoutes []tests.RouteInfo
+
+			BeforeEach(func() {
+				updatedRoutes = []tests.RouteInfo{{Hostname: "updated-host", Port: 4321}}
+				desiredLRPUpdate = cf.DesiredLRPUpdate{
+					Routes: map[string]json.RawMessage{
+						"cf-router": tests.MarshalRoutes(updatedRoutes),
+					},
+				}
+			})
+
+			It("successfully updates the LRP", func() {
+				Expect(lrp.Routes).To(SatisfyAll(
+					HaveLen(1),
+					HaveKeyWithValue("cf-router", tests.MarshalRoutes(updatedRoutes))),
+				)
+			})
+		})
+
+		When("updating the annotation", func() {
+			BeforeEach(func() {
+				desiredLRPUpdate = cf.DesiredLRPUpdate{
+					Annotation: "333333",
+				}
+			})
+
+			It("successfully updates the LRP", func() {
+				Expect(lrp.Annotation).To(Equal("333333"))
+			})
+		})
+
+		When("updating the image", func() {
+			BeforeEach(func() {
+				desiredLRPUpdate = cf.DesiredLRPUpdate{
+					Image: "new/image",
+				}
+			})
+
+			It("successfully updates the LRP", func() {
+				Expect(lrp.Image).To(Equal("new/image"))
+			})
 		})
 	})
 
@@ -328,23 +387,6 @@ func createLrpRequest(appGUID, version string) cf.DesireLRPRequest {
 			},
 		},
 	}
-}
-
-func updateApp(appGUID, version string, instances int, annotation string, routes []tests.RouteInfo) *http.Response {
-	resp, err := updateLRP(cf.UpdateDesiredLRPRequest{
-		GUID:    appGUID,
-		Version: version,
-		Update: cf.DesiredLRPUpdate{
-			Instances: instances,
-			Routes: map[string]json.RawMessage{
-				"cf-router": tests.MarshalRoutes(routes),
-			},
-			Annotation: annotation,
-		},
-	})
-	Expect(err).NotTo(HaveOccurred())
-
-	return resp
 }
 
 func getRunningInstances(appGUID, version string) []*cf.Instance {

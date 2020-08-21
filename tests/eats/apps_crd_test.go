@@ -244,6 +244,18 @@ var _ = Describe("Apps CRDs", func() {
 				}).Should(Equal(int32(3)))
 			})
 		})
+
+		When("the image is updated", func() {
+			BeforeEach(func() {
+				lrp.Spec.Image = "new/image"
+			})
+
+			It("updates the underlying statefulset", func() {
+				Eventually(func() string {
+					return getStatefulSet().Spec.Template.Spec.Containers[0].Image
+				}).Should(Equal("new/image"))
+			})
+		})
 	})
 
 	Describe("Stop an app", func() {

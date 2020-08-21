@@ -294,43 +294,25 @@ func (m *StatefulSetDesirer) update(lrp *opi.LRP) error {
 		return err
 	}
 
-	uris, err := json.Marshal(lrp.AppURIs)
-	if err != nil {
-		panic("failed to marshal routes")
-	}
+	updatedStatefulSet := m.getUpdatedStatefulSetObj(statefulSet,
+		lrp.AppURIs,
+		lrp.TargetInstances,
+		lrp.LastUpdated,
+		lrp.Image,
+	)
 
-	count := int32(lrp.TargetInstances)
-	statefulSet.Spec.Replicas = &count
-	statefulSet.Annotations[AnnotationLastUpdated] = lrp.LastUpdated
-	statefulSet.Annotations[AnnotationRegisteredRoutes] = string(uris)
-
-	_, err = m.StatefulSets.Update(statefulSet.Namespace, statefulSet)
+	_, err = m.StatefulSets.Update(updatedStatefulSet.Namespace, updatedStatefulSet)
 	if err != nil {
 		logger.Error("failed-to-update-statefulset", err, lager.Data{"namespace": statefulSet.Namespace})
 
 		return err
 	}
 
-	if lrp.TargetInstances <= 1 {
-		err = m.PodDisruptionBudgets.Delete(statefulSet.Namespace, statefulSet.Name)
-		if err != nil && !k8serrors.IsNotFound(err) {
-			logger.Error("failed-to-delete-disruption-budget", err, lager.Data{"namespace": statefulSet.Namespace})
-
-			return err
-		}
-
-		return nil
-	}
-
-	err = m.createPodDisruptionBudget(statefulSet.Namespace, lrp)
-
-	if err != nil && !k8serrors.IsAlreadyExists(err) {
-		logger.Error("failed-to-create-disruption-budget", err, lager.Data{"namespace": statefulSet.Namespace})
-
-		return err
-	}
-
-	return nil
+	return m.handlePodDisruptionBudget(logger,
+		statefulSet.Namespace,
+		statefulSet.Name,
+		lrp,
+	)
 }
 
 func (m *StatefulSetDesirer) Get(identifier opi.LRPIdentifier) (*opi.LRP, error) {
@@ -739,4 +721,51 @@ func (m *StatefulSetDesirer) getGetSecurityContext(lrp *opi.LRP) *corev1.PodSecu
 		RunAsNonRoot: &runAsNonRoot,
 		RunAsUser:    int64ptr(VcapUID),
 	}
+}
+
+func (m *StatefulSetDesirer) handlePodDisruptionBudget(logger lager.Logger, namespace, name string, lrp *opi.LRP) error {
+	if lrp.TargetInstances <= 1 {
+		err := m.PodDisruptionBudgets.Delete(namespace, name)
+		if err != nil && !k8serrors.IsNotFound(err) {
+			logger.Error("failed-to-delete-disruption-budget", err, lager.Data{"namespace": namespace})
+
+			return err
+		}
+
+		return nil
+	}
+
+	err := m.createPodDisruptionBudget(namespace, lrp)
+
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		logger.Error("failed-to-create-disruption-budget", err, lager.Data{"namespace": namespace})
+
+		return err
+	}
+
+	return nil
+}
+
+func (m *StatefulSetDesirer) getUpdatedStatefulSetObj(sts *appsv1.StatefulSet, routes []opi.Route, instances int, lastUpdated, image string) *appsv1.StatefulSet {
+	updatedSts := sts.DeepCopy()
+
+	uris, err := json.Marshal(routes)
+	if err != nil {
+		panic("failed to marshal routes")
+	}
+
+	count := int32(instances)
+	updatedSts.Spec.Replicas = &count
+	updatedSts.Annotations[AnnotationLastUpdated] = lastUpdated
+	updatedSts.Annotations[AnnotationRegisteredRoutes] = string(uris)
+
+	if image != "" {
+		for i, container := range updatedSts.Spec.Template.Spec.Containers {
+			if container.Name == OPIContainerName {
+				updatedSts.Spec.Template.Spec.Containers[i].Image = image
+			}
+		}
+	}
+
+	return updatedSts
 }

@@ -14,6 +14,7 @@ type DesiredLRP struct {
 	Instances   int32                      `json:"instances"`
 	Routes      map[string]json.RawMessage `json:"routes,omitempty"`
 	Annotation  string                     `json:"annotation"`
+	Image       string                     `json:"image"`
 }
 
 type DesiredLRPResponse struct {
@@ -181,6 +182,7 @@ type DesiredLRPUpdate struct {
 	Instances  int                        `json:"instances"`
 	Routes     map[string]json.RawMessage `json:"routes"`
 	Annotation string                     `json:"annotation"`
+	Image      string                     `json:"image"`
 }
 
 type GetInstancesResponse struct {
