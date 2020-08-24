@@ -55,6 +55,10 @@ check-pipeline() {
   echo "Checking https://jetson.eirini.cf-app.com/teams/main/pipelines/$pipeline_name ..."
   fly-login
   output=$(fly -t eirini jobs -p "$1")
+  if [ "$?" -ne "0" ]; then
+    echo "fly failed - giving up!"
+    exit 1
+  fi
   echo "$output" | grep -Eq "failed|error"
 }
 
