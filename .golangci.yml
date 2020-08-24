@@ -53,14 +53,14 @@ issues:
     - path: cmd/simulator/main\.go
       linters:
       - gomnd
-    - path: integration/util/k8s\.go
+    - path: tests/k8s\.go
       linters:
       - gomnd
       - funlen
       - gosec
       - golint
       - stylecheck
-    - path: integration/eats/eats_suite_test.go
+    - path: tests/eats/eats_suite_test.go
       linters:
       - gosec
   # Maximum issues count per one linter. Set to 0 to disable.
