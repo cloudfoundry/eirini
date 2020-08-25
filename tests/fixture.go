@@ -45,12 +45,17 @@ type Fixture struct {
 }
 
 func makeKubeConfigCopy() string {
+	kubeConfig := GetKubeconfig()
+	if kubeConfig == "" {
+		return ""
+	}
+
 	tmpKubeConfig, err := ioutil.TempFile("", "kube.cfg")
 	Expect(err).NotTo(HaveOccurred())
 
 	defer tmpKubeConfig.Close()
 
-	kubeConfigContents, err := os.Open(GetKubeconfig())
+	kubeConfigContents, err := os.Open(kubeConfig)
 	Expect(err).NotTo(HaveOccurred())
 
 	defer kubeConfigContents.Close()
