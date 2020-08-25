@@ -7,7 +7,6 @@ RUN_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 export GO111MODULE=on
 "$RUN_DIR"/run_unit_tests.sh
-"$RUN_DIR"/build.sh
 
 readonly kubeconfig=$(mktemp)
 trap "rm $kubeconfig" EXIT
