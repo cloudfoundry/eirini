@@ -20,6 +20,7 @@ rules:
   - delete
   - get
   - list
+  - update
 - apiGroups:
   - ""
   resources:
@@ -42,6 +43,7 @@ rules:
   - get
   - watch
   - delete
+  - update
 - apiGroups:
   - ""
   resources:
