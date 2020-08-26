@@ -17,6 +17,10 @@ var _ = Describe("Tasks Reporter", func() {
 	var taskRequest cf.TaskRequest
 
 	BeforeEach(func() {
+		if tests.IsHelmless() {
+			Skip("task reporter not deployed on helmless yet")
+		}
+
 		taskRequest = cf.TaskRequest{
 			GUID:               tests.GenerateGUID(),
 			Namespace:          fixture.Namespace,

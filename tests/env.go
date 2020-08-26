@@ -59,3 +59,9 @@ func IsUsingDeployedEirini() bool {
 
 	return set
 }
+
+func IsHelmless() bool {
+	_, set := os.LookupEnv("HELMLESS_DEPLOYMENT")
+
+	return set
+}
