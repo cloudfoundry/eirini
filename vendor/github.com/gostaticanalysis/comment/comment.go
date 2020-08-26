@@ -74,12 +74,34 @@ func (maps Maps) IgnorePos(pos token.Pos, check string) bool {
 	return false
 }
 
+// Deprecated: This function does not work with multiple files.
+// CommentsByPosLine can be used instead of CommentsByLine.
+// 
 // CommentsByLine returns correspond a CommentGroup slice to specified line.
 func (maps Maps) CommentsByLine(fset *token.FileSet, line int) []*ast.CommentGroup {
 	for i := range maps {
 		for n, cgs := range maps[i] {
 			l := fset.File(n.Pos()).Line(n.Pos())
 			if l == line {
+				return cgs
+			}
+		}
+	}
+	return nil
+}
+
+// CommentsByPosLine returns correspond a CommentGroup slice to specified line.
+func (maps Maps) CommentsByPosLine(fset *token.FileSet, pos token.Pos) []*ast.CommentGroup {
+	f1 := fset.File(pos)
+	for i := range maps {
+		for n, cgs := range maps[i] {
+			f2 := fset.File(n.Pos())
+			if f1 != f2 {
+				// different file
+				continue
+			}
+
+			if f1.Line(pos) == f2.Line(n.Pos()) {
 				return cgs
 			}
 		}

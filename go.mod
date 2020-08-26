@@ -40,7 +40,7 @@ require (
 	github.com/containers/image v3.0.2+incompatible
 	github.com/containers/storage v1.16.0 // indirect
 	github.com/coreos/bbolt v1.3.5 // indirect
-	github.com/coreos/etcd v3.3.24+incompatible // indirect
+	github.com/coreos/etcd v3.3.25+incompatible // indirect
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/daixiang0/gci v0.2.2 // indirect
 	github.com/deckarep/golang-set v1.7.1
@@ -50,19 +50,23 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
+	github.com/evanphx/json-patch v4.9.0+incompatible // indirect
 	github.com/go-critic/go-critic v0.5.2 // indirect
 	github.com/go-logr/logr v0.2.0 // indirect
 	github.com/go-test/deep v1.0.5 // indirect
+	github.com/gofrs/flock v0.7.3 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/golangci/golangci-lint v1.30.0 // indirect
 	github.com/golangci/misspell v0.3.5 // indirect
 	github.com/google/certificate-transparency-go v1.1.0 // indirect
+	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/monologue v0.0.0-20200310112848-e585696c5f1b // indirect
 	github.com/googleapis/gnostic v0.5.1 // indirect
 	github.com/gophercloud/gophercloud v0.12.0 // indirect
-	github.com/gorilla/mux v1.7.4 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gostaticanalysis/analysisutil v0.1.0 // indirect
+	github.com/gostaticanalysis/comment v1.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.14.7 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
@@ -76,6 +80,7 @@ require (
 	github.com/jirfag/go-printf-func-name v0.0.0-20200119135958-7558a9eaa5af // indirect
 	github.com/jonboulle/clockwork v0.2.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
+	github.com/magiconair/properties v1.8.2 // indirect
 	github.com/matoous/godox v0.0.0-20200801072554-4fb83dc2941e // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3
@@ -93,7 +98,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/common v0.12.0 // indirect
+	github.com/prometheus/common v0.13.0 // indirect
 	github.com/quasilyte/regex/syntax v0.0.0-20200805063351-8f842688393c // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/afero v1.3.4 // indirect
@@ -110,16 +115,18 @@ require (
 	github.com/weppos/publicsuffix-go v0.13.0 // indirect
 	github.com/zmap/zcrypto v0.0.0-20200731193947-bf025252fa41 // indirect
 	github.com/zmap/zlint v1.1.0 // indirect
-	go.etcd.io/etcd v3.3.24+incompatible // indirect
+	go.etcd.io/etcd v3.3.25+incompatible // indirect
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
-	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
-	golang.org/x/sys v0.0.0-20200819091447-39769834ee22 // indirect
+	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
+	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
+	golang.org/x/sys v0.0.0-20200824131525-c12d262b63d8 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	golang.org/x/tools v0.0.0-20200818005847-188abfa75333 // indirect
+	golang.org/x/tools v0.0.0-20200825225635-e0bf2294bb0c // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
-	google.golang.org/grpc v1.31.0
-	gopkg.in/ini.v1 v1.60.0 // indirect
+	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987 // indirect
+	google.golang.org/grpc v1.31.1
+	gopkg.in/ini.v1 v1.60.1 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
@@ -132,7 +139,7 @@ require (
 	k8s.io/klog/v2 v2.3.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20200811211545-daf3cbb84823 // indirect
 	k8s.io/metrics v0.18.8
-	k8s.io/utils v0.0.0-20200815180417-3bc9d57fc792 // indirect
+	k8s.io/utils v0.0.0-20200821003339-5e75c0163111 // indirect
 	mvdan.cc/gofumpt v0.0.0-20200802201014-ab5a8192947d // indirect
 	mvdan.cc/unparam v0.0.0-20200501210554-b37ab49443f7 // indirect
 	sigs.k8s.io/controller-runtime v0.6.2
