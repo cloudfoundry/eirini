@@ -1,14 +1,14 @@
 package event
 
 import (
-	"time"
+	"context"
 
 	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/lager"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const (
@@ -20,65 +20,75 @@ const (
 //counterfeiter:generate . CrashEmitter
 
 type CrashEventGenerator interface {
-	Generate(*v1.Pod, lager.Logger) (events.CrashEvent, bool)
+	Generate(*corev1.Pod, lager.Logger) (events.CrashEvent, bool)
 }
 
 type CrashEmitter interface {
 	Emit(events.CrashEvent) error
 }
 
-type CrashInformer struct {
-	clientset      kubernetes.Interface
-	syncPeriod     time.Duration
-	namespace      string
-	stopperChan    chan struct{}
+type CrashReconciler struct {
 	logger         lager.Logger
+	client         client.Client
 	eventGenerator CrashEventGenerator
 	crashEmitter   CrashEmitter
 }
 
-func NewCrashInformer(
-	client kubernetes.Interface,
-	syncPeriod time.Duration,
-	namespace string,
-	stopperChan chan struct{},
+func NewCrashReconciler(
 	logger lager.Logger,
+	client client.Client,
 	eventGenerator CrashEventGenerator,
 	crashEmitter CrashEmitter,
-) *CrashInformer {
-	return &CrashInformer{
-		clientset:      client,
-		syncPeriod:     syncPeriod,
-		namespace:      namespace,
-		stopperChan:    stopperChan,
+) *CrashReconciler {
+	return &CrashReconciler{
 		logger:         logger,
+		client:         client,
 		eventGenerator: eventGenerator,
 		crashEmitter:   crashEmitter,
 	}
 }
 
-func (c *CrashInformer) Start() {
-	factory := informers.NewSharedInformerFactoryWithOptions(
-		c.clientset,
-		c.syncPeriod,
-		informers.WithNamespace(c.namespace),
-	)
+func (c *CrashReconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	logger := c.logger.Session("reconcile-pod-crash",
+		lager.Data{
+			"name":      request.NamespacedName.Name,
+			"namespace": request.NamespacedName.Namespace,
+		})
 
-	informer := factory.Core().V1().Pods().Informer()
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		UpdateFunc: c.updateFunc,
-	})
+	pod := &corev1.Pod{}
 
-	informer.Run(c.stopperChan)
-}
+	err := c.client.Get(context.Background(), request.NamespacedName, pod)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Info("pod-not-found", lager.Data{"error": err})
 
-func (c *CrashInformer) updateFunc(_ interface{}, newObj interface{}) {
-	pod := newObj.(*v1.Pod)
-	event, send := c.eventGenerator.Generate(pod, c.logger)
-
-	if send {
-		if err := c.crashEmitter.Emit(event); err != nil {
-			c.logger.Error("failed-to-emit-crash-event", err)
+			return reconcile.Result{}, nil
 		}
+
+		logger.Error("failed-to-get-pod", err)
+
+		return reconcile.Result{}, err
 	}
+
+	logger.Info("fetched-pod", lager.Data{"pod": pod})
+
+	event, send := c.eventGenerator.Generate(pod, c.logger)
+	if !send {
+		logger.Debug("not-sending-event")
+
+		return reconcile.Result{}, nil
+	}
+
+	logger.Info("generated-event", lager.Data{"event": event})
+
+	err = c.crashEmitter.Emit(event)
+	if err != nil {
+		logger.Error("failed-to-emit-event", err)
+
+		return reconcile.Result{}, err
+	}
+
+	logger.Info("emitted-event")
+
+	return reconcile.Result{}, nil
 }
