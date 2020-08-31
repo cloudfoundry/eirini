@@ -12,6 +12,7 @@ import (
 	k8sclient "code.cloudfoundry.org/eirini/k8s/client"
 	k8sevent "code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
+	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/tps/cc_client"
 	"github.com/jessevdk/go-flags"
@@ -78,6 +79,7 @@ func main() {
 		MetricsBindAddress: "0",
 		Scheme:             kscheme.Scheme,
 		Namespace:          cfg.Namespace,
+		Logger:             util.NewLagerLogr(crashLogger),
 	})
 	cmdcommons.ExitIfError(err)
 

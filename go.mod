@@ -52,7 +52,7 @@ require (
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/evanphx/json-patch v4.9.0+incompatible // indirect
 	github.com/go-critic/go-critic v0.5.2 // indirect
-	github.com/go-logr/logr v0.2.0 // indirect
+	github.com/go-logr/logr v0.2.0
 	github.com/go-test/deep v1.0.5 // indirect
 	github.com/gofrs/flock v0.7.3 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect

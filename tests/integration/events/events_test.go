@@ -17,6 +17,7 @@ import (
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
 	v1 "k8s.io/api/core/v1"
@@ -70,6 +71,7 @@ var _ = Describe("Events", func() {
 
 	JustBeforeEach(func() {
 		eventsSession, eventsConfigFile = eiriniBins.EventsReporter.Run(config)
+		Eventually(eventsSession).Should(gbytes.Say("Starting workers"))
 	})
 
 	Describe("LRP events", func() {
