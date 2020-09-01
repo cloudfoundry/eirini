@@ -53,15 +53,3 @@ func GetApplicationServiceAccount() string {
 
 	return DefaultApplicationServiceAccount
 }
-
-func IsUsingDeployedEirini() bool {
-	_, set := os.LookupEnv("USE_DEPLOYED_EIRINI")
-
-	return set
-}
-
-func IsHelmless() bool {
-	_, set := os.LookupEnv("HELMLESS_DEPLOYMENT")
-
-	return set
-}

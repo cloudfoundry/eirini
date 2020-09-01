@@ -15,13 +15,11 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/cfhttp/v2"
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -43,11 +41,9 @@ var (
 	binsPath   string
 	eiriniBins tests.EiriniBinaries
 
-	localhostCertPath, localhostKeyPath string
-	opiConfig                           string
-	opiSession                          *gexec.Session
-	httpClient                          *http.Client
-	opiURL                              string
+	eiriniCertPath, eiriniKeyPath string
+	httpClient                    *http.Client
+	opiURL                        string
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
@@ -56,7 +52,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 
 	eiriniBins = tests.NewEiriniBinaries(binsPath)
-	eiriniBins.OPI.Build()
 
 	data, err := json.Marshal(eiriniBins)
 	Expect(err).NotTo(HaveOccurred())
@@ -80,72 +75,24 @@ var _ = BeforeEach(func() {
 	fixture.SetUp()
 
 	var err error
-	if tests.IsUsingDeployedEirini() {
-		localhostCertPath, localhostKeyPath = fixture.DownloadEiriniCertificates()
+	eiriniCertPath, eiriniKeyPath = fixture.DownloadEiriniCertificates()
 
-		httpClient, err = makeTestHTTPClient(localhostCertPath, localhostKeyPath)
-		Expect(err).ToNot(HaveOccurred())
+	httpClient, err = makeTestHTTPClient(eiriniCertPath, eiriniKeyPath)
+	Expect(err).ToNot(HaveOccurred())
 
-		svc, getErr := fixture.Clientset.CoreV1().Services("eirini-core").Get(context.Background(), "eirini-external", metav1.GetOptions{})
-		Expect(getErr).ToNot(HaveOccurred())
+	svc, getErr := fixture.Clientset.CoreV1().Services("eirini-core").Get(context.Background(), "eirini-external", metav1.GetOptions{})
+	Expect(getErr).ToNot(HaveOccurred())
 
-		host := svc.Status.LoadBalancer.Ingress[0].IP
-		opiURL = fmt.Sprintf("https://%s:8085", host)
-	} else {
-		localhostCertPath, localhostKeyPath = tests.GenerateKeyPair("localhost")
-
-		opiSession, opiConfig, opiURL = runOpi(localhostCertPath, localhostKeyPath)
-
-		httpClient, err = makeTestHTTPClient(localhostCertPath, localhostKeyPath)
-		Expect(err).ToNot(HaveOccurred())
-
-		waitOpiReady(httpClient, opiURL)
-	}
+	host := svc.Status.LoadBalancer.Ingress[0].IP
+	opiURL = fmt.Sprintf("https://%s:8085", host)
 })
 
 var _ = AfterEach(func() {
 	fixture.TearDown()
 
-	if !tests.IsUsingDeployedEirini() {
-		if opiSession != nil {
-			opiSession.Kill()
-		}
-		Expect(os.Remove(opiConfig)).To(Succeed())
-	}
-
-	Expect(os.Remove(localhostCertPath)).To(Succeed())
-	Expect(os.Remove(localhostKeyPath)).To(Succeed())
+	Expect(os.Remove(eiriniCertPath)).To(Succeed())
+	Expect(os.Remove(eiriniKeyPath)).To(Succeed())
 })
-
-func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
-	eiriniConfig := &eirini.Config{
-		Properties: eirini.Properties{
-			KubeConfig: eirini.KubeConfig{
-				ConfigPath: fixture.KubeConfigPath,
-				Namespace:  fixture.DefaultNamespace,
-			},
-			CCCAPath:        certPath,
-			CCCertPath:      certPath,
-			CCKeyPath:       keyPath,
-			ServerCertPath:  certPath,
-			ServerKeyPath:   keyPath,
-			ClientCAPath:    certPath,
-			DiskLimitMB:     500,
-			TLSPort:         fixture.NextAvailablePort(),
-			DownloaderImage: "docker.io/eirini/integration_test_staging",
-			ExecutorImage:   "docker.io/eirini/integration_test_staging",
-			UploaderImage:   "docker.io/eirini/integration_test_staging",
-
-			ApplicationServiceAccount: tests.GetApplicationServiceAccount(),
-		},
-	}
-
-	eiriniSession, eiriniConfigFilePath := eiriniBins.OPI.Run(eiriniConfig)
-
-	url := fmt.Sprintf("https://localhost:%d", eiriniConfig.Properties.TLSPort)
-
-	return eiriniSession, eiriniConfigFilePath, url
-}
 
 func makeTestHTTPClient(certPath, keyPath string) (*http.Client, error) {
 	bs, err := ioutil.ReadFile(certPath)
@@ -170,37 +117,6 @@ func makeTestHTTPClient(certPath, keyPath string) (*http.Client, error) {
 	client := cfhttp.NewClient(cfhttp.WithTLSConfig(tlsConfig))
 
 	return client, nil
-}
-
-func waitOpiReady(httpClient rest.HTTPClient, opiURL string) {
-	Eventually(func() error {
-		desireAppReq, err := http.NewRequest("GET", fmt.Sprintf("%s/apps", opiURL), bytes.NewReader([]byte{}))
-		Expect(err).ToNot(HaveOccurred())
-		_, err = httpClient.Do(desireAppReq) //nolint:bodyclose
-
-		return err
-	}).Should(Succeed())
-}
-
-func desireStaging(stagingRequest cf.StagingRequest) (int, error) {
-	data, err := json.Marshal(stagingRequest)
-	if err != nil {
-		return 0, err
-	}
-
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/stage/some-guid", opiURL), bytes.NewReader(data))
-	if err != nil {
-		return 0, err
-	}
-
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return 0, err
-	}
-
-	defer response.Body.Close()
-
-	return response.StatusCode, nil
 }
 
 func getLRP(processGUID, versionGUID string) (cf.DesiredLRP, error) {

@@ -60,8 +60,8 @@ var _ = Describe("Apps", func() {
 				namespace = ""
 			})
 
-			It("deploys the LRP to the default namespace", func() {
-				Expect(getStatefulSet(lrpGUID, lrpVersion).Namespace).To(Equal(fixture.DefaultNamespace))
+			It("deploys the LRP to the workloads namespace", func() {
+				Expect(getStatefulSet(lrpGUID, lrpVersion).Namespace).To(Equal(fixture.GetEiriniWorkloadsNamespace()))
 			})
 		})
 

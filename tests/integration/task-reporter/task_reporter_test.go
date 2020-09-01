@@ -196,13 +196,13 @@ var _ = Describe("TaskReporter", func() {
 
 	When("the reporter is monitoring a single namespace", func() {
 		BeforeEach(func() {
-			config.Namespace = fixture.DefaultNamespace
+			config.Namespace = fixture.CreateExtraNamespace()
 		})
 
 		It("does not receive events from another namespace", func() {
 			// Here we verify that the informer gets no events as the test task
 			// is created in `fixture.Namespace` while the informer operates in
-			// `fixture.DefaultNamespace`. It is not great to verify that
+			// an extra namespace that the test creates. It is not great to verify that
 			// nothing happens but we cannot think of any other way to test
 			// this. It would be great if we could force K8S reconcile loop and
 			// perform the verification immediately without using
