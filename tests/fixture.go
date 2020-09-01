@@ -35,6 +35,7 @@ type Fixture struct {
 	Clientset         kubernetes.Interface
 	EiriniClientset   eiriniclient.Interface
 	Namespace         string
+	DefaultNamespace  string
 	PspName           string
 	KubeConfigPath    string
 	Writer            io.Writer
@@ -87,6 +88,12 @@ func NewFixture(writer io.Writer) *Fixture {
 }
 
 func (f *Fixture) SetUp() {
+	if IsUsingDeployedEirini() {
+		f.DefaultNamespace = f.getApplicationNamespace()
+	} else {
+		f.DefaultNamespace = f.configureNewNamespace()
+	}
+
 	f.Namespace = f.configureNewNamespace()
 }
 
@@ -133,6 +140,10 @@ func (f *Fixture) TearDown() {
 	errs = multierror.Append(errs, f.printDebugInfo())
 	errs = multierror.Append(errs, f.deleteNamespace(f.Namespace))
 
+	if !IsUsingDeployedEirini() {
+		errs = multierror.Append(errs, f.deleteNamespace(f.DefaultNamespace))
+	}
+
 	Expect(errs.ErrorOrNil()).NotTo(HaveOccurred())
 
 	for _, ns := range f.extraNamespaces {
@@ -151,7 +162,7 @@ func (f *Fixture) CreateExtraNamespace() string {
 	return name
 }
 
-func (f Fixture) GetEiriniWorkloadsNamespace() string {
+func (f Fixture) getApplicationNamespace() string {
 	cm, err := f.Clientset.CoreV1().ConfigMaps("eirini-core").Get(context.Background(), "eirini", metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
