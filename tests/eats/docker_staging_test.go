@@ -1,31 +1,48 @@
 package eats_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
+	"k8s.io/client-go/rest"
 )
 
 var _ = Describe("Docker Staging", func() {
-	var capiServer *ghttp.Server
+	var (
+		httpClient rest.HTTPClient
+		capiServer *ghttp.Server
+		opiConfig  string
+		opiSession *gexec.Session
+		certPath   string
+		keyPath    string
+	)
 
 	BeforeEach(func() {
-		if tests.IsUsingDeployedEirini() {
-			Skip("Skipping because currently untestable on deployment")
-		}
+		certPath, keyPath = tests.GenerateKeyPair("localhost")
+
+		opiSession, opiConfig, opiURL = runOpi(certPath, keyPath)
 
 		var err error
+		httpClient, err = makeTestHTTPClient(certPath, keyPath)
+		Expect(err).ToNot(HaveOccurred())
+
+		waitOpiReady(httpClient, opiURL)
+
 		capiServer, err = tests.CreateTestServer(
-			localhostCertPath, localhostKeyPath, localhostCertPath,
+			certPath, keyPath, certPath,
 		)
 		Expect(err).NotTo(HaveOccurred())
 		capiServer.HTTPTestServer.StartTLS()
@@ -50,11 +67,16 @@ var _ = Describe("Docker Staging", func() {
 	})
 
 	AfterEach(func() {
+		if opiSession != nil {
+			opiSession.Kill()
+		}
+		Expect(os.Remove(opiConfig)).To(Succeed())
+
 		capiServer.Close()
 	})
 
 	It("returns code 201 Accepted and completes staging", func() {
-		code, err := desireStaging(cf.StagingRequest{
+		code, err := desireStaging(httpClient, cf.StagingRequest{
 			Lifecycle: cf.StagingLifecycle{
 				DockerLifecycle: &cf.StagingDockerLifecycle{
 					Image: "eirini/custom-port",
@@ -88,7 +110,7 @@ var _ = Describe("Docker Staging", func() {
 		})
 
 		It("returns code 201 Accepted and completes staging", func() {
-			code, err := desireStaging(cf.StagingRequest{
+			code, err := desireStaging(httpClient, cf.StagingRequest{
 				Lifecycle: cf.StagingLifecycle{
 					DockerLifecycle: &cf.StagingDockerLifecycle{
 						Image:            "eiriniuser/notdora",
@@ -107,7 +129,7 @@ var _ = Describe("Docker Staging", func() {
 
 	When("the callback uri is invalid", func() {
 		It("should return a 500 Internal Server Error", func() {
-			code, err := desireStaging(cf.StagingRequest{
+			code, err := desireStaging(httpClient, cf.StagingRequest{
 				Lifecycle: cf.StagingLifecycle{
 					DockerLifecycle: &cf.StagingDockerLifecycle{
 						Image: "eirini/custom-port",
@@ -138,7 +160,7 @@ var _ = Describe("Docker Staging", func() {
 		})
 
 		It("should return a 500 Internal Server Error", func() {
-			code, err := desireStaging(cf.StagingRequest{
+			code, err := desireStaging(httpClient, cf.StagingRequest{
 				Lifecycle: cf.StagingLifecycle{
 					DockerLifecycle: &cf.StagingDockerLifecycle{
 						Image: "what is eirini",
@@ -151,3 +173,64 @@ var _ = Describe("Docker Staging", func() {
 		})
 	})
 })
+
+func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
+	eiriniConfig := &eirini.Config{
+		Properties: eirini.Properties{
+			KubeConfig: eirini.KubeConfig{
+				ConfigPath: fixture.KubeConfigPath,
+				Namespace:  fixture.GetEiriniWorkloadsNamespace(),
+			},
+			CCCAPath:        certPath,
+			CCCertPath:      certPath,
+			CCKeyPath:       keyPath,
+			ServerCertPath:  certPath,
+			ServerKeyPath:   keyPath,
+			ClientCAPath:    certPath,
+			DiskLimitMB:     500,
+			TLSPort:         fixture.NextAvailablePort(),
+			DownloaderImage: "docker.io/eirini/integration_test_staging",
+			ExecutorImage:   "docker.io/eirini/integration_test_staging",
+			UploaderImage:   "docker.io/eirini/integration_test_staging",
+
+			ApplicationServiceAccount: tests.GetApplicationServiceAccount(),
+		},
+	}
+
+	eiriniSession, eiriniConfigFilePath := eiriniBins.OPI.Run(eiriniConfig)
+
+	url := fmt.Sprintf("https://localhost:%d", eiriniConfig.Properties.TLSPort)
+
+	return eiriniSession, eiriniConfigFilePath, url
+}
+
+func desireStaging(httpClient rest.HTTPClient, stagingRequest cf.StagingRequest) (int, error) {
+	data, err := json.Marshal(stagingRequest)
+	if err != nil {
+		return 0, err
+	}
+
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/stage/some-guid", opiURL), bytes.NewReader(data))
+	if err != nil {
+		return 0, err
+	}
+
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return 0, err
+	}
+
+	defer response.Body.Close()
+
+	return response.StatusCode, nil
+}
+
+func waitOpiReady(httpClient rest.HTTPClient, opiURL string) {
+	Eventually(func() error {
+		desireAppReq, err := http.NewRequest("GET", fmt.Sprintf("%s/apps", opiURL), bytes.NewReader([]byte{}))
+		Expect(err).ToNot(HaveOccurred())
+		_, err = httpClient.Do(desireAppReq) //nolint:bodyclose
+
+		return err
+	}).Should(Succeed())
+}
