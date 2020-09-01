@@ -37,6 +37,12 @@ linters:
     # However, we do not document our code and therefore this linter has no
     # value for us.
     - godot
+    # gofumpt also includes gofumports. These are a stricter version of gofmt
+    # and goimports respectively. By enabling them we also wanted to include
+    # them in our vim configurations to be run on save. Unfortunately this
+    # makes vim.coc report errors very slowly, or not at all. If we decide to
+    # enable them back we should also make sure that they work in our vim configs.
+    - gofumpt
 
 issues:
   exclude-use-default: true
