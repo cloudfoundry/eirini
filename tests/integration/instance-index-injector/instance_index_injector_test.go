@@ -2,7 +2,9 @@ package instance_index_injector_test
 
 import (
 	"context"
-	"net"
+	"crypto/tls"
+	"fmt"
+	"net/http"
 	"os"
 
 	"code.cloudfoundry.org/eirini"
@@ -17,31 +19,38 @@ import (
 
 var _ = Describe("InstanceIndexInjector", func() {
 	var (
-		config              *eirini.InstanceIndexEnvInjectorConfig
-		configFilePath      string
-		hookSession         *gexec.Session
-		telepresenceSession *tests.TelepresenceRunner
-		pod                 *corev1.Pod
+		config         *eirini.InstanceIndexEnvInjectorConfig
+		configFilePath string
+		hookSession    *gexec.Session
+		pod            *corev1.Pod
+		fingerprint    string
 	)
 
 	BeforeEach(func() {
-		serviceName := "instance-index-env-injector"
+		port := startPort + GinkgoParallelNode() - 1
+		fingerprint = "instance-id-" + tests.GenerateGUID()[:8]
 
 		config = &eirini.InstanceIndexEnvInjectorConfig{
-			ServiceName:      serviceName,
-			ServicePort:      8443,
-			ServiceNamespace: fixture.Namespace,
+			ServiceName:                telepresenceService,
+			ServicePort:                int32(port),
+			ServiceNamespace:           "default",
+			EiriniXOperatorFingerprint: fingerprint,
 		}
 		hookSession, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
-		Eventually(func() error {
-			_, err := net.Dial("tcp", ":8443")
 
-			return err
-		}).Should(Succeed())
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+		Eventually(func() (int, error) {
+			resp, err := client.Get(fmt.Sprintf("https://%s.default.svc:%d/0", telepresenceService, port))
+			if err != nil {
+				return 0, err
+			}
+			resp.Body.Close()
 
-		var err error
-		telepresenceSession, err = tests.StartTelepresence(fixture.Namespace, serviceName, "8443:443")
-		Expect(err).NotTo(HaveOccurred())
+			return resp.StatusCode, nil
+		}, "10s", "500ms").Should(Equal(http.StatusOK))
 	})
 
 	AfterEach(func() {
@@ -51,9 +60,8 @@ var _ = Describe("InstanceIndexInjector", func() {
 		if hookSession != nil {
 			Eventually(hookSession.Kill()).Should(gexec.Exit())
 		}
-		if telepresenceSession != nil {
-			telepresenceSession.Stop()
-		}
+		fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().Delete(context.Background(), fingerprint+"-mutating-hook", metav1.DeleteOptions{})
+		fixture.Clientset.CoreV1().Secrets("default").Delete(context.Background(), fingerprint+"-setupcertificate", metav1.DeleteOptions{})
 	})
 
 	JustBeforeEach(func() {
@@ -108,7 +116,7 @@ var _ = Describe("InstanceIndexInjector", func() {
 			Expect(getCFInstanceIndex(pod, k8s.OPIContainerName)).To(Equal("0"))
 		})
 
-		It("does not set CF_INSTANCE_INDEX on the nont-opi container", func() {
+		It("does not set CF_INSTANCE_INDEX on the non-opi container", func() {
 			Expect(getCFInstanceIndex(pod, "not-opi")).To(Equal(""))
 		})
 	})

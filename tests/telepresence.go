@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strconv"
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
@@ -16,18 +17,21 @@ type TelepresenceRunner struct {
 	stdin   io.WriteCloser
 }
 
-// StartTelepresence creates a deployment and a service in the given namespace
-// forwarding the remote port in kubernetes to the local port in the test machine.
-// Port can be either 'LOCAL_PORT:REMOTE_PORT' or 'LOCAL_PORT'. In the latter case
-// REMOTE_PORT is set to be the same as LOCAL_PORT
-func StartTelepresence(namespace, serviceName, port string) (*TelepresenceRunner, error) {
-	cmd := exec.Command("telepresence",
-		"--namespace", namespace,
+// StartTelepresence creates a deployment and a service in the default namespace
+// forwarding the defined remote ports in kubernetes to the local ports in the test machine.
+// The number of exposed ports are defined by the totalPorts. The actual exported ports are
+// startingPort, startingPort + 1, ..., startingPort + totalPorts - 1 .
+func StartTelepresence(serviceName string, startingPort int, totalPorts int) (*TelepresenceRunner, error) {
+	args := []string{
 		"--new-deployment", serviceName,
-		"--expose", port,
 		"--method", "vpn-tcp",
 		"--logfile", "-",
-	)
+	}
+	for i := 0; i < totalPorts; i++ {
+		args = append(args, "--expose", strconv.Itoa(startingPort+i))
+	}
+
+	cmd := exec.Command("/usr/local/bin/telepresence", args...)
 
 	// Telepresence needs something to run, and will run a shell if nothing specified.
 	// We need to have an open stdin to stop the shell exiting
@@ -46,6 +50,7 @@ func StartTelepresence(namespace, serviceName, port string) (*TelepresenceRunner
 	// Once the shell is responding, the tunnel is open
 	fmt.Fprintln(stdin, "echo ready")
 	gomega.Eventually(session, "10s").Should(gbytes.Say("ready"))
+	gomega.Consistently(session.Exited).ShouldNot(gomega.Receive())
 
 	return &TelepresenceRunner{
 		session: session,
