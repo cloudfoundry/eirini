@@ -71,7 +71,7 @@ func (f *freelist) size() int {
 		// The first element will be used to store the count. See freelist.write.
 		n++
 	}
-	return int(pageHeaderSize) + (int(unsafe.Sizeof(pgid(0))) * n)
+	return pageHeaderSize + (int(unsafe.Sizeof(pgid(0))) * n)
 }
 
 // count returns count of pages on the freelist
@@ -93,7 +93,7 @@ func (f *freelist) pending_count() int {
 	return count
 }
 
-// copyall copies a list of all free ids and all pending ids in one sorted list.
+// copyall copies into dst a list of all free ids and all pending ids in one sorted list.
 // f.count returns the minimum length required for dst.
 func (f *freelist) copyall(dst []pgid) {
 	m := make(pgids, 0, f.pending_count())
@@ -267,23 +267,17 @@ func (f *freelist) read(p *page) {
 	}
 	// If the page.count is at the max uint16 value (64k) then it's considered
 	// an overflow and the size of the freelist is stored as the first element.
-	var idx, count = 0, int(p.count)
+	idx, count := 0, int(p.count)
 	if count == 0xFFFF {
 		idx = 1
-		c := *(*pgid)(unsafeAdd(unsafe.Pointer(p), unsafe.Sizeof(*p)))
-		count = int(c)
-		if count < 0 {
-			panic(fmt.Sprintf("leading element count %d overflows int", c))
-		}
+		count = int(((*[maxAllocSize]pgid)(unsafe.Pointer(&p.ptr)))[0])
 	}
 
 	// Copy the list of page ids from the freelist.
 	if count == 0 {
 		f.ids = nil
 	} else {
-		var ids []pgid
-		data := unsafeIndex(unsafe.Pointer(p), unsafe.Sizeof(*p), unsafe.Sizeof(ids[0]), idx)
-		unsafeSlice(unsafe.Pointer(&ids), data, count)
+		ids := ((*[maxAllocSize]pgid)(unsafe.Pointer(&p.ptr)))[idx : idx+count]
 
 		// copy the ids, so we don't modify on the freelist page directly
 		idsCopy := make([]pgid, count)
@@ -316,22 +310,16 @@ func (f *freelist) write(p *page) error {
 
 	// The page.count can only hold up to 64k elements so if we overflow that
 	// number then we handle it by putting the size in the first element.
-	l := f.count()
-	if l == 0 {
-		p.count = uint16(l)
-	} else if l < 0xFFFF {
-		p.count = uint16(l)
-		var ids []pgid
-		data := unsafeAdd(unsafe.Pointer(p), unsafe.Sizeof(*p))
-		unsafeSlice(unsafe.Pointer(&ids), data, l)
-		f.copyall(ids)
+	lenids := f.count()
+	if lenids == 0 {
+		p.count = uint16(lenids)
+	} else if lenids < 0xFFFF {
+		p.count = uint16(lenids)
+		f.copyall(((*[maxAllocSize]pgid)(unsafe.Pointer(&p.ptr)))[:])
 	} else {
 		p.count = 0xFFFF
-		var ids []pgid
-		data := unsafeAdd(unsafe.Pointer(p), unsafe.Sizeof(*p))
-		unsafeSlice(unsafe.Pointer(&ids), data, l+1)
-		ids[0] = pgid(l)
-		f.copyall(ids[1:])
+		((*[maxAllocSize]pgid)(unsafe.Pointer(&p.ptr)))[0] = pgid(lenids)
+		f.copyall(((*[maxAllocSize]pgid)(unsafe.Pointer(&p.ptr)))[1:])
 	}
 
 	return nil
@@ -353,28 +341,6 @@ func (f *freelist) reload(p *page) {
 	// with any pages not in the pending lists.
 	var a []pgid
 	for _, id := range f.getFreePageIDs() {
-		if !pcache[id] {
-			a = append(a, id)
-		}
-	}
-
-	f.readIDs(a)
-}
-
-// noSyncReload reads the freelist from pgids and filters out pending items.
-func (f *freelist) noSyncReload(pgids []pgid) {
-	// Build a cache of only pending pages.
-	pcache := make(map[pgid]bool)
-	for _, txp := range f.pending {
-		for _, pendingID := range txp.ids {
-			pcache[pendingID] = true
-		}
-	}
-
-	// Check each page in the freelist and build a new available freelist
-	// with any pages not in the pending lists.
-	var a []pgid
-	for _, id := range pgids {
 		if !pcache[id] {
 			a = append(a, id)
 		}

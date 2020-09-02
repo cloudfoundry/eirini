@@ -3,17 +3,19 @@ module code.cloudfoundry.org/eirini
 go 1.13
 
 replace (
-	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
+	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.2
 	github.com/go-logr/logr => github.com/go-logr/logr v0.1.0
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
 	google.golang.org/grpc => google.golang.org/grpc v1.29.1
+	k8s.io/api => k8s.io/api v0.18.8
+	k8s.io/apimachinery => k8s.io/apimachinery v0.18.8
 	k8s.io/client-go => k8s.io/client-go v0.18.6
 	k8s.io/klog/v2 => k8s.io/klog/v2 v2.1.0
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe
 )
 
 require (
-	cloud.google.com/go v0.64.0 // indirect
+	cloud.google.com/go v0.65.0 // indirect
 	code.cloudfoundry.org/bbs v0.0.0-20200615191359-7b6fa295fa8d // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
@@ -26,7 +28,7 @@ require (
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	code.cloudfoundry.org/locket v0.0.0-20191127212858-571765e813ca // indirect
-	code.cloudfoundry.org/quarks-utils v0.0.0-20200813190746-9c255b49a81b // indirect
+	code.cloudfoundry.org/quarks-utils v0.0.0-20200901084422-8ffd423001d8 // indirect
 	code.cloudfoundry.org/rep v0.0.0-20191210190026-b68fa6668abc // indirect
 	code.cloudfoundry.org/rfc5424 v0.0.0-20180905210152-236a6d29298a // indirect
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
@@ -42,7 +44,7 @@ require (
 	github.com/coreos/bbolt v1.3.5 // indirect
 	github.com/coreos/etcd v3.3.25+incompatible // indirect
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
-	github.com/daixiang0/gci v0.2.2 // indirect
+	github.com/daixiang0/gci v0.2.4 // indirect
 	github.com/deckarep/golang-set v1.7.1
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v1.13.1 // indirect
@@ -50,11 +52,10 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
-	github.com/evanphx/json-patch v4.9.0+incompatible // indirect
 	github.com/go-critic/go-critic v0.5.2 // indirect
 	github.com/go-logr/logr v0.2.0
 	github.com/go-test/deep v1.0.5 // indirect
-	github.com/gofrs/flock v0.7.3 // indirect
+	github.com/gofrs/flock v0.8.0 // indirect
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/golangci/golangci-lint v1.30.0 // indirect
 	github.com/golangci/misspell v0.3.5 // indirect
@@ -62,6 +63,7 @@ require (
 	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/monologue v0.0.0-20200310112848-e585696c5f1b // indirect
+	github.com/google/uuid v1.1.2 // indirect
 	github.com/googleapis/gnostic v0.5.1 // indirect
 	github.com/gophercloud/gophercloud v0.12.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
@@ -111,34 +113,34 @@ require (
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	github.com/timakin/bodyclose v0.0.0-20200424151742-cb6215831a94 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20200427203606-3cfed13b9966 // indirect
+	github.com/ultraware/funlen v0.0.3 // indirect
 	github.com/urfave/cli v1.22.4 // indirect
 	github.com/weppos/publicsuffix-go v0.13.0 // indirect
 	github.com/zmap/zcrypto v0.0.0-20200731193947-bf025252fa41 // indirect
 	github.com/zmap/zlint v1.1.0 // indirect
 	go.etcd.io/etcd v3.3.25+incompatible // indirect
 	go.uber.org/multierr v1.5.0
-	go.uber.org/zap v1.15.0
+	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
-	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
-	golang.org/x/sys v0.0.0-20200824131525-c12d262b63d8 // indirect
+	golang.org/x/sys v0.0.0-20200831180312-196b9ba8737a // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	golang.org/x/tools v0.0.0-20200825225635-e0bf2294bb0c // indirect
+	golang.org/x/tools v0.0.0-20200902012652-d1954cc86c82 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
-	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987 // indirect
+	google.golang.org/genproto v0.0.0-20200901141002-b3bf27a9dbd1 // indirect
 	google.golang.org/grpc v1.31.1
-	gopkg.in/ini.v1 v1.60.1 // indirect
+	gopkg.in/ini.v1 v1.60.2 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
-	k8s.io/api v0.18.8
-	k8s.io/apiextensions-apiserver v0.18.8 // indirect
-	k8s.io/apimachinery v0.18.8
+	k8s.io/api v0.19.0
+	k8s.io/apiextensions-apiserver v0.19.0 // indirect
+	k8s.io/apimachinery v0.19.0
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
-	k8s.io/code-generator v0.18.8
+	k8s.io/code-generator v0.19.0
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.3.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20200811211545-daf3cbb84823 // indirect
-	k8s.io/metrics v0.18.8
+	k8s.io/kube-openapi v0.0.0-20200831175022-64514a1d5d59 // indirect
+	k8s.io/metrics v0.19.0
 	k8s.io/utils v0.0.0-20200821003339-5e75c0163111 // indirect
 	mvdan.cc/gofumpt v0.0.0-20200802201014-ab5a8192947d // indirect
 	mvdan.cc/unparam v0.0.0-20200501210554-b37ab49443f7 // indirect
