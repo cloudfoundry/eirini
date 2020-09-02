@@ -1,6 +1,6 @@
 ARG baseimage=scratch
 
-FROM golang:1.13 as builder
+FROM golang:1.15 as builder
 WORKDIR /eirini/
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -mod vendor -a -trimpath -installsuffix cgo -o bits-waiter ./cmd/bits-waiter/
