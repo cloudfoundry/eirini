@@ -1,4 +1,4 @@
-package eats_test
+package opi_test
 
 import (
 	"net"
@@ -9,7 +9,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
-	"code.cloudfoundry.org/eirini/tests/eats/fakes"
+	"code.cloudfoundry.org/eirini/tests/integration/opi/fakes"
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"code.cloudfoundry.org/tlsconfig"
 	. "github.com/onsi/ginkgo"
@@ -86,7 +86,7 @@ var _ = Describe("Metrics", func() {
 		})
 
 		JustBeforeEach(func() {
-			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireLRP(httpClient, url, lrp).StatusCode).To(Equal(http.StatusAccepted))
 		})
 
 		It("reports its metrics", func() {

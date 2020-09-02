@@ -5,34 +5,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("Tasks Reporter", func() {
-	var (
-		session     *gexec.Session
-		configFile  string
-		taskRequest cf.TaskRequest
-	)
+	var taskRequest cf.TaskRequest
 
 	BeforeEach(func() {
-		config := &eirini.TaskReporterConfig{
-			KubeConfig: eirini.KubeConfig{
-				Namespace:  fixture.Namespace,
-				ConfigPath: fixture.KubeConfigPath,
-			},
-			CCTLSDisabled: true,
+		if tests.IsHelmless() {
+			Skip("The task reporter is not a part of helmless yet")
 		}
-		session, configFile = eiriniBins.TaskReporter.Run(config)
-
 		taskRequest = cf.TaskRequest{
 			GUID:               tests.GenerateGUID(),
 			Namespace:          fixture.Namespace,
@@ -52,13 +39,6 @@ var _ = Describe("Tasks Reporter", func() {
 				},
 			},
 		}
-	})
-
-	AfterEach(func() {
-		if session != nil {
-			session.Kill()
-		}
-		Expect(os.Remove(configFile)).To(Succeed())
 	})
 
 	JustBeforeEach(func() {
@@ -87,10 +67,10 @@ func desireOpiTask(taskRequest cf.TaskRequest) {
 	data, err := json.Marshal(taskRequest)
 	Expect(err).NotTo(HaveOccurred())
 
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", opiURL, taskRequest.GUID), bytes.NewReader(data))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), taskRequest.GUID), bytes.NewReader(data))
 	Expect(err).NotTo(HaveOccurred())
 
-	response, err := httpClient.Do(request)
+	response, err := fixture.GetEiriniHTTPClient().Do(request)
 	Expect(err).NotTo(HaveOccurred())
 
 	defer response.Body.Close()

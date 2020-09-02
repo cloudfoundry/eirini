@@ -37,12 +37,7 @@ func GetKubeconfig() string {
 }
 
 func GetEiriniDockerHubPassword() string {
-	password := os.Getenv("EIRINIUSER_PASSWORD")
-	if password == "" {
-		Skip("eiriniuser password not provided. Please export EIRINIUSER_PASSWORD")
-	}
-
-	return password
+	return lookupOptionalEnv("EIRINIUSER_PASSWORD")
 }
 
 func GetApplicationServiceAccount() string {
@@ -52,4 +47,29 @@ func GetApplicationServiceAccount() string {
 	}
 
 	return DefaultApplicationServiceAccount
+}
+
+func GetEiriniSystemNamespace() string {
+	return lookupOptionalEnv("EIRINI_SYSTEM_NS")
+}
+
+func getEiriniTLSSecretName() string {
+	return lookupOptionalEnv("EIRINI_TLS_SECRET")
+}
+
+func GetEiriniAddress() string {
+	return lookupOptionalEnv("EIRINI_ADDRESS")
+}
+
+func IsHelmless() bool {
+	return os.Getenv("HELMLESS") == "true"
+}
+
+func lookupOptionalEnv(key string) string {
+	value, set := os.LookupEnv(key)
+	if !set {
+		Skip("Please export optional environment variable " + key + " to run this test")
+	}
+
+	return value
 }

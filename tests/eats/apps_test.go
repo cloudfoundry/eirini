@@ -40,7 +40,7 @@ var _ = Describe("Apps", func() {
 		})
 
 		AfterEach(func() {
-			_, err := stopLRP(httpClient, opiURL, lrpGUID, lrpVersion)
+			_, err := stopLRP(lrpGUID, lrpVersion)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -79,7 +79,7 @@ var _ = Describe("Apps", func() {
 		})
 
 		It("successfully updates the app", func() {
-			updatedRoutes := []routeInfo{{Hostname: "updated-host", Port: 4321}}
+			updatedRoutes := []tests.RouteInfo{{Hostname: "updated-host", Port: 4321}}
 			updateResp := updateApp(lrpGUID, lrpVersion, 2, "333333", updatedRoutes)
 			Expect(updateResp.StatusCode).To(Equal(http.StatusOK))
 			lrp, err := getLRP(lrpGUID, lrpVersion)
@@ -89,7 +89,7 @@ var _ = Describe("Apps", func() {
 
 			Expect(lrp.Routes).To(SatisfyAll(
 				HaveLen(1),
-				HaveKeyWithValue("cf-router", marshalRoutes(updatedRoutes))),
+				HaveKeyWithValue("cf-router", tests.MarshalRoutes(updatedRoutes))),
 			)
 		})
 	})
@@ -188,7 +188,7 @@ var _ = Describe("Apps", func() {
 		})
 
 		It("successfully stops the app", func() {
-			_, err := stopLRP(httpClient, opiURL, lrpGUID, lrpVersion)
+			_, err := stopLRP(lrpGUID, lrpVersion)
 			Expect(err).NotTo(HaveOccurred())
 			_, err = getLRP(lrpGUID, lrpVersion)
 			Expect(err).To(MatchError("404 Not Found"))
@@ -196,7 +196,7 @@ var _ = Describe("Apps", func() {
 
 		When("the app doesn't exist", func() {
 			It("succeeds", func() {
-				response, err := stopLRP(httpClient, opiURL, "does-not-exist", lrpVersion)
+				response, err := stopLRP("does-not-exist", lrpVersion)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(response.StatusCode).To(Equal(http.StatusOK))
 			})
@@ -331,14 +331,14 @@ func createLrpRequest(appGUID, version string) cf.DesireLRPRequest {
 	}
 }
 
-func updateApp(appGUID, version string, instances int, annotation string, routes []routeInfo) *http.Response {
+func updateApp(appGUID, version string, instances int, annotation string, routes []tests.RouteInfo) *http.Response {
 	resp, err := updateLRP(cf.UpdateDesiredLRPRequest{
 		GUID:    appGUID,
 		Version: version,
 		Update: cf.DesiredLRPUpdate{
 			Instances: instances,
 			Routes: map[string]json.RawMessage{
-				"cf-router": marshalRoutes(routes),
+				"cf-router": tests.MarshalRoutes(routes),
 			},
 			Annotation: annotation,
 		},

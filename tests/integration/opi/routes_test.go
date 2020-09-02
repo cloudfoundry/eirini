@@ -1,6 +1,7 @@
-package eats_test
+package opi_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -18,6 +19,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	. "github.com/onsi/gomega/gstruct"
+	"k8s.io/client-go/rest"
 )
 
 var _ = Describe("Routes", func() {
@@ -73,7 +75,7 @@ var _ = Describe("Routes", func() {
 			NumInstances: 1,
 			Namespace:    fixture.Namespace,
 			Routes: map[string]json.RawMessage{
-				"cf-router": marshalRoutes([]routeInfo{
+				"cf-router": tests.MarshalRoutes([]tests.RouteInfo{
 					{Hostname: "app-hostname-1", Port: 8080},
 				}),
 			},
@@ -109,7 +111,7 @@ var _ = Describe("Routes", func() {
 
 	Describe("Desiring an app", func() {
 		JustBeforeEach(func() {
-			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireLRP(httpClient, url, lrp).StatusCode).To(Equal(http.StatusAccepted))
 		})
 
 		It("continuously registers its routes", func() {
@@ -140,7 +142,7 @@ var _ = Describe("Routes", func() {
 
 	Describe("Updating an app", func() {
 		var (
-			desiredRoutes []routeInfo
+			desiredRoutes []tests.RouteInfo
 			emittedRoutes []string
 			instances     int
 		)
@@ -159,19 +161,21 @@ var _ = Describe("Routes", func() {
 		}
 
 		JustBeforeEach(func() {
-			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireLRP(httpClient, url, lrp).StatusCode).To(Equal(http.StatusAccepted))
 			Eventually(registerChan).Should(Receive())
 
-			resp, err := updateLRP(cf.UpdateDesiredLRPRequest{
-				GUID:    lrp.GUID,
-				Version: lrp.Version,
-				Update: cf.DesiredLRPUpdate{
-					Instances: instances,
-					Routes: map[string]json.RawMessage{
-						"cf-router": marshalRoutes(desiredRoutes),
+			resp, err := updateLRP(httpClient,
+				url,
+				cf.UpdateDesiredLRPRequest{
+					GUID:    lrp.GUID,
+					Version: lrp.Version,
+					Update: cf.DesiredLRPUpdate{
+						Instances: instances,
+						Routes: map[string]json.RawMessage{
+							"cf-router": tests.MarshalRoutes(desiredRoutes),
+						},
 					},
-				},
-			})
+				})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
@@ -179,7 +183,7 @@ var _ = Describe("Routes", func() {
 		When("a new route is added to the app", func() {
 			BeforeEach(func() {
 				instances = lrp.NumInstances
-				desiredRoutes = []routeInfo{
+				desiredRoutes = []tests.RouteInfo{
 					{Hostname: "app-hostname-1", Port: 8080},
 					{Hostname: "app-hostname-2", Port: 8080},
 				}
@@ -193,7 +197,7 @@ var _ = Describe("Routes", func() {
 		When("a route is removed from the app", func() {
 			BeforeEach(func() {
 				instances = lrp.NumInstances
-				desiredRoutes = []routeInfo{}
+				desiredRoutes = []tests.RouteInfo{}
 			})
 
 			It("unregisters the route", func() {
@@ -214,7 +218,7 @@ var _ = Describe("Routes", func() {
 		When("an app is scaled up", func() {
 			BeforeEach(func() {
 				instances = lrp.NumInstances + 1
-				desiredRoutes = []routeInfo{
+				desiredRoutes = []tests.RouteInfo{
 					{Hostname: "app-hostname-1", Port: 8080},
 				}
 			})
@@ -232,7 +236,7 @@ var _ = Describe("Routes", func() {
 		When("an app is scaled down", func() {
 			BeforeEach(func() {
 				instances = 0
-				desiredRoutes = []routeInfo{
+				desiredRoutes = []tests.RouteInfo{
 					{Hostname: "app-hostname-1", Port: 8080},
 				}
 			})
@@ -250,10 +254,10 @@ var _ = Describe("Routes", func() {
 
 	Describe("Stopping an app", func() {
 		JustBeforeEach(func() {
-			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireLRP(httpClient, url, lrp).StatusCode).To(Equal(http.StatusAccepted))
 			Eventually(registerChan).Should(Receive())
 
-			resp, err := stopLRP(httpClient, opiURL, lrp.GUID, lrp.Version)
+			resp, err := stopLRP(httpClient, url, lrp.GUID, lrp.Version)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
@@ -269,10 +273,10 @@ var _ = Describe("Routes", func() {
 
 	Describe("Stopping an app instance", func() {
 		JustBeforeEach(func() {
-			Expect(desireLRP(lrp).StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireLRP(httpClient, url, lrp).StatusCode).To(Equal(http.StatusAccepted))
 			Eventually(registerChan).Should(Receive())
 
-			resp, err := stopLRPInstance(lrp.GUID, lrp.Version, 0)
+			resp, err := stopLRPInstance(httpClient, url, lrp.GUID, lrp.Version, 0)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
@@ -318,16 +322,6 @@ func getNatsServerConfig() *server.Options {
 	}
 }
 
-func marshalRoutes(routes []routeInfo) json.RawMessage {
-	bytes, err := json.Marshal(routes)
-	Expect(err).NotTo(HaveOccurred())
-
-	rawMessage := json.RawMessage{}
-	Expect(rawMessage.UnmarshalJSON(bytes)).To(Succeed())
-
-	return rawMessage
-}
-
 func subscribeToNats(natsConfig *server.Options, registerChan, unregisterChan chan *nats.Msg) *nats.Conn {
 	natsClientConfig := nats.GetDefaultOptions()
 	natsClientConfig.Servers = []string{fmt.Sprintf("%s:%d", natsConfig.Host, natsConfig.Port)}
@@ -359,4 +353,47 @@ func runNatsTestServer(opts *server.Options) (server *server.Server, err error) 
 	server = natstest.RunServer(opts)
 
 	return server, nil
+}
+
+func desireLRP(httpClient rest.HTTPClient, url string, lrpRequest cf.DesireLRPRequest) *http.Response {
+	body, err := json.Marshal(lrpRequest)
+	Expect(err).NotTo(HaveOccurred())
+	desireLrpReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s", url, lrpRequest.GUID), bytes.NewReader(body))
+	Expect(err).NotTo(HaveOccurred())
+	response, err := httpClient.Do(desireLrpReq)
+	Expect(err).NotTo(HaveOccurred())
+
+	return response
+}
+
+func stopLRP(httpClient rest.HTTPClient, url string, processGUID, versionGUID string) (*http.Response, error) {
+	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop", url, processGUID, versionGUID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return httpClient.Do(request)
+}
+
+func stopLRPInstance(httpClient rest.HTTPClient, url string, processGUID, versionGUID string, instance int) (*http.Response, error) {
+	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop/%d", url, processGUID, versionGUID, instance), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return httpClient.Do(request)
+}
+
+func updateLRP(httpClient rest.HTTPClient, url string, updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error) {
+	body, err := json.Marshal(updateRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	updateLrpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/apps/%s", url, updateRequest.GUID), bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	return httpClient.Do(updateLrpReq)
 }
