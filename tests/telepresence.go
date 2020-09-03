@@ -33,6 +33,8 @@ func StartTelepresence(serviceName string, startingPort int, totalPorts int) (*T
 
 	cmd := exec.Command("telepresence", args...)
 
+	cmd.Env = []string{"KUBECONFIG=" + GetKubeconfig()}
+
 	// Telepresence needs something to run, and will run a shell if nothing specified.
 	// We need to have an open stdin to stop the shell exiting
 	stdin, err := cmd.StdinPipe()
