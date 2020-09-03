@@ -17,6 +17,7 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
 	batchv1 "k8s.io/api/batch/v1"
@@ -96,6 +97,7 @@ var _ = Describe("TaskReporter", func() {
 		)
 
 		session, configFile = eiriniBins.TaskReporter.Run(config)
+		Eventually(session).Should(gbytes.Say("Starting workers"))
 		Expect(taskDesirer.Desire(fixture.Namespace, task)).To(Succeed())
 	})
 

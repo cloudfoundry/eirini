@@ -1,6 +1,7 @@
 package task_test
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -12,7 +13,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
-	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -23,10 +23,11 @@ var _ = Describe("Reporter", func() {
 		server      *ghttp.Server
 		logger      *lagertest.TestLogger
 		pod         *corev1.Pod
-		oldPod      *corev1.Pod
 		taskDeleter *taskfakes.FakeDeleter
 		handlers    []http.HandlerFunc
+		err         error
 	)
+
 	createPod := func(taskState corev1.ContainerState) *corev1.Pod {
 		return &corev1.Pod{
 			ObjectMeta: v1.ObjectMeta{
@@ -55,6 +56,7 @@ var _ = Describe("Reporter", func() {
 			},
 		}
 	}
+
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("task-reporter-test")
 		taskDeleter = new(taskfakes.FakeDeleter)
@@ -73,10 +75,6 @@ var _ = Describe("Reporter", func() {
 			TaskDeleter: taskDeleter,
 		}
 
-		oldPod = createPod(corev1.ContainerState{
-			Running: &corev1.ContainerStateRunning{},
-		})
-
 		pod = createPod(corev1.ContainerState{
 			Terminated: &corev1.ContainerStateTerminated{
 				ExitCode: 0,
@@ -89,11 +87,15 @@ var _ = Describe("Reporter", func() {
 			ghttp.CombineHandlers(handlers...),
 		)
 
-		reporter.Report(oldPod, pod)
+		err = reporter.Report(pod)
 	})
 
 	AfterEach(func() {
 		server.Close()
+	})
+
+	It("succeeds", func() {
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("notifies the cloud controller", func() {
@@ -161,39 +163,6 @@ var _ = Describe("Reporter", func() {
 		})
 	})
 
-	When("task container has already terminated", func() {
-		BeforeEach(func() {
-			oldPod = createPod(corev1.ContainerState{
-				Terminated: &corev1.ContainerStateTerminated{
-					ExitCode: 0,
-				},
-			})
-		})
-
-		It("doesn't send anything to the cloud controller", func() {
-			Expect(server.ReceivedRequests()).To(HaveLen(0))
-		})
-
-		It("doesn't send delete the job on kubernetes", func() {
-			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
-		})
-	})
-
-	When("there is no previous task container status", func() {
-		BeforeEach(func() {
-			oldPod = createPod(corev1.ContainerState{})
-		})
-
-		It("notifies the cloud controller", func() {
-			Expect(server.ReceivedRequests()).To(HaveLen(1))
-		})
-
-		It("deletes the job on kubernetes", func() {
-			Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
-			Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-task-guid"))
-		})
-	})
-
 	When("task container status is missing", func() {
 		BeforeEach(func() {
 			pod.Status.ContainerStatuses = []corev1.ContainerStatus{
@@ -226,16 +195,22 @@ var _ = Describe("Reporter", func() {
 			)
 		})
 
-		It("logs the error", func() {
-			Expect(logger.Logs()).To(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Message": Equal("task-reporter-test.report.cannot-send-task-status-response"),
-				"Data":    HaveKeyWithValue("error", "request not successful: status=502 potato"),
-			})))
+		It("returns an error", func() {
+			Expect(err).To(MatchError(ContainSubstring("status=502 potato")))
 		})
 
-		It("still deletes the job on kubernetes", func() {
-			Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
-			Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-task-guid"))
+		It("does not delete the job on kubernetes", func() {
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
+		})
+	})
+
+	When("deleting the job fails", func() {
+		BeforeEach(func() {
+			taskDeleter.DeleteReturns("", errors.New("delete-task-failure"))
+		})
+
+		It("returns an error", func() {
+			Expect(err).To(MatchError("delete-task-failure"))
 		})
 	})
 })

@@ -22,49 +22,43 @@ type StateReporter struct {
 	TaskDeleter Deleter
 }
 
-func (r StateReporter) Report(oldPod, pod *corev1.Pod) {
+func (r StateReporter) Report(pod *corev1.Pod) error {
 	taskGUID := pod.Annotations[k8s.AnnotationGUID]
 	uri := pod.Annotations[k8s.AnnotationCompletionCallback]
 
 	logger := r.Logger.Session("report", lager.Data{"task-guid": taskGUID})
 
-	if !r.taskContainerHasJustTerminated(logger, oldPod, pod) {
-		return
+	if !r.taskContainerHasTerminated(logger, pod) {
+		return nil
 	}
 
+	logger.Debug("sending completion notification")
 	req := r.generateTaskCompletedRequest(logger, taskGUID, pod)
 
 	if err := utils.Post(r.Client, uri, req); err != nil {
 		logger.Error("cannot-send-task-status-response", err)
+
+		return err
 	}
 
 	if _, err := r.TaskDeleter.Delete(taskGUID); err != nil {
 		logger.Error("cannot-delete-job", err)
+
+		return err
 	}
+
+	return nil
 }
 
-func (r StateReporter) taskContainerHasJustTerminated(logger lager.Logger, oldPod, pod *corev1.Pod) bool {
-	oldTaskContainerStatus, hasOldTaskContainerStatus := getTaskContainerStatus(oldPod)
-	taskContainerStatus, hasTaskContainerStatus := getTaskContainerStatus(pod)
-
-	logger.Debug("checking-task-status", lager.Data{
-		"old-pod-has-status": hasOldTaskContainerStatus,
-		"old-status":         oldTaskContainerStatus,
-		"new-pod-has-status": hasTaskContainerStatus,
-		"new-status":         taskContainerStatus,
-	})
-
-	if !hasTaskContainerStatus {
-		logger.Info("updated-pod-has-no-task-container-status")
+func (r StateReporter) taskContainerHasTerminated(logger lager.Logger, pod *corev1.Pod) bool {
+	status, ok := getTaskContainerStatus(pod)
+	if !ok {
+		logger.Info("pod-has-no-task-container-status")
 
 		return false
 	}
 
-	if !isTerminatedStatus(taskContainerStatus) {
-		return false
-	}
-
-	return hasOldTaskContainerStatus && !isTerminatedStatus(oldTaskContainerStatus)
+	return isTerminatedStatus(status)
 }
 
 func isTerminatedStatus(status corev1.ContainerStatus) bool {
