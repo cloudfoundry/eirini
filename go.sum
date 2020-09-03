@@ -51,8 +51,8 @@ code.cloudfoundry.org/consuladapter v0.0.0-20190222031846-a0ec466a22b6 h1:ddgelD
 code.cloudfoundry.org/consuladapter v0.0.0-20190222031846-a0ec466a22b6/go.mod h1:bOVcKUGVpa9/23DMPJUd4mPt420blgr/Tpwb0+y32Cc=
 code.cloudfoundry.org/diego-logging-client v0.0.0-20190918155030-cd01d2d2c629 h1:fHdO7RAcFCpffc5fABJTopv0TCja9GN1IcQshh3qweo=
 code.cloudfoundry.org/diego-logging-client v0.0.0-20190918155030-cd01d2d2c629/go.mod h1:L8Y+60YwdebCsAE6US++EVqddijkVMMC4Ucx0nPH03o=
-code.cloudfoundry.org/eirinix v0.3.1-0.20200813115927-6a0925613552 h1:fO8rGvBo0YZshSS0rPe4kamP6rsGtzwnLC47+GKs0Wk=
-code.cloudfoundry.org/eirinix v0.3.1-0.20200813115927-6a0925613552/go.mod h1:t4yDelOxu4jOeL46/DsGDy2lvQ3R0GFF7KTcVuQpSQs=
+code.cloudfoundry.org/eirinix v0.3.1-0.20200903110842-7efe39741588 h1:OlOhTMWeGz3TBgNzo0qlmBahTmnFEfFpXcJu8N3ZKVA=
+code.cloudfoundry.org/eirinix v0.3.1-0.20200903110842-7efe39741588/go.mod h1:t4yDelOxu4jOeL46/DsGDy2lvQ3R0GFF7KTcVuQpSQs=
 code.cloudfoundry.org/executor v0.0.0-20191210222949-67a08c48e56c h1:SIJlv2s7myd0Km/DBkWmW514rO8SLZJ5HUZPh0ioNKw=
 code.cloudfoundry.org/executor v0.0.0-20191210222949-67a08c48e56c/go.mod h1:oemBimQzPedAfYleiBj968jpfEkSw8F5OsP+zYkVMRk=
 code.cloudfoundry.org/garden v0.0.0-20191128141255-60b076cc4749 h1:4ARPRRCD3A42vOY/iDn3o5/4QONscaX/WtvLqIHBRYY=

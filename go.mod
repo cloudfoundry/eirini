@@ -21,7 +21,7 @@ require (
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	code.cloudfoundry.org/consuladapter v0.0.0-20190222031846-a0ec466a22b6 // indirect
 	code.cloudfoundry.org/diego-logging-client v0.0.0-20190918155030-cd01d2d2c629 // indirect
-	code.cloudfoundry.org/eirinix v0.3.1-0.20200813115927-6a0925613552
+	code.cloudfoundry.org/eirinix v0.3.1-0.20200903110842-7efe39741588
 	code.cloudfoundry.org/executor v0.0.0-20191210222949-67a08c48e56c // indirect
 	code.cloudfoundry.org/garden v0.0.0-20191128141255-60b076cc4749 // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20190809170250-f77fb823c7ee // indirect

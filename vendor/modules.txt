@@ -6,7 +6,7 @@ code.cloudfoundry.org/bbs/format
 code.cloudfoundry.org/bbs/models
 # code.cloudfoundry.org/cfhttp/v2 v2.0.0
 code.cloudfoundry.org/cfhttp/v2
-# code.cloudfoundry.org/eirinix v0.3.1-0.20200813115927-6a0925613552
+# code.cloudfoundry.org/eirinix v0.3.1-0.20200903110842-7efe39741588
 code.cloudfoundry.org/eirinix
 code.cloudfoundry.org/eirinix/util/ctxlog
 # code.cloudfoundry.org/go-diodes v0.0.0-20190809170250-f77fb823c7ee
