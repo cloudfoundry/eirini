@@ -42,7 +42,7 @@ var _ = Describe("InstanceIndexInjector", func() {
 		hookSession, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
 
 		tr := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
 		}
 		client := &http.Client{Transport: tr}
 		Eventually(func() (int, error) {
@@ -84,8 +84,10 @@ var _ = Describe("InstanceIndexInjector", func() {
 		if hookSession != nil {
 			Eventually(hookSession.Kill()).Should(gexec.Exit())
 		}
-		fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().Delete(context.Background(), fingerprint+"-mutating-hook", metav1.DeleteOptions{})
-		fixture.Clientset.CoreV1().Secrets("default").Delete(context.Background(), fingerprint+"-setupcertificate", metav1.DeleteOptions{})
+		err := fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().Delete(context.Background(), fingerprint+"-mutating-hook", metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		err = fixture.Clientset.CoreV1().Secrets("default").Delete(context.Background(), fingerprint+"-setupcertificate", metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	JustBeforeEach(func() {

@@ -31,7 +31,7 @@ func StartTelepresence(serviceName string, startingPort int, totalPorts int) (*T
 		args = append(args, "--expose", strconv.Itoa(startingPort+i))
 	}
 
-	cmd := exec.Command("/usr/local/bin/telepresence", args...)
+	cmd := exec.Command("telepresence", args...)
 
 	// Telepresence needs something to run, and will run a shell if nothing specified.
 	// We need to have an open stdin to stop the shell exiting
