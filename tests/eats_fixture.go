@@ -75,7 +75,7 @@ func (f *EATSFixture) makeTestHTTPClient() (*http.Client, error) {
 	tlsConfig := &tls.Config{
 		RootCAs:      certPool,
 		Certificates: []tls.Certificate{clientCert},
-		MinVersion:   tls.VersionTLS13,
+		MinVersion:   tls.VersionTLS12,
 	}
 	client := cfhttp.NewClient(cfhttp.WithTLSConfig(tlsConfig))
 
