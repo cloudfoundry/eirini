@@ -33,12 +33,8 @@ run_eats() {
   echo "Running EATs against helmless deployed eirini on kind"
 
   ensure_kind_cluster
+  KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/cleanup.sh" || true
   KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/deploy.sh"
-
-  cleanup() {
-    KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/cleanup.sh"
-  }
-  trap cleanup EXIT
 
   EIRINI_IP="$(KUBECONFIG="$kubeconfig" kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')"
   echo -n "Waiting for eirini to start on $EIRINI_IP:443: "
