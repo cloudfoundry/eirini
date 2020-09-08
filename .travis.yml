@@ -21,6 +21,6 @@ before_install:
 install: true
 
 script:
-    - go vet ./...
+    - go vet -mod=vendor ./...
     - scripts/run_unit_tests.sh
     - golangci-lint run -v
