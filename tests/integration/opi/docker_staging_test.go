@@ -1,6 +1,7 @@
-package eats_test
+package opi_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -13,19 +14,16 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
+	"k8s.io/client-go/rest"
 )
 
 var _ = Describe("Docker Staging", func() {
 	var capiServer *ghttp.Server
 
 	BeforeEach(func() {
-		if tests.IsUsingDeployedEirini() {
-			Skip("Skipping because currently untestable on deployment")
-		}
-
 		var err error
 		capiServer, err = tests.CreateTestServer(
-			localhostCertPath, localhostKeyPath, localhostCertPath,
+			certPath, keyPath, certPath,
 		)
 		Expect(err).NotTo(HaveOccurred())
 		capiServer.HTTPTestServer.StartTLS()
@@ -54,7 +52,7 @@ var _ = Describe("Docker Staging", func() {
 	})
 
 	It("returns code 201 Accepted and completes staging", func() {
-		code, err := desireStaging(cf.StagingRequest{
+		code, err := desireStaging(httpClient, cf.StagingRequest{
 			Lifecycle: cf.StagingLifecycle{
 				DockerLifecycle: &cf.StagingDockerLifecycle{
 					Image: "eirini/custom-port",
@@ -88,7 +86,7 @@ var _ = Describe("Docker Staging", func() {
 		})
 
 		It("returns code 201 Accepted and completes staging", func() {
-			code, err := desireStaging(cf.StagingRequest{
+			code, err := desireStaging(httpClient, cf.StagingRequest{
 				Lifecycle: cf.StagingLifecycle{
 					DockerLifecycle: &cf.StagingDockerLifecycle{
 						Image:            "eiriniuser/notdora",
@@ -107,7 +105,7 @@ var _ = Describe("Docker Staging", func() {
 
 	When("the callback uri is invalid", func() {
 		It("should return a 500 Internal Server Error", func() {
-			code, err := desireStaging(cf.StagingRequest{
+			code, err := desireStaging(httpClient, cf.StagingRequest{
 				Lifecycle: cf.StagingLifecycle{
 					DockerLifecycle: &cf.StagingDockerLifecycle{
 						Image: "eirini/custom-port",
@@ -138,7 +136,7 @@ var _ = Describe("Docker Staging", func() {
 		})
 
 		It("should return a 500 Internal Server Error", func() {
-			code, err := desireStaging(cf.StagingRequest{
+			code, err := desireStaging(httpClient, cf.StagingRequest{
 				Lifecycle: cf.StagingLifecycle{
 					DockerLifecycle: &cf.StagingDockerLifecycle{
 						Image: "what is eirini",
@@ -151,3 +149,24 @@ var _ = Describe("Docker Staging", func() {
 		})
 	})
 })
+
+func desireStaging(httpClient rest.HTTPClient, stagingRequest cf.StagingRequest) (int, error) {
+	data, err := json.Marshal(stagingRequest)
+	if err != nil {
+		return 0, err
+	}
+
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/stage/some-guid", url), bytes.NewReader(data))
+	if err != nil {
+		return 0, err
+	}
+
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return 0, err
+	}
+
+	defer response.Body.Close()
+
+	return response.StatusCode, nil
+}

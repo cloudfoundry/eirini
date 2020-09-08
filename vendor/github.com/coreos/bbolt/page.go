@@ -7,12 +7,12 @@ import (
 	"unsafe"
 )
 
-const pageHeaderSize = unsafe.Sizeof(page{})
+const pageHeaderSize = int(unsafe.Offsetof(((*page)(nil)).ptr))
 
 const minKeysPerPage = 2
 
-const branchPageElementSize = unsafe.Sizeof(branchPageElement{})
-const leafPageElementSize = unsafe.Sizeof(leafPageElement{})
+const branchPageElementSize = int(unsafe.Sizeof(branchPageElement{}))
+const leafPageElementSize = int(unsafe.Sizeof(leafPageElement{}))
 
 const (
 	branchPageFlag   = 0x01
@@ -32,6 +32,7 @@ type page struct {
 	flags    uint16
 	count    uint16
 	overflow uint32
+	ptr      uintptr
 }
 
 // typ returns a human readable page type string used for debugging.
@@ -50,13 +51,13 @@ func (p *page) typ() string {
 
 // meta returns a pointer to the metadata section of the page.
 func (p *page) meta() *meta {
-	return (*meta)(unsafeAdd(unsafe.Pointer(p), unsafe.Sizeof(*p)))
+	return (*meta)(unsafe.Pointer(&p.ptr))
 }
 
 // leafPageElement retrieves the leaf node by index
 func (p *page) leafPageElement(index uint16) *leafPageElement {
-	return (*leafPageElement)(unsafeIndex(unsafe.Pointer(p), unsafe.Sizeof(*p),
-		leafPageElementSize, int(index)))
+	n := &((*[0x7FFFFFF]leafPageElement)(unsafe.Pointer(&p.ptr)))[index]
+	return n
 }
 
 // leafPageElements retrieves a list of leaf nodes.
@@ -64,16 +65,12 @@ func (p *page) leafPageElements() []leafPageElement {
 	if p.count == 0 {
 		return nil
 	}
-	var elems []leafPageElement
-	data := unsafeAdd(unsafe.Pointer(p), unsafe.Sizeof(*p))
-	unsafeSlice(unsafe.Pointer(&elems), data, int(p.count))
-	return elems
+	return ((*[0x7FFFFFF]leafPageElement)(unsafe.Pointer(&p.ptr)))[:]
 }
 
 // branchPageElement retrieves the branch node by index
 func (p *page) branchPageElement(index uint16) *branchPageElement {
-	return (*branchPageElement)(unsafeIndex(unsafe.Pointer(p), unsafe.Sizeof(*p),
-		unsafe.Sizeof(branchPageElement{}), int(index)))
+	return &((*[0x7FFFFFF]branchPageElement)(unsafe.Pointer(&p.ptr)))[index]
 }
 
 // branchPageElements retrieves a list of branch nodes.
@@ -81,15 +78,12 @@ func (p *page) branchPageElements() []branchPageElement {
 	if p.count == 0 {
 		return nil
 	}
-	var elems []branchPageElement
-	data := unsafeAdd(unsafe.Pointer(p), unsafe.Sizeof(*p))
-	unsafeSlice(unsafe.Pointer(&elems), data, int(p.count))
-	return elems
+	return ((*[0x7FFFFFF]branchPageElement)(unsafe.Pointer(&p.ptr)))[:]
 }
 
 // dump writes n bytes of the page to STDERR as hex output.
 func (p *page) hexdump(n int) {
-	buf := unsafeByteSlice(unsafe.Pointer(p), 0, 0, n)
+	buf := (*[maxAllocSize]byte)(unsafe.Pointer(p))[:n]
 	fmt.Fprintf(os.Stderr, "%x\n", buf)
 }
 
@@ -108,7 +102,8 @@ type branchPageElement struct {
 
 // key returns a byte slice of the node key.
 func (n *branchPageElement) key() []byte {
-	return unsafeByteSlice(unsafe.Pointer(n), 0, int(n.pos), int(n.pos)+int(n.ksize))
+	buf := (*[maxAllocSize]byte)(unsafe.Pointer(n))
+	return (*[maxAllocSize]byte)(unsafe.Pointer(&buf[n.pos]))[:n.ksize]
 }
 
 // leafPageElement represents a node on a leaf page.
@@ -121,16 +116,14 @@ type leafPageElement struct {
 
 // key returns a byte slice of the node key.
 func (n *leafPageElement) key() []byte {
-	i := int(n.pos)
-	j := i + int(n.ksize)
-	return unsafeByteSlice(unsafe.Pointer(n), 0, i, j)
+	buf := (*[maxAllocSize]byte)(unsafe.Pointer(n))
+	return (*[maxAllocSize]byte)(unsafe.Pointer(&buf[n.pos]))[:n.ksize:n.ksize]
 }
 
 // value returns a byte slice of the node value.
 func (n *leafPageElement) value() []byte {
-	i := int(n.pos) + int(n.ksize)
-	j := i + int(n.vsize)
-	return unsafeByteSlice(unsafe.Pointer(n), 0, i, j)
+	buf := (*[maxAllocSize]byte)(unsafe.Pointer(n))
+	return (*[maxAllocSize]byte)(unsafe.Pointer(&buf[n.pos+n.ksize]))[:n.vsize:n.vsize]
 }
 
 // PageInfo represents human readable information about a page.

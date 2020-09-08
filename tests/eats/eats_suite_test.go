@@ -3,28 +3,21 @@ package eats_test
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
-	"code.cloudfoundry.org/cfhttp/v2"
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 func TestEats(t *testing.T) {
@@ -33,183 +26,31 @@ func TestEats(t *testing.T) {
 	RunSpecs(t, "Eats Suite")
 }
 
-type routeInfo struct {
-	Hostname string `json:"hostname"`
-	Port     int    `json:"port"`
-}
+var fixture *tests.EATSFixture
 
-var (
-	fixture    *tests.Fixture
-	binsPath   string
-	eiriniBins tests.EiriniBinaries
-
-	localhostCertPath, localhostKeyPath string
-	opiConfig                           string
-	opiSession                          *gexec.Session
-	httpClient                          *http.Client
-	opiURL                              string
-)
-
-var _ = SynchronizedBeforeSuite(func() []byte {
-	var err error
-	binsPath, err = ioutil.TempDir("", "bins")
-	Expect(err).NotTo(HaveOccurred())
-
-	eiriniBins = tests.NewEiriniBinaries(binsPath)
-	eiriniBins.OPI.Build()
-
-	data, err := json.Marshal(eiriniBins)
-	Expect(err).NotTo(HaveOccurred())
-
-	return data
-}, func(data []byte) {
-	err := json.Unmarshal(data, &eiriniBins)
-	Expect(err).NotTo(HaveOccurred())
-
-	fixture = tests.NewFixture(GinkgoWriter)
+var _ = BeforeSuite(func() {
+	fixture = tests.NewEATSFixture(GinkgoWriter)
 })
 
-var _ = SynchronizedAfterSuite(func() {
+var _ = AfterSuite(func() {
 	fixture.Destroy()
-}, func() {
-	eiriniBins.TearDown()
-	Expect(os.RemoveAll(binsPath)).To(Succeed())
 })
 
 var _ = BeforeEach(func() {
 	fixture.SetUp()
-
-	var err error
-	if tests.IsUsingDeployedEirini() {
-		localhostCertPath, localhostKeyPath = fixture.DownloadEiriniCertificates()
-
-		httpClient, err = makeTestHTTPClient(localhostCertPath, localhostKeyPath)
-		Expect(err).ToNot(HaveOccurred())
-
-		svc, getErr := fixture.Clientset.CoreV1().Services("eirini-core").Get(context.Background(), "eirini-external", metav1.GetOptions{})
-		Expect(getErr).ToNot(HaveOccurred())
-
-		host := svc.Status.LoadBalancer.Ingress[0].IP
-		opiURL = fmt.Sprintf("https://%s:8085", host)
-	} else {
-		localhostCertPath, localhostKeyPath = tests.GenerateKeyPair("localhost")
-
-		opiSession, opiConfig, opiURL = runOpi(localhostCertPath, localhostKeyPath)
-
-		httpClient, err = makeTestHTTPClient(localhostCertPath, localhostKeyPath)
-		Expect(err).ToNot(HaveOccurred())
-
-		waitOpiReady(httpClient, opiURL)
-	}
 })
 
 var _ = AfterEach(func() {
 	fixture.TearDown()
-
-	if !tests.IsUsingDeployedEirini() {
-		if opiSession != nil {
-			opiSession.Kill()
-		}
-		Expect(os.Remove(opiConfig)).To(Succeed())
-	}
-
-	Expect(os.Remove(localhostCertPath)).To(Succeed())
-	Expect(os.Remove(localhostKeyPath)).To(Succeed())
 })
 
-func runOpi(certPath, keyPath string) (*gexec.Session, string, string) {
-	eiriniConfig := &eirini.Config{
-		Properties: eirini.Properties{
-			KubeConfig: eirini.KubeConfig{
-				ConfigPath: fixture.KubeConfigPath,
-				Namespace:  fixture.DefaultNamespace,
-			},
-			CCCAPath:        certPath,
-			CCCertPath:      certPath,
-			CCKeyPath:       keyPath,
-			ServerCertPath:  certPath,
-			ServerKeyPath:   keyPath,
-			ClientCAPath:    certPath,
-			DiskLimitMB:     500,
-			TLSPort:         fixture.NextAvailablePort(),
-			DownloaderImage: "docker.io/eirini/integration_test_staging",
-			ExecutorImage:   "docker.io/eirini/integration_test_staging",
-			UploaderImage:   "docker.io/eirini/integration_test_staging",
-
-			ApplicationServiceAccount: tests.GetApplicationServiceAccount(),
-		},
-	}
-
-	eiriniSession, eiriniConfigFilePath := eiriniBins.OPI.Run(eiriniConfig)
-
-	url := fmt.Sprintf("https://localhost:%d", eiriniConfig.Properties.TLSPort)
-
-	return eiriniSession, eiriniConfigFilePath, url
-}
-
-func makeTestHTTPClient(certPath, keyPath string) (*http.Client, error) {
-	bs, err := ioutil.ReadFile(certPath)
-	if err != nil {
-		return nil, err
-	}
-
-	clientCert, err := tls.LoadX509KeyPair(certPath, keyPath)
-	if err != nil {
-		return nil, err
-	}
-
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(bs) {
-		return nil, err
-	}
-
-	tlsConfig := &tls.Config{
-		RootCAs:      certPool,
-		Certificates: []tls.Certificate{clientCert},
-	}
-	client := cfhttp.NewClient(cfhttp.WithTLSConfig(tlsConfig))
-
-	return client, nil
-}
-
-func waitOpiReady(httpClient rest.HTTPClient, opiURL string) {
-	Eventually(func() error {
-		desireAppReq, err := http.NewRequest("GET", fmt.Sprintf("%s/apps", opiURL), bytes.NewReader([]byte{}))
-		Expect(err).ToNot(HaveOccurred())
-		_, err = httpClient.Do(desireAppReq) //nolint:bodyclose
-
-		return err
-	}).Should(Succeed())
-}
-
-func desireStaging(stagingRequest cf.StagingRequest) (int, error) {
-	data, err := json.Marshal(stagingRequest)
-	if err != nil {
-		return 0, err
-	}
-
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/stage/some-guid", opiURL), bytes.NewReader(data))
-	if err != nil {
-		return 0, err
-	}
-
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return 0, err
-	}
-
-	defer response.Body.Close()
-
-	return response.StatusCode, nil
-}
-
 func getLRP(processGUID, versionGUID string) (cf.DesiredLRP, error) {
-	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps/%s/%s", opiURL, processGUID, versionGUID), nil)
+	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps/%s/%s", tests.GetEiriniAddress(), processGUID, versionGUID), nil)
 	if err != nil {
 		return cf.DesiredLRP{}, err
 	}
 
-	response, err := httpClient.Do(request)
+	response, err := fixture.GetEiriniHTTPClient().Do(request)
 	if err != nil {
 		return cf.DesiredLRP{}, err
 	}
@@ -228,12 +69,12 @@ func getLRP(processGUID, versionGUID string) (cf.DesiredLRP, error) {
 }
 
 func getLRPs() ([]cf.DesiredLRPSchedulingInfo, error) {
-	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps", opiURL), nil)
+	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps", tests.GetEiriniAddress()), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := httpClient.Do(request)
+	response, err := fixture.GetEiriniHTTPClient().Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -271,12 +112,12 @@ func getPodReadiness(lrpGUID, lrpVersion string) bool {
 }
 
 func getInstances(processGUID, versionGUID string) (*cf.GetInstancesResponse, error) {
-	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps/%s/%s/instances", opiURL, processGUID, versionGUID), nil)
+	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps/%s/%s/instances", tests.GetEiriniAddress(), processGUID, versionGUID), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := httpClient.Do(request)
+	response, err := fixture.GetEiriniHTTPClient().Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -299,30 +140,30 @@ func getInstances(processGUID, versionGUID string) (*cf.GetInstancesResponse, er
 func desireLRP(lrpRequest cf.DesireLRPRequest) *http.Response {
 	body, err := json.Marshal(lrpRequest)
 	Expect(err).NotTo(HaveOccurred())
-	desireLrpReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s", opiURL, lrpRequest.GUID), bytes.NewReader(body))
+	desireLrpReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s", tests.GetEiriniAddress(), lrpRequest.GUID), bytes.NewReader(body))
 	Expect(err).NotTo(HaveOccurred())
-	response, err := httpClient.Do(desireLrpReq)
+	response, err := fixture.GetEiriniHTTPClient().Do(desireLrpReq)
 	Expect(err).NotTo(HaveOccurred())
 
 	return response
 }
 
-func stopLRP(httpClient rest.HTTPClient, opiURL, processGUID, versionGUID string) (*http.Response, error) {
-	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop", opiURL, processGUID, versionGUID), nil)
+func stopLRP(processGUID, versionGUID string) (*http.Response, error) {
+	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop", tests.GetEiriniAddress(), processGUID, versionGUID), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	return httpClient.Do(request)
+	return fixture.GetEiriniHTTPClient().Do(request)
 }
 
 func stopLRPInstance(processGUID, versionGUID string, instance int) (*http.Response, error) {
-	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop/%d", opiURL, processGUID, versionGUID, instance), nil)
+	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop/%d", tests.GetEiriniAddress(), processGUID, versionGUID, instance), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	return httpClient.Do(request)
+	return fixture.GetEiriniHTTPClient().Do(request)
 }
 
 func updateLRP(updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error) {
@@ -331,12 +172,12 @@ func updateLRP(updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error)
 		return nil, err
 	}
 
-	updateLrpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/apps/%s", opiURL, updateRequest.GUID), bytes.NewReader(body))
+	updateLrpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/apps/%s", tests.GetEiriniAddress(), updateRequest.GUID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
 
-	return httpClient.Do(updateLrpReq)
+	return fixture.GetEiriniHTTPClient().Do(updateLrpReq)
 }
 
 func listJobs() []batchv1.Job {

@@ -38,6 +38,7 @@ func main() {
 			Host:                "0.0.0.0",
 			ServiceName:         cfg.ServiceName,
 			WebhookNamespace:    cfg.ServiceNamespace,
+			Namespace:           cfg.WorkloadNamespace,
 			FilterEiriniApps:    &filterEiriniApps,
 			RegisterWebHook:     &register,
 			OperatorFingerprint: cfg.EiriniXOperatorFingerprint,

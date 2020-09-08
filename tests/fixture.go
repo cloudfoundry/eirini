@@ -9,7 +9,6 @@ import (
 	"os"
 	"sync"
 
-	"code.cloudfoundry.org/eirini"
 	eiriniclient "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
 	"github.com/hashicorp/go-multierror"
 
@@ -18,7 +17,6 @@ import (
 
 	// nolint:golint,stylecheck
 	. "github.com/onsi/gomega"
-	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -35,7 +33,6 @@ type Fixture struct {
 	Clientset         kubernetes.Interface
 	EiriniClientset   eiriniclient.Interface
 	Namespace         string
-	DefaultNamespace  string
 	PspName           string
 	KubeConfigPath    string
 	Writer            io.Writer
@@ -88,12 +85,6 @@ func NewFixture(writer io.Writer) *Fixture {
 }
 
 func (f *Fixture) SetUp() {
-	if IsUsingDeployedEirini() {
-		f.DefaultNamespace = f.getApplicationNamespace()
-	} else {
-		f.DefaultNamespace = f.configureNewNamespace()
-	}
-
 	f.Namespace = f.configureNewNamespace()
 }
 
@@ -115,34 +106,10 @@ func (f Fixture) maxPortNumber() int {
 	return basePortNumber + portRange*GinkgoParallelNode() + portRange
 }
 
-func (f Fixture) DownloadEiriniCertificates() (string, string) {
-	certFile, err := ioutil.TempFile("", "cert-")
-	Expect(err).NotTo(HaveOccurred())
-
-	defer certFile.Close()
-
-	_, err = certFile.WriteString(f.getSecret("eirini-certs", "tls.crt"))
-	Expect(err).NotTo(HaveOccurred())
-
-	keyFile, err := ioutil.TempFile("", "key-")
-	Expect(err).NotTo(HaveOccurred())
-
-	defer keyFile.Close()
-
-	_, err = keyFile.WriteString(f.getSecret("eirini-certs", "tls.key"))
-	Expect(err).NotTo(HaveOccurred())
-
-	return certFile.Name(), keyFile.Name()
-}
-
 func (f *Fixture) TearDown() {
 	var errs *multierror.Error
 	errs = multierror.Append(errs, f.printDebugInfo())
 	errs = multierror.Append(errs, f.deleteNamespace(f.Namespace))
-
-	if !IsUsingDeployedEirini() {
-		errs = multierror.Append(errs, f.deleteNamespace(f.DefaultNamespace))
-	}
 
 	Expect(errs.ErrorOrNil()).NotTo(HaveOccurred())
 
@@ -160,25 +127,6 @@ func (f *Fixture) CreateExtraNamespace() string {
 	f.extraNamespaces = append(f.extraNamespaces, name)
 
 	return name
-}
-
-func (f Fixture) getApplicationNamespace() string {
-	cm, err := f.Clientset.CoreV1().ConfigMaps("eirini-core").Get(context.Background(), "eirini", metav1.GetOptions{})
-	Expect(err).NotTo(HaveOccurred())
-
-	opiYml := cm.Data["opi.yml"]
-	config := eirini.Config{}
-
-	Expect(yaml.Unmarshal([]byte(opiYml), &config)).To(Succeed())
-
-	return config.Properties.Namespace
-}
-
-func (f Fixture) getSecret(secretName, secretPath string) string {
-	secret, err := f.Clientset.CoreV1().Secrets("eirini-core").Get(context.Background(), secretName, metav1.GetOptions{})
-	Expect(err).NotTo(HaveOccurred())
-
-	return string(secret.Data[secretPath])
 }
 
 func (f *Fixture) configureNewNamespace() string {

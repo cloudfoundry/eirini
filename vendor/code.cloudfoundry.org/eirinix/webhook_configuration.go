@@ -184,9 +184,7 @@ func (f *WebhookConfig) GenerateAdmissionWebhook(webhooks []MutatingWebhook) []a
 					Name:      f.serviceName,
 					Namespace: f.webhookNamespace,
 					Path:      &p,
-					// FIXME:
-					// client version still doesn't support specify a port for service reference
-					//		Port:      &f.config.WebhookServerPort,
+					Port:      &f.config.WebhookServerPort,
 				},
 			}
 		} else {

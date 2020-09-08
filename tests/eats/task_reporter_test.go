@@ -18,9 +18,8 @@ var _ = Describe("Tasks Reporter", func() {
 
 	BeforeEach(func() {
 		if tests.IsHelmless() {
-			Skip("task reporter not deployed on helmless yet")
+			Skip("The task reporter is not a part of helmless yet")
 		}
-
 		taskRequest = cf.TaskRequest{
 			GUID:               tests.GenerateGUID(),
 			Namespace:          fixture.Namespace,
@@ -68,10 +67,10 @@ func desireOpiTask(taskRequest cf.TaskRequest) {
 	data, err := json.Marshal(taskRequest)
 	Expect(err).NotTo(HaveOccurred())
 
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", opiURL, taskRequest.GUID), bytes.NewReader(data))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), taskRequest.GUID), bytes.NewReader(data))
 	Expect(err).NotTo(HaveOccurred())
 
-	response, err := httpClient.Do(request)
+	response, err := fixture.GetEiriniHTTPClient().Do(request)
 	Expect(err).NotTo(HaveOccurred())
 
 	defer response.Body.Close()
