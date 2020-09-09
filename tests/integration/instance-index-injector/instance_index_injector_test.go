@@ -51,12 +51,13 @@ var _ = Describe("InstanceIndexInjector", func() {
 		Eventually(func() (int, error) {
 			resp, err := client.Get(fmt.Sprintf("https://%s.default.svc:%d/0", telepresenceService, port))
 			if err != nil {
+				GinkgoWriter.Write([]byte(fmt.Sprintf("failed to call telepresence: %s" + err.Error())))
 				return 0, err
 			}
 			resp.Body.Close()
 
 			return resp.StatusCode, nil
-		}, "10s", "500ms").Should(Equal(http.StatusOK))
+		}, "2m", "500ms").Should(Equal(http.StatusOK))
 
 		pod = &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
