@@ -269,12 +269,20 @@ var _ = Describe("Task Desire and Cancel", func() {
 
 			When("the app/task service account has its automountServiceAccountToken set to false", func() {
 				BeforeEach(func() {
-					appServiceAccount, err := fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Get(context.Background(), tests.GetApplicationServiceAccount(), metav1.GetOptions{})
-					Expect(err).NotTo(HaveOccurred())
-					automountServiceAccountToken := false
-					appServiceAccount.AutomountServiceAccountToken = &automountServiceAccountToken
-					_, err = fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Update(context.Background(), appServiceAccount, metav1.UpdateOptions{})
-					Expect(err).NotTo(HaveOccurred())
+					Eventually(func() error {
+						appServiceAccount, err := fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Get(context.Background(), tests.GetApplicationServiceAccount(), metav1.GetOptions{})
+						if err != nil {
+							return err
+						}
+						automountServiceAccountToken := false
+						appServiceAccount.AutomountServiceAccountToken = &automountServiceAccountToken
+						_, err = fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Update(context.Background(), appServiceAccount, metav1.UpdateOptions{})
+						if err != nil {
+							return err
+						}
+
+						return nil
+					}).Should(Succeed())
 				})
 
 				It("does not mount the service account token", func() {
