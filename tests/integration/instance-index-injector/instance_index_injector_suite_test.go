@@ -65,7 +65,6 @@ var _ = SynchronizedAfterSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	Skip("This test requires telepresence, which can only be run in privileged containers. This test is skipped until we enable runnig privileged workloads in concourse")
 	fixture.SetUp()
 })
 
