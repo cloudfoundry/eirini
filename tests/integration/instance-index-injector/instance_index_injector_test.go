@@ -51,7 +51,8 @@ var _ = Describe("InstanceIndexInjector", func() {
 		Eventually(func() (int, error) {
 			resp, err := client.Get(fmt.Sprintf("https://%s.default.svc:%d/0", telepresenceService, port))
 			if err != nil {
-				GinkgoWriter.Write([]byte(fmt.Sprintf("failed to call telepresence: %s" + err.Error())))
+				printMessage(fmt.Sprintf("failed to call telepresence: %s" + err.Error()))
+
 				return 0, err
 			}
 			resp.Body.Close()
@@ -137,3 +138,8 @@ var _ = Describe("InstanceIndexInjector", func() {
 		})
 	})
 })
+
+func printMessage(str string) {
+	_, err := GinkgoWriter.Write([]byte(str))
+	Expect(err).NotTo(HaveOccurred())
+}
