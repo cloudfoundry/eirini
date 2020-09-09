@@ -38,6 +38,9 @@ var _ = Describe("InstanceIndexInjector", func() {
 			ServiceNamespace:           "default",
 			WorkloadNamespace:          fixture.Namespace,
 			EiriniXOperatorFingerprint: fingerprint,
+			KubeConfig: eirini.KubeConfig{
+				ConfigPath: fixture.KubeConfigPath,
+			},
 		}
 		hookSession, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
 
