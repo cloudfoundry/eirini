@@ -7,7 +7,6 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	batch "k8s.io/api/batch/v1"
@@ -53,7 +52,6 @@ type TaskDesirer struct {
 	serviceAccountName                string
 	stagingServiceAccountName         string
 	registrySecretName                string
-	rootfsVersion                     string
 	allowAutomountServiceAccountToken bool
 }
 
@@ -66,7 +64,6 @@ func NewTaskDesirer(
 	serviceAccountName string,
 	stagingServiceAccountName string,
 	registrySecretName string,
-	rootfsVersion string,
 	allowAutomountServiceAccountToken bool,
 ) *TaskDesirer {
 	return &TaskDesirer{
@@ -78,7 +75,6 @@ func NewTaskDesirer(
 		serviceAccountName:                serviceAccountName,
 		stagingServiceAccountName:         stagingServiceAccountName,
 		registrySecretName:                registrySecretName,
-		rootfsVersion:                     rootfsVersion,
 		allowAutomountServiceAccountToken: allowAutomountServiceAccountToken,
 	}
 }
@@ -92,7 +88,6 @@ func NewTaskDesirerWithEiriniInstance(
 	serviceAccountName string,
 	stagingServiceAccountName string,
 	registrySecretName string,
-	rootfsVersion string,
 	allowAutomountServiceAccountToken bool,
 ) *TaskDesirer {
 	desirer := NewTaskDesirer(
@@ -104,7 +99,6 @@ func NewTaskDesirerWithEiriniInstance(
 		serviceAccountName,
 		stagingServiceAccountName,
 		registrySecretName,
-		rootfsVersion,
 		allowAutomountServiceAccountToken,
 	)
 
@@ -410,9 +404,8 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 	job.Name = utils.SanitizeNameWithMaxStringLen(sanitizedName, task.GUID, 50)
 
 	job.Labels = map[string]string{
-		LabelGUID:                        task.GUID,
-		LabelAppGUID:                     task.AppGUID,
-		rootfspatcher.RootfsVersionLabel: d.rootfsVersion,
+		LabelGUID:    task.GUID,
+		LabelAppGUID: task.AppGUID,
 	}
 
 	job.Annotations = map[string]string{

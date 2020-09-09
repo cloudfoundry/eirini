@@ -9,7 +9,6 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
@@ -110,7 +109,6 @@ type StatefulSetDesirer struct {
 	EventsClient                      EventsClient
 	StatefulSetToLRPMapper            LRPMapper
 	RegistrySecretName                string
-	RootfsVersion                     string
 	LivenessProbeCreator              ProbeCreator
 	ReadinessProbeCreator             ProbeCreator
 	Logger                            lager.Logger
@@ -642,12 +640,11 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet { /
 	}
 
 	labels := map[string]string{
-		LabelGUID:                        lrp.GUID,
-		LabelProcessType:                 lrp.ProcessType,
-		LabelVersion:                     lrp.Version,
-		LabelAppGUID:                     lrp.AppGUID,
-		LabelSourceType:                  appSourceType,
-		rootfspatcher.RootfsVersionLabel: m.RootfsVersion,
+		LabelGUID:        lrp.GUID,
+		LabelProcessType: lrp.ProcessType,
+		LabelVersion:     lrp.Version,
+		LabelAppGUID:     lrp.AppGUID,
+		LabelSourceType:  appSourceType,
 	}
 
 	statefulSet.Spec.Template.Labels = labels

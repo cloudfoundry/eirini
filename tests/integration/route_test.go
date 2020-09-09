@@ -41,7 +41,6 @@ var _ = Describe("Routes", func() {
 			EventsClient:              client.NewEvent(fixture.Clientset),
 			StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
 			RegistrySecretName:        "registry-secret",
-			RootfsVersion:             "rootfsversion",
 			LivenessProbeCreator:      k8s.CreateLivenessProbe,
 			ReadinessProbeCreator:     k8s.CreateReadinessProbe,
 			Logger:                    logger,

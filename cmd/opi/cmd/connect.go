@@ -171,7 +171,6 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 		cfg.Properties.ApplicationServiceAccount,
 		cfg.Properties.StagingServiceAccount,
 		cfg.Properties.RegistrySecretName,
-		cfg.Properties.RootfsVersion,
 		cfg.Properties.UnsafeAllowAutomountServiceAccountToken,
 	)
 }
@@ -259,7 +258,6 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 		EventsClient:                      client.NewEvent(clientset),
 		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
 		RegistrySecretName:                cfg.Properties.RegistrySecretName,
-		RootfsVersion:                     cfg.Properties.RootfsVersion,
 		LivenessProbeCreator:              k8s.CreateLivenessProbe,
 		ReadinessProbeCreator:             k8s.CreateReadinessProbe,
 		Logger:                            desireLogger,

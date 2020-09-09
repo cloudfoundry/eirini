@@ -11,7 +11,6 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -30,7 +29,6 @@ import (
 const (
 	namespace          = "testing"
 	registrySecretName = "secret-name"
-	rootfsVersion      = "version2"
 )
 
 var _ = Describe("Statefulset Desirer", func() {
@@ -65,7 +63,6 @@ var _ = Describe("Statefulset Desirer", func() {
 			StatefulSets:              statefulSetClient,
 			PodDisruptionBudgets:      pdbClient,
 			RegistrySecretName:        registrySecretName,
-			RootfsVersion:             rootfsVersion,
 			LivenessProbeCreator:      livenessProbeCreator.Spy,
 			ReadinessProbeCreator:     readinessProbeCreator.Spy,
 			Logger:                    logger,
@@ -199,12 +196,6 @@ var _ = Describe("Statefulset Desirer", func() {
 		It("should set imagePullPolicy to Always", func() {
 			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
 			Expect(string(statefulSet.Spec.Template.Spec.Containers[0].ImagePullPolicy)).To(Equal("Always"))
-		})
-
-		It("should set rootfsVersion as a label", func() {
-			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
-			Expect(statefulSet.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
-			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, rootfsVersion))
 		})
 
 		It("should set app_guid as a label", func() {

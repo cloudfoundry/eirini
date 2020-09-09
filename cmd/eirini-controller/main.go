@@ -121,7 +121,6 @@ func createLRPReconciler(
 		EventsClient:                      client.NewEvent(clientset),
 		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
 		RegistrySecretName:                eiriniCfg.Properties.RegistrySecretName,
-		RootfsVersion:                     eiriniCfg.Properties.RootfsVersion,
 		LivenessProbeCreator:              k8s.CreateLivenessProbe,
 		ReadinessProbeCreator:             k8s.CreateReadinessProbe,
 		Logger:                            logger.Session("stateful-set-desirer"),
@@ -147,7 +146,6 @@ func createTaskReconciler(
 		eiriniCfg.Properties.ApplicationServiceAccount,
 		"",
 		eiriniCfg.Properties.RegistrySecretName,
-		eiriniCfg.Properties.RootfsVersion,
 		eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
 	)
 

@@ -8,7 +8,6 @@ import (
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/opi"
-	"code.cloudfoundry.org/eirini/rootfspatcher"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -141,7 +140,6 @@ var _ = Describe("TaskDesirer", func() {
 			"service-account",
 			"staging-service-account",
 			"registry-secret",
-			"rootfs-version",
 			false,
 		)
 	})
@@ -197,7 +195,6 @@ var _ = Describe("TaskDesirer", func() {
 					HaveKeyWithValue(LabelGUID, "task-123"),
 					HaveKeyWithValue(LabelSourceType, "TASK"),
 					HaveKeyWithValue(LabelName, "task-name"),
-					HaveKeyWithValue(rootfspatcher.RootfsVersionLabel, "rootfs-version"),
 				))
 			})
 
@@ -241,7 +238,6 @@ var _ = Describe("TaskDesirer", func() {
 					"service-account",
 					"staging-service-account",
 					"registry-secret",
-					"rootfs-version",
 					true,
 				)
 			})
@@ -576,7 +572,6 @@ var _ = Describe("TaskDesirer", func() {
 			Entry("LabelGUID", LabelGUID, "task-123"),
 			Entry("LabelSourceType", LabelSourceType, "STG"),
 			Entry("LabelStagingGUID", LabelStagingGUID, taskGUID),
-			Entry("LabelRootfsVersion", rootfspatcher.RootfsVersionLabel, "rootfs-version"),
 		)
 
 		DescribeTable("the task should have the expected annotations", func(key, value string) {

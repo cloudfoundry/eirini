@@ -86,8 +86,7 @@ type Properties struct { //nolint:maligned
 	ServerCertPath string
 	ServerKeyPath  string
 
-	RootfsVersion string `yaml:"rootfs_version"`
-	DiskLimitMB   int64  `yaml:"disk_limit_mb"`
+	DiskLimitMB int64 `yaml:"disk_limit_mb"`
 
 	KubeConfig `yaml:",inline"`
 

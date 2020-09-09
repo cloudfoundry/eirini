@@ -64,7 +64,6 @@ var _ = Describe("TaskReporter", func() {
 			"",
 			"",
 			"",
-			"",
 			false,
 		)
 
