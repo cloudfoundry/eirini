@@ -7,10 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
@@ -237,18 +235,8 @@ var _ = Describe("Task Desire and Cancel", func() {
 		})
 
 		When("unsafe_allow_automount_service_account_token is set", func() {
-			var newConfigPath string
-
 			BeforeEach(func() {
-				newConfigPath = restartWithConfig(func(config eirini.Config) eirini.Config {
-					config.Properties.UnsafeAllowAutomountServiceAccountToken = true
-
-					return config
-				})
-			})
-
-			AfterEach(func() {
-				os.RemoveAll(newConfigPath)
+				eiriniConfig.Properties.UnsafeAllowAutomountServiceAccountToken = true
 			})
 
 			getPods := func() []corev1.Pod {
@@ -397,8 +385,6 @@ var _ = Describe("Task Desire and Cancel", func() {
 		})
 
 		When("CC TLS is disabled and CC certs not configured", func() {
-			var newConfigPath string
-
 			BeforeEach(func() {
 				cloudControllerServer.Close()
 				cloudControllerServer = ghttp.NewServer()
@@ -413,20 +399,12 @@ var _ = Describe("Task Desire and Cancel", func() {
 					),
 				)
 
-				newConfigPath = restartWithConfig(func(cfg eirini.Config) eirini.Config {
-					cfg.Properties.CCTLSDisabled = true
-					cfg.Properties.CCCertPath = ""
-					cfg.Properties.CCKeyPath = ""
-					cfg.Properties.CCCAPath = ""
-
-					return cfg
-				})
+				eiriniConfig.Properties.CCTLSDisabled = true
+				eiriniConfig.Properties.CCCertPath = ""
+				eiriniConfig.Properties.CCKeyPath = ""
+				eiriniConfig.Properties.CCCAPath = ""
 
 				request.CompletionCallback = cloudControllerServer.URL()
-			})
-
-			AfterEach(func() {
-				os.RemoveAll(newConfigPath)
 			})
 
 			It("sends the task completed message to the cloud controller", func() {

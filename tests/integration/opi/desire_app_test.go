@@ -5,9 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -104,18 +102,8 @@ var _ = Describe("Desire App", func() {
 		})
 
 		When("unsafe_allow_automount_service_account_token is set", func() {
-			var newConfigPath string
-
 			BeforeEach(func() {
-				newConfigPath = restartWithConfig(func(config eirini.Config) eirini.Config {
-					config.Properties.UnsafeAllowAutomountServiceAccountToken = true
-
-					return config
-				})
-			})
-
-			AfterEach(func() {
-				os.RemoveAll(newConfigPath)
+				eiriniConfig.Properties.UnsafeAllowAutomountServiceAccountToken = true
 			})
 
 			It("mounts the service account token (because this is how K8S works by default)", func() {

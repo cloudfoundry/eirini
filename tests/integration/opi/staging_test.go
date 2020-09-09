@@ -6,9 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
-	"code.cloudfoundry.org/eirini"
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
@@ -187,17 +185,11 @@ var _ = Describe("Staging", func() {
 		})
 
 		When("CC TLS is disabled and CC certs not configured", func() {
-			var newConfigPath string
-
 			BeforeEach(func() {
-				newConfigPath = restartWithConfig(func(cfg eirini.Config) eirini.Config {
-					cfg.Properties.CCTLSDisabled = true
-					cfg.Properties.CCCertPath = ""
-					cfg.Properties.CCKeyPath = ""
-					cfg.Properties.CCCAPath = ""
-
-					return cfg
-				})
+				eiriniConfig.Properties.CCTLSDisabled = true
+				eiriniConfig.Properties.CCCertPath = ""
+				eiriniConfig.Properties.CCKeyPath = ""
+				eiriniConfig.Properties.CCCAPath = ""
 				stagingGUID = "completion-guid-2"
 
 				cloudControllerServer.Close()
@@ -210,10 +202,6 @@ var _ = Describe("Staging", func() {
 						}),
 					),
 				)
-			})
-
-			AfterEach(func() {
-				os.RemoveAll(newConfigPath)
 			})
 
 			It("should invoke the CC staging completed endpoint", func() {
