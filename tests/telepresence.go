@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	// TODO: Think if we need to somehow merge with NextAvailablePort. For now make sure
+	// Think if we need to somehow merge with NextAvailablePort. For now make sure
 	// they don't collide.
 	startPort = 10000
 )
