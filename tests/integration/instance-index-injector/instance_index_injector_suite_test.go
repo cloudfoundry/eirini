@@ -26,15 +26,11 @@ var (
 	telepresenceService string
 )
 
-const (
-	startPort = 20000
-)
-
 var _ = SynchronizedBeforeSuite(func() []byte {
 	var err error
 
 	telepresenceService = "local-binaries-" + tests.GenerateGUID()[:8]
-	telepresenceRunner, err = tests.StartTelepresence(telepresenceService, startPort, config.GinkgoConfig.ParallelTotal)
+	telepresenceRunner, err = tests.StartTelepresence(telepresenceService, config.GinkgoConfig.ParallelTotal)
 	Expect(err).NotTo(HaveOccurred())
 
 	binsPath, err = ioutil.TempDir("", "bins")

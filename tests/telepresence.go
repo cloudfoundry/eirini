@@ -13,6 +13,12 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
+const (
+	// TODO: Think if we need to somehow merge with NextAvailablePort. For now make sure
+	// they don't collide.
+	startPort = 10000
+)
+
 type TelepresenceRunner struct {
 	session *gexec.Session
 	stdin   io.WriteCloser
@@ -22,14 +28,14 @@ type TelepresenceRunner struct {
 // forwarding the defined remote ports in kubernetes to the local ports in the test machine.
 // The number of exposed ports are defined by the totalPorts. The actual exported ports are
 // startingPort, startingPort + 1, ..., startingPort + totalPorts - 1 .
-func StartTelepresence(serviceName string, startingPort int, totalPorts int) (*TelepresenceRunner, error) {
+func StartTelepresence(serviceName string, totalPorts int) (*TelepresenceRunner, error) {
 	args := []string{
 		"--new-deployment", serviceName,
 		"--method", "vpn-tcp",
 		"--logfile", "-",
 	}
 	for i := 0; i < totalPorts; i++ {
-		args = append(args, "--expose", strconv.Itoa(startingPort+i))
+		args = append(args, "--expose", strconv.Itoa(startPort+i))
 	}
 
 	cmd := exec.Command("telepresence", args...)
@@ -65,4 +71,8 @@ func StartTelepresence(serviceName string, startingPort int, totalPorts int) (*T
 func (t *TelepresenceRunner) Stop() {
 	t.stdin.Close()
 	gomega.Eventually(t.session, "5s").Should(gexec.Exit())
+}
+
+func GetTelepresencePort() int {
+	return startPort + ginkgo.GinkgoParallelNode() - 1
 }

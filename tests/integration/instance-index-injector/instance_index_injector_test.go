@@ -29,7 +29,7 @@ var _ = Describe("InstanceIndexInjector", func() {
 
 	BeforeEach(func() {
 		namespace = fixture.Namespace
-		port := startPort + GinkgoParallelNode() - 1
+		port := tests.GetTelepresencePort()
 		fingerprint = "instance-id-" + tests.GenerateGUID()[:8]
 
 		config = &eirini.InstanceIndexEnvInjectorConfig{
