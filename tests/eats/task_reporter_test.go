@@ -17,13 +17,10 @@ import (
 // the job if notifying the cloud controller fails. We need to implement
 // some sort of callback verification facility (wiremock maybe) that does
 // handles the invocation callback
-var _ = PDescribe("Tasks Reporter", func() {
+var _ = Describe("Tasks Reporter", func() {
 	var taskRequest cf.TaskRequest
 
 	BeforeEach(func() {
-		if tests.IsHelmless() {
-			Skip("The task reporter is not a part of helmless yet")
-		}
 		taskRequest = cf.TaskRequest{
 			GUID:               tests.GenerateGUID(),
 			Namespace:          fixture.Namespace,
@@ -32,7 +29,7 @@ var _ = PDescribe("Tasks Reporter", func() {
 			AppName:            "some-app",
 			OrgName:            "the-org",
 			SpaceName:          "the-space",
-			CompletionCallback: "http://example.com/complete",
+			CompletionCallback: "http://example.com/",
 			Lifecycle: cf.Lifecycle{
 				DockerLifecycle: &cf.DockerLifecycle{
 					Image: "busybox",

@@ -28,6 +28,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
+const (
+	CCCrtPath = "/etc/cf-api/certs/tls.crt"
+	CCKeyPath = "/etc/cf-api/certs/tls.key"
+	CCCAPath  = "/etc/cf-api/certs/ca.crt"
+)
+
 type options struct {
 	ConfigFile string `short:"c" long:"config" description:"Config for running task-reporter"`
 }
@@ -115,10 +121,18 @@ func createHTTPClient(cfg eirini.TaskReporterConfig) (*http.Client, error) {
 	return util.CreateTLSHTTPClient(
 		[]util.CertPaths{
 			{
-				Crt: cfg.CCCertPath,
-				Key: cfg.CCKeyPath,
-				Ca:  cfg.CAPath,
+				Crt: getWithDefault(cfg.CCCertPath, CCCrtPath),
+				Key: getWithDefault(cfg.CCKeyPath, CCKeyPath),
+				Ca:  getWithDefault(cfg.CAPath, CCCAPath),
 			},
 		},
 	)
+}
+
+func getWithDefault(actualValue, defaultValue string) string {
+	if actualValue != "" {
+		return actualValue
+	}
+
+	return defaultValue
 }
