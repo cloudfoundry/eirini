@@ -20,15 +20,19 @@ main() {
     exit 1
   fi
 
-  local cluster_name additional_values skip_docker_build="false"
+  local cluster_name additional_values skip_docker_build="false" use_helmless="false"
+
   additional_values=""
-  while getopts ":c:o:s" opt; do
+  while getopts ":c:o:sd" opt; do
     case ${opt} in
       c)
         cluster_name=$OPTARG
         ;;
       s)
         skip_docker_build="true"
+        ;;
+      d)
+        use_helmless="true"
         ;;
       o)
         additional_values=$OPTARG
@@ -81,6 +85,11 @@ main() {
     done
   fi
 
+  if [[ "$use_helmless" == "true" ]]; then
+    deploy_helmless
+    exit 0
+  fi
+
   pull_private_config
   patch_cf_for_k8s "$additional_values"
   deploy_cf "$cluster_name" "${extra_args[@]}"
@@ -107,7 +116,7 @@ update_component() {
   echo "--- Patching component $component ---"
   docker_build "$component"
   docker_push "$component"
-  update_image_in_helm_chart "$component"
+  update_image_in_yaml_files "$component"
 }
 
 docker_build() {
@@ -124,9 +133,14 @@ docker_push() {
   popd
 }
 
-update_image_in_helm_chart() {
+update_image_in_yaml_files() {
   echo "Applying docker image of $1 to kubernetes cluster"
-  pushd "$EIRINI_RELEASE_BASEDIR/helm/eirini/templates"
+  deploy_dir="$EIRINI_RELEASE_BASEDIR/helm/eirini/templates"
+  if [[ "$use_helmless" == "true" ]]; then
+    deploy_dir="$EIRINI_RELEASE_BASEDIR/deploy/core"
+  fi
+
+  pushd "$deploy_dir"
   local file new_image_ref
   file=$(rg -l "image: eirini/${1}")
   new_image_ref="$(docker inspect --format='{{index .RepoDigests 0}}' "eirini/${1}:$PATCH_TAG")"
@@ -182,6 +196,10 @@ EOF
   cp -r "$EIRINI_RELEASE_BASEDIR/helm/eirini" "$CF4K8S_DIR/build/eirini/_vendir/"
 
   "$CF4K8S_DIR"/build/eirini/build.sh
+}
+
+deploy_helmless() {
+  "$EIRINI_RELEASE_BASEDIR/deploy/scripts/deploy.sh"
 }
 
 deploy_cf() {
