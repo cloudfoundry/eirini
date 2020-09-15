@@ -36,7 +36,7 @@ var _ = Describe("Apps", func() {
 		var desireResp *http.Response
 
 		JustBeforeEach(func() {
-			desireResp = desireAppInNamespace(lrpGUID, lrpVersion, namespace)
+			desireResp = desireApp(lrpGUID, lrpVersion, namespace)
 		})
 
 		AfterEach(func() {
@@ -67,7 +67,7 @@ var _ = Describe("Apps", func() {
 
 		When("the app already exist", func() {
 			It("returns 202", func() {
-				resp := desireAppInNamespace(lrpGUID, lrpVersion, namespace)
+				resp := desireApp(lrpGUID, lrpVersion, namespace)
 				Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 			})
 		})
@@ -75,7 +75,7 @@ var _ = Describe("Apps", func() {
 
 	Describe("Update an app", func() {
 		BeforeEach(func() {
-			desireApp(lrpGUID, lrpVersion)
+			desireApp(lrpGUID, lrpVersion, namespace)
 		})
 
 		It("successfully updates the app", func() {
@@ -107,10 +107,12 @@ var _ = Describe("Apps", func() {
 			firstLrp := createLrpRequest(lrpGUID, lrpVersion)
 			firstLrp.NumInstances = 2
 			firstLrp.LastUpdated = "111111"
+			firstLrp.Namespace = namespace
 			desireLRP(firstLrp)
 
 			secondLrp := createLrpRequest(anotherLrpGUID, anotherLrpVersion)
 			secondLrp.LastUpdated = "222222"
+			secondLrp.Namespace = namespace
 			desireLRP(secondLrp)
 		})
 
@@ -164,7 +166,7 @@ var _ = Describe("Apps", func() {
 
 	Describe("Get an app", func() {
 		JustBeforeEach(func() {
-			desireApp(lrpGUID, lrpVersion)
+			desireApp(lrpGUID, lrpVersion, namespace)
 		})
 
 		It("successfully returns the LRP", func() {
@@ -184,7 +186,7 @@ var _ = Describe("Apps", func() {
 
 	Describe("Stop an app", func() {
 		BeforeEach(func() {
-			desireApp(lrpGUID, lrpVersion)
+			desireApp(lrpGUID, lrpVersion, namespace)
 		})
 
 		It("successfully stops the app", func() {
@@ -205,7 +207,7 @@ var _ = Describe("Apps", func() {
 
 	Describe("Stop an app instance", func() {
 		BeforeEach(func() {
-			desireAppWithInstances(lrpGUID, lrpVersion, 3)
+			desireAppWithInstances(lrpGUID, lrpVersion, namespace, 3)
 			Eventually(func() []*cf.Instance {
 				return getRunningInstances(lrpGUID, lrpVersion)
 			}).Should(HaveLen(3))
@@ -258,7 +260,7 @@ var _ = Describe("Apps", func() {
 
 	Describe("Get instances", func() {
 		JustBeforeEach(func() {
-			desireAppWithInstances(lrpGUID, lrpVersion, 3)
+			desireAppWithInstances(lrpGUID, lrpVersion, namespace, 3)
 		})
 
 		It("returns the app instances", func() {
@@ -298,19 +300,15 @@ var _ = Describe("Apps", func() {
 	})
 })
 
-func desireApp(appGUID, version string) {
-	resp := desireAppWithInstances(appGUID, version, 1)
-	defer resp.Body.Close()
-}
-
-func desireAppWithInstances(appGUID, version string, instances int) *http.Response {
+func desireAppWithInstances(appGUID, version, namespace string, instances int) *http.Response {
 	lrp := createLrpRequest(appGUID, version)
 	lrp.NumInstances = instances
+	lrp.Namespace = namespace
 
 	return desireLRP(lrp)
 }
 
-func desireAppInNamespace(appGUID, version, namespace string) *http.Response {
+func desireApp(appGUID, version, namespace string) *http.Response {
 	lrp := createLrpRequest(appGUID, version)
 	lrp.Namespace = namespace
 
