@@ -8,9 +8,11 @@ EIRINI_RELEASE_DIR="$HOME/workspace/eirini-release"
 
 ensure_kind_cluster() {
   if ! kind get clusters | grep -q integration-tests; then
-    current_cluster="$(kubectl config current-context)"
+    current_cluster="$(kubectl config current-context)" || true
     kind create cluster --name integration-tests
-    kubectl config use-context "$current_cluster"
+    if [[ -n "$current_cluster" ]]; then
+      kubectl config use-context "$current_cluster"
+    fi
   fi
   kind get kubeconfig --name integration-tests >$kubeconfig
 }
