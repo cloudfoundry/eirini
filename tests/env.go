@@ -61,10 +61,6 @@ func GetEiriniAddress() string {
 	return lookupOptionalEnv("EIRINI_ADDRESS")
 }
 
-func IsHelmless() bool {
-	return os.Getenv("HELMLESS") == "true"
-}
-
 func lookupOptionalEnv(key string) string {
 	value, set := os.LookupEnv(key)
 	if !set {

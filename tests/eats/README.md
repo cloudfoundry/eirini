@@ -15,7 +15,6 @@ $EIRINI_RELEASE_DIR/deploy/scripts/deploy.sh
 EIRINI_ADDRESS=https://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}') \
 EIRINI_TLS_SECRET=eirini-certs \
 EIRINI_SYSTEM_NS=eirini-core \
-HELMLESS=true \
 $EIRINI_DIR/scripts/run_eats_tests.sh
 ```
 
