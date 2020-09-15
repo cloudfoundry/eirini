@@ -32,12 +32,6 @@ type options struct {
 	ConfigFile string `short:"c" long:"config" description:"Config for running event-reporter"`
 }
 
-const (
-	CCCrtPath = "/etc/cf-api/certs/tls.crt"
-	CCKeyPath = "/etc/cf-api/certs/tls.key"
-	CCCAPath  = "/etc/cf-api/certs/ca.crt"
-)
-
 func main() {
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
@@ -54,11 +48,7 @@ func main() {
 	tlsConf := &tls.Config{} // nolint:gosec // No need to check for min version as the empty config is only used when tls is disabled
 
 	if !cfg.CCTLSDisabled {
-		crtPath := getOrDefault(cfg.CCCertPath, CCCrtPath)
-		keyPath := getOrDefault(cfg.CCKeyPath, CCKeyPath)
-		caPath := getOrDefault(cfg.CCCAPath, CCCAPath)
-
-		tlsConf, err = cc_client.NewTLSConfig(crtPath, keyPath, caPath)
+		tlsConf, err = createTLSConfig(*cfg)
 		cmdcommons.ExitIfError(err)
 	}
 
@@ -115,10 +105,10 @@ func readConfigFile(path string) (*eirini.EventReporterConfig, error) {
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
 }
 
-func getOrDefault(actualValue, defaultValue string) string {
-	if actualValue != "" {
-		return actualValue
-	}
+func createTLSConfig(cfg eirini.EventReporterConfig) (*tls.Config, error) {
+	crtPath := cmdcommons.GetOrDefault(cfg.CCCertPath, eirini.CCCrtPath)
+	keyPath := cmdcommons.GetOrDefault(cfg.CCKeyPath, eirini.CCKeyPath)
+	caPath := cmdcommons.GetOrDefault(cfg.CCCAPath, eirini.CCCAPath)
 
-	return defaultValue
+	return cc_client.NewTLSConfig(crtPath, keyPath, caPath)
 }

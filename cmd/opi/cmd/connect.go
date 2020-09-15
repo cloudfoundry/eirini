@@ -27,22 +27,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-const (
-	TLSSecretKey  = "tls.key"
-	TLSSecretCert = "tls.crt"
-	TLSSecretCA   = "ca.crt"
-
-	EiriniCAPath  = "/etc/eirini/certs/ca.crt"
-	EiriniCrtPath = "/etc/eirini/certs/tls.crt"
-	EiriniKeyPath = "/etc/eirini/certs/tls.key"
-	CCCrtPath     = "/etc/cf-api/certs/tls.crt"
-	CCKeyPath     = "/etc/cf-api/certs/tls.key"
-	CCCAPath      = "/etc/cf-api/certs/ca.crt"
-
-	CCUploaderSecretName   = "cc-uploader-certs"   //#nosec G101
-	EiriniClientSecretName = "eirini-client-certs" //#nosec G101
-)
-
 func connect(cmd *cobra.Command, args []string) {
 	path, err := cmd.Flags().GetString("config")
 	cmdcommons.ExitIfError(err)
@@ -74,9 +58,9 @@ func connect(cmd *cobra.Command, args []string) {
 func serveTLS(cfg *eirini.Config, handler http.Handler, logger lager.Logger) {
 	var server *http.Server
 
-	crtPath := getWithDefault(cfg.Properties.ServerCertPath, EiriniCrtPath)
-	keyPath := getWithDefault(cfg.Properties.ServerKeyPath, EiriniKeyPath)
-	caPath := getWithDefault(cfg.Properties.ClientCAPath, EiriniCAPath)
+	crtPath := cmdcommons.GetOrDefault(cfg.Properties.ServerCertPath, eirini.EiriniCrtPath)
+	keyPath := cmdcommons.GetOrDefault(cfg.Properties.ServerKeyPath, eirini.EiriniKeyPath)
+	caPath := cmdcommons.GetOrDefault(cfg.Properties.ClientCAPath, eirini.EiriniCAPath)
 
 	tlsConfig, err := tlsconfig.Build(
 		tlsconfig.WithInternalServiceDefaults(),
@@ -106,9 +90,9 @@ func initRetryableJSONClient(cfg *eirini.Config) *util.RetryableJSONClient {
 	httpClient := http.DefaultClient
 
 	if !cfg.Properties.CCTLSDisabled {
-		crtPath := getWithDefault(cfg.Properties.CCCertPath, CCCrtPath)
-		keyPath := getWithDefault(cfg.Properties.CCKeyPath, CCKeyPath)
-		caPath := getWithDefault(cfg.Properties.CCCAPath, CCCAPath)
+		crtPath := cmdcommons.GetOrDefault(cfg.Properties.CCCertPath, eirini.CCCrtPath)
+		keyPath := cmdcommons.GetOrDefault(cfg.Properties.CCKeyPath, eirini.CCKeyPath)
+		caPath := cmdcommons.GetOrDefault(cfg.Properties.CCCAPath, eirini.CCCAPath)
 
 		var err error
 		httpClient, err = util.CreateTLSHTTPClient(
@@ -138,23 +122,23 @@ func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) *stager.Callb
 func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.TaskDesirer {
 	tlsConfigs := []k8s.StagingConfigTLS{
 		{
-			SecretName: CCUploaderSecretName,
+			SecretName: eirini.CCUploaderSecretName,
 			KeyPaths: []k8s.KeyPath{
-				{Key: TLSSecretKey, Path: eirini.CCAPIKeyName},
-				{Key: TLSSecretCert, Path: eirini.CCAPICertName},
+				{Key: eirini.TLSSecretKey, Path: eirini.CCAPIKeyName},
+				{Key: eirini.TLSSecretCert, Path: eirini.CCAPICertName},
 			},
 		},
 		{
-			SecretName: EiriniClientSecretName,
+			SecretName: eirini.EiriniClientSecretName,
 			KeyPaths: []k8s.KeyPath{
-				{Key: TLSSecretKey, Path: eirini.EiriniClientKey},
-				{Key: TLSSecretCert, Path: eirini.EiriniClientCert},
+				{Key: eirini.TLSSecretKey, Path: eirini.EiriniClientKey},
+				{Key: eirini.TLSSecretCert, Path: eirini.EiriniClientCert},
 			},
 		},
 		{
-			SecretName: EiriniClientSecretName,
+			SecretName: eirini.EiriniClientSecretName,
 			KeyPaths: []k8s.KeyPath{
-				{Key: TLSSecretCA, Path: eirini.CACertName},
+				{Key: eirini.TLSSecretCA, Path: eirini.CACertName},
 			},
 		},
 	}
@@ -293,12 +277,4 @@ func initConverter(cfg *eirini.Config) *bifrost.OPIConverter {
 		cfg.Properties.AllowRunImageAsRoot,
 		stagerCfg,
 	)
-}
-
-func getWithDefault(actualValue, defaultValue string) string {
-	if actualValue != "" {
-		return actualValue
-	}
-
-	return defaultValue
 }
