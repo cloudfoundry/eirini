@@ -28,18 +28,16 @@ type lifecycleOptions struct {
 type OPIConverter struct {
 	logger               lager.Logger
 	registryIP           string
-	diskLimitMB          int64
 	imageMetadataFetcher ImageMetadataFetcher
 	imageRefParser       ImageRefParser
 	allowRunImageAsRoot  bool
 	stagerConfig         eirini.StagerConfig
 }
 
-func NewOPIConverter(logger lager.Logger, registryIP string, diskLimitMB int64, imageMetadataFetcher ImageMetadataFetcher, imageRefParser ImageRefParser, allowRunImageAsRoot bool, stagerConfig eirini.StagerConfig) *OPIConverter {
+func NewOPIConverter(logger lager.Logger, registryIP string, imageMetadataFetcher ImageMetadataFetcher, imageRefParser ImageRefParser, allowRunImageAsRoot bool, stagerConfig eirini.StagerConfig) *OPIConverter {
 	return &OPIConverter{
 		logger:               logger,
 		registryIP:           registryIP,
-		diskLimitMB:          diskLimitMB,
 		imageMetadataFetcher: imageMetadataFetcher,
 		imageRefParser:       imageRefParser,
 		allowRunImageAsRoot:  allowRunImageAsRoot,
@@ -77,6 +75,11 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 		Version: request.Version,
 	}
 
+	err = c.validateRequest(request)
+	if err != nil {
+		return opi.LRP{}, err
+	}
+
 	return opi.LRP{
 		AppName:                request.AppName,
 		AppGUID:                request.AppGUID,
@@ -95,7 +98,7 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 		Health:                 healthcheck,
 		Ports:                  request.Ports,
 		MemoryMB:               request.MemoryMB,
-		DiskMB:                 c.computeDiskSize(request),
+		DiskMB:                 request.DiskMB,
 		CPUWeight:              request.CPUWeight,
 		VolumeMounts:           convertVolumeMounts(request),
 		LRP:                    request.LRP,
@@ -360,10 +363,10 @@ func convertVolumeMounts(request cf.DesireLRPRequest) []opi.VolumeMount {
 	return volumeMounts
 }
 
-func (c *OPIConverter) computeDiskSize(request cf.DesireLRPRequest) int64 {
-	if request.DiskMB != 0 {
-		return request.DiskMB
+func (c *OPIConverter) validateRequest(request cf.DesireLRPRequest) error {
+	if request.DiskMB == 0 {
+		return errors.New("DiskMB cannot be 0")
 	}
 
-	return c.diskLimitMB
+	return nil
 }

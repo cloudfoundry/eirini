@@ -239,7 +239,6 @@ func setConfigFromFile(path string) *eirini.Config {
 	cmdcommons.ExitIfError(err)
 
 	var conf eirini.Config
-	conf.Properties.DiskLimitMB = 2048
 	err = yaml.Unmarshal(fileBytes, &conf)
 	cmdcommons.ExitIfError(err)
 
@@ -287,7 +286,6 @@ func initConverter(cfg *eirini.Config) *bifrost.OPIConverter {
 	return bifrost.NewOPIConverter(
 		convertLogger,
 		cfg.Properties.RegistryAddress,
-		cfg.Properties.DiskLimitMB,
 		docker.Fetch,
 		docker.Parse,
 		cfg.Properties.AllowRunImageAsRoot,

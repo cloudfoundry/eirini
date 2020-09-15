@@ -18,8 +18,7 @@ import (
 
 var _ = Describe("OPI Converter", func() {
 	const (
-		defaultDiskQuota = int64(2058)
-		registryIP       = "eirini-registry.service.cf.internal"
+		registryIP = "eirini-registry.service.cf.internal"
 	)
 
 	var (
@@ -49,7 +48,6 @@ var _ = Describe("OPI Converter", func() {
 		converter = bifrost.NewOPIConverter(
 			logger,
 			registryIP,
-			defaultDiskQuota,
 			imgMetadataFetcher.Spy,
 			imgRefParser.Spy,
 			allowRunImageAsRoot,
@@ -256,8 +254,8 @@ var _ = Describe("OPI Converter", func() {
 				desireLRPRequest.DiskMB = 0
 			})
 
-			It("should use the default disk quota", func() {
-				Expect(lrp.DiskMB).To(Equal(defaultDiskQuota))
+			It("fails", func() {
+				Expect(err).To(MatchError("DiskMB cannot be 0"))
 			})
 		})
 

@@ -14,13 +14,17 @@ import (
 )
 
 var _ = Describe("Desire App", func() {
-	var body string
+	var (
+		body     string
+		response *http.Response
+	)
 
 	BeforeEach(func() {
 		body = `{
 			"guid": "the-app-guid",
 			"version": "0.0.0",
 			"ports" : [8080],
+			"disk_mb": 512,
 			"lifecycle": {
 				"docker_lifecycle": {
 				"image": "busybox",
@@ -34,9 +38,12 @@ var _ = Describe("Desire App", func() {
 	JustBeforeEach(func() {
 		desireAppReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/the-app-guid", url), bytes.NewReader([]byte(body)))
 		Expect(err).NotTo(HaveOccurred())
-		resp, err := httpClient.Do(desireAppReq)
+		response, err = httpClient.Do(desireAppReq)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+	})
+
+	It("should return a 202 Accepted HTTP code", func() {
+		Expect(response.StatusCode).To(Equal(http.StatusAccepted))
 	})
 
 	It("should create a stateful set for the app", func() {
@@ -54,6 +61,7 @@ var _ = Describe("Desire App", func() {
 			"guid": "the-app-guid",
 			"version": "0.0.0",
 			"ports" : [8080],
+			"disk_mb": 400,
 		  "lifecycle": {
 				"docker_lifecycle": {
 				  "image": "foo",
@@ -70,6 +78,29 @@ var _ = Describe("Desire App", func() {
 			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(statefulsets.Items[0].Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "yes, please"))
+		})
+	})
+
+	When("disk_mb isn't specified", func() {
+		BeforeEach(func() {
+			body = `{
+			"guid": "the-app-guid",
+			"version": "0.0.0",
+			"ports" : [8080],
+		  "lifecycle": {
+				"docker_lifecycle": {
+				  "image": "foo",
+					"command": ["bar", "baz"]
+				}
+			},
+			"user_defined_annotations": {
+			  "prometheus.io/scrape": "yes, please"
+			}
+		}`
+		})
+
+		It("should return a 400 Bad Request HTTP code", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
 		})
 	})
 

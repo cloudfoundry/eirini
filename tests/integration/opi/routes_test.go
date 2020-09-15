@@ -74,6 +74,7 @@ var _ = Describe("Routes", func() {
 			Version:      tests.GenerateGUID(),
 			NumInstances: 1,
 			Namespace:    fixture.Namespace,
+			DiskMB:       400,
 			Routes: map[string]json.RawMessage{
 				"cf-router": tests.MarshalRoutes([]tests.RouteInfo{
 					{Hostname: "app-hostname-1", Port: 8080},

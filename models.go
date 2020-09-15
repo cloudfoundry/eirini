@@ -86,8 +86,6 @@ type Properties struct { //nolint:maligned
 	ServerCertPath string
 	ServerKeyPath  string
 
-	DiskLimitMB int64 `yaml:"disk_limit_mb"`
-
 	KubeConfig `yaml:",inline"`
 
 	ApplicationServiceAccount string `yaml:"application_service_account"`
