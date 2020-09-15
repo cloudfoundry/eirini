@@ -50,6 +50,21 @@ const (
 	EiriniClientKey  = "eirini-client-crt-key"
 
 	RegistrySecretName = "default-image-pull-secret"
+
+	// Certs
+	TLSSecretKey  = "tls.key"
+	TLSSecretCert = "tls.crt"
+	TLSSecretCA   = "ca.crt"
+
+	EiriniCAPath  = "/etc/eirini/certs/ca.crt"
+	EiriniCrtPath = "/etc/eirini/certs/tls.crt"
+	EiriniKeyPath = "/etc/eirini/certs/tls.key"
+	CCCrtPath     = "/etc/cf-api/certs/tls.crt"
+	CCKeyPath     = "/etc/cf-api/certs/tls.key"
+	CCCAPath      = "/etc/cf-api/certs/ca.crt"
+
+	CCUploaderSecretName   = "cc-uploader-certs"   //#nosec G101
+	EiriniClientSecretName = "eirini-client-certs" //#nosec G101
 )
 
 var ErrNotFound = errors.New("not found")

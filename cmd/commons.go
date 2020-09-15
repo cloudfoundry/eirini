@@ -48,3 +48,11 @@ func ExitIfError(err error) {
 func Exitf(messageFormat string, args ...interface{}) {
 	panic(fmt.Sprintf(messageFormat, args...))
 }
+
+func GetOrDefault(actualValue, defaultValue string) string {
+	if actualValue != "" {
+		return actualValue
+	}
+
+	return defaultValue
+}
