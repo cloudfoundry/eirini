@@ -44,7 +44,7 @@ run_eats() {
     EIRINI_TLS_SECRET=eirini-certs \
     EIRINI_SYSTEM_NS=eirini-core \
     HELMLESS=true \
-    KUBECONFIG="$kubeconfig" \
+    INTEGRATION_KUBECONFIG="$kubeconfig" \
     $RUN_DIR/run_eats_tests.sh
 }
 
