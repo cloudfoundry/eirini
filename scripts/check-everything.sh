@@ -39,11 +39,6 @@ run_eats() {
   KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/deploy.sh"
 
   EIRINI_IP="$(KUBECONFIG="$kubeconfig" kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')"
-  echo -n "Waiting for eirini to start on $EIRINI_IP:443: "
-  while ! nc -z -w 1 "$EIRINI_IP" 443; do
-    echo -n "."
-  done
-  echo " Up!"
 
   EIRINI_ADDRESS="https://$EIRINI_IP" \
     EIRINI_TLS_SECRET=eirini-certs \
