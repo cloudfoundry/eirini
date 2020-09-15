@@ -137,7 +137,7 @@ func getInstances(processGUID, versionGUID string) (*cf.GetInstancesResponse, er
 	return instancesResponse, nil
 }
 
-func desireLRP(lrpRequest cf.DesireLRPRequest) *http.Response {
+func desireLRP(lrpRequest cf.DesireLRPRequest) int {
 	body, err := json.Marshal(lrpRequest)
 	Expect(err).NotTo(HaveOccurred())
 	desireLrpReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s", tests.GetEiriniAddress(), lrpRequest.GUID), bytes.NewReader(body))
@@ -145,7 +145,9 @@ func desireLRP(lrpRequest cf.DesireLRPRequest) *http.Response {
 	response, err := fixture.GetEiriniHTTPClient().Do(desireLrpReq)
 	Expect(err).NotTo(HaveOccurred())
 
-	return response
+	defer response.Body.Close()
+
+	return response.StatusCode
 }
 
 func stopLRP(processGUID, versionGUID string) (*http.Response, error) {

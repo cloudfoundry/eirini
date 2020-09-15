@@ -33,10 +33,10 @@ var _ = Describe("Apps", func() {
 	})
 
 	Describe("Desiring an app", func() {
-		var desireResp *http.Response
+		var desireRespStatusCode int
 
 		JustBeforeEach(func() {
-			desireResp = desireApp(lrpGUID, lrpVersion, namespace)
+			desireRespStatusCode = desireApp(lrpGUID, lrpVersion, namespace)
 		})
 
 		AfterEach(func() {
@@ -45,7 +45,7 @@ var _ = Describe("Apps", func() {
 		})
 
 		It("succeeds", func() {
-			Expect(desireResp.StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireRespStatusCode).To(Equal(http.StatusAccepted))
 		})
 
 		It("deploys the LRP to the specified namespace", func() {
@@ -67,8 +67,8 @@ var _ = Describe("Apps", func() {
 
 		When("the app already exist", func() {
 			It("returns 202", func() {
-				resp := desireApp(lrpGUID, lrpVersion, namespace)
-				Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
+				respStatusCode := desireApp(lrpGUID, lrpVersion, namespace)
+				Expect(respStatusCode).To(Equal(http.StatusAccepted))
 			})
 		})
 	})
@@ -300,15 +300,15 @@ var _ = Describe("Apps", func() {
 	})
 })
 
-func desireAppWithInstances(appGUID, version, namespace string, instances int) *http.Response {
+func desireAppWithInstances(appGUID, version, namespace string, instances int) {
 	lrp := createLrpRequest(appGUID, version)
 	lrp.NumInstances = instances
 	lrp.Namespace = namespace
 
-	return desireLRP(lrp)
+	desireLRP(lrp)
 }
 
-func desireApp(appGUID, version, namespace string) *http.Response {
+func desireApp(appGUID, version, namespace string) int {
 	lrp := createLrpRequest(appGUID, version)
 	lrp.Namespace = namespace
 
