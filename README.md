@@ -57,3 +57,7 @@ $ ginkgo
 ```
 
 For details on how you can contribute to the Eirini project, please read the [CONTRIBUTING](.github/contributing.md) document.
+
+## Have a question or feedback? Reach out to us!
+
+We can be found in our Slack channel [#eirini-dev](https://cloudfoundry.slack.com/archives/C8RU3BZ26) in the Cloud Foundry workspace. Please hit us up with any questions you may have or to share your experience with Eirini!
