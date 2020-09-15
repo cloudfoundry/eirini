@@ -102,9 +102,10 @@ type Properties struct { //nolint:maligned
 type EventReporterConfig struct {
 	CcInternalAPI string `yaml:"cc_internal_api"`
 	CCTLSDisabled bool   `yaml:"cc_tls_disabled"`
-	CCCertPath    string `yaml:"cc_cert_path"`
-	CCKeyPath     string `yaml:"cc_key_path"`
-	CCCAPath      string `yaml:"cc_ca_path"`
+
+	CCCertPath string
+	CCKeyPath  string
+	CCCAPath   string
 
 	KubeConfig `yaml:",inline"`
 }

@@ -12,7 +12,7 @@ COPY --from=builder /eirini/event-reporter /usr/local/bin/event-reporter
 USER 1001
 ENTRYPOINT [ "/usr/local/bin/event-reporter", \
 	"--config", \
-	"/etc/eirini/config/events.yml" \
+	"/etc/eirini-event-reporter/config/events.yml" \
 ]
 ARG GIT_SHA
 LABEL org.opencontainers.image.revision=$GIT_SHA \
