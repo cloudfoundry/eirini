@@ -7,14 +7,16 @@ RUN_DIR="$(cd "$(dirname "$0")" && pwd)"
 EIRINI_RELEASE_DIR="$HOME/workspace/eirini-release"
 
 ensure_kind_cluster() {
-  if ! kind get clusters | grep -q integration-tests; then
+  local cluster_name
+  cluster_name="$1"
+  if ! kind get clusters | grep -q "$cluster_name"; then
     current_cluster="$(kubectl config current-context)" || true
-    kind create cluster --name integration-tests
+    kind create cluster --name "$cluster_name"
     if [[ -n "$current_cluster" ]]; then
       kubectl config use-context "$current_cluster"
     fi
   fi
-  kind get kubeconfig --name integration-tests >$kubeconfig
+  kind get kubeconfig --name "$cluster_name" >$kubeconfig
 }
 
 run_unit_tests() {
@@ -27,14 +29,14 @@ run_unit_tests() {
 run_integration_tests() {
   echo "Running integration tests on kind"
 
-  ensure_kind_cluster
+  ensure_kind_cluster "integration-tests"
   INTEGRATION_KUBECONFIG=$kubeconfig "$RUN_DIR"/run_integration_tests.sh
 }
 
 run_eats() {
   echo "Running EATs against helmless deployed eirini on kind"
 
-  ensure_kind_cluster
+  ensure_kind_cluster "eats"
   if [[ "$redeploy" == "true" ]]; then
     KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/cleanup.sh" || true
     KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/deploy.sh"
@@ -98,8 +100,7 @@ Options:
 EOF
   )
 
-  local cluster_name \
-    additional_values \
+  local additional_values \
     run_eats="false" \
     run_unit_tests="false" \
     run_integration_tests="false" \
