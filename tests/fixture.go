@@ -81,7 +81,7 @@ func NewFixture(writer io.Writer) *Fixture {
 	dynamicClientset, err := dynamic.NewForConfig(config)
 	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
 
-	wiremockClient := newWiremock(clientset)
+	wiremockClient := newWiremock()
 	Expect(wiremockClient.Reset()).To(Succeed())
 
 	return &Fixture{
@@ -96,13 +96,11 @@ func NewFixture(writer io.Writer) *Fixture {
 	}
 }
 
-func newWiremock(clientset kubernetes.Interface) *wiremock.Wiremock {
-	svc, err := clientset.CoreV1().Services("default").Get(context.Background(), "cc-wiremock", metav1.GetOptions{})
-	Expect(err).ToNot(HaveOccurred())
+func newWiremock() *wiremock.Wiremock {
+	// We assume wiremock is exposed using a ClusterIP service which listens on port 80
+	wireMockURL := fmt.Sprintf("http://cc-wiremock.%s.svc.cluster.local", GetEiriniSystemNamespace())
 
-	wireMockHost := "http://" + svc.Status.LoadBalancer.Ingress[0].IP
-
-	return wiremock.New(wireMockHost)
+	return wiremock.New(wireMockURL)
 }
 
 func (f *Fixture) SetUp() {

@@ -66,7 +66,7 @@ var _ = Describe("EventsReporter", func() {
 				URL:    fmt.Sprintf("/internal/v4/apps/%s-1/crashed", guid),
 			}
 
-			Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "10s").ShouldNot(BeZero())
+			Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "1m").ShouldNot(BeZero())
 			currentCount, err := fixture.Wiremock.GetCount(requestMatcher)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "1m").Should(BeNumerically(">", currentCount))

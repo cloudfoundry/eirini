@@ -26,14 +26,31 @@ func TestEats(t *testing.T) {
 	RunSpecs(t, "Eats Suite")
 }
 
-var fixture *tests.EATSFixture
+var (
+	fixture             *tests.EATSFixture
+	telepresenceRunner  *tests.TelepresenceRunner
+	telepresenceService string
+)
 
-var _ = BeforeSuite(func() {
+var _ = SynchronizedBeforeSuite(func() []byte {
+	var err error
+
+	telepresenceService = "local-binaries-" + tests.GenerateGUID()[:8]
+	// We don't need any ports to be proxies, we just need dns resolution
+	// to be able to talk to services running in the cluster. Thus the 0 argument.
+	telepresenceRunner, err = tests.StartTelepresence(telepresenceService, 0)
+	Expect(err).NotTo(HaveOccurred())
+
+	return []byte(telepresenceService)
+}, func(telepresenceServiceName []byte) {
 	fixture = tests.NewEATSFixture(GinkgoWriter)
+	telepresenceService = string(telepresenceServiceName)
 })
 
-var _ = AfterSuite(func() {
+var _ = SynchronizedAfterSuite(func() {
 	fixture.Destroy()
+}, func() {
+	telepresenceRunner.Stop()
 })
 
 var _ = BeforeEach(func() {

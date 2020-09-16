@@ -3,13 +3,17 @@ package tests
 import (
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
 
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
+	// nolint:golint,stylecheck
+
+	. "github.com/onsi/ginkgo"
+
+	// nolint:golint,stylecheck
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
 
@@ -49,17 +53,17 @@ func StartTelepresence(serviceName string, totalPorts int) (*TelepresenceRunner,
 		return nil, err
 	}
 
-	session, err := gexec.Start(cmd, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	if err != nil {
 		stdin.Close()
 
 		return nil, err
 	}
 
-	// Once the shell is responding, the tunnel is open
-	fmt.Fprintln(stdin, "echo ready")
-	gomega.Eventually(session, "10s").Should(gbytes.Say("ready"))
-	gomega.Consistently(session.Exited).ShouldNot(gomega.Receive())
+	Eventually(func() error {
+		_, err = net.LookupIP("kubernetes.default.svc.cluster.local")
+		return err
+	}, "30s").Should(Succeed(), "Could not resolve kube API! Looks like telepresence is not running!")
 
 	return &TelepresenceRunner{
 		session: session,
@@ -70,9 +74,9 @@ func StartTelepresence(serviceName string, totalPorts int) (*TelepresenceRunner,
 // Stop closes the Telepresence tunnel (by closing the stdin to the shell)
 func (t *TelepresenceRunner) Stop() {
 	t.stdin.Close()
-	gomega.Eventually(t.session, "5s").Should(gexec.Exit())
+	Eventually(t.session, "60s").Should(gexec.Exit())
 }
 
 func GetTelepresencePort() int {
-	return startPort + ginkgo.GinkgoParallelNode() - 1
+	return startPort + GinkgoParallelNode() - 1
 }
