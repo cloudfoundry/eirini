@@ -19,6 +19,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -32,6 +33,7 @@ const (
 type Fixture struct {
 	Clientset         kubernetes.Interface
 	EiriniClientset   eiriniclient.Interface
+	DynamicClientset  dynamic.Interface
 	Namespace         string
 	PspName           string
 	KubeConfigPath    string
@@ -74,10 +76,14 @@ func NewFixture(writer io.Writer) *Fixture {
 	lrpclientset, err := eiriniclient.NewForConfig(config)
 	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
 
+	dynamicClientset, err := dynamic.NewForConfig(config)
+	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
+
 	return &Fixture{
 		KubeConfigPath:    kubeConfigPath,
 		Clientset:         clientset,
 		EiriniClientset:   lrpclientset,
+		DynamicClientset:  dynamicClientset,
 		Writer:            writer,
 		nextAvailablePort: basePortNumber + portRange*GinkgoParallelNode(),
 		portMux:           &sync.Mutex{},
