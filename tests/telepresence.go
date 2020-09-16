@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	// nolint:golint,stylecheck
-
 	. "github.com/onsi/ginkgo"
 
 	// nolint:golint,stylecheck

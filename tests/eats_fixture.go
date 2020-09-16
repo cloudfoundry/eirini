@@ -11,15 +11,21 @@ import (
 
 	"code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/tests/eats/wiremock"
 
 	// nolint:golint,stylecheck
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 type EATSFixture struct {
 	Fixture
+
+	Wiremock         *wiremock.Wiremock
+	DynamicClientset dynamic.Interface
 
 	eiriniCertPath   string
 	eiriniKeyPath    string
@@ -27,8 +33,21 @@ type EATSFixture struct {
 }
 
 func NewEATSFixture(writer io.Writer) *EATSFixture {
+	kubeConfigPath := makeKubeConfigCopy()
+	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+	Expect(err).NotTo(HaveOccurred(), "failed to build config from flags")
+
+	dynamicClientset, err := dynamic.NewForConfig(config)
+	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
+
+	wiremockClient := newWiremock()
+	Expect(wiremockClient.Reset()).To(Succeed())
+
 	return &EATSFixture{
 		Fixture: *NewFixture(writer),
+
+		DynamicClientset: dynamicClientset,
+		Wiremock:         wiremockClient,
 	}
 }
 
