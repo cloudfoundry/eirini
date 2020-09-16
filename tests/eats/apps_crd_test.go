@@ -57,14 +57,14 @@ var _ = Describe("Apps CRDs", func() {
 	}
 
 	getLRP := func() *eiriniv1.LRP {
-		lrp, err := fixture.EiriniClientset.
+		l, err := fixture.EiriniClientset.
 			EiriniV1().
 			LRPs(namespace).
 			Get(context.Background(), lrpName, metav1.GetOptions{})
 
 		Expect(err).NotTo(HaveOccurred())
 
-		return lrp
+		return l
 	}
 
 	BeforeEach(func() {
@@ -197,6 +197,7 @@ var _ = Describe("Apps CRDs", func() {
 
 			Eventually(func() int32 {
 				lrp = getLRP()
+
 				return lrp.Status.Replicas
 			}).Should(Equal(int32(1)))
 		})
