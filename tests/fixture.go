@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	eiriniclient "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
+	"code.cloudfoundry.org/eirini/tests/eats/wiremock"
 	"github.com/hashicorp/go-multierror"
 
 	// nolint:golint,stylecheck
@@ -32,6 +33,7 @@ const (
 
 type Fixture struct {
 	Clientset         kubernetes.Interface
+	Wiremock          *wiremock.Wiremock
 	EiriniClientset   eiriniclient.Interface
 	DynamicClientset  dynamic.Interface
 	Namespace         string
@@ -79,15 +81,28 @@ func NewFixture(writer io.Writer) *Fixture {
 	dynamicClientset, err := dynamic.NewForConfig(config)
 	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
 
+	wiremockClient := newWiremock(clientset)
+	Expect(wiremockClient.Reset()).To(Succeed())
+
 	return &Fixture{
 		KubeConfigPath:    kubeConfigPath,
 		Clientset:         clientset,
+		Wiremock:          wiremockClient,
 		EiriniClientset:   lrpclientset,
 		DynamicClientset:  dynamicClientset,
 		Writer:            writer,
 		nextAvailablePort: basePortNumber + portRange*GinkgoParallelNode(),
 		portMux:           &sync.Mutex{},
 	}
+}
+
+func newWiremock(clientset kubernetes.Interface) *wiremock.Wiremock {
+	svc, err := clientset.CoreV1().Services("default").Get(context.Background(), "cc-wiremock", metav1.GetOptions{})
+	Expect(err).ToNot(HaveOccurred())
+
+	wireMockHost := "http://" + svc.Status.LoadBalancer.Ingress[0].IP
+
+	return wiremock.New(wireMockHost)
 }
 
 func (f *Fixture) SetUp() {
