@@ -35,8 +35,10 @@ run_eats() {
   echo "Running EATs against helmless deployed eirini on kind"
 
   ensure_kind_cluster
-  KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/cleanup.sh" || true
-  KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/deploy.sh"
+  if [[ "$redeploy" == "true" ]]; then
+    KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/cleanup.sh" || true
+    KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/deploy.sh"
+  fi
 
   EIRINI_IP="$(KUBECONFIG="$kubeconfig" kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')"
 
@@ -51,6 +53,24 @@ run_linter() {
   echo "Running Linter"
   cd "$RUN_DIR"/.. || exit 1
   golangci-lint run
+}
+
+run_subset() {
+  if [[ "$run_unit_tests" == "true" ]]; then
+    run_unit_tests
+  fi
+
+  if [[ "$run_integration_tests" == "true" ]]; then
+    run_integration_tests
+  fi
+
+  if [[ "$run_eats" == "true" ]]; then
+    run_eats
+  fi
+
+  if [[ "$run_linter" == "true" ]]; then
+    run_linter
+  fi
 }
 
 run_everything() {
@@ -69,40 +89,47 @@ main() {
 Usage: check-everything.sh [options]
 Options:
   -a  run all tests (default)
-  -u  unit tests
-  -i  integration tests
   -e  EATs tests
-  -l  golangci-lint
   -h  this help
+  -i  integration tests
+  -l  golangci-lint
+  -n  do not redeploy helmless when running eats
+  -u  unit tests
 EOF
   )
 
-  local cluster_name additional_values skip_docker_build="false"
+  local cluster_name \
+    additional_values \
+    run_eats="false" \
+    run_unit_tests="false" \
+    run_integration_tests="false" \
+    run_linter="false" \
+    skip_docker_build="false" \
+    redeploy="true"
+
   additional_values=""
-  while getopts "auieh" opt; do
+  while getopts "auienh" opt; do
     case ${opt} in
+      n)
+        redeploy="false"
+        ;;
       a)
         run_everything
         exit 0
         ;;
       u)
-        run_unit_tests
-        exit 0
+        run_unit_tests="true"
         ;;
       i)
-        run_integration_tests
-        exit 0
+        run_integration_tests="true"
         ;;
       e)
-        run_eats
-        exit 0
+        run_eats="true"
         ;;
       l)
-        run_linter
-        exit 0
+        run_linter="true"
         ;;
       h)
-        echo hello
         echo "$USAGE"
         exit 0
         ;;
@@ -119,7 +146,10 @@ EOF
     esac
   done
   shift $((OPTIND - 1))
-  run_everything
+  if [[ $((OPTIND - 1)) -eq 0 ]]; then
+    run_everything
+  fi
+  run_subset
 }
 
 main $@
