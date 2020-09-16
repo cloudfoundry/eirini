@@ -321,6 +321,7 @@ func createLrpRequest(appGUID, version string) cf.DesireLRPRequest {
 		Version:      version,
 		NumInstances: 1,
 		Ports:        []int32{8080},
+		DiskMB:       100,
 		Lifecycle: cf.Lifecycle{
 			DockerLifecycle: &cf.DockerLifecycle{
 				Image: "eirini/dorini",
