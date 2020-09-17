@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -141,4 +142,13 @@ func (f *EATSFixture) GetEiriniWorkloadsNamespace() string {
 	Expect(yaml.Unmarshal([]byte(opiYml), &config)).To(Succeed())
 
 	return config.Properties.Namespace
+}
+
+func newWiremock() *wiremock.Wiremock {
+	// We assume wiremock is exposed using a ClusterIP service which listens on port 80
+	wireMockHost := fmt.Sprintf("cc-wiremock.%s.svc.cluster.local", GetEiriniSystemNamespace())
+
+	RetryResolveHost(wireMockHost, "Is wiremock running in the cluster?")
+
+	return wiremock.New(fmt.Sprintf("http://%s", wireMockHost))
 }

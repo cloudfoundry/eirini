@@ -38,6 +38,7 @@ var _ = Describe("EventsReporter", func() {
 			GUID:         guid,
 			Version:      "1",
 			NumInstances: 1,
+			DiskMB:       512,
 			Lifecycle: cf.Lifecycle{
 				DockerLifecycle: &cf.DockerLifecycle{
 					Image: image,

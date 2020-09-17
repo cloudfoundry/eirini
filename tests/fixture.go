@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	eiriniclient "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
-	"code.cloudfoundry.org/eirini/tests/eats/wiremock"
 	"github.com/hashicorp/go-multierror"
 
 	// nolint:golint,stylecheck
@@ -83,13 +82,6 @@ func NewFixture(writer io.Writer) *Fixture {
 		nextAvailablePort: basePortNumber + portRange*GinkgoParallelNode(),
 		portMux:           &sync.Mutex{},
 	}
-}
-
-func newWiremock() *wiremock.Wiremock {
-	// We assume wiremock is exposed using a ClusterIP service which listens on port 80
-	wireMockURL := fmt.Sprintf("http://cc-wiremock.%s.svc.cluster.local", GetEiriniSystemNamespace())
-
-	return wiremock.New(wireMockURL)
 }
 
 func (f *Fixture) SetUp() {

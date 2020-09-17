@@ -3,7 +3,6 @@ package tests
 import (
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -59,10 +58,8 @@ func StartTelepresence(serviceName string, totalPorts int) (*TelepresenceRunner,
 		return nil, err
 	}
 
-	Eventually(func() error {
-		_, err = net.LookupIP("kubernetes.default.svc.cluster.local")
-		return err
-	}, "30s").Should(Succeed(), "Could not resolve kube API! Looks like telepresence is not running!")
+	RetryResolveHost("kubernetes.default.svc.cluster.local",
+		"Looks like telepresence is not running!")
 
 	return &TelepresenceRunner{
 		session: session,
