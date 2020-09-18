@@ -109,7 +109,7 @@ EOF
     redeploy="true"
 
   additional_values=""
-  while getopts "auienh" opt; do
+  while getopts "auienhl" opt; do
     case ${opt} in
       n)
         redeploy="false"
