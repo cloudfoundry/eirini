@@ -52,10 +52,11 @@ var _ = Describe("Events", func() {
 				Namespace:  fixture.Namespace,
 				ConfigPath: fixture.KubeConfigPath,
 			},
-			CcInternalAPI: capiServer.URL(),
-			CCCertPath:    certPath,
-			CCKeyPath:     keyPath,
-			CCCAPath:      certPath,
+			CcInternalAPI:               capiServer.URL(),
+			CCCertPath:                  certPath,
+			CCKeyPath:                   keyPath,
+			CCCAPath:                    certPath,
+			EnableMultiNamespaceSupport: true,
 		}
 	})
 
@@ -83,11 +84,11 @@ var _ = Describe("Events", func() {
 
 		BeforeEach(func() {
 			lrpDesirer = &k8s.StatefulSetDesirer{
-				Pods:                      client.NewPod(fixture.Clientset),
+				Pods:                      client.NewPod(fixture.Clientset, "", true),
 				Secrets:                   client.NewSecret(fixture.Clientset),
-				StatefulSets:              client.NewStatefulSet(fixture.Clientset),
+				StatefulSets:              client.NewStatefulSet(fixture.Clientset, "", true),
 				PodDisruptionBudgets:      client.NewPodDisruptionBudget(fixture.Clientset),
-				EventsClient:              client.NewEvent(fixture.Clientset),
+				EventsClient:              client.NewEvent(fixture.Clientset, "", true),
 				StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
 				RegistrySecretName:        "registry-secret",
 				LivenessProbeCreator:      k8s.CreateLivenessProbe,
@@ -176,7 +177,7 @@ var _ = Describe("Events", func() {
 		BeforeEach(func() {
 			taskDesirer = k8s.NewTaskDesirer(
 				logger,
-				client.NewJob(fixture.Clientset),
+				client.NewJob(fixture.Clientset, "", true),
 				nil,
 				fixture.Namespace,
 				nil,

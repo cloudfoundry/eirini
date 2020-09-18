@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,9 +21,10 @@ var _ = Describe("Desire App", func() {
 	)
 
 	BeforeEach(func() {
-		body = `{
+		body = fmt.Sprintf(`{
 			"guid": "the-app-guid",
 			"version": "0.0.0",
+			"namespace": "%s",
 			"ports" : [8080],
 			"disk_mb": 512,
 			"lifecycle": {
@@ -32,7 +34,7 @@ var _ = Describe("Desire App", func() {
 				}
 			},
 			"instances": 1
-		}`
+		}`, fixture.Namespace)
 	})
 
 	JustBeforeEach(func() {
@@ -101,6 +103,86 @@ var _ = Describe("Desire App", func() {
 
 		It("should return a 400 Bad Request HTTP code", func() {
 			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	When("multinamespace support is disabled", func() {
+		BeforeEach(func() {
+			eiriniConfig.Properties.EnableMultiNamespaceSupport = false
+		})
+
+		It("creates create the app in the requested namespace", func() {
+			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(statefulsets.Items).To(HaveLen(1))
+			Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
+			Expect(statefulsets.Items[0].Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
+		})
+
+		When("no app namespaces is explicitly requested", func() {
+			BeforeEach(func() {
+				body = `{
+					"guid": "the-app-guid",
+					"version": "0.0.0",
+					"ports" : [8080],
+					"disk_mb": 512,
+					"lifecycle": {
+						"docker_lifecycle": {
+						"image": "busybox",
+						"command": ["/bin/sleep", "100"]
+						}
+					},
+					"instances": 1
+				}`
+			})
+
+			It("creates create the app in the default namespace", func() {
+				statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(statefulsets.Items).To(HaveLen(1))
+				Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
+				Expect(statefulsets.Items[0].Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
+			})
+
+		})
+
+		When("the app is requested in non-allowed namespace", func() {
+			var appGUID string
+
+			BeforeEach(func() {
+				appGUID = tests.GenerateGUID()
+				anotherNamespace := fixture.CreateExtraNamespace()
+
+				body = fmt.Sprintf(`{
+					"guid": "%s",
+					"version": "0.0.0",
+					"namespace": "%s",
+					"ports" : [8080],
+					"disk_mb": 512,
+					"lifecycle": {
+						"docker_lifecycle": {
+						"image": "busybox",
+						"command": ["/bin/sleep", "100"]
+						}
+					},
+					"instances": 1
+				}`, appGUID, anotherNamespace)
+			})
+
+			It("should return a 400 Bad Request HTTP code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			})
+
+			It("does not create the app", func() {
+				statefulsets, err := fixture.Clientset.AppsV1().StatefulSets("").List(context.Background(), metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, appGUID),
+				})
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(statefulsets.Items).To(BeEmpty())
+			})
 		})
 	})
 

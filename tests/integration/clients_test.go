@@ -21,7 +21,7 @@ var _ = Describe("Pod", func() {
 	var podClient *client.Pod
 
 	BeforeEach(func() {
-		podClient = client.NewPod(fixture.Clientset)
+		podClient = client.NewPod(fixture.Clientset, "", true)
 	})
 
 	Describe("GetAll", func() {
@@ -41,6 +41,21 @@ var _ = Describe("Pod", func() {
 
 				return podNames(pods)
 			}).Should(ContainElements("one", "two", "three", "four", "five", "six"))
+		})
+
+		When("multi namespaced support is disabled", func() {
+			BeforeEach(func() {
+				podClient = client.NewPod(fixture.Clientset, fixture.Namespace, false)
+			})
+
+			It("lists all pods across all namespaces", func() {
+				Eventually(func() []string {
+					pods, err := podClient.GetAll()
+					Expect(err).NotTo(HaveOccurred())
+
+					return podNames(pods)
+				}).Should(ContainElements("one", "two", "three"))
+			})
 		})
 	})
 
@@ -74,6 +89,22 @@ var _ = Describe("Pod", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() []string { return podNames(pods) }).Should(ConsistOf("four", "five", "six"))
+		})
+
+		When("multi namespaced support is disabled", func() {
+			BeforeEach(func() {
+				podClient = client.NewPod(fixture.Clientset, fixture.Namespace, false)
+			})
+
+			It("lists all pods matching the specified LRP identifier", func() {
+				pods, err := podClient.GetByLRPIdentifier(opi.LRPIdentifier{
+					GUID:    guid,
+					Version: "42",
+				})
+
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(func() []string { return podNames(pods) }).Should(ConsistOf("four", "five"))
+			})
 		})
 	})
 
@@ -144,7 +175,7 @@ var _ = Describe("StatefulSets", func() {
 	var statefulSetClient *client.StatefulSet
 
 	BeforeEach(func() {
-		statefulSetClient = client.NewStatefulSet(fixture.Clientset)
+		statefulSetClient = client.NewStatefulSet(fixture.Clientset, "", true)
 	})
 
 	Describe("Create", func() {
@@ -234,6 +265,28 @@ var _ = Describe("StatefulSets", func() {
 				return statefulSetNames(statefulSets)
 			}).ShouldNot(ContainElements("two"))
 		})
+
+		When("multi namespaced support is disabled", func() {
+			BeforeEach(func() {
+				statefulSetClient = client.NewStatefulSet(fixture.Clientset, fixture.Namespace, false)
+			})
+
+			It("lists all StatefulSets in the specified namespace with the specified source type", func() {
+				Eventually(func() []string {
+					statefulSets, err := statefulSetClient.GetBySourceType("FOO")
+					Expect(err).NotTo(HaveOccurred())
+
+					return statefulSetNames(statefulSets)
+				}).Should(ContainElements("one"))
+
+				Consistently(func() []string {
+					statefulSets, err := statefulSetClient.GetBySourceType("FOO")
+					Expect(err).NotTo(HaveOccurred())
+
+					return statefulSetNames(statefulSets)
+				}).ShouldNot(ContainElements("two", "three"))
+			})
+		})
 	})
 
 	Describe("GetByLRPIdentifier", func() {
@@ -260,6 +313,19 @@ var _ = Describe("StatefulSets", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() []string { return statefulSetNames(statefulSets) }).Should(ConsistOf("one", "two"))
+		})
+
+		When("multi namespaced support is disabled", func() {
+			BeforeEach(func() {
+				statefulSetClient = client.NewStatefulSet(fixture.Clientset, fixture.Namespace, false)
+			})
+
+			It("lists all StatefulSets in the specified namespace matching the specified LRP identifier", func() {
+				statefulSets, err := statefulSetClient.GetByLRPIdentifier(opi.LRPIdentifier{GUID: guid, Version: "42"})
+
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(func() []string { return statefulSetNames(statefulSets) }).Should(ConsistOf("one"))
+			})
 		})
 	})
 
@@ -305,7 +371,7 @@ var _ = Describe("Jobs", func() {
 	var jobsClient *client.Job
 
 	BeforeEach(func() {
-		jobsClient = client.NewJob(fixture.Clientset)
+		jobsClient = client.NewJob(fixture.Clientset, "", true)
 	})
 
 	Describe("Create", func() {
@@ -365,6 +431,11 @@ var _ = Describe("Jobs", func() {
 			createJob(fixture.Namespace, "foo", map[string]string{
 				k8s.LabelGUID: "bar",
 			})
+
+			extraNs := fixture.CreateExtraNamespace()
+			createJob(extraNs, "foo2", map[string]string{
+				k8s.LabelGUID: "bar",
+			})
 		})
 
 		It("gets all jobs matching the specified guid", func() {
@@ -373,7 +444,22 @@ var _ = Describe("Jobs", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				return jobNames(jobs)
-			}).Should(ContainElements("foo"))
+			}).Should(ContainElements("foo", "foo2"))
+		})
+
+		When("multi namespaced support is disabled", func() {
+			BeforeEach(func() {
+				jobsClient = client.NewJob(fixture.Clientset, fixture.Namespace, false)
+			})
+
+			It("gets all jobs in the specified namespace matching the specified guid", func() {
+				Eventually(func() []string {
+					jobs, err := jobsClient.GetByGUID("bar")
+					Expect(err).NotTo(HaveOccurred())
+
+					return jobNames(jobs)
+				}).Should(ConsistOf("foo"))
+			})
 		})
 	})
 
@@ -421,12 +507,17 @@ var _ = Describe("StagingJobs", func() {
 	var jobsClient *client.Job
 
 	BeforeEach(func() {
-		jobsClient = client.NewStagingJob(fixture.Clientset)
+		jobsClient = client.NewStagingJob(fixture.Clientset, "", true)
 	})
 
 	Describe("GetByGUID", func() {
 		BeforeEach(func() {
 			createJob(fixture.Namespace, "foo", map[string]string{
+				k8s.LabelStagingGUID: "bar",
+			})
+
+			extraNs := fixture.CreateExtraNamespace()
+			createJob(extraNs, "baz", map[string]string{
 				k8s.LabelStagingGUID: "bar",
 			})
 		})
@@ -437,7 +528,22 @@ var _ = Describe("StagingJobs", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				return jobNames(jobs)
-			}).Should(ContainElements("foo"))
+			}).Should(ConsistOf("foo", "baz"))
+		})
+
+		When("multi namespaced support is disabled", func() {
+			BeforeEach(func() {
+				jobsClient = client.NewStagingJob(fixture.Clientset, fixture.Namespace, false)
+			})
+
+			It("gets jobs matching the specified guid in the workloads namespace", func() {
+				Eventually(func() []string {
+					jobs, err := jobsClient.GetByGUID("bar")
+					Expect(err).NotTo(HaveOccurred())
+
+					return jobNames(jobs)
+				}).Should(ConsistOf("foo"))
+			})
 		})
 	})
 
@@ -572,7 +678,7 @@ var _ = Describe("Events", func() {
 	var eventClient *client.Event
 
 	BeforeEach(func() {
-		eventClient = client.NewEvent(fixture.Clientset)
+		eventClient = client.NewEvent(fixture.Clientset, "", true)
 	})
 
 	Describe("GetByPod", func() {
@@ -607,6 +713,36 @@ var _ = Describe("Events", func() {
 
 				return eventNames(events)
 			}).Should(ConsistOf("the-event"))
+		})
+
+		When("multi namespaced support is dissabled", func() {
+			BeforeEach(func() {
+				extraNs := fixture.CreateExtraNamespace()
+				pod = corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "other-pod",
+						Namespace: extraNs,
+						UID:       types.UID(tests.GenerateGUID()),
+					},
+				}
+
+				createEvent(extraNs, "the-event", corev1.ObjectReference{
+					Name:      pod.Name,
+					Namespace: pod.Namespace,
+					UID:       pod.UID,
+				})
+
+				eventClient = client.NewEvent(fixture.Clientset, fixture.Namespace, false)
+			})
+
+			It("does not return events for pods outside the workloads namespace", func() {
+				Eventually(func() []string {
+					events, err := eventClient.GetByPod(pod)
+					Expect(err).NotTo(HaveOccurred())
+
+					return eventNames(events)
+				}).Should(BeEmpty())
+			})
 		})
 	})
 
@@ -654,6 +790,38 @@ var _ = Describe("Events", func() {
 
 				return event.Name
 			}).Should(Equal("the-crash-event"))
+		})
+
+		When("multi namespaced support is dissabled", func() {
+			BeforeEach(func() {
+				extraNs := fixture.CreateExtraNamespace()
+				ownerRef = corev1.ObjectReference{
+					Name:      "another-owner",
+					Namespace: extraNs,
+					UID:       types.UID(tests.GenerateGUID()),
+					Kind:      "the-kind",
+				}
+
+				createCrashEvent(extraNs, "the-crash-event", ownerRef, events.CrashEvent{
+					AppCrashedRequest: cc_messages.AppCrashedRequest{
+						Index:  67,
+						Reason: "and-another-reason",
+					},
+				})
+			})
+
+			It("does not list an event outside the workloads namespace", func() {
+				Eventually(func() *corev1.Event {
+					event, err := eventClient.GetByInstanceAndReason(fixture.Namespace, metav1.OwnerReference{
+						Name: ownerRef.Name,
+						UID:  ownerRef.UID,
+						Kind: ownerRef.Kind,
+					}, 42, "the-reason")
+					Expect(err).NotTo(HaveOccurred())
+
+					return event
+				}).Should(BeNil())
+			})
 		})
 	})
 

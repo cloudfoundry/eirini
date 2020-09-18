@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	"gopkg.in/yaml.v2"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
@@ -97,3 +98,33 @@ var _ = AfterEach(func() {
 
 	fixture.TearDown()
 })
+
+func restartWithConfig(updateConfig func(cfg eirini.Config) eirini.Config) string {
+	configBytes, err := ioutil.ReadFile(eiriniConfigFilePath)
+	Expect(err).NotTo(HaveOccurred())
+
+	var eiriniConfig eirini.Config
+
+	Expect(yaml.Unmarshal(configBytes, &eiriniConfig)).To(Succeed())
+
+	newConfig := updateConfig(eiriniConfig)
+
+	configBytes, err = yaml.Marshal(newConfig)
+	Expect(err).NotTo(HaveOccurred())
+	newConfigFile, err := ioutil.TempFile("", "")
+	Expect(err).NotTo(HaveOccurred())
+	Expect(ioutil.WriteFile(newConfigFile.Name(), configBytes, 0o600)).To(Succeed())
+
+	session = eiriniBins.OPI.Restart(newConfigFile.Name(), session)
+
+	Eventually(func() error {
+		resp, getErr := httpClient.Get(url)
+		if getErr == nil {
+			defer resp.Body.Close()
+		}
+
+		return getErr
+	}).Should(Succeed())
+
+	return newConfigFile.Name()
+}

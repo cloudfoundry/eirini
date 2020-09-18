@@ -113,11 +113,15 @@ type Properties struct { //nolint:maligned
 	UnsafeAllowAutomountServiceAccountToken bool `yaml:"unsafe_allow_automount_service_account_token"`
 
 	ServePlaintext bool `yaml:"serve_plaintext"`
+
+	EnableMultiNamespaceSupport bool `json:"enable_multi_namespace_support"`
 }
 
 type EventReporterConfig struct {
 	CcInternalAPI string `yaml:"cc_internal_api"`
 	CCTLSDisabled bool   `yaml:"cc_tls_disabled"`
+
+	EnableMultiNamespaceSupport bool `json:"enable_multi_namespace_support"`
 
 	CCCertPath string
 	CCKeyPath  string
@@ -148,6 +152,8 @@ type MetricsCollectorConfig struct {
 }
 
 type TaskReporterConfig struct {
+	EnableMultiNamespaceSupport bool `json:"enable_multi_namespace_support"`
+
 	CCTLSDisabled bool   `yaml:"cc_tls_disabled"`
 	CCCertPath    string `yaml:"cc_cert_path"`
 	CCKeyPath     string `yaml:"cc_key_path"`

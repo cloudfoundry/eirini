@@ -34,7 +34,8 @@ var _ = Describe("CrashEventGenerator", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("crash-event-logger-test")
 		clientset = fake.NewSimpleClientset()
-		generator = event.NewDefaultCrashEventGenerator(client.NewEvent(clientset))
+		eventsClient := client.NewEvent(clientset, "", true)
+		generator = event.NewDefaultCrashEventGenerator(eventsClient)
 	})
 
 	Context("When app is in CrashLoopBackOff", func() {

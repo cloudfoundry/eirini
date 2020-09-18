@@ -210,6 +210,8 @@ func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 			StagingServiceAccount:     "staging",
 			RegistryAddress:           "registry",
 			RegistrySecretName:        "registry-secret",
+
+			EnableMultiNamespaceSupport: true,
 		},
 	}
 }

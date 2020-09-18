@@ -12,6 +12,7 @@ import (
 
 //counterfeiter:generate . LRPConverter
 //counterfeiter:generate . LRPDesirer
+//counterfeiter:generate . LRPNamespacer
 
 type LRPConverter interface {
 	ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error)
@@ -27,10 +28,14 @@ type LRPDesirer interface {
 	StopInstance(identifier opi.LRPIdentifier, index uint) error
 }
 
+type LRPNamespacer interface {
+	GetNamespace(requestedNamespace string) (string, error)
+}
+
 type LRP struct {
-	DefaultNamespace string
-	Converter        LRPConverter
-	Desirer          LRPDesirer
+	Converter  LRPConverter
+	Desirer    LRPDesirer
+	Namespacer LRPNamespacer
 }
 
 func (l *LRP) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
@@ -39,10 +44,9 @@ func (l *LRP) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
 		return errors.Wrap(err, "failed to convert request")
 	}
 
-	namespace := l.DefaultNamespace
-
-	if request.Namespace != "" {
-		namespace = request.Namespace
+	namespace, err := l.Namespacer.GetNamespace(request.Namespace)
+	if err != nil {
+		return errors.Wrap(err, "invalid namespace")
 	}
 
 	return errors.Wrap(l.Desirer.Desire(namespace, &desiredLRP), "failed to desire")

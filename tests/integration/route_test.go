@@ -34,11 +34,11 @@ var _ = Describe("Routes", func() {
 		odinLRP = createLRP("ödin")
 		logger := lagertest.NewTestLogger("test")
 		desirer = &k8s.StatefulSetDesirer{
-			Pods:                      client.NewPod(fixture.Clientset),
+			Pods:                      client.NewPod(fixture.Clientset, "", true),
 			Secrets:                   client.NewSecret(fixture.Clientset),
-			StatefulSets:              client.NewStatefulSet(fixture.Clientset),
+			StatefulSets:              client.NewStatefulSet(fixture.Clientset, "", true),
 			PodDisruptionBudgets:      client.NewPodDisruptionBudget(fixture.Clientset),
-			EventsClient:              client.NewEvent(fixture.Clientset),
+			EventsClient:              client.NewEvent(fixture.Clientset, "", true),
 			StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
 			RegistrySecretName:        "registry-secret",
 			LivenessProbeCreator:      k8s.CreateLivenessProbe,

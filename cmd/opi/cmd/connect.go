@@ -9,6 +9,7 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/bifrost"
+	"code.cloudfoundry.org/eirini/bifrost/namespacers"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/k8s"
@@ -148,7 +149,7 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 
 	return k8s.NewTaskDesirer(
 		logger,
-		client.NewJob(clientset),
+		client.NewJob(clientset, cfg.Properties.Namespace, cfg.Properties.EnableMultiNamespaceSupport),
 		client.NewSecret(clientset),
 		cfg.Properties.Namespace,
 		tlsConfigs,
@@ -176,7 +177,7 @@ func initBuildpackStagingBifrost(cfg *eirini.Config, clientset kubernetes.Interf
 
 	converter := initConverter(cfg)
 	taskDesirer := initTaskDesirer(cfg, clientset)
-	stagingJobClient := client.NewStagingJob(clientset)
+	stagingJobClient := client.NewStagingJob(clientset, cfg.Properties.Namespace, cfg.Properties.EnableMultiNamespaceSupport)
 	taskDeleter := initTaskDeleter(clientset, stagingJobClient)
 	stagingCompleter := initStagingCompleter(cfg, logger)
 
@@ -205,7 +206,7 @@ func initDockerStagingBifrost(cfg *eirini.Config) *bifrost.DockerStaging {
 func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.Task {
 	converter := initConverter(cfg)
 	taskDesirer := initTaskDesirer(cfg, clientset)
-	jobClient := client.NewJob(clientset)
+	jobClient := client.NewJob(clientset, cfg.Properties.Namespace, cfg.Properties.EnableMultiNamespaceSupport)
 	taskDeleter := initTaskDeleter(clientset, jobClient)
 	retryableJSONClient := initRetryableJSONClient(cfg)
 
@@ -234,11 +235,11 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	desirer := &k8s.StatefulSetDesirer{
-		Pods:                              client.NewPod(clientset),
+		Pods:                              client.NewPod(clientset, cfg.Properties.Namespace, cfg.Properties.EnableMultiNamespaceSupport),
 		Secrets:                           client.NewSecret(clientset),
-		StatefulSets:                      client.NewStatefulSet(clientset),
+		StatefulSets:                      client.NewStatefulSet(clientset, cfg.Properties.Namespace, cfg.Properties.EnableMultiNamespaceSupport),
 		PodDisruptionBudgets:              client.NewPodDisruptionBudget(clientset),
-		EventsClient:                      client.NewEvent(clientset),
+		EventsClient:                      client.NewEvent(clientset, cfg.Properties.Namespace, cfg.Properties.EnableMultiNamespaceSupport),
 		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
 		RegistrySecretName:                cfg.Properties.RegistrySecretName,
 		LivenessProbeCreator:              k8s.CreateLivenessProbe,
@@ -248,11 +249,12 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 		AllowAutomountServiceAccountToken: cfg.Properties.UnsafeAllowAutomountServiceAccountToken,
 	}
 	converter := initConverter(cfg)
+	namespacer := initNamespacer(cfg)
 
 	return &bifrost.LRP{
-		DefaultNamespace: cfg.Properties.Namespace,
-		Converter:        converter,
-		Desirer:          desirer,
+		Converter:  converter,
+		Desirer:    desirer,
+		Namespacer: namespacer,
 	}
 }
 
@@ -275,4 +277,12 @@ func initConverter(cfg *eirini.Config) *bifrost.OPIConverter {
 		cfg.Properties.AllowRunImageAsRoot,
 		stagerCfg,
 	)
+}
+
+func initNamespacer(cfg *eirini.Config) bifrost.LRPNamespacer {
+	if cfg.Properties.EnableMultiNamespaceSupport {
+		return namespacers.NewMultiNamespace(cfg.Properties.Namespace)
+	}
+
+	return namespacers.NewSingleNamespace(cfg.Properties.Namespace)
 }

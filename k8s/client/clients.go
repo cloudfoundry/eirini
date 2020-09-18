@@ -16,15 +16,19 @@ import (
 )
 
 type Pod struct {
-	clientSet kubernetes.Interface
+	clientSet          kubernetes.Interface
+	workloadsNamespace string
 }
 
-func NewPod(clientSet kubernetes.Interface) *Pod {
-	return &Pod{clientSet: clientSet}
+func NewPod(clientSet kubernetes.Interface, workloadsNamespace string, enableMultiNamespaceSupport bool) *Pod {
+	return &Pod{
+		clientSet:          clientSet,
+		workloadsNamespace: getNamespace(workloadsNamespace, enableMultiNamespaceSupport),
+	}
 }
 
 func (c *Pod) GetAll() ([]corev1.Pod, error) {
-	podList, err := c.clientSet.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{})
+	podList, err := c.clientSet.CoreV1().Pods(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +37,7 @@ func (c *Pod) GetAll() ([]corev1.Pod, error) {
 }
 
 func (c *Pod) GetByLRPIdentifier(id opi.LRPIdentifier) ([]corev1.Pod, error) {
-	podList, err := c.clientSet.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{
+	podList, err := c.clientSet.CoreV1().Pods(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf(
 			"%s=%s,%s=%s",
 			k8s.LabelGUID, id.GUID,
@@ -68,11 +72,15 @@ func (c *PodDisruptionBudget) Delete(namespace string, name string) error {
 }
 
 type StatefulSet struct {
-	clientSet kubernetes.Interface
+	clientSet          kubernetes.Interface
+	workloadsNamespace string
 }
 
-func NewStatefulSet(clientSet kubernetes.Interface) *StatefulSet {
-	return &StatefulSet{clientSet: clientSet}
+func NewStatefulSet(clientSet kubernetes.Interface, workloadsNamespace string, enableMultiNamespaceSupport bool) *StatefulSet {
+	return &StatefulSet{
+		clientSet:          clientSet,
+		workloadsNamespace: getNamespace(workloadsNamespace, enableMultiNamespaceSupport),
+	}
 }
 
 func (c *StatefulSet) Create(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error) {
@@ -84,7 +92,7 @@ func (c *StatefulSet) Get(namespace, name string) (*appsv1.StatefulSet, error) {
 }
 
 func (c *StatefulSet) GetBySourceType(sourceType string) ([]appsv1.StatefulSet, error) {
-	statefulSetList, err := c.clientSet.AppsV1().StatefulSets("").List(context.Background(), metav1.ListOptions{
+	statefulSetList, err := c.clientSet.AppsV1().StatefulSets(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelSourceType, sourceType),
 	})
 	if err != nil {
@@ -95,7 +103,7 @@ func (c *StatefulSet) GetBySourceType(sourceType string) ([]appsv1.StatefulSet, 
 }
 
 func (c *StatefulSet) GetByLRPIdentifier(id opi.LRPIdentifier) ([]appsv1.StatefulSet, error) {
-	statefulSetList, err := c.clientSet.AppsV1().StatefulSets("").List(context.Background(), metav1.ListOptions{
+	statefulSetList, err := c.clientSet.AppsV1().StatefulSets(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf(
 			"%s=%s,%s=%s",
 			k8s.LabelGUID, id.GUID,
@@ -122,21 +130,27 @@ func (c *StatefulSet) Delete(namespace string, name string) error {
 }
 
 type Job struct {
-	clientSet kubernetes.Interface
-	jobType   string
+	clientSet          kubernetes.Interface
+	jobType            string
+	guidLabel          string
+	workloadsNamespace string
 }
 
-func NewJob(clientSet kubernetes.Interface) *Job {
+func NewJob(clientSet kubernetes.Interface, workloadsNamespace string, enableMultiNamespaceSupport bool) *Job {
 	return &Job{
-		clientSet: clientSet,
-		jobType:   "TASK",
+		clientSet:          clientSet,
+		jobType:            "TASK",
+		guidLabel:          k8s.LabelGUID,
+		workloadsNamespace: getNamespace(workloadsNamespace, enableMultiNamespaceSupport),
 	}
 }
 
-func NewStagingJob(clientSet kubernetes.Interface) *Job {
+func NewStagingJob(clientSet kubernetes.Interface, workloadsNamespace string, enableMultiNamespaceSupport bool) *Job {
 	return &Job{
-		clientSet: clientSet,
-		jobType:   "STG",
+		clientSet:          clientSet,
+		jobType:            "STG",
+		guidLabel:          k8s.LabelStagingGUID,
+		workloadsNamespace: getNamespace(workloadsNamespace, enableMultiNamespaceSupport),
 	}
 }
 
@@ -157,7 +171,7 @@ func (c *Job) GetByGUID(guid string) ([]batchv1.Job, error) {
 	listOpts := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", c.getGUIDLabel(), guid),
 	}
-	jobs, err := c.clientSet.BatchV1().Jobs("").List(context.Background(), listOpts)
+	jobs, err := c.clientSet.BatchV1().Jobs(c.workloadsNamespace).List(context.Background(), listOpts)
 
 	return jobs.Items, err
 }
@@ -204,15 +218,19 @@ func (c *Secret) Delete(namespace string, name string) error {
 }
 
 type Event struct {
-	clientSet kubernetes.Interface
+	clientSet          kubernetes.Interface
+	workloadsNamespace string
 }
 
-func NewEvent(clientSet kubernetes.Interface) *Event {
-	return &Event{clientSet: clientSet}
+func NewEvent(clientSet kubernetes.Interface, workloadsNamespace string, enableMultiNamespaceSupport bool) *Event {
+	return &Event{
+		clientSet:          clientSet,
+		workloadsNamespace: getNamespace(workloadsNamespace, enableMultiNamespaceSupport),
+	}
 }
 
 func (c *Event) GetByPod(pod corev1.Pod) ([]corev1.Event, error) {
-	eventList, err := c.clientSet.CoreV1().Events("").List(context.Background(), metav1.ListOptions{
+	eventList, err := c.clientSet.CoreV1().Events(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
 		FieldSelector: fmt.Sprintf(
 			"involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s",
 			pod.Namespace,
@@ -236,7 +254,7 @@ func (c *Event) GetByInstanceAndReason(namespace string, ownerRef metav1.OwnerRe
 	)
 	labelSelector := fmt.Sprintf("cloudfoundry.org/instance_index=%d", instanceIndex)
 
-	kubeEvents, err := c.clientSet.CoreV1().Events("").List(context.Background(), metav1.ListOptions{
+	kubeEvents, err := c.clientSet.CoreV1().Events(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
 		FieldSelector: fieldSelector,
 		LabelSelector: labelSelector,
 	})
@@ -257,4 +275,12 @@ func (c *Event) Create(namespace string, event *corev1.Event) (*corev1.Event, er
 
 func (c *Event) Update(namespace string, event *corev1.Event) (*corev1.Event, error) {
 	return c.clientSet.CoreV1().Events(namespace).Update(context.Background(), event, metav1.UpdateOptions{})
+}
+
+func getNamespace(workloadsNamespace string, enableMultiNamespaceSupport bool) string {
+	if enableMultiNamespaceSupport {
+		return ""
+	}
+
+	return workloadsNamespace
 }

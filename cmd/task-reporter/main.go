@@ -54,13 +54,13 @@ func main() {
 	reporter := k8stask.StateReporter{
 		Client:      httpClient,
 		Logger:      taskLogger,
-		TaskDeleter: initTaskDeleter(clientset),
+		TaskDeleter: initTaskDeleter(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport),
 	}
 
 	controllerClient, err := runtimeclient.New(kubeConfig, runtimeclient.Options{Scheme: kscheme.Scheme})
 	cmdcommons.ExitIfError(err)
 
-	jobsClient := client.NewJob(clientset)
+	jobsClient := client.NewJob(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport)
 
 	taskReconciler := k8stask.NewReconciler(taskLogger, controllerClient, jobsClient, reporter)
 
@@ -84,13 +84,13 @@ func main() {
 	cmdcommons.ExitIfError(err)
 }
 
-func initTaskDeleter(clientset kubernetes.Interface) k8stask.Deleter {
+func initTaskDeleter(clientset kubernetes.Interface, namespace string, enableMultiNamespaceSupport bool) k8stask.Deleter {
 	logger := lager.NewLogger("task-deleter")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	return k8s.NewTaskDeleter(
 		logger,
-		client.NewJob(clientset),
+		client.NewJob(clientset, namespace, enableMultiNamespaceSupport),
 		client.NewSecret(clientset),
 	)
 }

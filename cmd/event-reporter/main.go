@@ -68,8 +68,10 @@ func main() {
 		crashLogger,
 		controllerClient,
 		k8sevent.NewDefaultCrashEventGenerator(
-			k8sclient.NewEvent(clientset),
-		),
+			k8sclient.NewEvent(
+				clientset,
+				cfg.Namespace,
+				cfg.EnableMultiNamespaceSupport)),
 		emitter,
 	)
 

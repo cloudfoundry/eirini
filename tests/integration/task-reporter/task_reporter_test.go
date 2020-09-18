@@ -53,11 +53,13 @@ var _ = Describe("TaskReporter", func() {
 			CCCertPath: certPath,
 			CAPath:     certPath,
 			CCKeyPath:  keyPath,
+
+			EnableMultiNamespaceSupport: true,
 		}
 
 		taskDesirer = k8s.NewTaskDesirer(
 			lagertest.NewTestLogger("test-task-desirer"),
-			client.NewJob(fixture.Clientset),
+			client.NewJob(fixture.Clientset, "", true),
 			client.NewSecret(fixture.Clientset),
 			fixture.Namespace,
 			nil,

@@ -15,27 +15,31 @@ import (
 
 var _ = Describe("Bifrost LRP", func() {
 	var (
-		err          error
-		lrpBifrost   *bifrost.LRP
-		request      cf.DesireLRPRequest
-		lrpConverter *bifrostfakes.FakeLRPConverter
-		lrpDesirer   *bifrostfakes.FakeLRPDesirer
+		err           error
+		lrpBifrost    *bifrost.LRP
+		request       cf.DesireLRPRequest
+		lrpConverter  *bifrostfakes.FakeLRPConverter
+		lrpDesirer    *bifrostfakes.FakeLRPDesirer
+		lrpNamespacer *bifrostfakes.FakeLRPNamespacer
 	)
 
 	BeforeEach(func() {
 		lrpConverter = new(bifrostfakes.FakeLRPConverter)
 		lrpDesirer = new(bifrostfakes.FakeLRPDesirer)
+		lrpNamespacer = new(bifrostfakes.FakeLRPNamespacer)
+		lrpNamespacer.GetNamespaceReturns("my-namespace", nil)
+
 		request = cf.DesireLRPRequest{
 			GUID:      "my-guid",
-			Namespace: "my-namespace",
+			Namespace: "foo-namespace",
 		}
 	})
 
 	JustBeforeEach(func() {
 		lrpBifrost = &bifrost.LRP{
-			DefaultNamespace: "default-namespace",
-			Converter:        lrpConverter,
-			Desirer:          lrpDesirer,
+			Converter:  lrpConverter,
+			Desirer:    lrpDesirer,
+			Namespacer: lrpNamespacer,
 		}
 	})
 
@@ -73,18 +77,6 @@ var _ = Describe("Bifrost LRP", func() {
 				namespace, _, _ := lrpDesirer.DesireArgsForCall(0)
 				Expect(namespace).To(Equal("my-namespace"))
 			})
-
-			When("no namespace is specified", func() {
-				BeforeEach(func() {
-					request.Namespace = ""
-				})
-
-				It("should desire the LRP in the default namespace", func() {
-					Expect(lrpDesirer.DesireCallCount()).To(Equal(1))
-					namespace, _, _ := lrpDesirer.DesireArgsForCall(0)
-					Expect(namespace).To(Equal("default-namespace"))
-				})
-			})
 		})
 
 		Context("When lrp transfer fails", func() {
@@ -119,7 +111,19 @@ var _ = Describe("Bifrost LRP", func() {
 					Expect(lrpBifrost.Transfer(context.Background(), request)).To(MatchError(ContainSubstring("failed to desire")))
 				})
 			})
+
+			Context("when the namespacer fails", func() {
+				BeforeEach(func() {
+					lrpNamespacer.GetNamespaceReturns("", errors.New("oopsie"))
+				})
+
+				It("propagates the error", func() {
+					Expect(lrpBifrost.Transfer(context.Background(), request)).To(MatchError(ContainSubstring("oopsie")))
+				})
+
+			})
 		})
+
 	})
 
 	Describe("List LRP", func() {
