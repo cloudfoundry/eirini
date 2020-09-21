@@ -137,7 +137,7 @@ update_image_in_yaml_files() {
   echo "Applying docker image of $1 to kubernetes cluster"
   deploy_dir="$EIRINI_RELEASE_BASEDIR/helm/eirini/templates"
   if [[ "$use_helmless" == "true" ]]; then
-    deploy_dir="$EIRINI_RELEASE_BASEDIR/deploy/core"
+    deploy_dir="$EIRINI_RELEASE_BASEDIR/deploy"
   fi
 
   pushd "$deploy_dir"
