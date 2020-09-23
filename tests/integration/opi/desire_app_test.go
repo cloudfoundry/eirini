@@ -117,7 +117,6 @@ var _ = Describe("Desire App", func() {
 
 			Expect(statefulsets.Items).To(HaveLen(1))
 			Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
-			Expect(statefulsets.Items[0].Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
 		})
 
 		When("no app namespaces is explicitly requested", func() {
@@ -143,9 +142,7 @@ var _ = Describe("Desire App", func() {
 
 				Expect(statefulsets.Items).To(HaveLen(1))
 				Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
-				Expect(statefulsets.Items[0].Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
 			})
-
 		})
 
 		When("the app is requested in non-allowed namespace", func() {

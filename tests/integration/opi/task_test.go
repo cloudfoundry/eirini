@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
@@ -22,8 +23,9 @@ import (
 
 var _ = Describe("Task Desire and Cancel", func() {
 	var (
-		request cf.TaskRequest
-		jobs    *batchv1.JobList
+		request  cf.TaskRequest
+		jobs     *batchv1.JobList
+		response *http.Response
 	)
 
 	const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
@@ -35,9 +37,8 @@ var _ = Describe("Task Desire and Cancel", func() {
 		httpRequest, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", url, request.GUID), bytes.NewReader(body))
 		Expect(err).NotTo(HaveOccurred())
 
-		resp, err := httpClient.Do(httpRequest)
+		response, err = httpClient.Do(httpRequest)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(http.StatusAccepted))
 	})
 
 	Context("buildpack tasks", func() {
@@ -59,6 +60,8 @@ var _ = Describe("Task Desire and Cancel", func() {
 		})
 
 		It("should create a valid job for the task", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
 				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
@@ -130,6 +133,8 @@ var _ = Describe("Task Desire and Cancel", func() {
 		})
 
 		It("creates the job successfully", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
 				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
@@ -295,6 +300,82 @@ var _ = Describe("Task Desire and Cancel", func() {
 					}
 					Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
 				})
+			})
+		})
+	})
+
+	Context("multinamespace support is disabled", func() {
+		BeforeEach(func() {
+			eiriniConfig.Properties.EnableMultiNamespaceSupport = false
+			request = cf.TaskRequest{
+				GUID:        tests.GenerateGUID(),
+				AppName:     "my_app",
+				Name:        "my_task",
+				SpaceName:   "my_space",
+				Namespace:   fixture.Namespace,
+				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
+				Lifecycle: cf.Lifecycle{
+					BuildpackLifecycle: &cf.BuildpackLifecycle{
+						DropletHash:  "foo",
+						DropletGUID:  "bar",
+						StartCommand: "some command",
+					},
+				},
+			}
+		})
+
+		It("creates create the task in the requested namespace", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+
+			Eventually(func() ([]batchv1.Job, error) {
+				var err error
+				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+
+				return jobs.Items, err
+			}).Should(HaveLen(1))
+
+			Expect(jobs.Items).To(HaveLen(1))
+			Expect(jobs.Items[0].Name).To(Equal("my-app-my-space-my-task"))
+		})
+
+		When("no task namespaces is explicitly requested", func() {
+			BeforeEach(func() {
+				request.Namespace = ""
+			})
+
+			It("creates create the task in the default namespace", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+
+				Eventually(func() ([]batchv1.Job, error) {
+					var err error
+					jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+
+					return jobs.Items, err
+				}).Should(HaveLen(1))
+
+				Expect(jobs.Items).To(HaveLen(1))
+				Expect(jobs.Items[0].Name).To(Equal("my-app-my-space-my-task"))
+			})
+		})
+
+		When("the task is requested in non-allowed namespace", func() {
+			BeforeEach(func() {
+				request.GUID = tests.GenerateGUID()
+				request.Namespace = fixture.CreateExtraNamespace()
+			})
+
+			It("should return a 500 Internal Server Error HTTP code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+			})
+
+			It("does not create the task", func() {
+				var err error
+				jobs, err = fixture.Clientset.BatchV1().Jobs("").List(context.Background(), metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, request.GUID),
+				})
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(jobs.Items).To(BeEmpty())
 			})
 		})
 	})

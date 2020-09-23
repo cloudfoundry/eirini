@@ -13,6 +13,7 @@ import (
 //counterfeiter:generate . TaskDesirer
 //counterfeiter:generate . TaskDeleter
 //counterfeiter:generate . JSONClient
+//counterfeiter:generate . TaskNamespacer
 
 type TaskConverter interface {
 	ConvertTask(taskGUID string, request cf.TaskRequest) (opi.Task, error)
@@ -32,12 +33,16 @@ type JSONClient interface {
 	Post(url string, data interface{}) error
 }
 
+type TaskNamespacer interface {
+	GetNamespace(requestedNamespace string) (string, error)
+}
+
 type Task struct {
-	DefaultNamespace string
-	Converter        TaskConverter
-	TaskDesirer      TaskDesirer
-	TaskDeleter      TaskDeleter
-	JSONClient       JSONClient
+	Namespacer  TaskNamespacer
+	Converter   TaskConverter
+	TaskDesirer TaskDesirer
+	TaskDeleter TaskDeleter
+	JSONClient  JSONClient
 }
 
 func (t *Task) GetTask(taskGUID string) (cf.TaskResponse, error) {
@@ -69,9 +74,9 @@ func (t *Task) TransferTask(ctx context.Context, taskGUID string, taskRequest cf
 		return errors.Wrap(err, "failed to convert task")
 	}
 
-	namespace := t.DefaultNamespace
-	if taskRequest.Namespace != "" {
-		namespace = taskRequest.Namespace
+	namespace, err := t.Namespacer.GetNamespace(taskRequest.Namespace)
+	if err != nil {
+		return errors.Wrap(err, "invalid namespace")
 	}
 
 	return errors.Wrap(t.TaskDesirer.Desire(namespace, &desiredTask), "failed to desire")

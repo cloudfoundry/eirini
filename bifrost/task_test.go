@@ -20,6 +20,7 @@ var _ = Describe("Buildpack task", func() {
 		taskDesirer   *bifrostfakes.FakeTaskDesirer
 		taskDeleter   *bifrostfakes.FakeTaskDeleter
 		jsonClient    *bifrostfakes.FakeJSONClient
+		namespacer    *bifrostfakes.FakeTaskNamespacer
 		taskGUID      string
 		task          opi.Task
 	)
@@ -29,15 +30,19 @@ var _ = Describe("Buildpack task", func() {
 		taskDesirer = new(bifrostfakes.FakeTaskDesirer)
 		taskDeleter = new(bifrostfakes.FakeTaskDeleter)
 		jsonClient = new(bifrostfakes.FakeJSONClient)
+		namespacer = new(bifrostfakes.FakeTaskNamespacer)
+
 		taskGUID = "task-guid"
 		task = opi.Task{GUID: "my-guid"}
 		taskConverter.ConvertTaskReturns(task, nil)
+		namespacer.GetNamespaceReturns("our-namespace", nil)
+
 		taskBifrost = &bifrost.Task{
-			DefaultNamespace: "default-namespace",
-			Converter:        taskConverter,
-			TaskDesirer:      taskDesirer,
-			TaskDeleter:      taskDeleter,
-			JSONClient:       jsonClient,
+			Converter:   taskConverter,
+			TaskDesirer: taskDesirer,
+			TaskDeleter: taskDeleter,
+			JSONClient:  jsonClient,
+			Namespacer:  namespacer,
 		}
 	})
 
@@ -53,7 +58,7 @@ var _ = Describe("Buildpack task", func() {
 				OrgGUID:            "asdf123",
 				SpaceName:          "my-space",
 				SpaceGUID:          "fdsa4321",
-				Namespace:          "our-namespace",
+				Namespace:          "my-namespace",
 				CompletionCallback: "my-callback",
 				Environment:        nil,
 				Lifecycle: cf.Lifecycle{
@@ -83,18 +88,7 @@ var _ = Describe("Buildpack task", func() {
 			Expect(taskDesirer.DesireCallCount()).To(Equal(1))
 			namespace, desiredTask, _ := taskDesirer.DesireArgsForCall(0)
 			Expect(desiredTask.GUID).To(Equal("my-guid"))
-			Expect(namespace).To(Equal(taskRequest.Namespace))
-		})
-
-		When("the task request has an empty namespace", func() {
-			BeforeEach(func() {
-				taskRequest.Namespace = ""
-			})
-
-			It("desires the task in the default namespace", func() {
-				namespace, _, _ := taskDesirer.DesireArgsForCall(0)
-				Expect(namespace).To(Equal("default-namespace"))
-			})
+			Expect(namespace).To(Equal("our-namespace"))
 		})
 
 		When("converting the task fails", func() {
@@ -118,6 +112,16 @@ var _ = Describe("Buildpack task", func() {
 
 			It("returns the error", func() {
 				Expect(err).To(MatchError(ContainSubstring("desire-task-err")))
+			})
+		})
+
+		When("the namespacer fails", func() {
+			BeforeEach(func() {
+				namespacer.GetNamespaceReturns("", errors.New("oopsie"))
+			})
+
+			It("propagates the error", func() {
+				Expect(err).To(MatchError(ContainSubstring("oopsie")))
 			})
 		})
 	})

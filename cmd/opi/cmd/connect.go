@@ -209,13 +209,14 @@ func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifros
 	jobClient := client.NewJob(clientset, cfg.Properties.Namespace, cfg.Properties.EnableMultiNamespaceSupport)
 	taskDeleter := initTaskDeleter(clientset, jobClient)
 	retryableJSONClient := initRetryableJSONClient(cfg)
+	namespacer := initNamespacer(cfg)
 
 	return &bifrost.Task{
-		DefaultNamespace: cfg.Properties.Namespace,
-		Converter:        converter,
-		TaskDesirer:      taskDesirer,
-		TaskDeleter:      taskDeleter,
-		JSONClient:       retryableJSONClient,
+		Converter:   converter,
+		TaskDesirer: taskDesirer,
+		TaskDeleter: taskDeleter,
+		JSONClient:  retryableJSONClient,
+		Namespacer:  namespacer,
 	}
 }
 
