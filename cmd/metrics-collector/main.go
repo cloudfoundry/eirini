@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/kubelet"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/util"
@@ -72,7 +73,7 @@ func launchMetricsEmitter(
 	namespace string,
 	metricsEmissionInterval int,
 ) {
-	podClient := clientset.CoreV1().Pods(namespace)
+	podClient := client.NewPod(clientset)
 
 	podMetricsClient := metricsClient.MetricsV1beta1().PodMetricses(namespace)
 	metricsLogger := lager.NewLogger("metrics")
