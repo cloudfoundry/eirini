@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	metricsv1beta1 "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
 )
@@ -17,6 +18,7 @@ import (
 //counterfeiter:generate . MetricsCollector
 //counterfeiter:generate . DiskAPI
 //counterfeiter:generate . Emitter
+//counterfeiter:generate -o k8sfakes/fake_pod_interface.go k8s.io/client-go/kubernetes/typed/core/v1.PodInterface
 //counterfeiter:generate -o k8sfakes/fake_pod_metrics_interface.go k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1.PodMetricsInterface
 
 type MetricsCollector interface {
@@ -46,13 +48,13 @@ func ForwardMetricsToEmitter(collector MetricsCollector, emitter Emitter) error 
 
 type metricsCollector struct {
 	metricsClient metricsv1beta1.PodMetricsInterface
-	podClient     PodClient
+	podClient     typedv1.PodInterface
 	diskClient    DiskAPI
 	logger        lager.Logger
 }
 
 func NewMetricsCollector(metricsClient metricsv1beta1.PodMetricsInterface,
-	podClient PodClient,
+	podClient typedv1.PodInterface,
 	diskClient DiskAPI,
 	logger lager.Logger) MetricsCollector {
 	return &metricsCollector{
@@ -64,12 +66,12 @@ func NewMetricsCollector(metricsClient metricsv1beta1.PodMetricsInterface,
 }
 
 func (c *metricsCollector) Collect() ([]metrics.Message, error) {
-	pods, err := c.podClient.GetAll()
+	pods, err := c.podClient.List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return []metrics.Message{}, errors.Wrap(err, "failed to list pods")
 	}
 
-	return c.collectMetrics(pods), nil
+	return c.collectMetrics(pods.Items), nil
 }
 
 func (c *metricsCollector) collectMetrics(pods []apiv1.Pod) []metrics.Message {
