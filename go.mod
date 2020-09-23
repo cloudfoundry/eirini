@@ -28,7 +28,7 @@ require (
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	code.cloudfoundry.org/locket v0.0.0-20191127212858-571765e813ca // indirect
-	code.cloudfoundry.org/quarks-utils v0.0.0-20200911114130-7b6fe4c269e6 // indirect
+	code.cloudfoundry.org/quarks-utils v0.0.0-20200916123910-d781a52091ce // indirect
 	code.cloudfoundry.org/rep v0.0.0-20191210190026-b68fa6668abc // indirect
 	code.cloudfoundry.org/rfc5424 v0.0.0-20180905210152-236a6d29298a // indirect
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
@@ -64,7 +64,7 @@ require (
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gostaticanalysis/analysisutil v0.2.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.14.8 // indirect
+	github.com/grpc-ecosystem/grpc-gateway v1.15.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.6.7
 	github.com/hashicorp/go-uuid v1.0.2
@@ -102,6 +102,7 @@ require (
 	github.com/stretchr/objx v0.3.0 // indirect
 	github.com/tdakkota/asciicheck v0.0.0-20200416200610-e657995f937b // indirect
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
+	github.com/tetafro/godot v0.4.9 // indirect
 	github.com/timakin/bodyclose v0.0.0-20200424151742-cb6215831a94 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20200427203606-3cfed13b9966 // indirect
 	github.com/urfave/cli v1.22.4 // indirect
@@ -112,24 +113,24 @@ require (
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
-	golang.org/x/sys v0.0.0-20200915084602-288bc346aa39 // indirect
+	golang.org/x/sys v0.0.0-20200922070232-aee5d888a860 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	golang.org/x/tools v0.0.0-20200915201639-f4cefd1cb5ba // indirect
+	golang.org/x/tools v0.0.0-20200922173257-82fe25c37531 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
-	google.golang.org/genproto v0.0.0-20200915202801-9f80d0600517 // indirect
+	google.golang.org/genproto v0.0.0-20200921165018-b9da36f5f452 // indirect
 	google.golang.org/grpc v1.32.0
 	gopkg.in/ini.v1 v1.61.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
-	k8s.io/api v0.19.1
-	k8s.io/apiextensions-apiserver v0.19.1 // indirect
-	k8s.io/apimachinery v0.19.1
+	k8s.io/api v0.19.2
+	k8s.io/apiextensions-apiserver v0.19.2 // indirect
+	k8s.io/apimachinery v0.19.2
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
-	k8s.io/code-generator v0.19.1
+	k8s.io/code-generator v0.19.2
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.3.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20200831175022-64514a1d5d59 // indirect
-	k8s.io/metrics v0.19.1
+	k8s.io/metrics v0.19.2
 	k8s.io/utils v0.0.0-20200912215256-4140de9c8800 // indirect
 	mvdan.cc/gofumpt v0.0.0-20200802201014-ab5a8192947d // indirect
 	mvdan.cc/unparam v0.0.0-20200501210554-b37ab49443f7 // indirect

@@ -18,7 +18,7 @@ code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2
 code.cloudfoundry.org/lager
 code.cloudfoundry.org/lager/lagerctx
 code.cloudfoundry.org/lager/lagertest
-# code.cloudfoundry.org/quarks-utils v0.0.0-20200911114130-7b6fe4c269e6
+# code.cloudfoundry.org/quarks-utils v0.0.0-20200916123910-d781a52091ce
 code.cloudfoundry.org/quarks-utils/pkg/credsgen
 code.cloudfoundry.org/quarks-utils/pkg/credsgen/in_memory_generator
 code.cloudfoundry.org/quarks-utils/pkg/kubeconfig
@@ -438,7 +438,7 @@ github.com/gostaticanalysis/comment/passes/commentmap
 github.com/grpc-ecosystem/go-grpc-middleware
 # github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 github.com/grpc-ecosystem/go-grpc-prometheus
-# github.com/grpc-ecosystem/grpc-gateway v1.14.8
+# github.com/grpc-ecosystem/grpc-gateway v1.15.0
 github.com/grpc-ecosystem/grpc-gateway/internal
 github.com/grpc-ecosystem/grpc-gateway/runtime
 github.com/grpc-ecosystem/grpc-gateway/utilities
@@ -685,7 +685,7 @@ github.com/stretchr/testify/mock
 github.com/subosito/gotenv
 # github.com/tdakkota/asciicheck v0.0.0-20200416200610-e657995f937b
 github.com/tdakkota/asciicheck
-# github.com/tetafro/godot v0.4.8
+# github.com/tetafro/godot v0.4.9
 github.com/tetafro/godot
 # github.com/timakin/bodyclose v0.0.0-20200424151742-cb6215831a94
 github.com/timakin/bodyclose/passes/bodyclose
@@ -773,7 +773,7 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20200915084602-288bc346aa39
+# golang.org/x/sys v0.0.0-20200922070232-aee5d888a860
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
@@ -806,7 +806,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200915201639-f4cefd1cb5ba
+# golang.org/x/tools v0.0.0-20200922173257-82fe25c37531
 golang.org/x/tools/go/analysis
 golang.org/x/tools/go/analysis/passes/asmdecl
 golang.org/x/tools/go/analysis/passes/assign
@@ -885,7 +885,7 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20200915202801-9f80d0600517
+# google.golang.org/genproto v0.0.0-20200921165018-b9da36f5f452
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/api/httpbody
 google.golang.org/genproto/googleapis/rpc/status
@@ -1014,7 +1014,7 @@ honnef.co/go/tools/staticcheck
 honnef.co/go/tools/stylecheck
 honnef.co/go/tools/unused
 honnef.co/go/tools/version
-# k8s.io/api v0.19.1 => k8s.io/api v0.18.8
+# k8s.io/api v0.19.2 => k8s.io/api v0.18.8
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
@@ -1056,10 +1056,10 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.19.1
+# k8s.io/apiextensions-apiserver v0.19.2
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
-# k8s.io/apimachinery v0.19.1 => k8s.io/apimachinery v0.18.8
+# k8s.io/apimachinery v0.19.2 => k8s.io/apimachinery v0.18.8
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
@@ -1322,7 +1322,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/code-generator v0.19.1
+# k8s.io/code-generator v0.19.2
 k8s.io/code-generator
 k8s.io/code-generator/cmd/client-gen
 k8s.io/code-generator/cmd/client-gen/args
@@ -1378,7 +1378,7 @@ k8s.io/kube-openapi/pkg/generators
 k8s.io/kube-openapi/pkg/generators/rules
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/util/sets
-# k8s.io/metrics v0.19.1
+# k8s.io/metrics v0.19.2
 k8s.io/metrics/pkg/apis/metrics
 k8s.io/metrics/pkg/apis/metrics/v1alpha1
 k8s.io/metrics/pkg/apis/metrics/v1beta1
