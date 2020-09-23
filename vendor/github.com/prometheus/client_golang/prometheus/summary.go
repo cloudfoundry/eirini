@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/beorn7/perks/quantile"
-	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
 
 	dto "github.com/prometheus/client_model/go"
@@ -209,7 +208,7 @@ func newSummary(desc *Desc, opts SummaryOpts, labelValues ...string) Summary {
 		s := &noObjectivesSummary{
 			desc:       desc,
 			labelPairs: makeLabelPairs(desc, labelValues),
-			counts:     [2]*summaryCounts{{}, {}},
+			counts:     [2]*summaryCounts{&summaryCounts{}, &summaryCounts{}},
 		}
 		s.init(s) // Init self-collection.
 		return s

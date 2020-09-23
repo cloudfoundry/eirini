@@ -155,6 +155,21 @@ type FakePodInterface struct {
 		result1 *v1a.Pod
 		result2 error
 	}
+	ProxyGetStub        func(string, string, string, string, map[string]string) rest.ResponseWrapper
+	proxyGetMutex       sync.RWMutex
+	proxyGetArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 string
+		arg5 map[string]string
+	}
+	proxyGetReturns struct {
+		result1 rest.ResponseWrapper
+	}
+	proxyGetReturnsOnCall map[int]struct {
+		result1 rest.ResponseWrapper
+	}
 	UpdateStub        func(context.Context, *v1a.Pod, v1b.UpdateOptions) (*v1a.Pod, error)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
@@ -859,6 +874,70 @@ func (fake *FakePodInterface) PatchReturnsOnCall(i int, result1 *v1a.Pod, result
 	}{result1, result2}
 }
 
+func (fake *FakePodInterface) ProxyGet(arg1 string, arg2 string, arg3 string, arg4 string, arg5 map[string]string) rest.ResponseWrapper {
+	fake.proxyGetMutex.Lock()
+	ret, specificReturn := fake.proxyGetReturnsOnCall[len(fake.proxyGetArgsForCall)]
+	fake.proxyGetArgsForCall = append(fake.proxyGetArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 string
+		arg5 map[string]string
+	}{arg1, arg2, arg3, arg4, arg5})
+	fake.recordInvocation("ProxyGet", []interface{}{arg1, arg2, arg3, arg4, arg5})
+	fake.proxyGetMutex.Unlock()
+	if fake.ProxyGetStub != nil {
+		return fake.ProxyGetStub(arg1, arg2, arg3, arg4, arg5)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.proxyGetReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakePodInterface) ProxyGetCallCount() int {
+	fake.proxyGetMutex.RLock()
+	defer fake.proxyGetMutex.RUnlock()
+	return len(fake.proxyGetArgsForCall)
+}
+
+func (fake *FakePodInterface) ProxyGetCalls(stub func(string, string, string, string, map[string]string) rest.ResponseWrapper) {
+	fake.proxyGetMutex.Lock()
+	defer fake.proxyGetMutex.Unlock()
+	fake.ProxyGetStub = stub
+}
+
+func (fake *FakePodInterface) ProxyGetArgsForCall(i int) (string, string, string, string, map[string]string) {
+	fake.proxyGetMutex.RLock()
+	defer fake.proxyGetMutex.RUnlock()
+	argsForCall := fake.proxyGetArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
+}
+
+func (fake *FakePodInterface) ProxyGetReturns(result1 rest.ResponseWrapper) {
+	fake.proxyGetMutex.Lock()
+	defer fake.proxyGetMutex.Unlock()
+	fake.ProxyGetStub = nil
+	fake.proxyGetReturns = struct {
+		result1 rest.ResponseWrapper
+	}{result1}
+}
+
+func (fake *FakePodInterface) ProxyGetReturnsOnCall(i int, result1 rest.ResponseWrapper) {
+	fake.proxyGetMutex.Lock()
+	defer fake.proxyGetMutex.Unlock()
+	fake.ProxyGetStub = nil
+	if fake.proxyGetReturnsOnCall == nil {
+		fake.proxyGetReturnsOnCall = make(map[int]struct {
+			result1 rest.ResponseWrapper
+		})
+	}
+	fake.proxyGetReturnsOnCall[i] = struct {
+		result1 rest.ResponseWrapper
+	}{result1}
+}
+
 func (fake *FakePodInterface) Update(arg1 context.Context, arg2 *v1a.Pod, arg3 v1b.UpdateOptions) (*v1a.Pod, error) {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
@@ -1142,6 +1221,8 @@ func (fake *FakePodInterface) Invocations() map[string][][]interface{} {
 	defer fake.listMutex.RUnlock()
 	fake.patchMutex.RLock()
 	defer fake.patchMutex.RUnlock()
+	fake.proxyGetMutex.RLock()
+	defer fake.proxyGetMutex.RUnlock()
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	fake.updateEphemeralContainersMutex.RLock()

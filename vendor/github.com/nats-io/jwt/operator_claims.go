@@ -40,8 +40,6 @@ type Operator struct {
 	// A list of NATS urls (tls://host:port) where tools can connect to the server
 	// using proper credentials.
 	OperatorServiceURLs StringList `json:"operator_service_urls,omitempty"`
-	// Identity of the system account
-	SystemAccount string `json:"system_account,omitempty"`
 }
 
 // Validate checks the validity of the operators contents
@@ -63,12 +61,6 @@ func (o *Operator) Validate(vr *ValidationResults) {
 	for _, k := range o.SigningKeys {
 		if !nkeys.IsValidPublicOperatorKey(k) {
 			vr.AddError("%s is not an operator public key", k)
-		}
-	}
-
-	if o.SystemAccount != "" {
-		if !nkeys.IsValidPublicAccountKey(o.SystemAccount) {
-			vr.AddError("%s is not an account public key", o.SystemAccount)
 		}
 	}
 }

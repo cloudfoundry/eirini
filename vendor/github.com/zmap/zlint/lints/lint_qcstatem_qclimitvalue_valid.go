@@ -25,7 +25,7 @@ import (
 type qcStatemQcLimitValueValid struct{}
 
 func (this *qcStatemQcLimitValueValid) getStatementOid() *asn1.ObjectIdentifier {
-	return &util.IdEtsiQcsQcLimitValue
+	return &util.IdEtsiQcsQcSSCD
 }
 
 func (l *qcStatemQcLimitValueValid) Initialize() error {
