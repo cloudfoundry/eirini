@@ -159,7 +159,7 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 	)
 }
 
-func initTaskDeleter(clientset kubernetes.Interface, jobClient k8s.JobClient) *k8s.TaskDeleter {
+func initTaskDeleter(clientset kubernetes.Interface, jobClient k8s.JobDeletingClient) *k8s.TaskDeleter {
 	logger := lager.NewLogger("task-desirer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 

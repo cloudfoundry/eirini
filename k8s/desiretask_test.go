@@ -31,7 +31,7 @@ var _ = Describe("TaskDesirer", func() {
 	var (
 		task               *opi.Task
 		desirer            *TaskDesirer
-		fakeJobCreator     *k8sfakes.FakeJobCreator
+		fakeJobClient      *k8sfakes.FakeJobCreatingClient
 		fakeSecretsCreator *k8sfakes.FakeSecretsCreator
 		job                *batch.Job
 		jobNamespace       string
@@ -83,7 +83,7 @@ var _ = Describe("TaskDesirer", func() {
 	}
 
 	BeforeEach(func() {
-		fakeJobCreator = new(k8sfakes.FakeJobCreator)
+		fakeJobClient = new(k8sfakes.FakeJobCreatingClient)
 		fakeSecretsCreator = new(k8sfakes.FakeSecretsCreator)
 		desireOpts = []DesireOption{}
 		task = &opi.Task{
@@ -133,7 +133,7 @@ var _ = Describe("TaskDesirer", func() {
 
 		desirer = NewTaskDesirer(
 			lagertest.NewTestLogger("desiretask"),
-			fakeJobCreator,
+			fakeJobClient,
 			fakeSecretsCreator,
 			defaultNamespace,
 			tlsStagingConfigs,
@@ -158,8 +158,8 @@ var _ = Describe("TaskDesirer", func() {
 		It("should create a job for the task with the correct attributes", func() {
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
-			jobNamespace, job = fakeJobCreator.CreateArgsForCall(0)
+			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
+			jobNamespace, job = fakeJobClient.CreateArgsForCall(0)
 
 			assertGeneralSpec(job)
 
@@ -231,7 +231,7 @@ var _ = Describe("TaskDesirer", func() {
 			BeforeEach(func() {
 				desirer = NewTaskDesirerWithEiriniInstance(
 					lagertest.NewTestLogger("desiretask"),
-					fakeJobCreator,
+					fakeJobClient,
 					fakeSecretsCreator,
 					defaultNamespace,
 					[]StagingConfigTLS{},
@@ -245,8 +245,8 @@ var _ = Describe("TaskDesirer", func() {
 			It("does not set automountServiceAccountToken on the pod spec", func() {
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
-				_, job = fakeJobCreator.CreateArgsForCall(0)
+				Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
+				_, job = fakeJobClient.CreateArgsForCall(0)
 
 				Expect(job.Spec.Template.Spec.AutomountServiceAccountToken).To(BeNil())
 			})
@@ -259,8 +259,8 @@ var _ = Describe("TaskDesirer", func() {
 			})
 
 			It("should truncate the app and space name", func() {
-				Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
-				_, job = fakeJobCreator.CreateArgsForCall(0)
+				Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
+				_, job = fakeJobClient.CreateArgsForCall(0)
 				Expect(job.Name).To(Equal("app-with-very-long-name-space-with-a-ver-task-name"))
 			})
 		})
@@ -309,8 +309,8 @@ var _ = Describe("TaskDesirer", func() {
 			It("should use the guid as the prefix instead", func() {
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
-				_, job = fakeJobCreator.CreateArgsForCall(0)
+				Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
+				_, job = fakeJobClient.CreateArgsForCall(0)
 
 				Expect(job.Name).To(Equal(fmt.Sprintf("%s-%s", taskGUID, task.Name)))
 			})
@@ -318,7 +318,7 @@ var _ = Describe("TaskDesirer", func() {
 
 		Context("and the job already exists", func() {
 			BeforeEach(func() {
-				fakeJobCreator.CreateReturns(nil, errors.New("job already exists"))
+				fakeJobClient.CreateReturns(nil, errors.New("job already exists"))
 			})
 
 			It("should return an error", func() {
@@ -352,8 +352,8 @@ var _ = Describe("TaskDesirer", func() {
 					),
 				)
 
-				Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
-				_, job = fakeJobCreator.CreateArgsForCall(0)
+				Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
+				_, job = fakeJobClient.CreateArgsForCall(0)
 
 				Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(
 					corev1.LocalObjectReference{Name: "registry-secret"},
@@ -527,8 +527,8 @@ var _ = Describe("TaskDesirer", func() {
 		JustBeforeEach(func() {
 			var namespace string
 			err = desirer.DesireStaging(stagingTask)
-			Expect(fakeJobCreator.CreateCallCount()).To(Equal(1))
-			namespace, job = fakeJobCreator.CreateArgsForCall(0)
+			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
+			namespace, job = fakeJobClient.CreateArgsForCall(0)
 			Expect(namespace).To(Equal(defaultNamespace))
 		})
 
@@ -588,11 +588,77 @@ var _ = Describe("TaskDesirer", func() {
 
 		Context("When the staging task already exists", func() {
 			BeforeEach(func() {
-				fakeJobCreator.CreateReturns(nil, errors.New("job already exists"))
+				fakeJobClient.CreateReturns(nil, errors.New("job already exists"))
 			})
 
 			It("should return an error", func() {
 				Expect(err).To(MatchError(ContainSubstring("job already exists")))
+			})
+		})
+	})
+
+	Describe("Get", func() {
+		var err error
+
+		BeforeEach(func() {
+			job = &batch.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						LabelGUID: taskGUID,
+					},
+				},
+			}
+
+			fakeJobClient.GetByGUIDReturns([]batch.Job{*job}, nil)
+		})
+
+		JustBeforeEach(func() {
+			task, err = desirer.Get(task.GUID)
+		})
+
+		It("succeeds", func() {
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns the task with the specified task guid", func() {
+			Expect(task.GUID).To(Equal(taskGUID))
+		})
+
+		When("getting the task fails", func() {
+			BeforeEach(func() {
+				fakeJobClient.GetByGUIDReturns(nil, errors.New("get-task-error"))
+			})
+
+			It("returns the error", func() {
+				Expect(err).To(MatchError("get-task-error"))
+			})
+		})
+
+		When("there are no jobs for that task GUID", func() {
+			BeforeEach(func() {
+				fakeJobClient.GetByGUIDReturns([]batch.Job{}, nil)
+			})
+
+			It("returns not found error", func() {
+				Expect(err).To(Equal(eirini.ErrNotFound))
+			})
+		})
+
+		When("there are multiple jobs for that task GUID", func() {
+			BeforeEach(func() {
+				anotherJob := &batch.Job{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							LabelGUID: taskGUID,
+						},
+					},
+				}
+
+				fakeJobClient.GetByGUIDReturns([]batch.Job{*job, *anotherJob}, nil)
+			})
+
+			It("returns an error", func() {
+				Expect(err).To(MatchError(ContainSubstring("multiple")))
 			})
 		})
 	})

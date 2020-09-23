@@ -26,13 +26,13 @@ var _ = Describe("TaskDeleter", func() {
 	var (
 		task          *opi.Task
 		deleter       *TaskDeleter
-		jobClient     *k8sfakes.FakeJobClient
+		jobClient     *k8sfakes.FakeJobDeletingClient
 		secretDeleter *k8sfakes.FakeSecretsCreatorDeleter
 		job           batchv1.Job
 	)
 
 	BeforeEach(func() {
-		jobClient = new(k8sfakes.FakeJobClient)
+		jobClient = new(k8sfakes.FakeJobDeletingClient)
 		secretDeleter = new(k8sfakes.FakeSecretsCreatorDeleter)
 		task = &opi.Task{
 			Image: Image,

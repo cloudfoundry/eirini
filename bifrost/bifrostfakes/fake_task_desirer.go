@@ -23,6 +23,19 @@ type FakeTaskDesirer struct {
 	desireReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetStub        func(string) (*opi.Task, error)
+	getMutex       sync.RWMutex
+	getArgsForCall []struct {
+		arg1 string
+	}
+	getReturns struct {
+		result1 *opi.Task
+		result2 error
+	}
+	getReturnsOnCall map[int]struct {
+		result1 *opi.Task
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -89,11 +102,76 @@ func (fake *FakeTaskDesirer) DesireReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeTaskDesirer) Get(arg1 string) (*opi.Task, error) {
+	fake.getMutex.Lock()
+	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
+	fake.getArgsForCall = append(fake.getArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("Get", []interface{}{arg1})
+	fake.getMutex.Unlock()
+	if fake.GetStub != nil {
+		return fake.GetStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.getReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeTaskDesirer) GetCallCount() int {
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	return len(fake.getArgsForCall)
+}
+
+func (fake *FakeTaskDesirer) GetCalls(stub func(string) (*opi.Task, error)) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
+	fake.GetStub = stub
+}
+
+func (fake *FakeTaskDesirer) GetArgsForCall(i int) string {
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	argsForCall := fake.getArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeTaskDesirer) GetReturns(result1 *opi.Task, result2 error) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
+	fake.GetStub = nil
+	fake.getReturns = struct {
+		result1 *opi.Task
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeTaskDesirer) GetReturnsOnCall(i int, result1 *opi.Task, result2 error) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
+	fake.GetStub = nil
+	if fake.getReturnsOnCall == nil {
+		fake.getReturnsOnCall = make(map[int]struct {
+			result1 *opi.Task
+			result2 error
+		})
+	}
+	fake.getReturnsOnCall[i] = struct {
+		result1 *opi.Task
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeTaskDesirer) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

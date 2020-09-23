@@ -22,11 +22,12 @@ const (
 	completions          = 1
 )
 
-//counterfeiter:generate . JobCreator
+//counterfeiter:generate . JobCreatingClient
 //counterfeiter:generate . SecretsCreator
 
-type JobCreator interface {
+type JobCreatingClient interface {
 	Create(namespace string, job *batch.Job) (*batch.Job, error)
+	GetByGUID(guid string) ([]batch.Job, error)
 }
 
 type SecretsCreator interface {
@@ -45,7 +46,7 @@ type StagingConfigTLS struct {
 
 type TaskDesirer struct {
 	logger                            lager.Logger
-	jobCreator                        JobCreator
+	jobClient                         JobCreatingClient
 	secretsCreator                    SecretsCreator
 	defaultStagingNamespace           string
 	tlsConfig                         []StagingConfigTLS
@@ -57,7 +58,7 @@ type TaskDesirer struct {
 
 func NewTaskDesirer(
 	logger lager.Logger,
-	jobClient JobCreator,
+	jobClient JobCreatingClient,
 	secretsCreator SecretsCreator,
 	defaultStagingNamespace string,
 	tlsConfig []StagingConfigTLS,
@@ -68,7 +69,7 @@ func NewTaskDesirer(
 ) *TaskDesirer {
 	return &TaskDesirer{
 		logger:                            logger.Session("task-desirer"),
-		jobCreator:                        jobClient,
+		jobClient:                         jobClient,
 		secretsCreator:                    secretsCreator,
 		defaultStagingNamespace:           defaultStagingNamespace,
 		tlsConfig:                         tlsConfig,
@@ -81,7 +82,7 @@ func NewTaskDesirer(
 
 func NewTaskDesirerWithEiriniInstance(
 	logger lager.Logger,
-	jobClient JobCreator,
+	jobClient JobCreatingClient,
 	secretsCreator SecretsCreator,
 	defaultStagingNamespace string,
 	tlsConfig []StagingConfigTLS,
@@ -129,7 +130,7 @@ func (d *TaskDesirer) Desire(namespace string, task *opi.Task, opts ...DesireOpt
 		}
 	}
 
-	_, err := d.jobCreator.Create(namespace, job)
+	_, err := d.jobClient.Create(namespace, job)
 	if err != nil {
 		logger.Error("failed-to-create-job", err)
 
@@ -142,7 +143,7 @@ func (d *TaskDesirer) Desire(namespace string, task *opi.Task, opts ...DesireOpt
 func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 	logger := d.logger.Session("desire-staging", lager.Data{"guid": task.GUID, "name": task.Name})
 
-	_, err := d.jobCreator.Create(d.defaultStagingNamespace, d.toStagingJob(task))
+	_, err := d.jobClient.Create(d.defaultStagingNamespace, d.toStagingJob(task))
 	if err != nil {
 		logger.Error("failed-to-create-job", err)
 
@@ -150,6 +151,22 @@ func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 	}
 
 	return nil
+}
+
+func (d *TaskDesirer) Get(taskGUID string) (*opi.Task, error) {
+	jobs, err := d.jobClient.GetByGUID(taskGUID)
+	if err != nil {
+		return nil, err
+	}
+
+	switch len(jobs) {
+	case 0:
+		return nil, eirini.ErrNotFound
+	case 1:
+		return toTask(jobs[0]), nil
+	default:
+		return nil, fmt.Errorf("multiple jobs found for task GUID %q", taskGUID)
+	}
 }
 
 func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {
@@ -440,4 +457,10 @@ func (d *TaskDesirer) addImagePullSecret(namespace string, task *opi.Task, job *
 
 func imageInPrivateRegistry(task *opi.Task) bool {
 	return task.PrivateRegistry != nil && task.PrivateRegistry.Username != "" && task.PrivateRegistry.Password != ""
+}
+
+func toTask(job batch.Job) *opi.Task {
+	return &opi.Task{
+		GUID: job.Labels[LabelGUID],
+	}
 }

@@ -10,10 +10,10 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 )
 
-//counterfeiter:generate . JobClient
+//counterfeiter:generate . JobDeletingClient
 //counterfeiter:generate . SecretsDeleter
 
-type JobClient interface {
+type JobDeletingClient interface {
 	GetByGUID(guid string) ([]batchv1.Job, error)
 	Delete(namespace string, name string) error
 }
@@ -24,13 +24,13 @@ type SecretsDeleter interface {
 
 type TaskDeleter struct {
 	logger         lager.Logger
-	jobClient      JobClient
+	jobClient      JobDeletingClient
 	secretsDeleter SecretsDeleter
 }
 
 func NewTaskDeleter(
 	logger lager.Logger,
-	jobClient JobClient,
+	jobClient JobDeletingClient,
 	secretsDeleter SecretsDeleter,
 ) *TaskDeleter {
 	return &TaskDeleter{

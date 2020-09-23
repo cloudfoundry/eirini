@@ -104,6 +104,10 @@ type TaskRequest struct {
 	Lifecycle          Lifecycle             `json:"lifecycle"`
 }
 
+type TaskResponse struct {
+	GUID string `json:"guid"`
+}
+
 type TaskCompletedRequest struct {
 	TaskGUID      string `json:"task_guid"`
 	Failed        bool   `json:"failed"`

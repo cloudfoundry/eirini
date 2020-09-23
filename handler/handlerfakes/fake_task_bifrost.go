@@ -21,6 +21,19 @@ type FakeTaskBifrost struct {
 	cancelTaskReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetTaskStub        func(string) (cf.TaskResponse, error)
+	getTaskMutex       sync.RWMutex
+	getTaskArgsForCall []struct {
+		arg1 string
+	}
+	getTaskReturns struct {
+		result1 cf.TaskResponse
+		result2 error
+	}
+	getTaskReturnsOnCall map[int]struct {
+		result1 cf.TaskResponse
+		result2 error
+	}
 	TransferTaskStub        func(context.Context, string, cf.TaskRequest) error
 	transferTaskMutex       sync.RWMutex
 	transferTaskArgsForCall []struct {
@@ -98,6 +111,69 @@ func (fake *FakeTaskBifrost) CancelTaskReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeTaskBifrost) GetTask(arg1 string) (cf.TaskResponse, error) {
+	fake.getTaskMutex.Lock()
+	ret, specificReturn := fake.getTaskReturnsOnCall[len(fake.getTaskArgsForCall)]
+	fake.getTaskArgsForCall = append(fake.getTaskArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("GetTask", []interface{}{arg1})
+	fake.getTaskMutex.Unlock()
+	if fake.GetTaskStub != nil {
+		return fake.GetTaskStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.getTaskReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeTaskBifrost) GetTaskCallCount() int {
+	fake.getTaskMutex.RLock()
+	defer fake.getTaskMutex.RUnlock()
+	return len(fake.getTaskArgsForCall)
+}
+
+func (fake *FakeTaskBifrost) GetTaskCalls(stub func(string) (cf.TaskResponse, error)) {
+	fake.getTaskMutex.Lock()
+	defer fake.getTaskMutex.Unlock()
+	fake.GetTaskStub = stub
+}
+
+func (fake *FakeTaskBifrost) GetTaskArgsForCall(i int) string {
+	fake.getTaskMutex.RLock()
+	defer fake.getTaskMutex.RUnlock()
+	argsForCall := fake.getTaskArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeTaskBifrost) GetTaskReturns(result1 cf.TaskResponse, result2 error) {
+	fake.getTaskMutex.Lock()
+	defer fake.getTaskMutex.Unlock()
+	fake.GetTaskStub = nil
+	fake.getTaskReturns = struct {
+		result1 cf.TaskResponse
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeTaskBifrost) GetTaskReturnsOnCall(i int, result1 cf.TaskResponse, result2 error) {
+	fake.getTaskMutex.Lock()
+	defer fake.getTaskMutex.Unlock()
+	fake.GetTaskStub = nil
+	if fake.getTaskReturnsOnCall == nil {
+		fake.getTaskReturnsOnCall = make(map[int]struct {
+			result1 cf.TaskResponse
+			result2 error
+		})
+	}
+	fake.getTaskReturnsOnCall[i] = struct {
+		result1 cf.TaskResponse
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeTaskBifrost) TransferTask(arg1 context.Context, arg2 string, arg3 cf.TaskRequest) error {
 	fake.transferTaskMutex.Lock()
 	ret, specificReturn := fake.transferTaskReturnsOnCall[len(fake.transferTaskArgsForCall)]
@@ -165,6 +241,8 @@ func (fake *FakeTaskBifrost) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.cancelTaskMutex.RLock()
 	defer fake.cancelTaskMutex.RUnlock()
+	fake.getTaskMutex.RLock()
+	defer fake.getTaskMutex.RUnlock()
 	fake.transferTaskMutex.RLock()
 	defer fake.transferTaskMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

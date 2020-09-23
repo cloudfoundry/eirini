@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -156,6 +157,40 @@ var _ = Describe("TaskHandler", func() {
 			})
 
 			It("returns 500 status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+			})
+		})
+	})
+
+	Describe("GetTask", func() {
+		BeforeEach(func() {
+			method = "GET"
+			path = "/tasks/guid_1234"
+			body = ""
+
+			taskBifrost.GetTaskReturns(cf.TaskResponse{
+				GUID: "guid_1234",
+			}, nil)
+		})
+
+		It("retrives a task", func() {
+			Expect(taskBifrost.GetTaskCallCount()).To(Equal(1))
+			actualGUID := taskBifrost.GetTaskArgsForCall(0)
+			Expect(actualGUID).To(Equal("guid_1234"))
+
+			var taskResponse cf.TaskResponse
+			err := json.NewDecoder(response.Body).Decode(&taskResponse)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(taskResponse.GUID).To(Equal("guid_1234"))
+		})
+
+		When("getting the task fails", func() {
+			BeforeEach(func() {
+				taskBifrost.GetTaskReturns(cf.TaskResponse{}, errors.New("task-error"))
+			})
+
+			It("returns a 500 status", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
 			})
 		})

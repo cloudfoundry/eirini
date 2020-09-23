@@ -209,3 +209,16 @@ func listJobs() []batchv1.Job {
 
 	return jobs.Items
 }
+
+func desireTask(taskRequest cf.TaskRequest) *http.Response {
+	data, err := json.Marshal(taskRequest)
+	Expect(err).NotTo(HaveOccurred())
+
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), taskRequest.GUID), bytes.NewReader(data))
+	Expect(err).NotTo(HaveOccurred())
+
+	response, err := fixture.GetEiriniHTTPClient().Do(request)
+	Expect(err).NotTo(HaveOccurred())
+
+	return response
+}

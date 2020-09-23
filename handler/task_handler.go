@@ -21,6 +21,24 @@ func NewTaskHandler(logger lager.Logger, taskBifrost TaskBifrost) *Task {
 	}
 }
 
+func (t *Task) GetTask(resp http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	taskGUID := ps.ByName("task_guid")
+	logger := t.logger.Session("get-task-request", lager.Data{"task-guid": taskGUID})
+
+	response, err := t.taskBifrost.GetTask(taskGUID)
+	if err != nil {
+		logger.Error("get-task-request-failed", err)
+		writeErrorResponse(resp, http.StatusInternalServerError, err)
+
+		return
+	}
+
+	if err := json.NewEncoder(resp).Encode(response); err != nil {
+		logger.Error("encode-json-failed", err)
+		resp.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 func (t *Task) Run(resp http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	taskGUID := ps.ByName("task_guid")
 	logger := t.logger.Session("task-request", lager.Data{"task-guid": taskGUID})

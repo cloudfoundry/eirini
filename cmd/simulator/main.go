@@ -102,6 +102,10 @@ func (s *StagerSimulator) CompleteStaging(cf.StagingCompletedRequest) error {
 
 type TaskSimulator struct{}
 
+func (t *TaskSimulator) GetTask(taskGUID string) (cf.TaskResponse, error) {
+	return cf.TaskResponse{}, nil
+}
+
 func (t *TaskSimulator) TransferTask(ctx context.Context, taskGUID string, request cf.TaskRequest) error {
 	return nil
 }

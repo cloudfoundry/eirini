@@ -1,7 +1,6 @@
 package eats_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -59,7 +58,8 @@ var _ = Describe("Tasks Reporter", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		desireOpiTask(taskRequest)
+		response := desireTask(taskRequest)
+		Expect(response).To(HaveHTTPStatus(http.StatusAccepted))
 		Eventually(jobExists(taskRequest.GUID)).Should(BeTrue())
 	})
 
@@ -114,19 +114,4 @@ func jobExists(guid string) func() bool {
 
 		return false
 	}
-}
-
-func desireOpiTask(taskRequest cf.TaskRequest) {
-	data, err := json.Marshal(taskRequest)
-	Expect(err).NotTo(HaveOccurred())
-
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), taskRequest.GUID), bytes.NewReader(data))
-	Expect(err).NotTo(HaveOccurred())
-
-	response, err := fixture.GetEiriniHTTPClient().Do(request)
-	Expect(err).NotTo(HaveOccurred())
-
-	defer response.Body.Close()
-
-	Expect(response).To(HaveHTTPStatus(http.StatusAccepted))
 }

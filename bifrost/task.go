@@ -20,6 +20,7 @@ type TaskConverter interface {
 
 type TaskDesirer interface {
 	Desire(namespace string, task *opi.Task, opts ...k8s.DesireOption) error
+	Get(guid string) (*opi.Task, error)
 }
 
 type TaskDeleter interface {
@@ -36,6 +37,15 @@ type Task struct {
 	TaskDesirer      TaskDesirer
 	TaskDeleter      TaskDeleter
 	JSONClient       JSONClient
+}
+
+func (t *Task) GetTask(taskGUID string) (cf.TaskResponse, error) {
+	task, err := t.TaskDesirer.Get(taskGUID)
+	if err != nil {
+		return cf.TaskResponse{}, err
+	}
+
+	return cf.TaskResponse{GUID: task.GUID}, nil
 }
 
 func (t *Task) TransferTask(ctx context.Context, taskGUID string, taskRequest cf.TaskRequest) error {
