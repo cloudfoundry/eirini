@@ -80,7 +80,7 @@ type Config struct {
 
 type KubeConfig struct {
 	Namespace                   string `yaml:"app_namespace"`
-	EnableMultiNamespaceSupport bool   `json:"enable_multi_namespace_support"`
+	EnableMultiNamespaceSupport bool   `yaml:"enable_multi_namespace_support"`
 	ConfigPath                  string `yaml:"kube_config_path"`
 }
 

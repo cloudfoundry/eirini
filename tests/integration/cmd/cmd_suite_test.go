@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests"
@@ -34,6 +35,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 }, func(data []byte) {
 	err := json.Unmarshal(data, &eiriniBins)
 	Expect(err).NotTo(HaveOccurred())
+	SetDefaultConsistentlyDuration(time.Second * 2)
 
 	fixture = tests.NewFixture(GinkgoWriter)
 })

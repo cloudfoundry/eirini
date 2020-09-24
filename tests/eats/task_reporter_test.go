@@ -1,6 +1,8 @@
 package eats_test
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +13,7 @@ import (
 	"code.cloudfoundry.org/eirini/tests/eats/wiremock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Tasks Reporter", func() {
@@ -28,11 +31,7 @@ var _ = Describe("Tasks Reporter", func() {
 		taskRequest = cf.TaskRequest{
 			GUID:               taskGUID,
 			Namespace:          fixture.Namespace,
-			Name:               "some-task",
 			AppGUID:            tests.GenerateGUID(),
-			AppName:            "some-app",
-			OrgName:            "the-org",
-			SpaceName:          "the-space",
 			CompletionCallback: fmt.Sprintf("%s/%s", fixture.Wiremock.URL, taskGUID),
 			Lifecycle: cf.Lifecycle{
 				DockerLifecycle: &cf.DockerLifecycle{
@@ -61,6 +60,10 @@ var _ = Describe("Tasks Reporter", func() {
 		response := desireTask(taskRequest)
 		Expect(response).To(HaveHTTPStatus(http.StatusAccepted))
 		Eventually(jobExists(taskRequest.GUID)).Should(BeTrue())
+	})
+
+	AfterEach(func() {
+		Expect(cleanupJob(taskGUID)).To(Succeed())
 	})
 
 	It("deletes the task after it completes", func() {
@@ -114,4 +117,23 @@ func jobExists(guid string) func() bool {
 
 		return false
 	}
+}
+
+func desireOpiTask(taskRequest cf.TaskRequest) {
+	data, err := json.Marshal(taskRequest)
+	Expect(err).NotTo(HaveOccurred())
+
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), taskRequest.GUID), bytes.NewReader(data))
+	Expect(err).NotTo(HaveOccurred())
+
+	response, err := fixture.GetEiriniHTTPClient().Do(request)
+	Expect(err).NotTo(HaveOccurred())
+
+	defer response.Body.Close()
+
+	Expect(response).To(HaveHTTPStatus(http.StatusAccepted))
+}
+
+func cleanupJob(guid string) error {
+	return fixture.Clientset.BatchV1().Jobs(fixture.Namespace).DeleteCollection(context.Background(), v1.DeleteOptions{}, v1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, guid)})
 }

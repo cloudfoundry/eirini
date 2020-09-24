@@ -64,13 +64,20 @@ func main() {
 
 	taskReconciler := k8stask.NewReconciler(taskLogger, controllerClient, jobsClient, reporter)
 
-	mgr, err := manager.New(kubeConfig, manager.Options{
+	mgrOptions := manager.Options{
 		// do not serve prometheus metrics; disabled because port clashes during integration tests
 		MetricsBindAddress: "0",
 		Scheme:             kscheme.Scheme,
-		Namespace:          cfg.Namespace,
 		Logger:             util.NewLagerLogr(taskLogger),
-	})
+	}
+	if !cfg.EnableMultiNamespaceSupport {
+		if cfg.Namespace == "" {
+			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
+		}
+		mgrOptions.Namespace = cfg.Namespace
+	}
+
+	mgr, err := manager.New(kubeConfig, mgrOptions)
 	cmdcommons.ExitIfError(err)
 
 	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate("TASK")}

@@ -85,7 +85,11 @@ func NewFixture(writer io.Writer) *Fixture {
 }
 
 func (f *Fixture) SetUp() {
-	f.Namespace = f.configureNewNamespace()
+	if IsMultiNamespaceEnabled() {
+		f.Namespace = f.configureNewNamespace()
+	} else {
+		f.Namespace = GetEiriniWorkloadsNamespace()
+	}
 }
 
 func (f *Fixture) NextAvailablePort() int {
@@ -109,7 +113,10 @@ func (f Fixture) maxPortNumber() int {
 func (f *Fixture) TearDown() {
 	var errs *multierror.Error
 	errs = multierror.Append(errs, f.printDebugInfo())
-	errs = multierror.Append(errs, f.deleteNamespace(f.Namespace))
+
+	if IsMultiNamespaceEnabled() {
+		errs = multierror.Append(errs, f.deleteNamespace(f.Namespace))
+	}
 
 	Expect(errs.ErrorOrNil()).NotTo(HaveOccurred())
 

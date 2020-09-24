@@ -53,6 +53,14 @@ func GetEiriniSystemNamespace() string {
 	return lookupOptionalEnv("EIRINI_SYSTEM_NS")
 }
 
+func GetEiriniWorkloadsNamespace() string {
+	return lookupOptionalEnv("EIRINI_WORKLOADS_NS")
+}
+
+func IsMultiNamespaceEnabled() bool {
+	return os.Getenv("USE_MULTI_NAMESPACES") == "true"
+}
+
 func getEiriniTLSSecretName() string {
 	return lookupOptionalEnv("EIRINI_TLS_SECRET")
 }
