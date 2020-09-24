@@ -49,14 +49,14 @@ var _ = Describe("Events", func() {
 
 		config = &eirini.EventReporterConfig{
 			KubeConfig: eirini.KubeConfig{
-				Namespace:  fixture.Namespace,
-				ConfigPath: fixture.KubeConfigPath,
+				Namespace:                   fixture.Namespace,
+				EnableMultiNamespaceSupport: true,
+				ConfigPath:                  fixture.KubeConfigPath,
 			},
-			CcInternalAPI:               capiServer.URL(),
-			CCCertPath:                  certPath,
-			CCKeyPath:                   keyPath,
-			CCCAPath:                    certPath,
-			EnableMultiNamespaceSupport: true,
+			CcInternalAPI: capiServer.URL(),
+			CCCertPath:    certPath,
+			CCKeyPath:     keyPath,
+			CCCAPath:      certPath,
 		}
 	})
 

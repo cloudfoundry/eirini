@@ -191,8 +191,9 @@ func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 	return &eirini.Config{
 		Properties: eirini.Properties{
 			KubeConfig: eirini.KubeConfig{
-				ConfigPath: GetKubeconfig(),
-				Namespace:  namespace,
+				ConfigPath:                  GetKubeconfig(),
+				Namespace:                   namespace,
+				EnableMultiNamespaceSupport: true,
 			},
 			CCCAPath:       PathToTestFixture("cert"),
 			CCCertPath:     PathToTestFixture("cert"),
@@ -210,8 +211,6 @@ func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 			StagingServiceAccount:     "staging",
 			RegistryAddress:           "registry",
 			RegistrySecretName:        "registry-secret",
-
-			EnableMultiNamespaceSupport: true,
 		},
 	}
 }

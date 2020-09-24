@@ -47,14 +47,13 @@ var _ = Describe("TaskReporter", func() {
 
 		config = &eirini.TaskReporterConfig{
 			KubeConfig: eirini.KubeConfig{
-				Namespace:  fixture.Namespace,
-				ConfigPath: fixture.KubeConfigPath,
+				Namespace:                   fixture.Namespace,
+				EnableMultiNamespaceSupport: true,
+				ConfigPath:                  fixture.KubeConfigPath,
 			},
 			CCCertPath: certPath,
 			CAPath:     certPath,
 			CCKeyPath:  keyPath,
-
-			EnableMultiNamespaceSupport: true,
 		}
 
 		taskDesirer = k8s.NewTaskDesirer(
