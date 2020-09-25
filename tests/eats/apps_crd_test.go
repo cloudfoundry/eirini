@@ -2,6 +2,7 @@ package eats_test
 
 import (
 	"context"
+	"fmt"
 
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/pkg/apis/eirini"
@@ -18,20 +19,21 @@ import (
 )
 
 var _ = Describe("Apps CRDs", func() {
-	const lrpName = "lrp-name-irrelevant"
 
 	var (
-		namespace  string
-		lrpGUID    string
-		lrpVersion string
-		lrp        *eiriniv1.LRP
+		namespace   string
+		lrpName     string
+		lrpGUID     string
+		lrpVersion  string
+		lrp         *eiriniv1.LRP
+		appListOpts metav1.ListOptions
 	)
 
 	getStatefulSet := func() *appsv1.StatefulSet {
 		stsList, err := fixture.Clientset.
 			AppsV1().
 			StatefulSets(fixture.Namespace).
-			List(context.Background(), metav1.ListOptions{})
+			List(context.Background(), appListOpts)
 
 		Expect(err).NotTo(HaveOccurred())
 		if len(stsList.Items) == 0 {
@@ -40,20 +42,6 @@ var _ = Describe("Apps CRDs", func() {
 		Expect(stsList.Items).To(HaveLen(1))
 
 		return &stsList.Items[0]
-	}
-
-	getStatefulSetPods := func() []corev1.Pod {
-		podList, err := fixture.Clientset.
-			CoreV1().
-			Pods(fixture.Namespace).
-			List(context.Background(), metav1.ListOptions{})
-
-		Expect(err).NotTo(HaveOccurred())
-		if len(podList.Items) == 0 {
-			return nil
-		}
-
-		return podList.Items
 	}
 
 	getLRP := func() *eiriniv1.LRP {
@@ -69,8 +57,12 @@ var _ = Describe("Apps CRDs", func() {
 
 	BeforeEach(func() {
 		namespace = fixture.Namespace
+		lrpName = tests.GenerateGUID()
 		lrpGUID = tests.GenerateGUID()
 		lrpVersion = tests.GenerateGUID()
+		appListOpts = metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, lrpGUID, k8s.LabelVersion, lrpVersion),
+		}
 
 		lrp = &eiriniv1.LRP{
 			ObjectMeta: metav1.ObjectMeta{
@@ -97,6 +89,14 @@ var _ = Describe("Apps CRDs", func() {
 			},
 		}
 
+	})
+
+	AfterEach(func() {
+		err := fixture.EiriniClientset.
+			EiriniV1().
+			LRPs(namespace).
+			DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{FieldSelector: "metadata.name=" + lrpName})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Describe("Desiring an app", func() {
@@ -299,13 +299,10 @@ var _ = Describe("Apps CRDs", func() {
 			})
 
 			JustBeforeEach(func() {
-				pods := getStatefulSetPods()
-				Expect(pods).To(HaveLen(1))
-				pod := pods[0]
 				Expect(fixture.Clientset.
 					CoreV1().
 					Pods(fixture.Namespace).
-					Delete(context.Background(), pod.Name, metav1.DeleteOptions{}),
+					DeleteCollection(context.Background(), metav1.DeleteOptions{}, appListOpts),
 				).To(Succeed())
 			})
 

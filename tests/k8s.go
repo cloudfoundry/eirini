@@ -193,7 +193,7 @@ func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath:                  GetKubeconfig(),
 				Namespace:                   namespace,
-				EnableMultiNamespaceSupport: true,
+				EnableMultiNamespaceSupport: false,
 			},
 			CCCAPath:       PathToTestFixture("cert"),
 			CCCertPath:     PathToTestFixture("cert"),

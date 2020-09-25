@@ -47,6 +47,10 @@ func main() {
 	eiriniCfg, err := readConfigFile(opts.ConfigFile)
 	cmdcommons.ExitIfError(err)
 
+	if !eiriniCfg.Properties.EnableMultiNamespaceSupport && eiriniCfg.Properties.Namespace == "" {
+		cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
+	}
+
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", eiriniCfg.Properties.ConfigPath)
 	cmdcommons.ExitIfError(err)
 
