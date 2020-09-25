@@ -70,10 +70,12 @@ func main() {
 		Scheme:             kscheme.Scheme,
 		Logger:             util.NewLagerLogr(taskLogger),
 	}
+
 	if !cfg.EnableMultiNamespaceSupport {
 		if cfg.Namespace == "" {
 			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
 		}
+
 		mgrOptions.Namespace = cfg.Namespace
 	}
 

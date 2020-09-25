@@ -85,11 +85,7 @@ func NewFixture(writer io.Writer) *Fixture {
 }
 
 func (f *Fixture) SetUp() {
-	if IsMultiNamespaceEnabled() {
-		f.Namespace = f.configureNewNamespace()
-	} else {
-		f.Namespace = GetEiriniWorkloadsNamespace()
-	}
+	f.Namespace = f.CreateExtraNamespace()
 }
 
 func (f *Fixture) NextAvailablePort() int {
@@ -111,14 +107,7 @@ func (f Fixture) maxPortNumber() int {
 }
 
 func (f *Fixture) TearDown() {
-	var errs *multierror.Error
-	errs = multierror.Append(errs, f.printDebugInfo())
-
-	if IsMultiNamespaceEnabled() {
-		errs = multierror.Append(errs, f.deleteNamespace(f.Namespace))
-	}
-
-	Expect(errs.ErrorOrNil()).NotTo(HaveOccurred())
+	f.printDebugInfo()
 
 	for _, ns := range f.extraNamespaces {
 		_ = f.deleteNamespace(ns)
@@ -152,47 +141,32 @@ func (f *Fixture) deleteNamespace(namespace string) error {
 }
 
 //nolint:gocyclo
-func (f *Fixture) printDebugInfo() error {
-	if _, err := f.Writer.Write([]byte("Jobs:\n")); err != nil {
-		return err
-	}
+func (f *Fixture) printDebugInfo() {
+	fmt.Fprintln(f.Writer, "Jobs:")
 
 	jobs, _ := f.Clientset.BatchV1().Jobs(f.Namespace).List(context.Background(), metav1.ListOptions{})
 
 	for _, job := range jobs.Items {
 		fmt.Fprintf(f.Writer, "Job: %s status is: %#v\n", job.Name, job.Status)
-
-		if _, err := f.Writer.Write([]byte("-----------\n")); err != nil {
-			return err
-		}
+		fmt.Fprintln(f.Writer, "-----------")
 	}
 
 	statefulsets, _ := f.Clientset.AppsV1().StatefulSets(f.Namespace).List(context.Background(), metav1.ListOptions{})
 
-	if _, err := f.Writer.Write([]byte("StatefulSets:\n")); err != nil {
-		return err
-	}
+	fmt.Fprintf(f.Writer, "StatefulSets:")
 
 	for _, s := range statefulsets.Items {
 		fmt.Fprintf(f.Writer, "StatefulSet: %s status is: %#v\n", s.Name, s.Status)
-
-		if _, err := f.Writer.Write([]byte("-----------\n")); err != nil {
-			return err
-		}
+		fmt.Fprintln(f.Writer, "-----------")
 	}
 
 	pods, _ := f.Clientset.CoreV1().Pods(f.Namespace).List(context.Background(), metav1.ListOptions{})
 
-	if _, err := f.Writer.Write([]byte("Pods:\n")); err != nil {
-		return err
-	}
+	fmt.Fprintf(f.Writer, "Pods:")
 
 	for _, p := range pods.Items {
 		fmt.Fprintf(f.Writer, "Pod: %s status is: %#v\n", p.Name, p.Status)
-
-		if _, err := f.Writer.Write([]byte("-----------\n")); err != nil {
-			return err
-		}
+		fmt.Fprintln(f.Writer, "-----------")
 
 		fmt.Fprintf(f.Writer, "Pod: %s logs are: \n", p.Name)
 		logsReq := f.Clientset.CoreV1().Pods(f.Namespace).GetLogs(p.Name, &corev1.PodLogOptions{})
@@ -201,8 +175,6 @@ func (f *Fixture) printDebugInfo() error {
 			fmt.Fprintf(f.Writer, "Failed to get logs for Pod: %s becase: %v \n", p.Name, err)
 		}
 	}
-
-	return nil
 }
 
 func consumeRequest(request rest.ResponseWrapper, out io.Writer) error {

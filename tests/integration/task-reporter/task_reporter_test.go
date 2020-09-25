@@ -213,28 +213,6 @@ var _ = Describe("TaskReporter", func() {
 			Consistently(func() int { return len(cloudControllerServer.ReceivedRequests()) }, "1m").Should(BeZero())
 		})
 	})
-
-	// TODO: delete this when it is covered in EATS
-	// When("the reporter is monitoring multiple namespaces", func() {
-	// 	BeforeEach(func() {
-	// 		config.EnableMultiNamespaceSupport = true
-	// 		config.Namespace = ""
-	// 	})
-
-	// 	It("receives the events", func() {
-	// 		Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
-	// 	})
-
-	// 	When("the namespace is set", func() {
-	// 		BeforeEach(func() {
-	// 			config.Namespace = "fooo"
-	// 		})
-
-	// 		It("still receives events from all namespaces", func() {
-	// 			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
-	// 		})
-	// 	})
-	// })
 })
 
 func getTaskJobsFn(guid string) func() ([]batchv1.Job, error) {

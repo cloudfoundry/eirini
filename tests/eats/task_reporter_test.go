@@ -24,7 +24,6 @@ var _ = Describe("Tasks Reporter", func() {
 	)
 
 	BeforeEach(func() {
-
 		taskGUID = tests.GenerateGUID()
 		callbackStatusCode = http.StatusOK
 

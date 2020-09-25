@@ -51,6 +51,13 @@ func NewEATSFixture(writer io.Writer) *EATSFixture {
 		Wiremock:         wiremockClient,
 	}
 }
+func (f *EATSFixture) SetUp() {
+	if IsMultiNamespaceEnabled() {
+		f.Fixture.SetUp()
+	} else {
+		f.Namespace = GetEiriniWorkloadsNamespace()
+	}
+}
 
 func (f *EATSFixture) TearDown() {
 	f.Fixture.TearDown()
