@@ -73,6 +73,17 @@ var _ = Describe("Tasks Reporter", func() {
 			URL:    fmt.Sprintf("/%s", taskGUID),
 		}
 		Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "1m").Should(Equal(1))
+
+		bodyStr, err := fixture.Wiremock.GetRequestBody(requestMatcher)
+		Expect(err).NotTo(HaveOccurred())
+
+		var request cf.TaskCompletedRequest
+		err = json.Unmarshal([]byte(bodyStr), &request)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(request.TaskGUID).To(Equal(taskGUID))
+		Expect(request.Failed).To(BeFalse())
+		Expect(request.FailureReason).To(BeEmpty())
 	})
 
 	When("posting to the cloud controller fails", func() {

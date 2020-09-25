@@ -41,6 +41,36 @@ type Count struct {
 	Count int `json:"count"`
 }
 
+type Requests struct {
+	Requests []Request `json:"requests"`
+}
+
+type Request struct {
+	Body string `json:"body"`
+}
+
+func (w *Wiremock) GetRequestBody(requestMatcher RequestMatcher) (string, error) {
+	resp, err := w.postWithResponse("requests/find", requestMatcher)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	responseDecoder := json.NewDecoder(resp.Body)
+	reqs := &Requests{}
+
+	err = responseDecoder.Decode(reqs)
+	if err != nil {
+		return "", err
+	}
+
+	if len(reqs.Requests) != 1 {
+		return "", fmt.Errorf("expected one request, but instead got %d", len(reqs.Requests))
+	}
+
+	return reqs.Requests[0].Body, nil
+}
+
 func (w *Wiremock) GetCount(requestMatcher RequestMatcher) (int, error) {
 	resp, err := w.postWithResponse("requests/count", requestMatcher)
 	if err != nil {
