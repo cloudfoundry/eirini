@@ -14,12 +14,12 @@ import (
 )
 
 var _ = Describe("InstanceIndexEnvInjector", func() {
-	const lrpName = "lrp-name-irrelevant"
 
 	var (
 		namespace  string
 		lrpGUID    string
 		lrpVersion string
+		lrpName    string
 	)
 
 	getStatefulSetPods := func() []corev1.Pod {
@@ -56,6 +56,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 
 	BeforeEach(func() {
 		namespace = fixture.Namespace
+		lrpName = tests.GenerateGUID()
 		lrpGUID = tests.GenerateGUID()
 		lrpVersion = tests.GenerateGUID()
 
@@ -88,6 +89,14 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 			EiriniV1().
 			LRPs(namespace).
 			Create(context.Background(), lrp, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	AfterEach(func() {
+		err := fixture.EiriniClientset.
+			EiriniV1().
+			LRPs(namespace).
+			Delete(context.Background(), lrpName, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 

@@ -176,7 +176,6 @@ type InstanceIndexEnvInjectorConfig struct {
 	ServiceName                string `yaml:"service_name"`
 	ServiceNamespace           string `yaml:"service_namespace"`
 	ServicePort                int32  `yaml:"service_port"`
-	WorkloadNamespace          string `yaml:"workload_namespace"`
 	EiriniXOperatorFingerprint string
 
 	KubeConfig `yaml:",inline"`

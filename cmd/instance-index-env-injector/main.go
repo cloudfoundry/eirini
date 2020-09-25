@@ -32,19 +32,27 @@ func main() {
 
 	register := true
 	filterEiriniApps := true
-	manager := eirinix.NewManager(
-		eirinix.ManagerOptions{
-			Port:                cfg.ServicePort,
-			Host:                "0.0.0.0",
-			ServiceName:         cfg.ServiceName,
-			WebhookNamespace:    cfg.ServiceNamespace,
-			Namespace:           cfg.WorkloadNamespace,
-			FilterEiriniApps:    &filterEiriniApps,
-			RegisterWebHook:     &register,
-			OperatorFingerprint: cfg.EiriniXOperatorFingerprint,
-			KubeConfig:          cfg.ConfigPath,
-		})
 
+	managerOptions := eirinix.ManagerOptions{
+		Port:                cfg.ServicePort,
+		Host:                "0.0.0.0",
+		ServiceName:         cfg.ServiceName,
+		WebhookNamespace:    cfg.ServiceNamespace,
+		FilterEiriniApps:    &filterEiriniApps,
+		RegisterWebHook:     &register,
+		OperatorFingerprint: cfg.EiriniXOperatorFingerprint,
+		KubeConfig:          cfg.ConfigPath,
+	}
+
+	if !cfg.EnableMultiNamespaceSupport {
+		if cfg.Namespace == "" {
+			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
+		}
+
+		managerOptions.Namespace = cfg.Namespace
+	}
+
+	manager := eirinix.NewManager(managerOptions)
 	manager.AddExtension(webhook.NewInstanceIndexEnvInjector(log))
 
 	log.Fatal("instance-index-env-injector-errored", manager.Start())

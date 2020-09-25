@@ -36,10 +36,11 @@ var _ = Describe("InstanceIndexInjector", func() {
 			ServiceName:                telepresenceService,
 			ServicePort:                int32(port),
 			ServiceNamespace:           "default",
-			WorkloadNamespace:          fixture.Namespace,
 			EiriniXOperatorFingerprint: fingerprint,
 			KubeConfig: eirini.KubeConfig{
-				ConfigPath: fixture.KubeConfigPath,
+				ConfigPath:                  fixture.KubeConfigPath,
+				Namespace:                   fixture.Namespace,
+				EnableMultiNamespaceSupport: false,
 			},
 		}
 		hookSession, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
