@@ -74,4 +74,56 @@ var _ = Describe("MetricsCollector", func() {
 			Expect(session.Err).To(gbytes.Say("open : no such file or directory"))
 		})
 	})
+
+	Context("When the loggregator CA file is missing", func() {
+		BeforeEach(func() {
+			config = metricsCollectorConfig()
+			config.LoggregatorCAPath = "/somewhere/over/the/rainbow"
+		})
+
+		It("should exit with a useful error message", func() {
+			Eventually(session.Exited).Should(BeClosed())
+			Expect(session.ExitCode()).To(Equal(2))
+			Expect(session.Err).Should(gbytes.Say(`"Loggregator CA" file does not exist`))
+		})
+	})
+
+	Context("When the loggregator cert file is missing", func() {
+		BeforeEach(func() {
+			config = metricsCollectorConfig()
+			config.LoggregatorCertPath = "/somewhere/over/the/rainbow"
+		})
+
+		It("should exit with a useful error message", func() {
+			Eventually(session.Exited).Should(BeClosed())
+			Expect(session.ExitCode()).To(Equal(2))
+			Expect(session.Err).Should(gbytes.Say(`"Loggregator Cert" file does not exist`))
+		})
+	})
+
+	Context("When the loggregator key file is missing", func() {
+		BeforeEach(func() {
+			config = metricsCollectorConfig()
+			config.LoggregatorKeyPath = "/somewhere/over/the/rainbow"
+		})
+
+		It("should exit with a useful error message", func() {
+			Eventually(session.Exited).Should(BeClosed())
+			Expect(session.ExitCode()).To(Equal(2))
+			Expect(session.Err).Should(gbytes.Say(`"Loggregator Key" file does not exist`))
+		})
+	})
+
+	Context("When the loggregator CA file is invalid", func() {
+		BeforeEach(func() {
+			config = metricsCollectorConfig()
+			config.LoggregatorCAPath = pathToTestFixture("kube.conf")
+		})
+
+		It("should exit with a useful error message", func() {
+			Eventually(session.Exited).Should(BeClosed())
+			Expect(session.ExitCode()).To(Equal(2))
+			Expect(session.Err).Should(gbytes.Say(`Failed to create loggregator tls config: cannot parse ca cert`))
+		})
+	})
 })
