@@ -2,11 +2,11 @@ package cmd_test
 
 import (
 	"os"
-	"syscall"
 
 	"code.cloudfoundry.org/eirini"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 )
 
@@ -16,6 +16,16 @@ var _ = Describe("MetricsCollector", func() {
 		configFilePath string
 		session        *gexec.Session
 	)
+	BeforeEach(func() {
+		config = &eirini.MetricsCollectorConfig{
+			KubeConfig: eirini.KubeConfig{
+				ConfigPath: pathToTestFixture("kube.conf"),
+			},
+			LoggregatorCAPath:   pathToTestFixture("cert"),
+			LoggregatorCertPath: pathToTestFixture("cert"),
+			LoggregatorKeyPath:  pathToTestFixture("key"),
+		}
+	})
 
 	JustBeforeEach(func() {
 		session, configFilePath = eiriniBins.MetricsCollector.Run(config)
@@ -30,13 +40,38 @@ var _ = Describe("MetricsCollector", func() {
 		}
 	})
 
-	Context("When metrics-collector is executed with valid loggregator config", func() {
-		BeforeEach(func() {
-			config = metricsCollectorConfig()
-		})
+	It("should be able to start properly", func() {
+		Consistently(session, "5s").ShouldNot(gexec.Exit())
+	})
 
-		It("should be able to start properly", func() {
-			Expect(session.Command.Process.Signal(syscall.Signal(0))).To(Succeed())
+	When("the config file doesn't exist", func() {
+		It("exits reporting missing config file", func() {
+			session = eiriniBins.MetricsCollector.Restart("/does/not/exist", session)
+			Eventually(session).Should(gexec.Exit())
+			Expect(session.ExitCode).ToNot(BeZero())
+			Expect(session.Err).To(gbytes.Say("failed to read file"))
+		})
+	})
+
+	When("the config file is not valid yaml", func() {
+		It("exits reporting missing config file", func() {
+			session = eiriniBins.MetricsCollector.Restart(pathToTestFixture("invalid.yml"), session)
+			Eventually(session).Should(gexec.Exit())
+			Expect(session.ExitCode).ToNot(BeZero())
+			Expect(session.Err).To(gbytes.Say("failed to unmarshal yaml"))
+		})
+	})
+
+	When("no TLS certs are provided", func() {
+		BeforeEach(func() {
+			config.LoggregatorCAPath = ""
+			config.LoggregatorCertPath = ""
+			config.LoggregatorKeyPath = ""
+		})
+		It("exits reporting missing config file", func() {
+			Eventually(session).Should(gexec.Exit())
+			Expect(session.ExitCode).ToNot(BeZero())
+			Expect(session.Err).To(gbytes.Say("open : no such file or directory"))
 		})
 	})
 })

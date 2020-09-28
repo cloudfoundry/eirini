@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	. "github.com/onsi/gomega/gstruct"
 )
@@ -23,16 +24,17 @@ var _ = Describe("connect command", func() {
 		configFilePath string
 	)
 
-	getRootError := func() error {
-		_, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
+	makeRequest := func() (*http.Response, error) {
+		resp, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/apps", config.Properties.TLSPort))
+		if err != nil {
+			return nil, err
+		}
 
-		return err
-	}
+		if resp.StatusCode >= http.StatusBadRequest {
+			return resp, fmt.Errorf("Errorish status code: %d (%s)", resp.StatusCode, resp.Status)
+		}
 
-	getRoot := func() *http.Response {
-		resp, _ := httpClient.Get(fmt.Sprintf("https://localhost:%d/", config.Properties.TLSPort))
-
-		return resp
+		return resp, nil
 	}
 
 	BeforeEach(func() {
@@ -67,16 +69,24 @@ var _ = Describe("connect command", func() {
 		})
 
 		It("starts serving", func() {
-			Eventually(getRootError, "10s").Should(Succeed())
+			Eventually(func() error {
+				_, err := makeRequest()
+
+				return err
+			}, "10s").Should(Succeed())
 		})
 
 		Context("send a request without a client certificate", func() {
 			It("receives a mTLS-related connection failure", func() {
-				Eventually(getRootError, "10s").Should(Succeed())
+				Eventually(func() error {
+					_, err := makeRequest()
+
+					return err
+				}, "10s").Should(Succeed())
 
 				httpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{}
-				Expect(getRootError()).To(MatchError(
-					ContainSubstring("remote error: tls: bad certificate")))
+				_, err := makeRequest()
+				Expect(err).To(MatchError(ContainSubstring("remote error: tls: bad certificate")))
 			})
 		})
 
@@ -90,20 +100,31 @@ var _ = Describe("connect command", func() {
 			})
 
 			It("returns a mTLS-related connection failure", func() {
-				Eventually(getRootError, "10s").Should(Succeed())
+				Eventually(func() error {
+					_, err := makeRequest()
+
+					return err
+				}, "10s").Should(Succeed())
 
 				httpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{clientCert}
 
-				Expect(getRootError()).To(MatchError(
+				_, err := makeRequest()
+				Expect(err).To(MatchError(
 					ContainSubstring("remote error: tls: bad certificate")))
 			})
 		})
 
 		Context("when sending a request with a valid client certificate", func() {
 			It("should successfully connect", func() {
-				Eventually(getRootError, "10s").Should(Succeed())
+				var resp *http.Response
+				var err error
+				Eventually(func() error {
+					resp, err = makeRequest()
 
-				Expect(getRoot()).To(PointTo(MatchFields(IgnoreExtras, Fields{
+					return err
+				}, "10s").Should(Succeed())
+
+				Expect(resp).To(PointTo(MatchFields(IgnoreExtras, Fields{
 					"TLS": PointTo(MatchFields(IgnoreExtras, Fields{
 						"HandshakeComplete": BeTrue(),
 					})),
@@ -112,19 +133,24 @@ var _ = Describe("connect command", func() {
 		})
 	})
 
-	Context("invoke connect command with non-existent config", func() {
+	Context("invoke connect command with an empty config", func() {
+		BeforeEach(func() {
+			config = nil
+		})
+
 		It("fails", func() {
 			Eventually(session, "10s").Should(gexec.Exit())
 			Expect(session.ExitCode()).NotTo(BeZero())
+			Expect(session.Err).To(gbytes.Say("invalid configuration: no configuration has been provided"))
 		})
 	})
 
-	Context("invoke connect command without TLS config", func() {
+	Context("invoke connect command with non-existent TLS certs", func() {
 		BeforeEach(func() {
 			config = tests.DefaultEiriniConfig("test-ns", fixture.NextAvailablePort())
-			config.Properties.ClientCAPath = ""
-			config.Properties.ServerCertPath = ""
-			config.Properties.ServerKeyPath = ""
+			config.Properties.ClientCAPath = "/does/not/exist"
+			config.Properties.ServerCertPath = "/does/not/exist"
+			config.Properties.ServerKeyPath = "/does/not/exist"
 
 			configFile, err := tests.CreateConfigFile(config)
 			Expect(err).ToNot(HaveOccurred())
@@ -134,14 +160,12 @@ var _ = Describe("connect command", func() {
 		It("fails", func() {
 			Eventually(session, "10s").Should(gexec.Exit())
 			Expect(session.ExitCode()).NotTo(BeZero())
+			Expect(session.Err).To(gbytes.Say("failed to read certificate\\(s\\) at path \"/does/not/exist\""))
 		})
 
 		Context("eirini is configured to serve plaintext", func() {
 			BeforeEach(func() {
 				config = tests.DefaultEiriniConfig("test-ns", fixture.NextAvailablePort())
-				config.Properties.ClientCAPath = ""
-				config.Properties.ServerCertPath = ""
-				config.Properties.ServerKeyPath = ""
 				config.Properties.ServePlaintext = true
 				config.Properties.PlaintextPort = fixture.NextAvailablePort()
 
