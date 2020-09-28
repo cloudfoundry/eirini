@@ -80,13 +80,13 @@ run_integration_tests() {
 run_eats_helmless_single_ns() {
   echo "Running EATs against single NS helmless deployed eirini on kind"
 
-  run_eats_helmless "false"
+  run_eats_helmless "helmless-single"
 }
 
 run_eats_helmless_multi_ns() {
   echo "Running EATs against multi NS helmless deployed eirini on kind"
 
-  run_eats_helmless "true"
+  run_eats_helmless "helmless-multi"
 }
 
 run_eats_helmful_single_ns() {
@@ -102,16 +102,16 @@ run_eats_helmful_multi_ns() {
 }
 
 run_eats_helmless() {
-  local multi_ns_support
-  multi_ns_support="$1"
+  local profile_name
+  profile_name="$1"
 
   local cluster_name="eats-helmless"
   local kubeconfig="$HOME/.kube/$cluster_name.yml"
 
   ensure_kind_cluster "$cluster_name"
   if [[ "$redeploy" == "true" ]]; then
-    KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/cleanup.sh" || true
-    KUBECONFIG="$kubeconfig" USE_MULTI_NAMESPACE="$multi_ns_support" "$EIRINI_RELEASE_DIR/deploy/scripts/deploy.sh"
+    skaffold delete -p helmless
+    KUBECONFIG="$kubeconfig" $RUN_DIR/skaffold run -p "$profile_name"
   fi
 
   local service_name
@@ -148,8 +148,8 @@ run_eats_helmful() {
 
   ensure_kind_cluster "$cluster_name"
   if [[ "$redeploy" == "true" ]]; then
-    KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/helm/scripts/helm-cleanup.sh"
-    KUBECONFIG="$kubeconfig" USE_MULTI_NAMESPACE="$multi_ns_support" "$EIRINI_RELEASE_DIR/helm/scripts/helm-deploy-eirini.sh"
+    skaffold delete -p helm || true # helm will fail if nothing is deployed
+    KUBECONFIG="$kubeconfig" HELM_ENABLE_MULTI_NS="$multi_ns_support" $RUN_DIR/skaffold run -p helm
   fi
 
   local service_name
@@ -167,9 +167,9 @@ run_eats_helmful() {
     --rm \
     -v "$src_dir":/usr/src/app \
     -v "$HOME"/.cache:/root/.cache \
-    -e EIRINI_ADDRESS="https://eirini-opi.cf.svc.cluster.local:8085" \
+    -e EIRINI_ADDRESS="https://eirini-opi.eirini-core.svc.cluster.local:8085" \
     -e EIRINI_TLS_SECRET=eirini-certs \
-    -e EIRINI_SYSTEM_NS=cf \
+    -e EIRINI_SYSTEM_NS=eirini-core \
     -e EIRINI_WORKLOADS_NS=eirini \
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
     -e INTEGRATION_KUBECONFIG="/usr/src/app/$cluster_name.yml" \

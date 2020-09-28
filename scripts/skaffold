@@ -1,0 +1,50 @@
+#!/bin/bash
+
+set -euo pipefail
+
+trap revert_manifest_shas EXIT
+
+export HELM_ENABLE_MULTI_NS=${HELM_ENABLE_MULTI_NS:-false}
+export NATS_PASSWORD=${NATS_PASSWORD:-$(pass eirini/ci/nats-password)}
+export CLUSTER_IP="$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')"
+
+main() {
+  strip_manifest_shas
+  init_helm
+  create_namespaces
+  generate_secret
+  skaffold $@
+}
+
+strip_manifest_shas() {
+  for component in $(ls "$HOME/workspace/eirini-release/helm/eirini/versions"); do
+    # Eirini deployment yamls refer to unique sha256 versions of the images. We have to remove the exact shas for
+    # the locally built image to be used.
+    sed -i -e "s|image: eirini/$component.*$|image: eirini/$component|g" ~/workspace/eirini-release/deploy/**/*.yml
+  done
+}
+
+create_namespaces() {
+  cat "$HOME"/workspace/eirini-release/deploy/**/namespace.yml | kubectl apply -f -
+}
+
+generate_secret() {
+  "$HOME/workspace/eirini-release/deploy/scripts/generate_eirini_tls.sh" "*.eirini-core.svc.cluster.local"
+  eirini_certs_json=$(kubectl get -n eirini-core secret eirini-certs -o json)
+  echo "$eirini_certs_json" | jq --arg pass "$(echo -n $NATS_PASSWORD | base64)" '.data["nats-password"]=$pass' | kubectl apply -f -
+}
+
+init_helm() {
+  kubectl apply -f "$HOME/workspace/eirini-ci/k8s-specs/tiller-service-account.yml"
+  kubectl apply -f "$HOME/workspace/eirini-ci/k8s-specs/restricted-psp.yaml"
+  helm init --service-account tiller --upgrade --wait
+}
+
+revert_manifest_shas() {
+  for component in $(ls "$HOME/workspace/eirini-release/helm/eirini/versions"); do
+    sha=$(cat $HOME/workspace/eirini-release/helm/eirini/versions/$component)
+    sed -i -e "s|image: eirini/$component$|image: eirini/$component@$sha|g" ~/workspace/eirini-release/deploy/**/*.yml
+  done
+}
+
+main $@

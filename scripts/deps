@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -euo pipefail
+
+component=$1
+
+dep_packages=$(go list -f '{{ join .Deps "\n" }}' "cmd/$component/main.go" | grep code.cloudfoundry.org/eirini)
+
+for pkg in $dep_packages; do
+  pkg_dir=${pkg#"code.cloudfoundry.org/eirini/"}
+  files=$(go list -f '{{ join .GoFiles "\n" }}' "$pkg")
+  for file in $files; do
+    echo "$pkg_dir/$file"
+  done
+done |
+  jq -R . |
+  jq -s . |
+  jq ". += [\"cmd/$component/main.go\"]" |
+  jq 'sort_by(.) | .'
