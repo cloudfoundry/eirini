@@ -376,6 +376,45 @@ var _ = Describe("Jobs", func() {
 			}).Should(ContainElements("foo"))
 		})
 	})
+
+	Describe("List", func() {
+		var (
+			taskGUID    string
+			stagingGUID string
+		)
+
+		BeforeEach(func() {
+			taskGUID = tests.GenerateGUID()
+			stagingGUID = tests.GenerateGUID()
+
+			createJob(fixture.Namespace, "foo", map[string]string{
+				k8s.LabelGUID:       taskGUID,
+				k8s.LabelSourceType: "TASK",
+			})
+			createJob(fixture.Namespace, "boo", map[string]string{
+				k8s.LabelGUID:       stagingGUID,
+				k8s.LabelSourceType: "STG",
+			})
+		})
+
+		It("lists all task jobs", func() {
+			Eventually(func() []string {
+				jobs, err := jobsClient.List()
+				Expect(err).NotTo(HaveOccurred())
+
+				return jobGUIDs(jobs)
+			}).Should(ContainElement(taskGUID))
+		})
+
+		It("does not list staging jobs", func() {
+			Consistently(func() []string {
+				jobs, err := jobsClient.List()
+				Expect(err).NotTo(HaveOccurred())
+
+				return jobGUIDs(jobs)
+			}).ShouldNot(ContainElement(stagingGUID))
+		})
+	})
 })
 
 var _ = Describe("StagingJobs", func() {
@@ -399,6 +438,45 @@ var _ = Describe("StagingJobs", func() {
 
 				return jobNames(jobs)
 			}).Should(ContainElements("foo"))
+		})
+	})
+
+	Describe("List", func() {
+		var (
+			taskGUID    string
+			stagingGUID string
+		)
+
+		BeforeEach(func() {
+			taskGUID = tests.GenerateGUID()
+			stagingGUID = tests.GenerateGUID()
+
+			createJob(fixture.Namespace, "foo", map[string]string{
+				k8s.LabelGUID:       taskGUID,
+				k8s.LabelSourceType: "TASK",
+			})
+			createJob(fixture.Namespace, "boo", map[string]string{
+				k8s.LabelGUID:       stagingGUID,
+				k8s.LabelSourceType: "STG",
+			})
+		})
+
+		It("lists all staging jobs", func() {
+			Eventually(func() []string {
+				jobs, err := jobsClient.List()
+				Expect(err).NotTo(HaveOccurred())
+
+				return jobGUIDs(jobs)
+			}).Should(ContainElement(stagingGUID))
+		})
+
+		It("does not list task jobs", func() {
+			Consistently(func() []string {
+				jobs, err := jobsClient.List()
+				Expect(err).NotTo(HaveOccurred())
+
+				return jobGUIDs(jobs)
+			}).ShouldNot(ContainElement(taskGUID))
 		})
 	})
 })
@@ -643,6 +721,15 @@ func jobNames(jobs []batchv1.Job) []string {
 	}
 
 	return names
+}
+
+func jobGUIDs(jobs []batchv1.Job) []string {
+	guids := make([]string, 0, len(jobs))
+	for _, job := range jobs {
+		guids = append(guids, job.Labels[k8s.LabelGUID])
+	}
+
+	return guids
 }
 
 func secretNames(secrets []corev1.Secret) []string {

@@ -106,6 +106,10 @@ func (t *TaskSimulator) GetTask(taskGUID string) (cf.TaskResponse, error) {
 	return cf.TaskResponse{}, nil
 }
 
+func (t *TaskSimulator) ListTasks() (cf.TasksResponse, error) {
+	return cf.TasksResponse{}, nil
+}
+
 func (t *TaskSimulator) TransferTask(ctx context.Context, taskGUID string, request cf.TaskRequest) error {
 	return nil
 }

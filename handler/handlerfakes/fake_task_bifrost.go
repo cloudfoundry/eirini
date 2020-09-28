@@ -34,6 +34,18 @@ type FakeTaskBifrost struct {
 		result1 cf.TaskResponse
 		result2 error
 	}
+	ListTasksStub        func() (cf.TasksResponse, error)
+	listTasksMutex       sync.RWMutex
+	listTasksArgsForCall []struct {
+	}
+	listTasksReturns struct {
+		result1 cf.TasksResponse
+		result2 error
+	}
+	listTasksReturnsOnCall map[int]struct {
+		result1 cf.TasksResponse
+		result2 error
+	}
 	TransferTaskStub        func(context.Context, string, cf.TaskRequest) error
 	transferTaskMutex       sync.RWMutex
 	transferTaskArgsForCall []struct {
@@ -174,6 +186,61 @@ func (fake *FakeTaskBifrost) GetTaskReturnsOnCall(i int, result1 cf.TaskResponse
 	}{result1, result2}
 }
 
+func (fake *FakeTaskBifrost) ListTasks() (cf.TasksResponse, error) {
+	fake.listTasksMutex.Lock()
+	ret, specificReturn := fake.listTasksReturnsOnCall[len(fake.listTasksArgsForCall)]
+	fake.listTasksArgsForCall = append(fake.listTasksArgsForCall, struct {
+	}{})
+	fake.recordInvocation("ListTasks", []interface{}{})
+	fake.listTasksMutex.Unlock()
+	if fake.ListTasksStub != nil {
+		return fake.ListTasksStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.listTasksReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeTaskBifrost) ListTasksCallCount() int {
+	fake.listTasksMutex.RLock()
+	defer fake.listTasksMutex.RUnlock()
+	return len(fake.listTasksArgsForCall)
+}
+
+func (fake *FakeTaskBifrost) ListTasksCalls(stub func() (cf.TasksResponse, error)) {
+	fake.listTasksMutex.Lock()
+	defer fake.listTasksMutex.Unlock()
+	fake.ListTasksStub = stub
+}
+
+func (fake *FakeTaskBifrost) ListTasksReturns(result1 cf.TasksResponse, result2 error) {
+	fake.listTasksMutex.Lock()
+	defer fake.listTasksMutex.Unlock()
+	fake.ListTasksStub = nil
+	fake.listTasksReturns = struct {
+		result1 cf.TasksResponse
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeTaskBifrost) ListTasksReturnsOnCall(i int, result1 cf.TasksResponse, result2 error) {
+	fake.listTasksMutex.Lock()
+	defer fake.listTasksMutex.Unlock()
+	fake.ListTasksStub = nil
+	if fake.listTasksReturnsOnCall == nil {
+		fake.listTasksReturnsOnCall = make(map[int]struct {
+			result1 cf.TasksResponse
+			result2 error
+		})
+	}
+	fake.listTasksReturnsOnCall[i] = struct {
+		result1 cf.TasksResponse
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeTaskBifrost) TransferTask(arg1 context.Context, arg2 string, arg3 cf.TaskRequest) error {
 	fake.transferTaskMutex.Lock()
 	ret, specificReturn := fake.transferTaskReturnsOnCall[len(fake.transferTaskArgsForCall)]
@@ -243,6 +310,8 @@ func (fake *FakeTaskBifrost) Invocations() map[string][][]interface{} {
 	defer fake.cancelTaskMutex.RUnlock()
 	fake.getTaskMutex.RLock()
 	defer fake.getTaskMutex.RUnlock()
+	fake.listTasksMutex.RLock()
+	defer fake.listTasksMutex.RUnlock()
 	fake.transferTaskMutex.RLock()
 	defer fake.transferTaskMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

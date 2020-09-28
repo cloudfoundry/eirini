@@ -26,6 +26,7 @@ type LRPBifrost interface {
 
 type TaskBifrost interface {
 	GetTask(taskGUID string) (cf.TaskResponse, error)
+	ListTasks() (cf.TasksResponse, error)
 	TransferTask(ctx context.Context, taskGUID string, request cf.TaskRequest) error
 	CancelTask(taskGUID string) error
 }
@@ -69,6 +70,7 @@ func registerStageEndpoints(handler *httprouter.Router, stageHandler *Stage) {
 }
 
 func registerTaskEndpoints(handler *httprouter.Router, taskHandler *Task) {
+	handler.GET("/tasks", taskHandler.List)
 	handler.GET("/tasks/:task_guid", taskHandler.Get)
 	handler.POST("/tasks/:task_guid", taskHandler.Run)
 	handler.DELETE("/tasks/:task_guid", taskHandler.Cancel)

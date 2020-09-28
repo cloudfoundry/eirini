@@ -28,6 +28,7 @@ const (
 type JobCreatingClient interface {
 	Create(namespace string, job *batch.Job) (*batch.Job, error)
 	GetByGUID(guid string) ([]batch.Job, error)
+	List() ([]batch.Job, error)
 }
 
 type SecretsCreator interface {
@@ -167,6 +168,20 @@ func (d *TaskDesirer) Get(taskGUID string) (*opi.Task, error) {
 	default:
 		return nil, fmt.Errorf("multiple jobs found for task GUID %q", taskGUID)
 	}
+}
+
+func (d *TaskDesirer) List() ([]*opi.Task, error) {
+	jobs, err := d.jobClient.List()
+	if err != nil {
+		return nil, err
+	}
+
+	tasks := make([]*opi.Task, 0, len(jobs))
+	for _, job := range jobs {
+		tasks = append(tasks, toTask(job))
+	}
+
+	return tasks, nil
 }
 
 func (d *TaskDesirer) toTaskJob(task *opi.Task) *batch.Job {

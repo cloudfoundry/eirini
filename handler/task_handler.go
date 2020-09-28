@@ -74,3 +74,20 @@ func (t *Task) Cancel(resp http.ResponseWriter, req *http.Request, ps httprouter
 
 	resp.WriteHeader(http.StatusNoContent)
 }
+
+func (t *Task) List(resp http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	logger := t.logger.Session("list-tasks")
+
+	tasks, err := t.taskBifrost.ListTasks()
+	if err != nil {
+		logger.Error("list-tasks-request-failed", err)
+		resp.WriteHeader(http.StatusInternalServerError)
+
+		return
+	}
+
+	if err = json.NewEncoder(resp).Encode(tasks); err != nil {
+		logger.Error("encode-json-failed", err)
+		resp.WriteHeader(http.StatusInternalServerError)
+	}
+}

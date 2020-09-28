@@ -131,7 +131,7 @@ var _ = Describe("TaskHandler", func() {
 		})
 	})
 
-	Describe("Task cancelled", func() {
+	Describe("Cancel", func() {
 		BeforeEach(func() {
 			method = "DELETE"
 			path = "/tasks/guid_1234"
@@ -162,7 +162,7 @@ var _ = Describe("TaskHandler", func() {
 		})
 	})
 
-	Describe("GetTask", func() {
+	Describe("Get", func() {
 		BeforeEach(func() {
 			method = "GET"
 			path = "/tasks/guid_1234"
@@ -188,6 +188,39 @@ var _ = Describe("TaskHandler", func() {
 		When("getting the task fails", func() {
 			BeforeEach(func() {
 				taskBifrost.GetTaskReturns(cf.TaskResponse{}, errors.New("task-error"))
+			})
+
+			It("returns a 500 status", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+			})
+		})
+	})
+
+	Describe("List", func() {
+		BeforeEach(func() {
+			method = "GET"
+			path = "/tasks"
+			body = ""
+
+			taskBifrost.ListTasksReturns([]cf.TaskResponse{{
+				GUID: "guid_1234",
+			}}, nil)
+		})
+
+		It("lists tasks", func() {
+			Expect(taskBifrost.ListTasksCallCount()).To(Equal(1))
+
+			var taskResponse []cf.TaskResponse
+			err := json.NewDecoder(response.Body).Decode(&taskResponse)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(taskResponse).To(HaveLen(1))
+			Expect(taskResponse[0].GUID).To(Equal("guid_1234"))
+		})
+
+		When("listing tasks fails", func() {
+			BeforeEach(func() {
+				taskBifrost.ListTasksReturns(nil, errors.New("task-error"))
 			})
 
 			It("returns a 500 status", func() {

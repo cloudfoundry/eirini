@@ -123,20 +123,20 @@ func (c *StatefulSet) Delete(namespace string, name string) error {
 
 type Job struct {
 	clientSet kubernetes.Interface
-	guidLabel string
+	jobType   string
 }
 
 func NewJob(clientSet kubernetes.Interface) *Job {
 	return &Job{
 		clientSet: clientSet,
-		guidLabel: k8s.LabelGUID,
+		jobType:   "TASK",
 	}
 }
 
 func NewStagingJob(clientSet kubernetes.Interface) *Job {
 	return &Job{
 		clientSet: clientSet,
-		guidLabel: k8s.LabelStagingGUID,
+		jobType:   "STG",
 	}
 }
 
@@ -155,11 +155,28 @@ func (c *Job) Delete(namespace string, name string) error {
 
 func (c *Job) GetByGUID(guid string) ([]batchv1.Job, error) {
 	listOpts := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", c.guidLabel, guid),
+		LabelSelector: fmt.Sprintf("%s=%s", c.getGUIDLabel(), guid),
 	}
 	jobs, err := c.clientSet.BatchV1().Jobs("").List(context.Background(), listOpts)
 
 	return jobs.Items, err
+}
+
+func (c *Job) List() ([]batchv1.Job, error) {
+	listOpts := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelSourceType, c.jobType),
+	}
+	jobs, err := c.clientSet.BatchV1().Jobs("").List(context.Background(), listOpts)
+
+	return jobs.Items, err
+}
+
+func (c *Job) getGUIDLabel() string {
+	if c.jobType == "TASK" {
+		return k8s.LabelGUID
+	}
+
+	return k8s.LabelStagingGUID
 }
 
 type Secret struct {

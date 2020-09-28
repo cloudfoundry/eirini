@@ -156,6 +156,40 @@ var _ = Describe("Buildpack task", func() {
 		})
 	})
 
+	Describe("ListTasks", func() {
+		var (
+			tasksResponse cf.TasksResponse
+		)
+
+		BeforeEach(func() {
+			taskDesirer.ListReturns([]*opi.Task{{GUID: taskGUID}}, nil)
+		})
+
+		JustBeforeEach(func() {
+			tasksResponse, err = taskBifrost.ListTasks()
+		})
+
+		It("succeeds", func() {
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("lists all tasks", func() {
+			Expect(taskDesirer.ListCallCount()).To(Equal(1))
+			Expect(tasksResponse).To(HaveLen(1))
+			Expect(tasksResponse[0].GUID).To(Equal(taskGUID))
+		})
+
+		When("listing tasks fails", func() {
+			BeforeEach(func() {
+				taskDesirer.ListReturns(nil, errors.New("list-tasks-error"))
+			})
+
+			It("fails", func() {
+				Expect(err).To(MatchError("list-tasks-error"))
+			})
+		})
+	})
+
 	Describe("Cancel Task", func() {
 		BeforeEach(func() {
 			taskDeleter.DeleteReturns("the/callback/url", nil)

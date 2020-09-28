@@ -109,6 +109,8 @@ type TaskResponse struct {
 	GUID string `json:"guid"`
 }
 
+type TasksResponse []TaskResponse
+
 type TaskCompletedRequest struct {
 	TaskGUID      string `json:"task_guid"`
 	Failed        bool   `json:"failed"`

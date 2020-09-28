@@ -662,6 +662,54 @@ var _ = Describe("TaskDesirer", func() {
 			})
 		})
 	})
+
+	Describe("List", func() {
+		var (
+			tasks []*opi.Task
+			err   error
+		)
+
+		BeforeEach(func() {
+			job = &batch.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						LabelGUID: taskGUID,
+					},
+				},
+			}
+
+			fakeJobClient.ListReturns([]batch.Job{*job}, nil)
+		})
+
+		JustBeforeEach(func() {
+			tasks, err = desirer.List()
+		})
+
+		It("succeeds", func() {
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns all tasks", func() {
+			Expect(tasks).NotTo(BeEmpty())
+
+			taskGUIDs := []string{}
+			for _, task := range tasks {
+				taskGUIDs = append(taskGUIDs, task.GUID)
+			}
+
+			Expect(taskGUIDs).To(ContainElement(taskGUID))
+		})
+
+		When("listing the task fails", func() {
+			BeforeEach(func() {
+				fakeJobClient.ListReturns(nil, errors.New("list-tasks-error"))
+			})
+
+			It("returns the error", func() {
+				Expect(err).To(MatchError("list-tasks-error"))
+			})
+		})
+	})
 })
 
 func int32ptr(i int) *int32 {

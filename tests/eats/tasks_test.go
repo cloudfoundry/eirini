@@ -81,23 +81,49 @@ var _ = Describe("Tasks", func() {
 			Expect(cancelTask(tests.GenerateGUID())).To(MatchError("500 Internal Server Error"))
 		})
 	})
+
+	Describe("Listing tasks", func() {
+		It("lists", func() {
+			tasks, err := listTasks()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tasks).NotTo(BeEmpty())
+
+			taskGUIDs := []string{}
+			for _, t := range tasks {
+				taskGUIDs = append(taskGUIDs, t.GUID)
+			}
+			Expect(taskGUIDs).To(ContainElement(guid))
+		})
+	})
 })
 
-func getTask(guid string) (cf.TaskResponse, error) {
-	request, err := http.NewRequest("GET", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), guid), nil)
+func httpDo(method, url string) (*http.Response, error) {
+	request, err := http.NewRequest(method, url, nil)
 	if err != nil {
-		return cf.TaskResponse{}, err
+		return nil, err
 	}
 
 	response, err := fixture.GetEiriniHTTPClient().Do(request)
 	if err != nil {
-		return cf.TaskResponse{}, err
+		return nil, err
 	}
-	defer response.Body.Close()
 
 	if response.StatusCode >= 400 {
-		return cf.TaskResponse{}, errors.New(response.Status)
+		defer response.Body.Close()
+
+		return nil, errors.New(response.Status)
 	}
+
+	return response, nil
+}
+
+func getTask(guid string) (cf.TaskResponse, error) {
+	response, err := httpDo("GET", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), guid))
+	if err != nil {
+		return cf.TaskResponse{}, err
+	}
+
+	defer response.Body.Close()
 
 	var taskResponse cf.TaskResponse
 	if err := json.NewDecoder(response.Body).Decode(&taskResponse); err != nil {
@@ -107,21 +133,29 @@ func getTask(guid string) (cf.TaskResponse, error) {
 	return taskResponse, nil
 }
 
-func cancelTask(guid string) error {
-	request, err := http.NewRequest("DELETE", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), guid), nil)
+func listTasks() ([]cf.TaskResponse, error) {
+	response, err := httpDo("GET", fmt.Sprintf("%s/tasks", tests.GetEiriniAddress()))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	response, err := fixture.GetEiriniHTTPClient().Do(request)
-	if err != nil {
-		return err
-	}
 	defer response.Body.Close()
 
-	if response.StatusCode >= 400 {
-		return errors.New(response.Status)
+	var taskResponses []cf.TaskResponse
+	if err := json.NewDecoder(response.Body).Decode(&taskResponses); err != nil {
+		return nil, err
 	}
+
+	return taskResponses, nil
+}
+
+func cancelTask(guid string) error {
+	response, err := httpDo("DELETE", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), guid))
+	if err != nil {
+		return err
+	}
+
+	defer response.Body.Close()
 
 	return nil
 }

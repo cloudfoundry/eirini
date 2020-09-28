@@ -21,6 +21,7 @@ type TaskConverter interface {
 type TaskDesirer interface {
 	Desire(namespace string, task *opi.Task, opts ...k8s.DesireOption) error
 	Get(guid string) (*opi.Task, error)
+	List() ([]*opi.Task, error)
 }
 
 type TaskDeleter interface {
@@ -46,6 +47,20 @@ func (t *Task) GetTask(taskGUID string) (cf.TaskResponse, error) {
 	}
 
 	return cf.TaskResponse{GUID: task.GUID}, nil
+}
+
+func (t *Task) ListTasks() (cf.TasksResponse, error) {
+	tasks, err := t.TaskDesirer.List()
+	if err != nil {
+		return nil, err
+	}
+
+	var tasksResp cf.TasksResponse
+	for _, task := range tasks {
+		tasksResp = append(tasksResp, cf.TaskResponse{GUID: task.GUID})
+	}
+
+	return tasksResp, nil
 }
 
 func (t *Task) TransferTask(ctx context.Context, taskGUID string, taskRequest cf.TaskRequest) error {
