@@ -21,7 +21,7 @@ func NewTaskHandler(logger lager.Logger, taskBifrost TaskBifrost) *Task {
 	}
 }
 
-func (t *Task) GetTask(resp http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+func (t *Task) Get(resp http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	taskGUID := ps.ByName("task_guid")
 	logger := t.logger.Session("get-task-request", lager.Data{"task-guid": taskGUID})
 
@@ -61,7 +61,7 @@ func (t *Task) Run(resp http.ResponseWriter, req *http.Request, ps httprouter.Pa
 	resp.WriteHeader(http.StatusAccepted)
 }
 
-func (t *Task) CancelTask(resp http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+func (t *Task) Cancel(resp http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	taskGUID := ps.ByName("task_guid")
 	logger := t.logger.Session("task-cancel", lager.Data{"task-guid": taskGUID})
 

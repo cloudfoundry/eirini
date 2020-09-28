@@ -88,7 +88,7 @@ func (a *App) List(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	}
 }
 
-func (a *App) GetApp(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (a *App) Get(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	loggerSession := a.logger.Session("get-app", lager.Data{"guid": ps.ByName("process_guid"), "version": ps.ByName("version_guid")})
 	loggerSession.Debug("requested")
 

@@ -60,16 +60,16 @@ func registerAppsEndpoints(handler *httprouter.Router, appHandler *App) {
 	handler.PUT("/apps/:process_guid/:version_guid/stop", appHandler.Stop)
 	handler.PUT("/apps/:process_guid/:version_guid/stop/:instance", appHandler.StopInstance)
 	handler.GET("/apps/:process_guid/:version_guid/instances", appHandler.GetInstances)
-	handler.GET("/apps/:process_guid/:version_guid", appHandler.GetApp)
+	handler.GET("/apps/:process_guid/:version_guid", appHandler.Get)
 }
 
 func registerStageEndpoints(handler *httprouter.Router, stageHandler *Stage) {
-	handler.POST("/stage/:staging_guid", stageHandler.Stage)
-	handler.PUT("/stage/:staging_guid/completed", stageHandler.CompleteStaging)
+	handler.POST("/stage/:staging_guid", stageHandler.Run)
+	handler.PUT("/stage/:staging_guid/completed", stageHandler.Complete)
 }
 
 func registerTaskEndpoints(handler *httprouter.Router, taskHandler *Task) {
-	handler.GET("/tasks/:task_guid", taskHandler.GetTask)
+	handler.GET("/tasks/:task_guid", taskHandler.Get)
 	handler.POST("/tasks/:task_guid", taskHandler.Run)
-	handler.DELETE("/tasks/:task_guid", taskHandler.CancelTask)
+	handler.DELETE("/tasks/:task_guid", taskHandler.Cancel)
 }
