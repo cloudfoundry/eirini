@@ -45,6 +45,12 @@ func ExitIfError(err error) {
 	}
 }
 
+func ExitfIfError(err error, message string) {
+	if err != nil {
+		Exitf("%s: %s", message, err)
+	}
+}
+
 func Exitf(messageFormat string, args ...interface{}) {
 	panic(fmt.Sprintf(messageFormat, args...))
 }
@@ -55,4 +61,10 @@ func GetOrDefault(actualValue, defaultValue string) string {
 	}
 
 	return defaultValue
+}
+
+func VerifyFileExists(filePath, fileName string) {
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		Exitf("%q file does not exist", fileName)
+	}
 }
