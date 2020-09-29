@@ -33,10 +33,10 @@ run_integration_tests() {
   INTEGRATION_KUBECONFIG=$kubeconfig "$RUN_DIR"/run_integration_tests.sh
 }
 
-run_eats() {
+run_eats_helmless() {
   echo "Running EATs against helmless deployed eirini on kind"
 
-  ensure_kind_cluster "eats"
+  ensure_kind_cluster "eats-helmless"
   if [[ "$redeploy" == "true" ]]; then
     KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/cleanup.sh" || true
     KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/deploy.sh"
@@ -49,6 +49,21 @@ run_eats() {
     EIRINI_SYSTEM_NS=eirini-core \
     INTEGRATION_KUBECONFIG="$kubeconfig" \
     $RUN_DIR/run_eats_tests.sh
+}
+
+run_eats_helmful() {
+  echo "Running EATs against helm deployed eirini on kind"
+
+  ensure_kind_cluster "eats-helmful"
+  if [[ "$redeploy" == "true" ]]; then
+    KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/helm/scripts/helm-deploy-eirini.sh"
+  fi
+
+  EIRINI_ADDRESS="https://eirini-opi.cf.svc.cluster.local:8085" \
+    EIRINI_TLS_SECRET="eirini-certs" \
+    EIRINI_SYSTEM_NS="cf" \
+    INTEGRATION_KUBECONFIG="$kubeconfig" \
+    "$RUN_DIR/run_eats_tests.sh"
 }
 
 run_linter() {
@@ -67,7 +82,11 @@ run_subset() {
   fi
 
   if [[ "$run_eats" == "true" ]]; then
-    run_eats
+    run_eats_helmless
+  fi
+
+  if [[ "$run_eats_helmful" == "true" ]]; then
+    run_eats_helmful
   fi
 
   if [[ "$run_linter" == "true" ]]; then
@@ -78,7 +97,8 @@ run_subset() {
 run_everything() {
   run_unit_tests
   run_integration_tests
-  run_eats
+  run_eats_helmless
+  run_eats_helmful
   run_linter
 }
 
@@ -91,17 +111,19 @@ main() {
 Usage: check-everything.sh [options]
 Options:
   -a  run all tests (default)
-  -e  EATs tests
+  -e  EATs tests (helmless)
+  -f  EATs test (helmful)
   -h  this help
   -i  integration tests
   -l  golangci-lint
-  -n  do not redeploy helmless when running eats
+  -n  do not redeploy eirini when running eats
   -u  unit tests
 EOF
   )
 
   local additional_values \
     run_eats="false" \
+    run_eats_helmful="false" \
     run_unit_tests="false" \
     run_integration_tests="false" \
     run_linter="false" \
@@ -109,7 +131,7 @@ EOF
     redeploy="true"
 
   additional_values=""
-  while getopts "auienhl" opt; do
+  while getopts "auiefnhl" opt; do
     case ${opt} in
       n)
         redeploy="false"
@@ -126,6 +148,9 @@ EOF
         ;;
       e)
         run_eats="true"
+        ;;
+      f)
+        run_eats_helmful="true"
         ;;
       l)
         run_linter="true"
