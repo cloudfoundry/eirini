@@ -4,7 +4,18 @@ set -euo pipefail
 
 IFS=$'\n\t'
 
-readonly USAGE="Usage: patch-me-if-you-can.sh -c <cluster-name> [ -s ] [ -o <additional-values-yaml> ] [ <component-name> ... ]"
+USAGE=$(
+  cat <<EOF
+Usage: patch-me-if-you-can.sh [options] [ <component-name> ... ]
+Options:
+  -c <cluster-name>  - required unless skipping deloyment
+  -s  skip docker builds
+  -S  skip deployment (only update the eirini release SHAs)
+  -d  deploy the helmless YAML, rather than helm release
+  -o <additional-values.yml>  - use additional values from file
+  -h  this help
+EOF
+)
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly EIRINI_BASEDIR=$(realpath "$SCRIPT_DIR/..")
 readonly EIRINI_RELEASE_BASEDIR=$(realpath "$SCRIPT_DIR/../../eirini-release")
@@ -20,16 +31,23 @@ main() {
     exit 1
   fi
 
-  local cluster_name additional_values skip_docker_build="false" use_helmless="false"
+  local cluster_name="" additional_values skip_docker_build="false" use_helmless="false" skip_deployment="false"
 
   additional_values=""
-  while getopts ":c:o:sd" opt; do
+  while getopts "hc:o:sSd" opt; do
     case ${opt} in
+      h)
+        echo "$USAGE"
+        exit 0
+        ;;
       c)
         cluster_name=$OPTARG
         ;;
       s)
         skip_docker_build="true"
+        ;;
+      S)
+        skip_deployment="true"
         ;;
       d)
         use_helmless="true"
@@ -54,7 +72,7 @@ main() {
   done
   shift $((OPTIND - 1))
 
-  if [ -z "$cluster_name" ]; then
+  if [[ "$skip_deployment" == "false" && -z "$cluster_name" ]]; then
     echo "Cluster name not provided"
     echo "$USAGE"
     exit 1
@@ -83,6 +101,10 @@ main() {
         update_component "$component"
       fi
     done
+  fi
+
+  if [[ "$skip_deployment" == "true" ]]; then
+    exit 0
   fi
 
   if [[ "$use_helmless" == "true" ]]; then
@@ -116,7 +138,8 @@ update_component() {
   echo "--- Patching component $component ---"
   docker_build "$component"
   docker_push "$component"
-  update_image_in_yaml_files "$component"
+  update_image_in_yaml_files "$component" "$EIRINI_RELEASE_BASEDIR/helm/eirini/templates"
+  update_image_in_yaml_files "$component" "$EIRINI_RELEASE_BASEDIR/deploy"
 }
 
 docker_build() {
@@ -134,17 +157,16 @@ docker_push() {
 }
 
 update_image_in_yaml_files() {
-  echo "Applying docker image of $1 to kubernetes cluster"
-  deploy_dir="$EIRINI_RELEASE_BASEDIR/helm/eirini/templates"
-  if [[ "$use_helmless" == "true" ]]; then
-    deploy_dir="$EIRINI_RELEASE_BASEDIR/deploy"
-  fi
+  deploy_dir=$2
+  echo "Applying docker image of $1 to kubernetes cluster in $2"
 
   pushd "$deploy_dir"
-  local file new_image_ref
-  file=$(rg -l "image: eirini/${1}")
-  new_image_ref="$(docker inspect --format='{{index .RepoDigests 0}}' "eirini/${1}:$PATCH_TAG")"
-  sed -i -e "s|image: eirini/${1}.*$|image: ${new_image_ref}|g" "$file"
+  {
+    local file new_image_ref
+    file=$(rg -l "image: eirini/${1}")
+    new_image_ref="$(docker inspect --format='{{index .RepoDigests 0}}' "eirini/${1}:$PATCH_TAG")"
+    sed -i -e "s|image: eirini/${1}.*$|image: ${new_image_ref}|g" "$file"
+  }
   popd
 }
 
