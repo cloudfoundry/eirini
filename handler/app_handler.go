@@ -99,8 +99,15 @@ func (a *App) Get(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	desiredLRP, err := a.lrpBifrost.GetApp(r.Context(), identifier)
 	if err != nil {
+		if errors.Is(err, eirini.ErrNotFound) {
+			loggerSession.Info("app-not-found")
+			w.WriteHeader(http.StatusNotFound)
+
+			return
+		}
+
 		loggerSession.Error("failed-to-get-lrp", err, lager.Data{"guid": identifier.GUID})
-		w.WriteHeader(http.StatusNotFound)
+		w.WriteHeader(http.StatusInternalServerError)
 
 		return
 	}

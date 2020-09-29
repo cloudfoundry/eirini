@@ -2,8 +2,10 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
 	"github.com/julienschmidt/httprouter"
@@ -27,6 +29,13 @@ func (t *Task) Get(resp http.ResponseWriter, req *http.Request, ps httprouter.Pa
 
 	response, err := t.taskBifrost.GetTask(taskGUID)
 	if err != nil {
+		if errors.Is(err, eirini.ErrNotFound) {
+			logger.Info("task-not-found")
+			writeErrorResponse(resp, http.StatusNotFound, err)
+
+			return
+		}
+
 		logger.Error("get-task-request-failed", err)
 		writeErrorResponse(resp, http.StatusInternalServerError, err)
 

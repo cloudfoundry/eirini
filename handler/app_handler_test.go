@@ -332,11 +332,21 @@ var _ = Describe("AppHandler", func() {
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				lrpBifrost.GetAppReturns(cf.DesiredLRP{}, errors.New("boom"))
+				lrpBifrost.GetAppReturns(cf.DesiredLRP{}, errors.Wrap(errors.Wrap(eirini.ErrNotFound, "foo"), "bar"))
 			})
 
 			It("should return a 404 HTTP status code", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
+			})
+		})
+
+		Context("when getting tha app fails", func() {
+			BeforeEach(func() {
+				lrpBifrost.GetAppReturns(cf.DesiredLRP{}, errors.New("boom"))
+			})
+
+			It("should return a 500 HTTP status code", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
 			})
 		})
 	})

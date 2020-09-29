@@ -67,7 +67,7 @@ var _ = Describe("Tasks", func() {
 
 		It("returns an error for a non existing task GUID", func() {
 			_, err := getTask(tests.GenerateGUID())
-			Expect(err).To(MatchError("500 Internal Server Error"))
+			Expect(err).To(MatchError("404 Not Found"))
 		})
 	})
 

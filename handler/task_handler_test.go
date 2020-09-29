@@ -3,16 +3,17 @@ package handler_test
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 
+	"code.cloudfoundry.org/eirini"
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/handler/handlerfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 )
 
 var _ = Describe("TaskHandler", func() {
@@ -183,6 +184,16 @@ var _ = Describe("TaskHandler", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(taskResponse.GUID).To(Equal("guid_1234"))
+		})
+
+		When("there is no task with the required guid", func() {
+			BeforeEach(func() {
+				taskBifrost.GetTaskReturns(cf.TaskResponse{}, errors.Wrap(errors.Wrap(eirini.ErrNotFound, "foo"), "bar"))
+			})
+
+			It("returns a 404 status", func() {
+				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
+			})
 		})
 
 		When("getting the task fails", func() {
