@@ -351,7 +351,7 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 	case 1:
 		return &statefulSets[0], nil
 	default:
-		panic(fmt.Sprintf("more than one was identified as %+v", identifier))
+		return nil, fmt.Errorf("multiple statefulsets found for LRP identifier %+v", identifier)
 	}
 }
 
