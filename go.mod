@@ -2,6 +2,11 @@ module code.cloudfoundry.org/eirini
 
 go 1.13
 
+replace (
+	github.com/coreos/bbolt => github.com/coreos/bbolt v1.3.0
+	k8s.io/client-go => k8s.io/client-go v0.19.2
+)
+
 require (
 	code.cloudfoundry.org/bbs v0.0.0-20200615191359-7b6fa295fa8d // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
