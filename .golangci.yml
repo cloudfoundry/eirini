@@ -23,6 +23,8 @@ linters-settings:
 linters:
   enable-all: true
   disable:
+    # funlen is annoying
+    - funlen
     # goerr113 requires to not use errors.New, instead it wants us to define
     # package-level errors and wrap them. This feels to be an overkill so we
     # are skipping it for now.

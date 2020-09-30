@@ -108,6 +108,7 @@ var _ = Describe("Tasks Reporter", func() {
 func jobExists(guid string) func() bool {
 	return func() bool {
 		jobs := listJobs(guid)
+
 		return len(jobs) > 0
 	}
 }
@@ -129,6 +130,7 @@ func listJobs(guid string) []batchv1.Job {
 
 func cleanupJob(guid string) error {
 	bgDelete := metav1.DeletePropagationBackground
+
 	return fixture.Clientset.
 		BatchV1().
 		Jobs(fixture.Namespace).

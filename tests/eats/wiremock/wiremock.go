@@ -116,7 +116,7 @@ func (w *Wiremock) postWithResponse(path string, body interface{}) (*http.Respon
 
 	return retryOnTemporaryError(func() (*http.Response, error) {
 		return http.Post(fmt.Sprintf("%s/__admin/%s", w.URL, path), "application/json", bytes.NewReader(bodyJSON))
-	}, 5, time.Millisecond*500)
+	}, 5, time.Second)
 }
 
 func retryOnTemporaryError(fn func() (*http.Response, error), times int, wait time.Duration) (*http.Response, error) {

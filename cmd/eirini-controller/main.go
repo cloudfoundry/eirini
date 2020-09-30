@@ -71,6 +71,7 @@ func main() {
 		if eiriniCfg.Properties.Namespace == "" {
 			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
 		}
+
 		managerOptions.Namespace = eiriniCfg.Properties.Namespace
 	}
 

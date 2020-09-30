@@ -15,7 +15,9 @@ import (
 	"code.cloudfoundry.org/eirini/tests/eats/wiremock"
 
 	// nolint:golint,stylecheck
-	"github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo"
+
+	// nolint:golint,stylecheck
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,7 +64,7 @@ func (f *EATSFixture) SetUp() {
 
 func (f *EATSFixture) TearDown() {
 	if f == nil {
-		ginkgo.Fail("failed to initialize fixture")
+		Fail("failed to initialize fixture")
 	}
 
 	f.Fixture.TearDown()
