@@ -37,11 +37,10 @@ func main() {
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 	metricsClient := cmdcommons.CreateMetricsClient(cfg.ConfigPath)
 
-	verifyCertFilesExist(cfg)
 	tlsConfig, err := loggregator.NewIngressTLSConfig(
-		cfg.LoggregatorCAPath,
-		cfg.LoggregatorCertPath,
-		cfg.LoggregatorKeyPath,
+		getExistingFile(cfg.LoggregatorCAPath, eirini.LoggregatorCAPath, "Loggregator CA"),
+		getExistingFile(cfg.LoggregatorCertPath, eirini.LoggregatorCertPath, "Loggregator Cert"),
+		getExistingFile(cfg.LoggregatorKeyPath, eirini.LoggregatorKeyPath, "Loggregator Key"),
 	)
 	cmdcommons.ExitfIfError(err, "Failed to create loggregator tls config")
 
@@ -117,8 +116,9 @@ func readMetricsCollectorConfigFromFile(path string) (*eirini.MetricsCollectorCo
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
 }
 
-func verifyCertFilesExist(cfg *eirini.MetricsCollectorConfig) {
-	cmdcommons.VerifyFileExists(cfg.LoggregatorCAPath, "Loggregator CA")
-	cmdcommons.VerifyFileExists(cfg.LoggregatorCertPath, "Loggregator Cert")
-	cmdcommons.VerifyFileExists(cfg.LoggregatorKeyPath, "Loggregator Key")
+func getExistingFile(path, defaultPath, name string) string {
+	path = cmdcommons.GetOrDefault(path, defaultPath)
+	cmdcommons.VerifyFileExists(path, name)
+
+	return path
 }

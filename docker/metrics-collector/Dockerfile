@@ -12,7 +12,7 @@ COPY --from=builder /eirini/metrics-collector /usr/local/bin/metrics-collector
 USER 1001
 ENTRYPOINT [ "/usr/local/bin/metrics-collector", \
 	"--config", \
-	"/etc/eirini/config/metrics.yml" \
+	"/etc/eirini-metrics/config/metrics.yml" \
 ]
 ARG GIT_SHA
 LABEL org.opencontainers.image.revision=$GIT_SHA \

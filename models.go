@@ -56,12 +56,15 @@ const (
 	TLSSecretCert = "tls.crt"
 	TLSSecretCA   = "ca.crt"
 
-	EiriniCAPath  = "/etc/eirini/certs/ca.crt"
-	EiriniCrtPath = "/etc/eirini/certs/tls.crt"
-	EiriniKeyPath = "/etc/eirini/certs/tls.key"
-	CCCrtPath     = "/etc/cf-api/certs/tls.crt"
-	CCKeyPath     = "/etc/cf-api/certs/tls.key"
-	CCCAPath      = "/etc/cf-api/certs/ca.crt"
+	EiriniCAPath        = "/etc/eirini/certs/ca.crt"
+	EiriniCrtPath       = "/etc/eirini/certs/tls.crt"
+	EiriniKeyPath       = "/etc/eirini/certs/tls.key"
+	CCCrtPath           = "/etc/cf-api/certs/tls.crt"
+	CCKeyPath           = "/etc/cf-api/certs/tls.key"
+	CCCAPath            = "/etc/cf-api/certs/ca.crt"
+	LoggregatorCertPath = "/etc/loggregator/certs/tls.crt"
+	LoggregatorKeyPath  = "/etc/loggregator/certs/tls.key"
+	LoggregatorCAPath   = "/etc/loggregator/certs/ca.crt"
 
 	CCUploaderSecretName   = "cc-uploader-certs"   //#nosec G101
 	EiriniClientSecretName = "eirini-client-certs" //#nosec G101
@@ -133,10 +136,11 @@ type RouteEmitterConfig struct {
 }
 
 type MetricsCollectorConfig struct {
-	LoggregatorAddress  string `yaml:"loggregator_address"`
-	LoggregatorCertPath string `yaml:"loggregator_cert_path"`
-	LoggregatorKeyPath  string `yaml:"loggregator_key_path"`
-	LoggregatorCAPath   string `yaml:"loggregator_ca_path"`
+	LoggregatorAddress string `yaml:"loggregator_address"`
+
+	LoggregatorCertPath string
+	LoggregatorKeyPath  string
+	LoggregatorCAPath   string
 
 	AppMetricsEmissionIntervalInSecs int `yaml:"app_metrics_emission_interval_in_secs"`
 

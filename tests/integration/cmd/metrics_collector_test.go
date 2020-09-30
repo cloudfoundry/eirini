@@ -69,7 +69,7 @@ var _ = Describe("MetricsCollector", func() {
 
 		It("should exit with a useful error message", func() {
 			Eventually(session).Should(gexec.Exit(2))
-			Expect(session.Err).Should(gbytes.Say(`"Loggregator CA" file does not exist`))
+			Expect(session.Err).Should(gbytes.Say(`"Loggregator CA" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
 
@@ -80,7 +80,7 @@ var _ = Describe("MetricsCollector", func() {
 
 		It("should exit with a useful error message", func() {
 			Eventually(session).Should(gexec.Exit(2))
-			Expect(session.Err).Should(gbytes.Say(`"Loggregator Cert" file does not exist`))
+			Expect(session.Err).Should(gbytes.Say(`"Loggregator Cert" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
 
@@ -91,7 +91,7 @@ var _ = Describe("MetricsCollector", func() {
 
 		It("should exit with a useful error message", func() {
 			Eventually(session).Should(gexec.Exit(2))
-			Expect(session.Err).Should(gbytes.Say(`"Loggregator Key" file does not exist`))
+			Expect(session.Err).Should(gbytes.Say(`"Loggregator Key" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
 

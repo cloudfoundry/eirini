@@ -65,6 +65,6 @@ func GetOrDefault(actualValue, defaultValue string) string {
 
 func VerifyFileExists(filePath, fileName string) {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		Exitf("%q file does not exist", fileName)
+		Exitf("%q file at %q does not exist", fileName, filePath)
 	}
 }
