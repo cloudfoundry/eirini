@@ -70,8 +70,6 @@ func (c *CrashReconciler) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 
-	logger.Info("fetched-pod", lager.Data{"pod": pod})
-
 	event, send := c.eventGenerator.Generate(pod, c.logger)
 	if !send {
 		logger.Debug("not-sending-event")

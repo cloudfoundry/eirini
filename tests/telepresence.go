@@ -34,7 +34,6 @@ func StartTelepresence(serviceName string, totalPorts int) (*TelepresenceRunner,
 	args := []string{
 		"--new-deployment", serviceName,
 		"--method", "vpn-tcp",
-		"--logfile", "-",
 	}
 	for i := 0; i < totalPorts; i++ {
 		args = append(args, "--expose", strconv.Itoa(startPort+i))

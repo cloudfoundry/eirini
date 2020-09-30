@@ -92,10 +92,14 @@ var _ = Describe("Apps CRDs", func() {
 	})
 
 	AfterEach(func() {
+		bgDelete := metav1.DeletePropagationBackground
 		err := fixture.EiriniClientset.
 			EiriniV1().
 			LRPs(namespace).
-			DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{FieldSelector: "metadata.name=" + lrpName})
+			DeleteCollection(context.Background(),
+				metav1.DeleteOptions{PropagationPolicy: &bgDelete},
+				metav1.ListOptions{FieldSelector: "metadata.name=" + lrpName},
+			)
 		Expect(err).NotTo(HaveOccurred())
 	})
 

@@ -106,22 +106,9 @@ var _ = Describe("Desire App", func() {
 		})
 	})
 
-	When("multinamespace support is disabled", func() {
+	When("no app namespaces is explicitly requested", func() {
 		BeforeEach(func() {
-			eiriniConfig.Properties.EnableMultiNamespaceSupport = false
-		})
-
-		It("creates create the app in the requested namespace", func() {
-			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(statefulsets.Items).To(HaveLen(1))
-			Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
-		})
-
-		When("no app namespaces is explicitly requested", func() {
-			BeforeEach(func() {
-				body = `{
+			body = `{
 					"guid": "the-app-guid",
 					"version": "0.0.0",
 					"ports" : [8080],
@@ -134,25 +121,25 @@ var _ = Describe("Desire App", func() {
 					},
 					"instances": 1
 				}`
-			})
-
-			It("creates create the app in the default namespace", func() {
-				statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(statefulsets.Items).To(HaveLen(1))
-				Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
-			})
 		})
 
-		When("the app is requested in non-allowed namespace", func() {
-			var appGUID string
+		It("creates create the app in the default namespace", func() {
+			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
 
-			BeforeEach(func() {
-				appGUID = tests.GenerateGUID()
-				anotherNamespace := fixture.CreateExtraNamespace()
+			Expect(statefulsets.Items).To(HaveLen(1))
+			Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
+		})
+	})
 
-				body = fmt.Sprintf(`{
+	When("the app is requested in non-allowed namespace", func() {
+		var appGUID string
+
+		BeforeEach(func() {
+			appGUID = tests.GenerateGUID()
+			anotherNamespace := fixture.CreateExtraNamespace()
+
+			body = fmt.Sprintf(`{
 					"guid": "%s",
 					"version": "0.0.0",
 					"namespace": "%s",
@@ -166,20 +153,19 @@ var _ = Describe("Desire App", func() {
 					},
 					"instances": 1
 				}`, appGUID, anotherNamespace)
-			})
+		})
 
-			It("should return a 400 Bad Request HTTP code", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
-			})
+		It("should return a 400 Bad Request HTTP code", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+		})
 
-			It("does not create the app", func() {
-				statefulsets, err := fixture.Clientset.AppsV1().StatefulSets("").List(context.Background(), metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, appGUID),
-				})
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(statefulsets.Items).To(BeEmpty())
+		It("does not create the app", func() {
+			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets("").List(context.Background(), metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, appGUID),
 			})
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(statefulsets.Items).To(BeEmpty())
 		})
 	})
 

@@ -58,7 +58,7 @@ func GetEiriniWorkloadsNamespace() string {
 }
 
 func IsMultiNamespaceEnabled() bool {
-	return os.Getenv("USE_MULTI_NAMESPACES") == "true"
+	return os.Getenv("USE_MULTI_NAMESPACE") == "true"
 }
 
 func getEiriniTLSSecretName() string {

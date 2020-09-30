@@ -48,6 +48,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 				AppName:     "my_app",
 				Name:        "my_task",
 				SpaceName:   "my_space",
+				Namespace:   fixture.Namespace,
 				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
 				Lifecycle: cf.Lifecycle{
 					BuildpackLifecycle: &cf.BuildpackLifecycle{
@@ -122,6 +123,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 				AppName:     "my_app",
 				Name:        "my_task",
 				SpaceName:   "my_space",
+				Namespace:   fixture.Namespace,
 				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
 				Lifecycle: cf.Lifecycle{
 					DockerLifecycle: &cf.DockerLifecycle{
@@ -304,27 +306,12 @@ var _ = Describe("Task Desire and Cancel", func() {
 		})
 	})
 
-	Context("multinamespace support is disabled", func() {
+	When("no task namespaces is explicitly requested", func() {
 		BeforeEach(func() {
-			eiriniConfig.Properties.EnableMultiNamespaceSupport = false
-			request = cf.TaskRequest{
-				GUID:        tests.GenerateGUID(),
-				AppName:     "my_app",
-				Name:        "my_task",
-				SpaceName:   "my_space",
-				Namespace:   fixture.Namespace,
-				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
-				Lifecycle: cf.Lifecycle{
-					BuildpackLifecycle: &cf.BuildpackLifecycle{
-						DropletHash:  "foo",
-						DropletGUID:  "bar",
-						StartCommand: "some command",
-					},
-				},
-			}
+			request.Namespace = ""
 		})
 
-		It("creates create the task in the requested namespace", func() {
+		It("creates create the task in the default namespace", func() {
 			Expect(response.StatusCode).To(Equal(http.StatusAccepted))
 
 			Eventually(func() ([]batchv1.Job, error) {
@@ -337,46 +324,26 @@ var _ = Describe("Task Desire and Cancel", func() {
 			Expect(jobs.Items).To(HaveLen(1))
 			Expect(jobs.Items[0].Name).To(Equal("my-app-my-space-my-task"))
 		})
+	})
 
-		When("no task namespaces is explicitly requested", func() {
-			BeforeEach(func() {
-				request.Namespace = ""
-			})
-
-			It("creates create the task in the default namespace", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusAccepted))
-
-				Eventually(func() ([]batchv1.Job, error) {
-					var err error
-					jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-
-					return jobs.Items, err
-				}).Should(HaveLen(1))
-
-				Expect(jobs.Items).To(HaveLen(1))
-				Expect(jobs.Items[0].Name).To(Equal("my-app-my-space-my-task"))
-			})
+	When("the task is requested in non-allowed namespace", func() {
+		BeforeEach(func() {
+			request.GUID = tests.GenerateGUID()
+			request.Namespace = fixture.CreateExtraNamespace()
 		})
 
-		When("the task is requested in non-allowed namespace", func() {
-			BeforeEach(func() {
-				request.GUID = tests.GenerateGUID()
-				request.Namespace = fixture.CreateExtraNamespace()
-			})
+		It("should return a 500 Internal Server Error HTTP code", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+		})
 
-			It("should return a 500 Internal Server Error HTTP code", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
+		It("does not create the task", func() {
+			var err error
+			jobs, err = fixture.Clientset.BatchV1().Jobs("").List(context.Background(), metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, request.GUID),
 			})
+			Expect(err).ToNot(HaveOccurred())
 
-			It("does not create the task", func() {
-				var err error
-				jobs, err = fixture.Clientset.BatchV1().Jobs("").List(context.Background(), metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, request.GUID),
-				})
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(jobs.Items).To(BeEmpty())
-			})
+			Expect(jobs.Items).To(BeEmpty())
 		})
 	})
 
@@ -406,6 +373,7 @@ var _ = Describe("Task Desire and Cancel", func() {
 				GUID:      guid,
 				AppName:   "my_app",
 				SpaceName: "my_space",
+				Namespace: fixture.Namespace,
 				Lifecycle: cf.Lifecycle{
 					DockerLifecycle: &cf.DockerLifecycle{
 						Image:   "busybox",

@@ -12,7 +12,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = FDescribe("EiriniController", func() {
+var _ = Describe("EiriniController", func() {
 	var (
 		config         *eirini.Config
 		configFilePath string

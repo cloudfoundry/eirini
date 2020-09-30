@@ -15,13 +15,12 @@ import (
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 func TestEats(t *testing.T) {
-	SetDefaultEventuallyTimeout(4 * time.Minute)
+	SetDefaultEventuallyTimeout(1 * time.Minute)
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Eats Suite")
 }
@@ -199,18 +198,7 @@ func updateLRP(updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error)
 	return fixture.GetEiriniHTTPClient().Do(updateLrpReq)
 }
 
-func listJobs() []batchv1.Job {
-	jobs, err := fixture.Clientset.
-		BatchV1().
-		Jobs(fixture.Namespace).
-		List(context.Background(), metav1.ListOptions{})
-
-	Expect(err).NotTo(HaveOccurred())
-
-	return jobs.Items
-}
-
-func desireTask(taskRequest cf.TaskRequest) *http.Response {
+func desireTask(taskRequest cf.TaskRequest) {
 	data, err := json.Marshal(taskRequest)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -220,5 +208,7 @@ func desireTask(taskRequest cf.TaskRequest) *http.Response {
 	response, err := fixture.GetEiriniHTTPClient().Do(request)
 	Expect(err).NotTo(HaveOccurred())
 
-	return response
+	defer response.Body.Close()
+
+	Expect(response).To(HaveHTTPStatus(http.StatusAccepted))
 }

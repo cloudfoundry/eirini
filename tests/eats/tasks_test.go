@@ -18,13 +18,12 @@ import (
 
 var _ = Describe("Tasks", func() {
 	var (
-		resp *http.Response
 		guid string
 	)
 
 	BeforeEach(func() {
 		guid = tests.GenerateGUID()
-		resp = desireTask(cf.TaskRequest{
+		desireTask(cf.TaskRequest{
 			GUID:               guid,
 			Namespace:          fixture.Namespace,
 			Name:               "some-task",
@@ -46,10 +45,6 @@ var _ = Describe("Tasks", func() {
 	})
 
 	Describe("Running a task", func() {
-		It("succeeds", func() {
-			Expect(resp).To(HaveHTTPStatus(http.StatusAccepted))
-		})
-
 		It("creates a job", func() {
 			job := getJob(guid)
 			Expect(job).NotTo(BeNil())

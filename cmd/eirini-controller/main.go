@@ -13,6 +13,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	eirinischeme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
+	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/jessevdk/go-flags"
 	"github.com/pkg/errors"
@@ -47,10 +48,6 @@ func main() {
 	eiriniCfg, err := readConfigFile(opts.ConfigFile)
 	cmdcommons.ExitIfError(err)
 
-	if !eiriniCfg.Properties.EnableMultiNamespaceSupport && eiriniCfg.Properties.Namespace == "" {
-		cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
-	}
-
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", eiriniCfg.Properties.ConfigPath)
 	cmdcommons.ExitIfError(err)
 
@@ -63,11 +60,21 @@ func main() {
 	logger := lager.NewLogger("eirini-controller")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	mgr, err := manager.New(kubeConfig, manager.Options{
+	managerOptions := manager.Options{
 		// do not serve prometheus metrics; disabled because port clashes during integration tests
 		MetricsBindAddress: "0",
 		Scheme:             eirinischeme.Scheme,
-	})
+		Logger:             util.NewLagerLogr(logger),
+	}
+
+	if !eiriniCfg.Properties.EnableMultiNamespaceSupport {
+		if eiriniCfg.Properties.Namespace == "" {
+			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
+		}
+		managerOptions.Namespace = eiriniCfg.Properties.Namespace
+	}
+
+	mgr, err := manager.New(kubeConfig, managerOptions)
 	cmdcommons.ExitIfError(err)
 
 	lrpReconciler := createLRPReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())

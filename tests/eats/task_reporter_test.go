@@ -1,7 +1,6 @@
 package eats_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,7 +12,8 @@ import (
 	"code.cloudfoundry.org/eirini/tests/eats/wiremock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Tasks Reporter", func() {
@@ -56,9 +56,8 @@ var _ = Describe("Tasks Reporter", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		response := desireTask(taskRequest)
-		Expect(response).To(HaveHTTPStatus(http.StatusAccepted))
-		Eventually(jobExists(taskRequest.GUID)).Should(BeTrue())
+		desireTask(taskRequest)
+		Eventually(jobExists(taskGUID)).Should(BeTrue())
 	})
 
 	AfterEach(func() {
@@ -66,7 +65,7 @@ var _ = Describe("Tasks Reporter", func() {
 	})
 
 	It("deletes the task after it completes", func() {
-		Eventually(jobExists(taskRequest.GUID)).Should(BeFalse())
+		Eventually(jobExists(taskGUID)).Should(BeFalse())
 	})
 
 	It("notifies the cloud controller", func() {
@@ -100,7 +99,7 @@ var _ = Describe("Tasks Reporter", func() {
 			}
 			Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "1m").Should(Equal(1))
 
-			Expect(jobExists(taskRequest.GUID)()).To(BeTrue())
+			Expect(jobExists(taskGUID)()).To(BeTrue())
 		})
 
 	})
@@ -108,31 +107,34 @@ var _ = Describe("Tasks Reporter", func() {
 
 func jobExists(guid string) func() bool {
 	return func() bool {
-		for _, job := range listJobs() {
-			if job.Spec.Template.Annotations[k8s.AnnotationGUID] == guid {
-				return true
-			}
-		}
-
-		return false
+		jobs := listJobs(guid)
+		return len(jobs) > 0
 	}
 }
 
-func desireOpiTask(taskRequest cf.TaskRequest) {
-	data, err := json.Marshal(taskRequest)
+func listJobs(guid string) []batchv1.Job {
+	jobs, err := fixture.Clientset.
+		BatchV1().
+		Jobs(fixture.Namespace).
+		List(context.Background(),
+			metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, guid),
+			},
+		)
+
 	Expect(err).NotTo(HaveOccurred())
 
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), taskRequest.GUID), bytes.NewReader(data))
-	Expect(err).NotTo(HaveOccurred())
-
-	response, err := fixture.GetEiriniHTTPClient().Do(request)
-	Expect(err).NotTo(HaveOccurred())
-
-	defer response.Body.Close()
-
-	Expect(response).To(HaveHTTPStatus(http.StatusAccepted))
+	return jobs.Items
 }
 
 func cleanupJob(guid string) error {
-	return fixture.Clientset.BatchV1().Jobs(fixture.Namespace).DeleteCollection(context.Background(), v1.DeleteOptions{}, v1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, guid)})
+	bgDelete := metav1.DeletePropagationBackground
+	return fixture.Clientset.
+		BatchV1().
+		Jobs(fixture.Namespace).
+		DeleteCollection(
+			context.Background(),
+			metav1.DeleteOptions{PropagationPolicy: &bgDelete},
+			metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, guid)},
+		)
 }

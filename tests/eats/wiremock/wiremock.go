@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
+	"time"
 )
 
 type Wiremock struct {
@@ -112,5 +114,21 @@ func (w *Wiremock) postWithResponse(path string, body interface{}) (*http.Respon
 		return nil, err
 	}
 
-	return http.Post(fmt.Sprintf("%s/__admin/%s", w.URL, path), "application/json", bytes.NewReader(bodyJSON))
+	return retryOnTemporaryError(func() (*http.Response, error) {
+		return http.Post(fmt.Sprintf("%s/__admin/%s", w.URL, path), "application/json", bytes.NewReader(bodyJSON))
+	}, 5, time.Millisecond*500)
+}
+
+func retryOnTemporaryError(fn func() (*http.Response, error), times int, wait time.Duration) (*http.Response, error) {
+	resp, err := fn()
+	if err == nil || times < 1 {
+		return resp, err
+	}
+
+	if nerr, ok := err.(net.Error); ok && nerr.Temporary() {
+		time.Sleep(wait)
+		return retryOnTemporaryError(fn, times-1, wait)
+	}
+
+	return resp, err
 }

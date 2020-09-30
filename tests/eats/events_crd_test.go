@@ -16,6 +16,7 @@ import (
 
 var _ = Describe("PodCrashEvents", func() {
 	var (
+		lrpName    string
 		lrpGUID    string
 		lrpVersion string
 		timestamp  time.Time
@@ -28,12 +29,13 @@ var _ = Describe("PodCrashEvents", func() {
 	When("a crashing app is deployed", func() {
 		BeforeEach(func() {
 			namespace := fixture.Namespace
+			lrpName = tests.GenerateGUID()
 			lrpGUID = tests.GenerateGUID()
 			lrpVersion = tests.GenerateGUID()
 
 			lrp := &eiriniv1.LRP{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "crashing-lrp",
+					Name: lrpName,
 				},
 				Spec: eiriniv1.LRPSpec{
 					GUID:      lrpGUID,
@@ -56,6 +58,22 @@ var _ = Describe("PodCrashEvents", func() {
 				EiriniV1().
 				LRPs(namespace).
 				Create(context.Background(), lrp, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			backgroundPropagation := metav1.DeletePropagationBackground
+
+			err := fixture.EiriniClientset.
+				EiriniV1().
+				LRPs(fixture.Namespace).
+				DeleteCollection(context.Background(),
+					metav1.DeleteOptions{
+						PropagationPolicy: &backgroundPropagation},
+					metav1.ListOptions{
+						FieldSelector: "metadata.name=" + lrpName,
+					},
+				)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -94,7 +112,7 @@ var _ = Describe("PodCrashEvents", func() {
 			var events []corev1.Event
 			getEvents := func() int {
 				eventList, err := eventsClient.List(context.Background(), metav1.ListOptions{
-					FieldSelector: "involvedObject.kind=LRP",
+					FieldSelector: fmt.Sprintf("involvedObject.kind=LRP,involvedObject.name=%s", lrpName),
 				})
 				Expect(err).NotTo(HaveOccurred())
 				events = eventList.Items
@@ -115,7 +133,7 @@ var _ = Describe("PodCrashEvents", func() {
 			Expect(crash.Labels).To(HaveKeyWithValue("cloudfoundry.org/instance_index", "0"))
 			Expect(crash.Annotations).To(HaveKeyWithValue("cloudfoundry.org/process_guid", fmt.Sprintf("%s-%s", lrpGUID, lrpVersion)))
 			Expect(crash.InvolvedObject.Kind).To(Equal("LRP"))
-			Expect(crash.InvolvedObject.Name).To(Equal("crashing-lrp"))
+			Expect(crash.InvolvedObject.Name).To(Equal(lrpName))
 			Expect(crash.InvolvedObject.Namespace).To(Equal(fixture.Namespace))
 		})
 

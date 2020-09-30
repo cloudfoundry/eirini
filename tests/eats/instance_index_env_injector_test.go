@@ -2,6 +2,7 @@ package eats_test
 
 import (
 	"context"
+	"fmt"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
@@ -16,17 +17,18 @@ import (
 var _ = Describe("InstanceIndexEnvInjector", func() {
 
 	var (
-		namespace  string
-		lrpGUID    string
-		lrpVersion string
-		lrpName    string
+		namespace   string
+		lrpGUID     string
+		lrpVersion  string
+		lrpName     string
+		appListOpts metav1.ListOptions
 	)
 
 	getStatefulSetPods := func() []corev1.Pod {
 		podList, err := fixture.Clientset.
 			CoreV1().
 			Pods(fixture.Namespace).
-			List(context.Background(), metav1.ListOptions{})
+			List(context.Background(), appListOpts)
 
 		Expect(err).NotTo(HaveOccurred())
 		if len(podList.Items) == 0 {
@@ -59,6 +61,9 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 		lrpName = tests.GenerateGUID()
 		lrpGUID = tests.GenerateGUID()
 		lrpVersion = tests.GenerateGUID()
+		appListOpts = metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, lrpGUID, k8s.LabelVersion, lrpVersion),
+		}
 
 		lrp := &eiriniv1.LRP{
 			ObjectMeta: metav1.ObjectMeta{
@@ -93,10 +98,18 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 	})
 
 	AfterEach(func() {
+		backgroundPropagation := metav1.DeletePropagationBackground
+
 		err := fixture.EiriniClientset.
 			EiriniV1().
-			LRPs(namespace).
-			Delete(context.Background(), lrpName, metav1.DeleteOptions{})
+			LRPs(fixture.Namespace).
+			DeleteCollection(context.Background(),
+				metav1.DeleteOptions{
+					PropagationPolicy: &backgroundPropagation},
+				metav1.ListOptions{
+					FieldSelector: "metadata.name=" + lrpName,
+				},
+			)
 		Expect(err).NotTo(HaveOccurred())
 	})
 

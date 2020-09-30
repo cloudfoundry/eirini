@@ -2,6 +2,7 @@ package eats_test
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"code.cloudfoundry.org/eirini/k8s"
@@ -16,16 +17,65 @@ import (
 )
 
 var _ = Describe("Tasks CRD", func() {
-	var task *eiriniv1.Task
+	var (
+		task           *eiriniv1.Task
+		taskName       string
+		taskGUID       string
+		taskListOpts   metav1.ListOptions
+		taskDeleteOpts metav1.DeleteOptions
+	)
+
+	listTaskJobs := func() []batchv1.Job {
+		jobs, err := fixture.Clientset.
+			BatchV1().
+			Jobs(fixture.Namespace).
+			List(context.Background(), taskListOpts)
+
+		Expect(err).NotTo(HaveOccurred())
+
+		return jobs.Items
+	}
+
+	getRegistrySecretName := func() string {
+		jobs := listTaskJobs()
+		imagePullSecrets := jobs[0].Spec.Template.Spec.ImagePullSecrets
+
+		var registrySecretName string
+
+		for _, imagePullSecret := range imagePullSecrets {
+			if strings.HasPrefix(imagePullSecret.Name, "wavey-the-space-registry-secret") {
+				registrySecretName = imagePullSecret.Name
+			}
+		}
+
+		Expect(registrySecretName).NotTo(BeEmpty())
+
+		return registrySecretName
+	}
+
+	getJobConditions := func() []batchv1.JobCondition {
+		jobs := listJobs(taskGUID)
+
+		return jobs[0].Status.Conditions
+	}
 
 	BeforeEach(func() {
+		taskName = tests.GenerateGUID()
+		taskGUID = tests.GenerateGUID()
+		taskListOpts = metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, taskGUID),
+		}
+		bgDelete := metav1.DeletePropagationBackground
+		taskDeleteOpts = metav1.DeleteOptions{
+			PropagationPolicy: &bgDelete,
+		}
 		task = &eiriniv1.Task{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "some-task",
+				Name: taskName,
 			},
 			Spec: eiriniv1.TaskSpec{
-				Name:               "the-task",
-				GUID:               "the-guid",
+				Name:               taskName,
+				GUID:               taskGUID,
 				AppGUID:            "the-app-guid",
 				AppName:            "wavey",
 				SpaceName:          "the-space",
@@ -44,22 +94,35 @@ var _ = Describe("Tasks CRD", func() {
 		}
 	})
 
-	JustBeforeEach(func() {
-		_, err := fixture.EiriniClientset.
+	AfterEach(func() {
+		err := fixture.EiriniClientset.
 			EiriniV1().
 			Tasks(fixture.Namespace).
-			Create(context.Background(), task, metav1.CreateOptions{})
-
+			DeleteCollection(
+				context.Background(),
+				taskDeleteOpts,
+				metav1.ListOptions{FieldSelector: "metadata.name=" + taskName},
+			)
 		Expect(err).NotTo(HaveOccurred())
+
 	})
 
 	Describe("Creating a Task CRD", func() {
-		It("creates a corresponding job in the same namespace", func() {
-			Eventually(listJobs).Should(HaveLen(1))
+		JustBeforeEach(func() {
+			_, err := fixture.EiriniClientset.
+				EiriniV1().
+				Tasks(fixture.Namespace).
+				Create(context.Background(), task, metav1.CreateOptions{})
 
-			jobs := listJobs()
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("creates a corresponding job in the same namespace", func() {
+			Eventually(listTaskJobs).Should(HaveLen(1))
+
+			jobs := listTaskJobs()
 			job := jobs[0]
-			Expect(job.Name).To(Equal("wavey-the-space-the-task"))
+			Expect(job.Name).To(Equal(fmt.Sprintf("wavey-the-space-%s", taskName)))
 			Expect(job.Labels).To(SatisfyAll(
 				HaveKeyWithValue(k8s.LabelGUID, task.Spec.GUID),
 				HaveKeyWithValue(k8s.LabelAppGUID, task.Spec.AppGUID),
@@ -91,7 +154,7 @@ var _ = Describe("Tasks CRD", func() {
 			})
 
 			It("runs and completes the job", func() {
-				Eventually(listJobs).Should(HaveLen(1))
+				Eventually(listTaskJobs).Should(HaveLen(1))
 				Eventually(getJobConditions).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(batchv1.JobComplete),
 					"Status": Equal(corev1.ConditionTrue),
@@ -99,7 +162,7 @@ var _ = Describe("Tasks CRD", func() {
 			})
 
 			It("creates a ImagePullSecret with the credentials", func() {
-				Eventually(listJobs).Should(HaveLen(1))
+				Eventually(listTaskJobs).Should(HaveLen(1))
 
 				registrySecretName := getRegistrySecretName()
 				secret, err := fixture.Clientset.
@@ -116,41 +179,26 @@ var _ = Describe("Tasks CRD", func() {
 	})
 
 	Describe("Deleting the Task CRD", func() {
-		JustBeforeEach(func() {
-			Eventually(listJobs).Should(HaveLen(1))
+		BeforeEach(func() {
+			_, err := fixture.EiriniClientset.
+				EiriniV1().
+				Tasks(fixture.Namespace).
+				Create(context.Background(), task, metav1.CreateOptions{})
 
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(listTaskJobs).Should(HaveLen(1))
+		})
+
+		JustBeforeEach(func() {
 			err := fixture.EiriniClientset.
 				EiriniV1().
 				Tasks(fixture.Namespace).
-				Delete(context.Background(), task.Name, metav1.DeleteOptions{})
+				Delete(context.Background(), taskName, taskDeleteOpts)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("deletes the corresponding job", func() {
-			Eventually(listJobs).Should(BeEmpty())
+			Eventually(listTaskJobs).Should(BeEmpty())
 		})
 	})
 })
-
-func getRegistrySecretName() string {
-	jobs := listJobs()
-	imagePullSecrets := jobs[0].Spec.Template.Spec.ImagePullSecrets
-
-	var registrySecretName string
-
-	for _, imagePullSecret := range imagePullSecrets {
-		if strings.HasPrefix(imagePullSecret.Name, "wavey-the-space-registry-secret") {
-			registrySecretName = imagePullSecret.Name
-		}
-	}
-
-	Expect(registrySecretName).NotTo(BeEmpty())
-
-	return registrySecretName
-}
-
-func getJobConditions() []batchv1.JobCondition {
-	jobs := listJobs()
-
-	return jobs[0].Status.Conditions
-}

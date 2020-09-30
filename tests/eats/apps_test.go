@@ -96,6 +96,11 @@ var _ = Describe("Apps", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		AfterEach(func() {
+			_, err := stopLRP(lrpGUID, lrpVersion)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		When("updating the instance number", func() {
 			BeforeEach(func() {
 				desiredLRPUpdate = cf.DesiredLRPUpdate{
@@ -175,6 +180,14 @@ var _ = Describe("Apps", func() {
 			desireLRP(secondLrp)
 		})
 
+		AfterEach(func() {
+			_, err := stopLRP(lrpGUID, lrpVersion)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = stopLRP(anotherLrpGUID, anotherLrpVersion)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("successfully lists all LRPs", func() {
 			lrps, err := getLRPs()
 			Expect(err).NotTo(HaveOccurred())
@@ -192,10 +205,14 @@ var _ = Describe("Apps", func() {
 		})
 
 		When("non-eirini statefulSets exist", func() {
+			var otherStatefulSetName string
+
 			BeforeEach(func() {
+				otherStatefulSetName = tests.GenerateGUID()
+
 				_, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).Create(context.Background(), &appsv1.StatefulSet{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: tests.GenerateGUID(),
+						Name: otherStatefulSetName,
 					},
 					Spec: appsv1.StatefulSetSpec{
 						Template: corev1.PodTemplateSpec{
@@ -208,6 +225,24 @@ var _ = Describe("Apps", func() {
 						},
 					},
 				}, metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				backgroundPropagation := metav1.DeletePropagationBackground
+
+				err := fixture.Clientset.
+					AppsV1().
+					StatefulSets(fixture.Namespace).
+					DeleteCollection(
+						context.Background(),
+						metav1.DeleteOptions{
+							PropagationPolicy: &backgroundPropagation,
+						},
+						metav1.ListOptions{
+							FieldSelector: "metadata.name=" + otherStatefulSetName,
+						},
+					)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -228,6 +263,11 @@ var _ = Describe("Apps", func() {
 			desireApp(lrpGUID, lrpVersion, namespace)
 		})
 
+		AfterEach(func() {
+			_, err := stopLRP(lrpGUID, lrpVersion)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("successfully returns the LRP", func() {
 			lrp, err := getLRP(lrpGUID, lrpVersion)
 			Expect(err).NotTo(HaveOccurred())
@@ -246,6 +286,11 @@ var _ = Describe("Apps", func() {
 	Describe("Stop an app", func() {
 		BeforeEach(func() {
 			desireApp(lrpGUID, lrpVersion, namespace)
+		})
+
+		AfterEach(func() {
+			_, err := stopLRP(lrpGUID, lrpVersion)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("successfully stops the app", func() {
@@ -270,6 +315,11 @@ var _ = Describe("Apps", func() {
 			Eventually(func() []*cf.Instance {
 				return getRunningInstances(lrpGUID, lrpVersion)
 			}).Should(HaveLen(3))
+		})
+
+		AfterEach(func() {
+			_, err := stopLRP(lrpGUID, lrpVersion)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("successfully stops the instance", func() {
@@ -320,6 +370,11 @@ var _ = Describe("Apps", func() {
 	Describe("Get instances", func() {
 		JustBeforeEach(func() {
 			desireAppWithInstances(lrpGUID, lrpVersion, namespace, 3)
+		})
+
+		AfterEach(func() {
+			_, err := stopLRP(lrpGUID, lrpVersion)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("returns the app instances", func() {

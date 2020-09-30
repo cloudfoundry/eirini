@@ -2,6 +2,7 @@ package eats_test
 
 import (
 	"fmt"
+	"net/http"
 
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
@@ -12,18 +13,20 @@ import (
 
 var _ = Describe("EventsReporter", func() {
 	var (
-		guid  string
-		image string
+		guid    string
+		version string
+		image   string
 	)
 
 	BeforeEach(func() {
 		guid = tests.GenerateGUID()
+		version = tests.GenerateGUID()
 		image = "eirini/notdora"
 
 		err := fixture.Wiremock.AddStub(wiremock.Stub{
 			Request: wiremock.RequestMatcher{
 				Method: "POST",
-				URL:    fmt.Sprintf("/internal/v4/apps/%s-1/crashed", guid),
+				URL:    fmt.Sprintf("/internal/v4/apps/%s-%s/crashed", guid, version),
 			},
 			Response: wiremock.Response{
 				Status: 200,
@@ -33,10 +36,10 @@ var _ = Describe("EventsReporter", func() {
 	})
 
 	JustBeforeEach(func() {
-		desireLRP(cf.DesireLRPRequest{
+		statusCode := desireLRP(cf.DesireLRPRequest{
 			Namespace:    fixture.Namespace,
 			GUID:         guid,
-			Version:      "1",
+			Version:      version,
 			NumInstances: 1,
 			DiskMB:       512,
 			Lifecycle: cf.Lifecycle{
@@ -45,6 +48,12 @@ var _ = Describe("EventsReporter", func() {
 				},
 			},
 		})
+		Expect(statusCode).To(Equal(http.StatusAccepted))
+	})
+
+	AfterEach(func() {
+		_, err := stopLRP(guid, version)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("does not report a crash event for running apps", func() {
@@ -64,7 +73,7 @@ var _ = Describe("EventsReporter", func() {
 		It("reports a crash event", func() {
 			requestMatcher := wiremock.RequestMatcher{
 				Method: "POST",
-				URL:    fmt.Sprintf("/internal/v4/apps/%s-1/crashed", guid),
+				URL:    fmt.Sprintf("/internal/v4/apps/%s-%s/crashed", guid, version),
 			}
 
 			Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "1m").ShouldNot(BeZero())

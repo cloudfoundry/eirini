@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
@@ -18,52 +16,23 @@ var _ = Describe("ListAppTest", func() {
 
 	var (
 		configuredNamespaceAppGUID string
-		extraNamespaceAppGUID      string
 	)
 
 	BeforeEach(func() {
 		configuredNamespaceAppGUID = tests.GenerateGUID()
-		extraNamespaceAppGUID = tests.GenerateGUID()
 	})
 
 	JustBeforeEach(func() {
 		desireLRPWithGUID(configuredNamespaceAppGUID, fixture.Namespace)
-		desireLRPWithGUID(extraNamespaceAppGUID, fixture.CreateExtraNamespace())
 	})
 
-	It("will list apps in all namespaces", func() {
+	It("will list apps only in the configured namespace", func() {
 		apps := listLRPs(httpClient, url)
 
-		guids := []string{}
-		for _, lrp := range apps {
-			guids = append(guids, lrp.GUID)
-		}
-
-		Expect(guids).To(ContainElements(configuredNamespaceAppGUID, extraNamespaceAppGUID))
+		Expect(apps).To(HaveLen(1))
+		Expect(apps[0].GUID).To(Equal(configuredNamespaceAppGUID))
 	})
 
-	When("multi namespace support is disabled", func() {
-		var restartedConfigPath string
-
-		AfterEach(func() {
-			Expect(os.RemoveAll(restartedConfigPath)).To(Succeed())
-		})
-
-		JustBeforeEach(func() {
-			restartedConfigPath = restartWithConfig(func(cfg eirini.Config) eirini.Config {
-				cfg.Properties.EnableMultiNamespaceSupport = false
-
-				return cfg
-			})
-		})
-
-		It("will list apps only in the configured namespace", func() {
-			apps := listLRPs(httpClient, url)
-
-			Expect(apps).To(HaveLen(1))
-			Expect(apps[0].GUID).To(Equal(configuredNamespaceAppGUID))
-		})
-	})
 })
 
 func desireLRPWithGUID(guid, namespace string) {
