@@ -11,8 +11,8 @@ import (
 )
 
 //counterfeiter:generate . LRPBifrost
-//counterfeiter:generate . TaskBifrost
 //counterfeiter:generate . StagingBifrost
+//counterfeiter:generate . TaskBifrost
 
 type LRPBifrost interface {
 	Transfer(ctx context.Context, request cf.DesireLRPRequest) error
