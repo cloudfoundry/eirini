@@ -48,7 +48,7 @@ var _ = Describe("Pod", func() {
 				podClient = client.NewPod(fixture.Clientset, fixture.Namespace, false)
 			})
 
-			It("lists all pods across all namespaces", func() {
+			It("lists the pods from the workloads namespace", func() {
 				Eventually(func() []string {
 					pods, err := podClient.GetAll()
 					Expect(err).NotTo(HaveOccurred())
@@ -465,16 +465,24 @@ var _ = Describe("Jobs", func() {
 
 	Describe("List", func() {
 		var (
-			taskGUID    string
-			stagingGUID string
+			taskGUID      string
+			extraTaskGUID string
+			stagingGUID   string
+			extraNs       string
 		)
 
 		BeforeEach(func() {
 			taskGUID = tests.GenerateGUID()
+			extraTaskGUID = tests.GenerateGUID()
 			stagingGUID = tests.GenerateGUID()
+			extraNs = fixture.CreateExtraNamespace()
 
 			createJob(fixture.Namespace, "foo", map[string]string{
 				k8s.LabelGUID:       taskGUID,
+				k8s.LabelSourceType: "TASK",
+			})
+			createJob(extraNs, "bas", map[string]string{
+				k8s.LabelGUID:       extraTaskGUID,
 				k8s.LabelSourceType: "TASK",
 			})
 			createJob(fixture.Namespace, "boo", map[string]string{
@@ -489,7 +497,7 @@ var _ = Describe("Jobs", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				return jobGUIDs(jobs)
-			}).Should(ContainElement(taskGUID))
+			}).Should(ContainElements(taskGUID, extraTaskGUID))
 		})
 
 		It("does not list staging jobs", func() {
@@ -499,6 +507,28 @@ var _ = Describe("Jobs", func() {
 
 				return jobGUIDs(jobs)
 			}).ShouldNot(ContainElement(stagingGUID))
+		})
+
+		When("multinamespace support is disabled", func() {
+			BeforeEach(func() {
+				jobsClient = client.NewJob(fixture.Clientset, fixture.Namespace, false)
+			})
+
+			It("only returns tasks from the workloads namespace", func() {
+				Eventually(func() []string {
+					jobs, err := jobsClient.List()
+					Expect(err).NotTo(HaveOccurred())
+
+					return jobGUIDs(jobs)
+				}).Should(ContainElement(taskGUID))
+				Consistently(func() []string {
+					jobs, err := jobsClient.List()
+					Expect(err).NotTo(HaveOccurred())
+
+					return jobGUIDs(jobs)
+				}).ShouldNot(ContainElement(extraTaskGUID))
+			})
+
 		})
 	})
 })

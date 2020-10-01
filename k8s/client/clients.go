@@ -180,7 +180,7 @@ func (c *Job) List() ([]batchv1.Job, error) {
 	listOpts := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelSourceType, c.jobType),
 	}
-	jobs, err := c.clientSet.BatchV1().Jobs("").List(context.Background(), listOpts)
+	jobs, err := c.clientSet.BatchV1().Jobs(c.workloadsNamespace).List(context.Background(), listOpts)
 
 	return jobs.Items, err
 }
