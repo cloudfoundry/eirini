@@ -42,13 +42,11 @@ run_eats_helmless() {
     KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/deploy.sh"
   fi
 
-  EIRINI_IP="$(KUBECONFIG="$kubeconfig" kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')"
-
-  EIRINI_ADDRESS="https://$EIRINI_IP" \
+  EIRINI_ADDRESS="https://eirini-api.eirini-core.svc.cluster.local:8085" \
     EIRINI_TLS_SECRET=eirini-certs \
     EIRINI_SYSTEM_NS=eirini-core \
-    INTEGRATION_KUBECONFIG="$kubeconfig" \
     EIRINI_WORKLOADS_NS=eirini-workloads \
+    INTEGRATION_KUBECONFIG="$kubeconfig" \
     $RUN_DIR/run_eats_tests.sh
 }
 
@@ -61,8 +59,9 @@ run_eats_helmful() {
   fi
 
   EIRINI_ADDRESS="https://eirini-opi.cf.svc.cluster.local:8085" \
-    EIRINI_TLS_SECRET="eirini-certs" \
-    EIRINI_SYSTEM_NS="cf" \
+    EIRINI_TLS_SECRET=eirini-certs \
+    EIRINI_SYSTEM_NS=cf \
+    EIRINI_WORKLOADS_NS=eirini \
     INTEGRATION_KUBECONFIG="$kubeconfig" \
     "$RUN_DIR/run_eats_tests.sh"
 }
