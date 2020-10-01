@@ -20,7 +20,7 @@ import (
 )
 
 func TestEats(t *testing.T) {
-	SetDefaultEventuallyTimeout(1 * time.Minute)
+	SetDefaultEventuallyTimeout(4 * time.Minute)
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Eats Suite")
 }
