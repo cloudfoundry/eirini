@@ -26,7 +26,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 	)
 
 	BeforeEach(func() {
-		fingerprint = tests.GenerateGUID()[:10]
+		fingerprint = tests.GenerateGUID()
 		config = &eirini.InstanceIndexEnvInjectorConfig{
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath:                  fixture.KubeConfigPath,
@@ -47,7 +47,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 	AfterEach(func() {
 		Expect(fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().
 			DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{
-				FieldSelector: "metadata.name=cmd-test-mutating-hook",
+				FieldSelector: fmt.Sprintf("metadata.name=%s-mutating-hook", fingerprint),
 			}),
 		).To(Succeed())
 
@@ -66,7 +66,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 		Eventually(func() error {
 			var err error
 			hook, err = fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().
-				Get(context.Background(), "cmd-test-mutating-hook", metav1.GetOptions{})
+				Get(context.Background(), fingerprint+"-mutating-hook", metav1.GetOptions{})
 
 			return err
 		}).Should(Succeed())
@@ -99,21 +99,21 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 			Expect(session.ExitCode()).NotTo(BeZero())
 			Expect(session.Err).To(gbytes.Say("setting up the webhook server certificate: an empty namespace may not be set when a resource name is provided"))
 		})
+	})
 
-		When("multi-namespace is enabled", func() {
-			BeforeEach(func() {
-				config.EnableMultiNamespaceSupport = true
-				config.Namespace = ""
-			})
+	When("multi-namespace is enabled", func() {
+		BeforeEach(func() {
+			config.EnableMultiNamespaceSupport = true
+			config.Namespace = ""
+		})
 
-			It("starts ok with namespace unset", func() {
-				Expect(session.Command.Process.Signal(syscall.Signal(0))).To(Succeed())
-				Eventually(func() error {
-					_, err := net.Dial("tcp", fmt.Sprintf(":%d", config.ServicePort))
+		It("starts ok with namespace unset", func() {
+			Expect(session.Command.Process.Signal(syscall.Signal(0))).To(Succeed())
+			Eventually(func() error {
+				_, err := net.Dial("tcp", fmt.Sprintf(":%d", config.ServicePort))
 
-					return err
-				}, "5s").Should(Succeed())
-			})
+				return err
+			}, "5s").Should(Succeed())
 		})
 	})
 

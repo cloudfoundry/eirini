@@ -26,11 +26,6 @@ var _ = Describe("Tasks", func() {
 		desireTask(cf.TaskRequest{
 			GUID:               guid,
 			Namespace:          fixture.Namespace,
-			Name:               "some-task",
-			AppGUID:            tests.GenerateGUID(),
-			AppName:            "some-app",
-			OrgName:            "the-org",
-			SpaceName:          "the-space",
 			CompletionCallback: "http://example.com/",
 			Lifecycle: cf.Lifecycle{
 				DockerLifecycle: &cf.DockerLifecycle{
@@ -48,7 +43,7 @@ var _ = Describe("Tasks", func() {
 		It("creates a job", func() {
 			job := getJob(guid)
 			Expect(job).NotTo(BeNil())
-			Expect(job.Labels[k8s.LabelName]).To(Equal("some-task"))
+			Expect(job.Labels[k8s.LabelGUID]).To(Equal(guid))
 		})
 	})
 

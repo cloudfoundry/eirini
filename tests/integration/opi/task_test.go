@@ -308,7 +308,16 @@ var _ = Describe("Task Desire and Cancel", func() {
 
 	When("no task namespaces is explicitly requested", func() {
 		BeforeEach(func() {
-			request.Namespace = ""
+			request = cf.TaskRequest{
+				GUID:      tests.GenerateGUID(),
+				Namespace: "",
+				Lifecycle: cf.Lifecycle{
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image:   "busybox",
+						Command: []string{"/bin/echo", "hello"},
+					},
+				},
+			}
 		})
 
 		It("creates create the task in the default namespace", func() {
@@ -322,14 +331,22 @@ var _ = Describe("Task Desire and Cancel", func() {
 			}).Should(HaveLen(1))
 
 			Expect(jobs.Items).To(HaveLen(1))
-			Expect(jobs.Items[0].Name).To(Equal("my-app-my-space-my-task"))
+			Expect(jobs.Items[0].Name).To(Equal(request.GUID))
 		})
 	})
 
 	When("the task is requested in non-allowed namespace", func() {
 		BeforeEach(func() {
-			request.GUID = tests.GenerateGUID()
-			request.Namespace = fixture.CreateExtraNamespace()
+			request = cf.TaskRequest{
+				GUID:      tests.GenerateGUID(),
+				Namespace: fixture.CreateExtraNamespace(),
+				Lifecycle: cf.Lifecycle{
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image:   "busybox",
+						Command: []string{"/bin/echo", "hello"},
+					},
+				},
+			}
 		})
 
 		It("should return a 500 Internal Server Error HTTP code", func() {

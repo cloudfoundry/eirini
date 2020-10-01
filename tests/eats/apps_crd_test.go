@@ -283,7 +283,7 @@ var _ = Describe("Apps CRDs", func() {
 			).To(Succeed())
 		})
 
-		It("deletes the undurlying statefulset", func() {
+		It("deletes the underlying statefulset", func() {
 			Eventually(getStatefulSet).Should(BeNil())
 		})
 	})

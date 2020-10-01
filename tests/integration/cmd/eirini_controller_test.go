@@ -2,7 +2,6 @@ package cmd_test
 
 import (
 	"os"
-	"syscall"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests"
@@ -37,9 +36,7 @@ var _ = Describe("EiriniController", func() {
 	})
 
 	It("should be able to start properly", func() {
-		Consistently(func() error {
-			return session.Command.Process.Signal(syscall.Signal(0))
-		}).Should(Succeed())
+		Consistently(session).ShouldNot(gexec.Exit())
 	})
 
 	When("namespace is not configured", func() {
@@ -61,9 +58,7 @@ var _ = Describe("EiriniController", func() {
 		})
 
 		It("starts ok", func() {
-			Consistently(func() error {
-				return session.Command.Process.Signal(syscall.Signal(0))
-			}).Should(Succeed())
+			Consistently(session).ShouldNot(gexec.Exit())
 		})
 	})
 

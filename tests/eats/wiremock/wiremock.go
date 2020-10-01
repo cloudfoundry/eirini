@@ -127,6 +127,7 @@ func retryOnTemporaryError(fn func() (*http.Response, error), times int, wait ti
 
 	if nerr, ok := err.(net.Error); ok && nerr.Temporary() {
 		time.Sleep(wait)
+
 		return retryOnTemporaryError(fn, times-1, wait)
 	}
 
