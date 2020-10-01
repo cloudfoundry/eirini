@@ -69,7 +69,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 				Get(context.Background(), fingerprint+"-mutating-hook", metav1.GetOptions{})
 
 			return err
-		}).Should(Succeed())
+		}, "10s").Should(Succeed())
 
 		Expect(hook.Webhooks).To(HaveLen(1))
 
