@@ -22,7 +22,8 @@ readonly EIRINI_RELEASE_BASEDIR=$(realpath "$SCRIPT_DIR/../../eirini-release")
 readonly EIRINI_PRIVATE_CONFIG_BASEDIR=$(realpath "$SCRIPT_DIR/../../eirini-private-config")
 readonly EIRINI_CI_BASEDIR="$HOME/workspace/eirini-ci"
 readonly CF4K8S_DIR="$HOME/workspace/cf-for-k8s"
-readonly CAPIK8SDIR="$HOME/workspace/capi-k8s-release"
+readonly CAPI_DIR="$HOME/workspace/capi-release"
+readonly CAPIK8S_DIR="$HOME/workspace/capi-k8s-release"
 readonly PATCH_TAG='patch-me-if-you-can'
 
 main() {
@@ -84,7 +85,11 @@ main() {
     exit 1
   fi
 
-  local extra_args
+  if [[ "$use_helmless" != "true" ]]; then
+    echo "Checking out latest stable cf-for-k8s..."
+    checkout_stable_cf4k8s
+  fi
+
   if [ "$skip_docker_build" != "true" ]; then
     if [ "$#" == "0" ]; then
       echo "No components specified. Nothing to do."
@@ -94,9 +99,8 @@ main() {
     local component
     for component in "$@"; do
       if is_cloud_controller $component; then
-        custom_ccng_values_file=$(mktemp)
-        build_ccng_image $custom_ccng_values_file
-        extra_args=("-f" "$custom_ccng_values_file")
+        checkout_stable_cf_for_k8s_deps
+        build_ccng_image
       else
         update_component "$component"
       fi
@@ -114,7 +118,7 @@ main() {
 
   pull_private_config
   patch_cf_for_k8s "$additional_values"
-  deploy_cf "$cluster_name" "${extra_args[@]}"
+  deploy_cf "$cluster_name"
 }
 
 is_cloud_controller() {
@@ -123,12 +127,62 @@ is_cloud_controller() {
   [[ "$component" =~ cloud.controller ]] || [[ "$component" =~ "ccng" ]] || [[ "$component" =~ "capi" ]] || [[ "$component" =~ "cc" ]]
 }
 
+checkout_stable_cf4k8s() {
+  pushd "$CF4K8S_DIR"
+  {
+    echo "Cleaning dirty state in cf-for-k8s..."
+    git checkout . && git clean -ffd
+    echo "Checking out latest release..."
+    git fetch --tags
+    stable_cf4k8s_release="$(git tag | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | sort --reverse | head -1)"
+    git checkout "$stable_cf4k8s_release"
+    echo "cf-for-k8s version: $stable_cf4k8s_release"
+  }
+  popd
+}
+
+checkout_stable_cf_for_k8s_deps() {
+  local stable_cf4k8s_release capi_k8s_release_sha capi_release_sha
+
+  echo "Dear future us, take a deep breath as I am checking out stable revisions of cf-for-k8s dependencies for you..."
+
+  echo "Getting the vendored revision of capi-k8s-release..."
+  capi_k8s_release_sha="$(yq read $CF4K8S_DIR/vendir.lock.yml 'directories.(path==config/capi/_ytt_lib/capi-k8s-release).contents[0].git.sha')"
+  echo "capi-k8s-release version: $capi_k8s_release_sha"
+
+  pushd "$CAPIK8S_DIR"
+  {
+    echo "Getting the revision of the cloud_controller_ng submodule"
+    git checkout "$capi_k8s_release_sha"
+    ccng_sha="$(git show $capi_k8s_release_sha | grep cloud_controller_ng -A 1 | tail -1 | tr -d ' ')"
+    echo "cloud_controller_ng version: $ccng_sha"
+  }
+  popd
+
+  pushd "$CAPI_DIR"
+  {
+    echo "Looking for the commit that bumped the cloud_controller_ng submodule to $ccng_sha in capi-release"
+    capi_release_sha="$(git --no-pager log -S $ccng_sha --source --all --pretty=format:"%h" --reverse | head -1)"
+    git checkout "$capi_release_sha"
+    echo "capi-release version: $capi_release_sha"
+
+    echo "Stashing local changes and checking out submodule 🤞"
+    git -C src/cloud_controller_ng stash
+    git submodule update --init --recursive
+    git -C src/cloud_controller_ng stash pop
+  }
+  popd
+  echo "All done!"
+}
+
 build_ccng_image() {
   export IMAGE_DESTINATION_KPACK_WATCHER="docker.io/eirini/dev-kpack-watcher"
   export IMAGE_DESTINATION_CCNG="docker.io/eirini/dev-ccng"
-  git -C "$CAPIK8SDIR" checkout values/images.yml
-  "$CAPIK8SDIR"/scripts/build-into-values.sh "$CAPIK8SDIR/values/images.yml"
-  "$CAPIK8SDIR"/scripts/bump-cf-for-k8s.sh
+  export IMAGE_DESTINATION_CF_API_CONTROLLERS="docker.io/eirini/dev-cf-api-controllers"
+  export IMAGE_DESTINATION_PACKAGE_IMAGE_UPLOADER="docker.io/eirini/dev-package-image-uploader"
+  git -C "$CAPIK8S_DIR" checkout values/images.yml
+  "$CAPIK8S_DIR"/scripts/build-into-values.sh "$CAPIK8S_DIR/values/images.yml"
+  "$CAPIK8S_DIR"/scripts/bump-cf-for-k8s.sh
 }
 
 update_component() {
