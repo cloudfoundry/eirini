@@ -414,7 +414,6 @@ func (d *TaskDesirer) toJob(task *opi.Task) *batch.Job {
 					RestartPolicy: corev1.RestartPolicyNever,
 					SecurityContext: &corev1.PodSecurityContext{
 						RunAsNonRoot: &runAsNonRoot,
-						RunAsUser:    int64ptr(VcapUID),
 					},
 				},
 			},

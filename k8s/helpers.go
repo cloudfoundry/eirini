@@ -22,12 +22,6 @@ func int32ptr(i int) *int32 {
 	return &u
 }
 
-func int64ptr(i int) *int64 {
-	u := int64(i)
-
-	return &u
-}
-
 func IsStopped(events []v1.Event) bool {
 	if len(events) == 0 {
 		return false

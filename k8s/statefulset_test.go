@@ -262,11 +262,6 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(statefulSet.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(Equal(true)))
 		})
 
-		It("should run it as vcap user with numerical ID 2000", func() {
-			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
-			Expect(statefulSet.Spec.Template.Spec.SecurityContext.RunAsUser).To(PointTo(Equal(int64(2000))))
-		})
-
 		It("should not create a pod disruption budget", func() {
 			Expect(pdbClient.CreateCallCount()).To(BeZero())
 		})
