@@ -192,6 +192,18 @@ var _ = Describe("Buildpack task", func() {
 				Expect(err).To(MatchError("list-tasks-error"))
 			})
 		})
+
+		When("there are no tasks", func() {
+			BeforeEach(func() {
+				taskDesirer.ListReturns([]*opi.Task{}, nil)
+			})
+
+			It("fails", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(tasksResponse).NotTo(BeNil())
+				Expect(tasksResponse).To(HaveLen(0))
+			})
+		})
 	})
 
 	Describe("Cancel Task", func() {

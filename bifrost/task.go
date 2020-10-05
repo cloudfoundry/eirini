@@ -60,7 +60,7 @@ func (t *Task) ListTasks() (cf.TasksResponse, error) {
 		return nil, err
 	}
 
-	var tasksResp cf.TasksResponse
+	tasksResp := cf.TasksResponse{}
 	for _, task := range tasks {
 		tasksResp = append(tasksResp, cf.TaskResponse{GUID: task.GUID})
 	}
