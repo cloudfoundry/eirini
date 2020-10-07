@@ -1,4 +1,4 @@
-// Copyright 2017 Google Inc. All Rights Reserved.
+// Copyright 2017 Google LLC. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,12 +23,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	ct "github.com/google/certificate-transparency-go"
 	"github.com/google/certificate-transparency-go/client/configpb"
 	"github.com/google/certificate-transparency-go/jsonclient"
 	"github.com/google/certificate-transparency-go/x509"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
 )
 
 type interval struct {
@@ -43,14 +44,16 @@ func TemporalLogConfigFromFile(filename string) (*configpb.TemporalLogConfig, er
 		return nil, errors.New("log config filename empty")
 	}
 
-	cfgText, err := ioutil.ReadFile(filename)
+	cfgBytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read log config: %v", err)
 	}
 
 	var cfg configpb.TemporalLogConfig
-	if err := proto.UnmarshalText(string(cfgText), &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse log config: %v", err)
+	if txtErr := prototext.Unmarshal(cfgBytes, &cfg); txtErr != nil {
+		if binErr := proto.Unmarshal(cfgBytes, &cfg); binErr != nil {
+			return nil, fmt.Errorf("failed to parse TemporalLogConfig from %q as text protobuf (%v) or binary protobuf (%v)", filename, txtErr, binErr)
+		}
 	}
 
 	if len(cfg.Shard) == 0 {

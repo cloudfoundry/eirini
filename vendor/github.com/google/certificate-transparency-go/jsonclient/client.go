@@ -1,4 +1,4 @@
-// Copyright 2016 Google Inc. All Rights Reserved.
+// Copyright 2016 Google LLC. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -162,7 +162,7 @@ func (c *JSONClient) BaseURI() string {
 	return c.uri
 }
 
-// GetAndParse makes a HTTP GET call to the given path, and attempta to parse
+// GetAndParse makes a HTTP GET call to the given path, and attempts to parse
 // the response as a JSON representation of the rsp structure.  Returns the
 // http.Response, the body of the response, and an error (which may be of
 // type RspError if the HTTP response was available).
@@ -286,14 +286,14 @@ func (c *JSONClient) PostAndParseWithRetry(ctx context.Context, path string, req
 				return nil, nil, err
 			}
 			wait := c.backoff.set(nil)
-			c.logger.Printf("Request failed, backing-off on %s for %s: %s", c.uri, wait, err)
+			c.logger.Printf("Request to %s failed, backing-off %s: %s", c.uri, wait, err)
 		} else {
 			switch {
 			case httpRsp.StatusCode == http.StatusOK:
 				return httpRsp, body, nil
 			case httpRsp.StatusCode == http.StatusRequestTimeout:
 				// Request timeout, retry immediately
-				c.logger.Printf("Request timed out, retrying immediately")
+				c.logger.Printf("Request to %s timed out, retrying immediately", c.uri)
 			case httpRsp.StatusCode == http.StatusServiceUnavailable:
 				var backoff *time.Duration
 				// Retry-After may be either a number of seconds as a int or a RFC 1123
@@ -308,7 +308,7 @@ func (c *JSONClient) PostAndParseWithRetry(ctx context.Context, path string, req
 					}
 				}
 				wait := c.backoff.set(backoff)
-				c.logger.Printf("Request failed, backing-off for %s: got HTTP status %s", wait, httpRsp.Status)
+				c.logger.Printf("Request to %s failed, backing-off for %s: got HTTP status %s", c.uri, wait, httpRsp.Status)
 			default:
 				return nil, nil, RspError{
 					StatusCode: httpRsp.StatusCode,

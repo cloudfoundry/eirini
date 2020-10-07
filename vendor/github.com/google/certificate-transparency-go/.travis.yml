@@ -1,26 +1,51 @@
-sudo: true  # required for CI push into Kubernetes.
+version: ~> 1.0
 os: linux
 dist: xenial
 language: go
-go: "1.11.x"
+go: "1.14.x"
 go_import_path: github.com/google/certificate-transparency-go
-
 
 env:
   global:
   - GO111MODULE=on
   - GOPROXY=https://proxy.golang.org
-  matrix:
-  - GOFLAGS=
-  - GOFLAGS=-race                PRESUBMIT_OPTS="--no-linters"
-  - GOFLAGS=      WITH_ETCD=true PRESUBMIT_OPTS="--no-linters --coverage"
-  - GOFLAGS=-race WITH_ETCD=true PRESUBMIT_OPTS="--no-linters"
-    # The CT integration tests do not currently use a pkcs11 key. This only tests the build.
-  - GOFLAGS='-race --tags=pkcs11' WITH_PKCS11=true PRESUBMIT_OPTS="--no-linters"
 
-
-matrix:
+jobs:
   fast_finish: true
+  include:
+    - name: "go mod tidy"
+      before_install: skip
+      install: skip
+      before_script: go mod tidy -v
+      script: git diff --exit-code -- go.mod go.sum
+    - name: "default build"
+      env:
+      - GOFLAGS=""
+    - name: "build with race detection"
+      env:
+      - GOFLAGS="-race"
+      - PRESUBMIT_OPTS="--no-linters"
+    - name: "build with etcd and coverage report"
+      env:
+      - WITH_ETCD=true
+      - PRESUBMIT_OPTS="--no-linters --coverage"
+      after_success:
+      - cp /tmp/coverage.txt .
+      - bash <(curl -s https://codecov.io/bash)
+    - name: "build with etcd and race detection"
+      env:
+      - WITH_ETCD=true
+      - GOFLAGS="-race"
+      - PRESUBMIT_OPTS="--no-linters"
+    # The CT integration tests do not currently use a pkcs11 key. This only tests the build.
+    - name: "build with PKCS#11 support and race detection"
+      env:
+      - WITH_PKCS11=true
+      - GOFLAGS="-race --tags=pkcs11"
+      - PRESUBMIT_OPTS="--no-linters"
+  allow_failures:
+    - name: "go mod tidy"
+
 
 cache:
   directories:
@@ -35,17 +60,19 @@ install:
   - |
     (
       cd ../protoc
-      wget https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-${TRAVIS_OS_NAME}-x86_64.zip
-      unzip protoc-3.5.1-${TRAVIS_OS_NAME}-x86_64.zip
+      PROTOC_VERSION=3.11.4
+      wget "https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-${TRAVIS_OS_NAME}-x86_64.zip"
+      unzip "protoc-${PROTOC_VERSION}-${TRAVIS_OS_NAME}-x86_64.zip"
     )
   - export PATH=$(pwd)/../protoc/bin:$PATH
+  - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.21.0
   - GOPROXY=direct go install
-     github.com/golangci/golangci-lint/cmd/golangci-lint
      github.com/golang/protobuf/proto
      github.com/golang/protobuf/protoc-gen-go
      github.com/golang/mock/mockgen
      go.etcd.io/etcd
      go.etcd.io/etcd/etcdctl
+     github.com/fullstorydev/grpcurl/cmd/grpcurl
 
 before_script:
   - bash $(go list -f '{{.Dir}}' github.com/google/trillian)/scripts/resetdb.sh --force
@@ -72,6 +99,3 @@ script:
   - HAMMER_OPTS="--operations=1500" ./trillian/integration/ct_hammer_test.sh
   - set +e
 
-after_success:
-  - cp /tmp/coverage.txt .
-  - bash <(curl -s https://codecov.io/bash)
