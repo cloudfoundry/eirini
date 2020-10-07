@@ -19,7 +19,8 @@ var _ = Describe("MetricsCollector", func() {
 	BeforeEach(func() {
 		config = &eirini.MetricsCollectorConfig{
 			KubeConfig: eirini.KubeConfig{
-				ConfigPath: pathToTestFixture("kube.conf"),
+				ConfigPath:                  pathToTestFixture("kube.conf"),
+				EnableMultiNamespaceSupport: true,
 			},
 			LoggregatorCAPath:   pathToTestFixture("cert"),
 			LoggregatorCertPath: pathToTestFixture("cert"),
@@ -62,7 +63,7 @@ var _ = Describe("MetricsCollector", func() {
 		})
 	})
 
-	Context("When the loggregator CA file is missing", func() {
+	When("the loggregator CA file is missing", func() {
 		BeforeEach(func() {
 			config.LoggregatorCAPath = "/somewhere/over/the/rainbow"
 		})
@@ -73,7 +74,7 @@ var _ = Describe("MetricsCollector", func() {
 		})
 	})
 
-	Context("When the loggregator cert file is missing", func() {
+	When("the loggregator cert file is missing", func() {
 		BeforeEach(func() {
 			config.LoggregatorCertPath = "/somewhere/over/the/rainbow"
 		})
@@ -84,7 +85,7 @@ var _ = Describe("MetricsCollector", func() {
 		})
 	})
 
-	Context("When the loggregator key file is missing", func() {
+	When("the loggregator key file is missing", func() {
 		BeforeEach(func() {
 			config.LoggregatorKeyPath = "/somewhere/over/the/rainbow"
 		})
@@ -95,7 +96,7 @@ var _ = Describe("MetricsCollector", func() {
 		})
 	})
 
-	Context("When the loggregator CA file is invalid", func() {
+	When("the loggregator CA file is invalid", func() {
 		BeforeEach(func() {
 			config.LoggregatorCAPath = pathToTestFixture("kube.conf")
 		})
@@ -103,6 +104,28 @@ var _ = Describe("MetricsCollector", func() {
 		It("should exit with a useful error message", func() {
 			Eventually(session).Should(gexec.Exit(2))
 			Expect(session.Err).Should(gbytes.Say(`Failed to create loggregator tls config: cannot parse ca cert`))
+		})
+	})
+
+	When("EnableMultiNamespaceSupport is false", func() {
+		BeforeEach(func() {
+			config.EnableMultiNamespaceSupport = false
+			config.Namespace = fixture.Namespace
+		})
+
+		It("should be able to start properly", func() {
+			Consistently(session, "5s").ShouldNot(gexec.Exit())
+		})
+
+		When("the namespace is not set", func() {
+			BeforeEach(func() {
+				config.Namespace = ""
+			})
+
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(2))
+				Expect(session.Err).To(gbytes.Say("must set namespace in config when enableMultiNamespaceSupport is not set"))
+			})
 		})
 	})
 })

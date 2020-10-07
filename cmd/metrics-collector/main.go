@@ -51,6 +51,15 @@ func main() {
 	)
 	cmdcommons.ExitIfError(err)
 
+	namespace := ""
+	if !cfg.EnableMultiNamespaceSupport {
+		if cfg.Namespace == "" {
+			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
+		}
+
+		namespace = cfg.Namespace
+	}
+
 	defer func() {
 		err = loggregatorClient.CloseSend()
 		cmdcommons.ExitIfError(err)
@@ -60,7 +69,7 @@ func main() {
 		clientset,
 		metricsClient,
 		loggregatorClient,
-		cfg.Namespace,
+		namespace,
 		cfg.AppMetricsEmissionIntervalInSecs,
 	)
 }
