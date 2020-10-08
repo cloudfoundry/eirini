@@ -41,14 +41,14 @@ var _ = Describe("Task Completion Reconciler", func() {
 		jobsClient = new(taskfakes.FakeJobsClient)
 		taskReporter = new(taskfakes.FakeReporter)
 		taskDeleter = new(taskfakes.FakeDeleter)
-		reconciler = task.NewReconciler(logger, podClient, jobsClient, taskReporter, taskDeleter)
+		reconciler = task.NewReconciler(logger, podClient, jobsClient, taskReporter, taskDeleter, 1)
 
 		pod = &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
 				Labels: map[string]string{
-					k8s.LabelGUID: "the-guid",
+					k8s.LabelGUID: "the-task-pod-guid",
 				},
 				Annotations: map[string]string{
 					k8s.AnnotationOpiTaskContainerName: "opi-task",
@@ -77,6 +77,8 @@ var _ = Describe("Task Completion Reconciler", func() {
 		podClient.GetStub = func(c context.Context, nn k8stypes.NamespacedName, o runtime.Object) error {
 			p := o.(*corev1.Pod)
 			pod.DeepCopyInto(p)
+
+			p.Labels[k8s.LabelGUID] = nn.Name + "-guid"
 
 			return nil
 		}
@@ -107,7 +109,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 	It("fetches the job by guid", func() {
 		Expect(jobsClient.GetByGUIDCallCount()).To(Equal(1))
 		actualGUID := jobsClient.GetByGUIDArgsForCall(0)
-		Expect(actualGUID).To(Equal("the-guid"))
+		Expect(actualGUID).To(Equal("the-task-pod-guid"))
 	})
 
 	It("reports the task pod", func() {
@@ -117,7 +119,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 	It("deletes the task", func() {
 		Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
-		Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-guid"))
+		Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-task-pod-guid"))
 	})
 
 	When("fetching the task pod fails", func() {
@@ -234,6 +236,39 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 		It("does not delete the task", func() {
 			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
+		})
+	})
+
+	When("reporting the task pod consecutively fails more than [callbackRetryLimit] times", func() {
+		BeforeEach(func() {
+			taskReporter.ReportReturns(errors.New("task-reporter-error"))
+		})
+
+		JustBeforeEach(func() {
+			_, reconcileErr = reconciler.Reconcile(reconcile.Request{
+				NamespacedName: k8stypes.NamespacedName{
+					Name:      "another-task-pod",
+					Namespace: "space",
+				},
+			})
+			Expect(reconcileErr).To(MatchError("task-reporter-error"))
+
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
+
+			_, reconcileErr = reconciler.Reconcile(reconcile.Request{
+				NamespacedName: k8stypes.NamespacedName{
+					Name:      "the-task-pod",
+					Namespace: "space",
+				},
+			})
+		})
+
+		It("does not retry any more", func() {
+			Expect(reconcileErr).To(BeNil())
+		})
+
+		It("deletes the task after [callbackRetryLimit] retries", func() {
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
 		})
 	})
 

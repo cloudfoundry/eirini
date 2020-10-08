@@ -87,19 +87,18 @@ var _ = Describe("Tasks Reporter", func() {
 		Expect(request.FailureReason).To(BeEmpty())
 	})
 
-	When("posting to the cloud controller fails", func() {
+	When("posting to the cloud controller continuously fails", func() {
 		BeforeEach(func() {
 			callbackStatusCode = http.StatusTeapot
 		})
 
-		It("does not delete the job", func() {
+		It("deletes the job after a number of attempts at the callback", func() {
 			requestMatcher := wiremock.RequestMatcher{
 				Method: "POST",
 				URL:    fmt.Sprintf("/%s", taskGUID),
 			}
-			Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "1m").Should(Equal(1))
-
-			Expect(jobExists(taskGUID)()).To(BeTrue())
+			Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "1m").Should(BeNumerically(">", 1))
+			Eventually(jobExists(taskGUID)).Should(BeFalse())
 		})
 
 	})

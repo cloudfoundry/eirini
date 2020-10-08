@@ -51,9 +51,10 @@ var _ = Describe("TaskReporter", func() {
 				EnableMultiNamespaceSupport: false,
 				ConfigPath:                  fixture.KubeConfigPath,
 			},
-			CCCertPath: certPath,
-			CAPath:     certPath,
-			CCKeyPath:  keyPath,
+			CCCertPath:                   certPath,
+			CAPath:                       certPath,
+			CCKeyPath:                    keyPath,
+			CompletionCallbackRetryLimit: 3,
 		}
 
 		taskDesirer = k8s.NewTaskDesirer(
@@ -86,15 +87,15 @@ var _ = Describe("TaskReporter", func() {
 		}
 
 		handlers = []http.HandlerFunc{
-			ghttp.VerifyRequest("POST", "/the-callback"),
-			ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{TaskGUID: taskGUID}),
+			ghttp.CombineHandlers(
+				ghttp.VerifyRequest("POST", "/the-callback"),
+				ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{TaskGUID: taskGUID}),
+			),
 		}
 	})
 
 	JustBeforeEach(func() {
-		cloudControllerServer.AppendHandlers(
-			ghttp.CombineHandlers(handlers...),
-		)
+		cloudControllerServer.AppendHandlers(handlers...)
 
 		session, configFile = eiriniBins.TaskReporter.Run(config)
 		Eventually(session).Should(gbytes.Say("Starting workers"))
@@ -141,12 +142,14 @@ var _ = Describe("TaskReporter", func() {
 			task.Command = []string{"false"}
 
 			handlers = []http.HandlerFunc{
-				ghttp.VerifyRequest("POST", "/the-callback"),
-				ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
-					TaskGUID:      task.GUID,
-					Failed:        true,
-					FailureReason: "Error",
-				}),
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("POST", "/the-callback"),
+					ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
+						TaskGUID:      task.GUID,
+						Failed:        true,
+						FailureReason: "Error",
+					}),
+				),
 			}
 		})
 
@@ -158,6 +161,29 @@ var _ = Describe("TaskReporter", func() {
 		It("deletes the job", func() {
 			Eventually(getTaskJobsFn(task.GUID)).Should(BeEmpty())
 		})
+	})
+
+	When("the completion callback fails", func() {
+		BeforeEach(func() {
+			cloudControllerServer.SetAllowUnhandledRequests(true)
+			handlers = []http.HandlerFunc{
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("POST", "/the-callback"),
+					ghttp.RespondWith(http.StatusInternalServerError, nil),
+				),
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("POST", "/the-callback"),
+					ghttp.RespondWith(http.StatusInternalServerError, nil),
+				),
+			}
+			config.CompletionCallbackRetryLimit = 2
+		})
+
+		It("tries for a total of [callbackRetryLimit] times", func() {
+			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(config.CompletionCallbackRetryLimit))
+			Consistently(cloudControllerServer.ReceivedRequests, "2s").Should(HaveLen(config.CompletionCallbackRetryLimit))
+		})
+
 	})
 
 	When("a private docker registry is used", func() {
@@ -211,6 +237,24 @@ var _ = Describe("TaskReporter", func() {
 			// `Consistently`. If the consistently timeout gets too low, the
 			// test would always succeed even if there is a problem.
 			Consistently(func() int { return len(cloudControllerServer.ReceivedRequests()) }, "1m").Should(BeZero())
+		})
+	})
+
+	When("completionCallbackRetryLimit is not set in the config", func() {
+		BeforeEach(func() {
+			config.CompletionCallbackRetryLimit = 0
+			handlers = []http.HandlerFunc{
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("POST", "/the-callback"),
+					ghttp.RespondWith(http.StatusInternalServerError, nil),
+				),
+			}
+			cloudControllerServer.SetAllowUnhandledRequests(true)
+		})
+
+		It("uses the default value of '10'", func() {
+			Eventually(cloudControllerServer.ReceivedRequests, "30s").Should(HaveLen(10))
+			Consistently(cloudControllerServer.ReceivedRequests, "2s").Should(HaveLen(10))
 		})
 	})
 })

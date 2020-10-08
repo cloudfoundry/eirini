@@ -29,11 +29,13 @@ type Deleter interface {
 }
 
 type Reconciler struct {
-	logger   lager.Logger
-	pods     client.Client
-	jobs     JobsClient
-	reporter Reporter
-	deleter  Deleter
+	logger             lager.Logger
+	pods               client.Client
+	jobs               JobsClient
+	reporter           Reporter
+	deleter            Deleter
+	callbackRetryLimit int
+	callbackRetries    map[string]int
 }
 
 func NewReconciler(
@@ -42,13 +44,16 @@ func NewReconciler(
 	jobsClient JobsClient,
 	reporter Reporter,
 	deleter Deleter,
+	callbackRetryLimit int,
 ) *Reconciler {
 	return &Reconciler{
-		logger:   logger,
-		pods:     podClient,
-		jobs:     jobsClient,
-		reporter: reporter,
-		deleter:  deleter,
+		logger:             logger,
+		pods:               podClient,
+		jobs:               jobsClient,
+		reporter:           reporter,
+		deleter:            deleter,
+		callbackRetryLimit: callbackRetryLimit,
+		callbackRetries:    map[string]int{},
 	}
 }
 
@@ -72,9 +77,11 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 		return reconcile.Result{}, nil
 	}
 
-	jobsForPods, err := r.jobs.GetByGUID(pod.Labels[k8s.LabelGUID])
+	guid := pod.Labels[k8s.LabelGUID]
+	jobsForPods, err := r.jobs.GetByGUID(guid)
+
 	if err != nil {
-		logger.Error("failed to get related job by guid", err, lager.Data{"guid": pod.Labels[k8s.LabelGUID]})
+		logger.Error("failed to get related job by guid", err, lager.Data{"guid": guid})
 
 		return reconcile.Result{}, err
 	}
@@ -85,13 +92,19 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 		return reconcile.Result{}, nil
 	}
 
-	err = r.reporter.Report(pod)
+	if r.callbackRetries[guid] < r.callbackRetryLimit {
+		err = r.reporter.Report(pod)
+		if err != nil {
+			r.callbackRetries[guid]++
 
-	if err != nil {
-		return reconcile.Result{}, err
+			logger.Error("completion-callback-failed", err, lager.Data{"tries": r.callbackRetries[guid]})
+
+			return reconcile.Result{}, err
+		}
 	}
 
-	_, err = r.deleter.Delete(pod.Labels[k8s.LabelGUID])
+	delete(r.callbackRetries, guid)
+	_, err = r.deleter.Delete(guid)
 
 	return reconcile.Result{}, err
 }

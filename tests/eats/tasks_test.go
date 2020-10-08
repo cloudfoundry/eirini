@@ -18,21 +18,26 @@ import (
 
 var _ = Describe("Tasks", func() {
 	var (
-		guid string
+		guid               string
+		completionCallback string
 	)
 
 	BeforeEach(func() {
+		completionCallback = "http://example.com/"
 		guid = tests.GenerateGUID()
+	})
+
+	JustBeforeEach(func() {
 		desireTask(cf.TaskRequest{
 			GUID:               guid,
 			Namespace:          fixture.Namespace,
-			CompletionCallback: "http://example.com/",
+			CompletionCallback: completionCallback,
 			Lifecycle: cf.Lifecycle{
 				DockerLifecycle: &cf.DockerLifecycle{
 					Image: "busybox",
 					Command: []string{
-						"bin/sleep",
-						"10",
+						"/bin/sleep",
+						"0.2",
 					},
 				},
 			},

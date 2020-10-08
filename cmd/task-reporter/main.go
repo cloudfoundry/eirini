@@ -32,6 +32,8 @@ type options struct {
 	ConfigFile string `short:"c" long:"config" description:"Config for running task-reporter"`
 }
 
+const defaultCompletionCallbackRetryLimit = 10
+
 func main() {
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
@@ -61,11 +63,17 @@ func main() {
 
 	jobsClient := client.NewJob(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport)
 
+	completionCallbackRetryLimit := cfg.CompletionCallbackRetryLimit
+	if completionCallbackRetryLimit == 0 {
+		completionCallbackRetryLimit = defaultCompletionCallbackRetryLimit
+	}
+
 	taskReconciler := k8stask.NewReconciler(taskLogger,
 		controllerClient,
 		jobsClient,
 		reporter,
 		initTaskDeleter(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport),
+		completionCallbackRetryLimit,
 	)
 
 	mgrOptions := manager.Options{

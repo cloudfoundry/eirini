@@ -149,10 +149,11 @@ type MetricsCollectorConfig struct {
 }
 
 type TaskReporterConfig struct {
-	CCTLSDisabled bool   `yaml:"cc_tls_disabled"`
-	CCCertPath    string `yaml:"cc_cert_path"`
-	CCKeyPath     string `yaml:"cc_key_path"`
-	CAPath        string `yaml:"ca_path"`
+	CCTLSDisabled                bool   `yaml:"cc_tls_disabled"`
+	CCCertPath                   string `yaml:"cc_cert_path"`
+	CCKeyPath                    string `yaml:"cc_key_path"`
+	CAPath                       string `yaml:"ca_path"`
+	CompletionCallbackRetryLimit int    `yaml:"completion_callback_retry_limit"`
 
 	KubeConfig `yaml:",inline"`
 }
