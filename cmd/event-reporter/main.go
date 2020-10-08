@@ -64,13 +64,23 @@ func main() {
 	controllerClient, err := runtimeclient.New(kubeConfig, runtimeclient.Options{Scheme: kscheme.Scheme})
 	cmdcommons.ExitIfError(err)
 
+	namespace := ""
+
+	if !cfg.EnableMultiNamespaceSupport {
+		if cfg.Namespace == "" {
+			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
+		}
+
+		namespace = cfg.Namespace
+	}
+
 	crashReconciler := k8sevent.NewCrashReconciler(
 		crashLogger,
 		controllerClient,
 		k8sevent.NewDefaultCrashEventGenerator(
 			k8sclient.NewEvent(
 				clientset,
-				cfg.Namespace,
+				namespace,
 				cfg.EnableMultiNamespaceSupport)),
 		emitter,
 	)
@@ -79,7 +89,7 @@ func main() {
 		// do not serve prometheus metrics; disabled because port clashes during integration tests
 		MetricsBindAddress: "0",
 		Scheme:             kscheme.Scheme,
-		Namespace:          cfg.Namespace,
+		Namespace:          namespace,
 		Logger:             util.NewLagerLogr(crashLogger),
 	})
 	cmdcommons.ExitIfError(err)

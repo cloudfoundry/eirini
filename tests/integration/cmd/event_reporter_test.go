@@ -20,8 +20,8 @@ var _ = Describe("EventReporter", func() {
 	BeforeEach(func() {
 		config = &eirini.EventReporterConfig{
 			KubeConfig: eirini.KubeConfig{
-				Namespace:  "default",
-				ConfigPath: fixture.KubeConfigPath,
+				ConfigPath:                  fixture.KubeConfigPath,
+				EnableMultiNamespaceSupport: true,
 			},
 			CcInternalAPI: "doesitmatter.com",
 			CCCertPath:    pathToTestFixture("cert"),
@@ -81,6 +81,28 @@ var _ = Describe("EventReporter", func() {
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).NotTo(BeZero())
 			Expect(session.Err).To(gbytes.Say("failed to load keypair: open /does/not/exist: no such file or directory"))
+		})
+	})
+
+	When("EnableMultiNamespaceSupport is false", func() {
+		BeforeEach(func() {
+			config.EnableMultiNamespaceSupport = false
+			config.Namespace = fixture.Namespace
+		})
+
+		It("should be able to start properly", func() {
+			Consistently(session, "5s").ShouldNot(gexec.Exit())
+		})
+
+		When("the namespace is not set", func() {
+			BeforeEach(func() {
+				config.Namespace = ""
+			})
+
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(2))
+				Expect(session.Err).To(gbytes.Say("must set namespace in config when enableMultiNamespaceSupport is not set"))
+			})
 		})
 	})
 })
