@@ -10,16 +10,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-//counterfeiter:generate . Deleter
-
-type Deleter interface {
-	Delete(guid string) (string, error)
-}
-
 type StateReporter struct {
-	Client      *http.Client
-	Logger      lager.Logger
-	TaskDeleter Deleter
+	Client *http.Client
+	Logger lager.Logger
 }
 
 func (r StateReporter) Report(pod *corev1.Pod) error {
@@ -27,10 +20,6 @@ func (r StateReporter) Report(pod *corev1.Pod) error {
 	uri := pod.Annotations[k8s.AnnotationCompletionCallback]
 
 	logger := r.Logger.Session("report", lager.Data{"task-guid": taskGUID})
-
-	if !r.taskContainerHasTerminated(logger, pod) {
-		return nil
-	}
 
 	logger.Debug("sending completion notification")
 	req := r.generateTaskCompletedRequest(logger, taskGUID, pod)
@@ -41,28 +30,7 @@ func (r StateReporter) Report(pod *corev1.Pod) error {
 		return err
 	}
 
-	if _, err := r.TaskDeleter.Delete(taskGUID); err != nil {
-		logger.Error("cannot-delete-job", err)
-
-		return err
-	}
-
 	return nil
-}
-
-func (r StateReporter) taskContainerHasTerminated(logger lager.Logger, pod *corev1.Pod) bool {
-	status, ok := getTaskContainerStatus(pod)
-	if !ok {
-		logger.Info("pod-has-no-task-container-status")
-
-		return false
-	}
-
-	return isTerminatedStatus(status)
-}
-
-func isTerminatedStatus(status corev1.ContainerStatus) bool {
-	return status.State.Terminated != nil
 }
 
 func (r StateReporter) generateTaskCompletedRequest(logger lager.Logger, guid string, pod *corev1.Pod) cf.TaskCompletedRequest {

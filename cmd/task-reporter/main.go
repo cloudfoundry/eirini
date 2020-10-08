@@ -52,9 +52,8 @@ func main() {
 	taskLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	reporter := k8stask.StateReporter{
-		Client:      httpClient,
-		Logger:      taskLogger,
-		TaskDeleter: initTaskDeleter(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport),
+		Client: httpClient,
+		Logger: taskLogger,
 	}
 
 	controllerClient, err := runtimeclient.New(kubeConfig, runtimeclient.Options{Scheme: kscheme.Scheme})
@@ -62,7 +61,12 @@ func main() {
 
 	jobsClient := client.NewJob(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport)
 
-	taskReconciler := k8stask.NewReconciler(taskLogger, controllerClient, jobsClient, reporter)
+	taskReconciler := k8stask.NewReconciler(taskLogger,
+		controllerClient,
+		jobsClient,
+		reporter,
+		initTaskDeleter(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport),
+	)
 
 	mgrOptions := manager.Options{
 		// do not serve prometheus metrics; disabled because port clashes during integration tests

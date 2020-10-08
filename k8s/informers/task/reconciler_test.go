@@ -29,6 +29,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 		podClient    *reconcilerfakes.FakeClient
 		jobsClient   *taskfakes.FakeJobsClient
 		taskReporter *taskfakes.FakeReporter
+		taskDeleter  *taskfakes.FakeDeleter
 		reconciler   *task.Reconciler
 		pod          *corev1.Pod
 		job          batchv1.Job
@@ -39,7 +40,8 @@ var _ = Describe("Task Completion Reconciler", func() {
 		podClient = new(reconcilerfakes.FakeClient)
 		jobsClient = new(taskfakes.FakeJobsClient)
 		taskReporter = new(taskfakes.FakeReporter)
-		reconciler = task.NewReconciler(logger, podClient, jobsClient, taskReporter)
+		taskDeleter = new(taskfakes.FakeDeleter)
+		reconciler = task.NewReconciler(logger, podClient, jobsClient, taskReporter, taskDeleter)
 
 		pod = &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -48,14 +50,33 @@ var _ = Describe("Task Completion Reconciler", func() {
 				Labels: map[string]string{
 					k8s.LabelGUID: "the-guid",
 				},
+				Annotations: map[string]string{
+					k8s.AnnotationOpiTaskContainerName: "opi-task",
+				},
+			},
+			Status: corev1.PodStatus{
+				ContainerStatuses: []corev1.ContainerStatus{
+					{
+						Name: "opi-task",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode: 0,
+							},
+						},
+					},
+					{
+						Name: "some-sidecar",
+						State: corev1.ContainerState{
+							Running: &corev1.ContainerStateRunning{},
+						},
+					},
+				},
 			},
 		}
 
 		podClient.GetStub = func(c context.Context, nn k8stypes.NamespacedName, o runtime.Object) error {
 			p := o.(*corev1.Pod)
-			p.Name = pod.Name
-			p.Namespace = pod.Namespace
-			p.Labels = pod.Labels
+			pod.DeepCopyInto(p)
 
 			return nil
 		}
@@ -94,6 +115,11 @@ var _ = Describe("Task Completion Reconciler", func() {
 		Expect(taskReporter.ReportArgsForCall(0)).To(Equal(pod))
 	})
 
+	It("deletes the task", func() {
+		Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
+		Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-guid"))
+	})
+
 	When("fetching the task pod fails", func() {
 		BeforeEach(func() {
 			podClient.GetReturns(errors.New("fetch-pod-error"))
@@ -106,6 +132,45 @@ var _ = Describe("Task Completion Reconciler", func() {
 		It("does not call the task reporter", func() {
 			Expect(taskReporter.ReportCallCount()).To(BeZero())
 		})
+
+		It("does not delete the task", func() {
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
+		})
+	})
+
+	When("task container has not completed", func() {
+		BeforeEach(func() {
+			pod.Status.ContainerStatuses[0].State.Terminated = nil
+			pod.Status.ContainerStatuses[0].State.Running = &corev1.ContainerStateRunning{}
+		})
+
+		It("exits immediately doing nothing", func() {
+			Expect(reconcileErr).To(BeNil())
+			Expect(jobsClient.GetByGUIDCallCount()).To(BeZero())
+			Expect(taskReporter.ReportCallCount()).To(BeZero())
+			Expect(taskDeleter.DeleteCallCount()).To(BeZero())
+		})
+	})
+
+	When("task container status is missing", func() {
+		BeforeEach(func() {
+			pod.Status.ContainerStatuses = []corev1.ContainerStatus{
+				{
+					Name: "some-sidecar",
+					State: corev1.ContainerState{
+						Running: &corev1.ContainerStateRunning{},
+					},
+				},
+			}
+		})
+
+		It("exits immediately doing nothing", func() {
+			Expect(reconcileErr).To(BeNil())
+			Expect(jobsClient.GetByGUIDCallCount()).To(BeZero())
+			Expect(taskReporter.ReportCallCount()).To(BeZero())
+			Expect(taskDeleter.DeleteCallCount()).To(BeZero())
+		})
+
 	})
 
 	When("fetching the job fails", func() {
@@ -119,6 +184,10 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 		It("does not call the task reporter", func() {
 			Expect(taskReporter.ReportCallCount()).To(BeZero())
+		})
+
+		It("does not delete the task", func() {
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
 		})
 	})
 
@@ -134,6 +203,10 @@ var _ = Describe("Task Completion Reconciler", func() {
 		It("does not call the task reporter", func() {
 			Expect(taskReporter.ReportCallCount()).To(BeZero())
 		})
+
+		It("does not delete the task", func() {
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
+		})
 	})
 
 	When("the task pod does not exist", func() {
@@ -144,6 +217,10 @@ var _ = Describe("Task Completion Reconciler", func() {
 		It("does not call the task reporter", func() {
 			Expect(taskReporter.ReportCallCount()).To(BeZero())
 		})
+
+		It("does not delete the task", func() {
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
+		})
 	})
 
 	When("reporting the task pod fails", func() {
@@ -153,6 +230,20 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 		It("returns the error", func() {
 			Expect(reconcileErr).To(MatchError("task-reporter-error"))
+		})
+
+		It("does not delete the task", func() {
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
+		})
+	})
+
+	When("deleting the job fails", func() {
+		BeforeEach(func() {
+			taskDeleter.DeleteReturns("", errors.New("delete-task-failure"))
+		})
+
+		It("returns an error", func() {
+			Expect(reconcileErr).To(MatchError("delete-task-failure"))
 		})
 	})
 })

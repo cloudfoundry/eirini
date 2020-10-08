@@ -14,6 +14,7 @@ import (
 
 //counterfeiter:generate . Reporter
 //counterfeiter:generate . JobsClient
+//counterfeiter:generate . Deleter
 
 type Reporter interface {
 	Report(*corev1.Pod) error
@@ -23,11 +24,16 @@ type JobsClient interface {
 	GetByGUID(guid string) ([]batchv1.Job, error)
 }
 
+type Deleter interface {
+	Delete(guid string) (string, error)
+}
+
 type Reconciler struct {
 	logger   lager.Logger
 	pods     client.Client
 	jobs     JobsClient
 	reporter Reporter
+	deleter  Deleter
 }
 
 func NewReconciler(
@@ -35,12 +41,14 @@ func NewReconciler(
 	podClient client.Client,
 	jobsClient JobsClient,
 	reporter Reporter,
+	deleter Deleter,
 ) *Reconciler {
 	return &Reconciler{
 		logger:   logger,
 		pods:     podClient,
 		jobs:     jobsClient,
 		reporter: reporter,
+		deleter:  deleter,
 	}
 }
 
@@ -60,6 +68,10 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 		return reconcile.Result{}, err
 	}
 
+	if !r.taskContainerHasTerminated(logger, pod) {
+		return reconcile.Result{}, nil
+	}
+
 	jobsForPods, err := r.jobs.GetByGUID(pod.Labels[k8s.LabelGUID])
 	if err != nil {
 		logger.Error("failed to get related job by guid", err, lager.Data{"guid": pod.Labels[k8s.LabelGUID]})
@@ -75,5 +87,22 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 
 	err = r.reporter.Report(pod)
 
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	_, err = r.deleter.Delete(pod.Labels[k8s.LabelGUID])
+
 	return reconcile.Result{}, err
+}
+
+func (r Reconciler) taskContainerHasTerminated(logger lager.Logger, pod *corev1.Pod) bool {
+	status, ok := getTaskContainerStatus(pod)
+	if !ok {
+		logger.Info("pod-has-no-task-container-status")
+
+		return false
+	}
+
+	return status.State.Terminated != nil
 }
