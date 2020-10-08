@@ -48,7 +48,7 @@ var _ = Describe("Routes", func() {
 		}
 	})
 
-	Context("RouteCollector", func() {
+	Describe("RouteCollector", func() {
 		var collector k8s.RouteCollector
 
 		BeforeEach(func() {
@@ -132,7 +132,7 @@ fi;`,
 		})
 	})
 
-	Context("InstanceInformer", func() {
+	Describe("InstanceInformer", func() {
 		var (
 			stopChan         chan struct{}
 			informerWG       sync.WaitGroup
@@ -250,7 +250,7 @@ fi;`,
 		})
 	})
 
-	Context("URIChangeInformer", func() {
+	Describe("URIChangeInformer", func() {
 		var (
 			stopChan         chan struct{}
 			informerWG       sync.WaitGroup
