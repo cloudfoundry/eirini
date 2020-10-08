@@ -52,6 +52,7 @@ func main() {
 	cmdcommons.ExitIfError(err)
 
 	namespace := ""
+
 	if !cfg.EnableMultiNamespaceSupport {
 		if cfg.Namespace == "" {
 			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
