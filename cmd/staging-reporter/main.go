@@ -30,12 +30,22 @@ func main() {
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
+	namespace := ""
+
+	if !cfg.EnableMultiNamespaceSupport {
+		if cfg.Namespace == "" {
+			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
+		}
+
+		namespace = cfg.Namespace
+	}
+
 	launchStagingReporter(
 		clientset,
 		cfg.CAPath,
 		cfg.EiriniCertPath,
 		cfg.EiriniKeyPath,
-		cfg.Namespace,
+		namespace,
 	)
 }
 

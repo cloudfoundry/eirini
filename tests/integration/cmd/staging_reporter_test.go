@@ -20,7 +20,8 @@ var _ = Describe("StagingReporter", func() {
 	BeforeEach(func() {
 		config = &eirini.StagingReporterConfig{
 			KubeConfig: eirini.KubeConfig{
-				ConfigPath: pathToTestFixture("kube.conf"),
+				ConfigPath:                  pathToTestFixture("kube.conf"),
+				EnableMultiNamespaceSupport: true,
 			},
 			EiriniCertPath: pathToTestFixture("cert"),
 			EiriniKeyPath:  pathToTestFixture("key"),
@@ -87,6 +88,28 @@ var _ = Describe("StagingReporter", func() {
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).NotTo(BeZero())
 			Expect(session.Err).To(gbytes.Say("failed to load keypair: open : no such file or directory"))
+		})
+	})
+
+	When("EnableMultiNamespaceSupport is false", func() {
+		BeforeEach(func() {
+			config.EnableMultiNamespaceSupport = false
+			config.Namespace = fixture.Namespace
+		})
+
+		It("should be able to start properly", func() {
+			Consistently(session, "5s").ShouldNot(gexec.Exit())
+		})
+
+		When("the namespace is not set", func() {
+			BeforeEach(func() {
+				config.Namespace = ""
+			})
+
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(2))
+				Expect(session.Err).To(gbytes.Say("must set namespace in config when enableMultiNamespaceSupport is not set"))
+			})
 		})
 	})
 })
