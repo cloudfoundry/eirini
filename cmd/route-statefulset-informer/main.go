@@ -43,9 +43,19 @@ func main() {
 		RouteEmitter: routeEmitter,
 	}
 
+	namespace := ""
+
+	if !cfg.EnableMultiNamespaceSupport {
+		if cfg.Namespace == "" {
+			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
+		}
+
+		namespace = cfg.Namespace
+	}
+
 	uriInformer := k8sroute.NewURIChangeInformer(
 		clientset,
-		cfg.Namespace,
+		namespace,
 		updateHandler,
 		deleteHandler,
 	)
