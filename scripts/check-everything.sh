@@ -55,6 +55,7 @@ run_eats_helmful() {
 
   ensure_kind_cluster "eats-helmful"
   if [[ "$redeploy" == "true" ]]; then
+    KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/helm/scripts/helm-cleanup.sh"
     KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/helm/scripts/helm-deploy-eirini.sh"
   fi
 
