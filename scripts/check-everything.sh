@@ -33,13 +33,38 @@ run_integration_tests() {
   INTEGRATION_KUBECONFIG=$kubeconfig "$RUN_DIR"/run_integration_tests.sh
 }
 
+run_eats_helmless_single_ns() {
+  echo "Running EATs against single NS helmless deployed eirini on kind"
+
+  run_eats_helmless "false"
+}
+
+run_eats_helmless_multi_ns() {
+  echo "Running EATs against multi NS helmless deployed eirini on kind"
+
+  run_eats_helmless "true"
+}
+
+run_eats_helmful_single_ns() {
+  echo "Running EATs against single NS helm deployed eirini on kind"
+
+  run_eats_helmful "false"
+}
+
+run_eats_helmful_multi_ns() {
+  echo "Running EATs against multi NS helm deployed eirini on kind"
+
+  run_eats_helmful "true"
+}
+
 run_eats_helmless() {
-  echo "Running EATs against helmless deployed eirini on kind"
+  local multi_ns_support
+  multi_ns_support="$1"
 
   ensure_kind_cluster "eats-helmless"
   if [[ "$redeploy" == "true" ]]; then
     KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/cleanup.sh" || true
-    KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/deploy.sh"
+    KUBECONFIG="$kubeconfig" USE_MULTI_NAMESPACE="$multi_ns_support" "$EIRINI_RELEASE_DIR/deploy/scripts/deploy.sh"
   fi
 
   EIRINI_ADDRESS="https://eirini-api.eirini-core.svc.cluster.local:8085" \
@@ -47,16 +72,18 @@ run_eats_helmless() {
     EIRINI_SYSTEM_NS=eirini-core \
     EIRINI_WORKLOADS_NS=eirini-workloads \
     INTEGRATION_KUBECONFIG="$kubeconfig" \
+    USE_MULTI_NAMESPACE="$multi_ns_support" \
     $RUN_DIR/run_eats_tests.sh
 }
 
 run_eats_helmful() {
-  echo "Running EATs against helm deployed eirini on kind"
+  local multi_ns_support
+  multi_ns_support="$1"
 
   ensure_kind_cluster "eats-helmful"
   if [[ "$redeploy" == "true" ]]; then
     KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/helm/scripts/helm-cleanup.sh"
-    KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/helm/scripts/helm-deploy-eirini.sh"
+    KUBECONFIG="$kubeconfig" USE_MULTI_NAMESPACE="$multi_ns_support" "$EIRINI_RELEASE_DIR/helm/scripts/helm-deploy-eirini.sh"
   fi
 
   EIRINI_ADDRESS="https://eirini-opi.cf.svc.cluster.local:8085" \
@@ -64,6 +91,7 @@ run_eats_helmful() {
     EIRINI_SYSTEM_NS=cf \
     EIRINI_WORKLOADS_NS=eirini \
     INTEGRATION_KUBECONFIG="$kubeconfig" \
+    USE_MULTI_NAMESPACE="$multi_ns_support" \
     "$RUN_DIR/run_eats_tests.sh"
 }
 
@@ -82,12 +110,20 @@ run_subset() {
     run_integration_tests
   fi
 
-  if [[ "$run_eats" == "true" ]]; then
-    run_eats_helmless
+  if [[ "$run_eats_helmless_single_ns" == "true" ]]; then
+    run_eats_helmless_single_ns
   fi
 
-  if [[ "$run_eats_helmful" == "true" ]]; then
-    run_eats_helmful
+  if [[ "$run_eats_helmful_single_ns" == "true" ]]; then
+    run_eats_helmful_single_ns
+  fi
+
+  if [[ "$run_eats_helmless_multi_ns" == "true" ]]; then
+    run_eats_helmless_multi_ns
+  fi
+
+  if [[ "$run_eats_helmful_multi_ns" == "true" ]]; then
+    run_eats_helmful_multi_ns
   fi
 
   if [[ "$run_linter" == "true" ]]; then
@@ -98,8 +134,10 @@ run_subset() {
 run_everything() {
   run_unit_tests
   run_integration_tests
-  run_eats_helmless
-  run_eats_helmful
+  run_eats_helmless_single_ns
+  run_eats_helmful_single_ns
+  run_eats_helmless_multi_ns
+  run_eats_helmful_multi_ns
   run_linter
 }
 
@@ -112,8 +150,10 @@ main() {
 Usage: check-everything.sh [options]
 Options:
   -a  run all tests (default)
-  -e  EATs tests (helmless)
-  -f  EATs test (helmful)
+  -e  EATs tests (helmless / single NS)
+  -f  EATs test (helmful / single NS)
+  -E  EATs tests (helmless / multi NS)
+  -F  EATs test (helmful / multi NS)
   -h  this help
   -i  integration tests
   -l  golangci-lint
@@ -123,8 +163,10 @@ EOF
   )
 
   local additional_values \
-    run_eats="false" \
-    run_eats_helmful="false" \
+    run_eats_helmless_single_ns="false" \
+    run_eats_helmful_single_ns="false" \
+    run_eats_helmless_multi_ns="false" \
+    run_eats_helmful_multi_ns="false" \
     run_unit_tests="false" \
     run_integration_tests="false" \
     run_linter="false" \
@@ -132,7 +174,7 @@ EOF
     redeploy="true"
 
   additional_values=""
-  while getopts "auiefnhl" opt; do
+  while getopts "auieEfFnhl" opt; do
     case ${opt} in
       n)
         redeploy="false"
@@ -148,10 +190,16 @@ EOF
         run_integration_tests="true"
         ;;
       e)
-        run_eats="true"
+        run_eats_helmless_single_ns="true"
         ;;
       f)
-        run_eats_helmful="true"
+        run_eats_helmful_single_ns="true"
+        ;;
+      E)
+        run_eats_helmless_multi_ns="true"
+        ;;
+      F)
+        run_eats_helmful_multi_ns="true"
         ;;
       l)
         run_linter="true"
