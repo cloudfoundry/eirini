@@ -3,6 +3,7 @@ package tests
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 
 	// nolint:golint,stylecheck
 	. "github.com/onsi/ginkgo"
@@ -76,4 +77,21 @@ func lookupOptionalEnv(key string) string {
 	}
 
 	return value
+}
+
+func GetTelepresenceServiceName() string {
+	serviceName := os.Getenv("TELEPRESENCE_SERVICE_NAME")
+	Expect(serviceName).ToNot(BeEmpty())
+
+	return serviceName
+}
+
+func GetTelepresencePort() int {
+	startPort := os.Getenv("TELEPRESENCE_EXPOSE_PORT_START")
+	Expect(startPort).ToNot(BeEmpty())
+
+	portNo, err := strconv.Atoi(startPort)
+	Expect(err).NotTo(HaveOccurred())
+
+	return portNo + GinkgoParallelNode() - 1
 }

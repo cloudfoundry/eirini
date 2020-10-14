@@ -4,19 +4,35 @@ set -euo pipefail
 IFS=$'\n\t'
 
 RUN_DIR="$(cd "$(dirname "$0")" && pwd)"
-EIRINI_RELEASE_DIR="$HOME/workspace/eirini-release"
+EIRINI_RELEASE_DIR="$RUN_DIR/../../eirini-release"
+EIRINI_DIR="$RUN_DIR/.."
+EIRINIUSER_PASSWORD="$(pass eirini/docker-hub)"
+
+export TELEPRESENCE_EXPOSE_PORT_START=10000
+export TELEPRESENCE_SERVICE_NAME
+
+runFile=$(mktemp)
+clusterLock=$HOME/.kind-cluster.lock
 
 ensure_kind_cluster() {
   local cluster_name
   cluster_name="$1"
   if ! kind get clusters | grep -q "$cluster_name"; then
     current_cluster="$(kubectl config current-context)" || true
-    kind create cluster --name "$cluster_name"
+    kindConfig=$(mktemp)
+    cat <<EOF >>"$kindConfig"
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  apiServerAddress: 172.17.0.1
+EOF
+    flock -x $clusterLock kind create cluster --name "$cluster_name" --config "$kindConfig" --wait 5m
+    rm -f "$kindConfig"
     if [[ -n "$current_cluster" ]]; then
       kubectl config use-context "$current_cluster"
     fi
   fi
-  kind get kubeconfig --name "$cluster_name" >$kubeconfig
+  kind export kubeconfig --name "$cluster_name" --kubeconfig "$HOME/.kube/$cluster_name.yml"
 }
 
 run_unit_tests() {
@@ -29,8 +45,36 @@ run_unit_tests() {
 run_integration_tests() {
   echo "Running integration tests on kind"
 
-  ensure_kind_cluster "integration-tests"
-  INTEGRATION_KUBECONFIG=$kubeconfig "$RUN_DIR"/run_integration_tests.sh
+  local cluster_name="integration-tests"
+  ensure_kind_cluster "$cluster_name"
+
+  local service_name
+  service_name=telepresence-$(uuidgen)
+
+  local src_dir
+  src_dir=$(mktemp -d)
+  cp -a "$EIRINI_DIR" "$src_dir"
+  cp "$HOME/.kube/$cluster_name.yml" "$src_dir"
+  trap "rm -rf $src_dir" EXIT
+
+  KUBECONFIG=$HOME/.kube/integration-tests.yml telepresence \
+    --method container \
+    --new-deployment "$service_name" \
+    --expose 10000 \
+    --expose 10001 \
+    --expose 10002 \
+    --expose 10003 \
+    --docker-run \
+    --rm \
+    -v "$src_dir":/usr/src/app \
+    -v "$HOME"/.cache:/root/.cache \
+    -e INTEGRATION_KUBECONFIG=/usr/src/app/integration-tests.yml \
+    -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
+    -e TELEPRESENCE_EXPOSE_PORT_START=10000 \
+    -e TELEPRESENCE_SERVICE_NAME="$service_name" \
+    -e NODES=4 \
+    eirini/ci \
+    /usr/src/app/scripts/run_integration_tests.sh
 }
 
 run_eats_helmless_single_ns() {
@@ -61,38 +105,76 @@ run_eats_helmless() {
   local multi_ns_support
   multi_ns_support="$1"
 
-  ensure_kind_cluster "eats-helmless"
+  local cluster_name="eats-helmless"
+  local kubeconfig="$HOME/.kube/$cluster_name.yml"
+
+  ensure_kind_cluster "$cluster_name"
   if [[ "$redeploy" == "true" ]]; then
     KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/deploy/scripts/cleanup.sh" || true
     KUBECONFIG="$kubeconfig" USE_MULTI_NAMESPACE="$multi_ns_support" "$EIRINI_RELEASE_DIR/deploy/scripts/deploy.sh"
   fi
 
-  EIRINI_ADDRESS="https://eirini-api.eirini-core.svc.cluster.local:8085" \
-    EIRINI_TLS_SECRET=eirini-certs \
-    EIRINI_SYSTEM_NS=eirini-core \
-    EIRINI_WORKLOADS_NS=eirini-workloads \
-    INTEGRATION_KUBECONFIG="$kubeconfig" \
-    USE_MULTI_NAMESPACE="$multi_ns_support" \
-    $RUN_DIR/run_eats_tests.sh
+  local service_name
+  service_name=telepresence-$(uuidgen)
+
+  src_dir=$(mktemp -d)
+  cp -a "$EIRINI_DIR" "$src_dir"
+  cp "$HOME/.kube/$cluster_name.yml" "$src_dir"
+  trap "rm -rf $src_dir" EXIT
+
+  KUBECONFIG="$kubeconfig" telepresence \
+    --method container \
+    --new-deployment "$service_name" \
+    --docker-run \
+    --rm \
+    -v "$src_dir":/usr/src/app \
+    -v "$HOME"/.cache:/root/.cache \
+    -e EIRINI_ADDRESS="https://eirini-api.eirini-core.svc.cluster.local:8085" \
+    -e EIRINI_TLS_SECRET=eirini-certs \
+    -e EIRINI_SYSTEM_NS=eirini-core \
+    -e EIRINI_WORKLOADS_NS=eirini-workloads \
+    -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
+    -e INTEGRATION_KUBECONFIG="/usr/src/app/$cluster_name.yml" \
+    eirini/ci \
+    /usr/src/app/scripts/run_eats_tests.sh
 }
 
 run_eats_helmful() {
   local multi_ns_support
   multi_ns_support="$1"
 
-  ensure_kind_cluster "eats-helmful"
+  local cluster_name="eats-helmful"
+  local kubeconfig="$HOME/.kube/$cluster_name.yml"
+
+  ensure_kind_cluster "$cluster_name"
   if [[ "$redeploy" == "true" ]]; then
     KUBECONFIG="$kubeconfig" "$EIRINI_RELEASE_DIR/helm/scripts/helm-cleanup.sh"
     KUBECONFIG="$kubeconfig" USE_MULTI_NAMESPACE="$multi_ns_support" "$EIRINI_RELEASE_DIR/helm/scripts/helm-deploy-eirini.sh"
   fi
 
-  EIRINI_ADDRESS="https://eirini-opi.cf.svc.cluster.local:8085" \
-    EIRINI_TLS_SECRET=eirini-certs \
-    EIRINI_SYSTEM_NS=cf \
-    EIRINI_WORKLOADS_NS=eirini \
-    INTEGRATION_KUBECONFIG="$kubeconfig" \
-    USE_MULTI_NAMESPACE="$multi_ns_support" \
-    "$RUN_DIR/run_eats_tests.sh"
+  local service_name
+  service_name=telepresence-$(uuidgen)
+
+  src_dir=$(mktemp -d)
+  cp -a "$EIRINI_DIR" "$src_dir"
+  cp "$HOME/.kube/$cluster_name.yml" "$src_dir"
+  trap "rm -rf $src_dir" EXIT
+
+  KUBECONFIG="$kubeconfig" telepresence \
+    --method container \
+    --new-deployment "$service_name" \
+    --docker-run \
+    --rm \
+    -v "$src_dir":/usr/src/app \
+    -v "$HOME"/.cache:/root/.cache \
+    -e EIRINI_ADDRESS="https://eirini-opi.cf.svc.cluster.local:8085" \
+    -e EIRINI_TLS_SECRET=eirini-certs \
+    -e EIRINI_SYSTEM_NS=cf \
+    -e EIRINI_WORKLOADS_NS=eirini \
+    -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
+    -e INTEGRATION_KUBECONFIG="/usr/src/app/$cluster_name.yml" \
+    eirini/ci \
+    /usr/src/app/scripts/run_eats_tests.sh
 }
 
 run_linter() {
@@ -131,20 +213,29 @@ run_subset() {
   fi
 }
 
+RED=1
+GREEN=2
+print_message() {
+  message=$1
+  colour=$2
+  printf "\\r\\033[00;3%sm[%s]\\033[0m\\n" "$colour" "$message"
+}
+
 run_everything() {
-  run_unit_tests
-  run_integration_tests
-  run_eats_helmless_single_ns
-  run_eats_helmful_single_ns
-  run_eats_helmless_multi_ns
-  run_eats_helmful_multi_ns
-  run_linter
+  print_message "about to run tests in parallel, it will be awesome" $GREEN
+  print_message "ctrl-d panes when they are done" $RED
+  local do_not_deploy="-n "
+  if [[ "$redeploy" == "true" ]]; then
+    do_not_deploy=""
+  fi
+  tmux new-window -n eirini-tests "/bin/bash -c \"$0 -u; bash --init-file <(echo 'history -s $0 -u')\""
+  tmux split-window -h -p 50 "/bin/bash -c \"$0 -i $do_not_deploy; bash --init-file <(echo 'history -s $0 -i $do_not_deploy')\""
+  tmux split-window -v -p 50 "/bin/bash -c \"$0 -ef $do_not_deploy; bash --init-file <(echo 'history -s $0 -ef $do_not_deploy')\""
+  tmux select-pane -L
+  tmux split-window -v -p 50 "/bin/bash -c \"$0 -l; bash --init-file <(echo 'history -s $0 -l')\""
 }
 
 main() {
-  readonly kubeconfig=$(mktemp)
-  trap "rm $kubeconfig" EXIT
-
   USAGE=$(
     cat <<EOF
 Usage: check-everything.sh [options]
@@ -171,7 +262,8 @@ EOF
     run_integration_tests="false" \
     run_linter="false" \
     skip_docker_build="false" \
-    redeploy="true"
+    redeploy="true" \
+    run_subset="false"
 
   additional_values=""
   while getopts "auieEfFnhl" opt; do
@@ -180,29 +272,35 @@ EOF
         redeploy="false"
         ;;
       a)
-        run_everything
-        exit 0
+        run_subset="false"
         ;;
       u)
         run_unit_tests="true"
+        run_subset="true"
         ;;
       i)
         run_integration_tests="true"
+        run_subset="true"
         ;;
       e)
         run_eats_helmless_single_ns="true"
+        run_subset="true"
         ;;
       f)
         run_eats_helmful_single_ns="true"
+        run_subset="true"
         ;;
       E)
         run_eats_helmless_multi_ns="true"
+        run_subset="true"
         ;;
       F)
         run_eats_helmful_multi_ns="true"
+        run_subset="true"
         ;;
       l)
         run_linter="true"
+        run_subset="true"
         ;;
       h)
         echo "$USAGE"
@@ -220,11 +318,11 @@ EOF
         ;;
     esac
   done
-  shift $((OPTIND - 1))
-  if [[ $((OPTIND - 1)) -eq 0 ]]; then
+  if [[ "$run_subset" == "true" ]]; then
+    run_subset
+  else
     run_everything
   fi
-  run_subset
 }
 
 main $@

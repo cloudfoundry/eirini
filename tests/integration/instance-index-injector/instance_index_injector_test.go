@@ -30,6 +30,7 @@ var _ = Describe("InstanceIndexInjector", func() {
 	BeforeEach(func() {
 		namespace = fixture.Namespace
 		port := tests.GetTelepresencePort()
+		telepresenceService := tests.GetTelepresenceServiceName()
 		fingerprint = "instance-id-" + tests.GenerateGUID()[:8]
 
 		config = &eirini.InstanceIndexEnvInjectorConfig{

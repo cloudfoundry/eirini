@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -22,7 +21,6 @@ import (
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type EATSFixture struct {
@@ -36,22 +34,11 @@ type EATSFixture struct {
 	eiriniHTTPClient *http.Client
 }
 
-func NewEATSFixture(writer io.Writer) *EATSFixture {
-	kubeConfigPath := makeKubeConfigCopy()
-	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-	Expect(err).NotTo(HaveOccurred(), "failed to build config from flags")
-
-	dynamicClientset, err := dynamic.NewForConfig(config)
-	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
-
-	wiremockClient := newWiremock()
-	Expect(wiremockClient.Reset()).To(Succeed())
-
+func NewEATSFixture(baseFixture Fixture, dynamicClientset dynamic.Interface, wiremock *wiremock.Wiremock) *EATSFixture {
 	return &EATSFixture{
-		Fixture: *NewFixture(writer),
-
+		Fixture:          baseFixture,
 		DynamicClientset: dynamicClientset,
-		Wiremock:         wiremockClient,
+		Wiremock:         wiremock,
 	}
 }
 func (f *EATSFixture) SetUp() {
@@ -158,7 +145,7 @@ func (f *EATSFixture) GetEiriniWorkloadsNamespace() string {
 	return config.Properties.Namespace
 }
 
-func newWiremock() *wiremock.Wiremock {
+func NewWiremock() *wiremock.Wiremock {
 	// We assume wiremock is exposed using a ClusterIP service which listens on port 80
 	wireMockHost := fmt.Sprintf("cc-wiremock.%s.svc.cluster.local", GetEiriniSystemNamespace())
 

@@ -26,7 +26,6 @@ type EiriniBinaries struct {
 	EiriniController         Binary `json:"eirini_controller"`
 	StagingReporter          Binary `json:"staging_reporter"`
 	InstanceIndexEnvInjector Binary `json:"instance_index_env_injector"`
-	TelepresenceService      string `json:"telepresence_service"`
 }
 
 func NewEiriniBinaries(binsPath string) EiriniBinaries {

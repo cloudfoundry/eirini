@@ -16,7 +16,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func TestEats(t *testing.T) {
@@ -26,30 +28,25 @@ func TestEats(t *testing.T) {
 }
 
 var (
-	fixture             *tests.EATSFixture
-	telepresenceRunner  *tests.TelepresenceRunner
-	telepresenceService string
+	fixture *tests.EATSFixture
 )
 
-var _ = SynchronizedBeforeSuite(func() []byte {
-	var err error
+var _ = BeforeSuite(func() {
+	baseFixture := tests.NewFixture(GinkgoWriter)
+	config, err := clientcmd.BuildConfigFromFlags("", baseFixture.KubeConfigPath)
+	Expect(err).NotTo(HaveOccurred(), "failed to build config from flags")
 
-	telepresenceService = "local-binaries-" + tests.GenerateGUID()[:8]
-	// We don't need any ports to be proxies, we just need dns resolution
-	// to be able to talk to services running in the cluster. Thus the 0 argument.
-	telepresenceRunner, err = tests.StartTelepresence(telepresenceService, 0)
-	Expect(err).NotTo(HaveOccurred())
+	dynamicClientset, err := dynamic.NewForConfig(config)
+	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
 
-	return []byte(telepresenceService)
-}, func(telepresenceServiceName []byte) {
-	fixture = tests.NewEATSFixture(GinkgoWriter)
-	telepresenceService = string(telepresenceServiceName)
+	wiremockClient := tests.NewWiremock()
+	Expect(wiremockClient.Reset()).To(Succeed())
+
+	fixture = tests.NewEATSFixture(*baseFixture, dynamicClientset, wiremockClient)
 })
 
-var _ = SynchronizedAfterSuite(func() {
+var _ = AfterSuite(func() {
 	fixture.Destroy()
-}, func() {
-	telepresenceRunner.Stop()
 })
 
 var _ = BeforeEach(func() {
