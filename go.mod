@@ -29,7 +29,7 @@ require (
 	code.cloudfoundry.org/tlsconfig v0.0.0-20200131000646-bbe0f8da39b3
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
-	github.com/Azure/go-autorest/autorest v0.11.9 // indirect
+	github.com/Azure/go-autorest/autorest v0.11.10 // indirect
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/containerd/continuity v0.0.0-20200928162600-f2cc35102c2a // indirect
@@ -50,10 +50,10 @@ require (
 	github.com/google/certificate-transparency-go v1.1.1 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.2 // indirect
-	github.com/googleapis/gnostic v0.5.1 // indirect
+	github.com/googleapis/gnostic v0.5.2 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.15.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway v1.15.2 // indirect
 	github.com/hashicorp/consul/api v1.7.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
@@ -81,8 +81,8 @@ require (
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/nxadm/tail v1.4.5 // indirect
 	github.com/olekukonko/tablewriter v0.0.4 // indirect
-	github.com/onsi/ginkgo v1.14.1
-	github.com/onsi/gomega v1.10.2
+	github.com/onsi/ginkgo v1.14.2
+	github.com/onsi/gomega v1.10.3
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.14.0 // indirect
@@ -99,13 +99,15 @@ require (
 	go.etcd.io/etcd v3.3.25+incompatible // indirect
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/net v0.0.0-20201006153459-a7d1128ccaa0 // indirect
-	golang.org/x/sys v0.0.0-20201006155630-ac719f4daadf // indirect
+	golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee // indirect
+	golang.org/x/net v0.0.0-20201010224723-4f7140c49acb // indirect
+	golang.org/x/sys v0.0.0-20201013132646-2da7054afaeb // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
-	golang.org/x/tools v0.0.0-20201006221505-454bc3d4df59 // indirect
+	golang.org/x/tools v0.0.0-20201013201025-64a9e34f3752 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
-	google.golang.org/genproto v0.0.0-20201006033701-bcad7cf615f2 // indirect
-	google.golang.org/grpc v1.32.0
+	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto v0.0.0-20201013134114-7f9ee70cb474 // indirect
+	google.golang.org/grpc v1.33.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
