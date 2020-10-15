@@ -14,6 +14,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/tlsconfig"
 	"code.cloudfoundry.org/tps/cc_client"
 	"github.com/jessevdk/go-flags"
 	"github.com/pkg/errors"
@@ -122,5 +123,10 @@ func createTLSConfig(cfg eirini.EventReporterConfig) (*tls.Config, error) {
 	keyPath := cmdcommons.GetOrDefault(cfg.CCKeyPath, eirini.CCKeyPath)
 	caPath := cmdcommons.GetOrDefault(cfg.CCCAPath, eirini.CCCAPath)
 
-	return cc_client.NewTLSConfig(crtPath, keyPath, caPath)
+	return tlsconfig.Build(
+		tlsconfig.WithInternalServiceDefaults(),
+		tlsconfig.WithIdentityFromFile(crtPath, keyPath),
+	).Client(
+		tlsconfig.WithAuthorityFromFile(caPath),
+	)
 }
