@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/bifrost"
@@ -35,6 +36,8 @@ var _ = Describe("TaskReporter", func() {
 		taskDesirer           *k8s.TaskDesirer
 		task                  *opi.Task
 		config                *eirini.TaskReporterConfig
+		ttlSeconds            int
+		taskSubmittedAt       time.Time
 	)
 
 	BeforeEach(func() {
@@ -44,6 +47,7 @@ var _ = Describe("TaskReporter", func() {
 		cloudControllerServer, err = tests.CreateTestServer(certPath, keyPath, certPath)
 		Expect(err).ToNot(HaveOccurred())
 		cloudControllerServer.HTTPTestServer.StartTLS()
+		ttlSeconds = 10
 
 		config = &eirini.TaskReporterConfig{
 			KubeConfig: eirini.KubeConfig{
@@ -55,6 +59,7 @@ var _ = Describe("TaskReporter", func() {
 			CAPath:                       certPath,
 			CCKeyPath:                    keyPath,
 			CompletionCallbackRetryLimit: 3,
+			TTLSeconds:                   ttlSeconds,
 		}
 
 		taskDesirer = k8s.NewTaskDesirer(
@@ -100,6 +105,7 @@ var _ = Describe("TaskReporter", func() {
 		session, configFile = eiriniBins.TaskReporter.Run(config)
 		Eventually(session).Should(gbytes.Say("Starting workers"))
 		Expect(taskDesirer.Desire(fixture.Namespace, task)).To(Succeed())
+		taskSubmittedAt = time.Now()
 	})
 
 	AfterEach(func() {
@@ -135,6 +141,11 @@ var _ = Describe("TaskReporter", func() {
 
 	It("deletes the job", func() {
 		Eventually(getTaskJobsFn(task.GUID)).Should(BeEmpty())
+	})
+
+	It("does not delete the job before the TTL has expired", func() {
+		Eventually(getTaskJobsFn(task.GUID)).Should(BeEmpty())
+		Expect(time.Now()).To(BeTemporally(">", taskSubmittedAt.Add(time.Duration(ttlSeconds)*time.Second)))
 	})
 
 	When("a task job fails", func() {
@@ -183,7 +194,6 @@ var _ = Describe("TaskReporter", func() {
 			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(config.CompletionCallbackRetryLimit))
 			Consistently(cloudControllerServer.ReceivedRequests, "2s").Should(HaveLen(config.CompletionCallbackRetryLimit))
 		})
-
 	})
 
 	When("a private docker registry is used", func() {

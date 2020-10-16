@@ -74,6 +74,7 @@ func main() {
 		reporter,
 		initTaskDeleter(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport),
 		completionCallbackRetryLimit,
+		cfg.TTLSeconds,
 	)
 
 	mgrOptions := manager.Options{

@@ -3,6 +3,7 @@ package task_test
 import (
 	"context"
 	"errors"
+	"time"
 
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
@@ -22,8 +23,8 @@ import (
 )
 
 var _ = Describe("Task Completion Reconciler", func() {
-
 	var (
+		reconcileRes reconcile.Result
 		reconcileErr error
 		logger       *lagertest.TestLogger
 		podClient    *reconcilerfakes.FakeClient
@@ -33,6 +34,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 		reconciler   *task.Reconciler
 		pod          *corev1.Pod
 		job          batchv1.Job
+		ttl          int
 	)
 
 	BeforeEach(func() {
@@ -41,7 +43,8 @@ var _ = Describe("Task Completion Reconciler", func() {
 		jobsClient = new(taskfakes.FakeJobsClient)
 		taskReporter = new(taskfakes.FakeReporter)
 		taskDeleter = new(taskfakes.FakeDeleter)
-		reconciler = task.NewReconciler(logger, podClient, jobsClient, taskReporter, taskDeleter, 1)
+		ttl = 60
+		reconciler = task.NewReconciler(logger, podClient, jobsClient, taskReporter, taskDeleter, 1, ttl)
 
 		pod = &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -60,7 +63,8 @@ var _ = Describe("Task Completion Reconciler", func() {
 						Name: "opi-task",
 						State: corev1.ContainerState{
 							Terminated: &corev1.ContainerStateTerminated{
-								ExitCode: 0,
+								ExitCode:   0,
+								FinishedAt: metav1.NewTime(time.Now().Add(-120 * time.Second)),
 							},
 						},
 					},
@@ -87,7 +91,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 	})
 
 	JustBeforeEach(func() {
-		_, reconcileErr = reconciler.Reconcile(reconcile.Request{
+		reconcileRes, reconcileErr = reconciler.Reconcile(reconcile.Request{
 			NamespacedName: k8stypes.NamespacedName{
 				Name:      "the-task-pod",
 				Namespace: "space",
@@ -120,6 +124,41 @@ var _ = Describe("Task Completion Reconciler", func() {
 	It("deletes the task", func() {
 		Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
 		Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-task-pod-guid"))
+	})
+
+	When("ttl has not yet expired", func() {
+		BeforeEach(func() {
+			pod.Status.ContainerStatuses[0].State.Terminated.FinishedAt = metav1.NewTime(time.Now())
+		})
+
+		It("notifies CC on the first attempt only, and deletes only after TTL has expired", func() {
+			By("notifying CC the first time, but not yet deleting", func() {
+				Expect(taskReporter.ReportCallCount()).To(Equal(1))
+				Expect(taskReporter.ReportArgsForCall(0)).To(Equal(pod))
+
+				Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
+
+				Expect(reconcileErr).ToNot(HaveOccurred())
+				Expect(reconcileRes.RequeueAfter).To(Equal(time.Second * time.Duration(ttl)))
+			})
+
+			pod.Status.ContainerStatuses[0].State.Terminated.FinishedAt = metav1.NewTime(time.Now().Add(-60 * time.Second))
+			reconcileRes, reconcileErr = reconciler.Reconcile(reconcile.Request{
+				NamespacedName: k8stypes.NamespacedName{
+					Name:      "the-task-pod",
+					Namespace: "space",
+				},
+			})
+
+			By("not notifying CC again, but deleting the task", func() {
+				// report call count is _still_ 1
+				Expect(taskReporter.ReportCallCount()).To(Equal(1))
+				Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
+				Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-task-pod-guid"))
+				Expect(reconcileErr).ToNot(HaveOccurred())
+				Expect(reconcileRes.IsZero()).To(BeTrue())
+			})
+		})
 	})
 
 	When("fetching the task pod fails", func() {
@@ -172,7 +211,6 @@ var _ = Describe("Task Completion Reconciler", func() {
 			Expect(taskReporter.ReportCallCount()).To(BeZero())
 			Expect(taskDeleter.DeleteCallCount()).To(BeZero())
 		})
-
 	})
 
 	When("fetching the job fails", func() {

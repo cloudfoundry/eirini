@@ -154,6 +154,7 @@ type TaskReporterConfig struct {
 	CCKeyPath                    string `yaml:"cc_key_path"`
 	CAPath                       string `yaml:"ca_path"`
 	CompletionCallbackRetryLimit int    `yaml:"completion_callback_retry_limit"`
+	TTLSeconds                   int    `yaml:"ttl_seconds"`
 
 	KubeConfig `yaml:",inline"`
 }
