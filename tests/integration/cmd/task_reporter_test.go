@@ -2,7 +2,6 @@ package cmd_test
 
 import (
 	"os"
-	"syscall"
 
 	"code.cloudfoundry.org/eirini"
 	. "github.com/onsi/ginkgo"
@@ -43,9 +42,7 @@ var _ = Describe("TaskReporter", func() {
 	})
 
 	It("should be able to start properly", func() {
-		Consistently(func() error {
-			return session.Command.Process.Signal(syscall.Signal(0))
-		}).Should(Succeed())
+		Consistently(session).ShouldNot(gexec.Exit())
 	})
 
 	When("namespace is not configured", func() {
@@ -67,10 +64,7 @@ var _ = Describe("TaskReporter", func() {
 		})
 
 		It("starts ok", func() {
-			Consistently(func() error {
-				return session.Command.Process.Signal(syscall.Signal(0))
-			}).Should(Succeed())
+			Consistently(session).ShouldNot(gexec.Exit())
 		})
 	})
-
 })
