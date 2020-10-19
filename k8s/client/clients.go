@@ -55,6 +55,10 @@ func (c *Pod) Delete(namespace, name string) error {
 	return c.clientSet.CoreV1().Pods(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
 }
 
+func (c *Pod) Update(pod *corev1.Pod) (*corev1.Pod, error) {
+	return c.clientSet.CoreV1().Pods(pod.Namespace).Update(context.Background(), pod, metav1.UpdateOptions{})
+}
+
 type PodDisruptionBudget struct {
 	clientSet kubernetes.Interface
 }

@@ -62,6 +62,7 @@ func main() {
 	cmdcommons.ExitIfError(err)
 
 	jobsClient := client.NewJob(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport)
+	podUpdater := client.NewPod(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport)
 
 	completionCallbackRetryLimit := cfg.CompletionCallbackRetryLimit
 	if completionCallbackRetryLimit == 0 {
@@ -71,6 +72,7 @@ func main() {
 	taskReconciler := k8stask.NewReconciler(taskLogger,
 		controllerClient,
 		jobsClient,
+		podUpdater,
 		reporter,
 		initTaskDeleter(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport),
 		completionCallbackRetryLimit,

@@ -130,6 +130,29 @@ var _ = Describe("Pod", func() {
 			})
 		})
 	})
+
+	Describe("Update", func() {
+		BeforeEach(func() {
+			createPods(fixture.Namespace, "foo")
+		})
+
+		It("updates a pod", func() {
+			Eventually(func() []string { return podNames(listAllPods()) }).Should(ContainElement("foo"))
+
+			pods := listAllPods()
+			pod := pods[0]
+
+			pod.Annotations = map[string]string{"foo": "bar"}
+
+			p, err := podClient.Update(&pod)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(p.Annotations["foo"]).To(Equal("bar"))
+
+			pods = listAllPods()
+			relookedUpPod := pods[0]
+			Expect(relookedUpPod.Annotations["foo"]).To(Equal("bar"))
+		})
+	})
 })
 
 var _ = Describe("PodDisruptionBudgets", func() {
@@ -528,7 +551,6 @@ var _ = Describe("Jobs", func() {
 					return jobGUIDs(jobs)
 				}).ShouldNot(ContainElement(extraTaskGUID))
 			})
-
 		})
 	})
 })
