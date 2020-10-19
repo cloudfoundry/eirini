@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/kubelet"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/util"
@@ -51,6 +52,25 @@ func main() {
 	)
 	cmdcommons.ExitIfError(err)
 
+	defer func() {
+		err = loggregatorClient.CloseSend()
+		cmdcommons.ExitIfError(err)
+	}()
+
+	launchMetricsEmitter(
+		clientset,
+		metricsClient,
+		loggregatorClient,
+		cfg,
+	)
+}
+
+func launchMetricsEmitter(
+	clientset kubernetes.Interface,
+	metricsClient metricsclientset.Interface,
+	loggregatorClient metrics.LoggregatorClient,
+	cfg *eirini.MetricsCollectorConfig,
+) {
 	namespace := ""
 
 	if !cfg.EnableMultiNamespaceSupport {
@@ -61,36 +81,15 @@ func main() {
 		namespace = cfg.Namespace
 	}
 
-	defer func() {
-		err = loggregatorClient.CloseSend()
-		cmdcommons.ExitIfError(err)
-	}()
-
-	launchMetricsEmitter(
-		clientset,
-		metricsClient,
-		loggregatorClient,
-		namespace,
-		cfg.AppMetricsEmissionIntervalInSecs,
-	)
-}
-
-func launchMetricsEmitter(
-	clientset kubernetes.Interface,
-	metricsClient metricsclientset.Interface,
-	loggregatorClient metrics.LoggregatorClient,
-	namespace string,
-	metricsEmissionInterval int,
-) {
-	podClient := clientset.CoreV1().Pods(namespace)
+	podClient := client.NewPod(clientset, namespace, cfg.EnableMultiNamespaceSupport)
 
 	podMetricsClient := metricsClient.MetricsV1beta1().PodMetricses(namespace)
 	metricsLogger := lager.NewLogger("metrics")
 	metricsLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	tickerInterval := eirini.AppMetricsEmissionIntervalInSecs
-	if metricsEmissionInterval > 0 {
-		tickerInterval = metricsEmissionInterval
+	if cfg.AppMetricsEmissionIntervalInSecs > 0 {
+		tickerInterval = cfg.AppMetricsEmissionIntervalInSecs
 	}
 
 	collectorScheduler := &util.TickerTaskScheduler{

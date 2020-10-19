@@ -24,7 +24,7 @@ var _ = Describe("Metrics", func() {
 
 	Describe("Collect", func() {
 		var (
-			podClient        *k8sfakes.FakePodInterface
+			podClient        *k8sfakes.FakePodClient
 			podMetricsClient *k8sfakes.FakePodMetricsInterface
 			collector        k8s.MetricsCollector
 			diskClient       *k8sfakes.FakeDiskAPI
@@ -32,7 +32,7 @@ var _ = Describe("Metrics", func() {
 		)
 
 		BeforeEach(func() {
-			podClient = new(k8sfakes.FakePodInterface)
+			podClient = new(k8sfakes.FakePodClient)
 			podMetricsClient = new(k8sfakes.FakePodMetricsInterface)
 			diskClient = new(k8sfakes.FakeDiskAPI)
 			logger = lagertest.NewTestLogger("metrics-test")
@@ -49,10 +49,8 @@ var _ = Describe("Metrics", func() {
 				}
 				podMetricsClient.ListReturns(podMetrics, nil)
 
-				podList := &v1.PodList{
-					Items: []v1.Pod{*createPod(podName1), *createPod(podName2)},
-				}
-				podClient.ListReturns(podList, nil)
+				podList := []v1.Pod{*createPod(podName1), *createPod(podName2)}
+				podClient.GetAllReturns(podList, nil)
 
 				diskClient.GetPodMetricsReturns(map[string]float64{
 					podName1: 50,
@@ -86,7 +84,7 @@ var _ = Describe("Metrics", func() {
 
 		When("there are no pods", func() {
 			It("should return empty list", func() {
-				podClient.ListReturns(&v1.PodList{Items: []v1.Pod{}}, nil)
+				podClient.GetAllReturns([]v1.Pod{}, nil)
 
 				podMetrics := metricsv1beta1api.PodMetricsList{
 					Items: []metricsv1beta1api.PodMetrics{createMetrics(podName1)},
@@ -108,10 +106,8 @@ var _ = Describe("Metrics", func() {
 				}
 				podMetricsClient.ListReturns(podMetrics, nil)
 
-				podList := &v1.PodList{
-					Items: []v1.Pod{*createPod(podName1)},
-				}
-				podClient.ListReturns(podList, nil)
+				podList := []v1.Pod{*createPod(podName1)}
+				podClient.GetAllReturns(podList, nil)
 
 				diskClient.GetPodMetricsReturns(nil, errors.New("oopsie"))
 			})
@@ -139,7 +135,7 @@ var _ = Describe("Metrics", func() {
 		})
 		When("listing pods returns an error", func() {
 			It("should return an error", func() {
-				podClient.ListReturns(&v1.PodList{Items: []v1.Pod{}}, errors.New("something done broke"))
+				podClient.GetAllReturns([]v1.Pod{}, errors.New("something done broke"))
 
 				collected, err := collector.Collect()
 				Expect(err).To(HaveOccurred())
@@ -153,7 +149,7 @@ var _ = Describe("Metrics", func() {
 					podName1: 50,
 				}, nil)
 
-				podClient.ListReturns(&v1.PodList{Items: []v1.Pod{*createPod(podName1)}}, nil)
+				podClient.GetAllReturns([]v1.Pod{*createPod(podName1)}, nil)
 
 				podMetrics := metricsv1beta1api.PodMetricsList{
 					Items: []metricsv1beta1api.PodMetrics{},
@@ -185,10 +181,8 @@ var _ = Describe("Metrics", func() {
 				}
 				podMetricsClient.ListReturns(podMetrics, nil)
 
-				podList := &v1.PodList{
-					Items: []v1.Pod{*createPod(podName1)},
-				}
-				podClient.ListReturns(podList, nil)
+				podList := []v1.Pod{*createPod(podName1)}
+				podClient.GetAllReturns(podList, nil)
 
 				collected, err := collector.Collect()
 				Expect(err).ToNot(HaveOccurred())
@@ -210,7 +204,7 @@ var _ = Describe("Metrics", func() {
 			It("should skip such pod", func() {
 				aPodHasNoIndex := "i-dont-have-an-index"
 
-				podClient.ListReturns(&v1.PodList{Items: []v1.Pod{*createPod(aPodHasNoIndex), *createPod(podName2)}}, nil)
+				podClient.GetAllReturns([]v1.Pod{*createPod(aPodHasNoIndex), *createPod(podName2)}, nil)
 
 				podMetrics := metricsv1beta1api.PodMetricsList{
 					Items: []metricsv1beta1api.PodMetrics{createMetrics(aPodHasNoIndex), createMetrics(podName2)},
@@ -238,10 +232,8 @@ var _ = Describe("Metrics", func() {
 
 		When("metrics client returns an error", func() {
 			BeforeEach(func() {
-				podList := &v1.PodList{
-					Items: []v1.Pod{*createPod(podName1)},
-				}
-				podClient.ListReturns(podList, nil)
+				podList := []v1.Pod{*createPod(podName1)}
+				podClient.GetAllReturns(podList, nil)
 				podMetricsClient.ListReturns(&metricsv1beta1api.PodMetricsList{}, errors.New("oopsie"))
 				diskClient.GetPodMetricsReturns(map[string]float64{
 					podName1: 50,
