@@ -36,21 +36,21 @@ type options struct {
 func main() {
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
 	cfg, err := readConfigFile(opts.ConfigFile)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", cfg.ConfigPath)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to build kubeconfig")
 
 	tlsConf := &tls.Config{} // nolint:gosec // No need to check for min version as the empty config is only used when tls is disabled
 
 	if !cfg.CCTLSDisabled {
 		tlsConf, err = createTLSConfig(*cfg)
-		cmdcommons.ExitIfError(err)
+		cmdcommons.ExitfIfError(err, "Failed to create TLS config")
 	}
 
 	client := cc_client.NewCcClient(cfg.CcInternalAPI, tlsConf)
@@ -63,7 +63,7 @@ func main() {
 	crashLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	controllerClient, err := runtimeclient.New(kubeConfig, runtimeclient.Options{Scheme: kscheme.Scheme})
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to create k8s runtime client")
 
 	namespace := ""
 
@@ -93,17 +93,17 @@ func main() {
 		Namespace:          namespace,
 		Logger:             util.NewLagerLogr(crashLogger),
 	})
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
 
 	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate("APP")}
 	err = builder.
 		ControllerManagedBy(mgr).
 		For(&corev1.Pod{}, builder.WithPredicates(predicates...)).
 		Complete(crashReconciler)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to build Crash reconciler")
 
 	err = mgr.Start(ctrl.SetupSignalHandler())
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to start manager")
 }
 
 func readConfigFile(path string) (*eirini.EventReporterConfig, error) {
@@ -119,9 +119,9 @@ func readConfigFile(path string) (*eirini.EventReporterConfig, error) {
 }
 
 func createTLSConfig(cfg eirini.EventReporterConfig) (*tls.Config, error) {
-	crtPath := cmdcommons.GetOrDefault(cfg.CCCertPath, eirini.CCCrtPath)
-	keyPath := cmdcommons.GetOrDefault(cfg.CCKeyPath, eirini.CCKeyPath)
-	caPath := cmdcommons.GetOrDefault(cfg.CCCAPath, eirini.CCCAPath)
+	crtPath := cmdcommons.GetExistingFile(cfg.CCCertPath, eirini.CCCrtPath, "CC Cert")
+	keyPath := cmdcommons.GetExistingFile(cfg.CCKeyPath, eirini.CCKeyPath, "CC Key")
+	caPath := cmdcommons.GetExistingFile(cfg.CCCAPath, eirini.CCCAPath, "CC CA")
 
 	return tlsconfig.Build(
 		tlsconfig.WithInternalServiceDefaults(),

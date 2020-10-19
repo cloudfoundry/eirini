@@ -85,7 +85,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 			session = eiriniBins.InstanceIndexEnvInjector.Restart("/does/not/exist", session)
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode).ToNot(BeZero())
-			Expect(session.Err).To(gbytes.Say("failed to read file"))
+			Expect(session.Err).To(gbytes.Say("Failed to read config file: failed to read file"))
 		})
 	})
 

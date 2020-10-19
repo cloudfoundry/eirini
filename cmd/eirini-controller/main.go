@@ -43,19 +43,19 @@ func main() {
 
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
 	eiriniCfg, err := readConfigFile(opts.ConfigFile)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", eiriniCfg.Properties.ConfigPath)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to build kubeconfig")
 
 	controllerClient, err := runtimeclient.New(kubeConfig, runtimeclient.Options{Scheme: eirinischeme.Scheme})
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to create k8s runtime client")
 
 	clientset, err := kubernetes.NewForConfig(kubeConfig)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to create k8s clientset")
 
 	logger := lager.NewLogger("eirini-controller")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
@@ -76,7 +76,7 @@ func main() {
 	}
 
 	mgr, err := manager.New(kubeConfig, managerOptions)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
 
 	lrpReconciler := createLRPReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
 	taskReconciler := createTaskReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
@@ -87,24 +87,24 @@ func main() {
 		For(&eiriniv1.LRP{}).
 		Owns(&appsv1.StatefulSet{}).
 		Complete(lrpReconciler)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to build LRP reconciler")
 
 	err = builder.
 		ControllerManagedBy(mgr).
 		For(&eiriniv1.Task{}).
 		Owns(&batchv1.Job{}).
 		Complete(taskReconciler)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to build Task reconciler")
 
 	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate("APP")}
 	err = builder.
 		ControllerManagedBy(mgr).
 		For(&corev1.Pod{}, builder.WithPredicates(predicates...)).
 		Complete(podCrashReconciler)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to build Pod Crash reconciler")
 
 	err = mgr.Start(ctrl.SetupSignalHandler())
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to start manager")
 }
 
 func readConfigFile(path string) (*eirini.Config, error) {

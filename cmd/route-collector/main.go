@@ -21,10 +21,10 @@ type options struct {
 func main() {
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
 	cfg, err := route.ReadConfig(opts.ConfigFile)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
 	if cfg.EmitPeriodInSeconds == 0 {
 		cfg.EmitPeriodInSeconds = tickerPeriod
@@ -34,7 +34,7 @@ func main() {
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	routeEmitter, err := route.NewEmitterFromConfig(cfg.NatsIP, cfg.NatsPort, cfg.NatsPassword, logger)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to create route emitter")
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 

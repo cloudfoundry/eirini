@@ -54,7 +54,7 @@ var _ = Describe("EventReporter", func() {
 			session = eiriniBins.EventsReporter.Restart("/does/not/exist", session)
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode).ToNot(BeZero())
-			Expect(session.Err).To(gbytes.Say("failed to read file"))
+			Expect(session.Err).To(gbytes.Say("Failed to read config file: failed to read file"))
 		})
 	})
 
@@ -70,17 +70,36 @@ var _ = Describe("EventReporter", func() {
 		})
 	})
 
-	When("event reporter command with non-existent TLS certs", func() {
+	When("the cc CA file is missing", func() {
 		BeforeEach(func() {
-			config.CCCAPath = "/does/not/exist"
-			config.CCCertPath = "/does/not/exist"
-			config.CCKeyPath = "/does/not/exist"
+			config.CCCAPath = "/somewhere/over/the/rainbow"
 		})
 
-		It("fails", func() {
-			Eventually(session).Should(gexec.Exit())
-			Expect(session.ExitCode()).NotTo(BeZero())
-			Expect(session.Err).To(gbytes.Say("failed to load keypair: open /does/not/exist: no such file or directory"))
+		It("should exit with a useful error message", func() {
+			Eventually(session).Should(gexec.Exit(2))
+			Expect(session.Err).Should(gbytes.Say(`"CC CA" file at "/somewhere/over/the/rainbow" does not exist`))
+		})
+	})
+
+	When("the cc cert file is missing", func() {
+		BeforeEach(func() {
+			config.CCCertPath = "/somewhere/over/the/rainbow"
+		})
+
+		It("should exit with a useful error message", func() {
+			Eventually(session).Should(gexec.Exit(2))
+			Expect(session.Err).Should(gbytes.Say(`"CC Cert" file at "/somewhere/over/the/rainbow" does not exist`))
+		})
+	})
+
+	When("the cc key file is missing", func() {
+		BeforeEach(func() {
+			config.CCKeyPath = "/somewhere/over/the/rainbow"
+		})
+
+		It("should exit with a useful error message", func() {
+			Eventually(session).Should(gexec.Exit(2))
+			Expect(session.Err).Should(gbytes.Say(`"CC Key" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
 

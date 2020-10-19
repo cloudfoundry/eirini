@@ -60,7 +60,7 @@ var _ = Describe("RoutePodInformer", func() {
 			session = eiriniBins.RoutePodInformer.Restart("/does/not/exist", session)
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode).ToNot(BeZero())
-			Expect(session.Err).To(gbytes.Say("failed to read file"))
+			Expect(session.Err).To(gbytes.Say("failed to read config from /does/not/exist: failed to read file"))
 		})
 	})
 
@@ -69,7 +69,7 @@ var _ = Describe("RoutePodInformer", func() {
 			session = eiriniBins.RoutePodInformer.Restart(pathToTestFixture("invalid.yml"), session)
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode).ToNot(BeZero())
-			Expect(session.Err).To(gbytes.Say("failed to unmarshal yaml"))
+			Expect(session.Err).To(gbytes.Say("failed to read config from .*/invalid.yml: failed to unmarshal yaml"))
 		})
 	})
 
@@ -81,7 +81,7 @@ var _ = Describe("RoutePodInformer", func() {
 		It("fails", func() {
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).NotTo(BeZero())
-			Expect(session.Err).To(gbytes.Say("invalid configuration: no configuration has been provided"))
+			Expect(session.Err).To(gbytes.Say("Failed to get kubeconfig: invalid configuration: no configuration has been provided"))
 		})
 	})
 

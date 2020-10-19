@@ -22,10 +22,10 @@ type options struct {
 func main() {
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
 	cfg, err := readConfigFile(opts.ConfigFile)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
 	log := lager.NewLogger("instance-index-env-injector")
 	log.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))

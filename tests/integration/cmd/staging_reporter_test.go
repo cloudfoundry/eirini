@@ -53,7 +53,7 @@ var _ = Describe("StagingReporter", func() {
 			session = eiriniBins.StagingReporter.Restart("/does/not/exist", session)
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode).ToNot(BeZero())
-			Expect(session.Err).To(gbytes.Say("failed to read file"))
+			Expect(session.Err).To(gbytes.Say("Failed to read config file: failed to read file"))
 		})
 	})
 
@@ -62,7 +62,7 @@ var _ = Describe("StagingReporter", func() {
 			session = eiriniBins.StagingReporter.Restart(pathToTestFixture("invalid.yml"), session)
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode).ToNot(BeZero())
-			Expect(session.Err).To(gbytes.Say("failed to unmarshal yaml"))
+			Expect(session.Err).To(gbytes.Say("Failed to read config file: failed to unmarshal yaml"))
 		})
 	})
 
@@ -74,20 +74,40 @@ var _ = Describe("StagingReporter", func() {
 		It("fails", func() {
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).NotTo(BeZero())
-			Expect(session.Err).To(gbytes.Say("invalid configuration: no configuration has been provided"))
+			Expect(session.Err).To(gbytes.Say("Failed to get kubeconfig: invalid configuration: no configuration has been provided"))
 		})
 	})
 
-	When("cert paths do not exist", func() {
+	When("the Eirini cert file is missing", func() {
 		BeforeEach(func() {
-			config.EiriniCertPath = ""
-			config.EiriniKeyPath = ""
+			config.EiriniCertPath = "/somewhere/over/the/rainbow"
 		})
 
-		It("fails", func() {
-			Eventually(session).Should(gexec.Exit())
-			Expect(session.ExitCode()).NotTo(BeZero())
-			Expect(session.Err).To(gbytes.Say("failed to load keypair: open : no such file or directory"))
+		It("should exit with a useful error message", func() {
+			Eventually(session).Should(gexec.Exit(2))
+			Expect(session.Err).Should(gbytes.Say(`"Eirini Cert" file at "/somewhere/over/the/rainbow" does not exist`))
+		})
+	})
+
+	When("the Eirini key file is missing", func() {
+		BeforeEach(func() {
+			config.EiriniKeyPath = "/somewhere/over/the/rainbow"
+		})
+
+		It("should exit with a useful error message", func() {
+			Eventually(session).Should(gexec.Exit(2))
+			Expect(session.Err).Should(gbytes.Say(`"Eirini Key" file at "/somewhere/over/the/rainbow" does not exist`))
+		})
+	})
+
+	When("the Eirini CA file is missing", func() {
+		BeforeEach(func() {
+			config.CAPath = "/somewhere/over/the/rainbow"
+		})
+
+		It("should exit with a useful error message", func() {
+			Eventually(session).Should(gexec.Exit(2))
+			Expect(session.Err).Should(gbytes.Say(`"Eirini CA" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
 

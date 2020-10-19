@@ -30,18 +30,18 @@ type options struct {
 func main() {
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
 	cfg, err := readMetricsCollectorConfigFromFile(opts.ConfigFile)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 	metricsClient := cmdcommons.CreateMetricsClient(cfg.ConfigPath)
 
 	tlsConfig, err := loggregator.NewIngressTLSConfig(
-		getExistingFile(cfg.LoggregatorCAPath, eirini.LoggregatorCAPath, "Loggregator CA"),
-		getExistingFile(cfg.LoggregatorCertPath, eirini.LoggregatorCertPath, "Loggregator Cert"),
-		getExistingFile(cfg.LoggregatorKeyPath, eirini.LoggregatorKeyPath, "Loggregator Key"),
+		cmdcommons.GetExistingFile(cfg.LoggregatorCAPath, eirini.LoggregatorCAPath, "Loggregator CA"),
+		cmdcommons.GetExistingFile(cfg.LoggregatorCertPath, eirini.LoggregatorCertPath, "Loggregator Cert"),
+		cmdcommons.GetExistingFile(cfg.LoggregatorKeyPath, eirini.LoggregatorKeyPath, "Loggregator Key"),
 	)
 	cmdcommons.ExitfIfError(err, "Failed to create loggregator tls config")
 
@@ -50,11 +50,11 @@ func main() {
 		loggregator.WithAddr(cfg.LoggregatorAddress),
 		loggregator.WithLogger(log.New(os.Stdout, "loggregator-ingress-client", log.LstdFlags)),
 	)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to create Loggregator ingress client")
 
 	defer func() {
 		err = loggregatorClient.CloseSend()
-		cmdcommons.ExitIfError(err)
+		cmdcommons.ExitfIfError(err, "Failed to close send stream to the loggregator ingress server")
 	}()
 
 	launchMetricsEmitter(
@@ -123,11 +123,4 @@ func readMetricsCollectorConfigFromFile(path string) (*eirini.MetricsCollectorCo
 	err = yaml.Unmarshal(fileBytes, &conf)
 
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
-}
-
-func getExistingFile(path, defaultPath, name string) string {
-	path = cmdcommons.GetOrDefault(path, defaultPath)
-	cmdcommons.VerifyFileExists(path, name)
-
-	return path
 }

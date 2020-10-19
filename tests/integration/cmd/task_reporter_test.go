@@ -24,7 +24,10 @@ var _ = Describe("TaskReporter", func() {
 				EnableMultiNamespaceSupport: false,
 				ConfigPath:                  fixture.KubeConfigPath,
 			},
-			CCTLSDisabled: true,
+			CCTLSDisabled: false,
+			CCCertPath:    pathToTestFixture("cert"),
+			CAPath:        pathToTestFixture("cert"),
+			CCKeyPath:     pathToTestFixture("key"),
 		}
 	})
 
@@ -54,6 +57,60 @@ var _ = Describe("TaskReporter", func() {
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode).ToNot(BeZero())
 			Expect(session.Err).To(gbytes.Say("must set namespace"))
+		})
+	})
+
+	When("the config file doesn't exist", func() {
+		It("exits reporting missing config file", func() {
+			session = eiriniBins.TaskReporter.Restart("/does/not/exist", session)
+			Eventually(session).Should(gexec.Exit())
+			Expect(session.ExitCode).ToNot(BeZero())
+			Expect(session.Err).To(gbytes.Say("Failed to read config file: failed to read file"))
+		})
+	})
+
+	When("config is missing kubeconfig path", func() {
+		BeforeEach(func() {
+			config.ConfigPath = ""
+		})
+
+		It("fails", func() {
+			Eventually(session).Should(gexec.Exit())
+			Expect(session.ExitCode()).NotTo(BeZero())
+			Expect(session.Err).To(gbytes.Say("invalid configuration: no configuration has been provided"))
+		})
+	})
+
+	When("the cc CA file is missing", func() {
+		BeforeEach(func() {
+			config.CAPath = "/somewhere/over/the/rainbow"
+		})
+
+		It("should exit with a useful error message", func() {
+			Eventually(session).Should(gexec.Exit(2))
+			Expect(session.Err).Should(gbytes.Say(`"CC CA" file at "/somewhere/over/the/rainbow" does not exist`))
+		})
+	})
+
+	When("the cc cert file is missing", func() {
+		BeforeEach(func() {
+			config.CCCertPath = "/somewhere/over/the/rainbow"
+		})
+
+		It("should exit with a useful error message", func() {
+			Eventually(session).Should(gexec.Exit(2))
+			Expect(session.Err).Should(gbytes.Say(`"CC Cert" file at "/somewhere/over/the/rainbow" does not exist`))
+		})
+	})
+
+	When("the cc key file is missing", func() {
+		BeforeEach(func() {
+			config.CCKeyPath = "/somewhere/over/the/rainbow"
+		})
+
+		It("should exit with a useful error message", func() {
+			Eventually(session).Should(gexec.Exit(2))
+			Expect(session.Err).Should(gbytes.Say(`"CC Key" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
 

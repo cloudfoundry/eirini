@@ -44,10 +44,13 @@ var _ = Describe("connect command", func() {
 
 		configFilePath = ""
 		session = nil
-		config = nil
+		config = tests.DefaultEiriniConfig("test-ns", fixture.NextAvailablePort())
 	})
 
 	JustBeforeEach(func() {
+		configFile, err := tests.CreateConfigFile(config)
+		Expect(err).ToNot(HaveOccurred())
+		configFilePath = configFile.Name()
 		session, configFilePath = eiriniBins.OPI.Run(config)
 	})
 
@@ -61,13 +64,6 @@ var _ = Describe("connect command", func() {
 	})
 
 	Context("invoke connect command with TLS config", func() {
-		BeforeEach(func() {
-			config = tests.DefaultEiriniConfig("test-ns", fixture.NextAvailablePort())
-			configFile, err := tests.CreateConfigFile(config)
-			Expect(err).ToNot(HaveOccurred())
-			configFilePath = configFile.Name()
-		})
-
 		It("starts serving", func() {
 			Eventually(func() error {
 				_, err := makeRequest()
@@ -133,6 +129,27 @@ var _ = Describe("connect command", func() {
 		})
 	})
 
+	When("the config file doesn't exist", func() {
+		It("exits reporting missing config file", func() {
+			session = eiriniBins.OPI.Restart("/does/not/exist", session)
+			Eventually(session).Should(gexec.Exit())
+			Expect(session.ExitCode).ToNot(BeZero())
+			Expect(session.Err).To(gbytes.Say("Failed to read config file"))
+		})
+	})
+
+	When("config is missing kubeconfig path", func() {
+		BeforeEach(func() {
+			config.Properties.ConfigPath = ""
+		})
+
+		It("fails", func() {
+			Eventually(session).Should(gexec.Exit())
+			Expect(session.ExitCode()).NotTo(BeZero())
+			Expect(session.Err).To(gbytes.Say("invalid configuration: no configuration has been provided"))
+		})
+	})
+
 	Context("invoke connect command with an empty config", func() {
 		BeforeEach(func() {
 			config = nil
@@ -146,24 +163,40 @@ var _ = Describe("connect command", func() {
 	})
 
 	Context("invoke connect command with non-existent TLS certs", func() {
-		BeforeEach(func() {
-			config = tests.DefaultEiriniConfig("test-ns", fixture.NextAvailablePort())
-			config.Properties.ClientCAPath = "/does/not/exist"
-			config.Properties.ServerCertPath = "/does/not/exist"
-			config.Properties.ServerKeyPath = "/does/not/exist"
+		When("the cc CA file is missing", func() {
+			BeforeEach(func() {
+				config.Properties.CCCAPath = "/somewhere/over/the/rainbow"
+			})
 
-			configFile, err := tests.CreateConfigFile(config)
-			Expect(err).ToNot(HaveOccurred())
-			configFilePath = configFile.Name()
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(2))
+				Expect(session.Err).Should(gbytes.Say(`"CC CA" file at "/somewhere/over/the/rainbow" does not exist`))
+			})
 		})
 
-		It("fails", func() {
-			Eventually(session, "10s").Should(gexec.Exit())
-			Expect(session.ExitCode()).NotTo(BeZero())
-			Expect(session.Err).To(gbytes.Say("failed to read certificate\\(s\\) at path \"/does/not/exist\""))
+		When("the cc cert file is missing", func() {
+			BeforeEach(func() {
+				config.Properties.CCCertPath = "/somewhere/over/the/rainbow"
+			})
+
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(2))
+				Expect(session.Err).Should(gbytes.Say(`"CC Cert" file at "/somewhere/over/the/rainbow" does not exist`))
+			})
 		})
 
-		Context("eirini is configured to serve plaintext", func() {
+		When("the cc key file is missing", func() {
+			BeforeEach(func() {
+				config.Properties.CCKeyPath = "/somewhere/over/the/rainbow"
+			})
+
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(2))
+				Expect(session.Err).Should(gbytes.Say(`"CC Key" file at "/somewhere/over/the/rainbow" does not exist`))
+			})
+		})
+
+		When("eirini is configured to serve plaintext", func() {
 			BeforeEach(func() {
 				config = tests.DefaultEiriniConfig("test-ns", fixture.NextAvailablePort())
 				config.Properties.ServePlaintext = true

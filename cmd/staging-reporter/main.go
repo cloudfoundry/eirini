@@ -23,10 +23,10 @@ type options struct {
 func main() {
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
 	cfg, err := readConfigFile(opts.ConfigFile)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
@@ -50,6 +50,10 @@ func main() {
 }
 
 func launchStagingReporter(clientset kubernetes.Interface, ca, eiriniCert, eiriniKey, namespace string) {
+	cmdcommons.VerifyFileExists(eiriniCert, "Eirini Cert")
+	cmdcommons.VerifyFileExists(eiriniKey, "Eirini Key")
+	cmdcommons.VerifyFileExists(ca, "Eirini CA")
+
 	httpClient, err := util.CreateTLSHTTPClient(
 		[]util.CertPaths{
 			{
@@ -59,7 +63,7 @@ func launchStagingReporter(clientset kubernetes.Interface, ca, eiriniCert, eirin
 			},
 		},
 	)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to create TLS HTTP client")
 
 	stagingLogger := lager.NewLogger("staging-informer")
 	stagingLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))

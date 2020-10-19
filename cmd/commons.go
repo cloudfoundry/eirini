@@ -18,10 +18,10 @@ func CreateMetricsClient(kubeConfigPath string) metricsclientset.Interface {
 	klog.SetOutputBySeverity("Fatal", os.Stderr)
 
 	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-	ExitIfError(err)
+	ExitfIfError(err, "Failed to get kubeconfig")
 
 	metricsClient, err := metricsclientset.NewForConfig(config)
-	ExitIfError(err)
+	ExitfIfError(err, "Failed to build metrics client")
 
 	return metricsClient
 }
@@ -31,10 +31,10 @@ func CreateKubeClient(kubeConfigPath string) kubernetes.Interface {
 	klog.SetOutputBySeverity("Fatal", os.Stderr)
 
 	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-	ExitIfError(err)
+	ExitfIfError(err, "Failed to get kubeconfig")
 
 	clientset, err := kubernetes.NewForConfig(config)
-	ExitIfError(err)
+	ExitfIfError(err, "Failed to create k8s client")
 
 	return clientset
 }
@@ -67,4 +67,11 @@ func VerifyFileExists(filePath, fileName string) {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		Exitf("%q file at %q does not exist", fileName, filePath)
 	}
+}
+
+func GetExistingFile(path, defaultPath, name string) string {
+	path = GetOrDefault(path, defaultPath)
+	VerifyFileExists(path, name)
+
+	return path
 }

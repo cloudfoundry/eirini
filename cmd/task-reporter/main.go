@@ -37,18 +37,18 @@ const defaultCompletionCallbackRetryLimit = 10
 func main() {
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
 	cfg, err := readConfigFile(opts.ConfigFile)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", cfg.ConfigPath)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to build kubeconfig")
 
 	httpClient, err := createHTTPClient(cfg)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to create http client")
 
 	taskLogger := lager.NewLogger("task-informer")
 	taskLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
@@ -59,7 +59,7 @@ func main() {
 	}
 
 	controllerClient, err := runtimeclient.New(kubeConfig, runtimeclient.Options{Scheme: kscheme.Scheme})
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to create k8s runtime client")
 
 	jobsClient := client.NewJob(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport)
 	podUpdater := client.NewPod(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport)
@@ -95,17 +95,17 @@ func main() {
 	}
 
 	mgr, err := manager.New(kubeConfig, mgrOptions)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
 
 	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate("TASK")}
 	err = builder.
 		ControllerManagedBy(mgr).
 		For(&corev1.Pod{}, builder.WithPredicates(predicates...)).
 		Complete(taskReconciler)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to build task reporter reconciler")
 
 	err = mgr.Start(ctrl.SetupSignalHandler())
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to start manager")
 }
 
 func initTaskDeleter(clientset kubernetes.Interface, namespace string, enableMultiNamespaceSupport bool) k8stask.Deleter {
@@ -139,9 +139,9 @@ func createHTTPClient(cfg eirini.TaskReporterConfig) (*http.Client, error) {
 	return util.CreateTLSHTTPClient(
 		[]util.CertPaths{
 			{
-				Crt: cmdcommons.GetOrDefault(cfg.CCCertPath, eirini.CCCrtPath),
-				Key: cmdcommons.GetOrDefault(cfg.CCKeyPath, eirini.CCKeyPath),
-				Ca:  cmdcommons.GetOrDefault(cfg.CAPath, eirini.CCCAPath),
+				Crt: cmdcommons.GetExistingFile(cfg.CCCertPath, eirini.CCCrtPath, "CC Cert"),
+				Key: cmdcommons.GetExistingFile(cfg.CCKeyPath, eirini.CCKeyPath, "CC Key"),
+				Ca:  cmdcommons.GetExistingFile(cfg.CAPath, eirini.CCCAPath, "CC CA"),
 			},
 		},
 	)

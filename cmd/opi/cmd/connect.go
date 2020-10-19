@@ -19,7 +19,6 @@ import (
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/tlsconfig"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
@@ -30,7 +29,7 @@ import (
 
 func connect(cmd *cobra.Command, args []string) {
 	path, err := cmd.Flags().GetString("config")
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to get config flag")
 
 	if path == "" {
 		cmdcommons.Exitf("--config is missing")
@@ -68,7 +67,7 @@ func serveTLS(cfg *eirini.Config, handler http.Handler, logger lager.Logger) {
 	).Server(
 		tlsconfig.WithClientAuthenticationFromFile(caPath),
 	)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to build TLS config")
 
 	server = &http.Server{
 		Addr:      fmt.Sprintf("0.0.0.0:%d", cfg.Properties.TLSPort),
@@ -91,9 +90,9 @@ func initRetryableJSONClient(cfg *eirini.Config) *util.RetryableJSONClient {
 	httpClient := http.DefaultClient
 
 	if !cfg.Properties.CCTLSDisabled {
-		crtPath := cmdcommons.GetOrDefault(cfg.Properties.CCCertPath, eirini.CCCrtPath)
-		keyPath := cmdcommons.GetOrDefault(cfg.Properties.CCKeyPath, eirini.CCKeyPath)
-		caPath := cmdcommons.GetOrDefault(cfg.Properties.CCCAPath, eirini.CCCAPath)
+		crtPath := cmdcommons.GetExistingFile(cfg.Properties.CCCertPath, eirini.CCCrtPath, "CC Cert")
+		keyPath := cmdcommons.GetExistingFile(cfg.Properties.CCKeyPath, eirini.CCKeyPath, "CC Key")
+		caPath := cmdcommons.GetExistingFile(cfg.Properties.CCCAPath, eirini.CCCAPath, "CC CA")
 
 		var err error
 		httpClient, err = util.CreateTLSHTTPClient(
@@ -107,7 +106,7 @@ func initRetryableJSONClient(cfg *eirini.Config) *util.RetryableJSONClient {
 		)
 
 		if err != nil {
-			panic(errors.Wrap(err, "failed to create stager http client"))
+			cmdcommons.ExitfIfError(err, "failed to create stager http client")
 		}
 	}
 
@@ -222,11 +221,11 @@ func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifros
 
 func setConfigFromFile(path string) *eirini.Config {
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
 	var conf eirini.Config
 	err = yaml.Unmarshal(fileBytes, &conf)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to unmarshal config file")
 
 	return &conf
 }

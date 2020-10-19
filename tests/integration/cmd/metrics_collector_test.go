@@ -50,7 +50,7 @@ var _ = Describe("MetricsCollector", func() {
 			session = eiriniBins.MetricsCollector.Restart("/does/not/exist", session)
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode).ToNot(BeZero())
-			Expect(session.Err).To(gbytes.Say("failed to read file"))
+			Expect(session.Err).To(gbytes.Say("Failed to read config file: failed to read file"))
 		})
 	})
 
@@ -59,7 +59,7 @@ var _ = Describe("MetricsCollector", func() {
 			session = eiriniBins.MetricsCollector.Restart(pathToTestFixture("invalid.yml"), session)
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode).ToNot(BeZero())
-			Expect(session.Err).To(gbytes.Say("failed to unmarshal yaml"))
+			Expect(session.Err).To(gbytes.Say("Failed to read config file: failed to unmarshal yaml"))
 		})
 	})
 

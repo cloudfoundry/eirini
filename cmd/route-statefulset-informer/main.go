@@ -18,7 +18,7 @@ type options struct {
 func main() {
 	var opts options
 	_, err := flags.ParseArgs(&opts, os.Args)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
 	cfg, err := route.ReadConfig(opts.ConfigFile)
 	cmdcommons.ExitIfError(err)
@@ -27,7 +27,7 @@ func main() {
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	routeEmitter, err := route.NewEmitterFromConfig(cfg.NatsIP, cfg.NatsPort, cfg.NatsPassword, logger)
-	cmdcommons.ExitIfError(err)
+	cmdcommons.ExitfIfError(err, "Failed to create Route Emitter")
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
