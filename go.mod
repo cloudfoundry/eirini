@@ -46,6 +46,7 @@ require (
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/go-logr/logr v0.2.1
 	github.com/go-test/deep v1.0.7 // indirect
+	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/google/certificate-transparency-go v1.1.1 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect

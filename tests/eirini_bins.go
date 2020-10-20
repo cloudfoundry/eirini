@@ -7,13 +7,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gofrs/flock"
+	"github.com/onsi/gomega/gexec"
+	"gopkg.in/yaml.v2"
+
 	// nolint:golint,stylecheck
 	. "github.com/onsi/ginkgo"
 
 	// nolint:golint,stylecheck
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
-	"gopkg.in/yaml.v2"
 )
 
 type EiriniBinaries struct {
@@ -71,7 +73,6 @@ func (b *EiriniBinaries) setBinsPath() {
 type Binary struct {
 	PackagePath string   `json:"src_path"`
 	BinPath     string   `json:"bin_path"`
-	LocksDir    string   `json:"locks_dir"`
 	ExtraArgs   []string `json:"extra_args"`
 }
 
@@ -83,7 +84,6 @@ func NewBinary(packagePath, binsPath string, extraArgs []string) Binary {
 		PackagePath: packagePath,
 		BinPath:     filepath.Join(binsPath, binName),
 		ExtraArgs:   extraArgs,
-		LocksDir:    filepath.Join(binsPath, ".locks"),
 	}
 }
 
@@ -134,10 +134,10 @@ func (b *Binary) Build() {
 }
 
 func (b *Binary) buildIfNecessary() {
-	locksmith := NewExclusiveLocksmith(b.LocksDir)
-	lockFile, err := locksmith.Lock(b.BinPath)
+	lock := flock.New(b.BinPath + ".lock")
+	err := lock.Lock()
 	Expect(err).NotTo(HaveOccurred())
-	defer locksmith.Unlock(lockFile)
+	defer lock.Unlock()
 
 	_, err = os.Stat(b.BinPath)
 	if os.IsNotExist(err) {
@@ -148,6 +148,7 @@ func (b *Binary) buildIfNecessary() {
 func (b *Binary) build() {
 	compiledPath, err := gexec.Build(b.PackagePath)
 	Expect(err).NotTo(HaveOccurred())
+
 	Expect(os.MkdirAll(filepath.Dir(b.BinPath), 0o755)).To(Succeed())
 
 	Expect(os.Link(compiledPath, b.BinPath)).To(Succeed())
