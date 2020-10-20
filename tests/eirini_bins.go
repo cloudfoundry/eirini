@@ -8,14 +8,14 @@ import (
 	"strings"
 
 	"github.com/gofrs/flock"
-	"github.com/onsi/gomega/gexec"
-	"gopkg.in/yaml.v2"
 
 	// nolint:golint,stylecheck
 	. "github.com/onsi/ginkgo"
 
 	// nolint:golint,stylecheck
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
+	"gopkg.in/yaml.v2"
 )
 
 type EiriniBinaries struct {
@@ -46,11 +46,13 @@ func NewEiriniBinaries() EiriniBinaries {
 	bins.EiriniController = NewBinary("code.cloudfoundry.org/eirini/cmd/eirini-controller", bins.BinsPath, []string{})
 	bins.StagingReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/staging-reporter", bins.BinsPath, []string{})
 	bins.InstanceIndexEnvInjector = NewBinary("code.cloudfoundry.org/eirini/cmd/instance-index-env-injector", bins.BinsPath, []string{})
+
 	return bins
 }
 
 func (b *EiriniBinaries) TearDown() {
 	gexec.CleanupBuildArtifacts()
+
 	if !b.ExternalBinsPath {
 		os.RemoveAll(b.BinsPath)
 	}
@@ -62,6 +64,7 @@ func (b *EiriniBinaries) setBinsPath() {
 
 	if binsPath == "" {
 		b.ExternalBinsPath = false
+
 		var err error
 		binsPath, err = ioutil.TempDir("", "bins")
 		Expect(err).NotTo(HaveOccurred())
@@ -137,7 +140,7 @@ func (b *Binary) buildIfNecessary() {
 	lock := flock.New(b.BinPath + ".lock")
 	err := lock.Lock()
 	Expect(err).NotTo(HaveOccurred())
-	defer lock.Unlock()
+	defer Expect(lock.Unlock()).To(Succeed())
 
 	_, err = os.Stat(b.BinPath)
 	if os.IsNotExist(err) {

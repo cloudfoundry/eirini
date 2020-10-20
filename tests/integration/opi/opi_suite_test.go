@@ -26,7 +26,6 @@ const secretName = "certs-secret"
 
 var (
 	eiriniBins           tests.EiriniBinaries
-	binsPath             string
 	fixture              *tests.Fixture
 	httpClient           *http.Client
 	eiriniConfigFilePath string
