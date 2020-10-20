@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,30 +27,51 @@ type EiriniBinaries struct {
 	EiriniController         Binary `json:"eirini_controller"`
 	StagingReporter          Binary `json:"staging_reporter"`
 	InstanceIndexEnvInjector Binary `json:"instance_index_env_injector"`
+	ExternalBinsPath         bool
+	BinsPath                 string
 }
 
-func NewEiriniBinaries(binsPath string) EiriniBinaries {
-	return EiriniBinaries{
-		OPI:                      NewBinary("code.cloudfoundry.org/eirini/cmd/opi", binsPath, []string{"connect"}),
-		RouteCollector:           NewBinary("code.cloudfoundry.org/eirini/cmd/route-collector", binsPath, []string{}),
-		MetricsCollector:         NewBinary("code.cloudfoundry.org/eirini/cmd/metrics-collector", binsPath, []string{}),
-		RouteStatefulsetInformer: NewBinary("code.cloudfoundry.org/eirini/cmd/route-statefulset-informer", binsPath, []string{}),
-		RoutePodInformer:         NewBinary("code.cloudfoundry.org/eirini/cmd/route-pod-informer", binsPath, []string{}),
-		EventsReporter:           NewBinary("code.cloudfoundry.org/eirini/cmd/event-reporter", binsPath, []string{}),
-		TaskReporter:             NewBinary("code.cloudfoundry.org/eirini/cmd/task-reporter", binsPath, []string{}),
-		EiriniController:         NewBinary("code.cloudfoundry.org/eirini/cmd/eirini-controller", binsPath, []string{}),
-		StagingReporter:          NewBinary("code.cloudfoundry.org/eirini/cmd/staging-reporter", binsPath, []string{}),
-		InstanceIndexEnvInjector: NewBinary("code.cloudfoundry.org/eirini/cmd/instance-index-env-injector", binsPath, []string{}),
-	}
+func NewEiriniBinaries() EiriniBinaries {
+	bins := EiriniBinaries{}
+	bins.setBinsPath()
+	bins.OPI = NewBinary("code.cloudfoundry.org/eirini/cmd/opi", bins.BinsPath, []string{"connect"})
+	bins.RouteCollector = NewBinary("code.cloudfoundry.org/eirini/cmd/route-collector", bins.BinsPath, []string{})
+	bins.MetricsCollector = NewBinary("code.cloudfoundry.org/eirini/cmd/metrics-collector", bins.BinsPath, []string{})
+	bins.RouteStatefulsetInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-statefulset-informer", bins.BinsPath, []string{})
+	bins.RoutePodInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-pod-informer", bins.BinsPath, []string{})
+	bins.EventsReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/event-reporter", bins.BinsPath, []string{})
+	bins.TaskReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/task-reporter", bins.BinsPath, []string{})
+	bins.EiriniController = NewBinary("code.cloudfoundry.org/eirini/cmd/eirini-controller", bins.BinsPath, []string{})
+	bins.StagingReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/staging-reporter", bins.BinsPath, []string{})
+	bins.InstanceIndexEnvInjector = NewBinary("code.cloudfoundry.org/eirini/cmd/instance-index-env-injector", bins.BinsPath, []string{})
+	return bins
 }
 
 func (b *EiriniBinaries) TearDown() {
 	gexec.CleanupBuildArtifacts()
+	if !b.ExternalBinsPath {
+		os.RemoveAll(b.BinsPath)
+	}
+}
+
+func (b *EiriniBinaries) setBinsPath() {
+	binsPath := os.Getenv("EIRINI_BINS_PATH")
+	b.ExternalBinsPath = true
+
+	if binsPath == "" {
+		b.ExternalBinsPath = false
+		var err error
+		binsPath, err = ioutil.TempDir("", "bins")
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	b.BinsPath = binsPath
 }
 
 type Binary struct {
 	PackagePath string   `json:"src_path"`
 	BinPath     string   `json:"bin_path"`
+	LocksDir    string   `json:"locks_dir"`
 	ExtraArgs   []string `json:"extra_args"`
 }
 
@@ -61,6 +83,7 @@ func NewBinary(packagePath, binsPath string, extraArgs []string) Binary {
 		PackagePath: packagePath,
 		BinPath:     filepath.Join(binsPath, binName),
 		ExtraArgs:   extraArgs,
+		LocksDir:    filepath.Join(binsPath, ".locks"),
 	}
 }
 
@@ -111,7 +134,12 @@ func (b *Binary) Build() {
 }
 
 func (b *Binary) buildIfNecessary() {
-	_, err := os.Stat(b.BinPath)
+	locksmith := NewExclusiveLocksmith(b.LocksDir)
+	lockFile, err := locksmith.Lock(b.BinPath)
+	Expect(err).NotTo(HaveOccurred())
+	defer locksmith.Unlock(lockFile)
+
+	_, err = os.Stat(b.BinPath)
 	if os.IsNotExist(err) {
 		b.build()
 	}
@@ -122,11 +150,5 @@ func (b *Binary) build() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(os.MkdirAll(filepath.Dir(b.BinPath), 0o755)).To(Succeed())
 
-	err = os.Symlink(compiledPath, b.BinPath)
-	if os.IsExist(err) {
-		// A neighbour Ginkgo node has built the binary in the meanwhile, that's fine
-		return
-	}
-
-	Expect(err).NotTo(HaveOccurred())
+	Expect(os.Link(compiledPath, b.BinPath)).To(Succeed())
 }

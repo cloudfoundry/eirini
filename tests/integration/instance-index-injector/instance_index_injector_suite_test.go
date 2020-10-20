@@ -2,8 +2,6 @@ package instance_index_injector_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"code.cloudfoundry.org/eirini/tests"
@@ -20,16 +18,10 @@ func TestInstanceIndexInjector(t *testing.T) {
 var (
 	fixture    *tests.Fixture
 	eiriniBins tests.EiriniBinaries
-	binsPath   string
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	var err error
-
-	binsPath, err = ioutil.TempDir("", "bins")
-	Expect(err).NotTo(HaveOccurred())
-
-	eiriniBins = tests.NewEiriniBinaries(binsPath)
+	eiriniBins = tests.NewEiriniBinaries()
 
 	data, err := json.Marshal(eiriniBins)
 	Expect(err).NotTo(HaveOccurred())
@@ -46,7 +38,6 @@ var _ = SynchronizedAfterSuite(func() {
 	fixture.Destroy()
 }, func() {
 	eiriniBins.TearDown()
-	Expect(os.RemoveAll(binsPath)).To(Succeed())
 })
 
 var _ = BeforeEach(func() {

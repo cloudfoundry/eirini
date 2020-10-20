@@ -12,6 +12,10 @@ if [[ "${NODES:-}" != "" ]]; then
 fi
 
 main() {
+  export EIRINI_BINS_PATH
+  EIRINI_BINS_PATH=$(mktemp -d)
+  trap "rm -rf $EIRINI_BINS_PATH" EXIT
+
   pushd "$BASEDIR"/tests/integration >/dev/null || exit 1
   ginkgo -mod=vendor -p $nodes -r -keepGoing -tags=integration -randomizeAllSpecs -randomizeSuites -timeout=20m "$@"
   popd >/dev/null || exit 1

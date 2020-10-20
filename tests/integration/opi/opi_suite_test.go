@@ -3,7 +3,6 @@ package opi_test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -39,11 +38,7 @@ var (
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	var err error
-	binsPath, err = ioutil.TempDir("", "bins")
-	Expect(err).NotTo(HaveOccurred())
-
-	eiriniBins = tests.NewEiriniBinaries(binsPath)
+	eiriniBins = tests.NewEiriniBinaries()
 	eiriniBins.OPI.Build()
 
 	data, err := json.Marshal(eiriniBins)
@@ -62,7 +57,6 @@ var _ = SynchronizedAfterSuite(func() {
 	fixture.Destroy()
 }, func() {
 	eiriniBins.TearDown()
-	Expect(os.RemoveAll(binsPath)).To(Succeed())
 })
 
 var _ = BeforeEach(func() {
