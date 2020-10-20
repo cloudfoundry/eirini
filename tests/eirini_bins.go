@@ -140,6 +140,7 @@ func (b *Binary) buildIfNecessary() {
 	locksmith := NewExclusiveLocksmith(b.LocksDir)
 	lockFile, err := locksmith.Lock(b.BinPath)
 	Expect(err).NotTo(HaveOccurred())
+
 	defer func() {
 		Expect(locksmith.Unlock(lockFile)).To(Succeed())
 	}()
