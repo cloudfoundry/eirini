@@ -565,8 +565,12 @@ var _ = Describe("Jobs", func() {
 		})
 	})
 
-	Describe("Update", func() {
-		var taskGUID string
+	Describe("SetLabel", func() {
+		var (
+			taskGUID string
+			label    string
+			value    string
+		)
 
 		BeforeEach(func() {
 			taskGUID = tests.GenerateGUID()
@@ -578,24 +582,46 @@ var _ = Describe("Jobs", func() {
 			Eventually(func() (*batchv1.Job, error) {
 				return getJob(taskGUID)
 			}).ShouldNot(BeNil())
+
+			label = "foo"
+			value = "bar"
 		})
 
-		It("updates the job", func() {
+		JustBeforeEach(func() {
 			job, err := getJob(taskGUID)
 			Expect(err).NotTo(HaveOccurred())
 
-			job.Labels["foo"] = "bar"
-			_, err = jobsClient.Update(job)
+			_, err = jobsClient.SetLabel(job, label, value)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("adds the foo label", func() {
+			job, err := getJob(taskGUID)
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(func() (map[string]string, error) {
-				job, err := getJob(taskGUID)
-				if err != nil {
-					return nil, err
-				}
+			Expect(job.Labels).To(HaveKeyWithValue("foo", "bar"))
+		})
 
-				return job.Labels, nil
-			}).Should(HaveKeyWithValue("foo", "bar"))
+		It("preserves old labels", func() {
+			job, err := getJob(taskGUID)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(job.Labels).To(HaveKeyWithValue(k8s.LabelGUID, taskGUID))
+			Expect(job.Labels).To(HaveKeyWithValue(k8s.LabelSourceType, "TASK"))
+		})
+
+		When("setting an existing label", func() {
+			BeforeEach(func() {
+				label = k8s.LabelSourceType
+				value = "STG"
+			})
+
+			It("replaces the label", func() {
+				job, err := getJob(taskGUID)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(job.Labels).To(HaveKeyWithValue(k8s.LabelSourceType, "STG"))
+			})
 		})
 	})
 })

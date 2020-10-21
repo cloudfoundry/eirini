@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/patching"
 	"code.cloudfoundry.org/eirini/opi"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -12,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -193,8 +195,14 @@ func (c *Job) List(includeCompleted bool) ([]batchv1.Job, error) {
 	return jobs.Items, err
 }
 
-func (c *Job) Update(job *batchv1.Job) (*batchv1.Job, error) {
-	return c.clientSet.BatchV1().Jobs(job.Namespace).Update(context.Background(), job, metav1.UpdateOptions{})
+func (c *Job) SetLabel(job *batchv1.Job, label, value string) (*batchv1.Job, error) {
+	patchBytes := patching.NewLabel(label, value).GetJSONPatchBytes()
+
+	return c.clientSet.BatchV1().Jobs(job.Namespace).Patch(
+		context.Background(),
+		job.Name,
+		types.JSONPatchType,
+		patchBytes, metav1.PatchOptions{})
 }
 
 func (c *Job) getGUIDLabel() string {

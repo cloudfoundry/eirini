@@ -138,9 +138,10 @@ var _ = Describe("Task Completion Reconciler", func() {
 	})
 
 	It("labels the task as completed", func() {
-		Expect(jobsClient.UpdateCallCount()).To(Equal(1))
-		updatedJob := jobsClient.UpdateArgsForCall(0)
-		Expect(updatedJob.Labels).To(HaveKeyWithValue(k8s.LabelTaskCompleted, "true"))
+		Expect(jobsClient.SetLabelCallCount()).To(Equal(1))
+		_, label, value := jobsClient.SetLabelArgsForCall(0)
+		Expect(label).To(Equal(k8s.LabelTaskCompleted))
+		Expect(value).To(Equal(k8s.TaskCompletedTrue))
 	})
 
 	When("ttl has not yet expired", func() {
@@ -309,7 +310,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 		})
 
 		It("does not label the task as completed", func() {
-			Expect(jobsClient.UpdateCallCount()).To(BeZero())
+			Expect(jobsClient.SetLabelCallCount()).To(BeZero())
 		})
 
 		When("updating the annotation on the pod fails", func() {
@@ -389,12 +390,11 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 	When("labeling the job as completed fails", func() {
 		BeforeEach(func() {
-			jobsClient.UpdateReturns(nil, errors.New("boom"))
+			jobsClient.SetLabelReturns(nil, errors.New("boom"))
 		})
 
 		It("returns the error", func() {
 			Expect(reconcileErr).To(MatchError("failed to label the job as completed: boom"))
 		})
-
 	})
 })

@@ -57,6 +57,7 @@ const (
 	LabelStagingGUID = "cloudfoundry.org/staging_guid"
 
 	LabelTaskCompleted = "cloudfoundry.org/task_completed"
+	TaskCompletedTrue  = "true"
 
 	OPIContainerName = "opi"
 

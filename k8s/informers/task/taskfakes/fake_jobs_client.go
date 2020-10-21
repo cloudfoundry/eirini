@@ -22,16 +22,18 @@ type FakeJobsClient struct {
 		result1 []v1.Job
 		result2 error
 	}
-	UpdateStub        func(*v1.Job) (*v1.Job, error)
-	updateMutex       sync.RWMutex
-	updateArgsForCall []struct {
+	SetLabelStub        func(*v1.Job, string, string) (*v1.Job, error)
+	setLabelMutex       sync.RWMutex
+	setLabelArgsForCall []struct {
 		arg1 *v1.Job
+		arg2 string
+		arg3 string
 	}
-	updateReturns struct {
+	setLabelReturns struct {
 		result1 *v1.Job
 		result2 error
 	}
-	updateReturnsOnCall map[int]struct {
+	setLabelReturnsOnCall map[int]struct {
 		result1 *v1.Job
 		result2 error
 	}
@@ -102,64 +104,66 @@ func (fake *FakeJobsClient) GetByGUIDReturnsOnCall(i int, result1 []v1.Job, resu
 	}{result1, result2}
 }
 
-func (fake *FakeJobsClient) Update(arg1 *v1.Job) (*v1.Job, error) {
-	fake.updateMutex.Lock()
-	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
-	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
+func (fake *FakeJobsClient) SetLabel(arg1 *v1.Job, arg2 string, arg3 string) (*v1.Job, error) {
+	fake.setLabelMutex.Lock()
+	ret, specificReturn := fake.setLabelReturnsOnCall[len(fake.setLabelArgsForCall)]
+	fake.setLabelArgsForCall = append(fake.setLabelArgsForCall, struct {
 		arg1 *v1.Job
-	}{arg1})
-	fake.recordInvocation("Update", []interface{}{arg1})
-	fake.updateMutex.Unlock()
-	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1)
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("SetLabel", []interface{}{arg1, arg2, arg3})
+	fake.setLabelMutex.Unlock()
+	if fake.SetLabelStub != nil {
+		return fake.SetLabelStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.updateReturns
+	fakeReturns := fake.setLabelReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeJobsClient) UpdateCallCount() int {
-	fake.updateMutex.RLock()
-	defer fake.updateMutex.RUnlock()
-	return len(fake.updateArgsForCall)
+func (fake *FakeJobsClient) SetLabelCallCount() int {
+	fake.setLabelMutex.RLock()
+	defer fake.setLabelMutex.RUnlock()
+	return len(fake.setLabelArgsForCall)
 }
 
-func (fake *FakeJobsClient) UpdateCalls(stub func(*v1.Job) (*v1.Job, error)) {
-	fake.updateMutex.Lock()
-	defer fake.updateMutex.Unlock()
-	fake.UpdateStub = stub
+func (fake *FakeJobsClient) SetLabelCalls(stub func(*v1.Job, string, string) (*v1.Job, error)) {
+	fake.setLabelMutex.Lock()
+	defer fake.setLabelMutex.Unlock()
+	fake.SetLabelStub = stub
 }
 
-func (fake *FakeJobsClient) UpdateArgsForCall(i int) *v1.Job {
-	fake.updateMutex.RLock()
-	defer fake.updateMutex.RUnlock()
-	argsForCall := fake.updateArgsForCall[i]
-	return argsForCall.arg1
+func (fake *FakeJobsClient) SetLabelArgsForCall(i int) (*v1.Job, string, string) {
+	fake.setLabelMutex.RLock()
+	defer fake.setLabelMutex.RUnlock()
+	argsForCall := fake.setLabelArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeJobsClient) UpdateReturns(result1 *v1.Job, result2 error) {
-	fake.updateMutex.Lock()
-	defer fake.updateMutex.Unlock()
-	fake.UpdateStub = nil
-	fake.updateReturns = struct {
+func (fake *FakeJobsClient) SetLabelReturns(result1 *v1.Job, result2 error) {
+	fake.setLabelMutex.Lock()
+	defer fake.setLabelMutex.Unlock()
+	fake.SetLabelStub = nil
+	fake.setLabelReturns = struct {
 		result1 *v1.Job
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeJobsClient) UpdateReturnsOnCall(i int, result1 *v1.Job, result2 error) {
-	fake.updateMutex.Lock()
-	defer fake.updateMutex.Unlock()
-	fake.UpdateStub = nil
-	if fake.updateReturnsOnCall == nil {
-		fake.updateReturnsOnCall = make(map[int]struct {
+func (fake *FakeJobsClient) SetLabelReturnsOnCall(i int, result1 *v1.Job, result2 error) {
+	fake.setLabelMutex.Lock()
+	defer fake.setLabelMutex.Unlock()
+	fake.SetLabelStub = nil
+	if fake.setLabelReturnsOnCall == nil {
+		fake.setLabelReturnsOnCall = make(map[int]struct {
 			result1 *v1.Job
 			result2 error
 		})
 	}
-	fake.updateReturnsOnCall[i] = struct {
+	fake.setLabelReturnsOnCall[i] = struct {
 		result1 *v1.Job
 		result2 error
 	}{result1, result2}
@@ -170,8 +174,8 @@ func (fake *FakeJobsClient) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.getByGUIDMutex.RLock()
 	defer fake.getByGUIDMutex.RUnlock()
-	fake.updateMutex.RLock()
-	defer fake.updateMutex.RUnlock()
+	fake.setLabelMutex.RLock()
+	defer fake.setLabelMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

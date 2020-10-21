@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/patching"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
@@ -19,6 +20,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 var _ = Describe("Tasks", func() {
@@ -536,8 +538,16 @@ var _ = Describe("Tasks", func() {
 				jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 				Expect(err).NotTo(HaveOccurred())
 				job := jobs.Items[0]
-				job.Labels[k8s.LabelTaskCompleted] = "true"
-				_, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).Update(context.Background(), &job, metav1.UpdateOptions{})
+
+				patchBytes := patching.NewLabel(k8s.LabelTaskCompleted, "true").GetJSONPatchBytes()
+
+				_, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).Patch(
+					context.Background(),
+					job.Name,
+					types.JSONPatchType,
+					patchBytes,
+					metav1.PatchOptions{},
+				)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -555,8 +565,6 @@ var _ = Describe("Tasks", func() {
 
 				Expect(tasks).To(BeEmpty())
 			})
-
 		})
-
 	})
 })
