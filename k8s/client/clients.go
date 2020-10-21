@@ -180,13 +180,14 @@ func (c *Job) GetByGUID(guid string) ([]batchv1.Job, error) {
 	return jobs.Items, err
 }
 
-func (c *Job) List() ([]batchv1.Job, error) {
-	listOpts := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s!=true",
-			k8s.LabelSourceType, c.jobType,
-			k8s.LabelTaskCompleted,
-		),
+func (c *Job) List(includeCompleted bool) ([]batchv1.Job, error) {
+	labelSelector := fmt.Sprintf("%s=%s", k8s.LabelSourceType, c.jobType)
+
+	if !includeCompleted {
+		labelSelector = fmt.Sprintf("%s=%s,%s!=true", k8s.LabelSourceType, c.jobType, k8s.LabelTaskCompleted)
 	}
+
+	listOpts := metav1.ListOptions{LabelSelector: labelSelector}
 	jobs, err := c.clientSet.BatchV1().Jobs(c.workloadsNamespace).List(context.Background(), listOpts)
 
 	return jobs.Items, err

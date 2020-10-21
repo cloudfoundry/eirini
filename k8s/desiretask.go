@@ -28,7 +28,7 @@ const (
 type JobCreatingClient interface {
 	Create(namespace string, job *batch.Job) (*batch.Job, error)
 	GetByGUID(guid string) ([]batch.Job, error)
-	List() ([]batch.Job, error)
+	List(includeCompleted bool) ([]batch.Job, error)
 }
 
 type SecretsCreator interface {
@@ -171,7 +171,7 @@ func (d *TaskDesirer) Get(taskGUID string) (*opi.Task, error) {
 }
 
 func (d *TaskDesirer) List() ([]*opi.Task, error) {
-	jobs, err := d.jobClient.List()
+	jobs, err := d.jobClient.List(false)
 	if err != nil {
 		return nil, err
 	}

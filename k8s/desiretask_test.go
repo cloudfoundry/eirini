@@ -689,6 +689,11 @@ var _ = Describe("TaskDesirer", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("excludes completed tasks", func() {
+			Expect(fakeJobClient.ListCallCount()).To(Equal(1))
+			Expect(fakeJobClient.ListArgsForCall(0)).To(BeFalse())
+		})
+
 		It("returns all tasks", func() {
 			Expect(tasks).NotTo(BeEmpty())
 

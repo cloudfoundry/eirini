@@ -36,9 +36,10 @@ type FakeJobCreatingClient struct {
 		result1 []v1.Job
 		result2 error
 	}
-	ListStub        func() ([]v1.Job, error)
+	ListStub        func(bool) ([]v1.Job, error)
 	listMutex       sync.RWMutex
 	listArgsForCall []struct {
+		arg1 bool
 	}
 	listReturns struct {
 		result1 []v1.Job
@@ -179,15 +180,16 @@ func (fake *FakeJobCreatingClient) GetByGUIDReturnsOnCall(i int, result1 []v1.Jo
 	}{result1, result2}
 }
 
-func (fake *FakeJobCreatingClient) List() ([]v1.Job, error) {
+func (fake *FakeJobCreatingClient) List(arg1 bool) ([]v1.Job, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-	}{})
-	fake.recordInvocation("List", []interface{}{})
+		arg1 bool
+	}{arg1})
+	fake.recordInvocation("List", []interface{}{arg1})
 	fake.listMutex.Unlock()
 	if fake.ListStub != nil {
-		return fake.ListStub()
+		return fake.ListStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -202,10 +204,17 @@ func (fake *FakeJobCreatingClient) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakeJobCreatingClient) ListCalls(stub func() ([]v1.Job, error)) {
+func (fake *FakeJobCreatingClient) ListCalls(stub func(bool) ([]v1.Job, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
+}
+
+func (fake *FakeJobCreatingClient) ListArgsForCall(i int) bool {
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
+	argsForCall := fake.listArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeJobCreatingClient) ListReturns(result1 []v1.Job, result2 error) {

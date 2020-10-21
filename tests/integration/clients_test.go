@@ -524,31 +524,33 @@ var _ = Describe("Jobs", func() {
 			})
 		})
 
-		It("lists all task jobs", func() {
-			Eventually(func() []string {
-				jobs, err := jobsClient.List()
+		listJobGUIDs := func(includeCompleted bool) func() []string {
+			return func() []string {
+				jobs, err := jobsClient.List(includeCompleted)
 				Expect(err).NotTo(HaveOccurred())
 
 				return jobGUIDs(jobs)
-			}).Should(ContainElements(taskGUID, extraTaskGUID))
+			}
+		}
+
+		When("including completed tasks", func() {
+			It("lists all task jobs", func() {
+				Eventually(listJobGUIDs(true)).Should(ContainElements(taskGUID, extraTaskGUID, completedTaskGUID))
+			})
+
+			It("does not list staging jobs", func() {
+				Consistently(listJobGUIDs(true)).ShouldNot(ContainElement(stagingGUID))
+			})
 		})
 
-		It("does not list completed tasks", func() {
-			Consistently(func() []string {
-				jobs, err := jobsClient.List()
-				Expect(err).NotTo(HaveOccurred())
+		When("excluding completed tasks", func() {
+			It("does not list completed tasks", func() {
+				Consistently(listJobGUIDs(false)).ShouldNot(ContainElements(completedTaskGUID))
+			})
 
-				return jobGUIDs(jobs)
-			}).ShouldNot(ContainElements(completedTaskGUID))
-		})
-
-		It("does not list staging jobs", func() {
-			Consistently(func() []string {
-				jobs, err := jobsClient.List()
-				Expect(err).NotTo(HaveOccurred())
-
-				return jobGUIDs(jobs)
-			}).ShouldNot(ContainElement(stagingGUID))
+			It("does not list staging jobs", func() {
+				Consistently(listJobGUIDs(false)).ShouldNot(ContainElement(stagingGUID))
+			})
 		})
 
 		When("multinamespace support is disabled", func() {
@@ -557,18 +559,8 @@ var _ = Describe("Jobs", func() {
 			})
 
 			It("only returns tasks from the workloads namespace", func() {
-				Eventually(func() []string {
-					jobs, err := jobsClient.List()
-					Expect(err).NotTo(HaveOccurred())
-
-					return jobGUIDs(jobs)
-				}).Should(ContainElement(taskGUID))
-				Consistently(func() []string {
-					jobs, err := jobsClient.List()
-					Expect(err).NotTo(HaveOccurred())
-
-					return jobGUIDs(jobs)
-				}).ShouldNot(ContainElement(extraTaskGUID))
+				Eventually(listJobGUIDs(false)).Should(ContainElement(taskGUID))
+				Consistently(listJobGUIDs(false)).ShouldNot(ContainElement(extraTaskGUID))
 			})
 		})
 	})
@@ -586,7 +578,6 @@ var _ = Describe("Jobs", func() {
 			Eventually(func() (*batchv1.Job, error) {
 				return getJob(taskGUID)
 			}).ShouldNot(BeNil())
-
 		})
 
 		It("updates the job", func() {
@@ -605,7 +596,6 @@ var _ = Describe("Jobs", func() {
 
 				return job.Labels, nil
 			}).Should(HaveKeyWithValue("foo", "bar"))
-
 		})
 	})
 })
@@ -656,13 +646,15 @@ var _ = Describe("StagingJobs", func() {
 
 	Describe("List", func() {
 		var (
-			taskGUID    string
-			stagingGUID string
+			taskGUID      string
+			stagingGUID   string
+			completedGUID string
 		)
 
 		BeforeEach(func() {
 			taskGUID = tests.GenerateGUID()
 			stagingGUID = tests.GenerateGUID()
+			completedGUID = tests.GenerateGUID()
 
 			createJob(fixture.Namespace, "foo", map[string]string{
 				k8s.LabelGUID:       taskGUID,
@@ -672,24 +664,40 @@ var _ = Describe("StagingJobs", func() {
 				k8s.LabelGUID:       stagingGUID,
 				k8s.LabelSourceType: "STG",
 			})
+			createJob(fixture.Namespace, "coo", map[string]string{
+				k8s.LabelGUID:          completedGUID,
+				k8s.LabelSourceType:    "STG",
+				k8s.LabelTaskCompleted: "true",
+			})
 		})
 
-		It("lists all staging jobs", func() {
-			Eventually(func() []string {
-				jobs, err := jobsClient.List()
+		listJobGUIDs := func(includeCompleted bool) func() []string {
+			return func() []string {
+				jobs, err := jobsClient.List(includeCompleted)
 				Expect(err).NotTo(HaveOccurred())
 
 				return jobGUIDs(jobs)
-			}).Should(ContainElement(stagingGUID))
+			}
+		}
+
+		When("including completed tasks", func() {
+			It("lists all staging jobs", func() {
+				Eventually(listJobGUIDs(true)).Should(ContainElements(stagingGUID, completedGUID))
+			})
+
+			It("does not list task jobs", func() {
+				Consistently(listJobGUIDs(true)).ShouldNot(ContainElement(taskGUID))
+			})
 		})
 
-		It("does not list task jobs", func() {
-			Consistently(func() []string {
-				jobs, err := jobsClient.List()
-				Expect(err).NotTo(HaveOccurred())
+		When("excluding completed tasks", func() {
+			It("does not list completed tasks", func() {
+				Consistently(listJobGUIDs(false)).ShouldNot(ContainElement(completedGUID))
+			})
 
-				return jobGUIDs(jobs)
-			}).ShouldNot(ContainElement(taskGUID))
+			It("does not list task jobs", func() {
+				Consistently(listJobGUIDs(false)).ShouldNot(ContainElement(taskGUID))
+			})
 		})
 	})
 })
