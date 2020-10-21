@@ -8,12 +8,15 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/lager"
 	"github.com/hashicorp/go-multierror"
+	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
+
+const TaskCompletedValue = "true"
 
 //counterfeiter:generate . Reporter
 //counterfeiter:generate . JobsClient
@@ -26,6 +29,7 @@ type Reporter interface {
 
 type JobsClient interface {
 	GetByGUID(guid string) ([]batchv1.Job, error)
+	Update(*batchv1.Job) (*batchv1.Job, error)
 }
 
 type Deleter interface {
@@ -111,6 +115,13 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 		return reconcile.Result{}, err
 	}
 
+	job := jobsForPods[0]
+	job.Labels[k8s.LabelTaskCompleted] = TaskCompletedValue
+
+	if _, err = r.jobs.Update(&job); err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to label the job as completed")
+	}
+
 	if !r.taskHasExpired(logger, pod) {
 		logger.Debug("task-hasnt-expired-yet")
 
@@ -123,7 +134,7 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 }
 
 func (r *Reconciler) reportIfRequired(pod *corev1.Pod) error {
-	if pod.Annotations[k8s.AnnotationCCAckedTaskCompletion] == "true" {
+	if pod.Annotations[k8s.AnnotationCCAckedTaskCompletion] == TaskCompletedValue {
 		return nil
 	}
 
@@ -143,7 +154,7 @@ func (r *Reconciler) reportIfRequired(pod *corev1.Pod) error {
 		return resultErr.ErrorOrNil()
 	}
 
-	pod.Annotations[k8s.AnnotationCCAckedTaskCompletion] = "true"
+	pod.Annotations[k8s.AnnotationCCAckedTaskCompletion] = TaskCompletedValue
 	if _, updateErr := r.podUpdater.Update(pod); updateErr != nil {
 		return updateErr
 	}

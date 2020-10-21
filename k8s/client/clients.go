@@ -182,11 +182,18 @@ func (c *Job) GetByGUID(guid string) ([]batchv1.Job, error) {
 
 func (c *Job) List() ([]batchv1.Job, error) {
 	listOpts := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelSourceType, c.jobType),
+		LabelSelector: fmt.Sprintf("%s=%s,%s!=true",
+			k8s.LabelSourceType, c.jobType,
+			k8s.LabelTaskCompleted,
+		),
 	}
 	jobs, err := c.clientSet.BatchV1().Jobs(c.workloadsNamespace).List(context.Background(), listOpts)
 
 	return jobs.Items, err
+}
+
+func (c *Job) Update(job *batchv1.Job) (*batchv1.Job, error) {
+	return c.clientSet.BatchV1().Jobs(job.Namespace).Update(context.Background(), job, metav1.UpdateOptions{})
 }
 
 func (c *Job) getGUIDLabel() string {

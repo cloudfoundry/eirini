@@ -319,7 +319,7 @@ func createCrashEvent(ns, name string, involvedObject corev1.ObjectReference, cr
 func createJob(ns, name string, labels map[string]string) *batchv1.Job {
 	runAsNonRoot := true
 	runAsUser := int64(2000)
-	statefulSet, err := fixture.Clientset.BatchV1().Jobs(ns).Create(context.Background(), &batchv1.Job{
+	job, err := fixture.Clientset.BatchV1().Jobs(ns).Create(context.Background(), &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
 			Labels: labels,
@@ -347,7 +347,7 @@ func createJob(ns, name string, labels map[string]string) *batchv1.Job {
 
 	Expect(err).NotTo(HaveOccurred())
 
-	return statefulSet
+	return job
 }
 
 func listSecrets(ns string) []corev1.Secret {

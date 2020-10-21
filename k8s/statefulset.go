@@ -56,6 +56,8 @@ const (
 
 	LabelStagingGUID = "cloudfoundry.org/staging_guid"
 
+	LabelTaskCompleted = "cloudfoundry.org/task_completed"
+
 	OPIContainerName = "opi"
 
 	VcapUID                  = 2000

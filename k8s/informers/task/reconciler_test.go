@@ -90,6 +90,11 @@ var _ = Describe("Task Completion Reconciler", func() {
 			return nil
 		}
 
+		job = batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{},
+			},
+		}
 		jobsClient.GetByGUIDReturns([]batchv1.Job{job}, nil)
 	})
 
@@ -130,6 +135,12 @@ var _ = Describe("Task Completion Reconciler", func() {
 	It("deletes the task", func() {
 		Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
 		Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-task-pod-guid"))
+	})
+
+	It("labels the task as completed", func() {
+		Expect(jobsClient.UpdateCallCount()).To(Equal(1))
+		updatedJob := jobsClient.UpdateArgsForCall(0)
+		Expect(updatedJob.Labels).To(HaveKeyWithValue(k8s.LabelTaskCompleted, "true"))
 	})
 
 	When("ttl has not yet expired", func() {
@@ -297,6 +308,10 @@ var _ = Describe("Task Completion Reconciler", func() {
 			Expect(actualPod.Annotations[k8s.AnnotationCCAckedTaskCompletion]).To(BeEmpty())
 		})
 
+		It("does not label the task as completed", func() {
+			Expect(jobsClient.UpdateCallCount()).To(BeZero())
+		})
+
 		When("updating the annotation on the pod fails", func() {
 			BeforeEach(func() {
 				podUpdater.UpdateReturns(nil, errors.New("update-failed"))
@@ -370,5 +385,16 @@ var _ = Describe("Task Completion Reconciler", func() {
 		It("returns an error", func() {
 			Expect(reconcileErr).To(MatchError("delete-task-failure"))
 		})
+	})
+
+	When("labeling the job as completed fails", func() {
+		BeforeEach(func() {
+			jobsClient.UpdateReturns(nil, errors.New("boom"))
+		})
+
+		It("returns the error", func() {
+			Expect(reconcileErr).To(MatchError("failed to label the job as completed: boom"))
+		})
+
 	})
 })

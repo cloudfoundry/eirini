@@ -1,6 +1,9 @@
 package integration_test
 
 import (
+	"context"
+	"fmt"
+
 	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
@@ -488,21 +491,28 @@ var _ = Describe("Jobs", func() {
 
 	Describe("List", func() {
 		var (
-			taskGUID      string
-			extraTaskGUID string
-			stagingGUID   string
-			extraNs       string
+			taskGUID          string
+			extraTaskGUID     string
+			completedTaskGUID string
+			stagingGUID       string
+			extraNs           string
 		)
 
 		BeforeEach(func() {
 			taskGUID = tests.GenerateGUID()
 			extraTaskGUID = tests.GenerateGUID()
+			completedTaskGUID = tests.GenerateGUID()
 			stagingGUID = tests.GenerateGUID()
 			extraNs = fixture.CreateExtraNamespace()
 
 			createJob(fixture.Namespace, "foo", map[string]string{
 				k8s.LabelGUID:       taskGUID,
 				k8s.LabelSourceType: "TASK",
+			})
+			createJob(fixture.Namespace, "completedfoo", map[string]string{
+				k8s.LabelGUID:          completedTaskGUID,
+				k8s.LabelSourceType:    "TASK",
+				k8s.LabelTaskCompleted: "true",
 			})
 			createJob(extraNs, "bas", map[string]string{
 				k8s.LabelGUID:       extraTaskGUID,
@@ -521,6 +531,15 @@ var _ = Describe("Jobs", func() {
 
 				return jobGUIDs(jobs)
 			}).Should(ContainElements(taskGUID, extraTaskGUID))
+		})
+
+		It("does not list completed tasks", func() {
+			Consistently(func() []string {
+				jobs, err := jobsClient.List()
+				Expect(err).NotTo(HaveOccurred())
+
+				return jobGUIDs(jobs)
+			}).ShouldNot(ContainElements(completedTaskGUID))
 		})
 
 		It("does not list staging jobs", func() {
@@ -551,6 +570,42 @@ var _ = Describe("Jobs", func() {
 					return jobGUIDs(jobs)
 				}).ShouldNot(ContainElement(extraTaskGUID))
 			})
+		})
+	})
+
+	Describe("Update", func() {
+		var taskGUID string
+
+		BeforeEach(func() {
+			taskGUID = tests.GenerateGUID()
+			createJob(fixture.Namespace, "foo", map[string]string{
+				k8s.LabelGUID:       taskGUID,
+				k8s.LabelSourceType: "TASK",
+			})
+
+			Eventually(func() (*batchv1.Job, error) {
+				return getJob(taskGUID)
+			}).ShouldNot(BeNil())
+
+		})
+
+		It("updates the job", func() {
+			job, err := getJob(taskGUID)
+			Expect(err).NotTo(HaveOccurred())
+
+			job.Labels["foo"] = "bar"
+			_, err = jobsClient.Update(job)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() (map[string]string, error) {
+				job, err := getJob(taskGUID)
+				if err != nil {
+					return nil, err
+				}
+
+				return job.Labels, nil
+			}).Should(HaveKeyWithValue("foo", "bar"))
+
 		})
 	})
 })
@@ -968,4 +1023,19 @@ func eventNames(events []corev1.Event) []string {
 	}
 
 	return names
+}
+
+func getJob(taskGUID string) (*batchv1.Job, error) {
+	jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, taskGUID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(jobs.Items) != 1 {
+		return nil, fmt.Errorf("expected 1 job with guid %s, got %d", taskGUID, len(jobs.Items))
+	}
+
+	return &jobs.Items[0], nil
 }

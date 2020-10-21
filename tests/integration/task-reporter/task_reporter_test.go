@@ -2,6 +2,7 @@ package task_reporter_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -121,6 +122,21 @@ var _ = Describe("TaskReporter", func() {
 	It("notifies the cloud controller of a task completion", func() {
 		Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
 		Consistently(cloudControllerServer.ReceivedRequests, "1m").Should(HaveLen(1))
+	})
+
+	It("labels the job as completed", func() {
+		Eventually(func() (map[string]string, error) {
+			tasks, err := getTaskJobsFn(task.GUID)()
+			if err != nil {
+				return nil, err
+			}
+
+			if len(tasks) != 1 {
+				return nil, errors.New("task missing")
+			}
+
+			return tasks[0].Labels, nil
+		}).Should(HaveKeyWithValue(k8s.LabelTaskCompleted, "true"))
 	})
 
 	When("the Cloud Controller is not using TLS", func() {

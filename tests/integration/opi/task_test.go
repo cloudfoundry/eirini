@@ -488,4 +488,75 @@ var _ = Describe("Tasks", func() {
 			})
 		})
 	})
+
+	Describe("listing", func() {
+		BeforeEach(func() {
+			guid := tests.GenerateGUID()
+
+			request = cf.TaskRequest{
+				GUID:      guid,
+				AppName:   "my_app",
+				SpaceName: "my_space",
+				Namespace: fixture.Namespace,
+				Lifecycle: cf.Lifecycle{
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image:   "busybox",
+						Command: []string{"/bin/sleep", "100"},
+					},
+				},
+			}
+		})
+
+		JustBeforeEach(func() {
+			Eventually(func() ([]batchv1.Job, error) {
+				var err error
+				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+
+				return jobs.Items, err
+			}).Should(HaveLen(1))
+		})
+
+		It("returns all tasks", func() {
+			httpRequest, err := http.NewRequest("GET", fmt.Sprintf("%s/tasks", url), nil)
+			Expect(err).NotTo(HaveOccurred())
+			resp, err := httpClient.Do(httpRequest)
+			Expect(err).NotTo(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
+			var tasks cf.TasksResponse
+			err = json.NewDecoder(resp.Body).Decode(&tasks)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(tasks).To(ConsistOf(cf.TaskResponse{GUID: request.GUID}))
+		})
+
+		When("the task is marked as completed", func() {
+			JustBeforeEach(func() {
+				jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				job := jobs.Items[0]
+				job.Labels[k8s.LabelTaskCompleted] = "true"
+				_, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).Update(context.Background(), &job, metav1.UpdateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("does not return it", func() {
+				httpRequest, err := http.NewRequest("GET", fmt.Sprintf("%s/tasks", url), nil)
+				Expect(err).NotTo(HaveOccurred())
+				resp, err := httpClient.Do(httpRequest)
+				Expect(err).NotTo(HaveOccurred())
+				defer resp.Body.Close()
+				Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
+				var tasks cf.TasksResponse
+				err = json.NewDecoder(resp.Body).Decode(&tasks)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(tasks).To(BeEmpty())
+			})
+
+		})
+
+	})
 })
