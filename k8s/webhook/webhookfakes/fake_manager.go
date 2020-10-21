@@ -2,6 +2,7 @@
 package webhookfakes
 
 import (
+	"context"
 	"sync"
 
 	extension "code.cloudfoundry.org/eirinix"
@@ -9,19 +10,41 @@ import (
 	v1a "k8s.io/api/core/v1"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 type FakeManager struct {
-	AddExtensionStub        func(extension.Extension)
+	AddExtensionStub        func(interface{}) error
 	addExtensionMutex       sync.RWMutex
 	addExtensionArgsForCall []struct {
-		arg1 extension.Extension
+		arg1 interface{}
+	}
+	addExtensionReturns struct {
+		result1 error
+	}
+	addExtensionReturnsOnCall map[int]struct {
+		result1 error
+	}
+	AddReconcilerStub        func(extension.Reconciler)
+	addReconcilerMutex       sync.RWMutex
+	addReconcilerArgsForCall []struct {
+		arg1 extension.Reconciler
 	}
 	AddWatcherStub        func(extension.Watcher)
 	addWatcherMutex       sync.RWMutex
 	addWatcherArgsForCall []struct {
 		arg1 extension.Watcher
+	}
+	GetContextStub        func() context.Context
+	getContextMutex       sync.RWMutex
+	getContextArgsForCall []struct {
+	}
+	getContextReturns struct {
+		result1 context.Context
+	}
+	getContextReturnsOnCall map[int]struct {
+		result1 context.Context
 	}
 	GetKubeClientStub        func() (v1.CoreV1Interface, error)
 	getKubeClientMutex       sync.RWMutex
@@ -46,6 +69,16 @@ type FakeManager struct {
 	getKubeConnectionReturnsOnCall map[int]struct {
 		result1 *rest.Config
 		result2 error
+	}
+	GetKubeManagerStub        func() manager.Manager
+	getKubeManagerMutex       sync.RWMutex
+	getKubeManagerArgsForCall []struct {
+	}
+	getKubeManagerReturns struct {
+		result1 manager.Manager
+	}
+	getKubeManagerReturnsOnCall map[int]struct {
+		result1 manager.Manager
 	}
 	GetLoggerStub        func() *zap.SugaredLogger
 	getLoggerMutex       sync.RWMutex
@@ -76,6 +109,16 @@ type FakeManager struct {
 	}
 	listExtensionsReturnsOnCall map[int]struct {
 		result1 []extension.Extension
+	}
+	ListReconcilersStub        func() []extension.Reconciler
+	listReconcilersMutex       sync.RWMutex
+	listReconcilersArgsForCall []struct {
+	}
+	listReconcilersReturns struct {
+		result1 []extension.Reconciler
+	}
+	listReconcilersReturnsOnCall map[int]struct {
+		result1 []extension.Reconciler
 	}
 	PatchFromPodStub        func(admission.Request, *v1a.Pod) admission.Response
 	patchFromPodMutex       sync.RWMutex
@@ -132,16 +175,22 @@ type FakeManager struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeManager) AddExtension(arg1 extension.Extension) {
+func (fake *FakeManager) AddExtension(arg1 interface{}) error {
 	fake.addExtensionMutex.Lock()
+	ret, specificReturn := fake.addExtensionReturnsOnCall[len(fake.addExtensionArgsForCall)]
 	fake.addExtensionArgsForCall = append(fake.addExtensionArgsForCall, struct {
-		arg1 extension.Extension
+		arg1 interface{}
 	}{arg1})
 	fake.recordInvocation("AddExtension", []interface{}{arg1})
 	fake.addExtensionMutex.Unlock()
 	if fake.AddExtensionStub != nil {
-		fake.AddExtensionStub(arg1)
+		return fake.AddExtensionStub(arg1)
 	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.addExtensionReturns
+	return fakeReturns.result1
 }
 
 func (fake *FakeManager) AddExtensionCallCount() int {
@@ -150,16 +199,70 @@ func (fake *FakeManager) AddExtensionCallCount() int {
 	return len(fake.addExtensionArgsForCall)
 }
 
-func (fake *FakeManager) AddExtensionCalls(stub func(extension.Extension)) {
+func (fake *FakeManager) AddExtensionCalls(stub func(interface{}) error) {
 	fake.addExtensionMutex.Lock()
 	defer fake.addExtensionMutex.Unlock()
 	fake.AddExtensionStub = stub
 }
 
-func (fake *FakeManager) AddExtensionArgsForCall(i int) extension.Extension {
+func (fake *FakeManager) AddExtensionArgsForCall(i int) interface{} {
 	fake.addExtensionMutex.RLock()
 	defer fake.addExtensionMutex.RUnlock()
 	argsForCall := fake.addExtensionArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeManager) AddExtensionReturns(result1 error) {
+	fake.addExtensionMutex.Lock()
+	defer fake.addExtensionMutex.Unlock()
+	fake.AddExtensionStub = nil
+	fake.addExtensionReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeManager) AddExtensionReturnsOnCall(i int, result1 error) {
+	fake.addExtensionMutex.Lock()
+	defer fake.addExtensionMutex.Unlock()
+	fake.AddExtensionStub = nil
+	if fake.addExtensionReturnsOnCall == nil {
+		fake.addExtensionReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.addExtensionReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeManager) AddReconciler(arg1 extension.Reconciler) {
+	fake.addReconcilerMutex.Lock()
+	fake.addReconcilerArgsForCall = append(fake.addReconcilerArgsForCall, struct {
+		arg1 extension.Reconciler
+	}{arg1})
+	fake.recordInvocation("AddReconciler", []interface{}{arg1})
+	fake.addReconcilerMutex.Unlock()
+	if fake.AddReconcilerStub != nil {
+		fake.AddReconcilerStub(arg1)
+	}
+}
+
+func (fake *FakeManager) AddReconcilerCallCount() int {
+	fake.addReconcilerMutex.RLock()
+	defer fake.addReconcilerMutex.RUnlock()
+	return len(fake.addReconcilerArgsForCall)
+}
+
+func (fake *FakeManager) AddReconcilerCalls(stub func(extension.Reconciler)) {
+	fake.addReconcilerMutex.Lock()
+	defer fake.addReconcilerMutex.Unlock()
+	fake.AddReconcilerStub = stub
+}
+
+func (fake *FakeManager) AddReconcilerArgsForCall(i int) extension.Reconciler {
+	fake.addReconcilerMutex.RLock()
+	defer fake.addReconcilerMutex.RUnlock()
+	argsForCall := fake.addReconcilerArgsForCall[i]
 	return argsForCall.arg1
 }
 
@@ -192,6 +295,58 @@ func (fake *FakeManager) AddWatcherArgsForCall(i int) extension.Watcher {
 	defer fake.addWatcherMutex.RUnlock()
 	argsForCall := fake.addWatcherArgsForCall[i]
 	return argsForCall.arg1
+}
+
+func (fake *FakeManager) GetContext() context.Context {
+	fake.getContextMutex.Lock()
+	ret, specificReturn := fake.getContextReturnsOnCall[len(fake.getContextArgsForCall)]
+	fake.getContextArgsForCall = append(fake.getContextArgsForCall, struct {
+	}{})
+	fake.recordInvocation("GetContext", []interface{}{})
+	fake.getContextMutex.Unlock()
+	if fake.GetContextStub != nil {
+		return fake.GetContextStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.getContextReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeManager) GetContextCallCount() int {
+	fake.getContextMutex.RLock()
+	defer fake.getContextMutex.RUnlock()
+	return len(fake.getContextArgsForCall)
+}
+
+func (fake *FakeManager) GetContextCalls(stub func() context.Context) {
+	fake.getContextMutex.Lock()
+	defer fake.getContextMutex.Unlock()
+	fake.GetContextStub = stub
+}
+
+func (fake *FakeManager) GetContextReturns(result1 context.Context) {
+	fake.getContextMutex.Lock()
+	defer fake.getContextMutex.Unlock()
+	fake.GetContextStub = nil
+	fake.getContextReturns = struct {
+		result1 context.Context
+	}{result1}
+}
+
+func (fake *FakeManager) GetContextReturnsOnCall(i int, result1 context.Context) {
+	fake.getContextMutex.Lock()
+	defer fake.getContextMutex.Unlock()
+	fake.GetContextStub = nil
+	if fake.getContextReturnsOnCall == nil {
+		fake.getContextReturnsOnCall = make(map[int]struct {
+			result1 context.Context
+		})
+	}
+	fake.getContextReturnsOnCall[i] = struct {
+		result1 context.Context
+	}{result1}
 }
 
 func (fake *FakeManager) GetKubeClient() (v1.CoreV1Interface, error) {
@@ -302,6 +457,58 @@ func (fake *FakeManager) GetKubeConnectionReturnsOnCall(i int, result1 *rest.Con
 		result1 *rest.Config
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeManager) GetKubeManager() manager.Manager {
+	fake.getKubeManagerMutex.Lock()
+	ret, specificReturn := fake.getKubeManagerReturnsOnCall[len(fake.getKubeManagerArgsForCall)]
+	fake.getKubeManagerArgsForCall = append(fake.getKubeManagerArgsForCall, struct {
+	}{})
+	fake.recordInvocation("GetKubeManager", []interface{}{})
+	fake.getKubeManagerMutex.Unlock()
+	if fake.GetKubeManagerStub != nil {
+		return fake.GetKubeManagerStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.getKubeManagerReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeManager) GetKubeManagerCallCount() int {
+	fake.getKubeManagerMutex.RLock()
+	defer fake.getKubeManagerMutex.RUnlock()
+	return len(fake.getKubeManagerArgsForCall)
+}
+
+func (fake *FakeManager) GetKubeManagerCalls(stub func() manager.Manager) {
+	fake.getKubeManagerMutex.Lock()
+	defer fake.getKubeManagerMutex.Unlock()
+	fake.GetKubeManagerStub = stub
+}
+
+func (fake *FakeManager) GetKubeManagerReturns(result1 manager.Manager) {
+	fake.getKubeManagerMutex.Lock()
+	defer fake.getKubeManagerMutex.Unlock()
+	fake.GetKubeManagerStub = nil
+	fake.getKubeManagerReturns = struct {
+		result1 manager.Manager
+	}{result1}
+}
+
+func (fake *FakeManager) GetKubeManagerReturnsOnCall(i int, result1 manager.Manager) {
+	fake.getKubeManagerMutex.Lock()
+	defer fake.getKubeManagerMutex.Unlock()
+	fake.GetKubeManagerStub = nil
+	if fake.getKubeManagerReturnsOnCall == nil {
+		fake.getKubeManagerReturnsOnCall = make(map[int]struct {
+			result1 manager.Manager
+		})
+	}
+	fake.getKubeManagerReturnsOnCall[i] = struct {
+		result1 manager.Manager
+	}{result1}
 }
 
 func (fake *FakeManager) GetLogger() *zap.SugaredLogger {
@@ -457,6 +664,58 @@ func (fake *FakeManager) ListExtensionsReturnsOnCall(i int, result1 []extension.
 	}
 	fake.listExtensionsReturnsOnCall[i] = struct {
 		result1 []extension.Extension
+	}{result1}
+}
+
+func (fake *FakeManager) ListReconcilers() []extension.Reconciler {
+	fake.listReconcilersMutex.Lock()
+	ret, specificReturn := fake.listReconcilersReturnsOnCall[len(fake.listReconcilersArgsForCall)]
+	fake.listReconcilersArgsForCall = append(fake.listReconcilersArgsForCall, struct {
+	}{})
+	fake.recordInvocation("ListReconcilers", []interface{}{})
+	fake.listReconcilersMutex.Unlock()
+	if fake.ListReconcilersStub != nil {
+		return fake.ListReconcilersStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.listReconcilersReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeManager) ListReconcilersCallCount() int {
+	fake.listReconcilersMutex.RLock()
+	defer fake.listReconcilersMutex.RUnlock()
+	return len(fake.listReconcilersArgsForCall)
+}
+
+func (fake *FakeManager) ListReconcilersCalls(stub func() []extension.Reconciler) {
+	fake.listReconcilersMutex.Lock()
+	defer fake.listReconcilersMutex.Unlock()
+	fake.ListReconcilersStub = stub
+}
+
+func (fake *FakeManager) ListReconcilersReturns(result1 []extension.Reconciler) {
+	fake.listReconcilersMutex.Lock()
+	defer fake.listReconcilersMutex.Unlock()
+	fake.ListReconcilersStub = nil
+	fake.listReconcilersReturns = struct {
+		result1 []extension.Reconciler
+	}{result1}
+}
+
+func (fake *FakeManager) ListReconcilersReturnsOnCall(i int, result1 []extension.Reconciler) {
+	fake.listReconcilersMutex.Lock()
+	defer fake.listReconcilersMutex.Unlock()
+	fake.ListReconcilersStub = nil
+	if fake.listReconcilersReturnsOnCall == nil {
+		fake.listReconcilersReturnsOnCall = make(map[int]struct {
+			result1 []extension.Reconciler
+		})
+	}
+	fake.listReconcilersReturnsOnCall[i] = struct {
+		result1 []extension.Reconciler
 	}{result1}
 }
 
@@ -736,18 +995,26 @@ func (fake *FakeManager) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.addExtensionMutex.RLock()
 	defer fake.addExtensionMutex.RUnlock()
+	fake.addReconcilerMutex.RLock()
+	defer fake.addReconcilerMutex.RUnlock()
 	fake.addWatcherMutex.RLock()
 	defer fake.addWatcherMutex.RUnlock()
+	fake.getContextMutex.RLock()
+	defer fake.getContextMutex.RUnlock()
 	fake.getKubeClientMutex.RLock()
 	defer fake.getKubeClientMutex.RUnlock()
 	fake.getKubeConnectionMutex.RLock()
 	defer fake.getKubeConnectionMutex.RUnlock()
+	fake.getKubeManagerMutex.RLock()
+	defer fake.getKubeManagerMutex.RUnlock()
 	fake.getLoggerMutex.RLock()
 	defer fake.getLoggerMutex.RUnlock()
 	fake.getManagerOptionsMutex.RLock()
 	defer fake.getManagerOptionsMutex.RUnlock()
 	fake.listExtensionsMutex.RLock()
 	defer fake.listExtensionsMutex.RUnlock()
+	fake.listReconcilersMutex.RLock()
+	defer fake.listReconcilersMutex.RUnlock()
 	fake.patchFromPodMutex.RLock()
 	defer fake.patchFromPodMutex.RUnlock()
 	fake.registerExtensionsMutex.RLock()

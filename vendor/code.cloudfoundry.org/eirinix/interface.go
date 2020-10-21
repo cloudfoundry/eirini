@@ -13,6 +13,8 @@ import (
 	"k8s.io/client-go/rest"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -39,6 +41,15 @@ type Extension interface {
 // namespace.
 type Watcher interface {
 	Handle(Manager, watch.Event)
+}
+
+// Reconciler is the Eirini Reconciler Extension interface
+//
+// An Eirini Reconciler must implement a Reconcile method which is called when
+// a new request is being created.
+type Reconciler interface {
+	Reconcile(request reconcile.Request) (reconcile.Result, error)
+	Register(Manager) error
 }
 
 // MutatingWebhook is the interface of the generated webhook
@@ -70,7 +81,12 @@ type Manager interface {
 	// AddExtension adds an Extension to the manager
 	//
 	// The manager later on, will register the Extension when Start() is being called.
-	AddExtension(e Extension)
+	AddExtension(v interface{}) error
+
+	// AddReconciler adds a Reconciler Extension to the manager
+	//
+	// The manager later on, will register the Extension when Start() is being called.
+	AddReconciler(r Reconciler)
 
 	// Start starts the manager infinite loop.
 	//
@@ -82,6 +98,16 @@ type Manager interface {
 
 	// ListExtensions returns a list of the current loaded Extension
 	ListExtensions() []Extension
+
+	// ListReconcilers returns a list of the current loaded Reconcilers
+	ListReconcilers() []Reconciler
+
+	// GetContext returns the context of the manager, which can be used in internall cals by extension
+	GetContext() context.Context
+
+	// GetKubeManager returns the kubernetes manager which can be used by Reconcilers to perform
+	// direct requests
+	GetKubeManager() manager.Manager
 
 	// GetKubeConnection sets up a kube connection if not already present
 	//

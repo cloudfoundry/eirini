@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"time"
 
+	"code.cloudfoundry.org/eirinix/util/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/credsgen"
 	inmemorycredgen "code.cloudfoundry.org/quarks-utils/pkg/credsgen/in_memory_generator"
 	kubeConfig "code.cloudfoundry.org/quarks-utils/pkg/kubeconfig"
-	"code.cloudfoundry.org/eirinix/util/ctxlog"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
@@ -62,6 +62,9 @@ type DefaultExtensionManager struct {
 	// Watchers is the list of Eirini watchers handlers
 	Watchers []Watcher
 
+	// Reconcilers is the list of Eirini Reconcilers
+	Reconcilers []Reconciler
+
 	// KubeManager is the kubernetes manager object which is setted up by the Manager
 	KubeManager manager.Manager
 
@@ -102,6 +105,9 @@ type ManagerOptions struct {
 
 	// Port is the listening port
 	Port int32
+
+	// Context is the context to be used for Kube requests. Leave it empty for automatic generation
+	Context *context.Context
 
 	// KubeConfig is the kubeconfig path. Optional, omit for in-cluster connection
 	KubeConfig string
@@ -201,9 +207,20 @@ func NewManager(opts ManagerOptions) Manager {
 	return &DefaultExtensionManager{Options: opts, Logger: opts.Logger, stopChannel: make(chan struct{})}
 }
 
-// AddExtension adds an Erini extension to the manager
-func (m *DefaultExtensionManager) AddExtension(e Extension) {
-	m.Extensions = append(m.Extensions, e)
+// AddExtension adds an Eirini extension to the manager.
+// It accepts Eirinix.Watcher, Eirinix.Reconciler and Eirinix.Extension types.
+func (m *DefaultExtensionManager) AddExtension(v interface{}) error {
+	switch v.(type) {
+	case Extension:
+		m.Extensions = append(m.Extensions, v.(Extension))
+	case Watcher:
+		m.AddWatcher(v.(Watcher))
+	case Reconciler:
+		m.AddReconciler(v.(Reconciler))
+	default:
+		return errors.New("Invalid extension type")
+	}
+	return nil
 }
 
 // ListExtensions returns the list of the Extensions added to the Manager
@@ -219,6 +236,28 @@ func (m *DefaultExtensionManager) AddWatcher(w Watcher) {
 // ListWatchers returns the list of the Extensions added to the Manager
 func (m *DefaultExtensionManager) ListWatchers() []Watcher {
 	return m.Watchers
+}
+
+// AddReconciler adds an Erini reconciler Extension to the manager
+func (m *DefaultExtensionManager) AddReconciler(r Reconciler) {
+	m.Reconcilers = append(m.Reconcilers, r)
+}
+
+// ListReconcilers returns the list of the Extensions added to the Manager
+func (m *DefaultExtensionManager) ListReconcilers() []Reconciler {
+	return m.Reconcilers
+}
+
+// GetContext returns the context which can be used by Extensions and Reconcilers to perform
+// background requests
+func (m *DefaultExtensionManager) GetContext() context.Context {
+	return m.Context
+}
+
+// GetKubeManager returns the kubernetes manager which can be used by Reconcilers to perform
+// direct requests
+func (m *DefaultExtensionManager) GetKubeManager() manager.Manager {
+	return m.KubeManager
 }
 
 // GetKubeClient returns a kubernetes Corev1 client interface from the rest config used.
@@ -308,7 +347,7 @@ func (m *DefaultExtensionManager) kubeSetup() error {
 func (m *DefaultExtensionManager) GenWebHookServer() {
 
 	//disableConfigInstaller := true
-	m.Context = ctxlog.NewManagerContext(m.Logger)
+
 	m.WebhookConfig = NewWebhookConfig(
 		m.KubeManager.GetClient(),
 		&Config{
@@ -334,6 +373,12 @@ func (m *DefaultExtensionManager) GenWebHookServer() {
 // OperatorSetup prepares the webhook server, generates certificates and configuration.
 // It also setups the namespace label for the operator
 func (m *DefaultExtensionManager) OperatorSetup() error {
+
+	if m.GetManagerOptions().Context == nil {
+		m.Context = ctxlog.NewManagerContext(m.Logger)
+	} else {
+		m.Context = *m.GetManagerOptions().Context
+	}
 
 	m.GenWebHookServer()
 
@@ -447,6 +492,12 @@ func (m *DefaultExtensionManager) LoadExtensions() error {
 			return errors.Wrap(err, "generating the webhook server configuration")
 		}
 	}
+
+	for _, r := range m.Reconcilers {
+		if err := r.Register(m); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -516,6 +567,10 @@ func (m *DefaultExtensionManager) Watch() error {
 // Start starts the Manager infinite loop, and returns an error on failure
 func (m *DefaultExtensionManager) Start() error {
 	defer m.Logger.Sync()
+
+	if len(m.Watchers) >= 0 {
+		go m.Watch()
+	}
 
 	if err := m.RegisterExtensions(); err != nil {
 		return err
