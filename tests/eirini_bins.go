@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gofrs/flock"
+
 	// nolint:golint,stylecheck
 	. "github.com/onsi/ginkgo"
 
@@ -137,12 +139,12 @@ func (b *Binary) Build() {
 }
 
 func (b *Binary) buildIfNecessary() {
-	locksmith := NewExclusiveLocksmith(b.LocksDir)
-	lockFile, err := locksmith.Lock(b.BinPath)
+	lock := flock.New(b.BinPath + ".lock")
+	err := lock.Lock()
 	Expect(err).NotTo(HaveOccurred())
 
 	defer func() {
-		Expect(locksmith.Unlock(lockFile)).To(Succeed())
+		Expect(lock.Unlock()).To(Succeed())
 	}()
 
 	_, err = os.Stat(b.BinPath)
