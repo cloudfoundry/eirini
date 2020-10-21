@@ -53,7 +53,8 @@ func main() {
 	}
 
 	manager := eirinix.NewManager(managerOptions)
-	manager.AddExtension(webhook.NewInstanceIndexEnvInjector(log))
+	err = manager.AddExtension(webhook.NewInstanceIndexEnvInjector(log))
+	cmdcommons.ExitfIfError(err, "failed to register the instance index env injector extension")
 
 	log.Fatal("instance-index-env-injector-errored", manager.Start())
 }
