@@ -151,8 +151,9 @@ func createPods(ns string, names ...string) {
 func createPod(ns, name string, labels map[string]string) {
 	_, err := fixture.Clientset.CoreV1().Pods(ns).Create(context.Background(), &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
+			Name:        name,
+			Labels:      labels,
+			Annotations: map[string]string{"some": "annotation"},
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{

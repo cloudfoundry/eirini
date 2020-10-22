@@ -57,8 +57,16 @@ func (c *Pod) Delete(namespace, name string) error {
 	return c.clientSet.CoreV1().Pods(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
 }
 
-func (c *Pod) Update(pod *corev1.Pod) (*corev1.Pod, error) {
-	return c.clientSet.CoreV1().Pods(pod.Namespace).Update(context.Background(), pod, metav1.UpdateOptions{})
+func (c *Pod) SetAnnotation(pod *corev1.Pod, key, value string) (*corev1.Pod, error) {
+	patchBytes := patching.NewAnnotation(key, value).GetJSONPatchBytes()
+
+	return c.clientSet.CoreV1().Pods(pod.Namespace).Patch(
+		context.Background(),
+		pod.Name,
+		types.JSONPatchType,
+		patchBytes,
+		metav1.PatchOptions{},
+	)
 }
 
 type PodDisruptionBudget struct {

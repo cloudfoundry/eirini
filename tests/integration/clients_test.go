@@ -134,26 +134,53 @@ var _ = Describe("Pod", func() {
 		})
 	})
 
-	Describe("Update", func() {
+	Describe("SetAnnotation", func() {
+		var (
+			key   string
+			value string
+		)
+
 		BeforeEach(func() {
+			key = "foo"
+			value = "bar"
+
 			createPods(fixture.Namespace, "foo")
+			Eventually(func() []string { return podNames(listAllPods()) }).Should(ContainElement("foo"))
 		})
 
-		It("updates a pod", func() {
-			Eventually(func() []string { return podNames(listAllPods()) }).Should(ContainElement("foo"))
-
+		JustBeforeEach(func() {
 			pods := listAllPods()
 			pod := pods[0]
 
-			pod.Annotations = map[string]string{"foo": "bar"}
-
-			p, err := podClient.Update(&pod)
+			_, err := podClient.SetAnnotation(&pod, key, value)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(p.Annotations["foo"]).To(Equal("bar"))
+		})
 
-			pods = listAllPods()
-			relookedUpPod := pods[0]
-			Expect(relookedUpPod.Annotations["foo"]).To(Equal("bar"))
+		It("sets a pod annotation", func() {
+			pods := listAllPods()
+			pod := pods[0]
+
+			Expect(pod.Annotations["foo"]).To(Equal("bar"))
+		})
+
+		It("preserves existing annotations", func() {
+			pods := listAllPods()
+			pod := pods[0]
+
+			Expect(pod.Annotations["some"]).To(Equal("annotation"))
+		})
+
+		When("setting an existing annotation", func() {
+			BeforeEach(func() {
+				key = "some"
+			})
+
+			It("overrides that annotation", func() {
+				pods := listAllPods()
+				pod := pods[0]
+
+				Expect(pod.Annotations["some"]).To(Equal("bar"))
+			})
 		})
 	})
 })

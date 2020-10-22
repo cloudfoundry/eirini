@@ -24,29 +24,29 @@ import (
 
 var _ = Describe("Task Completion Reconciler", func() {
 	var (
-		reconcileRes reconcile.Result
-		reconcileErr error
-		logger       *lagertest.TestLogger
-		podClient    *reconcilerfakes.FakeClient
-		jobsClient   *taskfakes.FakeJobsClient
-		podUpdater   *taskfakes.FakePodUpdater
-		taskReporter *taskfakes.FakeReporter
-		taskDeleter  *taskfakes.FakeDeleter
-		reconciler   *task.Reconciler
-		pod          *corev1.Pod
-		job          batchv1.Job
-		ttl          int
+		reconcileRes  reconcile.Result
+		reconcileErr  error
+		logger        *lagertest.TestLogger
+		runtimeClient *reconcilerfakes.FakeClient
+		jobsClient    *taskfakes.FakeJobsClient
+		podsClient    *taskfakes.FakePodsClient
+		taskReporter  *taskfakes.FakeReporter
+		taskDeleter   *taskfakes.FakeDeleter
+		reconciler    *task.Reconciler
+		pod           *corev1.Pod
+		job           batchv1.Job
+		ttl           int
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("reconciler-test")
-		podClient = new(reconcilerfakes.FakeClient)
+		runtimeClient = new(reconcilerfakes.FakeClient)
 		jobsClient = new(taskfakes.FakeJobsClient)
-		podUpdater = new(taskfakes.FakePodUpdater)
+		podsClient = new(taskfakes.FakePodsClient)
 		taskReporter = new(taskfakes.FakeReporter)
 		taskDeleter = new(taskfakes.FakeDeleter)
 		ttl = 60
-		reconciler = task.NewReconciler(logger, podClient, jobsClient, podUpdater, taskReporter, taskDeleter, 2, ttl)
+		reconciler = task.NewReconciler(logger, runtimeClient, jobsClient, podsClient, taskReporter, taskDeleter, 2, ttl)
 
 		pod = &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -80,7 +80,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 			},
 		}
 
-		podClient.GetStub = func(c context.Context, nn k8stypes.NamespacedName, o runtime.Object) error {
+		runtimeClient.GetStub = func(c context.Context, nn k8stypes.NamespacedName, o runtime.Object) error {
 			p := o.(*corev1.Pod)
 			pod.DeepCopyInto(p)
 			pod = p
@@ -112,8 +112,8 @@ var _ = Describe("Task Completion Reconciler", func() {
 	})
 
 	It("fetches the task pod", func() {
-		Expect(podClient.GetCallCount()).To(Equal(1))
-		_, actualNamepspacedName, _ := podClient.GetArgsForCall(0)
+		Expect(runtimeClient.GetCallCount()).To(Equal(1))
+		_, actualNamepspacedName, _ := runtimeClient.GetArgsForCall(0)
 		Expect(actualNamepspacedName.Namespace).To(Equal("space"))
 		Expect(actualNamepspacedName.Name).To(Equal("the-task-pod"))
 	})
@@ -127,9 +127,11 @@ var _ = Describe("Task Completion Reconciler", func() {
 	It("reports the task pod", func() {
 		Expect(taskReporter.ReportCallCount()).To(Equal(1))
 		Expect(taskReporter.ReportArgsForCall(0).Name).To(Equal(pod.Name))
-		Expect(podUpdater.UpdateCallCount()).To(Equal(1))
-		actualPod := podUpdater.UpdateArgsForCall(0)
-		Expect(actualPod.Annotations[k8s.AnnotationCCAckedTaskCompletion]).To(Equal("true"))
+		Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
+		actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
+		Expect(actualPod).To(Equal(pod))
+		Expect(key).To(Equal(k8s.AnnotationCCAckedTaskCompletion))
+		Expect(value).To(Equal(k8s.TaskCompletedTrue))
 	})
 
 	It("deletes the task", func() {
@@ -144,44 +146,40 @@ var _ = Describe("Task Completion Reconciler", func() {
 		Expect(value).To(Equal(k8s.TaskCompletedTrue))
 	})
 
-	When("ttl has not yet expired", func() {
+	When("TTL has not yet expired", func() {
 		BeforeEach(func() {
 			pod.Status.ContainerStatuses[0].State.Terminated.FinishedAt = metav1.NewTime(time.Now())
 		})
 
-		It("notifies CC on the first attempt only, and deletes only after TTL has expired", func() {
-			By("notifying CC the first time, but not yet deleting", func() {
-				Expect(taskReporter.ReportCallCount()).To(Equal(1))
-				Expect(taskReporter.ReportArgsForCall(0).Name).To(Equal(pod.Name))
+		It("notifies CC, but does not delete yet", func() {
+			Expect(taskReporter.ReportCallCount()).To(Equal(1))
+			Expect(taskReporter.ReportArgsForCall(0).Name).To(Equal(pod.Name))
 
-				Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
 
-				Expect(reconcileErr).ToNot(HaveOccurred())
-				Expect(reconcileRes.RequeueAfter).To(Equal(time.Second * time.Duration(ttl)))
-			})
+			Expect(reconcileErr).ToNot(HaveOccurred())
+			Expect(reconcileRes.RequeueAfter).To(Equal(time.Second * time.Duration(ttl)))
+		})
+	})
 
+	When("CC has been notified and TTL has expired", func() {
+		BeforeEach(func() {
 			pod.Status.ContainerStatuses[0].State.Terminated.FinishedAt = metav1.NewTime(time.Now().Add(-60 * time.Second))
-			reconcileRes, reconcileErr = reconciler.Reconcile(reconcile.Request{
-				NamespacedName: k8stypes.NamespacedName{
-					Name:      "the-task-pod",
-					Namespace: "space",
-				},
-			})
+			pod.ObjectMeta.Annotations[k8s.AnnotationCCAckedTaskCompletion] = k8s.TaskCompletedTrue
+		})
 
-			By("not notifying CC again, but deleting the task", func() {
-				// report call count is _still_ 1
-				Expect(taskReporter.ReportCallCount()).To(Equal(1))
-				Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
-				Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-task-pod-guid"))
-				Expect(reconcileErr).ToNot(HaveOccurred())
-				Expect(reconcileRes.IsZero()).To(BeTrue())
-			})
+		It("deletes the job", func() {
+			Expect(taskReporter.ReportCallCount()).To(Equal(0))
+			Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
+			Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal("the-task-pod-guid"))
+			Expect(reconcileErr).ToNot(HaveOccurred())
+			Expect(reconcileRes.IsZero()).To(BeTrue())
 		})
 	})
 
 	When("fetching the task pod fails", func() {
 		BeforeEach(func() {
-			podClient.GetReturns(errors.New("fetch-pod-error"))
+			runtimeClient.GetReturns(errors.New("fetch-pod-error"))
 		})
 
 		It("returns the error", func() {
@@ -269,7 +267,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 	When("the task pod does not exist", func() {
 		BeforeEach(func() {
-			podClient.GetReturns(apierrors.NewNotFound(schema.GroupResource{}, ""))
+			runtimeClient.GetReturns(apierrors.NewNotFound(schema.GroupResource{}, ""))
 		})
 
 		It("does not call the task reporter", func() {
@@ -290,81 +288,57 @@ var _ = Describe("Task Completion Reconciler", func() {
 			Expect(reconcileErr).To(MatchError(ContainSubstring("task-reporter-error")))
 		})
 
-		It("sets the 'retry counter' annotation", func() {
-			Expect(pod.Annotations[k8s.AnnotationOpiTaskCompletionReportCounter]).To(Equal("1"))
-		})
-
-		It("does not delete the task", func() {
-			Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
-		})
-
 		It("does not set the 'cc acked' annotation on the pod", func() {
 			Expect(pod.Annotations[k8s.AnnotationCCAckedTaskCompletion]).To(BeEmpty())
 		})
 
 		It("updates the pod setting the updated call count but not reporting success", func() {
-			Expect(podUpdater.UpdateCallCount()).To(Equal(1))
-			actualPod := podUpdater.UpdateArgsForCall(0)
-			Expect(actualPod.Annotations[k8s.AnnotationOpiTaskCompletionReportCounter]).To(Equal("1"))
-			Expect(actualPod.Annotations[k8s.AnnotationCCAckedTaskCompletion]).To(BeEmpty())
+			Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
+			actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
+			Expect(actualPod).To(Equal(pod))
+			Expect(key).To(Equal(k8s.AnnotationOpiTaskCompletionReportCounter))
+			Expect(value).To(Equal("1"))
 		})
 
 		It("does not label the task as completed", func() {
 			Expect(jobsClient.SetLabelCallCount()).To(BeZero())
 		})
 
-		When("updating the annotation on the pod fails", func() {
+		When("it's the first time", func() {
+			It("sets the 'retry counter' annotation", func() {
+				Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
+				actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
+				Expect(actualPod).To(Equal(pod))
+				Expect(key).To(Equal(k8s.AnnotationOpiTaskCompletionReportCounter))
+				Expect(value).To(Equal("1"))
+			})
+
+			It("does not delete the task", func() {
+				Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
+			})
+		})
+
+		When("it's a subsequent time within the retry limit", func() {
 			BeforeEach(func() {
-				podUpdater.UpdateReturns(nil, errors.New("update-failed"))
+				pod.ObjectMeta.Annotations[k8s.AnnotationOpiTaskCompletionReportCounter] = "1"
 			})
 
-			It("returns an error with both failure messages", func() {
-				Expect(reconcileErr).To(MatchError(SatisfyAll(
-					ContainSubstring("task-reporter-error"),
-					ContainSubstring("update-failed"),
-				)))
+			It("increments the reporting count", func() {
+				Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
+				actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
+				Expect(actualPod).To(Equal(pod))
+				Expect(key).To(Equal(k8s.AnnotationOpiTaskCompletionReportCounter))
+				Expect(value).To(Equal("2"))
 			})
-		})
-	})
 
-	When("updating the annotation on the pod fails", func() {
-		BeforeEach(func() {
-			podUpdater.UpdateReturns(nil, errors.New("annotation-update-failed"))
-		})
-
-		It("returns then error", func() {
-			Expect(reconcileErr).To(MatchError("annotation-update-failed"))
-		})
-	})
-
-	When("reporting to CC fails for the second time", func() {
-		BeforeEach(func() {
-			taskReporter.ReportReturns(errors.New("task-reporter-error"))
-		})
-
-		JustBeforeEach(func() {
-			_, reconcileErr = reconciler.Reconcile(reconcile.Request{
-				NamespacedName: k8stypes.NamespacedName{
-					Name:      "the-task-pod",
-					Namespace: "space",
-				},
+			It("does not delete the task", func() {
+				Expect(taskDeleter.DeleteCallCount()).To(Equal(0))
 			})
 		})
 
-		It("updates the reporting count to 2", func() {
-			Expect(podUpdater.UpdateCallCount()).To(Equal(2))
-			actualPod := podUpdater.UpdateArgsForCall(1)
-			Expect(actualPod.Annotations[k8s.AnnotationOpiTaskCompletionReportCounter]).To(Equal("2"))
-		})
-
-		When("reporting the task pod consecutively fails more than [callbackRetryLimit = 2] times", func() {
-			JustBeforeEach(func() {
-				_, reconcileErr = reconciler.Reconcile(reconcile.Request{
-					NamespacedName: k8stypes.NamespacedName{
-						Name:      "the-task-pod",
-						Namespace: "space",
-					},
-				})
+		When("it hits the retry limit", func() {
+			BeforeEach(func() {
+				pod.ObjectMeta.Annotations[k8s.AnnotationOpiTaskCompletionReportCounter] = "2"
 			})
 
 			It("does not retry any more", func() {
@@ -374,6 +348,19 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 			It("deletes the task", func() {
 				Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
+			})
+		})
+
+		When("updating the annotation on the pod fails", func() {
+			BeforeEach(func() {
+				podsClient.SetAnnotationReturns(nil, errors.New("update-failed"))
+			})
+
+			It("returns an error with both failure messages", func() {
+				Expect(reconcileErr).To(MatchError(SatisfyAll(
+					ContainSubstring("task-reporter-error"),
+					ContainSubstring("update-failed"),
+				)))
 			})
 		})
 	})

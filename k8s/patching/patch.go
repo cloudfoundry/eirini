@@ -25,6 +25,14 @@ func NewLabel(name, value string) Patch {
 	}
 }
 
+func NewAnnotation(name, value string) Patch {
+	return Patch{
+		name:  name,
+		value: value,
+		path:  "/metadata/annotations/",
+	}
+}
+
 func (p Patch) GetJSONPatchBytes() []byte {
 	list := []jsonPatchString{
 		{

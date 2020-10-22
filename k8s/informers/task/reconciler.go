@@ -18,8 +18,8 @@ import (
 
 //counterfeiter:generate . Reporter
 //counterfeiter:generate . JobsClient
+//counterfeiter:generate . PodsClient
 //counterfeiter:generate . Deleter
-//counterfeiter:generate . PodUpdater
 
 type Reporter interface {
 	Report(*corev1.Pod) error
@@ -27,22 +27,22 @@ type Reporter interface {
 
 type JobsClient interface {
 	GetByGUID(guid string) ([]batchv1.Job, error)
-	SetLabel(job *batchv1.Job, label, value string) (*batchv1.Job, error)
+	SetLabel(job *batchv1.Job, key, value string) (*batchv1.Job, error)
 }
 
 type Deleter interface {
 	Delete(guid string) (string, error)
 }
 
-type PodUpdater interface {
-	Update(pod *corev1.Pod) (*corev1.Pod, error)
+type PodsClient interface {
+	SetAnnotation(pod *corev1.Pod, key, value string) (*corev1.Pod, error)
 }
 
 type Reconciler struct {
 	logger             lager.Logger
-	pods               client.Client
+	runtimeClient      client.Client
 	jobs               JobsClient
-	podUpdater         PodUpdater
+	pods               PodsClient
 	reporter           Reporter
 	deleter            Deleter
 	callbackRetryLimit int
@@ -53,7 +53,7 @@ func NewReconciler(
 	logger lager.Logger,
 	podClient client.Client,
 	jobsClient JobsClient,
-	podUpdater PodUpdater,
+	podUpdater PodsClient,
 	reporter Reporter,
 	deleter Deleter,
 	callbackRetryLimit int,
@@ -61,9 +61,9 @@ func NewReconciler(
 ) *Reconciler {
 	return &Reconciler{
 		logger:             logger,
-		pods:               podClient,
+		runtimeClient:      podClient,
 		jobs:               jobsClient,
-		podUpdater:         podUpdater,
+		pods:               podUpdater,
 		reporter:           reporter,
 		deleter:            deleter,
 		callbackRetryLimit: callbackRetryLimit,
@@ -75,7 +75,7 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 	logger := r.logger.Session("task-completion-reconciler", lager.Data{"namespace": request.Namespace, "pod-name": request.Name})
 
 	pod := &corev1.Pod{}
-	if err := r.pods.Get(context.Background(), request.NamespacedName, pod); err != nil {
+	if err := r.runtimeClient.Get(context.Background(), request.NamespacedName, pod); err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Error("pod does not exist", err)
 
@@ -141,16 +141,14 @@ func (r *Reconciler) reportIfRequired(pod *corev1.Pod) error {
 	if err := r.reporter.Report(pod); err != nil {
 		resultErr := multierror.Append(err)
 
-		pod.Annotations[k8s.AnnotationOpiTaskCompletionReportCounter] = strconv.Itoa(completionCounter + 1)
-		if _, updateErr := r.podUpdater.Update(pod); updateErr != nil {
+		if _, updateErr := r.pods.SetAnnotation(pod, k8s.AnnotationOpiTaskCompletionReportCounter, strconv.Itoa(completionCounter+1)); updateErr != nil {
 			resultErr = multierror.Append(resultErr, updateErr)
 		}
 
 		return resultErr.ErrorOrNil()
 	}
 
-	pod.Annotations[k8s.AnnotationCCAckedTaskCompletion] = k8s.TaskCompletedTrue
-	if _, updateErr := r.podUpdater.Update(pod); updateErr != nil {
+	if _, updateErr := r.pods.SetAnnotation(pod, k8s.AnnotationCCAckedTaskCompletion, k8s.TaskCompletedTrue); updateErr != nil {
 		return updateErr
 	}
 
