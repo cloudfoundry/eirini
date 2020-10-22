@@ -23,7 +23,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
-	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -58,9 +57,6 @@ func main() {
 		Logger: taskLogger,
 	}
 
-	controllerClient, err := runtimeclient.New(kubeConfig, runtimeclient.Options{Scheme: kscheme.Scheme})
-	cmdcommons.ExitfIfError(err, "Failed to create k8s runtime client")
-
 	jobsClient := client.NewJob(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport)
 	podUpdater := client.NewPod(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport)
 
@@ -68,16 +64,6 @@ func main() {
 	if completionCallbackRetryLimit == 0 {
 		completionCallbackRetryLimit = defaultCompletionCallbackRetryLimit
 	}
-
-	taskReconciler := k8stask.NewReconciler(taskLogger,
-		controllerClient,
-		jobsClient,
-		podUpdater,
-		reporter,
-		initTaskDeleter(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport),
-		completionCallbackRetryLimit,
-		cfg.TTLSeconds,
-	)
 
 	mgrOptions := manager.Options{
 		// do not serve prometheus metrics; disabled because port clashes during integration tests
@@ -96,6 +82,16 @@ func main() {
 
 	mgr, err := manager.New(kubeConfig, mgrOptions)
 	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
+
+	taskReconciler := k8stask.NewReconciler(taskLogger,
+		mgr.GetClient(),
+		jobsClient,
+		podUpdater,
+		reporter,
+		initTaskDeleter(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport),
+		completionCallbackRetryLimit,
+		cfg.TTLSeconds,
+	)
 
 	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate("TASK")}
 	err = builder.
