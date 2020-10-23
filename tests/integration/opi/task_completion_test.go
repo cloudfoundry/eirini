@@ -71,6 +71,15 @@ var _ = Describe("Tasks completion", func() {
 		Eventually(listTasks).Should(BeEmpty())
 		Expect(getJob(taskGUID)).NotTo(BeNil())
 	})
+
+	It("does not get a completed tasks that has not reached its ttl", func() {
+		Eventually(func() error {
+			_, err := getTask(taskGUID)
+
+			return err
+		}).Should(MatchError(ContainSubstring("404 Not Found")))
+		Expect(getJob(taskGUID)).NotTo(BeNil())
+	})
 })
 
 func listTasks() ([]cf.TaskResponse, error) {
@@ -87,6 +96,22 @@ func listTasks() ([]cf.TaskResponse, error) {
 	}
 
 	return taskResponses, nil
+}
+
+func getTask(guid string) (cf.TaskResponse, error) {
+	response, err := httpDo("GET", fmt.Sprintf("%s/tasks/%s", url, guid), nil)
+	if err != nil {
+		return cf.TaskResponse{}, err
+	}
+
+	defer response.Body.Close()
+
+	var taskResponse cf.TaskResponse
+	if err := json.NewDecoder(response.Body).Decode(&taskResponse); err != nil {
+		return cf.TaskResponse{}, err
+	}
+
+	return taskResponse, nil
 }
 
 func getJob(taskGUID string) *batchv1.Job {

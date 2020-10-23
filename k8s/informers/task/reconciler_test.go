@@ -120,8 +120,9 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 	It("fetches the job by guid", func() {
 		Expect(jobsClient.GetByGUIDCallCount()).To(Equal(1))
-		actualGUID := jobsClient.GetByGUIDArgsForCall(0)
+		actualGUID, actualIncludeCompleted := jobsClient.GetByGUIDArgsForCall(0)
 		Expect(actualGUID).To(Equal("the-task-pod-guid"))
+		Expect(actualIncludeCompleted).To(BeTrue())
 	})
 
 	It("reports the task pod", func() {

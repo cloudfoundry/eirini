@@ -23,10 +23,11 @@ type FakeJobCreatingClient struct {
 		result1 *v1.Job
 		result2 error
 	}
-	GetByGUIDStub        func(string) ([]v1.Job, error)
+	GetByGUIDStub        func(string, bool) ([]v1.Job, error)
 	getByGUIDMutex       sync.RWMutex
 	getByGUIDArgsForCall []struct {
 		arg1 string
+		arg2 bool
 	}
 	getByGUIDReturns struct {
 		result1 []v1.Job
@@ -117,16 +118,17 @@ func (fake *FakeJobCreatingClient) CreateReturnsOnCall(i int, result1 *v1.Job, r
 	}{result1, result2}
 }
 
-func (fake *FakeJobCreatingClient) GetByGUID(arg1 string) ([]v1.Job, error) {
+func (fake *FakeJobCreatingClient) GetByGUID(arg1 string, arg2 bool) ([]v1.Job, error) {
 	fake.getByGUIDMutex.Lock()
 	ret, specificReturn := fake.getByGUIDReturnsOnCall[len(fake.getByGUIDArgsForCall)]
 	fake.getByGUIDArgsForCall = append(fake.getByGUIDArgsForCall, struct {
 		arg1 string
-	}{arg1})
-	fake.recordInvocation("GetByGUID", []interface{}{arg1})
+		arg2 bool
+	}{arg1, arg2})
+	fake.recordInvocation("GetByGUID", []interface{}{arg1, arg2})
 	fake.getByGUIDMutex.Unlock()
 	if fake.GetByGUIDStub != nil {
-		return fake.GetByGUIDStub(arg1)
+		return fake.GetByGUIDStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -141,17 +143,17 @@ func (fake *FakeJobCreatingClient) GetByGUIDCallCount() int {
 	return len(fake.getByGUIDArgsForCall)
 }
 
-func (fake *FakeJobCreatingClient) GetByGUIDCalls(stub func(string) ([]v1.Job, error)) {
+func (fake *FakeJobCreatingClient) GetByGUIDCalls(stub func(string, bool) ([]v1.Job, error)) {
 	fake.getByGUIDMutex.Lock()
 	defer fake.getByGUIDMutex.Unlock()
 	fake.GetByGUIDStub = stub
 }
 
-func (fake *FakeJobCreatingClient) GetByGUIDArgsForCall(i int) string {
+func (fake *FakeJobCreatingClient) GetByGUIDArgsForCall(i int) (string, bool) {
 	fake.getByGUIDMutex.RLock()
 	defer fake.getByGUIDMutex.RUnlock()
 	argsForCall := fake.getByGUIDArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeJobCreatingClient) GetByGUIDReturns(result1 []v1.Job, result2 error) {

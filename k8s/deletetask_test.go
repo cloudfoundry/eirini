@@ -75,8 +75,9 @@ var _ = Describe("TaskDeleter", func() {
 
 			By("selecting the job using the task label guid and the eirini label")
 			Expect(jobClient.GetByGUIDCallCount()).To(Equal(1))
-			guid := jobClient.GetByGUIDArgsForCall(0)
+			guid, includeCompleted := jobClient.GetByGUIDArgsForCall(0)
 			Expect(guid).To(Equal(taskGUID))
+			Expect(includeCompleted).To(Equal(true))
 		})
 
 		Context("when the job has an owner", func() {
@@ -188,8 +189,9 @@ var _ = Describe("TaskDeleter", func() {
 			Expect(deleter.DeleteStaging(taskGUID)).To(Succeed())
 
 			Expect(jobClient.GetByGUIDCallCount()).To(Equal(1))
-			guid := jobClient.GetByGUIDArgsForCall(0)
+			guid, includeCompleted := jobClient.GetByGUIDArgsForCall(0)
 			Expect(guid).To(Equal(taskGUID))
+			Expect(includeCompleted).To(Equal(true))
 
 			Expect(jobClient.DeleteCallCount()).To(Equal(1))
 			namespace, jobName := jobClient.DeleteArgsForCall(0)

@@ -620,6 +620,13 @@ var _ = Describe("TaskDesirer", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("requests uncompleted jobs from the jobs client", func() {
+			Expect(fakeJobClient.GetByGUIDCallCount()).To(Equal(1))
+			actualGUID, actualIncludeCompleted := fakeJobClient.GetByGUIDArgsForCall(0)
+			Expect(actualGUID).To(Equal(task.GUID))
+			Expect(actualIncludeCompleted).To(BeFalse())
+		})
+
 		It("returns the task with the specified task guid", func() {
 			Expect(task.GUID).To(Equal(taskGUID))
 		})

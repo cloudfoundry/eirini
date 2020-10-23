@@ -14,7 +14,7 @@ import (
 //counterfeiter:generate . SecretsDeleter
 
 type JobDeletingClient interface {
-	GetByGUID(guid string) ([]batchv1.Job, error)
+	GetByGUID(guid string, includeCompleted bool) ([]batchv1.Job, error)
 	Delete(namespace string, name string) error
 }
 
@@ -58,7 +58,7 @@ func (d *TaskDeleter) DeleteStaging(guid string) error {
 }
 
 func (d *TaskDeleter) getJobByGUID(logger lager.Logger, guid string) (batchv1.Job, error) {
-	jobs, err := d.jobClient.GetByGUID(guid)
+	jobs, err := d.jobClient.GetByGUID(guid, true)
 	if err != nil {
 		logger.Error("failed-to-list-jobs", err)
 

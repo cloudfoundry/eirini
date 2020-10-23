@@ -27,7 +27,7 @@ const (
 
 type JobCreatingClient interface {
 	Create(namespace string, job *batch.Job) (*batch.Job, error)
-	GetByGUID(guid string) ([]batch.Job, error)
+	GetByGUID(guid string, includeCompleted bool) ([]batch.Job, error)
 	List(includeCompleted bool) ([]batch.Job, error)
 }
 
@@ -155,7 +155,7 @@ func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 }
 
 func (d *TaskDesirer) Get(taskGUID string) (*opi.Task, error) {
-	jobs, err := d.jobClient.GetByGUID(taskGUID)
+	jobs, err := d.jobClient.GetByGUID(taskGUID, false)
 	if err != nil {
 		return nil, err
 	}

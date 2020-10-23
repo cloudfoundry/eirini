@@ -485,19 +485,37 @@ var _ = Describe("Jobs", func() {
 				k8s.LabelGUID: "bar",
 			})
 
+			createJob(fixture.Namespace, "foo-complete", map[string]string{
+				k8s.LabelGUID:          "baz",
+				k8s.LabelTaskCompleted: k8s.TaskCompletedTrue,
+			})
+
 			extraNs := fixture.CreateExtraNamespace()
 			createJob(extraNs, "foo2", map[string]string{
 				k8s.LabelGUID: "bar",
 			})
 		})
 
-		It("gets all jobs matching the specified guid", func() {
-			Eventually(func() []string {
-				jobs, err := jobsClient.GetByGUID("bar")
+		getJobGUIDs := func(guid string, includeCompleted bool) func() []string {
+			return func() []string {
+				jobs, err := jobsClient.GetByGUID(guid, includeCompleted)
 				Expect(err).NotTo(HaveOccurred())
 
 				return jobNames(jobs)
-			}).Should(ContainElements("foo", "foo2"))
+			}
+		}
+
+		When("not including completed jobs", func() {
+			It("gets all jobs not labelled as completed matching the specified guid", func() {
+				Eventually(getJobGUIDs("bar", false)).Should(ContainElements("foo", "foo2"))
+				Consistently(getJobGUIDs("baz", false)).ShouldNot(ContainElement("foo-complete"))
+			})
+		})
+
+		When("including completed jobs", func() {
+			It("gets a job labelled as completed", func() {
+				Eventually(getJobGUIDs("baz", true)).Should(ContainElement("foo-complete"))
+			})
 		})
 
 		When("multi namespaced support is disabled", func() {
@@ -506,12 +524,7 @@ var _ = Describe("Jobs", func() {
 			})
 
 			It("gets all jobs in the specified namespace matching the specified guid", func() {
-				Eventually(func() []string {
-					jobs, err := jobsClient.GetByGUID("bar")
-					Expect(err).NotTo(HaveOccurred())
-
-					return jobNames(jobs)
-				}).Should(ConsistOf("foo"))
+				Eventually(getJobGUIDs("bar", false)).Should(ConsistOf("foo"))
 			})
 		})
 	})
@@ -674,7 +687,7 @@ var _ = Describe("StagingJobs", func() {
 
 		It("gets all jobs matching the specified guid", func() {
 			Eventually(func() []string {
-				jobs, err := jobsClient.GetByGUID("bar")
+				jobs, err := jobsClient.GetByGUID("bar", false)
 				Expect(err).NotTo(HaveOccurred())
 
 				return jobNames(jobs)
@@ -688,7 +701,7 @@ var _ = Describe("StagingJobs", func() {
 
 			It("gets jobs matching the specified guid in the workloads namespace", func() {
 				Eventually(func() []string {
-					jobs, err := jobsClient.GetByGUID("bar")
+					jobs, err := jobsClient.GetByGUID("bar", false)
 					Expect(err).NotTo(HaveOccurred())
 
 					return jobNames(jobs)

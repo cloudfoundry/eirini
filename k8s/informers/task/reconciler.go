@@ -26,7 +26,7 @@ type Reporter interface {
 }
 
 type JobsClient interface {
-	GetByGUID(guid string) ([]batchv1.Job, error)
+	GetByGUID(guid string, includeCompleted bool) ([]batchv1.Job, error)
 	SetLabel(job *batchv1.Job, key, value string) (*batchv1.Job, error)
 }
 
@@ -94,7 +94,7 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 	guid := pod.Labels[k8s.LabelGUID]
 	logger = logger.WithData(lager.Data{"guid": guid})
 
-	jobsForPods, err := r.jobs.GetByGUID(guid)
+	jobsForPods, err := r.jobs.GetByGUID(guid, true)
 	if err != nil {
 		logger.Error("failed to get related job by guid", err)
 
