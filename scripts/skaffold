@@ -38,6 +38,8 @@ init_helm() {
   kubectl apply -f "$HOME/workspace/eirini-ci/k8s-specs/tiller-service-account.yml"
   kubectl apply -f "$HOME/workspace/eirini-ci/k8s-specs/restricted-psp.yaml"
   helm init --service-account tiller --upgrade --wait
+  helm repo add bitnami https://charts.bitnami.com/bitnami
+  helm repo update
 }
 
 revert_manifest_shas() {
