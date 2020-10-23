@@ -4,4 +4,4 @@ set -eu
 
 component=$1
 
-docker build . --file docker/$component/Dockerfile --build-arg GIT_SHA=$(git rev-parse HEAD)-dirty --tag $IMAGE
+DOCKER_BUILDKIT=1 docker build . --file docker/$component/Dockerfile --build-arg GIT_SHA=$(git rev-parse HEAD)-dirty --tag $IMAGE
