@@ -10,7 +10,7 @@ REVISION := $(shell git -C $(EIRINI_DIR) rev-parse HEAD)
 all: $(IMAGES)
 
 $(IMAGES):
-	docker build $(EIRINI_DIR) \
+	DOCKER_BUILDKIT=1 docker build $(EIRINI_DIR) \
 		--file "$(DOCKER_DIR)/$@/Dockerfile" \
 		--build-arg GIT_SHA=$(REVISION) \
 		--tag "eirini/$@:$(TAG)"
