@@ -6,7 +6,11 @@ IFS=$'\n\t'
 RUN_DIR="$(cd "$(dirname "$0")" && pwd)"
 EIRINI_RELEASE_DIR="$RUN_DIR/../../eirini-release"
 EIRINI_DIR="$RUN_DIR/.."
-EIRINIUSER_PASSWORD="$(pass eirini/docker-hub)"
+
+EIRINIUSER_PASSWORD=""
+if command -v pass &>/dev/null; then
+  EIRINIUSER_PASSWORD="$(pass eirini/docker-hub)"
+fi
 
 export TELEPRESENCE_EXPOSE_PORT_START=10000
 export TELEPRESENCE_SERVICE_NAME
