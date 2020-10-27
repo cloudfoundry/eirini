@@ -38,6 +38,14 @@ Eirini is composed of:
 - `task-reporter`: A Kubernetes reconciler that reports the outcome of _non-staging_ tasks to the [Cloud Controller](https://github.com/cloudfoundry/cloud_controller_ng/) and deletes the underlying Kubernetes Jobs after a configurable TTL has elapsed.
 - `eirini-controller`: A Kubernetes reconciler that acts on create/delete/update operations on Eirini's own Custom Resouce Definitions (CRDs). This is still experimental.
 
+## CI Pipelines
+
+We use Concourse. Our pipelines can be found [here](https://jetson.eirini.cf-app.com/).
+
+## Contributing
+
+Please read [CONTRIBUTING.md](.github/contributing.md) for details.
+
 ## Have a question or feedback? Reach out to us!
 
 We can be found in our Slack channel [#eirini-dev](https://cloudfoundry.slack.com/archives/C8RU3BZ26) in the Cloud Foundry workspace. Please hit us up with any questions you may have or to share your experience with Eirini!
