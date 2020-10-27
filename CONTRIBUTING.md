@@ -6,11 +6,11 @@ Thank you for taking the time to contribute to Eirini. You can find more informa
 1. [CI pipeline](https://jetson.eirini.cf-app.com/teams/main/pipelines/ci)
 1. [Project page](https://www.cloudfoundry.org/project-eirini/)
 
-# How to contribute
+## How to contribute
 
 ### Submitting a bug report
 
-We use PivotalTracker to track bugs and a story is automatically created when you submit an issue on GitHub. To create the issue please use the following [template](ISSUE_TEMPLATE.md).
+We use PivotalTracker to track bugs and a story is automatically created when you submit an issue on GitHub.
 
 ### Submitting a pull request
 
@@ -27,40 +27,18 @@ Pull requests are the best way to propose changes to the codebase. When a Pull r
 1. Push your feature branch to your fork
 1. Issue a Pull request
 
-# Tests & static checks
+## Tests & static checks
 
 Before you submit a Pull request, you must make sure that your contribution meets the following requirements:
+
 * Your change has been well covered by unit tests (if applicable)
 * All tests are passing
 * All static code checks are passing. We enforce that by using [golangci-lint](https://github.com/golangci/golangci-lint#install)
 
 You can check all that by executing the following script:
 
-`$ INTEGRATION_KUBECONFIG=<path-to-your-kubeconfig> ./scripts/check-everything.sh`
+```
+$ ./scripts/check-everything.sh
+```
 
-# Deploy your patched version of Eirini
-
-1. Build image:
-
-  ```
-  docker build . -f "docker/opi/Dockerfile" \
-    --build-arg GIT_SHA=doesnt-matter-for-testing
-  ```
-
-1. Push the image
-1. Set the deployment image to the new one:
-
-  ```
-  kubectl set image -n $namespace deployment/eirini opi=<your image>
-  ```
-
-1. Wait for the deployment to finish:
-
-  ```
-  kubectl rollout status -n $namespace deployment eirini
-  ```
-
-1. PROFIT
-
-Thanks,<br/>
-The Eirini team :heart:
+Our test scripts depend on [`telepresence`](https://www.telepresence.io/), [`kind`](https://kind.sigs.k8s.io/), and [`skaffold`](https://skaffold.dev/).
