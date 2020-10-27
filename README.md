@@ -1,3 +1,10 @@
+<p align="center">
+  <img src="logo.jpg" alt="Eirini">
+</p>
+
+<!-- A spacer -->
+<div>&nbsp;</div>
+
 [![Build Status](https://travis-ci.org/cloudfoundry-incubator/eirini.svg?branch=master)](https://travis-ci.org/cloudfoundry-incubator/eirini)
 
 # What is Eirini?
