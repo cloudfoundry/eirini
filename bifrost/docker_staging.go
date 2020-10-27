@@ -134,7 +134,7 @@ func parseExposedPorts(imageConfig *v1.ImageConfig) ([]port, error) {
 	for imagePort := range imageConfig.ExposedPorts {
 		_, err := fmt.Sscanf(imagePort, "%d/%s", &portNum, &protocol)
 		if err != nil {
-			return []port{}, err
+			return []port{}, errors.Wrap(err, "")
 		}
 
 		ports = append(ports, port{

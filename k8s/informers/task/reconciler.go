@@ -84,7 +84,7 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 
 		logger.Error("failed to get pod", err)
 
-		return reconcile.Result{}, err
+		return reconcile.Result{}, errors.Wrap(err, "failed to get pod")
 	}
 
 	if !r.taskContainerHasTerminated(logger, pod) {
@@ -98,7 +98,7 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 	if err != nil {
 		logger.Error("failed to get related job by guid", err)
 
-		return reconcile.Result{}, err
+		return reconcile.Result{}, errors.Wrap(err, "failed to get related job by guid")
 	}
 
 	if len(jobsForPods) == 0 {
@@ -123,9 +123,11 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 		return reconcile.Result{RequeueAfter: time.Duration(r.ttlSeconds) * time.Second}, nil
 	}
 
-	_, err = r.deleter.Delete(guid)
+	if _, err = r.deleter.Delete(guid); err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to delete job")
+	}
 
-	return reconcile.Result{}, err
+	return reconcile.Result{}, nil
 }
 
 func (r *Reconciler) reportIfRequired(pod *corev1.Pod) error {
@@ -149,7 +151,7 @@ func (r *Reconciler) reportIfRequired(pod *corev1.Pod) error {
 	}
 
 	if _, updateErr := r.pods.SetAnnotation(pod, k8s.AnnotationCCAckedTaskCompletion, k8s.TaskCompletedTrue); updateErr != nil {
-		return updateErr
+		return errors.Wrap(updateErr, "failed to set task completion annotation")
 	}
 
 	return nil

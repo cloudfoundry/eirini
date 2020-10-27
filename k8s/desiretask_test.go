@@ -637,7 +637,7 @@ var _ = Describe("TaskDesirer", func() {
 			})
 
 			It("returns the error", func() {
-				Expect(err).To(MatchError("get-task-error"))
+				Expect(err).To(MatchError(ContainSubstring("get-task-error")))
 			})
 		})
 
@@ -718,7 +718,7 @@ var _ = Describe("TaskDesirer", func() {
 			})
 
 			It("returns the error", func() {
-				Expect(err).To(MatchError("list-tasks-error"))
+				Expect(err).To(MatchError(ContainSubstring("list-tasks-error")))
 			})
 		})
 	})

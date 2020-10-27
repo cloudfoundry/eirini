@@ -169,7 +169,7 @@ var _ = Describe("StatefulsetDeleteHandler", func() {
 				Expect(log.Message).To(Equal("uri-informer-test.statefulset-delete.failed-to-decode-deleted-user-defined-routes"))
 				Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
 				Expect(log.LogLevel).To(Equal(lager.ERROR))
-				Expect(log.Data).To(HaveKeyWithValue("error", "unexpected end of JSON input"))
+				Expect(log.Data).To(HaveKeyWithValue("error", "failed to unmarshal routes: unexpected end of JSON input"))
 			})
 		})
 	})

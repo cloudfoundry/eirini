@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/lager"
+	exterrors "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -53,7 +54,7 @@ func (t *Task) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	if err != nil {
 		logger.Error("task-get-failed", err)
 
-		return reconcile.Result{}, fmt.Errorf("could not fetch task: %+v", err)
+		return reconcile.Result{}, fmt.Errorf("could not fetch task: %w", err)
 	}
 
 	err = t.taskDesirer.Desire(task.Namespace, toOpiTask(task), t.setOwnerFn(task))
@@ -66,7 +67,7 @@ func (t *Task) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	if err != nil {
 		logger.Error("desire-task-failed", err)
 
-		return reconcile.Result{}, err
+		return reconcile.Result{}, exterrors.Wrap(err, "failed to desire task")
 	}
 
 	logger.Debug("task-desired-successfully")
@@ -78,7 +79,7 @@ func (t *Task) setOwnerFn(task *eiriniv1.Task) func(interface{}) error {
 	return func(resource interface{}) error {
 		obj := resource.(metav1.Object)
 		if err := ctrl.SetControllerReference(task, obj, t.scheme); err != nil {
-			return err
+			return exterrors.Wrap(err, "failed to set controller reference")
 		}
 
 		return nil

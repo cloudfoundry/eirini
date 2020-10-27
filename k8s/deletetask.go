@@ -62,7 +62,7 @@ func (d *TaskDeleter) getJobByGUID(logger lager.Logger, guid string) (batchv1.Jo
 	if err != nil {
 		logger.Error("failed-to-list-jobs", err)
 
-		return batchv1.Job{}, err
+		return batchv1.Job{}, errors.Wrap(err, "failed to list jobs")
 	}
 
 	if len(jobs) != 1 {
@@ -88,7 +88,7 @@ func (d *TaskDeleter) delete(logger lager.Logger, job batchv1.Job) (string, erro
 	if err := d.jobClient.Delete(job.Namespace, job.Name); err != nil {
 		logger.Error("failed-to-delete-job", err)
 
-		return "", err
+		return "", errors.Wrap(err, "failed to delete job")
 	}
 
 	return callbackURL, nil

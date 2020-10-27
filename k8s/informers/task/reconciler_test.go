@@ -184,7 +184,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 		})
 
 		It("returns the error", func() {
-			Expect(reconcileErr).To(MatchError("fetch-pod-error"))
+			Expect(reconcileErr).To(MatchError(ContainSubstring("fetch-pod-error")))
 		})
 
 		It("does not call the task reporter", func() {
@@ -236,7 +236,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 		})
 
 		It("returns the error", func() {
-			Expect(reconcileErr).To(MatchError("fetch-job-failure"))
+			Expect(reconcileErr).To(MatchError(ContainSubstring("fetch-job-failure")))
 		})
 
 		It("does not call the task reporter", func() {
@@ -372,7 +372,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(reconcileErr).To(MatchError("delete-task-failure"))
+			Expect(reconcileErr).To(MatchError(ContainSubstring("delete-task-failure")))
 		})
 	})
 

@@ -11,6 +11,7 @@ import (
 	"code.cloudfoundry.org/eirini/util"
 	eirinix "code.cloudfoundry.org/eirinix"
 	"code.cloudfoundry.org/lager"
+	exterrors "github.com/pkg/errors"
 	"k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -59,7 +60,7 @@ func (i InstanceIndexEnvInjector) Handle(ctx context.Context, eiriniManager eiri
 func injectInstanceIndex(logger lager.Logger, pod *corev1.Pod) error {
 	index, err := util.ParseAppIndex(pod.Name)
 	if err != nil {
-		return err
+		return exterrors.Wrap(err, "failed to parse app index")
 	}
 
 	for c := range pod.Spec.Containers {

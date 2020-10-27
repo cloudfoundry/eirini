@@ -7,6 +7,7 @@ import (
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 	set "github.com/deckarep/golang-set"
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,7 +65,7 @@ func getChildrenPods(podClient typedv1.PodInterface, st *appsv1.StatefulSet) ([]
 
 	podlist, err := podClient.List(context.Background(), opts)
 	if err != nil {
-		return []corev1.Pod{}, err
+		return []corev1.Pod{}, errors.Wrap(err, "failed to list pods")
 	}
 
 	return podlist.Items, nil

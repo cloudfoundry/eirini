@@ -135,7 +135,7 @@ func (d *TaskDesirer) Desire(namespace string, task *opi.Task, opts ...DesireOpt
 	if err != nil {
 		logger.Error("failed-to-create-job", err)
 
-		return err
+		return errors.Wrap(err, "failed to create job")
 	}
 
 	return nil
@@ -148,7 +148,7 @@ func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 	if err != nil {
 		logger.Error("failed-to-create-job", err)
 
-		return err
+		return errors.Wrap(err, "failed to create job")
 	}
 
 	return nil
@@ -157,7 +157,7 @@ func (d *TaskDesirer) DesireStaging(task *opi.StagingTask) error {
 func (d *TaskDesirer) Get(taskGUID string) (*opi.Task, error) {
 	jobs, err := d.jobClient.GetByGUID(taskGUID, false)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get job")
 	}
 
 	switch len(jobs) {
@@ -173,7 +173,7 @@ func (d *TaskDesirer) Get(taskGUID string) (*opi.Task, error) {
 func (d *TaskDesirer) List() ([]*opi.Task, error) {
 	jobs, err := d.jobClient.List(false)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to list jobs")
 	}
 
 	tasks := make([]*opi.Task, 0, len(jobs))

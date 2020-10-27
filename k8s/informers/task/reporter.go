@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -27,7 +28,7 @@ func (r StateReporter) Report(pod *corev1.Pod) error {
 	if err := utils.Post(r.Client, uri, req); err != nil {
 		logger.Error("cannot-send-task-status-response", err)
 
-		return err
+		return errors.Wrap(err, "failed to complete task")
 	}
 
 	return nil

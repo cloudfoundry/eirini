@@ -45,11 +45,9 @@ linters:
     # makes vim.coc report errors very slowly, or not at all. If we decide to
     # enable them back we should also make sure that they work in our vim configs.
     - gofumpt
-    # the following are temporarily disabled so CI is functional
-    # review later!
-    - errorlint
+    # exhaustivestruct is meant for special checking only. It verifies that
+    # all fields are set in struct construction, and so is not useful for us
     - exhaustivestruct
-    - wrapcheck
 
 issues:
   exclude-use-default: true
@@ -60,6 +58,7 @@ issues:
       - dupl
       - gomnd
       - gochecknoglobals
+      - wrapcheck
     - path: _suite_test\.go
       linters:
       - gochecknoglobals
@@ -76,6 +75,9 @@ issues:
     - path: tests/eats/eats_suite_test.go
       linters:
       - gosec
+    - path: tests
+      linters:
+      - wrapcheck
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 

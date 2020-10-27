@@ -276,7 +276,7 @@ var _ = Describe("ForwardMetricsToEmitter", func() {
 		collector := new(k8sfakes.FakeMetricsCollector)
 		collector.CollectReturns(nil, errors.New("oopsie"))
 
-		Expect(k8s.ForwardMetricsToEmitter(collector, emitter)).To(MatchError("oopsie"))
+		Expect(k8s.ForwardMetricsToEmitter(collector, emitter)).To(MatchError(ContainSubstring("oopsie")))
 	})
 })
 

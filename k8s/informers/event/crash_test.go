@@ -143,7 +143,7 @@ var _ = Describe("Event", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).To(MatchError("get-pod-error"))
+			Expect(err).To(MatchError(ContainSubstring("get-pod-error")))
 		})
 
 		It("does not emit an event", func() {
@@ -157,7 +157,7 @@ var _ = Describe("Event", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(err).To(MatchError("emit-error"))
+			Expect(err).To(MatchError(ContainSubstring("emit-error")))
 		})
 	})
 })

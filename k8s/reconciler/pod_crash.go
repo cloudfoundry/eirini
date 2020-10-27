@@ -73,7 +73,7 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 
 		logger.Error("failed to get pod", err)
 
-		return reconcile.Result{}, err
+		return reconcile.Result{}, errors.Wrap(err, "failed to get pod")
 	}
 
 	crashEvent, shouldCreate := r.crashEventGenerator.Generate(pod, logger)
@@ -92,7 +92,7 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 	if err != nil {
 		logger.Error("failed-to-get-stateful-set", err)
 
-		return reconcile.Result{}, err
+		return reconcile.Result{}, errors.Wrap(err, "failed to get stateful set")
 	}
 
 	lrpRef, err := r.getOwner(statefulSet, lrpKind)
@@ -106,7 +106,7 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 	if err != nil {
 		logger.Error("failed-to-get-existing-event", err)
 
-		return reconcile.Result{}, err
+		return reconcile.Result{}, errors.Wrap(err, "failed to get existing event")
 	}
 
 	if kubeEvent != nil {

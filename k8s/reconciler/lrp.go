@@ -71,7 +71,7 @@ func (r *LRP) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 
 		logger.Error("failed-to-get-lrp", err)
 
-		return reconcile.Result{}, err
+		return reconcile.Result{}, errors.Wrap(err, "failed to get lrp")
 	}
 
 	err := r.do(lrp)
@@ -124,7 +124,7 @@ func (r *LRP) updateStatus(lrp *eiriniv1.LRP, appLRP *opi.LRP) error {
 
 	st, err := r.statefulsetGetter.Get(lrp.Namespace, statefulSetName)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get stateful set")
 	}
 
 	lrp.Status.Replicas = st.Status.ReadyReplicas
@@ -136,7 +136,7 @@ func (r *LRP) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {
 	return func(resource interface{}) error {
 		obj := resource.(metav1.Object)
 		if err := ctrl.SetControllerReference(lrp, obj, r.scheme); err != nil {
-			return err
+			return errors.Wrap(err, "failed to set controller reference")
 		}
 
 		return nil
@@ -146,13 +146,13 @@ func (r *LRP) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {
 func toOpiLrp(lrp *eiriniv1.LRP) (*opi.LRP, error) {
 	opiLrp := &opi.LRP{}
 	if err := copier.Copy(opiLrp, lrp.Spec); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to copy lrp spec")
 	}
 
 	opiLrp.TargetInstances = lrp.Spec.Instances
 
 	if err := copier.Copy(&opiLrp.AppURIs, lrp.Spec.AppRoutes); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to copy app routes")
 	}
 
 	return opiLrp, nil

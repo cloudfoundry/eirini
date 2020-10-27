@@ -32,7 +32,7 @@ func NewPod(clientSet kubernetes.Interface, workloadsNamespace string, enableMul
 func (c *Pod) GetAll() ([]corev1.Pod, error) {
 	podList, err := c.clientSet.CoreV1().Pods(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to list pods")
 	}
 
 	return podList.Items, nil
@@ -47,7 +47,7 @@ func (c *Pod) GetByLRPIdentifier(id opi.LRPIdentifier) ([]corev1.Pod, error) {
 		),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to list pods by lrp identifier")
 	}
 
 	return podList.Items, nil
@@ -110,7 +110,7 @@ func (c *StatefulSet) GetBySourceType(sourceType string) ([]appsv1.StatefulSet, 
 		LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelSourceType, sourceType),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to list statefulsets by resource type")
 	}
 
 	return statefulSetList.Items, nil
@@ -125,7 +125,7 @@ func (c *StatefulSet) GetByLRPIdentifier(id opi.LRPIdentifier) ([]appsv1.Statefu
 		),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to list statefulsets by lrp identifier")
 	}
 
 	return statefulSetList.Items, nil
@@ -191,7 +191,7 @@ func (c *Job) GetByGUID(guid string, includeCompleted bool) ([]batchv1.Job, erro
 	listOpts := metav1.ListOptions{LabelSelector: labelSelector}
 	jobs, err := c.clientSet.BatchV1().Jobs(c.workloadsNamespace).List(context.Background(), listOpts)
 
-	return jobs.Items, err
+	return jobs.Items, errors.Wrap(err, "failed to list jobs by guid")
 }
 
 func (c *Job) List(includeCompleted bool) ([]batchv1.Job, error) {
@@ -204,7 +204,7 @@ func (c *Job) List(includeCompleted bool) ([]batchv1.Job, error) {
 	listOpts := metav1.ListOptions{LabelSelector: labelSelector}
 	jobs, err := c.clientSet.BatchV1().Jobs(c.workloadsNamespace).List(context.Background(), listOpts)
 
-	return jobs.Items, err
+	return jobs.Items, errors.Wrap(err, "failed to list jobs")
 }
 
 func (c *Job) SetLabel(job *batchv1.Job, label, value string) (*batchv1.Job, error) {
@@ -271,7 +271,7 @@ func (c *Event) GetByPod(pod corev1.Pod) ([]corev1.Event, error) {
 		),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to list pod events")
 	}
 
 	return eventList.Items, nil

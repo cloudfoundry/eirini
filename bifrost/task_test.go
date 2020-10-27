@@ -155,7 +155,7 @@ var _ = Describe("Buildpack task", func() {
 			})
 
 			It("fails", func() {
-				Expect(err).To(MatchError("task-error"))
+				Expect(err).To(MatchError(ContainSubstring("task-error")))
 			})
 		})
 	})
@@ -189,7 +189,7 @@ var _ = Describe("Buildpack task", func() {
 			})
 
 			It("fails", func() {
-				Expect(err).To(MatchError("list-tasks-error"))
+				Expect(err).To(MatchError(ContainSubstring("list-tasks-error")))
 			})
 		})
 

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/pkg/errors"
 )
 
 type RetryableJSONClient struct {
@@ -33,7 +34,7 @@ func NewRetryableJSONClient(httpClient *http.Client) *RetryableJSONClient {
 func (c *RetryableJSONClient) Post(url string, data interface{}) error {
 	jsonBody, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to marshal json body")
 	}
 
 	resp, err := c.httpClient.Post(url, "application/json", jsonBody)

@@ -48,7 +48,7 @@ type Task struct {
 func (t *Task) GetTask(taskGUID string) (cf.TaskResponse, error) {
 	task, err := t.TaskDesirer.Get(taskGUID)
 	if err != nil {
-		return cf.TaskResponse{}, err
+		return cf.TaskResponse{}, errors.Wrap(err, "failed to get task")
 	}
 
 	return cf.TaskResponse{GUID: task.GUID}, nil
@@ -57,7 +57,7 @@ func (t *Task) GetTask(taskGUID string) (cf.TaskResponse, error) {
 func (t *Task) ListTasks() (cf.TasksResponse, error) {
 	tasks, err := t.TaskDesirer.List()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to list tasks")
 	}
 
 	tasksResp := cf.TasksResponse{}

@@ -5,6 +5,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/lager"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -67,7 +68,7 @@ func (c *CrashReconciler) Reconcile(request reconcile.Request) (reconcile.Result
 
 		logger.Error("failed-to-get-pod", err)
 
-		return reconcile.Result{}, err
+		return reconcile.Result{}, errors.Wrap(err, "failed to get pod")
 	}
 
 	event, send := c.eventGenerator.Generate(pod, c.logger)
@@ -83,7 +84,7 @@ func (c *CrashReconciler) Reconcile(request reconcile.Request) (reconcile.Result
 	if err != nil {
 		logger.Error("failed-to-emit-event", err)
 
-		return reconcile.Result{}, err
+		return reconcile.Result{}, errors.Wrap(err, "failed to emit event")
 	}
 
 	logger.Info("emitted-event")

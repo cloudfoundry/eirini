@@ -220,7 +220,7 @@ func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 	if err != nil && !k8serrors.IsNotFound(err) {
 		logger.Error("failed-to-delete-disruption-budget", err)
 
-		return err
+		return errors.Wrap(err, "failed to delete pod disruption budget")
 	}
 
 	err = m.deletePrivateRegistrySecret(statefulSet)
@@ -233,7 +233,7 @@ func (m *StatefulSetDesirer) stop(identifier opi.LRPIdentifier) error {
 	if err := m.StatefulSets.Delete(statefulSet.Namespace, statefulSet.Name); err != nil {
 		logger.Error("failed-to-delete-statefulset", err)
 
-		return err
+		return errors.Wrap(err, "failed to delete statefulset")
 	}
 
 	return nil
@@ -313,7 +313,7 @@ func (m *StatefulSetDesirer) update(lrp *opi.LRP) error {
 	if err != nil {
 		logger.Error("failed-to-update-statefulset", err, lager.Data{"namespace": statefulSet.Namespace})
 
-		return err
+		return errors.Wrap(err, "failed to update statefulset")
 	}
 
 	return m.handlePodDisruptionBudget(logger,
@@ -365,7 +365,7 @@ func (m *StatefulSetDesirer) getStatefulSet(identifier opi.LRPIdentifier) (*apps
 
 func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
 	logger := m.Logger.Session("get-instance", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
-	if _, err := m.getLRP(logger, identifier); err == eirini.ErrNotFound {
+	if _, err := m.getLRP(logger, identifier); errors.Is(err, eirini.ErrNotFound) {
 		return nil, err
 	}
 
@@ -394,7 +394,7 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 		if err != nil {
 			logger.Error("failed-to-parse-app-index", err)
 
-			return nil, err
+			return nil, errors.Wrap(err, "failed to parse pod index")
 		}
 
 		since := int64(0)
@@ -434,7 +434,7 @@ func (m *StatefulSetDesirer) createPodDisruptionBudget(namespace, statefulSetNam
 			},
 		})
 
-		return err
+		return errors.Wrap(err, "failed to create pod distruption budget")
 	}
 
 	return nil
@@ -738,7 +738,7 @@ func (m *StatefulSetDesirer) handlePodDisruptionBudget(logger lager.Logger, name
 		if err != nil && !k8serrors.IsNotFound(err) {
 			logger.Error("failed-to-delete-disruption-budget", err, lager.Data{"namespace": namespace})
 
-			return err
+			return errors.Wrap(err, "failed to delete pod disruption budget")
 		}
 
 		return nil

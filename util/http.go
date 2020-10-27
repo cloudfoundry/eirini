@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"code.cloudfoundry.org/tlsconfig"
+	"github.com/pkg/errors"
 )
 
 type CertPaths struct {
@@ -21,7 +22,7 @@ func CreateTLSHTTPClient(certPaths []CertPaths) (*http.Client, error) {
 
 	tlsConfig, err := tlsconfig.Build(tlsOpts...).Client(tlsClientOpts...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to build tls config")
 	}
 
 	return &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}, nil

@@ -3,6 +3,7 @@ package wiremock
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -125,7 +126,8 @@ func retryOnTemporaryError(fn func() (*http.Response, error), times int, wait ti
 		return resp, err
 	}
 
-	if nerr, ok := err.(net.Error); ok && nerr.Temporary() {
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Temporary() {
 		time.Sleep(wait)
 
 		return retryOnTemporaryError(fn, times-1, wait)

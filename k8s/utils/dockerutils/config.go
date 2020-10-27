@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+
+	"github.com/pkg/errors"
 )
 
 const DockerConfigKey string = ".dockerconfigjson"
@@ -35,7 +37,7 @@ func NewDockerConfig(host, user, password string) *Config {
 func (c *Config) JSON() (string, error) {
 	jsonBytes, err := json.Marshal(c)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to marshal docker config json")
 	}
 
 	return string(jsonBytes), nil

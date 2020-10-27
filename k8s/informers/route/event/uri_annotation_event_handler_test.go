@@ -556,7 +556,7 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 			Expect(log.Message).To(Equal("uri-informer-test.statefulset-update.failed-to-decode-updated-user-defined-routes"))
 			Expect(log.LogLevel).To(Equal(lager.ERROR))
 			Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
-			Expect(log.Data).To(HaveKeyWithValue("error", "unexpected end of JSON input"))
+			Expect(log.Data).To(HaveKeyWithValue("error", "failed to unmarshal routes: unexpected end of JSON input"))
 		})
 	})
 
@@ -616,7 +616,7 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 			Expect(log.Message).To(Equal("uri-informer-test.statefulset-update.failed-to-decode-old-user-defined-routes"))
 			Expect(log.LogLevel).To(Equal(lager.ERROR))
 			Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
-			Expect(log.Data).To(HaveKeyWithValue("error", "unexpected end of JSON input"))
+			Expect(log.Data).To(HaveKeyWithValue("error", "failed to unmarshal routes: unexpected end of JSON input"))
 		})
 	})
 
@@ -654,7 +654,7 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 			Expect(log.Message).To(Equal("uri-informer-test.statefulset-update.failed-to-get-child-pods"))
 			Expect(log.Data).To(HaveKeyWithValue("guid", "myguid"))
 			Expect(log.LogLevel).To(Equal(lager.ERROR))
-			Expect(log.Data).To(HaveKeyWithValue("error", "listing pods went boom"))
+			Expect(log.Data).To(HaveKeyWithValue("error", "failed to list pods: listing pods went boom"))
 		})
 	})
 

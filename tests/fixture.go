@@ -3,6 +3,7 @@ package tests
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -193,7 +194,7 @@ func consumeRequest(request rest.ResponseWrapper, out io.Writer) error {
 		}
 
 		if err != nil {
-			if err != io.EOF {
+			if !errors.Is(err, io.EOF) {
 				return err
 			}
 

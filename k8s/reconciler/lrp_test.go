@@ -191,7 +191,7 @@ var _ = Describe("reconciler.LRP", func() {
 		})
 
 		It("returns an error", func() {
-			Expect(resultErr).To(MatchError("boom"))
+			Expect(resultErr).To(MatchError(ContainSubstring("boom")))
 		})
 	})
 

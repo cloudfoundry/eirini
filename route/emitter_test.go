@@ -107,7 +107,7 @@ var _ = Describe("MessageEmitter", func() {
 			It("prints an informative message that registration failed", func() {
 				messageEmitter.Emit(routes)
 				Expect(logger.Buffer()).To(gbytes.Say(`"message":"test-logger.failed-to-publish-registered-route"`))
-				Expect(logger.Buffer()).To(gbytes.Say(`"error":"Failed to publish message"`))
+				Expect(logger.Buffer()).To(gbytes.Say(`"error":".*Failed to publish message"`))
 			})
 
 			It("should publish the unregistered routes", func() {
@@ -118,7 +118,7 @@ var _ = Describe("MessageEmitter", func() {
 			It("prints an informative message that unregistration failed", func() {
 				messageEmitter.Emit(routes)
 				Expect(logger.Buffer()).To(gbytes.Say(`"message":"test-logger.failed-to-publish-unregistered-route"`))
-				Expect(logger.Buffer()).To(gbytes.Say(`"error":"Failed to publish message"`))
+				Expect(logger.Buffer()).To(gbytes.Say(`"error":".*Failed to publish message"`))
 			})
 		})
 	})

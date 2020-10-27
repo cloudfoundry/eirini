@@ -115,7 +115,7 @@ func decodeRoutes(s string) ([]cf.Route, error) {
 	routes := []cf.Route{}
 	err := json.Unmarshal([]byte(s), &routes)
 
-	return routes, err
+	return routes, errors.Wrap(err, "failed to unmarshal routes")
 }
 
 func markedForDeletion(pod corev1.Pod) bool {

@@ -69,7 +69,7 @@ func (s *CallbackStagingCompleter) getCallbackURI(taskCompletedRequest cf.Stagin
 	if err := json.Unmarshal([]byte(taskCompletedRequest.Annotation), &annotation); err != nil {
 		s.logger.Error("failed-to-parse-annotation", err)
 
-		return "", err
+		return "", errors.Wrap(err, "failed to parse annotation")
 	}
 
 	return annotation.CompletionCallback, nil

@@ -34,7 +34,7 @@ type Emitter interface {
 func ForwardMetricsToEmitter(collector MetricsCollector, emitter Emitter) error {
 	messages, err := collector.Collect()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to collect metrics")
 	}
 
 	for _, m := range messages {
@@ -133,7 +133,7 @@ func parseMetrics(metric v1beta1.PodMetrics) (cpu float64, memory float64) {
 func (c *metricsCollector) getPodMetrics() (map[string]v1beta1.PodMetrics, error) {
 	metricsList, err := c.metricsClient.List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to list metrics")
 	}
 
 	metricsMap := make(map[string]v1beta1.PodMetrics)

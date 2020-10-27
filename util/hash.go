@@ -5,6 +5,8 @@ package util
 import (
 	"crypto/sha256"
 	"encoding/hex"
+
+	"github.com/pkg/errors"
 )
 
 const MaxHashLength = 10
@@ -14,7 +16,7 @@ func Hash(s string) (string, error) {
 
 	_, err := sha.Write([]byte(s))
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to calculate sha")
 	}
 
 	hash := hex.EncodeToString(sha.Sum(nil))

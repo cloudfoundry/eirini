@@ -166,7 +166,7 @@ var _ = Describe("TaskDeleter", func() {
 
 			It("should return an error", func() {
 				_, err := deleter.Delete(taskGUID)
-				Expect(err).To(MatchError("failed to list jobs"))
+				Expect(err).To(MatchError(ContainSubstring("failed to list jobs")))
 				Expect(jobClient.GetByGUIDCallCount()).To(Equal(1))
 				Expect(jobClient.DeleteCallCount()).To(BeZero())
 			})
@@ -261,7 +261,7 @@ var _ = Describe("TaskDeleter", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(deleter.DeleteStaging(taskGUID)).To(MatchError("failed to list jobs"))
+				Expect(deleter.DeleteStaging(taskGUID)).To(MatchError(ContainSubstring("failed to list jobs")))
 				Expect(jobClient.GetByGUIDCallCount()).To(Equal(1))
 				Expect(jobClient.DeleteCallCount()).To(BeZero())
 			})
