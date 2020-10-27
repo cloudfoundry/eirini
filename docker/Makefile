@@ -22,6 +22,7 @@ push-%:
 	docker push eirini/$*:$(TAG)
 
 clean:
+	docker container prune --force
 	docker image prune --force
-	docker rmi $(shell docker image ls --format="{{.Repository}}:{{.Tag}}" --filter=reference="eirini/*")
+	$(foreach img, $(IMAGES), docker rmi eirini/$(img):$(TAG) || true;)
 
