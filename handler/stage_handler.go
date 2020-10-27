@@ -35,7 +35,7 @@ func (s *Stage) Run(resp http.ResponseWriter, req *http.Request, ps httprouter.P
 	var stagingRequest cf.StagingRequest
 	if err := json.NewDecoder(req.Body).Decode(&stagingRequest); err != nil {
 		logger.Error("staging-request-body-decoding-failed", err)
-		writeErrorResponse(resp, http.StatusBadRequest, err)
+		writeErrorResponse(logger, resp, http.StatusBadRequest, err)
 
 		return
 	}
@@ -43,7 +43,7 @@ func (s *Stage) Run(resp http.ResponseWriter, req *http.Request, ps httprouter.P
 	if err := s.stage(stagingGUID, stagingRequest); err != nil {
 		reason := fmt.Sprintf("staging task with guid %s failed to start", stagingGUID)
 		logger.Error("staging-failed", errors.Wrap(err, reason))
-		writeErrorResponse(resp, http.StatusInternalServerError, errors.New(reason))
+		writeErrorResponse(logger, resp, http.StatusInternalServerError, errors.New(reason))
 
 		return
 	}
@@ -83,11 +83,11 @@ func (s *Stage) Complete(res http.ResponseWriter, req *http.Request, ps httprout
 	logger.Info("posted-staging-complete")
 }
 
-func writeErrorResponse(resp http.ResponseWriter, status int, err error) {
+func writeErrorResponse(logger lager.Logger, resp http.ResponseWriter, status int, err error) {
 	resp.WriteHeader(status)
 	encodingErr := json.NewEncoder(resp).Encode(&cf.Error{Message: err.Error()})
 
 	if encodingErr != nil {
-		panic(encodingErr)
+		logger.Error("failed-to-encode-error", encodingErr)
 	}
 }

@@ -101,7 +101,7 @@ var _ = Describe("RouteCollector", func() {
 			})
 
 			It("should exit with a useful error message", func() {
-				Eventually(session).Should(gexec.Exit(2))
+				Eventually(session).Should(gexec.Exit(1))
 				Expect(session.Err).To(gbytes.Say("must set namespace in config when enableMultiNamespaceSupport is not set"))
 			})
 		})

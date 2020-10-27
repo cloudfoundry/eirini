@@ -84,7 +84,7 @@ var _ = Describe("StagingReporter", func() {
 		})
 
 		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(2))
+			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).Should(gbytes.Say(`"Eirini Cert" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
@@ -95,7 +95,7 @@ var _ = Describe("StagingReporter", func() {
 		})
 
 		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(2))
+			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).Should(gbytes.Say(`"Eirini Key" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
@@ -106,7 +106,7 @@ var _ = Describe("StagingReporter", func() {
 		})
 
 		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(2))
+			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).Should(gbytes.Say(`"Eirini CA" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
@@ -127,7 +127,7 @@ var _ = Describe("StagingReporter", func() {
 			})
 
 			It("should exit with a useful error message", func() {
-				Eventually(session).Should(gexec.Exit(2))
+				Eventually(session).Should(gexec.Exit(1))
 				Expect(session.Err).To(gbytes.Say("must set namespace in config when enableMultiNamespaceSupport is not set"))
 			})
 		})

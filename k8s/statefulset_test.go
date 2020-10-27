@@ -484,7 +484,6 @@ var _ = Describe("Statefulset Desirer", func() {
 				Expect(err).To(MatchError(ContainSubstring("multiple statefulsets found for LRP identifier")))
 			})
 		})
-
 	})
 
 	Describe("Update", func() {
@@ -494,7 +493,21 @@ var _ = Describe("Statefulset Desirer", func() {
 		)
 
 		BeforeEach(func() {
+			updatedLRP = &opi.LRP{
+				LRPIdentifier: opi.LRPIdentifier{
+					GUID:    "guid_1234",
+					Version: "version_1234",
+				},
+				AppName:         "baldur",
+				SpaceName:       "space-foo",
+				TargetInstances: 5,
+				LastUpdated:     "now",
+				AppURIs:         []opi.Route{{Hostname: "new-route.io", Port: 6666}},
+				Image:           "new/image",
+			}
+
 			replicas := int32(3)
+
 			st := []appsv1.StatefulSet{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -521,19 +534,6 @@ var _ = Describe("Statefulset Desirer", func() {
 			}
 
 			statefulSetClient.GetByLRPIdentifierReturns(st, nil)
-
-			updatedLRP = &opi.LRP{
-				LRPIdentifier: opi.LRPIdentifier{
-					GUID:    "guid_1234",
-					Version: "version_1234",
-				},
-				AppName:         "baldur",
-				SpaceName:       "space-foo",
-				TargetInstances: 5,
-				LastUpdated:     "now",
-				AppURIs:         []opi.Route{{Hostname: "new-route.io", Port: 6666}},
-				Image:           "new/image",
-			}
 		})
 
 		JustBeforeEach(func() {
@@ -619,7 +619,7 @@ var _ = Describe("Statefulset Desirer", func() {
 				Expect(pdbClient.CreateCallCount()).To(Equal(1))
 				namespace, pdb := pdbClient.CreateArgsForCall(0)
 
-				Expect(pdb.Name).To(Equal("baldur-space-foo-34f869d015"))
+				Expect(pdb.Name).To(Equal("baldur"))
 				Expect(namespace).To(Equal("the-namespace"))
 			})
 
@@ -1137,9 +1137,7 @@ func randStringBytes() string {
 	b := make([]byte, 10)
 	for i := range b {
 		randomNumber, err := rand.Int(rand.Reader, big.NewInt(int64(len(letterBytes))))
-		if err != nil {
-			panic(fmt.Errorf("Could not generate a random number: %w", err))
-		}
+		Expect(err).NotTo(HaveOccurred())
 
 		b[i] = letterBytes[randomNumber.Int64()]
 	}

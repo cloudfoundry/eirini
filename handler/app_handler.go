@@ -232,7 +232,9 @@ func writeUpdateErrorResponse(w http.ResponseWriter, err error, statusCode int, 
 
 	body, marshalError := json.Marshal(response)
 	if marshalError != nil {
-		panic(marshalError)
+		loggerSession.Error("could-not-marshal-response", marshalError)
+
+		return
 	}
 
 	if _, err = w.Write(body); err != nil {

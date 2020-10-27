@@ -40,19 +40,18 @@ func CreateKubeClient(kubeConfigPath string) kubernetes.Interface {
 }
 
 func ExitIfError(err error) {
-	if err != nil {
-		panic(err)
-	}
+	ExitfIfError(err, "an unexpected error occurred")
 }
 
 func ExitfIfError(err error, message string) {
 	if err != nil {
-		Exitf("%s: %s", message, err)
+		fmt.Fprintln(os.Stderr, fmt.Errorf("%s: %w", message, err))
+		os.Exit(1)
 	}
 }
 
 func Exitf(messageFormat string, args ...interface{}) {
-	panic(fmt.Sprintf(messageFormat, args...))
+	ExitIfError(fmt.Errorf(messageFormat, args...))
 }
 
 func GetOrDefault(actualValue, defaultValue string) string {

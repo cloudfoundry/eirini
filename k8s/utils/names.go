@@ -7,6 +7,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/util"
+	"github.com/pkg/errors"
 )
 
 func SanitizeName(name, fallback string) string {
@@ -32,14 +33,14 @@ func truncateString(str string, num int) string {
 	return str
 }
 
-func GetStatefulsetName(lrp *opi.LRP) string {
+func GetStatefulsetName(lrp *opi.LRP) (string, error) {
 	nameSuffix, err := util.Hash(fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version))
 	if err != nil {
-		panic(err)
+		return "", errors.Wrap(err, "failed to generate hash")
 	}
 
 	namePrefix := fmt.Sprintf("%s-%s", lrp.AppName, lrp.SpaceName)
 	namePrefix = SanitizeName(namePrefix, lrp.GUID)
 
-	return fmt.Sprintf("%s-%s", namePrefix, nameSuffix)
+	return fmt.Sprintf("%s-%s", namePrefix, nameSuffix), nil
 }

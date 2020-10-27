@@ -14,6 +14,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/tlsconfig"
 	ginkgoconfig "github.com/onsi/ginkgo/config"
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -44,9 +45,8 @@ func namespaceExists(namespace string, clientset kubernetes.Interface) bool {
 func createNamespace(namespace string, clientset kubernetes.Interface) {
 	namespaceSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
 
-	if _, err := clientset.CoreV1().Namespaces().Create(context.Background(), namespaceSpec, metav1.CreateOptions{}); err != nil {
-		panic(err)
-	}
+	_, err := clientset.CoreV1().Namespaces().Create(context.Background(), namespaceSpec, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred())
 }
 
 func CreatePodCreationPSP(namespace, pspName, serviceAccountName string, clientset kubernetes.Interface) error {
@@ -233,9 +233,7 @@ func CreateConfigFile(config interface{}) (*os.File, error) {
 
 func PathToTestFixture(relativePath string) string {
 	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
+	Expect(err).NotTo(HaveOccurred())
 
 	return fmt.Sprintf("%s/../fixtures/%s", cwd, relativePath)
 }

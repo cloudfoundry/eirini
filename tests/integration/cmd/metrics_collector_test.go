@@ -69,7 +69,7 @@ var _ = Describe("MetricsCollector", func() {
 		})
 
 		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(2))
+			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).Should(gbytes.Say(`"Loggregator CA" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
@@ -80,7 +80,7 @@ var _ = Describe("MetricsCollector", func() {
 		})
 
 		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(2))
+			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).Should(gbytes.Say(`"Loggregator Cert" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
@@ -91,7 +91,7 @@ var _ = Describe("MetricsCollector", func() {
 		})
 
 		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(2))
+			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).Should(gbytes.Say(`"Loggregator Key" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
@@ -102,7 +102,7 @@ var _ = Describe("MetricsCollector", func() {
 		})
 
 		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(2))
+			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).Should(gbytes.Say(`Failed to create loggregator tls config: cannot parse ca cert`))
 		})
 	})
@@ -123,7 +123,7 @@ var _ = Describe("MetricsCollector", func() {
 			})
 
 			It("should exit with a useful error message", func() {
-				Eventually(session).Should(gexec.Exit(2))
+				Eventually(session).Should(gexec.Exit(1))
 				Expect(session.Err).To(gbytes.Say("must set namespace in config when enableMultiNamespaceSupport is not set"))
 			})
 		})

@@ -15,7 +15,8 @@ func main() {
 	http.HandleFunc("/", HelloServer)
 
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, fmt.Errorf("an unexpected error occurred: %w", err))
+		os.Exit(1)
 	}
 }
 

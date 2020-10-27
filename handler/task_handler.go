@@ -31,13 +31,13 @@ func (t *Task) Get(resp http.ResponseWriter, req *http.Request, ps httprouter.Pa
 	if err != nil {
 		if errors.Is(err, eirini.ErrNotFound) {
 			logger.Info("task-not-found")
-			writeErrorResponse(resp, http.StatusNotFound, err)
+			writeErrorResponse(logger, resp, http.StatusNotFound, err)
 
 			return
 		}
 
 		logger.Error("get-task-request-failed", err)
-		writeErrorResponse(resp, http.StatusInternalServerError, err)
+		writeErrorResponse(logger, resp, http.StatusInternalServerError, err)
 
 		return
 	}
@@ -55,14 +55,14 @@ func (t *Task) Run(resp http.ResponseWriter, req *http.Request, ps httprouter.Pa
 	var taskRequest cf.TaskRequest
 	if err := json.NewDecoder(req.Body).Decode(&taskRequest); err != nil {
 		logger.Error("task-request-body-decoding-failed", err)
-		writeErrorResponse(resp, http.StatusBadRequest, err)
+		writeErrorResponse(logger, resp, http.StatusBadRequest, err)
 
 		return
 	}
 
 	if err := t.taskBifrost.TransferTask(req.Context(), taskGUID, taskRequest); err != nil {
 		logger.Error("task-request-task-create-failed", err)
-		writeErrorResponse(resp, http.StatusInternalServerError, err)
+		writeErrorResponse(logger, resp, http.StatusInternalServerError, err)
 
 		return
 	}
@@ -76,7 +76,7 @@ func (t *Task) Cancel(resp http.ResponseWriter, req *http.Request, ps httprouter
 
 	if err := t.taskBifrost.CancelTask(taskGUID); err != nil {
 		logger.Error("task-request-task-delete-failed", err)
-		writeErrorResponse(resp, http.StatusInternalServerError, err)
+		writeErrorResponse(logger, resp, http.StatusInternalServerError, err)
 
 		return
 	}

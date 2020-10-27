@@ -87,7 +87,7 @@ var _ = Describe("TaskReporter", func() {
 		})
 
 		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(2))
+			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).Should(gbytes.Say(`"CC CA" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
@@ -98,7 +98,7 @@ var _ = Describe("TaskReporter", func() {
 		})
 
 		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(2))
+			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).Should(gbytes.Say(`"CC Cert" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})
@@ -109,7 +109,7 @@ var _ = Describe("TaskReporter", func() {
 		})
 
 		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(2))
+			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).Should(gbytes.Say(`"CC Key" file at "/somewhere/over/the/rainbow" does not exist`))
 		})
 	})

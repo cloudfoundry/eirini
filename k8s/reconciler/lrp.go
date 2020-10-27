@@ -117,7 +117,12 @@ func (r *LRP) do(lrp *eiriniv1.LRP) error {
 }
 
 func (r *LRP) updateStatus(lrp *eiriniv1.LRP, appLRP *opi.LRP) error {
-	st, err := r.statefulsetGetter.Get(lrp.Namespace, utils.GetStatefulsetName(appLRP))
+	statefulSetName, err := utils.GetStatefulsetName(appLRP)
+	if err != nil {
+		return err
+	}
+
+	st, err := r.statefulsetGetter.Get(lrp.Namespace, statefulSetName)
 	if err != nil {
 		return err
 	}

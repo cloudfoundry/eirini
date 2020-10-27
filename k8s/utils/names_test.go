@@ -28,7 +28,7 @@ var _ = Describe("Names", func() {
 
 	Describe("GetStatefulsetName", func() {
 		It("calculates the name of an app's backing statefulset", func() {
-			statefulsetName := GetStatefulsetName(&opi.LRP{
+			statefulsetName, err := GetStatefulsetName(&opi.LRP{
 				LRPIdentifier: opi.LRPIdentifier{
 					GUID:    "guid",
 					Version: "version",
@@ -36,12 +36,13 @@ var _ = Describe("Names", func() {
 				AppName:   "app",
 				SpaceName: "space",
 			})
+			Expect(err).NotTo(HaveOccurred())
 			Expect(statefulsetName).To(Equal("app-space-077dc99e95"))
 		})
 
 		When("the prefix is too long", func() {
 			It("calculates the name of an app's backing statefulset", func() {
-				statefulsetName := GetStatefulsetName(&opi.LRP{
+				statefulsetName, err := GetStatefulsetName(&opi.LRP{
 					LRPIdentifier: opi.LRPIdentifier{
 						GUID:    "guid",
 						Version: "version",
@@ -49,6 +50,7 @@ var _ = Describe("Names", func() {
 					AppName:   "very-long-app-name",
 					SpaceName: "space-with-very-very-very-very-very-very-very-very-very-long-name",
 				})
+				Expect(err).NotTo(HaveOccurred())
 				Expect(statefulsetName).To(Equal("very-long-app-name-space-with-very-very--077dc99e95"))
 			})
 		})

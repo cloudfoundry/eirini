@@ -89,7 +89,12 @@ func (l *LRP) Update(ctx context.Context, request cf.UpdateDesiredLRPRequest) er
 
 	lrp.TargetInstances = request.Update.Instances
 	lrp.LastUpdated = request.Update.Annotation
-	lrp.AppURIs = getURIs(request.Update)
+
+	lrp.AppURIs, err = getURIs(request.Update)
+	if err != nil {
+		return err
+	}
+
 	lrp.Image = request.Update.Image
 
 	return errors.Wrap(l.Desirer.Update(lrp), "failed to update")
@@ -152,18 +157,18 @@ func (l *LRP) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([
 	return cfInstances, nil
 }
 
-func getURIs(update cf.DesiredLRPUpdate) []opi.Route {
+func getURIs(update cf.DesiredLRPUpdate) ([]opi.Route, error) {
 	cfRouterRoutes, hasRoutes := update.Routes["cf-router"]
 	if !hasRoutes {
-		return []opi.Route{}
+		return []opi.Route{}, nil
 	}
 
 	var routes []opi.Route
 
 	err := json.Unmarshal(cfRouterRoutes, &routes)
 	if err != nil {
-		panic("This should never happen")
+		return nil, errors.Wrap(err, "failed to unmarshal routes")
 	}
 
-	return routes
+	return routes, nil
 }

@@ -80,10 +80,15 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 		return opi.LRP{}, err
 	}
 
+	routes, err := getRequestedRoutes(request)
+	if err != nil {
+		return opi.LRP{}, err
+	}
+
 	return opi.LRP{
 		AppName:                request.AppName,
 		AppGUID:                request.AppGUID,
-		AppURIs:                getRequestedRoutes(request),
+		AppURIs:                routes,
 		LastUpdated:            request.LastUpdated,
 		OrgName:                request.OrganizationName,
 		OrgGUID:                request.OrganizationGUID,
@@ -241,14 +246,14 @@ func (c *OPIConverter) getImageUser(lifecycle *cf.DockerLifecycle) (string, erro
 	return imgMetadata.User, nil
 }
 
-func getRequestedRoutes(request cf.DesireLRPRequest) []opi.Route {
+func getRequestedRoutes(request cf.DesireLRPRequest) ([]opi.Route, error) {
 	jsonRoutes := request.Routes
 	if jsonRoutes == nil {
-		return []opi.Route{}
+		return []opi.Route{}, nil
 	}
 
 	if _, ok := jsonRoutes["cf-router"]; !ok {
-		return []opi.Route{}
+		return []opi.Route{}, nil
 	}
 
 	cfRouterRoutes := jsonRoutes["cf-router"]
@@ -257,10 +262,10 @@ func getRequestedRoutes(request cf.DesireLRPRequest) []opi.Route {
 
 	err := json.Unmarshal(cfRouterRoutes, &routes)
 	if err != nil {
-		panic("This should never happen!")
+		return nil, err
 	}
 
-	return routes
+	return routes, nil
 }
 
 func (c *OPIConverter) imageURI(dropletGUID, dropletHash string) string {

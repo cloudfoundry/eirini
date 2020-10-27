@@ -128,30 +128,28 @@ type DesireOption func(resource interface{}) error
 func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP, opts ...DesireOption) error {
 	logger := m.Logger.Session("desire", lager.Data{"guid": lrp.GUID, "version": lrp.Version, "namespace": namespace})
 
+	statefulSetName, err := utils.GetStatefulsetName(lrp)
+	if err != nil {
+		return err
+	}
+
 	if lrp.PrivateRegistry != nil {
-		secret, err := m.generateRegistryCredsSecret(lrp)
+		err = m.createRegistryCredsSecret(namespace, statefulSetName, lrp)
 		if err != nil {
-			logger.Error("failed-to-generate-private-registry-secret", err)
-
-			return errors.Wrap(err, "failed to generate private registry secret for statefulset")
-		}
-
-		if _, err := m.Secrets.Create(namespace, secret); err != nil {
-			logger.Error("failed-to-create-private-registry-secret", err)
-
-			return errors.Wrap(err, "failed to create private registry secret for statefulset")
+			return err
 		}
 	}
 
-	st := m.toStatefulSet(lrp)
+	st, err := m.toStatefulSet(statefulSetName, lrp)
+	if err != nil {
+		return err
+	}
+
 	st.Namespace = namespace
 
-	for _, opt := range opts {
-		if err := opt(st); err != nil {
-			logger.Error("failed-to-apply-option", err)
-
-			return errors.Wrap(err, "failed to apply options")
-		}
+	err = applyOpts(st, opts...)
+	if err != nil {
+		return err
 	}
 
 	if _, err := m.StatefulSets.Create(namespace, st); err != nil {
@@ -165,7 +163,7 @@ func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP, opts ...Desi
 		return errors.Wrap(err, "failed to create statefulset")
 	}
 
-	if err := m.createPodDisruptionBudget(namespace, lrp); err != nil {
+	if err := m.createPodDisruptionBudget(namespace, statefulSetName, lrp); err != nil {
 		logger.Error("failed-to-create-pod-disruption-budget", err)
 
 		return errors.Wrap(err, "failed to create pod disruption budget")
@@ -299,12 +297,17 @@ func (m *StatefulSetDesirer) update(lrp *opi.LRP) error {
 		return err
 	}
 
-	updatedStatefulSet := m.getUpdatedStatefulSetObj(statefulSet,
+	updatedStatefulSet, err := m.getUpdatedStatefulSetObj(statefulSet,
 		lrp.AppURIs,
 		lrp.TargetInstances,
 		lrp.LastUpdated,
 		lrp.Image,
 	)
+	if err != nil {
+		logger.Error("failed-to-get-updated-statefulset", err)
+
+		return err
+	}
 
 	_, err = m.StatefulSets.Update(updatedStatefulSet.Namespace, updatedStatefulSet)
 	if err != nil {
@@ -418,12 +421,12 @@ func (m *StatefulSetDesirer) GetInstances(identifier opi.LRPIdentifier) ([]*opi.
 	return instances, nil
 }
 
-func (m *StatefulSetDesirer) createPodDisruptionBudget(namespace string, lrp *opi.LRP) error {
+func (m *StatefulSetDesirer) createPodDisruptionBudget(namespace, statefulSetName string, lrp *opi.LRP) error {
 	if lrp.TargetInstances > 1 {
 		minAvailable := intstr.FromInt(PdbMinAvailableInstances)
 		_, err := m.PodDisruptionBudgets.Create(namespace, &v1beta1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: utils.GetStatefulsetName(lrp),
+				Name: statefulSetName,
 			},
 			Spec: v1beta1.PodDisruptionBudgetSpec{
 				MinAvailable: &minAvailable,
@@ -467,7 +470,7 @@ func (m *StatefulSetDesirer) privateRegistrySecretName(statefulSetName string) s
 	return fmt.Sprintf("%s-registry-credentials", statefulSetName)
 }
 
-func (m *StatefulSetDesirer) generateRegistryCredsSecret(lrp *opi.LRP) (*corev1.Secret, error) {
+func (m *StatefulSetDesirer) generateRegistryCredsSecret(statefulSetName string, lrp *opi.LRP) (*corev1.Secret, error) {
 	dockerConfig := dockerutils.NewDockerConfig(
 		lrp.PrivateRegistry.Server,
 		lrp.PrivateRegistry.Username,
@@ -481,7 +484,7 @@ func (m *StatefulSetDesirer) generateRegistryCredsSecret(lrp *opi.LRP) (*corev1.
 
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: m.privateRegistrySecretName(utils.GetStatefulsetName(lrp)),
+			Name: m.privateRegistrySecretName(statefulSetName),
 		},
 		Type: corev1.SecretTypeDockerConfigJson,
 		StringData: map[string]string{
@@ -490,21 +493,21 @@ func (m *StatefulSetDesirer) generateRegistryCredsSecret(lrp *opi.LRP) (*corev1.
 	}, nil
 }
 
-func (m *StatefulSetDesirer) calculateImagePullSecrets(lrp *opi.LRP) []corev1.LocalObjectReference {
+func (m *StatefulSetDesirer) calculateImagePullSecrets(statefulSetName string, lrp *opi.LRP) []corev1.LocalObjectReference {
 	imagePullSecrets := []corev1.LocalObjectReference{
 		{Name: m.RegistrySecretName},
 	}
 
 	if lrp.PrivateRegistry != nil {
 		imagePullSecrets = append(imagePullSecrets, corev1.LocalObjectReference{
-			Name: m.privateRegistrySecretName(utils.GetStatefulsetName(lrp)),
+			Name: m.privateRegistrySecretName(statefulSetName),
 		})
 	}
 
 	return imagePullSecrets
 }
 
-func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet { //nolint:funlen // this is a boilerplate function, its length is fine
+func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP) (*appsv1.StatefulSet, error) { //nolint:funlen // this is a boilerplate function, its length is fine
 	envs := MapToEnvVar(lrp.Env)
 	fieldEnvs := []corev1.EnvVar{
 		{
@@ -557,17 +560,18 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet { /
 
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
 	allowPrivilegeEscalation := false
+	imagePullSecrets := m.calculateImagePullSecrets(statefulSetName, lrp)
 
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: utils.GetStatefulsetName(lrp),
+			Name: statefulSetName,
 		},
 		Spec: appsv1.StatefulSetSpec{
 			PodManagementPolicy: "Parallel",
 			Replicas:            int32ptr(lrp.TargetInstances),
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
-					ImagePullSecrets: m.calculateImagePullSecrets(lrp),
+					ImagePullSecrets: imagePullSecrets,
 					Containers: []corev1.Container{
 						{
 							Name:            OPIContainerName,
@@ -639,7 +643,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet { /
 
 	uris, err := json.Marshal(lrp.AppURIs)
 	if err != nil {
-		panic("failed to marshal routes")
+		return nil, errors.Wrap(err, "failed to marshal app uris")
 	}
 
 	annotations := map[string]string{
@@ -664,7 +668,7 @@ func (m *StatefulSetDesirer) toStatefulSet(lrp *opi.LRP) *appsv1.StatefulSet { /
 	statefulSet.Spec.Template.Annotations = annotations
 	statefulSet.Spec.Template.Annotations[corev1.SeccompPodAnnotationKey] = corev1.SeccompProfileRuntimeDefault
 
-	return statefulSet
+	return statefulSet, nil
 }
 
 func toLabelSelectorRequirements(selector *metav1.LabelSelector) []metav1.LabelSelectorRequirement {
@@ -740,7 +744,7 @@ func (m *StatefulSetDesirer) handlePodDisruptionBudget(logger lager.Logger, name
 		return nil
 	}
 
-	err := m.createPodDisruptionBudget(namespace, lrp)
+	err := m.createPodDisruptionBudget(namespace, name, lrp)
 
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		logger.Error("failed-to-create-disruption-budget", err, lager.Data{"namespace": namespace})
@@ -751,12 +755,12 @@ func (m *StatefulSetDesirer) handlePodDisruptionBudget(logger lager.Logger, name
 	return nil
 }
 
-func (m *StatefulSetDesirer) getUpdatedStatefulSetObj(sts *appsv1.StatefulSet, routes []opi.Route, instances int, lastUpdated, image string) *appsv1.StatefulSet {
+func (m *StatefulSetDesirer) getUpdatedStatefulSetObj(sts *appsv1.StatefulSet, routes []opi.Route, instances int, lastUpdated, image string) (*appsv1.StatefulSet, error) {
 	updatedSts := sts.DeepCopy()
 
 	uris, err := json.Marshal(routes)
 	if err != nil {
-		panic("failed to marshal routes")
+		return nil, errors.Wrap(err, "failed to marshal routes")
 	}
 
 	count := int32(instances)
@@ -772,5 +776,26 @@ func (m *StatefulSetDesirer) getUpdatedStatefulSetObj(sts *appsv1.StatefulSet, r
 		}
 	}
 
-	return updatedSts
+	return updatedSts, nil
+}
+
+func (m *StatefulSetDesirer) createRegistryCredsSecret(namespace, statefulSetName string, lrp *opi.LRP) error {
+	secret, err := m.generateRegistryCredsSecret(statefulSetName, lrp)
+	if err != nil {
+		return errors.Wrap(err, "failed to generate private registry secret for statefulset")
+	}
+
+	_, err = m.Secrets.Create(namespace, secret)
+
+	return errors.Wrap(err, "failed to create private registry secret for statefulset")
+}
+
+func applyOpts(statefulset *appsv1.StatefulSet, opts ...DesireOption) error {
+	for _, opt := range opts {
+		if err := opt(statefulset); err != nil {
+			return errors.Wrap(err, "failed to apply options")
+		}
+	}
+
+	return nil
 }
