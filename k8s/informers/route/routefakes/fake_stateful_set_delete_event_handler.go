@@ -23,9 +23,10 @@ func (fake *FakeStatefulSetDeleteEventHandler) Handle(arg1 *v1.StatefulSet) {
 	fake.handleArgsForCall = append(fake.handleArgsForCall, struct {
 		arg1 *v1.StatefulSet
 	}{arg1})
+	stub := fake.HandleStub
 	fake.recordInvocation("Handle", []interface{}{arg1})
 	fake.handleMutex.Unlock()
-	if fake.HandleStub != nil {
+	if stub != nil {
 		fake.HandleStub(arg1)
 	}
 }

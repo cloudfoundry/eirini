@@ -23,9 +23,10 @@ func (fake *FakeLoggregatorClient) EmitGauge(arg1 ...loggregator.EmitGaugeOption
 	fake.emitGaugeArgsForCall = append(fake.emitGaugeArgsForCall, struct {
 		arg1 []loggregator.EmitGaugeOption
 	}{arg1})
+	stub := fake.EmitGaugeStub
 	fake.recordInvocation("EmitGauge", []interface{}{arg1})
 	fake.emitGaugeMutex.Unlock()
-	if fake.EmitGaugeStub != nil {
+	if stub != nil {
 		fake.EmitGaugeStub(arg1...)
 	}
 }

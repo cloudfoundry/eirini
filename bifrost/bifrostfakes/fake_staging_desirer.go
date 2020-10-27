@@ -30,15 +30,16 @@ func (fake *FakeStagingDesirer) DesireStaging(arg1 *opi.StagingTask) error {
 	fake.desireStagingArgsForCall = append(fake.desireStagingArgsForCall, struct {
 		arg1 *opi.StagingTask
 	}{arg1})
+	stub := fake.DesireStagingStub
+	fakeReturns := fake.desireStagingReturns
 	fake.recordInvocation("DesireStaging", []interface{}{arg1})
 	fake.desireStagingMutex.Unlock()
-	if fake.DesireStagingStub != nil {
-		return fake.DesireStagingStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.desireStagingReturns
 	return fakeReturns.result1
 }
 

@@ -36,15 +36,16 @@ func (fake *FakeNodeAPI) List(arg1 context.Context, arg2 v1a.ListOptions) (*v1.N
 		arg1 context.Context
 		arg2 v1a.ListOptions
 	}{arg1, arg2})
+	stub := fake.ListStub
+	fakeReturns := fake.listReturns
 	fake.recordInvocation("List", []interface{}{arg1, arg2})
 	fake.listMutex.Unlock()
-	if fake.ListStub != nil {
-		return fake.ListStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

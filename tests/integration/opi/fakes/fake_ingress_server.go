@@ -55,15 +55,16 @@ func (fake *FakeIngressServer) BatchSender(arg1 loggregator_v2.Ingress_BatchSend
 	fake.batchSenderArgsForCall = append(fake.batchSenderArgsForCall, struct {
 		arg1 loggregator_v2.Ingress_BatchSenderServer
 	}{arg1})
+	stub := fake.BatchSenderStub
+	fakeReturns := fake.batchSenderReturns
 	fake.recordInvocation("BatchSender", []interface{}{arg1})
 	fake.batchSenderMutex.Unlock()
-	if fake.BatchSenderStub != nil {
-		return fake.BatchSenderStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.batchSenderReturns
 	return fakeReturns.result1
 }
 
@@ -116,15 +117,16 @@ func (fake *FakeIngressServer) Send(arg1 context.Context, arg2 *loggregator_v2.E
 		arg1 context.Context
 		arg2 *loggregator_v2.EnvelopeBatch
 	}{arg1, arg2})
+	stub := fake.SendStub
+	fakeReturns := fake.sendReturns
 	fake.recordInvocation("Send", []interface{}{arg1, arg2})
 	fake.sendMutex.Unlock()
-	if fake.SendStub != nil {
-		return fake.SendStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.sendReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -179,15 +181,16 @@ func (fake *FakeIngressServer) Sender(arg1 loggregator_v2.Ingress_SenderServer) 
 	fake.senderArgsForCall = append(fake.senderArgsForCall, struct {
 		arg1 loggregator_v2.Ingress_SenderServer
 	}{arg1})
+	stub := fake.SenderStub
+	fakeReturns := fake.senderReturns
 	fake.recordInvocation("Sender", []interface{}{arg1})
 	fake.senderMutex.Unlock()
-	if fake.SenderStub != nil {
-		return fake.SenderStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.senderReturns
 	return fakeReturns.result1
 }
 

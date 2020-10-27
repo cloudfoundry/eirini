@@ -44,15 +44,16 @@ func (fake *FakeStagingBifrost) CompleteStaging(arg1 cf.StagingCompletedRequest)
 	fake.completeStagingArgsForCall = append(fake.completeStagingArgsForCall, struct {
 		arg1 cf.StagingCompletedRequest
 	}{arg1})
+	stub := fake.CompleteStagingStub
+	fakeReturns := fake.completeStagingReturns
 	fake.recordInvocation("CompleteStaging", []interface{}{arg1})
 	fake.completeStagingMutex.Unlock()
-	if fake.CompleteStagingStub != nil {
-		return fake.CompleteStagingStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.completeStagingReturns
 	return fakeReturns.result1
 }
 
@@ -106,15 +107,16 @@ func (fake *FakeStagingBifrost) TransferStaging(arg1 context.Context, arg2 strin
 		arg2 string
 		arg3 cf.StagingRequest
 	}{arg1, arg2, arg3})
+	stub := fake.TransferStagingStub
+	fakeReturns := fake.transferStagingReturns
 	fake.recordInvocation("TransferStaging", []interface{}{arg1, arg2, arg3})
 	fake.transferStagingMutex.Unlock()
-	if fake.TransferStagingStub != nil {
-		return fake.TransferStagingStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.transferStagingReturns
 	return fakeReturns.result1
 }
 

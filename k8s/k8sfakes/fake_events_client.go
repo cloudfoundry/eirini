@@ -32,15 +32,16 @@ func (fake *FakeEventsClient) GetByPod(arg1 v1.Pod) ([]v1.Event, error) {
 	fake.getByPodArgsForCall = append(fake.getByPodArgsForCall, struct {
 		arg1 v1.Pod
 	}{arg1})
+	stub := fake.GetByPodStub
+	fakeReturns := fake.getByPodReturns
 	fake.recordInvocation("GetByPod", []interface{}{arg1})
 	fake.getByPodMutex.Unlock()
-	if fake.GetByPodStub != nil {
-		return fake.GetByPodStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getByPodReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

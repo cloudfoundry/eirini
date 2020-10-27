@@ -35,15 +35,16 @@ func (fake *FakeStagingConverter) ConvertStaging(arg1 string, arg2 cf.StagingReq
 		arg1 string
 		arg2 cf.StagingRequest
 	}{arg1, arg2})
+	stub := fake.ConvertStagingStub
+	fakeReturns := fake.convertStagingReturns
 	fake.recordInvocation("ConvertStaging", []interface{}{arg1, arg2})
 	fake.convertStagingMutex.Unlock()
-	if fake.ConvertStagingStub != nil {
-		return fake.ConvertStagingStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.convertStagingReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

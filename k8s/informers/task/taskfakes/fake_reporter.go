@@ -30,15 +30,16 @@ func (fake *FakeReporter) Report(arg1 *v1.Pod) error {
 	fake.reportArgsForCall = append(fake.reportArgsForCall, struct {
 		arg1 *v1.Pod
 	}{arg1})
+	stub := fake.ReportStub
+	fakeReturns := fake.reportReturns
 	fake.recordInvocation("Report", []interface{}{arg1})
 	fake.reportMutex.Unlock()
-	if fake.ReportStub != nil {
-		return fake.ReportStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.reportReturns
 	return fakeReturns.result1
 }
 

@@ -31,15 +31,16 @@ func (fake *FakeAPI) StatsSummary(arg1 string) (kubelet.StatsSummary, error) {
 	fake.statsSummaryArgsForCall = append(fake.statsSummaryArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.StatsSummaryStub
+	fakeReturns := fake.statsSummaryReturns
 	fake.recordInvocation("StatsSummary", []interface{}{arg1})
 	fake.statsSummaryMutex.Unlock()
-	if fake.StatsSummaryStub != nil {
-		return fake.StatsSummaryStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.statsSummaryReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

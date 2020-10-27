@@ -35,15 +35,16 @@ func (fake *FakeTaskDesirer) Desire(arg1 string, arg2 *opi.Task, arg3 ...k8s.Des
 		arg2 *opi.Task
 		arg3 []k8s.DesireOption
 	}{arg1, arg2, arg3})
+	stub := fake.DesireStub
+	fakeReturns := fake.desireReturns
 	fake.recordInvocation("Desire", []interface{}{arg1, arg2, arg3})
 	fake.desireMutex.Unlock()
-	if fake.DesireStub != nil {
-		return fake.DesireStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.desireReturns
 	return fakeReturns.result1
 }
 

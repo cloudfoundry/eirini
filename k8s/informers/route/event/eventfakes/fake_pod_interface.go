@@ -242,15 +242,16 @@ func (fake *FakePodInterface) Bind(arg1 context.Context, arg2 *v1a.Binding, arg3
 		arg2 *v1a.Binding
 		arg3 v1b.CreateOptions
 	}{arg1, arg2, arg3})
+	stub := fake.BindStub
+	fakeReturns := fake.bindReturns
 	fake.recordInvocation("Bind", []interface{}{arg1, arg2, arg3})
 	fake.bindMutex.Unlock()
-	if fake.BindStub != nil {
-		return fake.BindStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.bindReturns
 	return fakeReturns.result1
 }
 
@@ -304,15 +305,16 @@ func (fake *FakePodInterface) Create(arg1 context.Context, arg2 *v1a.Pod, arg3 v
 		arg2 *v1a.Pod
 		arg3 v1b.CreateOptions
 	}{arg1, arg2, arg3})
+	stub := fake.CreateStub
+	fakeReturns := fake.createReturns
 	fake.recordInvocation("Create", []interface{}{arg1, arg2, arg3})
 	fake.createMutex.Unlock()
-	if fake.CreateStub != nil {
-		return fake.CreateStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.createReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -369,15 +371,16 @@ func (fake *FakePodInterface) Delete(arg1 context.Context, arg2 string, arg3 v1b
 		arg2 string
 		arg3 v1b.DeleteOptions
 	}{arg1, arg2, arg3})
+	stub := fake.DeleteStub
+	fakeReturns := fake.deleteReturns
 	fake.recordInvocation("Delete", []interface{}{arg1, arg2, arg3})
 	fake.deleteMutex.Unlock()
-	if fake.DeleteStub != nil {
-		return fake.DeleteStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteReturns
 	return fakeReturns.result1
 }
 
@@ -431,15 +434,16 @@ func (fake *FakePodInterface) DeleteCollection(arg1 context.Context, arg2 v1b.De
 		arg2 v1b.DeleteOptions
 		arg3 v1b.ListOptions
 	}{arg1, arg2, arg3})
+	stub := fake.DeleteCollectionStub
+	fakeReturns := fake.deleteCollectionReturns
 	fake.recordInvocation("DeleteCollection", []interface{}{arg1, arg2, arg3})
 	fake.deleteCollectionMutex.Unlock()
-	if fake.DeleteCollectionStub != nil {
-		return fake.DeleteCollectionStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteCollectionReturns
 	return fakeReturns.result1
 }
 
@@ -492,15 +496,16 @@ func (fake *FakePodInterface) Evict(arg1 context.Context, arg2 *v1beta1.Eviction
 		arg1 context.Context
 		arg2 *v1beta1.Eviction
 	}{arg1, arg2})
+	stub := fake.EvictStub
+	fakeReturns := fake.evictReturns
 	fake.recordInvocation("Evict", []interface{}{arg1, arg2})
 	fake.evictMutex.Unlock()
-	if fake.EvictStub != nil {
-		return fake.EvictStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.evictReturns
 	return fakeReturns.result1
 }
 
@@ -554,15 +559,16 @@ func (fake *FakePodInterface) Get(arg1 context.Context, arg2 string, arg3 v1b.Ge
 		arg2 string
 		arg3 v1b.GetOptions
 	}{arg1, arg2, arg3})
+	stub := fake.GetStub
+	fakeReturns := fake.getReturns
 	fake.recordInvocation("Get", []interface{}{arg1, arg2, arg3})
 	fake.getMutex.Unlock()
-	if fake.GetStub != nil {
-		return fake.GetStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -619,15 +625,16 @@ func (fake *FakePodInterface) GetEphemeralContainers(arg1 context.Context, arg2 
 		arg2 string
 		arg3 v1b.GetOptions
 	}{arg1, arg2, arg3})
+	stub := fake.GetEphemeralContainersStub
+	fakeReturns := fake.getEphemeralContainersReturns
 	fake.recordInvocation("GetEphemeralContainers", []interface{}{arg1, arg2, arg3})
 	fake.getEphemeralContainersMutex.Unlock()
-	if fake.GetEphemeralContainersStub != nil {
-		return fake.GetEphemeralContainersStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getEphemeralContainersReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -683,15 +690,16 @@ func (fake *FakePodInterface) GetLogs(arg1 string, arg2 *v1a.PodLogOptions) *res
 		arg1 string
 		arg2 *v1a.PodLogOptions
 	}{arg1, arg2})
+	stub := fake.GetLogsStub
+	fakeReturns := fake.getLogsReturns
 	fake.recordInvocation("GetLogs", []interface{}{arg1, arg2})
 	fake.getLogsMutex.Unlock()
-	if fake.GetLogsStub != nil {
-		return fake.GetLogsStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.getLogsReturns
 	return fakeReturns.result1
 }
 
@@ -744,15 +752,16 @@ func (fake *FakePodInterface) List(arg1 context.Context, arg2 v1b.ListOptions) (
 		arg1 context.Context
 		arg2 v1b.ListOptions
 	}{arg1, arg2})
+	stub := fake.ListStub
+	fakeReturns := fake.listReturns
 	fake.recordInvocation("List", []interface{}{arg1, arg2})
 	fake.listMutex.Unlock()
-	if fake.ListStub != nil {
-		return fake.ListStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -817,15 +826,16 @@ func (fake *FakePodInterface) Patch(arg1 context.Context, arg2 string, arg3 type
 		arg5 v1b.PatchOptions
 		arg6 []string
 	}{arg1, arg2, arg3, arg4Copy, arg5, arg6})
+	stub := fake.PatchStub
+	fakeReturns := fake.patchReturns
 	fake.recordInvocation("Patch", []interface{}{arg1, arg2, arg3, arg4Copy, arg5, arg6})
 	fake.patchMutex.Unlock()
-	if fake.PatchStub != nil {
-		return fake.PatchStub(arg1, arg2, arg3, arg4, arg5, arg6...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4, arg5, arg6...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.patchReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -884,15 +894,16 @@ func (fake *FakePodInterface) ProxyGet(arg1 string, arg2 string, arg3 string, ar
 		arg4 string
 		arg5 map[string]string
 	}{arg1, arg2, arg3, arg4, arg5})
+	stub := fake.ProxyGetStub
+	fakeReturns := fake.proxyGetReturns
 	fake.recordInvocation("ProxyGet", []interface{}{arg1, arg2, arg3, arg4, arg5})
 	fake.proxyGetMutex.Unlock()
-	if fake.ProxyGetStub != nil {
-		return fake.ProxyGetStub(arg1, arg2, arg3, arg4, arg5)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4, arg5)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.proxyGetReturns
 	return fakeReturns.result1
 }
 
@@ -946,15 +957,16 @@ func (fake *FakePodInterface) Update(arg1 context.Context, arg2 *v1a.Pod, arg3 v
 		arg2 *v1a.Pod
 		arg3 v1b.UpdateOptions
 	}{arg1, arg2, arg3})
+	stub := fake.UpdateStub
+	fakeReturns := fake.updateReturns
 	fake.recordInvocation("Update", []interface{}{arg1, arg2, arg3})
 	fake.updateMutex.Unlock()
-	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.updateReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -1012,15 +1024,16 @@ func (fake *FakePodInterface) UpdateEphemeralContainers(arg1 context.Context, ar
 		arg3 *v1a.EphemeralContainers
 		arg4 v1b.UpdateOptions
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.UpdateEphemeralContainersStub
+	fakeReturns := fake.updateEphemeralContainersReturns
 	fake.recordInvocation("UpdateEphemeralContainers", []interface{}{arg1, arg2, arg3, arg4})
 	fake.updateEphemeralContainersMutex.Unlock()
-	if fake.UpdateEphemeralContainersStub != nil {
-		return fake.UpdateEphemeralContainersStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.updateEphemeralContainersReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -1077,15 +1090,16 @@ func (fake *FakePodInterface) UpdateStatus(arg1 context.Context, arg2 *v1a.Pod, 
 		arg2 *v1a.Pod
 		arg3 v1b.UpdateOptions
 	}{arg1, arg2, arg3})
+	stub := fake.UpdateStatusStub
+	fakeReturns := fake.updateStatusReturns
 	fake.recordInvocation("UpdateStatus", []interface{}{arg1, arg2, arg3})
 	fake.updateStatusMutex.Unlock()
-	if fake.UpdateStatusStub != nil {
-		return fake.UpdateStatusStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.updateStatusReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -1141,15 +1155,16 @@ func (fake *FakePodInterface) Watch(arg1 context.Context, arg2 v1b.ListOptions) 
 		arg1 context.Context
 		arg2 v1b.ListOptions
 	}{arg1, arg2})
+	stub := fake.WatchStub
+	fakeReturns := fake.watchReturns
 	fake.recordInvocation("Watch", []interface{}{arg1, arg2})
 	fake.watchMutex.Unlock()
-	if fake.WatchStub != nil {
-		return fake.WatchStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.watchReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

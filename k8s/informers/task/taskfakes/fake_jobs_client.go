@@ -49,15 +49,16 @@ func (fake *FakeJobsClient) GetByGUID(arg1 string, arg2 bool) ([]v1.Job, error) 
 		arg1 string
 		arg2 bool
 	}{arg1, arg2})
+	stub := fake.GetByGUIDStub
+	fakeReturns := fake.getByGUIDReturns
 	fake.recordInvocation("GetByGUID", []interface{}{arg1, arg2})
 	fake.getByGUIDMutex.Unlock()
-	if fake.GetByGUIDStub != nil {
-		return fake.GetByGUIDStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getByGUIDReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -114,15 +115,16 @@ func (fake *FakeJobsClient) SetLabel(arg1 *v1.Job, arg2 string, arg3 string) (*v
 		arg2 string
 		arg3 string
 	}{arg1, arg2, arg3})
+	stub := fake.SetLabelStub
+	fakeReturns := fake.setLabelReturns
 	fake.recordInvocation("SetLabel", []interface{}{arg1, arg2, arg3})
 	fake.setLabelMutex.Unlock()
-	if fake.SetLabelStub != nil {
-		return fake.SetLabelStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.setLabelReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

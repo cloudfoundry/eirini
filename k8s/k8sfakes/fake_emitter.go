@@ -23,9 +23,10 @@ func (fake *FakeEmitter) Emit(arg1 metrics.Message) {
 	fake.emitArgsForCall = append(fake.emitArgsForCall, struct {
 		arg1 metrics.Message
 	}{arg1})
+	stub := fake.EmitStub
 	fake.recordInvocation("Emit", []interface{}{arg1})
 	fake.emitMutex.Unlock()
-	if fake.EmitStub != nil {
+	if stub != nil {
 		fake.EmitStub(arg1)
 	}
 }

@@ -60,15 +60,16 @@ func (fake *FakeTaskDesirer) Desire(arg1 string, arg2 *opi.Task, arg3 ...k8s.Des
 		arg2 *opi.Task
 		arg3 []k8s.DesireOption
 	}{arg1, arg2, arg3})
+	stub := fake.DesireStub
+	fakeReturns := fake.desireReturns
 	fake.recordInvocation("Desire", []interface{}{arg1, arg2, arg3})
 	fake.desireMutex.Unlock()
-	if fake.DesireStub != nil {
-		return fake.DesireStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.desireReturns
 	return fakeReturns.result1
 }
 
@@ -120,15 +121,16 @@ func (fake *FakeTaskDesirer) Get(arg1 string) (*opi.Task, error) {
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GetStub
+	fakeReturns := fake.getReturns
 	fake.recordInvocation("Get", []interface{}{arg1})
 	fake.getMutex.Unlock()
-	if fake.GetStub != nil {
-		return fake.GetStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -182,15 +184,16 @@ func (fake *FakeTaskDesirer) List() ([]*opi.Task, error) {
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
 	}{})
+	stub := fake.ListStub
+	fakeReturns := fake.listReturns
 	fake.recordInvocation("List", []interface{}{})
 	fake.listMutex.Unlock()
-	if fake.ListStub != nil {
-		return fake.ListStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

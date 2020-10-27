@@ -36,15 +36,16 @@ func (fake *FakePublisher) Publish(arg1 string, arg2 []byte) error {
 		arg1 string
 		arg2 []byte
 	}{arg1, arg2Copy})
+	stub := fake.PublishStub
+	fakeReturns := fake.publishReturns
 	fake.recordInvocation("Publish", []interface{}{arg1, arg2Copy})
 	fake.publishMutex.Unlock()
-	if fake.PublishStub != nil {
-		return fake.PublishStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.publishReturns
 	return fakeReturns.result1
 }
 

@@ -33,15 +33,16 @@ func (fake *FakeLRPConverter) ConvertLRP(arg1 cf.DesireLRPRequest) (opi.LRP, err
 	fake.convertLRPArgsForCall = append(fake.convertLRPArgsForCall, struct {
 		arg1 cf.DesireLRPRequest
 	}{arg1})
+	stub := fake.ConvertLRPStub
+	fakeReturns := fake.convertLRPReturns
 	fake.recordInvocation("ConvertLRP", []interface{}{arg1})
 	fake.convertLRPMutex.Unlock()
-	if fake.ConvertLRPStub != nil {
-		return fake.ConvertLRPStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.convertLRPReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

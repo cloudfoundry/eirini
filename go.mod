@@ -1,6 +1,6 @@
 module code.cloudfoundry.org/eirini
 
-go 1.13
+go 1.15
 
 replace (
 	github.com/coreos/bbolt => github.com/coreos/bbolt v1.3.0
@@ -29,6 +29,7 @@ require (
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
 	github.com/Azure/go-autorest/autorest v0.11.10 // indirect
+	github.com/cloudflare/cfssl v1.5.0 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/containerd/continuity v0.0.0-20200928162600-f2cc35102c2a // indirect
 	github.com/containers/image v3.0.2+incompatible
@@ -44,7 +45,7 @@ require (
 	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/google/certificate-transparency-go v1.1.1 // indirect
-	github.com/googleapis/gnostic v0.5.2 // indirect
+	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.15.2 // indirect
 	github.com/hashicorp/consul/api v1.7.0 // indirect
@@ -55,10 +56,10 @@ require (
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jessevdk/go-flags v1.4.0
-	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
+	github.com/jinzhu/copier v0.0.0-20201025035756-632e723a6687
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/mattn/go-colorable v0.1.8 // indirect
-	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.3
+	github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0
 	github.com/nats-io/jwt v1.1.0 // indirect
 	github.com/nats-io/nats-server/v2 v2.1.8
 	github.com/nats-io/nats.go v1.10.0
@@ -76,12 +77,11 @@ require (
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897 // indirect
-	golang.org/x/net v0.0.0-20201021035429-f5854403a974 // indirect
-	golang.org/x/sys v0.0.0-20201020230747-6e5568b54d1a // indirect
-	golang.org/x/tools v0.0.0-20201021122455-2be66b663cb6 // indirect
+	golang.org/x/sys v0.0.0-20201027090413-e1471140ff15 // indirect
+	golang.org/x/tools v0.0.0-20201026223136-e84cfc6dd5ca // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20201021134325-0d71844de594 // indirect
+	google.golang.org/genproto v0.0.0-20201026171402-d4b8fe4fd877 // indirect
 	google.golang.org/grpc v1.33.1
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.19.3
@@ -91,6 +91,6 @@ require (
 	k8s.io/code-generator v0.19.3
 	k8s.io/klog v1.0.0
 	k8s.io/metrics v0.19.3
-	k8s.io/utils v0.0.0-20201015054608-420da100c033 // indirect
+	k8s.io/utils v0.0.0-20201027101359-01387209bb0d // indirect
 	sigs.k8s.io/controller-runtime v0.6.3
 )

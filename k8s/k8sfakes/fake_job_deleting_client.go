@@ -46,15 +46,16 @@ func (fake *FakeJobDeletingClient) Delete(arg1 string, arg2 string) error {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.DeleteStub
+	fakeReturns := fake.deleteReturns
 	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
 	fake.deleteMutex.Unlock()
-	if fake.DeleteStub != nil {
-		return fake.DeleteStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteReturns
 	return fakeReturns.result1
 }
 
@@ -107,15 +108,16 @@ func (fake *FakeJobDeletingClient) GetByGUID(arg1 string, arg2 bool) ([]v1.Job, 
 		arg1 string
 		arg2 bool
 	}{arg1, arg2})
+	stub := fake.GetByGUIDStub
+	fakeReturns := fake.getByGUIDReturns
 	fake.recordInvocation("GetByGUID", []interface{}{arg1, arg2})
 	fake.getByGUIDMutex.Unlock()
-	if fake.GetByGUIDStub != nil {
-		return fake.GetByGUIDStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getByGUIDReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

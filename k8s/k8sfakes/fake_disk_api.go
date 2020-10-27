@@ -29,15 +29,16 @@ func (fake *FakeDiskAPI) GetPodMetrics() (map[string]float64, error) {
 	ret, specificReturn := fake.getPodMetricsReturnsOnCall[len(fake.getPodMetricsArgsForCall)]
 	fake.getPodMetricsArgsForCall = append(fake.getPodMetricsArgsForCall, struct {
 	}{})
+	stub := fake.GetPodMetricsStub
+	fakeReturns := fake.getPodMetricsReturns
 	fake.recordInvocation("GetPodMetrics", []interface{}{})
 	fake.getPodMetricsMutex.Unlock()
-	if fake.GetPodMetricsStub != nil {
-		return fake.GetPodMetricsStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getPodMetricsReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

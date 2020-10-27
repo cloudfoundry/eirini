@@ -107,15 +107,16 @@ func (fake *FakeLRPDesirer) Desire(arg1 string, arg2 *opi.LRP, arg3 ...k8s.Desir
 		arg2 *opi.LRP
 		arg3 []k8s.DesireOption
 	}{arg1, arg2, arg3})
+	stub := fake.DesireStub
+	fakeReturns := fake.desireReturns
 	fake.recordInvocation("Desire", []interface{}{arg1, arg2, arg3})
 	fake.desireMutex.Unlock()
-	if fake.DesireStub != nil {
-		return fake.DesireStub(arg1, arg2, arg3...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.desireReturns
 	return fakeReturns.result1
 }
 
@@ -167,15 +168,16 @@ func (fake *FakeLRPDesirer) Get(arg1 opi.LRPIdentifier) (*opi.LRP, error) {
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
 		arg1 opi.LRPIdentifier
 	}{arg1})
+	stub := fake.GetStub
+	fakeReturns := fake.getReturns
 	fake.recordInvocation("Get", []interface{}{arg1})
 	fake.getMutex.Unlock()
-	if fake.GetStub != nil {
-		return fake.GetStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -230,15 +232,16 @@ func (fake *FakeLRPDesirer) GetInstances(arg1 opi.LRPIdentifier) ([]*opi.Instanc
 	fake.getInstancesArgsForCall = append(fake.getInstancesArgsForCall, struct {
 		arg1 opi.LRPIdentifier
 	}{arg1})
+	stub := fake.GetInstancesStub
+	fakeReturns := fake.getInstancesReturns
 	fake.recordInvocation("GetInstances", []interface{}{arg1})
 	fake.getInstancesMutex.Unlock()
-	if fake.GetInstancesStub != nil {
-		return fake.GetInstancesStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getInstancesReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -292,15 +295,16 @@ func (fake *FakeLRPDesirer) List() ([]*opi.LRP, error) {
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
 	}{})
+	stub := fake.ListStub
+	fakeReturns := fake.listReturns
 	fake.recordInvocation("List", []interface{}{})
 	fake.listMutex.Unlock()
-	if fake.ListStub != nil {
-		return fake.ListStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -348,15 +352,16 @@ func (fake *FakeLRPDesirer) Stop(arg1 opi.LRPIdentifier) error {
 	fake.stopArgsForCall = append(fake.stopArgsForCall, struct {
 		arg1 opi.LRPIdentifier
 	}{arg1})
+	stub := fake.StopStub
+	fakeReturns := fake.stopReturns
 	fake.recordInvocation("Stop", []interface{}{arg1})
 	fake.stopMutex.Unlock()
-	if fake.StopStub != nil {
-		return fake.StopStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.stopReturns
 	return fakeReturns.result1
 }
 
@@ -409,15 +414,16 @@ func (fake *FakeLRPDesirer) StopInstance(arg1 opi.LRPIdentifier, arg2 uint) erro
 		arg1 opi.LRPIdentifier
 		arg2 uint
 	}{arg1, arg2})
+	stub := fake.StopInstanceStub
+	fakeReturns := fake.stopInstanceReturns
 	fake.recordInvocation("StopInstance", []interface{}{arg1, arg2})
 	fake.stopInstanceMutex.Unlock()
-	if fake.StopInstanceStub != nil {
-		return fake.StopInstanceStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.stopInstanceReturns
 	return fakeReturns.result1
 }
 
@@ -469,15 +475,16 @@ func (fake *FakeLRPDesirer) Update(arg1 *opi.LRP) error {
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
 		arg1 *opi.LRP
 	}{arg1})
+	stub := fake.UpdateStub
+	fakeReturns := fake.updateReturns
 	fake.recordInvocation("Update", []interface{}{arg1})
 	fake.updateMutex.Unlock()
-	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.updateReturns
 	return fakeReturns.result1
 }
 

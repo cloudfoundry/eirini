@@ -31,15 +31,16 @@ func (fake *FakeCallbackClient) Post(arg1 string, arg2 interface{}) error {
 		arg1 string
 		arg2 interface{}
 	}{arg1, arg2})
+	stub := fake.PostStub
+	fakeReturns := fake.postReturns
 	fake.recordInvocation("Post", []interface{}{arg1, arg2})
 	fake.postMutex.Unlock()
-	if fake.PostStub != nil {
-		return fake.PostStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.postReturns
 	return fakeReturns.result1
 }
 

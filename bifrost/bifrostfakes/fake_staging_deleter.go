@@ -29,15 +29,16 @@ func (fake *FakeStagingDeleter) DeleteStaging(arg1 string) error {
 	fake.deleteStagingArgsForCall = append(fake.deleteStagingArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.DeleteStagingStub
+	fakeReturns := fake.deleteStagingReturns
 	fake.recordInvocation("DeleteStaging", []interface{}{arg1})
 	fake.deleteStagingMutex.Unlock()
-	if fake.DeleteStagingStub != nil {
-		return fake.DeleteStagingStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteStagingReturns
 	return fakeReturns.result1
 }
 

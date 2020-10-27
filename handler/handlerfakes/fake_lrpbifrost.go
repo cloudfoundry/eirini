@@ -112,15 +112,16 @@ func (fake *FakeLRPBifrost) GetApp(arg1 context.Context, arg2 opi.LRPIdentifier)
 		arg1 context.Context
 		arg2 opi.LRPIdentifier
 	}{arg1, arg2})
+	stub := fake.GetAppStub
+	fakeReturns := fake.getAppReturns
 	fake.recordInvocation("GetApp", []interface{}{arg1, arg2})
 	fake.getAppMutex.Unlock()
-	if fake.GetAppStub != nil {
-		return fake.GetAppStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getAppReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -176,15 +177,16 @@ func (fake *FakeLRPBifrost) GetInstances(arg1 context.Context, arg2 opi.LRPIdent
 		arg1 context.Context
 		arg2 opi.LRPIdentifier
 	}{arg1, arg2})
+	stub := fake.GetInstancesStub
+	fakeReturns := fake.getInstancesReturns
 	fake.recordInvocation("GetInstances", []interface{}{arg1, arg2})
 	fake.getInstancesMutex.Unlock()
-	if fake.GetInstancesStub != nil {
-		return fake.GetInstancesStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getInstancesReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -239,15 +241,16 @@ func (fake *FakeLRPBifrost) List(arg1 context.Context) ([]cf.DesiredLRPSchedulin
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
 		arg1 context.Context
 	}{arg1})
+	stub := fake.ListStub
+	fakeReturns := fake.listReturns
 	fake.recordInvocation("List", []interface{}{arg1})
 	fake.listMutex.Unlock()
-	if fake.ListStub != nil {
-		return fake.ListStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -303,15 +306,16 @@ func (fake *FakeLRPBifrost) Stop(arg1 context.Context, arg2 opi.LRPIdentifier) e
 		arg1 context.Context
 		arg2 opi.LRPIdentifier
 	}{arg1, arg2})
+	stub := fake.StopStub
+	fakeReturns := fake.stopReturns
 	fake.recordInvocation("Stop", []interface{}{arg1, arg2})
 	fake.stopMutex.Unlock()
-	if fake.StopStub != nil {
-		return fake.StopStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.stopReturns
 	return fakeReturns.result1
 }
 
@@ -365,15 +369,16 @@ func (fake *FakeLRPBifrost) StopInstance(arg1 context.Context, arg2 opi.LRPIdent
 		arg2 opi.LRPIdentifier
 		arg3 uint
 	}{arg1, arg2, arg3})
+	stub := fake.StopInstanceStub
+	fakeReturns := fake.stopInstanceReturns
 	fake.recordInvocation("StopInstance", []interface{}{arg1, arg2, arg3})
 	fake.stopInstanceMutex.Unlock()
-	if fake.StopInstanceStub != nil {
-		return fake.StopInstanceStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.stopInstanceReturns
 	return fakeReturns.result1
 }
 
@@ -426,15 +431,16 @@ func (fake *FakeLRPBifrost) Transfer(arg1 context.Context, arg2 cf.DesireLRPRequ
 		arg1 context.Context
 		arg2 cf.DesireLRPRequest
 	}{arg1, arg2})
+	stub := fake.TransferStub
+	fakeReturns := fake.transferReturns
 	fake.recordInvocation("Transfer", []interface{}{arg1, arg2})
 	fake.transferMutex.Unlock()
-	if fake.TransferStub != nil {
-		return fake.TransferStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.transferReturns
 	return fakeReturns.result1
 }
 
@@ -487,15 +493,16 @@ func (fake *FakeLRPBifrost) Update(arg1 context.Context, arg2 cf.UpdateDesiredLR
 		arg1 context.Context
 		arg2 cf.UpdateDesiredLRPRequest
 	}{arg1, arg2})
+	stub := fake.UpdateStub
+	fakeReturns := fake.updateReturns
 	fake.recordInvocation("Update", []interface{}{arg1, arg2})
 	fake.updateMutex.Unlock()
-	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.updateReturns
 	return fakeReturns.result1
 }
 

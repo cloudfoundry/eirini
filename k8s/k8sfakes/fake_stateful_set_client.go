@@ -87,15 +87,16 @@ func (fake *FakeStatefulSetClient) Create(arg1 string, arg2 *v1.StatefulSet) (*v
 		arg1 string
 		arg2 *v1.StatefulSet
 	}{arg1, arg2})
+	stub := fake.CreateStub
+	fakeReturns := fake.createReturns
 	fake.recordInvocation("Create", []interface{}{arg1, arg2})
 	fake.createMutex.Unlock()
-	if fake.CreateStub != nil {
-		return fake.CreateStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.createReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -151,15 +152,16 @@ func (fake *FakeStatefulSetClient) Delete(arg1 string, arg2 string) error {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.DeleteStub
+	fakeReturns := fake.deleteReturns
 	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
 	fake.deleteMutex.Unlock()
-	if fake.DeleteStub != nil {
-		return fake.DeleteStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteReturns
 	return fakeReturns.result1
 }
 
@@ -211,15 +213,16 @@ func (fake *FakeStatefulSetClient) GetByLRPIdentifier(arg1 opi.LRPIdentifier) ([
 	fake.getByLRPIdentifierArgsForCall = append(fake.getByLRPIdentifierArgsForCall, struct {
 		arg1 opi.LRPIdentifier
 	}{arg1})
+	stub := fake.GetByLRPIdentifierStub
+	fakeReturns := fake.getByLRPIdentifierReturns
 	fake.recordInvocation("GetByLRPIdentifier", []interface{}{arg1})
 	fake.getByLRPIdentifierMutex.Unlock()
-	if fake.GetByLRPIdentifierStub != nil {
-		return fake.GetByLRPIdentifierStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getByLRPIdentifierReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -274,15 +277,16 @@ func (fake *FakeStatefulSetClient) GetBySourceType(arg1 string) ([]v1.StatefulSe
 	fake.getBySourceTypeArgsForCall = append(fake.getBySourceTypeArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GetBySourceTypeStub
+	fakeReturns := fake.getBySourceTypeReturns
 	fake.recordInvocation("GetBySourceType", []interface{}{arg1})
 	fake.getBySourceTypeMutex.Unlock()
-	if fake.GetBySourceTypeStub != nil {
-		return fake.GetBySourceTypeStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getBySourceTypeReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -338,15 +342,16 @@ func (fake *FakeStatefulSetClient) Update(arg1 string, arg2 *v1.StatefulSet) (*v
 		arg1 string
 		arg2 *v1.StatefulSet
 	}{arg1, arg2})
+	stub := fake.UpdateStub
+	fakeReturns := fake.updateReturns
 	fake.recordInvocation("Update", []interface{}{arg1, arg2})
 	fake.updateMutex.Unlock()
-	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.updateReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

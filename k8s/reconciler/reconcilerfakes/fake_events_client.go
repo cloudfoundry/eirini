@@ -65,15 +65,16 @@ func (fake *FakeEventsClient) Create(arg1 string, arg2 *v1.Event) (*v1.Event, er
 		arg1 string
 		arg2 *v1.Event
 	}{arg1, arg2})
+	stub := fake.CreateStub
+	fakeReturns := fake.createReturns
 	fake.recordInvocation("Create", []interface{}{arg1, arg2})
 	fake.createMutex.Unlock()
-	if fake.CreateStub != nil {
-		return fake.CreateStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.createReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -131,15 +132,16 @@ func (fake *FakeEventsClient) GetByInstanceAndReason(arg1 string, arg2 v1a.Owner
 		arg3 int
 		arg4 string
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.GetByInstanceAndReasonStub
+	fakeReturns := fake.getByInstanceAndReasonReturns
 	fake.recordInvocation("GetByInstanceAndReason", []interface{}{arg1, arg2, arg3, arg4})
 	fake.getByInstanceAndReasonMutex.Unlock()
-	if fake.GetByInstanceAndReasonStub != nil {
-		return fake.GetByInstanceAndReasonStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getByInstanceAndReasonReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -195,15 +197,16 @@ func (fake *FakeEventsClient) Update(arg1 string, arg2 *v1.Event) (*v1.Event, er
 		arg1 string
 		arg2 *v1.Event
 	}{arg1, arg2})
+	stub := fake.UpdateStub
+	fakeReturns := fake.updateReturns
 	fake.recordInvocation("Update", []interface{}{arg1, arg2})
 	fake.updateMutex.Unlock()
-	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.updateReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

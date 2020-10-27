@@ -30,15 +30,16 @@ func (fake *FakeStagingCompleter) CompleteStaging(arg1 cf.StagingCompletedReques
 	fake.completeStagingArgsForCall = append(fake.completeStagingArgsForCall, struct {
 		arg1 cf.StagingCompletedRequest
 	}{arg1})
+	stub := fake.CompleteStagingStub
+	fakeReturns := fake.completeStagingReturns
 	fake.recordInvocation("CompleteStaging", []interface{}{arg1})
 	fake.completeStagingMutex.Unlock()
-	if fake.CompleteStagingStub != nil {
-		return fake.CompleteStagingStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.completeStagingReturns
 	return fakeReturns.result1
 }
 

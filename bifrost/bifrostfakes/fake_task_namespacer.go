@@ -31,15 +31,16 @@ func (fake *FakeTaskNamespacer) GetNamespace(arg1 string) (string, error) {
 	fake.getNamespaceArgsForCall = append(fake.getNamespaceArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GetNamespaceStub
+	fakeReturns := fake.getNamespaceReturns
 	fake.recordInvocation("GetNamespace", []interface{}{arg1})
 	fake.getNamespaceMutex.Unlock()
-	if fake.GetNamespaceStub != nil {
-		return fake.GetNamespaceStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getNamespaceReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

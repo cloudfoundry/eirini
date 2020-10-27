@@ -61,15 +61,16 @@ func (fake *FakeJobCreatingClient) Create(arg1 string, arg2 *v1.Job) (*v1.Job, e
 		arg1 string
 		arg2 *v1.Job
 	}{arg1, arg2})
+	stub := fake.CreateStub
+	fakeReturns := fake.createReturns
 	fake.recordInvocation("Create", []interface{}{arg1, arg2})
 	fake.createMutex.Unlock()
-	if fake.CreateStub != nil {
-		return fake.CreateStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.createReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -125,15 +126,16 @@ func (fake *FakeJobCreatingClient) GetByGUID(arg1 string, arg2 bool) ([]v1.Job, 
 		arg1 string
 		arg2 bool
 	}{arg1, arg2})
+	stub := fake.GetByGUIDStub
+	fakeReturns := fake.getByGUIDReturns
 	fake.recordInvocation("GetByGUID", []interface{}{arg1, arg2})
 	fake.getByGUIDMutex.Unlock()
-	if fake.GetByGUIDStub != nil {
-		return fake.GetByGUIDStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getByGUIDReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -188,15 +190,16 @@ func (fake *FakeJobCreatingClient) List(arg1 bool) ([]v1.Job, error) {
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
 		arg1 bool
 	}{arg1})
+	stub := fake.ListStub
+	fakeReturns := fake.listReturns
 	fake.recordInvocation("List", []interface{}{arg1})
 	fake.listMutex.Unlock()
-	if fake.ListStub != nil {
-		return fake.ListStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

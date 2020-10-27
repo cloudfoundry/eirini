@@ -69,15 +69,16 @@ func (fake *FakeTaskBifrost) CancelTask(arg1 string) error {
 	fake.cancelTaskArgsForCall = append(fake.cancelTaskArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.CancelTaskStub
+	fakeReturns := fake.cancelTaskReturns
 	fake.recordInvocation("CancelTask", []interface{}{arg1})
 	fake.cancelTaskMutex.Unlock()
-	if fake.CancelTaskStub != nil {
-		return fake.CancelTaskStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.cancelTaskReturns
 	return fakeReturns.result1
 }
 
@@ -129,15 +130,16 @@ func (fake *FakeTaskBifrost) GetTask(arg1 string) (cf.TaskResponse, error) {
 	fake.getTaskArgsForCall = append(fake.getTaskArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.GetTaskStub
+	fakeReturns := fake.getTaskReturns
 	fake.recordInvocation("GetTask", []interface{}{arg1})
 	fake.getTaskMutex.Unlock()
-	if fake.GetTaskStub != nil {
-		return fake.GetTaskStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getTaskReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -191,15 +193,16 @@ func (fake *FakeTaskBifrost) ListTasks() (cf.TasksResponse, error) {
 	ret, specificReturn := fake.listTasksReturnsOnCall[len(fake.listTasksArgsForCall)]
 	fake.listTasksArgsForCall = append(fake.listTasksArgsForCall, struct {
 	}{})
+	stub := fake.ListTasksStub
+	fakeReturns := fake.listTasksReturns
 	fake.recordInvocation("ListTasks", []interface{}{})
 	fake.listTasksMutex.Unlock()
-	if fake.ListTasksStub != nil {
-		return fake.ListTasksStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listTasksReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -249,15 +252,16 @@ func (fake *FakeTaskBifrost) TransferTask(arg1 context.Context, arg2 string, arg
 		arg2 string
 		arg3 cf.TaskRequest
 	}{arg1, arg2, arg3})
+	stub := fake.TransferTaskStub
+	fakeReturns := fake.transferTaskReturns
 	fake.recordInvocation("TransferTask", []interface{}{arg1, arg2, arg3})
 	fake.transferTaskMutex.Unlock()
-	if fake.TransferTaskStub != nil {
-		return fake.TransferTaskStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.transferTaskReturns
 	return fakeReturns.result1
 }
 

@@ -22,9 +22,10 @@ func (fake *FakeTaskScheduler) Schedule(arg1 util.Task) {
 	fake.scheduleArgsForCall = append(fake.scheduleArgsForCall, struct {
 		arg1 util.Task
 	}{arg1})
+	stub := fake.ScheduleStub
 	fake.recordInvocation("Schedule", []interface{}{arg1})
 	fake.scheduleMutex.Unlock()
-	if fake.ScheduleStub != nil {
+	if stub != nil {
 		fake.ScheduleStub(arg1)
 	}
 }

@@ -35,15 +35,16 @@ func (fake *FakeCcClient) AppCrashed(arg1 string, arg2 cc_messages.AppCrashedReq
 		arg2 cc_messages.AppCrashedRequest
 		arg3 lager.Logger
 	}{arg1, arg2, arg3})
+	stub := fake.AppCrashedStub
+	fakeReturns := fake.appCrashedReturns
 	fake.recordInvocation("AppCrashed", []interface{}{arg1, arg2, arg3})
 	fake.appCrashedMutex.Unlock()
-	if fake.AppCrashedStub != nil {
-		return fake.AppCrashedStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.appCrashedReturns
 	return fakeReturns.result1
 }
 

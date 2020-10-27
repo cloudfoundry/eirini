@@ -189,15 +189,16 @@ func (fake *FakeStatefulSetInterface) Create(arg1 context.Context, arg2 *v1a.Sta
 		arg2 *v1a.StatefulSet
 		arg3 v1b.CreateOptions
 	}{arg1, arg2, arg3})
+	stub := fake.CreateStub
+	fakeReturns := fake.createReturns
 	fake.recordInvocation("Create", []interface{}{arg1, arg2, arg3})
 	fake.createMutex.Unlock()
-	if fake.CreateStub != nil {
-		return fake.CreateStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.createReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -254,15 +255,16 @@ func (fake *FakeStatefulSetInterface) Delete(arg1 context.Context, arg2 string, 
 		arg2 string
 		arg3 v1b.DeleteOptions
 	}{arg1, arg2, arg3})
+	stub := fake.DeleteStub
+	fakeReturns := fake.deleteReturns
 	fake.recordInvocation("Delete", []interface{}{arg1, arg2, arg3})
 	fake.deleteMutex.Unlock()
-	if fake.DeleteStub != nil {
-		return fake.DeleteStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteReturns
 	return fakeReturns.result1
 }
 
@@ -316,15 +318,16 @@ func (fake *FakeStatefulSetInterface) DeleteCollection(arg1 context.Context, arg
 		arg2 v1b.DeleteOptions
 		arg3 v1b.ListOptions
 	}{arg1, arg2, arg3})
+	stub := fake.DeleteCollectionStub
+	fakeReturns := fake.deleteCollectionReturns
 	fake.recordInvocation("DeleteCollection", []interface{}{arg1, arg2, arg3})
 	fake.deleteCollectionMutex.Unlock()
-	if fake.DeleteCollectionStub != nil {
-		return fake.DeleteCollectionStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteCollectionReturns
 	return fakeReturns.result1
 }
 
@@ -378,15 +381,16 @@ func (fake *FakeStatefulSetInterface) Get(arg1 context.Context, arg2 string, arg
 		arg2 string
 		arg3 v1b.GetOptions
 	}{arg1, arg2, arg3})
+	stub := fake.GetStub
+	fakeReturns := fake.getReturns
 	fake.recordInvocation("Get", []interface{}{arg1, arg2, arg3})
 	fake.getMutex.Unlock()
-	if fake.GetStub != nil {
-		return fake.GetStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -443,15 +447,16 @@ func (fake *FakeStatefulSetInterface) GetScale(arg1 context.Context, arg2 string
 		arg2 string
 		arg3 v1b.GetOptions
 	}{arg1, arg2, arg3})
+	stub := fake.GetScaleStub
+	fakeReturns := fake.getScaleReturns
 	fake.recordInvocation("GetScale", []interface{}{arg1, arg2, arg3})
 	fake.getScaleMutex.Unlock()
-	if fake.GetScaleStub != nil {
-		return fake.GetScaleStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getScaleReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -507,15 +512,16 @@ func (fake *FakeStatefulSetInterface) List(arg1 context.Context, arg2 v1b.ListOp
 		arg1 context.Context
 		arg2 v1b.ListOptions
 	}{arg1, arg2})
+	stub := fake.ListStub
+	fakeReturns := fake.listReturns
 	fake.recordInvocation("List", []interface{}{arg1, arg2})
 	fake.listMutex.Unlock()
-	if fake.ListStub != nil {
-		return fake.ListStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -580,15 +586,16 @@ func (fake *FakeStatefulSetInterface) Patch(arg1 context.Context, arg2 string, a
 		arg5 v1b.PatchOptions
 		arg6 []string
 	}{arg1, arg2, arg3, arg4Copy, arg5, arg6})
+	stub := fake.PatchStub
+	fakeReturns := fake.patchReturns
 	fake.recordInvocation("Patch", []interface{}{arg1, arg2, arg3, arg4Copy, arg5, arg6})
 	fake.patchMutex.Unlock()
-	if fake.PatchStub != nil {
-		return fake.PatchStub(arg1, arg2, arg3, arg4, arg5, arg6...)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4, arg5, arg6...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.patchReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -645,15 +652,16 @@ func (fake *FakeStatefulSetInterface) Update(arg1 context.Context, arg2 *v1a.Sta
 		arg2 *v1a.StatefulSet
 		arg3 v1b.UpdateOptions
 	}{arg1, arg2, arg3})
+	stub := fake.UpdateStub
+	fakeReturns := fake.updateReturns
 	fake.recordInvocation("Update", []interface{}{arg1, arg2, arg3})
 	fake.updateMutex.Unlock()
-	if fake.UpdateStub != nil {
-		return fake.UpdateStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.updateReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -711,15 +719,16 @@ func (fake *FakeStatefulSetInterface) UpdateScale(arg1 context.Context, arg2 str
 		arg3 *v1c.Scale
 		arg4 v1b.UpdateOptions
 	}{arg1, arg2, arg3, arg4})
+	stub := fake.UpdateScaleStub
+	fakeReturns := fake.updateScaleReturns
 	fake.recordInvocation("UpdateScale", []interface{}{arg1, arg2, arg3, arg4})
 	fake.updateScaleMutex.Unlock()
-	if fake.UpdateScaleStub != nil {
-		return fake.UpdateScaleStub(arg1, arg2, arg3, arg4)
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.updateScaleReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -776,15 +785,16 @@ func (fake *FakeStatefulSetInterface) UpdateStatus(arg1 context.Context, arg2 *v
 		arg2 *v1a.StatefulSet
 		arg3 v1b.UpdateOptions
 	}{arg1, arg2, arg3})
+	stub := fake.UpdateStatusStub
+	fakeReturns := fake.updateStatusReturns
 	fake.recordInvocation("UpdateStatus", []interface{}{arg1, arg2, arg3})
 	fake.updateStatusMutex.Unlock()
-	if fake.UpdateStatusStub != nil {
-		return fake.UpdateStatusStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.updateStatusReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -840,15 +850,16 @@ func (fake *FakeStatefulSetInterface) Watch(arg1 context.Context, arg2 v1b.ListO
 		arg1 context.Context
 		arg2 v1b.ListOptions
 	}{arg1, arg2})
+	stub := fake.WatchStub
+	fakeReturns := fake.watchReturns
 	fake.recordInvocation("Watch", []interface{}{arg1, arg2})
 	fake.watchMutex.Unlock()
-	if fake.WatchStub != nil {
-		return fake.WatchStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.watchReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

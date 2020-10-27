@@ -58,15 +58,16 @@ func (fake *FakePodClient) Delete(arg1 string, arg2 string) error {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.DeleteStub
+	fakeReturns := fake.deleteReturns
 	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
 	fake.deleteMutex.Unlock()
-	if fake.DeleteStub != nil {
-		return fake.DeleteStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.deleteReturns
 	return fakeReturns.result1
 }
 
@@ -117,15 +118,16 @@ func (fake *FakePodClient) GetAll() ([]v1.Pod, error) {
 	ret, specificReturn := fake.getAllReturnsOnCall[len(fake.getAllArgsForCall)]
 	fake.getAllArgsForCall = append(fake.getAllArgsForCall, struct {
 	}{})
+	stub := fake.GetAllStub
+	fakeReturns := fake.getAllReturns
 	fake.recordInvocation("GetAll", []interface{}{})
 	fake.getAllMutex.Unlock()
-	if fake.GetAllStub != nil {
-		return fake.GetAllStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getAllReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -173,15 +175,16 @@ func (fake *FakePodClient) GetByLRPIdentifier(arg1 opi.LRPIdentifier) ([]v1.Pod,
 	fake.getByLRPIdentifierArgsForCall = append(fake.getByLRPIdentifierArgsForCall, struct {
 		arg1 opi.LRPIdentifier
 	}{arg1})
+	stub := fake.GetByLRPIdentifierStub
+	fakeReturns := fake.getByLRPIdentifierReturns
 	fake.recordInvocation("GetByLRPIdentifier", []interface{}{arg1})
 	fake.getByLRPIdentifierMutex.Unlock()
-	if fake.GetByLRPIdentifierStub != nil {
-		return fake.GetByLRPIdentifierStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getByLRPIdentifierReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

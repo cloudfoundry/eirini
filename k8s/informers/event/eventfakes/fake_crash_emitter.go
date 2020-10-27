@@ -30,15 +30,16 @@ func (fake *FakeCrashEmitter) Emit(arg1 events.CrashEvent) error {
 	fake.emitArgsForCall = append(fake.emitArgsForCall, struct {
 		arg1 events.CrashEvent
 	}{arg1})
+	stub := fake.EmitStub
+	fakeReturns := fake.emitReturns
 	fake.recordInvocation("Emit", []interface{}{arg1})
 	fake.emitMutex.Unlock()
-	if fake.EmitStub != nil {
-		return fake.EmitStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.emitReturns
 	return fakeReturns.result1
 }
 

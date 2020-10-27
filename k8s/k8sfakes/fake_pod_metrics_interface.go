@@ -67,15 +67,16 @@ func (fake *FakePodMetricsInterface) Get(arg1 context.Context, arg2 string, arg3
 		arg2 string
 		arg3 v1.GetOptions
 	}{arg1, arg2, arg3})
+	stub := fake.GetStub
+	fakeReturns := fake.getReturns
 	fake.recordInvocation("Get", []interface{}{arg1, arg2, arg3})
 	fake.getMutex.Unlock()
-	if fake.GetStub != nil {
-		return fake.GetStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -131,15 +132,16 @@ func (fake *FakePodMetricsInterface) List(arg1 context.Context, arg2 v1.ListOpti
 		arg1 context.Context
 		arg2 v1.ListOptions
 	}{arg1, arg2})
+	stub := fake.ListStub
+	fakeReturns := fake.listReturns
 	fake.recordInvocation("List", []interface{}{arg1, arg2})
 	fake.listMutex.Unlock()
-	if fake.ListStub != nil {
-		return fake.ListStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.listReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -195,15 +197,16 @@ func (fake *FakePodMetricsInterface) Watch(arg1 context.Context, arg2 v1.ListOpt
 		arg1 context.Context
 		arg2 v1.ListOptions
 	}{arg1, arg2})
+	stub := fake.WatchStub
+	fakeReturns := fake.watchReturns
 	fake.recordInvocation("Watch", []interface{}{arg1, arg2})
 	fake.watchMutex.Unlock()
-	if fake.WatchStub != nil {
-		return fake.WatchStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.watchReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

@@ -36,15 +36,16 @@ func (fake *FakePodsClient) SetAnnotation(arg1 *v1.Pod, arg2 string, arg3 string
 		arg2 string
 		arg3 string
 	}{arg1, arg2, arg3})
+	stub := fake.SetAnnotationStub
+	fakeReturns := fake.setAnnotationReturns
 	fake.recordInvocation("SetAnnotation", []interface{}{arg1, arg2, arg3})
 	fake.setAnnotationMutex.Unlock()
-	if fake.SetAnnotationStub != nil {
-		return fake.SetAnnotationStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.setAnnotationReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

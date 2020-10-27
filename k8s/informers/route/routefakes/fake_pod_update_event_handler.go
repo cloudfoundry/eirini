@@ -25,9 +25,10 @@ func (fake *FakePodUpdateEventHandler) Handle(arg1 *v1.Pod, arg2 *v1.Pod) {
 		arg1 *v1.Pod
 		arg2 *v1.Pod
 	}{arg1, arg2})
+	stub := fake.HandleStub
 	fake.recordInvocation("Handle", []interface{}{arg1, arg2})
 	fake.handleMutex.Unlock()
-	if fake.HandleStub != nil {
+	if stub != nil {
 		fake.HandleStub(arg1, arg2)
 	}
 }

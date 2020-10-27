@@ -181,15 +181,16 @@ func (fake *FakeManager) AddExtension(arg1 interface{}) error {
 	fake.addExtensionArgsForCall = append(fake.addExtensionArgsForCall, struct {
 		arg1 interface{}
 	}{arg1})
+	stub := fake.AddExtensionStub
+	fakeReturns := fake.addExtensionReturns
 	fake.recordInvocation("AddExtension", []interface{}{arg1})
 	fake.addExtensionMutex.Unlock()
-	if fake.AddExtensionStub != nil {
-		return fake.AddExtensionStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.addExtensionReturns
 	return fakeReturns.result1
 }
 
@@ -240,9 +241,10 @@ func (fake *FakeManager) AddReconciler(arg1 extension.Reconciler) {
 	fake.addReconcilerArgsForCall = append(fake.addReconcilerArgsForCall, struct {
 		arg1 extension.Reconciler
 	}{arg1})
+	stub := fake.AddReconcilerStub
 	fake.recordInvocation("AddReconciler", []interface{}{arg1})
 	fake.addReconcilerMutex.Unlock()
-	if fake.AddReconcilerStub != nil {
+	if stub != nil {
 		fake.AddReconcilerStub(arg1)
 	}
 }
@@ -271,9 +273,10 @@ func (fake *FakeManager) AddWatcher(arg1 extension.Watcher) {
 	fake.addWatcherArgsForCall = append(fake.addWatcherArgsForCall, struct {
 		arg1 extension.Watcher
 	}{arg1})
+	stub := fake.AddWatcherStub
 	fake.recordInvocation("AddWatcher", []interface{}{arg1})
 	fake.addWatcherMutex.Unlock()
-	if fake.AddWatcherStub != nil {
+	if stub != nil {
 		fake.AddWatcherStub(arg1)
 	}
 }
@@ -302,15 +305,16 @@ func (fake *FakeManager) GetContext() context.Context {
 	ret, specificReturn := fake.getContextReturnsOnCall[len(fake.getContextArgsForCall)]
 	fake.getContextArgsForCall = append(fake.getContextArgsForCall, struct {
 	}{})
+	stub := fake.GetContextStub
+	fakeReturns := fake.getContextReturns
 	fake.recordInvocation("GetContext", []interface{}{})
 	fake.getContextMutex.Unlock()
-	if fake.GetContextStub != nil {
-		return fake.GetContextStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.getContextReturns
 	return fakeReturns.result1
 }
 
@@ -354,15 +358,16 @@ func (fake *FakeManager) GetKubeClient() (v1.CoreV1Interface, error) {
 	ret, specificReturn := fake.getKubeClientReturnsOnCall[len(fake.getKubeClientArgsForCall)]
 	fake.getKubeClientArgsForCall = append(fake.getKubeClientArgsForCall, struct {
 	}{})
+	stub := fake.GetKubeClientStub
+	fakeReturns := fake.getKubeClientReturns
 	fake.recordInvocation("GetKubeClient", []interface{}{})
 	fake.getKubeClientMutex.Unlock()
-	if fake.GetKubeClientStub != nil {
-		return fake.GetKubeClientStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getKubeClientReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -409,15 +414,16 @@ func (fake *FakeManager) GetKubeConnection() (*rest.Config, error) {
 	ret, specificReturn := fake.getKubeConnectionReturnsOnCall[len(fake.getKubeConnectionArgsForCall)]
 	fake.getKubeConnectionArgsForCall = append(fake.getKubeConnectionArgsForCall, struct {
 	}{})
+	stub := fake.GetKubeConnectionStub
+	fakeReturns := fake.getKubeConnectionReturns
 	fake.recordInvocation("GetKubeConnection", []interface{}{})
 	fake.getKubeConnectionMutex.Unlock()
-	if fake.GetKubeConnectionStub != nil {
-		return fake.GetKubeConnectionStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.getKubeConnectionReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -464,15 +470,16 @@ func (fake *FakeManager) GetKubeManager() manager.Manager {
 	ret, specificReturn := fake.getKubeManagerReturnsOnCall[len(fake.getKubeManagerArgsForCall)]
 	fake.getKubeManagerArgsForCall = append(fake.getKubeManagerArgsForCall, struct {
 	}{})
+	stub := fake.GetKubeManagerStub
+	fakeReturns := fake.getKubeManagerReturns
 	fake.recordInvocation("GetKubeManager", []interface{}{})
 	fake.getKubeManagerMutex.Unlock()
-	if fake.GetKubeManagerStub != nil {
-		return fake.GetKubeManagerStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.getKubeManagerReturns
 	return fakeReturns.result1
 }
 
@@ -516,15 +523,16 @@ func (fake *FakeManager) GetLogger() *zap.SugaredLogger {
 	ret, specificReturn := fake.getLoggerReturnsOnCall[len(fake.getLoggerArgsForCall)]
 	fake.getLoggerArgsForCall = append(fake.getLoggerArgsForCall, struct {
 	}{})
+	stub := fake.GetLoggerStub
+	fakeReturns := fake.getLoggerReturns
 	fake.recordInvocation("GetLogger", []interface{}{})
 	fake.getLoggerMutex.Unlock()
-	if fake.GetLoggerStub != nil {
-		return fake.GetLoggerStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.getLoggerReturns
 	return fakeReturns.result1
 }
 
@@ -568,15 +576,16 @@ func (fake *FakeManager) GetManagerOptions() extension.ManagerOptions {
 	ret, specificReturn := fake.getManagerOptionsReturnsOnCall[len(fake.getManagerOptionsArgsForCall)]
 	fake.getManagerOptionsArgsForCall = append(fake.getManagerOptionsArgsForCall, struct {
 	}{})
+	stub := fake.GetManagerOptionsStub
+	fakeReturns := fake.getManagerOptionsReturns
 	fake.recordInvocation("GetManagerOptions", []interface{}{})
 	fake.getManagerOptionsMutex.Unlock()
-	if fake.GetManagerOptionsStub != nil {
-		return fake.GetManagerOptionsStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.getManagerOptionsReturns
 	return fakeReturns.result1
 }
 
@@ -620,15 +629,16 @@ func (fake *FakeManager) ListExtensions() []extension.Extension {
 	ret, specificReturn := fake.listExtensionsReturnsOnCall[len(fake.listExtensionsArgsForCall)]
 	fake.listExtensionsArgsForCall = append(fake.listExtensionsArgsForCall, struct {
 	}{})
+	stub := fake.ListExtensionsStub
+	fakeReturns := fake.listExtensionsReturns
 	fake.recordInvocation("ListExtensions", []interface{}{})
 	fake.listExtensionsMutex.Unlock()
-	if fake.ListExtensionsStub != nil {
-		return fake.ListExtensionsStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.listExtensionsReturns
 	return fakeReturns.result1
 }
 
@@ -672,15 +682,16 @@ func (fake *FakeManager) ListReconcilers() []extension.Reconciler {
 	ret, specificReturn := fake.listReconcilersReturnsOnCall[len(fake.listReconcilersArgsForCall)]
 	fake.listReconcilersArgsForCall = append(fake.listReconcilersArgsForCall, struct {
 	}{})
+	stub := fake.ListReconcilersStub
+	fakeReturns := fake.listReconcilersReturns
 	fake.recordInvocation("ListReconcilers", []interface{}{})
 	fake.listReconcilersMutex.Unlock()
-	if fake.ListReconcilersStub != nil {
-		return fake.ListReconcilersStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.listReconcilersReturns
 	return fakeReturns.result1
 }
 
@@ -726,15 +737,16 @@ func (fake *FakeManager) PatchFromPod(arg1 admission.Request, arg2 *v1a.Pod) adm
 		arg1 admission.Request
 		arg2 *v1a.Pod
 	}{arg1, arg2})
+	stub := fake.PatchFromPodStub
+	fakeReturns := fake.patchFromPodReturns
 	fake.recordInvocation("PatchFromPod", []interface{}{arg1, arg2})
 	fake.patchFromPodMutex.Unlock()
-	if fake.PatchFromPodStub != nil {
-		return fake.PatchFromPodStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.patchFromPodReturns
 	return fakeReturns.result1
 }
 
@@ -785,15 +797,16 @@ func (fake *FakeManager) RegisterExtensions() error {
 	ret, specificReturn := fake.registerExtensionsReturnsOnCall[len(fake.registerExtensionsArgsForCall)]
 	fake.registerExtensionsArgsForCall = append(fake.registerExtensionsArgsForCall, struct {
 	}{})
+	stub := fake.RegisterExtensionsStub
+	fakeReturns := fake.registerExtensionsReturns
 	fake.recordInvocation("RegisterExtensions", []interface{}{})
 	fake.registerExtensionsMutex.Unlock()
-	if fake.RegisterExtensionsStub != nil {
-		return fake.RegisterExtensionsStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.registerExtensionsReturns
 	return fakeReturns.result1
 }
 
@@ -837,9 +850,10 @@ func (fake *FakeManager) SetManagerOptions(arg1 extension.ManagerOptions) {
 	fake.setManagerOptionsArgsForCall = append(fake.setManagerOptionsArgsForCall, struct {
 		arg1 extension.ManagerOptions
 	}{arg1})
+	stub := fake.SetManagerOptionsStub
 	fake.recordInvocation("SetManagerOptions", []interface{}{arg1})
 	fake.setManagerOptionsMutex.Unlock()
-	if fake.SetManagerOptionsStub != nil {
+	if stub != nil {
 		fake.SetManagerOptionsStub(arg1)
 	}
 }
@@ -868,15 +882,16 @@ func (fake *FakeManager) Start() error {
 	ret, specificReturn := fake.startReturnsOnCall[len(fake.startArgsForCall)]
 	fake.startArgsForCall = append(fake.startArgsForCall, struct {
 	}{})
+	stub := fake.StartStub
+	fakeReturns := fake.startReturns
 	fake.recordInvocation("Start", []interface{}{})
 	fake.startMutex.Unlock()
-	if fake.StartStub != nil {
-		return fake.StartStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.startReturns
 	return fakeReturns.result1
 }
 
@@ -919,9 +934,10 @@ func (fake *FakeManager) Stop() {
 	fake.stopMutex.Lock()
 	fake.stopArgsForCall = append(fake.stopArgsForCall, struct {
 	}{})
+	stub := fake.StopStub
 	fake.recordInvocation("Stop", []interface{}{})
 	fake.stopMutex.Unlock()
-	if fake.StopStub != nil {
+	if stub != nil {
 		fake.StopStub()
 	}
 }
@@ -943,15 +959,16 @@ func (fake *FakeManager) Watch() error {
 	ret, specificReturn := fake.watchReturnsOnCall[len(fake.watchArgsForCall)]
 	fake.watchArgsForCall = append(fake.watchArgsForCall, struct {
 	}{})
+	stub := fake.WatchStub
+	fakeReturns := fake.watchReturns
 	fake.recordInvocation("Watch", []interface{}{})
 	fake.watchMutex.Unlock()
-	if fake.WatchStub != nil {
-		return fake.WatchStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.watchReturns
 	return fakeReturns.result1
 }
 

@@ -29,15 +29,17 @@ func (fake *FakeDesireOption) Spy(arg1 interface{}) error {
 	fake.argsForCall = append(fake.argsForCall, struct {
 		arg1 interface{}
 	}{arg1})
+	stub := fake.Stub
+	returns := fake.returns
 	fake.recordInvocation("DesireOption", []interface{}{arg1})
 	fake.mutex.Unlock()
-	if fake.Stub != nil {
-		return fake.Stub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.returns.result1
+	return returns.result1
 }
 
 func (fake *FakeDesireOption) CallCount() int {
