@@ -25,6 +25,10 @@ Currently Eirini strictly provides a Kubernetes implementation of the OPI. Howev
 
 ## Components
 
+![Eirini Overview Diagram](docs/architecture/EiriniOverview.png)
+
+---
+
 Eirini is composed of:
 
 - `opi`: The main component, provides the REST API (implementing OPI) used by the [Cloud Controller](https://github.com/cloudfoundry/cloud_controller_ng/). It's responsible for starting LRPs and tasks.
