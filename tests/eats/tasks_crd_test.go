@@ -84,9 +84,9 @@ var _ = Describe("Tasks CRD", func() {
 				Env: map[string]string{
 					"FOO": "BAR",
 				},
-				Image: "ubuntu",
+				Image: "eirini/busybox",
 				Command: []string{
-					"bin/bash",
+					"sh",
 					"-c",
 					"sleep 1",
 				},
@@ -104,7 +104,6 @@ var _ = Describe("Tasks CRD", func() {
 				metav1.ListOptions{FieldSelector: "metadata.name=" + taskName},
 			)
 		Expect(err).NotTo(HaveOccurred())
-
 	})
 
 	Describe("Creating a Task CRD", func() {
@@ -132,9 +131,9 @@ var _ = Describe("Tasks CRD", func() {
 			Expect(job.Spec.Template.Spec.Containers).To(HaveLen(1))
 
 			taskContainer := job.Spec.Template.Spec.Containers[0]
-			Expect(taskContainer.Image).To(Equal("ubuntu"))
+			Expect(taskContainer.Image).To(Equal("eirini/busybox"))
 			Expect(taskContainer.Env).To(ContainElement(corev1.EnvVar{Name: "FOO", Value: "BAR"}))
-			Expect(taskContainer.Command).To(Equal([]string{"bin/bash", "-c", "sleep 1"}))
+			Expect(taskContainer.Command).To(Equal([]string{"sh", "-c", "sleep 1"}))
 
 			Eventually(getJobConditions).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(batchv1.JobComplete),

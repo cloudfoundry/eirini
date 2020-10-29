@@ -13,10 +13,7 @@ import (
 )
 
 var _ = Describe("ListAppTest", func() {
-
-	var (
-		configuredNamespaceAppGUID string
-	)
+	var configuredNamespaceAppGUID string
 
 	BeforeEach(func() {
 		configuredNamespaceAppGUID = tests.GenerateGUID()
@@ -32,7 +29,6 @@ var _ = Describe("ListAppTest", func() {
 		Expect(apps).To(HaveLen(1))
 		Expect(apps[0].GUID).To(Equal(configuredNamespaceAppGUID))
 	})
-
 })
 
 func desireLRPWithGUID(guid, namespace string) {
@@ -44,7 +40,7 @@ func desireLRPWithGUID(guid, namespace string) {
 		DiskMB:    512,
 		Lifecycle: cf.Lifecycle{
 			DockerLifecycle: &cf.DockerLifecycle{
-				Image:   "busybox",
+				Image:   "eirini/busybox",
 				Command: []string{"/bin/sleep", "100"},
 			},
 		},

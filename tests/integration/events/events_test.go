@@ -102,7 +102,7 @@ var _ = Describe("Events", func() {
 			lrp = opi.LRP{
 				Command:         lrpCommand,
 				TargetInstances: 1,
-				Image:           "busybox",
+				Image:           "eirini/busybox",
 				LRPIdentifier:   opi.LRPIdentifier{GUID: tests.GenerateGUID(), Version: tests.GenerateGUID()},
 			}
 			Expect(lrpDesirer.Desire(fixture.Namespace, &lrp)).To(Succeed())
@@ -191,7 +191,7 @@ var _ = Describe("Events", func() {
 		JustBeforeEach(func() {
 			task := opi.Task{
 				Command: []string{"exit", "1"},
-				Image:   "busybox",
+				Image:   "eirini/busybox",
 				GUID:    tests.GenerateGUID(),
 			}
 			Expect(taskDesirer.Desire(fixture.Namespace, &task)).To(Succeed())
@@ -212,7 +212,7 @@ var _ = Describe("Events", func() {
 					Containers: []v1.Container{
 						{
 							Name:    "potato",
-							Image:   "busybox",
+							Image:   "eirini/busybox",
 							Command: []string{"exit", "1"},
 						},
 					},

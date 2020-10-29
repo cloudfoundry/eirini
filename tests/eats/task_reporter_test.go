@@ -34,7 +34,7 @@ var _ = Describe("Tasks Reporter", func() {
 			CompletionCallback: fmt.Sprintf("%s/%s", fixture.Wiremock.URL, taskGUID),
 			Lifecycle: cf.Lifecycle{
 				DockerLifecycle: &cf.DockerLifecycle{
-					Image: "busybox",
+					Image: "eirini/busybox",
 					Command: []string{
 						"bin/sleep",
 						"10",
@@ -100,7 +100,6 @@ var _ = Describe("Tasks Reporter", func() {
 			Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "1m").Should(BeNumerically(">", 1))
 			Eventually(jobExists(taskGUID)).Should(BeFalse())
 		})
-
 	})
 })
 

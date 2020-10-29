@@ -130,7 +130,7 @@ var _ = Describe("Tasks", func() {
 					Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
 					Lifecycle: cf.Lifecycle{
 						DockerLifecycle: &cf.DockerLifecycle{
-							Image:   "busybox",
+							Image:   "eirini/busybox",
 							Command: []string{"/bin/echo", "hello"},
 						},
 					},
@@ -156,7 +156,7 @@ var _ = Describe("Tasks", func() {
 					jobContainers := jobs.Items[0].Spec.Template.Spec.Containers
 					Expect(jobContainers).To(HaveLen(1))
 					Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
-					Expect(jobContainers[0].Image).To(Equal("busybox"))
+					Expect(jobContainers[0].Image).To(Equal("eirini/busybox"))
 					Expect(jobContainers[0].Command).To(ConsistOf("/bin/echo", "hello"))
 				})
 
@@ -316,7 +316,7 @@ var _ = Describe("Tasks", func() {
 					Namespace: "",
 					Lifecycle: cf.Lifecycle{
 						DockerLifecycle: &cf.DockerLifecycle{
-							Image:   "busybox",
+							Image:   "eirini/busybox",
 							Command: []string{"/bin/echo", "hello"},
 						},
 					},
@@ -345,7 +345,7 @@ var _ = Describe("Tasks", func() {
 					Namespace: fixture.CreateExtraNamespace(),
 					Lifecycle: cf.Lifecycle{
 						DockerLifecycle: &cf.DockerLifecycle{
-							Image:   "busybox",
+							Image:   "eirini/busybox",
 							Command: []string{"/bin/echo", "hello"},
 						},
 					},
@@ -397,7 +397,7 @@ var _ = Describe("Tasks", func() {
 				Namespace: fixture.Namespace,
 				Lifecycle: cf.Lifecycle{
 					DockerLifecycle: &cf.DockerLifecycle{
-						Image:   "busybox",
+						Image:   "eirini/busybox",
 						Command: []string{"/bin/sleep", "100"},
 					},
 				},
@@ -502,7 +502,7 @@ var _ = Describe("Tasks", func() {
 				Namespace: fixture.Namespace,
 				Lifecycle: cf.Lifecycle{
 					DockerLifecycle: &cf.DockerLifecycle{
-						Image:   "busybox",
+						Image:   "eirini/busybox",
 						Command: []string{"/bin/sleep", "100"},
 					},
 				},

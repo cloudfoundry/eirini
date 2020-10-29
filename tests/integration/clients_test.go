@@ -446,7 +446,7 @@ var _ = Describe("Jobs", func() {
 							Containers: []corev1.Container{
 								{
 									Name:            "test",
-									Image:           "busybox",
+									Image:           "eirini/busybox",
 									ImagePullPolicy: corev1.PullAlways,
 									Command:         []string{"echo", "hi"},
 								},

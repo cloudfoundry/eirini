@@ -159,7 +159,7 @@ func createPod(ns, name string, labels map[string]string) {
 			Containers: []corev1.Container{
 				{
 					Name:  "busybox",
-					Image: "busybox",
+					Image: "eirini/busybox",
 				},
 			},
 		},
@@ -219,7 +219,7 @@ func createLRP(name string) *opi.LRP {
 		AppName:         name,
 		SpaceName:       "space-foo",
 		TargetInstances: 2,
-		Image:           "busybox",
+		Image:           "eirini/busybox",
 		AppURIs:         []opi.Route{{Hostname: "foo.example.com", Port: 8080}},
 		LRPIdentifier:   opi.LRPIdentifier{GUID: tests.GenerateGUID(), Version: tests.GenerateGUID()},
 		LRP:             "metadata",
@@ -336,7 +336,7 @@ func createJob(ns, name string, labels map[string]string) *batchv1.Job {
 					Containers: []corev1.Container{
 						{
 							Name:            "test",
-							Image:           "busybox",
+							Image:           "eirini/busybox",
 							ImagePullPolicy: corev1.PullAlways,
 							Command:         []string{"echo", "hi"},
 						},

@@ -29,7 +29,7 @@ var _ = Describe("Desire App", func() {
 			"disk_mb": 512,
 			"lifecycle": {
 				"docker_lifecycle": {
-				"image": "busybox",
+				"image": "eirini/busybox",
 				"command": ["/bin/sleep", "100"]
 				}
 			},
@@ -115,7 +115,7 @@ var _ = Describe("Desire App", func() {
 					"disk_mb": 512,
 					"lifecycle": {
 						"docker_lifecycle": {
-						"image": "busybox",
+						"image": "eirini/busybox",
 						"command": ["/bin/sleep", "100"]
 						}
 					},
@@ -147,7 +147,7 @@ var _ = Describe("Desire App", func() {
 					"disk_mb": 512,
 					"lifecycle": {
 						"docker_lifecycle": {
-						"image": "busybox",
+						"image": "eirini/busybox",
 						"command": ["/bin/sleep", "100"]
 						}
 					},

@@ -1,4 +1,4 @@
-PUBLIC_IMAGES = custom-port icarus dorini
+PUBLIC_IMAGES = custom-port icarus dorini busybox
 PRIVATE_IMAGES = notdora
 ALL_IMAGES = $(PUBLIC_IMAGES) $(PRIVATE_IMAGES)
 

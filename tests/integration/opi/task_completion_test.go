@@ -52,7 +52,7 @@ var _ = Describe("Tasks completion", func() {
 			Namespace: fixture.Namespace,
 			Lifecycle: cf.Lifecycle{
 				DockerLifecycle: &cf.DockerLifecycle{
-					Image:   "busybox",
+					Image:   "eirini/busybox",
 					Command: []string{"/bin/sleep", "1"},
 				},
 			},

@@ -40,7 +40,7 @@ var _ = Describe("PodCrashEvents", func() {
 				Spec: eiriniv1.LRPSpec{
 					GUID:      lrpGUID,
 					Version:   lrpVersion,
-					Image:     "busybox",
+					Image:     "eirini/busybox",
 					AppGUID:   "the-app-guid",
 					AppName:   "k-2so",
 					SpaceName: "s",
@@ -69,7 +69,8 @@ var _ = Describe("PodCrashEvents", func() {
 				LRPs(fixture.Namespace).
 				DeleteCollection(context.Background(),
 					metav1.DeleteOptions{
-						PropagationPolicy: &backgroundPropagation},
+						PropagationPolicy: &backgroundPropagation,
+					},
 					metav1.ListOptions{
 						FieldSelector: "metadata.name=" + lrpName,
 					},

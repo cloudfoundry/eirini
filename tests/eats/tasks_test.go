@@ -34,7 +34,7 @@ var _ = Describe("Tasks", func() {
 			CompletionCallback: completionCallback,
 			Lifecycle: cf.Lifecycle{
 				DockerLifecycle: &cf.DockerLifecycle{
-					Image: "busybox",
+					Image: "eirini/busybox",
 					Command: []string{
 						"/bin/sleep",
 						"0.2",

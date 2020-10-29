@@ -77,7 +77,7 @@ var _ = Describe("TaskReporter", func() {
 
 		taskGUID := tests.GenerateGUID()
 		task = &opi.Task{
-			Image:              "busybox",
+			Image:              "eirini/busybox",
 			Command:            []string{"echo", "hi"},
 			GUID:               taskGUID,
 			CompletionCallback: fmt.Sprintf("%s/the-callback", cloudControllerServer.URL()),
