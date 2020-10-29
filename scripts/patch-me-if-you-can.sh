@@ -233,19 +233,9 @@ patch_cf_for_k8s() {
   eirini_values="$build_path/eirini-values.yml"
   eirini_custom_values="$build_path/eirini-custom-values.yml"
 
-  cat >"$build_path/add-namespaces-overlay.yml" <<EOF
-#@ load("@ytt:overlay", "overlay")
-
-#@overlay/match by=overlay.subset({"kind":"Namespace", "metadata":{"name":"cf-workloads"}})
-#@overlay/remove
----
-
-EOF
-
   cat >>"$eirini_custom_values" <<EOF
 ---
 opi:
-  serviceName: eirini
   lrpController:
     tls:
       secretName: "eirini-internal-tls-certs"
