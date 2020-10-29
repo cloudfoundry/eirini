@@ -48,6 +48,8 @@ linters:
     # exhaustivestruct is meant for special checking only. It verifies that
     # all fields are set in struct construction, and so is not useful for us
     - exhaustivestruct
+    # we don't believe in wrapping all errors, especially from our interfaces
+    - wrapcheck
 
 issues:
   exclude-use-default: true
@@ -58,7 +60,6 @@ issues:
       - dupl
       - gomnd
       - gochecknoglobals
-      - wrapcheck
     - path: _suite_test\.go
       linters:
       - gochecknoglobals
@@ -75,9 +76,6 @@ issues:
     - path: tests/eats/eats_suite_test.go
       linters:
       - gosec
-    - path: tests
-      linters:
-      - wrapcheck
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 
