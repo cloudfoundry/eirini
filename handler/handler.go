@@ -37,18 +37,17 @@ type StagingBifrost interface {
 }
 
 func New(lrpBifrost LRPBifrost,
-	buildpackStagingBifrost StagingBifrost,
 	dockerStagingBifrost StagingBifrost,
 	taskBifrost TaskBifrost,
 	lager lager.Logger) http.Handler {
 	handler := httprouter.New()
 
 	appHandler := NewAppHandler(lrpBifrost, lager)
-	stageHandler := NewStageHandler(buildpackStagingBifrost, dockerStagingBifrost, lager)
+	stageHandler := NewStageHandler(dockerStagingBifrost, lager)
 	taskHandler := NewTaskHandler(lager, taskBifrost)
 
 	registerAppsEndpoints(handler, appHandler)
-	registerStageEndpoints(handler, stageHandler)
+	registerStageEndpoint(handler, stageHandler)
 	registerTaskEndpoints(handler, taskHandler)
 
 	return handler
@@ -64,9 +63,8 @@ func registerAppsEndpoints(handler *httprouter.Router, appHandler *App) {
 	handler.GET("/apps/:process_guid/:version_guid", appHandler.Get)
 }
 
-func registerStageEndpoints(handler *httprouter.Router, stageHandler *Stage) {
+func registerStageEndpoint(handler *httprouter.Router, stageHandler *Stage) {
 	handler.POST("/stage/:staging_guid", stageHandler.Run)
-	handler.PUT("/stage/:staging_guid/completed", stageHandler.Complete)
 }
 
 func registerTaskEndpoints(handler *httprouter.Router, taskHandler *Task) {

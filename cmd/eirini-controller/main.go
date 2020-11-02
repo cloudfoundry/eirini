@@ -159,10 +159,7 @@ func createTaskReconciler(
 		logger,
 		client.NewJob(clientset, eiriniCfg.Properties.Namespace, eiriniCfg.Properties.EnableMultiNamespaceSupport),
 		client.NewSecret(clientset),
-		"",
-		[]k8s.StagingConfigTLS{},
 		eiriniCfg.Properties.ApplicationServiceAccount,
-		"",
 		eiriniCfg.Properties.RegistrySecretName,
 		eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
 	)

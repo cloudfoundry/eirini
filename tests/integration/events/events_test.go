@@ -179,10 +179,7 @@ var _ = Describe("Events", func() {
 				logger,
 				client.NewJob(fixture.Clientset, "", true),
 				nil,
-				fixture.Namespace,
-				nil,
 				tests.GetApplicationServiceAccount(),
-				"",
 				"",
 				false,
 			)

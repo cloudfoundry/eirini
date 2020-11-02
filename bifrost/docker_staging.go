@@ -14,6 +14,11 @@ import (
 
 //counterfeiter:generate . ImageMetadataFetcher
 //counterfeiter:generate . ImageRefParser
+//counterfeiter:generate . StagingCompleter
+
+type StagingCompleter interface {
+	CompleteStaging(cf.StagingCompletedRequest) error
+}
 
 type ImageMetadataFetcher func(string, types.SystemContext) (*v1.ImageConfig, error)
 

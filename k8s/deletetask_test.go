@@ -17,10 +17,9 @@ import (
 
 var _ = Describe("TaskDeleter", func() {
 	const (
-		Image            = "docker.png"
-		CertsSecretName  = "secret-certs"
-		defaultNamespace = "default-ns"
-		taskGUID         = "task-123"
+		Image           = "docker.png"
+		CertsSecretName = "secret-certs"
+		taskGUID        = "task-123"
 	)
 
 	var (

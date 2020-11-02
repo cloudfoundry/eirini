@@ -22,17 +22,15 @@ import (
 
 var _ = Describe("AppHandler", func() {
 	var (
-		lrpBifrost     *handlerfakes.FakeLRPBifrost
-		stagingBifrost *handlerfakes.FakeStagingBifrost
-		lager          *lagertest.TestLogger
-		ts             *httptest.Server
+		lrpBifrost *handlerfakes.FakeLRPBifrost
+		lager      *lagertest.TestLogger
+		ts         *httptest.Server
 	)
 
 	BeforeEach(func() {
 		lrpBifrost = new(handlerfakes.FakeLRPBifrost)
-		stagingBifrost = new(handlerfakes.FakeStagingBifrost)
 		lager = lagertest.NewTestLogger("app-handler-test")
-		ts = httptest.NewServer(New(lrpBifrost, stagingBifrost, nil, nil, lager))
+		ts = httptest.NewServer(New(lrpBifrost, nil, nil, lager))
 	})
 
 	AfterEach(func() {
@@ -77,8 +75,8 @@ var _ = Describe("AppHandler", func() {
 				"placement_tags": ["place-1", "place-2"],
 				"egress_rules": ["raw message"],
 				"lifecycle": {
-					"buildpack_lifecycle": {
-						"start_command": "./start"
+					"docker_lifecycle": {
+						"image": "eirini/dorini"
 					}
 				},
 				"environment": { "env_var": "env_var_value" },
@@ -128,8 +126,8 @@ var _ = Describe("AppHandler", func() {
 				OrganizationName: "org-name",
 				PlacementTags:    []string{"place-1", "place-2"},
 				Lifecycle: cf.Lifecycle{
-					BuildpackLifecycle: &cf.BuildpackLifecycle{
-						StartCommand: "./start",
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image: "eirini/dorini",
 					},
 				},
 				Environment:             map[string]string{"env_var": "env_var_value"},

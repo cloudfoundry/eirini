@@ -38,14 +38,13 @@ func connect(cmd *cobra.Command, args []string) {
 	cfg := setConfigFromFile(path)
 	clientset := cmdcommons.CreateKubeClient(cfg.Properties.ConfigPath)
 
-	buildpackStagingBifrost := initBuildpackStagingBifrost(cfg, clientset)
 	dockerStagingBifrost := initDockerStagingBifrost(cfg)
 	taskBifrost := initTaskBifrost(cfg, clientset)
 	bifrost := initLRPBifrost(clientset, cfg)
 
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-	handler := handler.New(bifrost, buildpackStagingBifrost, dockerStagingBifrost, taskBifrost, handlerLogger)
+	handler := handler.New(bifrost, dockerStagingBifrost, taskBifrost, handlerLogger)
 	handlerLogger.Info("opi-connected")
 
 	if cfg.Properties.ServePlaintext {
@@ -120,29 +119,6 @@ func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) *stager.Callb
 }
 
 func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.TaskDesirer {
-	tlsConfigs := []k8s.StagingConfigTLS{
-		{
-			SecretName: eirini.CCUploaderSecretName,
-			KeyPaths: []k8s.KeyPath{
-				{Key: eirini.TLSSecretKey, Path: eirini.CCAPIKeyName},
-				{Key: eirini.TLSSecretCert, Path: eirini.CCAPICertName},
-			},
-		},
-		{
-			SecretName: eirini.EiriniClientSecretName,
-			KeyPaths: []k8s.KeyPath{
-				{Key: eirini.TLSSecretKey, Path: eirini.EiriniClientKey},
-				{Key: eirini.TLSSecretCert, Path: eirini.EiriniClientCert},
-			},
-		},
-		{
-			SecretName: eirini.EiriniClientSecretName,
-			KeyPaths: []k8s.KeyPath{
-				{Key: eirini.TLSSecretCA, Path: eirini.CACertName},
-			},
-		},
-	}
-
 	logger := lager.NewLogger("task-desirer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
@@ -150,10 +126,7 @@ func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Ta
 		logger,
 		client.NewJob(clientset, cfg.Properties.Namespace, cfg.Properties.EnableMultiNamespaceSupport),
 		client.NewSecret(clientset),
-		cfg.Properties.Namespace,
-		tlsConfigs,
 		cfg.Properties.ApplicationServiceAccount,
-		cfg.Properties.StagingServiceAccount,
 		cfg.Properties.RegistrySecretName,
 		cfg.Properties.UnsafeAllowAutomountServiceAccountToken,
 	)
@@ -168,25 +141,6 @@ func initTaskDeleter(clientset kubernetes.Interface, jobClient k8s.JobDeletingCl
 		jobClient,
 		client.NewSecret(clientset),
 	)
-}
-
-func initBuildpackStagingBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.BuildpackStaging {
-	logger := lager.NewLogger("buildpack-staging-bifrost")
-	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-
-	converter := initConverter(cfg)
-	taskDesirer := initTaskDesirer(cfg, clientset)
-	stagingJobClient := client.NewStagingJob(clientset, cfg.Properties.Namespace, cfg.Properties.EnableMultiNamespaceSupport)
-	taskDeleter := initTaskDeleter(clientset, stagingJobClient)
-	stagingCompleter := initStagingCompleter(cfg, logger)
-
-	return &bifrost.BuildpackStaging{
-		Converter:        converter,
-		StagingDesirer:   taskDesirer,
-		StagingDeleter:   taskDeleter,
-		StagingCompleter: stagingCompleter,
-		Logger:           logger,
-	}
 }
 
 func initDockerStagingBifrost(cfg *eirini.Config) *bifrost.DockerStaging {

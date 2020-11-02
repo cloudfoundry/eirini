@@ -15,24 +15,22 @@ import (
 
 var _ = Describe("Handler", func() {
 	var (
-		ts                      *httptest.Server
-		client                  *http.Client
-		lrpBifrost              *handlerfakes.FakeLRPBifrost
-		buildpackStagingBifrost *handlerfakes.FakeStagingBifrost
-		dockerStagingBifrost    *handlerfakes.FakeStagingBifrost
-		taskBifrost             *handlerfakes.FakeTaskBifrost
-		handlerClient           http.Handler
+		ts                   *httptest.Server
+		client               *http.Client
+		lrpBifrost           *handlerfakes.FakeLRPBifrost
+		dockerStagingBifrost *handlerfakes.FakeStagingBifrost
+		taskBifrost          *handlerfakes.FakeTaskBifrost
+		handlerClient        http.Handler
 	)
 
 	BeforeEach(func() {
 		client = &http.Client{}
 		lrpBifrost = new(handlerfakes.FakeLRPBifrost)
-		buildpackStagingBifrost = new(handlerfakes.FakeStagingBifrost)
 		dockerStagingBifrost = new(handlerfakes.FakeStagingBifrost)
 		taskBifrost = new(handlerfakes.FakeTaskBifrost)
 
 		lager := lagertest.NewTestLogger("handler-test")
-		handlerClient = New(lrpBifrost, buildpackStagingBifrost, dockerStagingBifrost, taskBifrost, lager)
+		handlerClient = New(lrpBifrost, dockerStagingBifrost, taskBifrost, lager)
 	})
 
 	JustBeforeEach(func() {
@@ -149,19 +147,8 @@ var _ = Describe("Handler", func() {
 			BeforeEach(func() {
 				method = "POST"
 				path = "/stage/stage_123"
+				body = `{"lifecycle" : { "docker_lifecycle": { } }}`
 				expectedStatus = http.StatusAccepted
-			})
-
-			It("serves the endpoint", func() {
-				assertEndpoint()
-			})
-		})
-
-		Context("PUT /stage/:staging_guid/completed", func() {
-			BeforeEach(func() {
-				method = "PUT"
-				path = "/stage/stage_123/completed"
-				expectedStatus = http.StatusOK
 			})
 
 			It("serves the endpoint", func() {
@@ -175,9 +162,9 @@ var _ = Describe("Handler", func() {
 				path = "/tasks/stage_123"
 				expectedStatus = http.StatusAccepted
 				body = `{"lifecycle" : {
-          "buildpack_lifecycle": {
-					  "start_command": "cmd"
-					}
+				  "docker_lifecycle": {
+					  "image": "eirini/dorini"
+			      }
 				}}`
 			})
 

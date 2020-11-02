@@ -3,7 +3,6 @@ package bifrost_test
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/bifrost"
@@ -117,7 +116,7 @@ var _ = Describe("OPI Converter", func() {
 					"prometheus.io/scrape": "scrape",
 				},
 				Lifecycle: cf.Lifecycle{
-					BuildpackLifecycle: &cf.BuildpackLifecycle{},
+					DockerLifecycle: &cf.DockerLifecycle{},
 				},
 			}
 		})
@@ -444,43 +443,6 @@ var _ = Describe("OPI Converter", func() {
 					})
 				})
 			})
-
-			Context("When the app is using buildpack lifecycle", func() {
-				BeforeEach(func() {
-					desireLRPRequest.Lifecycle = cf.Lifecycle{
-						BuildpackLifecycle: &cf.BuildpackLifecycle{
-							DropletHash:  "the-droplet-hash",
-							DropletGUID:  "the-droplet-guid",
-							StartCommand: "start me",
-						},
-					}
-				})
-
-				It("sets the healthcheck information", func() {
-					health := lrp.Health
-					Expect(health.Type).To(Equal("http"))
-					Expect(health.Port).To(Equal(int32(8000)))
-					Expect(health.Endpoint).To(Equal("/heat"))
-					Expect(health.TimeoutMs).To(Equal(uint(400)))
-				})
-
-				It("should convert droplet apps via the special registry URL", func() {
-					Expect(lrp.Image).To(Equal(fmt.Sprintf("%s/cloudfoundry/the-droplet-guid:the-droplet-hash", registryIP)))
-				})
-
-				It("should set buildpack specific env variables", func() {
-					Expect(lrp.Env).To(HaveKeyWithValue("HOME", "/home/vcap/app"))
-					Expect(lrp.Env).To(HaveKeyWithValue("PATH", "/usr/local/bin:/usr/bin:/bin"))
-					Expect(lrp.Env).To(HaveKeyWithValue("USER", "vcap"))
-					Expect(lrp.Env).To(HaveKeyWithValue("TMPDIR", "/home/vcap/tmp"))
-					Expect(lrp.Env).To(HaveKeyWithValue("PWD", "/home/vcap/app"))
-					Expect(lrp.Env).To(HaveKeyWithValue("START_COMMAND", "start me"))
-				})
-
-				It("assumes that the pod should not run as root", func() {
-					Expect(lrp.RunsAsRoot).To(BeFalse())
-				})
-			})
 		})
 	})
 
@@ -492,44 +454,6 @@ var _ = Describe("OPI Converter", func() {
 
 		JustBeforeEach(func() {
 			task, err = converter.ConvertTask("guid_1234", taskRequest)
-		})
-
-		When("the task has a buildpack lifecycle", func() {
-			BeforeEach(func() {
-				taskRequest = cf.TaskRequest{
-					AppGUID:            "our-app-id",
-					Name:               "task-name",
-					Environment:        []cf.EnvironmentVariable{{Name: "HOWARD", Value: "the alien"}},
-					CompletionCallback: "example.com/call/me/maybe",
-					Lifecycle: cf.Lifecycle{
-						BuildpackLifecycle: &cf.BuildpackLifecycle{
-							DropletGUID:  "some-guid",
-							DropletHash:  "some-hash",
-							StartCommand: "some command",
-						},
-					},
-				}
-			})
-
-			It("should convert the task request", func() {
-				Expect(err).NotTo(HaveOccurred())
-				Expect(task).To(Equal(opi.Task{
-					GUID:               "guid_1234",
-					AppGUID:            "our-app-id",
-					Name:               "task-name",
-					CompletionCallback: "example.com/call/me/maybe",
-					Env: map[string]string{
-						"HOWARD":        "the alien",
-						"HOME":          "/home/vcap/app",
-						"PATH":          "/usr/local/bin:/usr/bin:/bin",
-						"USER":          "vcap",
-						"TMPDIR":        "/home/vcap/tmp",
-						"START_COMMAND": "some command",
-					},
-					Command: []string{"/lifecycle/launch"},
-					Image:   fmt.Sprintf("%s/cloudfoundry/some-guid:some-hash", registryIP),
-				}))
-			})
 		})
 
 		When("the task has a docker lifecycle", func() {
@@ -583,96 +507,25 @@ var _ = Describe("OPI Converter", func() {
 				})
 			})
 		})
-	})
 
-	Describe("Convert Staging", func() {
-		var (
-			stagingRequest cf.StagingRequest
-			stagingGUID    string
-			stagingTask    opi.StagingTask
-		)
-
-		BeforeEach(func() {
-			stagingGUID = "guid_2468"
-			stagingRequest = cf.StagingRequest{
-				AppGUID:   "our-app-id",
-				AppName:   "our-app",
-				OrgName:   "our-org",
-				SpaceName: "our-space",
-				OrgGUID:   "our-org-id",
-				SpaceGUID: "our-space-id",
-				Environment: []cf.EnvironmentVariable{
-					{Name: "HOWARD", Value: "the alien"},
-					{Name: eirini.EnvAppID, Value: "should be ignored"},
-					{Name: eirini.EnvBuildpacks, Value: "should be ignored"},
-					{Name: eirini.EnvDownloadURL, Value: "should be ignored"},
-					{Name: eirini.EnvStagingGUID, Value: "should be ignored"},
-					{Name: eirini.EnvEiriniAddress, Value: "should be ignored"},
-					{Name: eirini.EnvCompletionCallback, Value: "should be ignored"},
-					{Name: eirini.EnvDropletUploadURL, Value: "should be ignored"},
-				},
-				LifecycleData: &cf.StagingBuildpackLifecycle{
-					AppBitsDownloadURI: "example.com/download",
-					DropletUploadURI:   "example.com/upload",
-					Buildpacks: []cf.Buildpack{
-						{
-							Name:       "go_buildpack",
-							Key:        "1234eeff",
-							URL:        "example.com/build/pack",
-							SkipDetect: true,
+		When("the task has the (unsuported) buildpack lifecycle", func() {
+			BeforeEach(func() {
+				taskRequest = cf.TaskRequest{
+					AppGUID:            "our-app-id",
+					Name:               "task-name",
+					Environment:        []cf.EnvironmentVariable{{Name: "HOWARD", Value: "the alien"}},
+					CompletionCallback: "example.com/call/me/maybe",
+					Lifecycle: cf.Lifecycle{
+						BuildpackLifecycle: &cf.BuildpackLifecycle{
+							DropletGUID: "some-guid",
 						},
 					},
-					BuildpackCacheDownloadURI:       "buildpack-cache-download-uri",
-					BuildpackCacheUploadURI:         "buildpack-cache-upload-uri",
-					BuildpackCacheChecksum:          "sumcheck",
-					BuildpackCacheChecksumAlgorithm: "sha256",
-				},
-				CompletionCallback: "example.com/call/me/maybe",
-				MemoryMB:           1234,
-				DiskMB:             4567,
-				CPUWeight:          49,
-			}
-		})
+				}
+			})
 
-		JustBeforeEach(func() {
-			stagingTask, err = converter.ConvertStaging(stagingGUID, stagingRequest)
-		})
-
-		It("converts the staging task request", func() {
-			Expect(err).NotTo(HaveOccurred())
-			Expect(stagingTask).To(Equal(opi.StagingTask{
-				DownloaderImage: "eirini/recipe-downloader:tagged",
-				UploaderImage:   "eirini/recipe-uploader:tagged",
-				ExecutorImage:   "eirini/recipe-runner:tagged",
-				Task: &opi.Task{
-					GUID:      stagingGUID,
-					AppName:   "our-app",
-					AppGUID:   "our-app-id",
-					OrgName:   "our-org",
-					SpaceName: "our-space",
-					OrgGUID:   "our-org-id",
-					SpaceGUID: "our-space-id",
-					Env: map[string]string{
-						"HOWARD":                                  "the alien",
-						eirini.EnvDownloadURL:                     "example.com/download",
-						eirini.EnvDropletUploadURL:                "example.com/upload",
-						eirini.EnvAppID:                           stagingRequest.AppGUID,
-						eirini.EnvStagingGUID:                     stagingGUID,
-						eirini.EnvCompletionCallback:              stagingRequest.CompletionCallback,
-						eirini.EnvBuildpacks:                      `[{"name":"go_buildpack","key":"1234eeff","url":"example.com/build/pack","skip_detect":true}]`,
-						eirini.EnvEiriniAddress:                   "http://opi.cf.internal",
-						eirini.EnvBuildpackCacheDownloadURI:       "buildpack-cache-download-uri",
-						eirini.EnvBuildpackCacheUploadURI:         "buildpack-cache-upload-uri",
-						eirini.EnvBuildpackCacheChecksum:          "sumcheck",
-						eirini.EnvBuildpackCacheChecksumAlgorithm: "sha256",
-						eirini.EnvBuildpackCacheArtifactsDir:      "/tmp/buildpack-cache",
-						eirini.EnvBuildpackCacheOutputArtifact:    "/tmp/cache.tgz",
-					},
-					MemoryMB:  1234,
-					DiskMB:    4567,
-					CPUWeight: 49,
-				},
-			}))
+			It("fails with a useful message", func() {
+				Expect(err).To(MatchError("docker is the only supported lifecycle"))
+			})
 		})
 	})
 })

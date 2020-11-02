@@ -136,10 +136,7 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 	}
 
 	if request.Lifecycle.BuildpackLifecycle != nil {
-		lifecycle := request.Lifecycle.BuildpackLifecycle
-		task.Command = []string{"/lifecycle/launch"}
-		task.Image = c.imageURI(lifecycle.DropletGUID, lifecycle.DropletHash)
-		env["START_COMMAND"] = lifecycle.StartCommand
+		return opi.Task{}, errors.New("docker is the only supported lifecycle")
 	}
 
 	if request.Lifecycle.DockerLifecycle != nil {
@@ -159,59 +156,6 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 	task.Env = mergeEnvs(request.Environment, env)
 
 	return task, nil
-}
-
-func (c *OPIConverter) ConvertStaging(stagingGUID string, request cf.StagingRequest) (opi.StagingTask, error) {
-	c.logger.Debug("convert-staging", lager.Data{"app-id": request.AppGUID, "staging-guid": stagingGUID})
-
-	lifecycleData := request.LifecycleData
-	if lifecycleData == nil {
-		lifecycleData = request.Lifecycle.BuildpackLifecycle
-	}
-
-	buildpacksJSON, err := json.Marshal(lifecycleData.Buildpacks)
-	if err != nil {
-		return opi.StagingTask{}, errors.Wrap(err, "failed to marshal buildpack json")
-	}
-
-	eiriniEnv := map[string]string{
-		eirini.EnvDownloadURL:                     lifecycleData.AppBitsDownloadURI,
-		eirini.EnvDropletUploadURL:                lifecycleData.DropletUploadURI,
-		eirini.EnvBuildpacks:                      string(buildpacksJSON),
-		eirini.EnvAppID:                           request.AppGUID,
-		eirini.EnvStagingGUID:                     stagingGUID,
-		eirini.EnvCompletionCallback:              request.CompletionCallback,
-		eirini.EnvEiriniAddress:                   c.stagerConfig.EiriniAddress,
-		eirini.EnvBuildpackCacheDownloadURI:       lifecycleData.BuildpackCacheDownloadURI,
-		eirini.EnvBuildpackCacheUploadURI:         lifecycleData.BuildpackCacheUploadURI,
-		eirini.EnvBuildpackCacheChecksum:          lifecycleData.BuildpackCacheChecksum,
-		eirini.EnvBuildpackCacheChecksumAlgorithm: lifecycleData.BuildpackCacheChecksumAlgorithm,
-		eirini.EnvBuildpackCacheArtifactsDir:      fmt.Sprintf("%s/buildpack-cache", eirini.BuildpackCacheDir),
-		eirini.EnvBuildpackCacheOutputArtifact:    fmt.Sprintf("%s/cache.tgz", eirini.BuildpackCacheDir),
-	}
-
-	stagingEnv := mergeEnvs(request.Environment, eiriniEnv)
-
-	stagingTask := opi.StagingTask{
-		DownloaderImage: c.stagerConfig.DownloaderImage,
-		UploaderImage:   c.stagerConfig.UploaderImage,
-		ExecutorImage:   c.stagerConfig.ExecutorImage,
-		Task: &opi.Task{
-			GUID:      stagingGUID,
-			AppName:   request.AppName,
-			AppGUID:   request.AppGUID,
-			OrgName:   request.OrgName,
-			SpaceName: request.SpaceName,
-			OrgGUID:   request.OrgGUID,
-			SpaceGUID: request.SpaceGUID,
-			Env:       stagingEnv,
-			MemoryMB:  request.MemoryMB,
-			DiskMB:    request.DiskMB,
-			CPUWeight: request.CPUWeight,
-		},
-	}
-
-	return stagingTask, nil
 }
 
 func (c *OPIConverter) isAllowedToRunAsRoot(lifecycle *cf.DockerLifecycle) (bool, error) {
@@ -268,10 +212,6 @@ func getRequestedRoutes(request cf.DesireLRPRequest) ([]opi.Route, error) {
 	return routes, nil
 }
 
-func (c *OPIConverter) imageURI(dropletGUID, dropletHash string) string {
-	return fmt.Sprintf("%s/cloudfoundry/%s:%s", c.registryIP, dropletGUID, dropletHash)
-}
-
 func mergeMaps(maps ...map[string]string) map[string]string {
 	result := make(map[string]string)
 
@@ -310,47 +250,30 @@ func mergeEnvs(requestEnv []cf.EnvironmentVariable, appliedEnv map[string]string
 func (c *OPIConverter) getLifecycleOptions(request cf.DesireLRPRequest) (*lifecycleOptions, error) {
 	options := &lifecycleOptions{}
 
-	switch {
-	case request.Lifecycle.DockerLifecycle != nil:
-		var err error
-
-		lifecycle := request.Lifecycle.DockerLifecycle
-		options.image = lifecycle.Image
-		options.command = lifecycle.Command
-		options.runsAsRoot, err = c.isAllowedToRunAsRoot(lifecycle)
-
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to verify if docker image needs root user")
-		}
-
-		registryUsername := lifecycle.RegistryUsername
-		registryPassword := lifecycle.RegistryPassword
-
-		if registryUsername != "" || registryPassword != "" {
-			options.privateRegistry = &opi.PrivateRegistry{
-				Server:   parseRegistryHost(options.image),
-				Username: registryUsername,
-				Password: registryPassword,
-			}
-		}
-
-	case request.Lifecycle.BuildpackLifecycle != nil:
-		lifecycle := request.Lifecycle.BuildpackLifecycle
-
-		options.image = c.imageURI(lifecycle.DropletGUID, lifecycle.DropletHash)
-		options.command = []string{"dumb-init", "--", "/lifecycle/launch"}
-		options.env = map[string]string{
-			"HOME":          "/home/vcap/app",
-			"PATH":          "/usr/local/bin:/usr/bin:/bin",
-			"USER":          "vcap",
-			"PWD":           "/home/vcap/app",
-			"TMPDIR":        "/home/vcap/tmp",
-			"START_COMMAND": lifecycle.StartCommand,
-		}
-		options.runsAsRoot = false
-
-	default:
+	if request.Lifecycle.DockerLifecycle == nil {
 		return nil, fmt.Errorf("missing lifecycle data")
+	}
+
+	var err error
+
+	lifecycle := request.Lifecycle.DockerLifecycle
+	options.image = lifecycle.Image
+	options.command = lifecycle.Command
+	options.runsAsRoot, err = c.isAllowedToRunAsRoot(lifecycle)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to verify if docker image needs root user")
+	}
+
+	registryUsername := lifecycle.RegistryUsername
+	registryPassword := lifecycle.RegistryPassword
+
+	if registryUsername != "" || registryPassword != "" {
+		options.privateRegistry = &opi.PrivateRegistry{
+			Server:   parseRegistryHost(options.image),
+			Username: registryUsername,
+			Password: registryPassword,
+		}
 	}
 
 	return options, nil

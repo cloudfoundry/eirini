@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var _ = Describe("Buildpack task", func() {
+var _ = Describe("Task", func() {
 	var (
 		err           error
 		taskBifrost   *bifrost.Task
@@ -62,11 +62,7 @@ var _ = Describe("Buildpack task", func() {
 				CompletionCallback: "my-callback",
 				Environment:        nil,
 				Lifecycle: cf.Lifecycle{
-					BuildpackLifecycle: &cf.BuildpackLifecycle{
-						DropletHash:  "h123jhh",
-						DropletGUID:  "fds1234",
-						StartCommand: "run",
-					},
+					DockerLifecycle: &cf.DockerLifecycle{},
 				},
 			}
 			task := opi.Task{GUID: "my-guid"}

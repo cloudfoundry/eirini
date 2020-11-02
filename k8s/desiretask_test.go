@@ -10,22 +10,19 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/pkg/errors"
 	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("TaskDesirer", func() {
 	const (
-		Image            = "docker.png"
-		CertsSecretName  = "secret-certs"
-		defaultNamespace = "default-ns"
-		taskGUID         = "task-123"
+		Image           = "docker.png"
+		CertsSecretName = "secret-certs"
+		taskGUID        = "task-123"
 	)
 
 	var (
@@ -54,7 +51,6 @@ var _ = Describe("TaskDesirer", func() {
 			corev1.EnvVar{Name: eirini.EnvDownloadURL, Value: "example.com/download"},
 			corev1.EnvVar{Name: eirini.EnvDropletUploadURL, Value: "example.com/upload"},
 			corev1.EnvVar{Name: eirini.EnvAppID, Value: "env-app-id"},
-			corev1.EnvVar{Name: eirini.EnvStagingGUID, Value: taskGUID},
 			corev1.EnvVar{Name: eirini.EnvCFInstanceGUID, ValueFrom: expectedValFrom("metadata.uid")},
 			corev1.EnvVar{Name: eirini.EnvCFInstanceInternalIP, ValueFrom: expectedValFrom("status.podIP")},
 			corev1.EnvVar{Name: eirini.EnvCFInstanceIP, ValueFrom: expectedValFrom("status.hostIP")},
@@ -63,22 +59,6 @@ var _ = Describe("TaskDesirer", func() {
 			corev1.EnvVar{Name: eirini.EnvCFInstancePort, Value: ""},
 			corev1.EnvVar{Name: eirini.EnvCFInstancePorts, Value: "[]"},
 		))
-	}
-
-	assertStagingContainer := func(container corev1.Container, name string) {
-		assertContainer(container, name)
-
-		Expect(container.Env).To(ContainElements(
-			corev1.EnvVar{Name: eirini.EnvCompletionCallback, Value: "example.com/call/me/maybe"},
-			corev1.EnvVar{Name: eirini.EnvEiriniAddress, Value: "http://opi.cf.internal"},
-		))
-	}
-
-	assertExecutorContainer := func(container corev1.Container, cpu uint8, mem, disk int64) {
-		assertStagingContainer(container, "opi-task-executor")
-		Expect(container.Resources.Requests.Memory()).To(Equal(resource.NewScaledQuantity(mem, resource.Mega)))
-		Expect(container.Resources.Requests.Cpu()).To(Equal(resource.NewScaledQuantity(int64(cpu*10), resource.Milli)))
-		Expect(container.Resources.Requests.StorageEphemeral()).To(Equal(resource.NewScaledQuantity(disk, resource.Mega)))
 	}
 
 	BeforeEach(func() {
@@ -100,44 +80,17 @@ var _ = Describe("TaskDesirer", func() {
 				eirini.EnvDownloadURL:      "example.com/download",
 				eirini.EnvDropletUploadURL: "example.com/upload",
 				eirini.EnvAppID:            "env-app-id",
-				eirini.EnvStagingGUID:      taskGUID,
 			},
 			MemoryMB:  1,
 			CPUWeight: 2,
 			DiskMB:    3,
 		}
 
-		tlsStagingConfigs := []StagingConfigTLS{
-			{
-				SecretName: "cc-uploader-certs",
-				KeyPaths: []KeyPath{
-					{Key: "key-to-cc-uploader-cert", Path: "cc-uploader-cert"},
-					{Key: "key-to-cc-uploader-priv-key", Path: "cc-uploader-key"},
-				},
-			},
-			{
-				SecretName: "eirini-certs",
-				KeyPaths: []KeyPath{
-					{Key: "key-to-eirini-cert", Path: "eirini-cert"},
-					{Key: "key-to-eirini-priv-key", Path: "eirini-key"},
-				},
-			},
-			{
-				SecretName: "global-ca",
-				KeyPaths: []KeyPath{
-					{Key: "key-to-ca", Path: "ca"},
-				},
-			},
-		}
-
 		desirer = NewTaskDesirer(
 			lagertest.NewTestLogger("desiretask"),
 			fakeJobClient,
 			fakeSecretsCreator,
-			defaultNamespace,
-			tlsStagingConfigs,
 			"service-account",
-			"staging-service-account",
 			"registry-secret",
 			false,
 		)
@@ -219,11 +172,6 @@ var _ = Describe("TaskDesirer", func() {
 					HaveKeyWithValue(LabelSourceType, "TASK"),
 				))
 			})
-
-			By("not setting staging-specific labels on the job", func() {
-				Expect(job.Labels[LabelSourceType]).NotTo(Equal("STG"))
-				Expect(job.Labels).NotTo(HaveKey(LabelStagingGUID))
-			})
 		})
 
 		When("allowAutomountServiceAccountToken is true", func() {
@@ -232,10 +180,7 @@ var _ = Describe("TaskDesirer", func() {
 					lagertest.NewTestLogger("desiretask"),
 					fakeJobClient,
 					fakeSecretsCreator,
-					defaultNamespace,
-					[]StagingConfigTLS{},
 					"service-account",
-					"staging-service-account",
 					"registry-secret",
 					true,
 				)
@@ -368,230 +313,6 @@ var _ = Describe("TaskDesirer", func() {
 				It("returns an error", func() {
 					Expect(err).To(MatchError(ContainSubstring("create-secret-err")))
 				})
-			})
-		})
-	})
-
-	Describe("DesireStaging", func() {
-		var (
-			stagingTask *opi.StagingTask
-			err         error
-		)
-
-		assertVolumes := func(job *batch.Job) {
-			Expect(job.Spec.Template.Spec.Volumes).To(HaveLen(5))
-			Expect(job.Spec.Template.Spec.Volumes).To(ConsistOf(
-				MatchFields(IgnoreExtras, Fields{
-					"Name": Equal(eirini.CertsVolumeName),
-					"VolumeSource": Equal(corev1.VolumeSource{
-						Projected: &corev1.ProjectedVolumeSource{
-							Sources: []corev1.VolumeProjection{
-								{
-									Secret: &corev1.SecretProjection{
-										LocalObjectReference: corev1.LocalObjectReference{
-											Name: "cc-uploader-certs",
-										},
-										Items: []corev1.KeyToPath{
-											{
-												Key:  "key-to-cc-uploader-cert",
-												Path: "cc-uploader-cert",
-											},
-											{
-												Key:  "key-to-cc-uploader-priv-key",
-												Path: "cc-uploader-key",
-											},
-										},
-									},
-								},
-								{
-									Secret: &corev1.SecretProjection{
-										LocalObjectReference: corev1.LocalObjectReference{
-											Name: "eirini-certs",
-										},
-										Items: []corev1.KeyToPath{
-											{
-												Key:  "key-to-eirini-cert",
-												Path: "eirini-cert",
-											},
-											{
-												Key:  "key-to-eirini-priv-key",
-												Path: "eirini-key",
-											},
-										},
-									},
-								},
-								{
-									Secret: &corev1.SecretProjection{
-										LocalObjectReference: corev1.LocalObjectReference{
-											Name: "global-ca",
-										},
-										Items: []corev1.KeyToPath{
-											{
-												Key:  "key-to-ca",
-												Path: "ca",
-											},
-										},
-									},
-								},
-							},
-						},
-					}),
-				}),
-				MatchFields(IgnoreExtras, Fields{
-					"Name": Equal(eirini.RecipeOutputName),
-				}),
-				MatchFields(IgnoreExtras, Fields{
-					"Name": Equal(eirini.RecipeBuildPacksName),
-				}),
-				MatchFields(IgnoreExtras, Fields{
-					"Name": Equal(eirini.RecipeWorkspaceName),
-				}),
-				MatchFields(IgnoreExtras, Fields{
-					"Name": Equal(eirini.BuildpackCacheName),
-				}),
-			))
-		}
-
-		assertContainerVolumeMount := func(job *batch.Job) {
-			buildpackVolumeMatcher := MatchFields(IgnoreExtras, Fields{
-				"Name":      Equal(eirini.RecipeBuildPacksName),
-				"ReadOnly":  Equal(false),
-				"MountPath": Equal(eirini.RecipeBuildPacksDir),
-			})
-			certsVolumeMatcher := MatchFields(IgnoreExtras, Fields{
-				"Name":      Equal(eirini.CertsVolumeName),
-				"ReadOnly":  Equal(true),
-				"MountPath": Equal(eirini.CertsMountPath),
-			})
-			workspaceVolumeMatcher := MatchFields(IgnoreExtras, Fields{
-				"Name":      Equal(eirini.RecipeWorkspaceName),
-				"ReadOnly":  Equal(false),
-				"MountPath": Equal(eirini.RecipeWorkspaceDir),
-			})
-			outputVolumeMatcher := MatchFields(IgnoreExtras, Fields{
-				"Name":      Equal(eirini.RecipeOutputName),
-				"ReadOnly":  Equal(false),
-				"MountPath": Equal(eirini.RecipeOutputLocation),
-			})
-			buildpackCacheVolumeMatcher := MatchFields(IgnoreExtras, Fields{
-				"Name":      Equal(eirini.BuildpackCacheName),
-				"ReadOnly":  Equal(false),
-				"MountPath": Equal(eirini.BuildpackCacheDir),
-			})
-
-			downloaderVolumeMounts := job.Spec.Template.Spec.InitContainers[0].VolumeMounts
-			Expect(downloaderVolumeMounts).To(ConsistOf(
-				buildpackVolumeMatcher,
-				certsVolumeMatcher,
-				workspaceVolumeMatcher,
-				buildpackCacheVolumeMatcher,
-			))
-
-			executorVolumeMounts := job.Spec.Template.Spec.InitContainers[1].VolumeMounts
-			Expect(executorVolumeMounts).To(ConsistOf(
-				buildpackVolumeMatcher,
-				certsVolumeMatcher,
-				workspaceVolumeMatcher,
-				outputVolumeMatcher,
-				buildpackCacheVolumeMatcher,
-			))
-
-			uploaderVolumeMounts := job.Spec.Template.Spec.Containers[0].VolumeMounts
-			Expect(uploaderVolumeMounts).To(ConsistOf(
-				certsVolumeMatcher,
-				outputVolumeMatcher,
-				buildpackCacheVolumeMatcher,
-			))
-		}
-
-		assertStagingSpec := func(job *batch.Job) {
-			Expect(job.Spec.Template.Spec.ServiceAccountName).To(Equal("staging-service-account"))
-			assertVolumes(job)
-			assertContainerVolumeMount(job)
-		}
-
-		BeforeEach(func() {
-			stagingTask = &opi.StagingTask{
-				DownloaderImage: Image,
-				ExecutorImage:   Image,
-				UploaderImage:   Image,
-				Task:            task,
-			}
-			stagingTask.Name = ""
-			env := stagingTask.Env
-			env[eirini.EnvCompletionCallback] = "example.com/call/me/maybe"
-			env[eirini.EnvEiriniAddress] = "http://opi.cf.internal"
-		})
-
-		JustBeforeEach(func() {
-			var namespace string
-			err = desirer.DesireStaging(stagingTask)
-			Expect(fakeJobClient.CreateCallCount()).To(Equal(1))
-			namespace, job = fakeJobClient.CreateArgsForCall(0)
-			Expect(namespace).To(Equal(defaultNamespace))
-		})
-
-		It("should desire the staging task", func() {
-			Expect(err).NotTo(HaveOccurred())
-			Expect(job.Name).To(Equal("my-app-my-space"))
-
-			assertGeneralSpec(job)
-			assertStagingSpec(job)
-
-			initContainers := job.Spec.Template.Spec.InitContainers
-			Expect(initContainers).To(HaveLen(2))
-
-			containers := job.Spec.Template.Spec.Containers
-			Expect(containers).To(HaveLen(1))
-
-			assertStagingContainer(initContainers[0], "opi-task-downloader")
-			assertExecutorContainer(initContainers[1],
-				stagingTask.CPUWeight,
-				stagingTask.MemoryMB,
-				stagingTask.DiskMB,
-			)
-			assertStagingContainer(containers[0], "opi-task-uploader")
-		})
-
-		When("the prefix would be invalid", func() {
-			BeforeEach(func() {
-				task.AppName = ""
-				task.SpaceName = ""
-			})
-
-			It("should use the guid as the prefix instead", func() {
-				Expect(job.Name).To(Equal(taskGUID))
-			})
-		})
-
-		DescribeTable("the task should have the expected labels", func(key, value string) {
-			Expect(job.Labels).To(HaveKeyWithValue(key, value))
-		},
-			Entry("AppGUID", LabelAppGUID, "my-app-guid"),
-			Entry("LabelGUID", LabelGUID, "task-123"),
-			Entry("LabelSourceType", LabelSourceType, "STG"),
-			Entry("LabelStagingGUID", LabelStagingGUID, taskGUID),
-		)
-
-		DescribeTable("the task should have the expected annotations", func(key, value string) {
-			Expect(job.Annotations).To(HaveKeyWithValue(key, value))
-		},
-			Entry("AnnotationAppName", AnnotationAppName, "my-app"),
-			Entry("AnnotationAppID", AnnotationAppID, "my-app-guid"),
-			Entry("AnnotationOrgName", AnnotationOrgName, "my-org"),
-			Entry("AnnotationOrgGUID", AnnotationOrgGUID, "org-id"),
-			Entry("AnnotationSpaceName", AnnotationSpaceName, "my-space"),
-			Entry("AnnotationSpaceGUID", AnnotationSpaceGUID, "space-id"),
-			Entry("SeccompPodAnnotationKey", corev1.SeccompPodAnnotationKey, corev1.SeccompProfileRuntimeDefault),
-		)
-
-		Context("When the staging task already exists", func() {
-			BeforeEach(func() {
-				fakeJobClient.CreateReturns(nil, errors.New("job already exists"))
-			})
-
-			It("should return an error", func() {
-				Expect(err).To(MatchError(ContainSubstring("job already exists")))
 			})
 		})
 	})

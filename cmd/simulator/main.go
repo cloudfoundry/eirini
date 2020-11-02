@@ -30,7 +30,7 @@ func main() {
 	stager := &StagerSimulator{}
 	task := &TaskSimulator{}
 
-	handler := handler.New(lrpBifrost, stager, stager, task, handlerLogger)
+	handler := handler.New(lrpBifrost, stager, task, handlerLogger)
 
 	fmt.Println("Starting to listen at 127.0.0.1:8085")
 	handlerLogger.Fatal("simulator-crashed", http.ListenAndServe("127.0.0.1:8085", handler))

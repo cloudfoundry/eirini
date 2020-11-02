@@ -39,7 +39,7 @@ var _ = Describe("TaskHandler", func() {
 
 	JustBeforeEach(func() {
 		logger = lagertest.NewTestLogger("test")
-		handler := New(nil, nil, nil, taskBifrost, logger)
+		handler := New(nil, nil, taskBifrost, logger)
 		ts = httptest.NewServer(handler)
 		req, err := http.NewRequest(method, ts.URL+path, bytes.NewReader([]byte(body)))
 		Expect(err).NotTo(HaveOccurred())
@@ -69,12 +69,12 @@ var _ = Describe("TaskHandler", func() {
 				"environment": [{"name": "HOWARD", "value": "the alien"}],
 				"completion_callback": "example.com/call/me/maybe",
 				"lifecycle": {
-					"buildpack_lifecycle": {
-							"droplet_guid": "some-guid",
-							"droplet_hash": "some-hash",
-							"start_command": "some command"
-						}
+					"docker_lifecycle": {
+						"image": "eirini/dorini",
+						"registry_username": "user",
+						"registry_password": "pass"
 					}
+				}
 			}`
 		})
 
@@ -98,10 +98,10 @@ var _ = Describe("TaskHandler", func() {
 				Environment:        []cf.EnvironmentVariable{{Name: "HOWARD", Value: "the alien"}},
 				CompletionCallback: "example.com/call/me/maybe",
 				Lifecycle: cf.Lifecycle{
-					BuildpackLifecycle: &cf.BuildpackLifecycle{
-						DropletGUID:  "some-guid",
-						DropletHash:  "some-hash",
-						StartCommand: "some command",
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image:            "eirini/dorini",
+						RegistryUsername: "user",
+						RegistryPassword: "pass",
 					},
 				},
 			}))
