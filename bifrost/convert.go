@@ -135,21 +135,19 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 		SpaceGUID:          request.SpaceGUID,
 	}
 
-	if request.Lifecycle.BuildpackLifecycle != nil {
+	if request.Lifecycle.DockerLifecycle == nil {
 		return opi.Task{}, errors.New("docker is the only supported lifecycle")
 	}
 
-	if request.Lifecycle.DockerLifecycle != nil {
-		lifecycle := request.Lifecycle.DockerLifecycle
-		task.Command = lifecycle.Command
-		task.Image = lifecycle.Image
+	lifecycle := request.Lifecycle.DockerLifecycle
+	task.Command = lifecycle.Command
+	task.Image = lifecycle.Image
 
-		if lifecycle.RegistryUsername != "" || lifecycle.RegistryPassword != "" {
-			task.PrivateRegistry = &opi.PrivateRegistry{
-				Server:   parseRegistryHost(lifecycle.Image),
-				Username: lifecycle.RegistryUsername,
-				Password: lifecycle.RegistryPassword,
-			}
+	if lifecycle.RegistryUsername != "" || lifecycle.RegistryPassword != "" {
+		task.PrivateRegistry = &opi.PrivateRegistry{
+			Server:   parseRegistryHost(lifecycle.Image),
+			Username: lifecycle.RegistryUsername,
+			Password: lifecycle.RegistryPassword,
 		}
 	}
 

@@ -508,18 +508,14 @@ var _ = Describe("OPI Converter", func() {
 			})
 		})
 
-		When("the task has the (unsuported) buildpack lifecycle", func() {
+		When("the task does not have any docker lifecycle information", func() {
 			BeforeEach(func() {
 				taskRequest = cf.TaskRequest{
 					AppGUID:            "our-app-id",
 					Name:               "task-name",
 					Environment:        []cf.EnvironmentVariable{{Name: "HOWARD", Value: "the alien"}},
 					CompletionCallback: "example.com/call/me/maybe",
-					Lifecycle: cf.Lifecycle{
-						BuildpackLifecycle: &cf.BuildpackLifecycle{
-							DropletGUID: "some-guid",
-						},
-					},
+					Lifecycle:          cf.Lifecycle{},
 				}
 			})
 

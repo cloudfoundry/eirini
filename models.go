@@ -4,20 +4,13 @@ import "errors"
 
 const (
 	// Environment Variable Names
-	EnvEiriniNamespace                 = "EIRINI_NAMESPACE"
-	EnvDownloadURL                     = "DOWNLOAD_URL"
-	EnvBuildpacks                      = "BUILDPACKS"
-	EnvDropletUploadURL                = "DROPLET_UPLOAD_URL"
-	EnvAppID                           = "APP_ID"
-	EnvStagingGUID                     = "STAGING_GUID"
-	EnvCompletionCallback              = "COMPLETION_CALLBACK"
-	EnvEiriniAddress                   = "EIRINI_ADDRESS"
-	EnvBuildpackCacheUploadURI         = "BUILDPACK_CACHE_UPLOAD_URI"
-	EnvBuildpackCacheDownloadURI       = "BUILDPACK_CACHE_DOWNLOAD_URI"
-	EnvBuildpackCacheChecksum          = "BUILDPACK_CACHE_CHECKSUM"
-	EnvBuildpackCacheChecksumAlgorithm = "BUILDPACK_CACHE_CHECKSUM_ALGORITHM"
-	EnvBuildpackCacheArtifactsDir      = "EIRINI_BUILD_ARTIFACTS_CACHE_DIR"
-	EnvBuildpackCacheOutputArtifact    = "EIRINI_OUTPUT_BUILD_ARTIFACTS_CACHE"
+	EnvEiriniNamespace    = "EIRINI_NAMESPACE"
+	EnvDownloadURL        = "DOWNLOAD_URL"
+	EnvDropletUploadURL   = "DROPLET_UPLOAD_URL"
+	EnvAppID              = "APP_ID"
+	EnvStagingGUID        = "STAGING_GUID"
+	EnvCompletionCallback = "COMPLETION_CALLBACK"
+	EnvEiriniAddress      = "EIRINI_ADDRESS"
 
 	EnvPodName              = "POD_NAME"
 	EnvCFInstanceIP         = "CF_INSTANCE_IP"
@@ -28,15 +21,11 @@ const (
 	EnvCFInstancePort       = "CF_INSTANCE_PORT"
 	EnvCFInstancePorts      = "CF_INSTANCE_PORTS"
 
-	RecipeBuildPacksDir    = "/var/lib/buildpacks"
-	RecipeBuildPacksName   = "recipe-buildpacks"
 	RecipeWorkspaceDir     = "/recipe_workspace"
 	RecipeWorkspaceName    = "recipe-workspace"
 	RecipeOutputName       = "staging-output"
 	RecipeOutputLocation   = "/out"
 	RecipePacksBuilderPath = "/packs/builder"
-	BuildpackCacheDir      = "/tmp"
-	BuildpackCacheName     = "buildpack-cache"
 
 	AppMetricsEmissionIntervalInSecs = 15
 

@@ -73,8 +73,7 @@ type DesiredLRPLifecycleResponse struct {
 }
 
 type Lifecycle struct {
-	DockerLifecycle    *DockerLifecycle    `json:"docker_lifecycle"`
-	BuildpackLifecycle *BuildpackLifecycle `json:"buildpack_lifecycle"`
+	DockerLifecycle *DockerLifecycle `json:"docker_lifecycle"`
 }
 
 type DockerLifecycle struct {
@@ -82,12 +81,6 @@ type DockerLifecycle struct {
 	Command          []string `json:"command"`
 	RegistryUsername string   `json:"registry_username"`
 	RegistryPassword string   `json:"registry_password"`
-}
-
-type BuildpackLifecycle struct {
-	DropletHash  string `json:"droplet_hash"`
-	DropletGUID  string `json:"droplet_guid"`
-	StartCommand string `json:"start_command"`
 }
 
 type TaskRequest struct {
@@ -118,19 +111,18 @@ type TaskCompletedRequest struct {
 }
 
 type StagingRequest struct {
-	AppGUID            string                     `json:"app_guid"`
-	AppName            string                     `json:"app_name"`
-	OrgName            string                     `json:"org_name"`
-	OrgGUID            string                     `json:"org_guid"`
-	SpaceName          string                     `json:"space_name"`
-	SpaceGUID          string                     `json:"space_guid"`
-	CompletionCallback string                     `json:"completion_callback"`
-	Environment        []EnvironmentVariable      `json:"environment"`
-	LifecycleData      *StagingBuildpackLifecycle `json:"lifecycle_data"`
-	Lifecycle          StagingLifecycle           `json:"lifecycle"`
-	MemoryMB           int64                      `json:"memory_mb"`
-	DiskMB             int64                      `json:"disk_mb"`
-	CPUWeight          uint8                      `json:"cpu_weight"`
+	AppGUID            string                `json:"app_guid"`
+	AppName            string                `json:"app_name"`
+	OrgName            string                `json:"org_name"`
+	OrgGUID            string                `json:"org_guid"`
+	SpaceName          string                `json:"space_name"`
+	SpaceGUID          string                `json:"space_guid"`
+	CompletionCallback string                `json:"completion_callback"`
+	Environment        []EnvironmentVariable `json:"environment"`
+	Lifecycle          StagingLifecycle      `json:"lifecycle"`
+	MemoryMB           int64                 `json:"memory_mb"`
+	DiskMB             int64                 `json:"disk_mb"`
+	CPUWeight          uint8                 `json:"cpu_weight"`
 }
 
 type StagingCompletedRequest struct {
@@ -142,31 +134,13 @@ type StagingCompletedRequest struct {
 }
 
 type StagingLifecycle struct {
-	DockerLifecycle    *StagingDockerLifecycle    `json:"docker_lifecycle"`
-	BuildpackLifecycle *StagingBuildpackLifecycle `json:"buildpack_lifecycle"`
+	DockerLifecycle *StagingDockerLifecycle `json:"docker_lifecycle"`
 }
 
 type StagingDockerLifecycle struct {
 	Image            string `json:"image"`
 	RegistryUsername string `json:"registry_username"`
 	RegistryPassword string `json:"registry_password"`
-}
-
-type StagingBuildpackLifecycle struct {
-	AppBitsDownloadURI              string      `json:"app_bits_download_uri"`
-	DropletUploadURI                string      `json:"droplet_upload_uri"`
-	Buildpacks                      []Buildpack `json:"buildpacks"`
-	BuildpackCacheDownloadURI       string      `json:"buildpack_cache_download_uri"`
-	BuildpackCacheUploadURI         string      `json:"buildpack_cache_upload_uri"`
-	BuildpackCacheChecksum          string      `json:"buildpack_cache_checksum"`
-	BuildpackCacheChecksumAlgorithm string      `json:"buildpack_cache_checksum_algorithm"`
-}
-
-type Buildpack struct {
-	Name       string `json:"name"`
-	Key        string `json:"key"`
-	URL        string `json:"url"`
-	SkipDetect bool   `json:"skip_detect"`
 }
 
 type EnvironmentVariable struct {
