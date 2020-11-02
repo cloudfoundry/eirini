@@ -43,7 +43,7 @@ run_unit_tests() {
   echo "Running unit tests"
 
   export GO111MODULE=on
-  "$RUN_DIR"/run_unit_tests.sh
+  "$RUN_DIR"/run_unit_tests.sh "$@"
 }
 
 run_integration_tests() {
@@ -78,36 +78,37 @@ run_integration_tests() {
     -e TELEPRESENCE_SERVICE_NAME="$service_name" \
     -e NODES=4 \
     eirini/ci \
-    /usr/src/app/scripts/run_integration_tests.sh
+    /usr/src/app/scripts/run_integration_tests.sh "$@"
 }
 
 run_eats_helmless_single_ns() {
   echo "Running EATs against single NS helmless deployed eirini on kind"
 
-  run_eats_helmless "helmless-single"
+  run_eats_helmless "helmless-single" "$@"
 }
 
 run_eats_helmless_multi_ns() {
   echo "Running EATs against multi NS helmless deployed eirini on kind"
 
-  run_eats_helmless "helmless-multi"
+  run_eats_helmless "helmless-multi" "$@"
 }
 
 run_eats_helmful_single_ns() {
   echo "Running EATs against single NS helm deployed eirini on kind"
 
-  run_eats_helmful "false"
+  run_eats_helmful "false" "$@"
 }
 
 run_eats_helmful_multi_ns() {
   echo "Running EATs against multi NS helm deployed eirini on kind"
 
-  run_eats_helmful "true"
+  run_eats_helmful "true" "$@"
 }
 
 run_eats_helmless() {
   local profile_name
   profile_name="$1"
+  shift
 
   local cluster_name="eats-helmless"
   local kubeconfig="$HOME/.kube/$cluster_name.yml"
@@ -140,12 +141,13 @@ run_eats_helmless() {
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
     -e INTEGRATION_KUBECONFIG="/usr/src/app/$cluster_name.yml" \
     eirini/ci \
-    /usr/src/app/scripts/run_eats_tests.sh
+    /usr/src/app/scripts/run_eats_tests.sh "$@"
 }
 
 run_eats_helmful() {
   local multi_ns_support
   multi_ns_support="$1"
+  shift
 
   local cluster_name="eats-helmful"
   local kubeconfig="$HOME/.kube/$cluster_name.yml"
@@ -178,7 +180,7 @@ run_eats_helmful() {
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
     -e INTEGRATION_KUBECONFIG="/usr/src/app/$cluster_name.yml" \
     eirini/ci \
-    /usr/src/app/scripts/run_eats_tests.sh
+    /usr/src/app/scripts/run_eats_tests.sh "$@"
 }
 
 run_linter() {
@@ -189,27 +191,27 @@ run_linter() {
 
 run_subset() {
   if [[ "$run_unit_tests" == "true" ]]; then
-    run_unit_tests
+    run_unit_tests "$@"
   fi
 
   if [[ "$run_integration_tests" == "true" ]]; then
-    run_integration_tests
+    run_integration_tests "$@"
   fi
 
   if [[ "$run_eats_helmless_single_ns" == "true" ]]; then
-    run_eats_helmless_single_ns
+    run_eats_helmless_single_ns "$@"
   fi
 
   if [[ "$run_eats_helmful_single_ns" == "true" ]]; then
-    run_eats_helmful_single_ns
+    run_eats_helmful_single_ns "$@"
   fi
 
   if [[ "$run_eats_helmless_multi_ns" == "true" ]]; then
-    run_eats_helmless_multi_ns
+    run_eats_helmless_multi_ns "$@"
   fi
 
   if [[ "$run_eats_helmful_multi_ns" == "true" ]]; then
-    run_eats_helmful_multi_ns
+    run_eats_helmful_multi_ns "$@"
   fi
 
   if [[ "$run_linter" == "true" ]]; then
@@ -322,8 +324,10 @@ EOF
         ;;
     esac
   done
+  shift $((OPTIND - 1))
+
   if [[ "$run_subset" == "true" ]]; then
-    run_subset
+    run_subset "$@"
   else
     run_everything
   fi
