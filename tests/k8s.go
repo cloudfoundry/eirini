@@ -203,13 +203,7 @@ func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 			ClientCAPath:   PathToTestFixture("cert"),
 			TLSPort:        tlsPort,
 
-			DownloaderImage: "docker.io/eirini/integration_test_staging",
-			ExecutorImage:   "docker.io/eirini/integration_test_staging",
-			UploaderImage:   "docker.io/eirini/integration_test_staging",
-
 			ApplicationServiceAccount: GetApplicationServiceAccount(),
-			StagingServiceAccount:     "staging",
-			RegistryAddress:           "registry",
 			RegistrySecretName:        "registry-secret",
 		},
 	}

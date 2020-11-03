@@ -16,9 +16,6 @@ import (
 )
 
 var _ = Describe("OPI Converter", func() {
-	const (
-		registryIP = "eirini-registry.service.cf.internal"
-	)
 
 	var (
 		logger              *lagertest.TestLogger
@@ -27,7 +24,6 @@ var _ = Describe("OPI Converter", func() {
 		imgMetadataFetcher  *bifrostfakes.FakeImageMetadataFetcher
 		imgRefParser        *bifrostfakes.FakeImageRefParser
 		allowRunImageAsRoot bool
-		stagerConfig        eirini.StagerConfig
 	)
 
 	BeforeEach(func() {
@@ -35,22 +31,14 @@ var _ = Describe("OPI Converter", func() {
 		imgMetadataFetcher = new(bifrostfakes.FakeImageMetadataFetcher)
 		imgRefParser = new(bifrostfakes.FakeImageRefParser)
 		allowRunImageAsRoot = false
-		stagerConfig = eirini.StagerConfig{
-			EiriniAddress:   "http://opi.cf.internal",
-			DownloaderImage: "eirini/recipe-downloader:tagged",
-			UploaderImage:   "eirini/recipe-uploader:tagged",
-			ExecutorImage:   "eirini/recipe-runner:tagged",
-		}
 	})
 
 	JustBeforeEach(func() {
 		converter = bifrost.NewOPIConverter(
 			logger,
-			registryIP,
 			imgMetadataFetcher.Spy,
 			imgRefParser.Spy,
 			allowRunImageAsRoot,
-			stagerConfig,
 		)
 	})
 

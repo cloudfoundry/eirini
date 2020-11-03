@@ -27,21 +27,17 @@ type lifecycleOptions struct {
 
 type OPIConverter struct {
 	logger               lager.Logger
-	registryIP           string
 	imageMetadataFetcher ImageMetadataFetcher
 	imageRefParser       ImageRefParser
 	allowRunImageAsRoot  bool
-	stagerConfig         eirini.StagerConfig
 }
 
-func NewOPIConverter(logger lager.Logger, registryIP string, imageMetadataFetcher ImageMetadataFetcher, imageRefParser ImageRefParser, allowRunImageAsRoot bool, stagerConfig eirini.StagerConfig) *OPIConverter {
+func NewOPIConverter(logger lager.Logger, imageMetadataFetcher ImageMetadataFetcher, imageRefParser ImageRefParser, allowRunImageAsRoot bool) *OPIConverter {
 	return &OPIConverter{
 		logger:               logger,
-		registryIP:           registryIP,
 		imageMetadataFetcher: imageMetadataFetcher,
 		imageRefParser:       imageRefParser,
 		allowRunImageAsRoot:  allowRunImageAsRoot,
-		stagerConfig:         stagerConfig,
 	}
 }
 

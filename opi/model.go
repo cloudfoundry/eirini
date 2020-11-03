@@ -102,10 +102,3 @@ type Task struct {
 	DiskMB             int64
 	CPUWeight          uint8
 }
-
-type StagingTask struct {
-	*Task
-	DownloaderImage string
-	UploaderImage   string
-	ExecutorImage   string
-}

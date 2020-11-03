@@ -86,10 +86,6 @@ func (c *ConverterSimulator) ConvertTask(taskGUID string, taskRequest cf.TaskReq
 	return opi.Task{}, nil
 }
 
-func (c *ConverterSimulator) ConvertStaging(stagingGUID string, stagingRequest cf.StagingRequest) (opi.StagingTask, error) {
-	return opi.StagingTask{}, nil
-}
-
 type StagerSimulator struct{}
 
 func (s *StagerSimulator) TransferStaging(ctx context.Context, stagingGUID string, request cf.StagingRequest) error {

@@ -216,20 +216,11 @@ func initConverter(cfg *eirini.Config) *bifrost.OPIConverter {
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	stagerCfg := eirini.StagerConfig{
-		EiriniAddress:   cfg.Properties.EiriniAddress,
-		DownloaderImage: cfg.Properties.DownloaderImage,
-		UploaderImage:   cfg.Properties.UploaderImage,
-		ExecutorImage:   cfg.Properties.ExecutorImage,
-	}
-
 	return bifrost.NewOPIConverter(
 		convertLogger,
-		cfg.Properties.RegistryAddress,
 		docker.Fetch,
 		docker.Parse,
 		cfg.Properties.AllowRunImageAsRoot,
-		stagerCfg,
 	)
 }
 

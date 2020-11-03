@@ -77,12 +77,7 @@ type Properties struct { //nolint:maligned
 	TLSPort       int `yaml:"tls_port"`
 	PlaintextPort int `yaml:"plaintext_port"`
 
-	RegistryAddress                  string `yaml:"registry_address"`
 	RegistrySecretName               string `yaml:"registry_secret_name"`
-	EiriniAddress                    string `yaml:"eirini_address"`
-	DownloaderImage                  string `yaml:"downloader_image"`
-	UploaderImage                    string `yaml:"uploader_image"`
-	ExecutorImage                    string `yaml:"executor_image"`
 	AppMetricsEmissionIntervalInSecs int    `yaml:"app_metrics_emission_interval_in_secs"`
 
 	CCTLSDisabled bool `yaml:"cc_tls_disabled"`
@@ -97,7 +92,6 @@ type Properties struct { //nolint:maligned
 	KubeConfig `yaml:",inline"`
 
 	ApplicationServiceAccount string `yaml:"application_service_account"`
-	StagingServiceAccount     string `yaml:"staging_service_account"`
 
 	AllowRunImageAsRoot                     bool `yaml:"allow_run_image_as_root"`
 	UnsafeAllowAutomountServiceAccountToken bool `yaml:"unsafe_allow_automount_service_account_token"`
@@ -146,13 +140,6 @@ type TaskReporterConfig struct {
 	TTLSeconds                   int    `yaml:"ttl_seconds"`
 
 	KubeConfig `yaml:",inline"`
-}
-
-type StagerConfig struct {
-	EiriniAddress   string
-	DownloaderImage string
-	UploaderImage   string
-	ExecutorImage   string
 }
 
 type InstanceIndexEnvInjectorConfig struct {
