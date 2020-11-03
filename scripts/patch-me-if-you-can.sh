@@ -176,10 +176,10 @@ checkout_stable_cf_for_k8s_deps() {
 }
 
 build_ccng_image() {
-  export IMAGE_DESTINATION_KPACK_WATCHER="docker.io/eirini/dev-kpack-watcher"
   export IMAGE_DESTINATION_CCNG="docker.io/eirini/dev-ccng"
-  export IMAGE_DESTINATION_CF_API_CONTROLLERS="docker.io/eirini/dev-cf-api-controllers"
-  export IMAGE_DESTINATION_PACKAGE_IMAGE_UPLOADER="docker.io/eirini/dev-package-image-uploader"
+  export IMAGE_DESTINATION_CF_API_CONTROLLERS="docker.io/eirini/dev-controllers"
+  export IMAGE_DESTINATION_REGISTRY_BUDDY="docker.io/eirini/dev-registry-buddy"
+  export IMAGE_DESTINATION_BACKUP_METADATA="docker.io/eirini/dev-backup-metadata"
   git -C "$CAPIK8S_DIR" checkout values/images.yml
   "$CAPIK8S_DIR"/scripts/build-into-values.sh "$CAPIK8S_DIR/values/images.yml"
   "$CAPIK8S_DIR"/scripts/bump-cf-for-k8s.sh
