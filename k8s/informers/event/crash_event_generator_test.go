@@ -38,54 +38,6 @@ var _ = Describe("CrashEventGenerator", func() {
 		generator = event.NewDefaultCrashEventGenerator(eventsClient)
 	})
 
-	Context("When app is in CrashLoopBackOff", func() {
-		Context("When there is one container in the pod", func() {
-			BeforeEach(func() {
-				pod = newCrashedPod()
-			})
-
-			It("should return a crashed report", func() {
-				report, returned := generator.Generate(pod, logger)
-				Expect(returned).To(BeTrue())
-				Expect(report).To(Equal(events.CrashEvent{
-					ProcessGUID: "test-pod-anno",
-					AppCrashedRequest: cc_messages.AppCrashedRequest{
-						Reason:          event.CrashLoopBackOff,
-						Instance:        "test-pod-0",
-						Index:           0,
-						ExitStatus:      1,
-						ExitDescription: "better luck next time",
-						CrashCount:      3,
-						CrashTimestamp:  crashTime.Time.Unix(),
-					},
-				}))
-			})
-		})
-
-		Context("When there are multiple containers in the pod", func() {
-			BeforeEach(func() {
-				pod = newMultiContainerCrashedPod()
-			})
-
-			It("should return a crashed report", func() {
-				report, returned := generator.Generate(pod, logger)
-				Expect(returned).To(BeTrue())
-				Expect(report).To(Equal(events.CrashEvent{
-					ProcessGUID: "test-pod-anno",
-					AppCrashedRequest: cc_messages.AppCrashedRequest{
-						Reason:          event.CrashLoopBackOff,
-						Instance:        "test-pod-0",
-						Index:           0,
-						ExitStatus:      1,
-						ExitDescription: "better luck next time",
-						CrashCount:      3,
-						CrashTimestamp:  crashTime.Time.Unix(),
-					},
-				}))
-			})
-		})
-	})
-
 	Context("When app has been terminated", func() {
 		Context("When there is one container in the pod", func() {
 			BeforeEach(func() {
@@ -101,28 +53,17 @@ var _ = Describe("CrashEventGenerator", func() {
 						Reason:          "better luck next time",
 						Instance:        "test-pod-0",
 						Index:           0,
-						ExitStatus:      1,
+						ExitStatus:      0,
 						ExitDescription: "better luck next time",
-						CrashCount:      8,
+						CrashCount:      9,
 						CrashTimestamp:  crashTime.Time.Unix(),
 					},
 				}))
 			})
 
-			Context("with zero exit status", func() {
+			Context("When a pod is not owned by eirini", func() {
 				BeforeEach(func() {
-					pod.Status.ContainerStatuses[0].State.Terminated.ExitCode = 0
-				})
-
-				It("should not generate the report", func() {
-					_, returned := generator.Generate(pod, logger)
-					Expect(returned).To(BeFalse())
-				})
-			})
-
-			Context("When a pod name does not have index", func() {
-				BeforeEach(func() {
-					pod.Name = "naughty-pod"
+					pod.Labels = map[string]string{}
 				})
 
 				It("should not generate", func() {
@@ -136,9 +77,29 @@ var _ = Describe("CrashEventGenerator", func() {
 					logs := logger.Logs()
 					Expect(logs).To(HaveLen(1))
 					log := logs[0]
-					Expect(log.Message).To(Equal("crash-event-logger-test.failed-to-parse-app-index"))
-					Expect(log.Data).To(HaveKeyWithValue("pod-name", "naughty-pod"))
-					Expect(log.Data).To(HaveKeyWithValue("guid", "test-pod-anno"))
+					Expect(log.Message).To(Equal("crash-event-logger-test.generate-crash-event.skipping-non-eirini-pod"))
+					Expect(log.Data).To(HaveKeyWithValue("pod-name", "test-pod-0"))
+				})
+			})
+
+			Context("When pod is waiting, but hasn't been terminated", func() {
+				BeforeEach(func() {
+					pod = newPod([]v1.ContainerStatus{
+						{
+							Name:         k8s.OPIContainerName,
+							RestartCount: 0,
+							State: v1.ContainerState{
+								Waiting: &v1.ContainerStateWaiting{
+									Reason: "better luck next time",
+								},
+							},
+						},
+					})
+				})
+
+				It("should not emit a crashed event", func() {
+					_, returned := generator.Generate(pod, logger)
+					Expect(returned).To(BeFalse())
 				})
 			})
 
@@ -179,44 +140,79 @@ var _ = Describe("CrashEventGenerator", func() {
 					logs := logger.Logs()
 					Expect(logs).To(HaveLen(1))
 					log := logs[0]
-					Expect(log.Message).To(Equal("crash-event-logger-test.failed-to-get-k8s-events"))
+					Expect(log.Message).To(Equal("crash-event-logger-test.generate-crash-event.failed-to-get-k8s-events"))
+					Expect(log.Data).To(HaveKeyWithValue("pod-name", "test-pod-0"))
 					Expect(log.Data).To(HaveKeyWithValue("guid", "test-pod-anno"))
+					Expect(log.Data).To(HaveKeyWithValue("version", "test-pod-version"))
 				})
 			})
 		})
-		Context("When there are multiple containers in the pod", func() {
+
+		Context("When the sidecar is terminated", func() {
 			BeforeEach(func() {
-				pod = newMultiContainerTerminatedPod()
+				pod = newTerminatedSidecarPod()
 			})
 
-			It("should generate a crashed report", func() {
-				report, returned := generator.Generate(pod, logger)
-				Expect(returned).To(BeTrue())
-				Expect(report).To(Equal(events.CrashEvent{
-					ProcessGUID: "test-pod-anno",
-					AppCrashedRequest: cc_messages.AppCrashedRequest{
-						Reason:          "better luck next time",
-						Instance:        "test-pod-0",
-						Index:           0,
-						ExitStatus:      1,
-						ExitDescription: "better luck next time",
-						CrashCount:      8,
-						CrashTimestamp:  crashTime.Time.Unix(),
+			It("should not emit a crashed event", func() {
+				_, returned := generator.Generate(pod, logger)
+				Expect(returned).To(BeFalse())
+			})
+		})
+
+		Context("When the sidecar is waiting after termination", func() {
+			BeforeEach(func() {
+				pod = newPod([]v1.ContainerStatus{
+					{
+						Name:         k8s.OPIContainerName,
+						RestartCount: 1,
+						State: v1.ContainerState{
+							Running: &v1.ContainerStateRunning{},
+						},
 					},
-				}))
+					{
+						Name:         "some-sidecar-container",
+						RestartCount: 1,
+						State: v1.ContainerState{
+							Waiting: &v1.ContainerStateWaiting{
+								Reason:  event.CreateContainerConfigError,
+								Message: "not configured properly",
+							},
+						},
+						LastTerminationState: v1.ContainerState{
+							Terminated: &v1.ContainerStateTerminated{
+								Reason:    "better luck next time",
+								StartedAt: crashTime,
+								ExitCode:  1,
+							},
+						},
+					},
+				})
+			})
+
+			It("should not emit a crashed event", func() {
+				_, returned := generator.Generate(pod, logger)
+				Expect(returned).To(BeFalse())
 			})
 		})
 	})
 
-	Context("When app is in CreateContainerConfigError", func() {
+	Context("When app is in waiting state after terimnation", func() {
 		BeforeEach(func() {
 			pod = newPod([]v1.ContainerStatus{
 				{
-					RestartCount: 0,
+					Name:         k8s.OPIContainerName,
+					RestartCount: 1,
 					State: v1.ContainerState{
 						Waiting: &v1.ContainerStateWaiting{
 							Reason:  event.CreateContainerConfigError,
 							Message: "not configured properly",
+						},
+					},
+					LastTerminationState: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{
+							Reason:    "better luck next time",
+							StartedAt: crashTime,
+							ExitCode:  1,
 						},
 					},
 				},
@@ -231,27 +227,18 @@ var _ = Describe("CrashEventGenerator", func() {
 				AppCrashedRequest: cc_messages.AppCrashedRequest{
 					Reason:          event.CreateContainerConfigError,
 					Instance:        "test-pod-0",
-					ExitDescription: "not configured properly",
+					ExitDescription: "better luck next time",
+					ExitStatus:      1,
+					CrashCount:      2,
+					CrashTimestamp:  crashTime.Unix(),
 				},
 			}))
 		})
 	})
 
-	Context("When app is waiting for any insignificant reason", func() {
-		BeforeEach(func() {
-			pod = newCrashedPod()
-			pod.Status.ContainerStatuses[0].State.Waiting.Reason = "Monday"
-		})
-
-		It("should not send reports", func() {
-			_, returned := generator.Generate(pod, logger)
-			Expect(returned).To(BeFalse())
-		})
-	})
-
 	Context("When a pod has no container statuses", func() {
 		BeforeEach(func() {
-			pod = newCrashedPod()
+			pod = newTerminatedPod()
 		})
 
 		Context("container statuses is nil", func() {
@@ -276,84 +263,82 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 		})
 	})
+
+	Context("When a pod has no opi container statuses", func() {
+		BeforeEach(func() {
+			pod = newPod([]v1.ContainerStatus{
+				{
+					Name:         "some-other-container",
+					RestartCount: 1,
+					State: v1.ContainerState{
+						Terminated: &v1.ContainerStateTerminated{
+							Reason:    "better luck next time",
+							StartedAt: crashTime,
+							ExitCode:  1,
+						},
+					},
+				},
+			})
+		})
+
+		It("should not send any reports", func() {
+			_, returned := generator.Generate(pod, logger)
+			Expect(returned).To(BeFalse())
+		})
+
+		It("should provide a helpful log message", func() {
+			generator.Generate(pod, logger)
+			logs := logger.Logs()
+			Expect(logs).To(HaveLen(1))
+			log := logs[0]
+			Expect(log.Message).To(Equal("crash-event-logger-test.generate-crash-event.eirini-pod-has-no-opi-container-statuses"))
+			Expect(log.Data).To(HaveKeyWithValue("pod-name", "test-pod-0"))
+			Expect(log.Data).To(HaveKeyWithValue("guid", "test-pod-anno"))
+			Expect(log.Data).To(HaveKeyWithValue("version", "test-pod-version"))
+		})
+	})
 })
 
 func newTerminatedPod() *v1.Pod {
 	return newPod([]v1.ContainerStatus{
 		{
-			RestartCount: 8,
-			State: v1.ContainerState{
-				Terminated: &v1.ContainerStateTerminated{
-					Reason:    "better luck next time",
-					StartedAt: crashTime,
-					ExitCode:  1,
-				},
-			},
-		},
-	})
-}
-
-func newMultiContainerTerminatedPod() *v1.Pod {
-	return newPod([]v1.ContainerStatus{
-		{
+			Name:         "some-sidecar-container",
 			RestartCount: 1,
 			State: v1.ContainerState{
 				Running: &v1.ContainerStateRunning{},
 			},
 		},
 		{
+			Name:         k8s.OPIContainerName,
 			RestartCount: 8,
 			State: v1.ContainerState{
 				Terminated: &v1.ContainerStateTerminated{
 					Reason:    "better luck next time",
 					StartedAt: crashTime,
-					ExitCode:  1,
+					ExitCode:  0,
 				},
 			},
 		},
 	})
 }
 
-func newCrashedPod() *v1.Pod {
+func newTerminatedSidecarPod() *v1.Pod {
 	return newPod([]v1.ContainerStatus{
 		{
-			RestartCount: 3,
-			State: v1.ContainerState{
-				Waiting: &v1.ContainerStateWaiting{
-					Reason: event.CrashLoopBackOff,
-				},
-			},
-			LastTerminationState: v1.ContainerState{
-				Terminated: &v1.ContainerStateTerminated{
-					ExitCode:  1,
-					Reason:    "better luck next time",
-					StartedAt: crashTime,
-				},
-			},
-		},
-	})
-}
-
-func newMultiContainerCrashedPod() *v1.Pod {
-	return newPod([]v1.ContainerStatus{
-		{
+			Name:         k8s.OPIContainerName,
 			RestartCount: 1,
 			State: v1.ContainerState{
 				Running: &v1.ContainerStateRunning{},
 			},
 		},
 		{
-			RestartCount: 3,
+			Name:         "some-sidecar-container",
+			RestartCount: 8,
 			State: v1.ContainerState{
-				Waiting: &v1.ContainerStateWaiting{
-					Reason: event.CrashLoopBackOff,
-				},
-			},
-			LastTerminationState: v1.ContainerState{
 				Terminated: &v1.ContainerStateTerminated{
-					ExitCode:  1,
 					Reason:    "better luck next time",
 					StartedAt: crashTime,
+					ExitCode:  0,
 				},
 			},
 		},
@@ -366,8 +351,12 @@ func newPod(statuses []v1.ContainerStatus) *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: meta.ObjectMeta{
 			Name: fmt.Sprintf("%s-%d", name, 0),
+			Labels: map[string]string{
+				k8s.LabelSourceType: k8s.AppSourceType,
+			},
 			Annotations: map[string]string{
 				k8s.AnnotationProcessGUID: fmt.Sprintf("%s-anno", name),
+				k8s.AnnotationVersion:     fmt.Sprintf("%s-version", name),
 			},
 			OwnerReferences: []meta.OwnerReference{
 				{

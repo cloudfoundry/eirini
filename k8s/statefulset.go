@@ -26,7 +26,6 @@ const (
 	eventKilling          = "Killing"
 	eventFailedScheduling = "FailedScheduling"
 	eventFailedScaleUp    = "NotTriggerScaleUp"
-	appSourceType         = "APP"
 
 	AnnotationAppName                        = "cloudfoundry.org/application_name"
 	AnnotationVersion                        = "cloudfoundry.org/version"
@@ -44,6 +43,8 @@ const (
 	AnnotationOpiTaskCompletionReportCounter = "cloudfoundry.org/task_completion_report_counter"
 	AnnotationCCAckedTaskCompletion          = "cloudfoundry.org/cc_acked_task_completion"
 	AnnotationGUID                           = "cloudfoundry.org/guid"
+
+	AppSourceType = "APP"
 
 	AnnotationStagingGUID = "cloudfoundry.org/staging_guid"
 
@@ -174,7 +175,7 @@ func (m *StatefulSetDesirer) Desire(namespace string, lrp *opi.LRP, opts ...Desi
 func (m *StatefulSetDesirer) List() ([]*opi.LRP, error) {
 	logger := m.Logger.Session("list")
 
-	statefulsets, err := m.StatefulSets.GetBySourceType(appSourceType)
+	statefulsets, err := m.StatefulSets.GetBySourceType(AppSourceType)
 	if err != nil {
 		logger.Error("failed-to-list-statefulsets", err)
 
@@ -634,7 +635,7 @@ func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP)
 		LabelProcessType: lrp.ProcessType,
 		LabelVersion:     lrp.Version,
 		LabelAppGUID:     lrp.AppGUID,
-		LabelSourceType:  appSourceType,
+		LabelSourceType:  AppSourceType,
 	}
 
 	statefulSet.Spec.Template.Labels = labels
@@ -713,7 +714,7 @@ func (m *StatefulSetDesirer) labelSelector(lrp *opi.LRP) *metav1.LabelSelector {
 		MatchLabels: map[string]string{
 			LabelGUID:       lrp.GUID,
 			LabelVersion:    lrp.Version,
-			LabelSourceType: appSourceType,
+			LabelSourceType: AppSourceType,
 		},
 	}
 }

@@ -14,6 +14,7 @@ import (
 func TestStagingReporter(t *testing.T) {
 	RegisterFailHandler(Fail)
 	SetDefaultEventuallyTimeout(30 * time.Second)
+	SetDefaultConsistentlyDuration(10 * time.Second)
 	RunSpecs(t, "Events Suite")
 }
 

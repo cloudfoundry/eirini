@@ -15,7 +15,6 @@ import (
 )
 
 var _ = Describe("InstanceIndexEnvInjector", func() {
-
 	var (
 		namespace   string
 		lrpGUID     string
@@ -105,7 +104,8 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 			LRPs(fixture.Namespace).
 			DeleteCollection(context.Background(),
 				metav1.DeleteOptions{
-					PropagationPolicy: &backgroundPropagation},
+					PropagationPolicy: &backgroundPropagation,
+				},
 				metav1.ListOptions{
 					FieldSelector: "metadata.name=" + lrpName,
 				},

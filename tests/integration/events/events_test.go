@@ -108,9 +108,19 @@ var _ = Describe("Events", func() {
 			Expect(lrpDesirer.Desire(fixture.Namespace, &lrp)).To(Succeed())
 		})
 
-		When("the LRP crashes", func() {
+		When("the LRP does not terminate", func() {
 			BeforeEach(func() {
-				lrpCommand = []string{"exit", "1"}
+				lrpCommand = []string{"sleep", "100"}
+			})
+
+			It("should not send crash events", func() {
+				Consistently(capiServer.ReceivedRequests).Should(HaveLen(0))
+			})
+		})
+
+		When("the LRP terminates with code 0", func() {
+			BeforeEach(func() {
+				lrpCommand = []string{"/bin/sh", "-c", "exit", "0"}
 			})
 
 			JustBeforeEach(func() {
@@ -125,6 +135,7 @@ var _ = Describe("Events", func() {
 						Expect(json.Unmarshal(bytes, request)).To(Succeed())
 
 						Expect(request.Instance).To(ContainSubstring(lrp.GUID))
+						Expect(request.ExitStatus).To(Equal(0))
 					},
 				)
 			})
@@ -133,7 +144,7 @@ var _ = Describe("Events", func() {
 				Eventually(capiServer.ReceivedRequests).Should(HaveLen(1))
 			})
 
-			Context("when TLS to Cloud Controller is disabled", func() {
+			When("TLS to Cloud Controller is disabled", func() {
 				var noTLSCapiServer *ghttp.Server
 
 				BeforeEach(func() {
@@ -160,13 +171,53 @@ var _ = Describe("Events", func() {
 			})
 		})
 
-		When("the LRP does not crash", func() {
+		When("the LRP exits with non-zero code", func() {
 			BeforeEach(func() {
-				lrpCommand = []string{"sleep", "100"}
+				lrpCommand = []string{"/bin/sh", "-c", "exit", "13"}
 			})
 
-			It("should not send crash events", func() {
-				Consistently(capiServer.ReceivedRequests).Should(HaveLen(0))
+			JustBeforeEach(func() {
+				processGUID := fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version)
+				capiServer.RouteToHandler(
+					"POST",
+					fmt.Sprintf("/internal/v4/apps/%s/crashed", processGUID),
+					func(w http.ResponseWriter, req *http.Request) {
+						bytes, err := ioutil.ReadAll(req.Body)
+						Expect(err).NotTo(HaveOccurred())
+						request := &cc_messages.AppCrashedRequest{}
+						Expect(json.Unmarshal(bytes, request)).To(Succeed())
+
+						Expect(request.Instance).To(ContainSubstring(lrp.GUID))
+						Expect(request.ExitStatus).To(Equal(13))
+					},
+				)
+			})
+		})
+
+		When("the LRP does not start because it tries to run non-existing binary", func() {
+			BeforeEach(func() {
+				lrpCommand = []string{"justtrolling"}
+			})
+
+			JustBeforeEach(func() {
+				processGUID := fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version)
+				capiServer.RouteToHandler(
+					"POST",
+					fmt.Sprintf("/internal/v4/apps/%s/crashed", processGUID),
+					func(w http.ResponseWriter, req *http.Request) {
+						bytes, err := ioutil.ReadAll(req.Body)
+						Expect(err).NotTo(HaveOccurred())
+						request := &cc_messages.AppCrashedRequest{}
+						Expect(json.Unmarshal(bytes, request)).To(Succeed())
+
+						Expect(request.Instance).To(ContainSubstring(lrp.GUID))
+						Expect(request.ExitStatus).To(Equal(128))
+					},
+				)
+			})
+
+			It("should generate and send a crash event", func() {
+				Eventually(capiServer.ReceivedRequests).Should(HaveLen(1))
 			})
 		})
 	})

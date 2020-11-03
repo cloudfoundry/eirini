@@ -61,5 +61,4 @@ var _ = Describe("EiriniController", func() {
 			Consistently(session).ShouldNot(gexec.Exit())
 		})
 	})
-
 })
