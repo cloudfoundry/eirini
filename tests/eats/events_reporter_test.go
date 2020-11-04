@@ -54,7 +54,7 @@ var _ = Describe("EventsReporter", func() {
 				DiskMB:       512,
 				Lifecycle: cf.Lifecycle{
 					DockerLifecycle: &cf.DockerLifecycle{
-						Image:            "eiriniuser/notdora",
+						Image:            "eirini/dorini",
 						RegistryUsername: "eiriniuser",
 						RegistryPassword: tests.GetEiriniDockerHubPassword(),
 					},
@@ -62,7 +62,7 @@ var _ = Describe("EventsReporter", func() {
 			})
 			Expect(statusCode).To(Equal(http.StatusAccepted))
 
-			appServiceName = exposeLRP(fixture.Namespace, guid, 8888, "/")
+			appServiceName = exposeLRP(fixture.Namespace, guid, 8080, "/")
 		})
 
 		AfterEach(func() {
@@ -80,7 +80,7 @@ var _ = Describe("EventsReporter", func() {
 
 		When("the app exists with non-zero code", func() {
 			BeforeEach(func() {
-				_, err := http.Get(fmt.Sprintf("http://%s.%s:8888/exit?exitCode=1", appServiceName, fixture.Namespace))
+				_, err := http.Get(fmt.Sprintf("http://%s.%s:8080/exit?exitCode=1", appServiceName, fixture.Namespace))
 				Expect(err).To(MatchError(ContainSubstring("EOF"))) // The app exited
 			})
 
@@ -97,7 +97,7 @@ var _ = Describe("EventsReporter", func() {
 
 		When("the app exists with zero code", func() {
 			BeforeEach(func() {
-				_, err := http.Get(fmt.Sprintf("http://%s.%s:8888/exit?exitCode=0", appServiceName, fixture.Namespace))
+				_, err := http.Get(fmt.Sprintf("http://%s.%s:8080/exit?exitCode=0", appServiceName, fixture.Namespace))
 				Expect(err).To(MatchError(ContainSubstring("EOF"))) // The app exited
 			})
 
