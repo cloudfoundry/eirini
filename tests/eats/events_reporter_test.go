@@ -203,6 +203,7 @@ func unexposeLRP(namespace, serviceName string) {
 func verifyCrashRequest(requestMatcher wiremock.RequestMatcher, exitStatus int) {
 	body, err := fixture.Wiremock.GetRequestBody(requestMatcher)
 	Expect(err).NotTo(HaveOccurred())
+
 	var request cc_messages.AppCrashedRequest
 	err = json.Unmarshal([]byte(body), &request)
 	Expect(err).NotTo(HaveOccurred())
