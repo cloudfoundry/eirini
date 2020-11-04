@@ -2,6 +2,7 @@ package eats_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,6 +11,7 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/eats/wiremock"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -92,6 +94,8 @@ var _ = Describe("EventsReporter", func() {
 
 				Eventually(fixture.Wiremock.GetCountFn(requestMatcher)).Should(Equal(1))
 				Consistently(fixture.Wiremock.GetCountFn(requestMatcher), "10s").Should(Equal(1))
+
+				verifyCrashRequest(requestMatcher, 1)
 			})
 		})
 
@@ -109,6 +113,8 @@ var _ = Describe("EventsReporter", func() {
 
 				Eventually(fixture.Wiremock.GetCountFn(requestMatcher)).Should(Equal(1))
 				Consistently(fixture.Wiremock.GetCountFn(requestMatcher), "10s").Should(Equal(1))
+
+				verifyCrashRequest(requestMatcher, 0)
 			})
 		})
 	})
@@ -192,4 +198,15 @@ func exposeLRP(namespace, guid string, appPort int32, pingPath ...string) string
 
 func unexposeLRP(namespace, serviceName string) {
 	Expect(fixture.Clientset.CoreV1().Services(namespace).Delete(context.Background(), serviceName, metav1.DeleteOptions{})).To(Succeed())
+}
+
+func verifyCrashRequest(requestMatcher wiremock.RequestMatcher, exitStatus int) {
+	body, err := fixture.Wiremock.GetRequestBody(requestMatcher)
+	Expect(err).NotTo(HaveOccurred())
+	var request cc_messages.AppCrashedRequest
+	err = json.Unmarshal([]byte(body), &request)
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(request.ExitStatus).To(Equal(exitStatus))
+	Expect(request.CrashCount).To(Equal(1))
 }
