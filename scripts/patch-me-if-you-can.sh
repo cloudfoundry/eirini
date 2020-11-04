@@ -225,35 +225,12 @@ update_image_in_yaml_files() {
 }
 
 patch_cf_for_k8s() {
-  local build_path eirini_values eirini_custom_values user_values
+  local build_path eirini_values user_values
   user_values="$1"
   rm -rf "$CF4K8S_DIR/build/eirini/_vendir/eirini"
 
   build_path="$CF4K8S_DIR/build/eirini/"
   eirini_values="$build_path/eirini-values.yml"
-  eirini_custom_values="$build_path/eirini-custom-values.yml"
-
-  cat >>"$eirini_custom_values" <<EOF
----
-opi:
-  lrpController:
-    tls:
-      secretName: "eirini-internal-tls-certs"
-      keyPath: "tls.key"
-      caPath: "tls.ca"
-      certPath: "tls.crt"
-  tasks:
-    tls:
-      taskReporter:
-          secretName: "eirini-internal-tls-certs"
-          keyPath: "tls.key"
-          caPath: "tls.ca"
-          certPath: "tls.crt"
-
-EOF
-
-  yq merge --inplace "$eirini_values" "$eirini_custom_values"
-  rm "$eirini_custom_values"
 
   if ! [[ -z "$user_values" ]]; then
     yq merge --inplace "$eirini_values" "$user_values"
