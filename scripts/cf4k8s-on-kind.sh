@@ -21,6 +21,8 @@ pushd $HOME/workspace/cf-for-k8s
 {
   if ! kind get clusters | grep -q "$CLUSTER_NAME"; then
     kind create cluster --config=./deploy/kind/cluster.yml --image kindest/node:v1.19.1 --name "$CLUSTER_NAME"
+  else
+    kind export kubeconfig --name $CLUSTER_NAME
   fi
 
   if [[ ! -f "$values_file" ]]; then
