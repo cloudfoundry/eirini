@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 The NATS Authors
+ * Copyright 2018-2020 The NATS Authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -213,6 +213,7 @@ func (a *AccountClaims) ClearRevocation(pubKey string) {
 // IsRevokedAt checks if the public key is in the revoked list with a timestamp later than the one passed in.
 // Generally this method is called with the subject and issue time of the jwt to be tested.
 // DO NOT pass time.Now(), it will not produce a stable/expected response.
+// The value is expected to be a public key or "*" (means all public keys)
 func (a *AccountClaims) IsRevokedAt(pubKey string, timestamp time.Time) bool {
 	return a.Revocations.IsRevoked(pubKey, timestamp)
 }

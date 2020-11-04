@@ -1,4 +1,4 @@
-
+# NOTE: This repository is deprecated in favor of [go-loggregator](https://github.com/cloudfoundry/go-loggregator/tree/master/rfc5424)
 [![Build Status](https://travis-ci.org/crewjam/rfc5424.png)](https://travis-ci.org/crewjam/rfc5424)
 
 [![](https://godoc.org/github.com/crewjam/rfc5424?status.png)](http://godoc.org/github.com/crewjam/rfc5424)

@@ -2,7 +2,7 @@
 
 ARG baseimage=scratch
 
-FROM golang:1.15 as builder
+FROM golang:1.15.3 as builder
 WORKDIR /eirini/
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/go-build \

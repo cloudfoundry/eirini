@@ -71,13 +71,14 @@ func (sl *ServiceLatency) Validate(vr *ValidationResults) {
 
 // Export represents a single export
 type Export struct {
-	Name         string          `json:"name,omitempty"`
-	Subject      Subject         `json:"subject,omitempty"`
-	Type         ExportType      `json:"type,omitempty"`
-	TokenReq     bool            `json:"token_req,omitempty"`
-	Revocations  RevocationList  `json:"revocations,omitempty"`
-	ResponseType ResponseType    `json:"response_type,omitempty"`
-	Latency      *ServiceLatency `json:"service_latency,omitempty"`
+	Name                 string          `json:"name,omitempty"`
+	Subject              Subject         `json:"subject,omitempty"`
+	Type                 ExportType      `json:"type,omitempty"`
+	TokenReq             bool            `json:"token_req,omitempty"`
+	Revocations          RevocationList  `json:"revocations,omitempty"`
+	ResponseType         ResponseType    `json:"response_type,omitempty"`
+	Latency              *ServiceLatency `json:"service_latency,omitempty"`
+	AccountTokenPosition uint            `json:"account_token_position,omitempty"`
 }
 
 // IsService returns true if an export is for a service

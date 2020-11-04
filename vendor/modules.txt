@@ -1,4 +1,4 @@
-# cloud.google.com/go v0.70.0
+# cloud.google.com/go v0.71.0
 ## explicit
 cloud.google.com/go/compute/metadata
 # code.cloudfoundry.org/bbs v0.0.0-20200615191359-7b6fa295fa8d
@@ -43,7 +43,7 @@ code.cloudfoundry.org/quarks-utils/pkg/credsgen/in_memory_generator
 code.cloudfoundry.org/quarks-utils/pkg/kubeconfig
 # code.cloudfoundry.org/rep v0.0.0-20200325195957-1404b978e31e
 ## explicit
-# code.cloudfoundry.org/rfc5424 v0.0.0-20180905210152-236a6d29298a
+# code.cloudfoundry.org/rfc5424 v0.0.0-20201103192249-000122071b78
 ## explicit
 code.cloudfoundry.org/rfc5424
 # code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
@@ -293,7 +293,7 @@ github.com/form3tech-oss/jwt-go
 github.com/fsnotify/fsnotify
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
-# github.com/go-logr/logr v0.2.1
+# github.com/go-logr/logr v0.3.0
 ## explicit
 github.com/go-logr/logr
 # github.com/go-openapi/jsonpointer v0.19.3
@@ -373,7 +373,7 @@ github.com/gorilla/websocket
 github.com/grpc-ecosystem/go-grpc-middleware
 # github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 github.com/grpc-ecosystem/go-grpc-prometheus
-# github.com/grpc-ecosystem/grpc-gateway v1.15.2
+# github.com/grpc-ecosystem/grpc-gateway v1.16.0
 ## explicit
 github.com/grpc-ecosystem/grpc-gateway/internal
 github.com/grpc-ecosystem/grpc-gateway/runtime
@@ -440,10 +440,10 @@ github.com/maxbrunsfeld/counterfeiter/v6/generator
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/nats-io/jwt v1.1.0
+# github.com/nats-io/jwt v1.2.0
 ## explicit
 github.com/nats-io/jwt
-# github.com/nats-io/nats-server/v2 v2.1.8
+# github.com/nats-io/nats-server/v2 v2.1.9
 ## explicit
 github.com/nats-io/nats-server/v2/conf
 github.com/nats-io/nats-server/v2/internal/ldap
@@ -457,7 +457,6 @@ github.com/nats-io/nats.go
 github.com/nats-io/nats.go/encoders/builtin
 github.com/nats-io/nats.go/util
 # github.com/nats-io/nkeys v0.2.0
-## explicit
 github.com/nats-io/nkeys
 # github.com/nats-io/nuid v1.0.1
 github.com/nats-io/nuid
@@ -563,13 +562,15 @@ github.com/square/certstrap/pkix
 ## explicit
 # github.com/tmc/grpc-websocket-proxy v0.0.0-20200427203606-3cfed13b9966
 github.com/tmc/grpc-websocket-proxy/wsproxy
-# github.com/urfave/cli v1.22.4
+# github.com/urfave/cli v1.22.5
+## explicit
 github.com/urfave/cli
 # github.com/weppos/publicsuffix-go v0.13.0
 github.com/weppos/publicsuffix-go/publicsuffix
 # github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2
 github.com/xiang90/probing
-# github.com/zmap/zcrypto v0.0.0-20200911161511-43ff0ea04f21
+# github.com/zmap/zcrypto v0.0.0-20201103164829-2760ff0e1c25
+## explicit
 github.com/zmap/zcrypto/json
 github.com/zmap/zcrypto/util
 github.com/zmap/zcrypto/x509
@@ -592,7 +593,6 @@ go.etcd.io/etcd/etcdctl
 # go.uber.org/atomic v1.7.0
 go.uber.org/atomic
 # go.uber.org/multierr v1.6.0
-## explicit
 go.uber.org/multierr
 # go.uber.org/zap v1.16.0
 ## explicit
@@ -623,7 +623,7 @@ golang.org/x/crypto/ssh/terminal
 # golang.org/x/mod v0.3.0
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20201027133719-8eef5233e2a1
+# golang.org/x/net v0.0.0-20201031054903-ff519b6c9102
 ## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -644,7 +644,7 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20201027140754-0fcbb8f4928c
+# golang.org/x/sys v0.0.0-20201101102859-da207088b7d1
 ## explicit
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
@@ -679,7 +679,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20201027233111-0b86805daf58
+# golang.org/x/tools v0.0.0-20201103190053-ac612affd56b
 ## explicit
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
@@ -716,7 +716,7 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20201026171402-d4b8fe4fd877
+# google.golang.org/genproto v0.0.0-20201103154000-415bd0cd5df6
 ## explicit
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/api/httpbody
@@ -1183,7 +1183,8 @@ k8s.io/gengo/types
 # k8s.io/klog v1.0.0
 ## explicit
 k8s.io/klog
-# k8s.io/klog/v2 v2.3.0
+# k8s.io/klog/v2 v2.4.0
+## explicit
 k8s.io/klog/v2
 # k8s.io/kube-openapi v0.0.0-20200923155610-8b5066479488
 k8s.io/kube-openapi/cmd/openapi-gen/args
@@ -1244,7 +1245,8 @@ sigs.k8s.io/controller-runtime/pkg/webhook/admission
 sigs.k8s.io/controller-runtime/pkg/webhook/conversion
 sigs.k8s.io/controller-runtime/pkg/webhook/internal/certwatcher
 sigs.k8s.io/controller-runtime/pkg/webhook/internal/metrics
-# sigs.k8s.io/structured-merge-diff/v4 v4.0.1
+# sigs.k8s.io/structured-merge-diff/v4 v4.0.2
+## explicit
 sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
