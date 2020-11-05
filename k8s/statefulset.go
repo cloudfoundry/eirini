@@ -49,6 +49,10 @@ const (
 	AnnotationStagingGUID = "cloudfoundry.org/staging_guid"
 
 	LabelGUID        = AnnotationGUID
+	LabelOrgGUID     = AnnotationOrgGUID
+	LabelOrgName     = AnnotationOrgName
+	LabelSpaceGUID   = AnnotationSpaceGUID
+	LabelSpaceName   = AnnotationSpaceName
 	LabelName        = "cloudfoundry.org/name"
 	LabelVersion     = "cloudfoundry.org/version"
 	LabelAppGUID     = "cloudfoundry.org/app_guid"
@@ -631,6 +635,10 @@ func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP)
 	}
 
 	labels := map[string]string{
+		LabelOrgGUID:     lrp.OrgGUID,
+		LabelOrgName:     lrp.OrgName,
+		LabelSpaceGUID:   lrp.SpaceGUID,
+		LabelSpaceName:   lrp.SpaceName,
 		LabelGUID:        lrp.GUID,
 		LabelProcessType: lrp.ProcessType,
 		LabelVersion:     lrp.Version,

@@ -229,6 +229,18 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(statefulSet.Spec.Template.Labels).To(HaveKeyWithValue(k8s.LabelSourceType, "APP"))
 		})
 
+		It("should set cf space and org information as labels", func() {
+			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
+			haveSpaceAndOrgInformation := SatisfyAll(
+				HaveKeyWithValue(k8s.LabelOrgGUID, "org-guid"),
+				HaveKeyWithValue(k8s.LabelOrgName, "org-foo"),
+				HaveKeyWithValue(k8s.LabelSpaceGUID, "space-guid"),
+				HaveKeyWithValue(k8s.LabelSpaceName, "space-foo"),
+			)
+			Expect(statefulSet.Labels).To(haveSpaceAndOrgInformation)
+			Expect(statefulSet.Spec.Template.Labels).To(haveSpaceAndOrgInformation)
+		})
+
 		It("should set guid as a label selector", func() {
 			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
 			Expect(statefulSet.Spec.Selector.MatchLabels).To(HaveKeyWithValue(k8s.LabelGUID, "guid_1234"))
