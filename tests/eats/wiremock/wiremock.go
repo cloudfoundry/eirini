@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -103,7 +104,6 @@ func (w *Wiremock) post(path string, body interface{}) error {
 	if err != nil {
 		return err
 	}
-
 	defer resp.Body.Close()
 
 	return nil
@@ -115,9 +115,23 @@ func (w *Wiremock) postWithResponse(path string, body interface{}) (*http.Respon
 		return nil, err
 	}
 
-	return retryOnTemporaryError(func() (*http.Response, error) {
+	resp, err := retryOnTemporaryError(func() (*http.Response, error) {
 		return http.Post(fmt.Sprintf("%s/__admin/%s", w.URL, path), "application/json", bytes.NewReader(bodyJSON))
 	}, 5, time.Second)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode >= http.StatusMultipleChoices {
+		respondeBody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, fmt.Errorf("request to wiremock failed: %s", respondeBody)
+	}
+
+	return resp, nil
 }
 
 func retryOnTemporaryError(fn func() (*http.Response, error), times int, wait time.Duration) (*http.Response, error) {

@@ -27,9 +27,7 @@ func TestEats(t *testing.T) {
 	RunSpecs(t, "Eats Suite")
 }
 
-var (
-	fixture *tests.EATSFixture
-)
+var fixture *tests.EATSFixture
 
 var _ = BeforeSuite(func() {
 	baseFixture := tests.NewFixture(GinkgoWriter)
