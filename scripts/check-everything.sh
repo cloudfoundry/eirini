@@ -84,13 +84,13 @@ run_integration_tests() {
 run_eats_helmless_single_ns() {
   echo "Running EATs against single NS helmless deployed eirini on kind"
 
-  run_eats_helmless "helmless-single" "$@"
+  run_eats_helmless "false" "$@"
 }
 
 run_eats_helmless_multi_ns() {
   echo "Running EATs against multi NS helmless deployed eirini on kind"
 
-  run_eats_helmless "helmless-multi" "$@"
+  run_eats_helmless "true" "$@"
 }
 
 run_eats_helmful_single_ns() {
@@ -106,16 +106,17 @@ run_eats_helmful_multi_ns() {
 }
 
 run_eats_helmless() {
-  local profile_name
-  profile_name="$1"
+  local multi_ns_support profile_name
+  multi_ns_support="$1"
   shift
+
+  profile_name="helmless-single"
+  if [[ "$multi_ns_support" == "true" ]]; then
+    profile_name="helmless-multi"
+  fi
 
   local cluster_name="eats-helmless"
   local kubeconfig="$HOME/.kube/$cluster_name.yml"
-  local use_multi_namespace="false"
-  if [[ "$profile_name" == "helmless-multi" ]]; then
-    use_multi_namespace="true"
-  fi
 
   ensure_kind_cluster "$cluster_name"
   if [[ "$redeploy" == "true" ]]; then
@@ -143,7 +144,7 @@ run_eats_helmless() {
     -e EIRINI_SYSTEM_NS=eirini-core \
     -e EIRINI_WORKLOADS_NS=eirini-workloads \
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
-    -e USE_MULTI_NAMESPACE="$use_multi_namespace" \
+    -e USE_MULTI_NAMESPACE="$multi_ns_support" \
     -e INTEGRATION_KUBECONFIG="/usr/src/app/$cluster_name.yml" \
     eirini/ci \
     /usr/src/app/scripts/run_eats_tests.sh "$@"
@@ -183,6 +184,7 @@ run_eats_helmful() {
     -e EIRINI_SYSTEM_NS=eirini-core \
     -e EIRINI_WORKLOADS_NS=eirini \
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
+    -e USE_MULTI_NAMESPACE="$multi_ns_support" \
     -e INTEGRATION_KUBECONFIG="/usr/src/app/$cluster_name.yml" \
     eirini/ci \
     /usr/src/app/scripts/run_eats_tests.sh "$@"
