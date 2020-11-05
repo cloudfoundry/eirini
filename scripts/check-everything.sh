@@ -112,6 +112,10 @@ run_eats_helmless() {
 
   local cluster_name="eats-helmless"
   local kubeconfig="$HOME/.kube/$cluster_name.yml"
+  local use_multi_namespace="false"
+  if [[ "$profile_name" == "helmless-multi" ]]; then
+    use_multi_namespace="true"
+  fi
 
   ensure_kind_cluster "$cluster_name"
   if [[ "$redeploy" == "true" ]]; then
@@ -139,6 +143,7 @@ run_eats_helmless() {
     -e EIRINI_SYSTEM_NS=eirini-core \
     -e EIRINI_WORKLOADS_NS=eirini-workloads \
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
+    -e USE_MULTI_NAMESPACE="$use_multi_namespace" \
     -e INTEGRATION_KUBECONFIG="/usr/src/app/$cluster_name.yml" \
     eirini/ci \
     /usr/src/app/scripts/run_eats_tests.sh "$@"
