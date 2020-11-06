@@ -29,6 +29,8 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 
 	statuses := pod.Status.ContainerStatuses
 	if len(statuses) == 0 {
+		logger.Debug("skipping-empty-container-statuseses")
+
 		return events.CrashEvent{}, false
 	}
 
@@ -40,7 +42,7 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 
 	appStatus := getOPIContainerStatus(pod.Status.ContainerStatuses)
 	if appStatus == nil {
-		logger.Debug("eirini-pod-has-no-opi-container-statuses")
+		logger.Debug("skipping-eirini-pod-has-no-opi-container-statuses")
 
 		return events.CrashEvent{}, false
 	}
@@ -57,18 +59,22 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 		return generateReport(pod, appStatus.State.Waiting.Reason, exitStatus, exitDescription, crashTimestamp, calculateCrashCount(appStatus.RestartCount)), true
 	}
 
+	logger.Debug("skipping-pod-healthy")
+
 	return events.CrashEvent{}, false
 }
 
 func (g DefaultCrashEventGenerator) generateReportForTerminatedPod(pod *v1.Pod, status *v1.ContainerStatus, logger lager.Logger) (events.CrashEvent, bool) {
 	podEvents, err := g.eventsClient.GetByPod(*pod)
 	if err != nil {
-		logger.Error("failed-to-get-k8s-events", err)
+		logger.Error("skipping-failed-to-get-k8s-events", err)
 
 		return events.CrashEvent{}, false
 	}
 
 	if k8s.IsStopped(podEvents) {
+		logger.Debug("skipping-pod-stopped")
+
 		return events.CrashEvent{}, false
 	}
 

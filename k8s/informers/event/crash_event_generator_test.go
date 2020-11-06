@@ -140,7 +140,7 @@ var _ = Describe("CrashEventGenerator", func() {
 					logs := logger.Logs()
 					Expect(logs).To(HaveLen(1))
 					log := logs[0]
-					Expect(log.Message).To(Equal("crash-event-logger-test.generate-crash-event.failed-to-get-k8s-events"))
+					Expect(log.Message).To(Equal("crash-event-logger-test.generate-crash-event.skipping-failed-to-get-k8s-events"))
 					Expect(log.Data).To(HaveKeyWithValue("pod-name", "test-pod-0"))
 					Expect(log.Data).To(HaveKeyWithValue("guid", "test-pod-anno"))
 					Expect(log.Data).To(HaveKeyWithValue("version", "test-pod-version"))
@@ -291,7 +291,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			logs := logger.Logs()
 			Expect(logs).To(HaveLen(1))
 			log := logs[0]
-			Expect(log.Message).To(Equal("crash-event-logger-test.generate-crash-event.eirini-pod-has-no-opi-container-statuses"))
+			Expect(log.Message).To(Equal("crash-event-logger-test.generate-crash-event.skipping-eirini-pod-has-no-opi-container-statuses"))
 			Expect(log.Data).To(HaveKeyWithValue("pod-name", "test-pod-0"))
 			Expect(log.Data).To(HaveKeyWithValue("guid", "test-pod-anno"))
 			Expect(log.Data).To(HaveKeyWithValue("version", "test-pod-version"))
