@@ -20,20 +20,22 @@ import (
 
 var _ = Describe("EventsReporter", func() {
 	var (
-		guid           string
-		version        string
-		appServiceName string
+		guid            string
+		version         string
+		appServiceName  string
+		expectedRequest wiremock.RequestMatcher
 	)
 
 	BeforeEach(func() {
 		guid = tests.GenerateGUID()
 		version = tests.GenerateGUID()
 
+		expectedRequest = wiremock.RequestMatcher{
+			Method: "POST",
+			URL:    fmt.Sprintf("/internal/v4/apps/%s-%s/crashed", guid, version),
+		}
 		err := fixture.Wiremock.AddStub(wiremock.Stub{
-			Request: wiremock.RequestMatcher{
-				Method: "POST",
-				URL:    fmt.Sprintf("/internal/v4/apps/%s-%s/crashed", guid, version),
-			},
+			Request: expectedRequest,
 			Response: wiremock.Response{
 				Status: 200,
 			},
@@ -72,12 +74,7 @@ var _ = Describe("EventsReporter", func() {
 		})
 
 		It("does not report a crash event for running apps", func() {
-			requestMatcher := wiremock.RequestMatcher{
-				Method: "POST",
-				URL:    fmt.Sprintf("/internal/v4/apps/%s-1/crashed", guid),
-			}
-
-			Consistently(fixture.Wiremock.GetCountFn(requestMatcher), "10s").Should(BeZero())
+			Consistently(fixture.Wiremock.GetCountFn(expectedRequest), "10s").Should(BeZero())
 		})
 
 		When("the app exists with non-zero code", func() {
@@ -87,15 +84,10 @@ var _ = Describe("EventsReporter", func() {
 			})
 
 			It("reports a crash event", func() {
-				requestMatcher := wiremock.RequestMatcher{
-					Method: "POST",
-					URL:    fmt.Sprintf("/internal/v4/apps/%s-%s/crashed", guid, version),
-				}
+				Eventually(fixture.Wiremock.GetCountFn(expectedRequest)).Should(Equal(1))
+				Consistently(fixture.Wiremock.GetCountFn(expectedRequest), "10s").Should(Equal(1))
 
-				Eventually(fixture.Wiremock.GetCountFn(requestMatcher)).Should(Equal(1))
-				Consistently(fixture.Wiremock.GetCountFn(requestMatcher), "10s").Should(Equal(1))
-
-				verifyCrashRequest(requestMatcher, 1)
+				verifyCrashRequest(expectedRequest, 1)
 			})
 		})
 
@@ -106,15 +98,10 @@ var _ = Describe("EventsReporter", func() {
 			})
 
 			It("reports a crash event", func() {
-				requestMatcher := wiremock.RequestMatcher{
-					Method: "POST",
-					URL:    fmt.Sprintf("/internal/v4/apps/%s-%s/crashed", guid, version),
-				}
+				Eventually(fixture.Wiremock.GetCountFn(expectedRequest)).Should(Equal(1))
+				Consistently(fixture.Wiremock.GetCountFn(expectedRequest), "10s").Should(Equal(1))
 
-				Eventually(fixture.Wiremock.GetCountFn(requestMatcher)).Should(Equal(1))
-				Consistently(fixture.Wiremock.GetCountFn(requestMatcher), "10s").Should(Equal(1))
-
-				verifyCrashRequest(requestMatcher, 0)
+				verifyCrashRequest(expectedRequest, 0)
 			})
 		})
 	})
@@ -143,12 +130,7 @@ var _ = Describe("EventsReporter", func() {
 		})
 
 		It("reports a crash event per app restart", func() {
-			requestMatcher := wiremock.RequestMatcher{
-				Method: "POST",
-				URL:    fmt.Sprintf("/internal/v4/apps/%s-%s/crashed", guid, version),
-			}
-
-			Eventually(fixture.Wiremock.GetCountFn(requestMatcher)).Should(BeNumerically(">", 1))
+			Eventually(fixture.Wiremock.GetCountFn(expectedRequest)).Should(BeNumerically(">", 1))
 		})
 	})
 })

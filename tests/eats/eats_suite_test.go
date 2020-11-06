@@ -38,7 +38,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
 
 	wiremockClient := tests.NewWiremock()
-	Expect(wiremockClient.Reset()).To(Succeed())
 
 	fixture = tests.NewEATSFixture(*baseFixture, dynamicClientset, wiremockClient)
 })
