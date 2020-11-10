@@ -22,7 +22,6 @@ var _ = Describe("EventsReporter", func() {
 	var (
 		guid            string
 		version         string
-		appServiceName  string
 		expectedRequest wiremock.RequestMatcher
 	)
 
@@ -65,52 +64,67 @@ var _ = Describe("EventsReporter", func() {
 				},
 			})
 			Expect(statusCode).To(Equal(http.StatusAccepted))
-
-			appServiceName = exposeLRP(fixture.Namespace, guid, 8080, "/")
-		})
-
-		AfterEach(func() {
-			unexposeLRP(fixture.Namespace, appServiceName)
 		})
 
 		It("does not report a crash event for running apps", func() {
 			Consistently(fixture.Wiremock.GetCountFn(expectedRequest), "10s").Should(BeZero())
 		})
+	})
 
-		When("the app exists with non-zero code", func() {
-			BeforeEach(func() {
-				_, err := http.Get(fmt.Sprintf("http://%s.%s:8080/exit?exitCode=1", appServiceName, fixture.Namespace))
-				Expect(err).To(MatchError(ContainSubstring("EOF"))) // The app exited
+	When("the app exists with non-zero code", func() {
+		BeforeEach(func() {
+			statusCode := desireLRP(cf.DesireLRPRequest{
+				Namespace:    fixture.Namespace,
+				GUID:         guid,
+				Version:      version,
+				NumInstances: 1,
+				DiskMB:       512,
+				Lifecycle: cf.Lifecycle{
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image:            "eirini/busybox",
+						Command:          []string{"/bin/sh", "-c", "exit 1"},
+						RegistryUsername: "eiriniuser",
+						RegistryPassword: tests.GetEiriniDockerHubPassword(),
+					},
+				},
 			})
-
-			It("reports a crash event", func() {
-				Eventually(fixture.Wiremock.GetCountFn(expectedRequest)).Should(Equal(1))
-				Consistently(fixture.Wiremock.GetCountFn(expectedRequest), "10s").Should(Equal(1))
-
-				verifyCrashRequest(expectedRequest, 1)
-			})
+			Expect(statusCode).To(Equal(http.StatusAccepted))
 		})
 
-		When("the app exists with zero code", func() {
-			BeforeEach(func() {
-				_, err := http.Get(fmt.Sprintf("http://%s.%s:8080/exit?exitCode=0", appServiceName, fixture.Namespace))
-				Expect(err).To(MatchError(ContainSubstring("EOF"))) // The app exited
-			})
+		It("reports a crash event", func() {
+			Eventually(fixture.Wiremock.GetCountFn(expectedRequest)).Should(BeNumerically(">=", 1))
+			verifyCrashRequest(expectedRequest, 1)
+		})
+	})
 
-			It("reports a crash event", func() {
-				Eventually(fixture.Wiremock.GetCountFn(expectedRequest)).Should(Equal(1))
-				Consistently(fixture.Wiremock.GetCountFn(expectedRequest), "10s").Should(Equal(1))
-
-				verifyCrashRequest(expectedRequest, 0)
+	When("the app exists with zero code", func() {
+		BeforeEach(func() {
+			statusCode := desireLRP(cf.DesireLRPRequest{
+				Namespace:    fixture.Namespace,
+				GUID:         guid,
+				Version:      version,
+				NumInstances: 1,
+				DiskMB:       512,
+				Lifecycle: cf.Lifecycle{
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image:            "eirini/busybox",
+						Command:          []string{"/bin/sh", "-c", "exit 0"},
+						RegistryUsername: "eiriniuser",
+						RegistryPassword: tests.GetEiriniDockerHubPassword(),
+					},
+				},
 			})
+			Expect(statusCode).To(Equal(http.StatusAccepted))
+		})
+
+		It("reports a crash event", func() {
+			Eventually(fixture.Wiremock.GetCountFn(expectedRequest)).Should(BeNumerically(">=", 1))
+			verifyCrashRequest(expectedRequest, 0)
 		})
 	})
 
 	When("the app is crashing on startup", func() {
 		BeforeEach(func() {
-			_, err := stopLRP(guid, version)
-			Expect(err).NotTo(HaveOccurred())
-
 			statusCode := desireLRP(cf.DesireLRPRequest{
 				Namespace:    fixture.Namespace,
 				GUID:         guid,
@@ -191,5 +205,5 @@ func verifyCrashRequest(requestMatcher wiremock.RequestMatcher, exitStatus int) 
 	Expect(err).NotTo(HaveOccurred())
 
 	Expect(request.ExitStatus).To(Equal(exitStatus))
-	Expect(request.CrashCount).To(Equal(1))
+	Expect(request.CrashCount).To(BeNumerically(">=", 1))
 }
