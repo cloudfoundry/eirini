@@ -147,31 +147,29 @@ checkout_stable_cf_for_k8s_deps() {
   echo "Dear future us, take a deep breath as I am checking out stable revisions of cf-for-k8s dependencies for you..."
 
   echo "Getting the vendored revision of capi-k8s-release..."
-  capi_k8s_release_sha="$(yq read $CF4K8S_DIR/vendir.lock.yml 'directories.(path==config/capi/_ytt_lib/capi-k8s-release).contents[0].git.sha')"
-  echo "capi-k8s-release version: $capi_k8s_release_sha"
+
+  pushd "$CF4K8S_DIR"
+  {
+    capi_k8s_release_sha=$(yq r vendir.lock.yml 'directories.(path==config/capi/_ytt_lib/capi-k8s-release).contents[0].git.sha')
+    echo "capi-k8s-release version: $capi_k8s_release_sha"
+  }
+  popd
 
   pushd "$CAPIK8S_DIR"
   {
-    echo "Getting the revision of the cloud_controller_ng submodule"
-    git checkout "$capi_k8s_release_sha"
-    ccng_sha="$(git show $capi_k8s_release_sha | grep cloud_controller_ng -A 1 | tail -1 | tr -d ' ')"
+    ccng_sha=$(git show -s "$capi_k8s_release_sha" | awk '/ccng:/ {found=1}; /sha:/ { if (found == 1) print $2; found = 0 }')
     echo "cloud_controller_ng version: $ccng_sha"
   }
   popd
 
-  pushd "$CAPI_DIR"
+  pushd "$CAPI_DIR/src/cloud_controller_ng"
   {
-    echo "Looking for the commit that bumped the cloud_controller_ng submodule to $ccng_sha in capi-release"
-    capi_release_sha="$(git --no-pager log -S $ccng_sha --source --all --pretty=format:"%h" --reverse | head -1)"
-    git checkout "$capi_release_sha"
-    echo "capi-release version: $capi_release_sha"
-
-    echo "Stashing local changes and checking out submodule 🤞"
-    git -C src/cloud_controller_ng stash
-    git submodule update --init --recursive
-    git -C src/cloud_controller_ng stash pop
+    git stash
+    git checkout "$ccng_sha"
+    git stash pop
   }
   popd
+
   echo "All done!"
 }
 
