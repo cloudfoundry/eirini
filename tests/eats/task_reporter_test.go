@@ -73,7 +73,7 @@ var _ = Describe("Tasks Reporter", func() {
 			Method: "POST",
 			URL:    fmt.Sprintf("/%s", taskGUID),
 		}
-		Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "1m").Should(Equal(1))
+		Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "2m").Should(Equal(1))
 
 		bodyStr, err := fixture.Wiremock.GetRequestBody(requestMatcher)
 		Expect(err).NotTo(HaveOccurred())
