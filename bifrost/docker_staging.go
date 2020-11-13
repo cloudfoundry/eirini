@@ -59,9 +59,14 @@ type port struct {
 	Protocol string `json:"Protocol"`
 }
 
+type user struct {
+	User string
+}
+
 type executionMetadata struct {
 	Cmd   []string `json:"cmd"`
 	Ports []port   `json:"ports"`
+	User  user     `json:"user"`
 }
 
 func (s DockerStaging) TransferStaging(ctx context.Context, stagingGUID string, request cf.StagingRequest) error {
@@ -85,8 +90,9 @@ func (s DockerStaging) TransferStaging(ctx context.Context, stagingGUID string, 
 
 		return s.respondWithFailure(taskCallbackResponse, errors.Wrap(err, "failed to parse exposed ports"))
 	}
+	userFromConfig, err := parseUser(imageConfig)
 
-	stagingResult, err := buildStagingResult(request.Lifecycle.DockerLifecycle.Image, ports)
+	stagingResult, err := buildStagingResult(request.Lifecycle.DockerLifecycle.Image, ports, user{User: userFromConfig})
 	if err != nil {
 		logger.Error("failed-to-build-staging-result", err)
 
@@ -151,10 +157,19 @@ func parseExposedPorts(imageConfig *v1.ImageConfig) ([]port, error) {
 	return ports, nil
 }
 
-func buildStagingResult(image string, ports []port) (string, error) {
+func parseUser(imageConfig *v1.ImageConfig) (string, error) {
+	if imageConfig.User != "" {
+		return imageConfig.User, nil
+	}
+
+	return "", errors.New("Image has no USER instruction")
+}
+
+func buildStagingResult(image string, ports []port, user user) (string, error) {
 	executionMetadataJSON, err := json.Marshal(executionMetadata{
 		Cmd:   []string{},
 		Ports: ports,
+		User:  user,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse execution metadata")
