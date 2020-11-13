@@ -65,7 +65,7 @@ var ErrInvalidInstanceIndex = errors.New("invalid instance index")
 
 type Config struct {
 	Properties         Properties `yaml:"opi"`
-	WorkloadsNamespace string
+	WorkloadsNamespace string     `yaml:"-"`
 }
 
 type KubeConfig struct {
@@ -82,12 +82,12 @@ type Properties struct { //nolint:maligned
 
 	CCTLSDisabled bool `yaml:"cc_tls_disabled"`
 
-	CCCertPath     string
-	CCKeyPath      string
-	CCCAPath       string
-	ClientCAPath   string
-	ServerCertPath string
-	ServerKeyPath  string
+	CCCertPath     string `yaml:"-"`
+	CCKeyPath      string `yaml:"-"`
+	CCCAPath       string `yaml:"-"`
+	ClientCAPath   string `yaml:"-"`
+	ServerCertPath string `yaml:"-"`
+	ServerKeyPath  string `yaml:"-"`
 
 	KubeConfig `yaml:",inline"`
 
@@ -103,11 +103,11 @@ type EventReporterConfig struct {
 	CcInternalAPI string `yaml:"cc_internal_api"`
 	CCTLSDisabled bool   `yaml:"cc_tls_disabled"`
 
-	CCCertPath string
-	CCKeyPath  string
-	CCCAPath   string
+	CCCertPath string `yaml:"-"`
+	CCKeyPath  string `yaml:"-"`
+	CCCAPath   string `yaml:"-"`
 
-	WorkloadsNamespace string
+	WorkloadsNamespace string `yaml:"-"`
 
 	KubeConfig `yaml:",inline"`
 }
@@ -117,7 +117,7 @@ type RouteEmitterConfig struct {
 	NatsIP              string `yaml:"nats_ip"`
 	NatsPort            int    `yaml:"nats_port"`
 	EmitPeriodInSeconds uint   `yaml:"emit_period_in_seconds"`
-	WorkloadsNamespace  string
+	WorkloadsNamespace  string `yaml:"-"`
 
 	KubeConfig `yaml:",inline"`
 }
@@ -125,10 +125,10 @@ type RouteEmitterConfig struct {
 type MetricsCollectorConfig struct {
 	LoggregatorAddress string `yaml:"loggregator_address"`
 
-	WorkloadsNamespace  string
-	LoggregatorCertPath string
-	LoggregatorKeyPath  string
-	LoggregatorCAPath   string
+	WorkloadsNamespace  string `yaml:"-"`
+	LoggregatorCertPath string `yaml:"-"`
+	LoggregatorKeyPath  string `yaml:"-"`
+	LoggregatorCAPath   string `yaml:"-"`
 
 	AppMetricsEmissionIntervalInSecs int `yaml:"app_metrics_emission_interval_in_secs"`
 
@@ -143,7 +143,7 @@ type TaskReporterConfig struct {
 	CompletionCallbackRetryLimit int    `yaml:"completion_callback_retry_limit"`
 	TTLSeconds                   int    `yaml:"ttl_seconds"`
 
-	WorkloadsNamespace string
+	WorkloadsNamespace string `yaml:"-"`
 
 	KubeConfig `yaml:",inline"`
 }
@@ -154,7 +154,7 @@ type InstanceIndexEnvInjectorConfig struct {
 	ServicePort                int32  `yaml:"service_port"`
 	EiriniXOperatorFingerprint string
 
-	WorkloadsNamespace string
+	WorkloadsNamespace string `yaml:"-"`
 
 	KubeConfig `yaml:",inline"`
 }

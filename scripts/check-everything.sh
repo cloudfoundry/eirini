@@ -4,7 +4,6 @@ set -euo pipefail
 IFS=$'\n\t'
 
 RUN_DIR="$(cd "$(dirname "$0")" && pwd)"
-EIRINI_RELEASE_DIR="$RUN_DIR/../../eirini-release"
 EIRINI_DIR="$RUN_DIR/.."
 
 EIRINIUSER_PASSWORD=""
@@ -15,7 +14,6 @@ fi
 export TELEPRESENCE_EXPOSE_PORT_START=10000
 export TELEPRESENCE_SERVICE_NAME
 
-runFile=$(mktemp)
 clusterLock=$HOME/.kind-cluster.lock
 
 ensure_kind_cluster() {
@@ -30,7 +28,7 @@ apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   apiServerAddress: 172.17.0.1
 EOF
-    flock -x $clusterLock kind create cluster --name "$cluster_name" --config "$kindConfig" --wait 5m
+    flock -x "$clusterLock" kind create cluster --name "$cluster_name" --config "$kindConfig" --wait 5m
     rm -f "$kindConfig"
     if [[ -n "$current_cluster" ]]; then
       kubectl config use-context "$current_cluster"
@@ -59,7 +57,7 @@ run_integration_tests() {
   src_dir=$(mktemp -d)
   cp -a "$EIRINI_DIR" "$src_dir"
   cp "$HOME/.kube/$cluster_name.yml" "$src_dir"
-  trap "rm -rf $src_dir" EXIT
+  trap 'rm -rf $src_dir' EXIT
 
   KUBECONFIG=$HOME/.kube/integration-tests.yml telepresence \
     --method container \
@@ -81,39 +79,8 @@ run_integration_tests() {
     /usr/src/app/scripts/run_integration_tests.sh "$@"
 }
 
-run_eats_helmless_single_ns() {
-  echo "Running EATs against single NS helmless deployed eirini on kind"
-
-  run_eats_helmless "false" "$@"
-}
-
-run_eats_helmless_multi_ns() {
-  echo "Running EATs against multi NS helmless deployed eirini on kind"
-
-  run_eats_helmless "true" "$@"
-}
-
-run_eats_helmful_single_ns() {
-  echo "Running EATs against single NS helm deployed eirini on kind"
-
-  run_eats_helmful "false" "$@"
-}
-
-run_eats_helmful_multi_ns() {
-  echo "Running EATs against multi NS helm deployed eirini on kind"
-
-  run_eats_helmful "true" "$@"
-}
-
 run_eats_helmless() {
-  local multi_ns_support profile_name
-  multi_ns_support="$1"
-  shift
-
-  profile_name="helmless-single"
-  if [[ "$multi_ns_support" == "true" ]]; then
-    profile_name="helmless-multi"
-  fi
+  echo "Running EATs against helmless deployed eirini on kind"
 
   local cluster_name="eats-helmless"
   local kubeconfig="$HOME/.kube/$cluster_name.yml"
@@ -121,7 +88,7 @@ run_eats_helmless() {
   ensure_kind_cluster "$cluster_name"
   if [[ "$redeploy" == "true" ]]; then
     skaffold delete -p helmless
-    KUBECONFIG="$kubeconfig" $RUN_DIR/skaffold run -p "$profile_name"
+    KUBECONFIG="$kubeconfig" "$RUN_DIR/skaffold" run -p helmless
   fi
 
   local service_name
@@ -130,7 +97,7 @@ run_eats_helmless() {
   src_dir=$(mktemp -d)
   cp -a "$EIRINI_DIR" "$src_dir"
   cp "$HOME/.kube/$cluster_name.yml" "$src_dir"
-  trap "rm -rf $src_dir" EXIT
+  trap 'rm -rf $src_dir' EXIT
 
   KUBECONFIG="$kubeconfig" telepresence \
     --method container \
@@ -144,16 +111,13 @@ run_eats_helmless() {
     -e EIRINI_SYSTEM_NS=eirini-core \
     -e EIRINI_WORKLOADS_NS=eirini-workloads \
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
-    -e USE_MULTI_NAMESPACE="$multi_ns_support" \
     -e INTEGRATION_KUBECONFIG="/usr/src/app/$cluster_name.yml" \
     eirini/ci \
     /usr/src/app/scripts/run_eats_tests.sh "$@"
 }
 
 run_eats_helmful() {
-  local multi_ns_support
-  multi_ns_support="$1"
-  shift
+  echo "Running EATs against helm deployed eirini on kind"
 
   local cluster_name="eats-helmful"
   local kubeconfig="$HOME/.kube/$cluster_name.yml"
@@ -161,7 +125,7 @@ run_eats_helmful() {
   ensure_kind_cluster "$cluster_name"
   if [[ "$redeploy" == "true" ]]; then
     skaffold delete -p helm || true # helm will fail if nothing is deployed
-    KUBECONFIG="$kubeconfig" HELM_ENABLE_MULTI_NS="$multi_ns_support" $RUN_DIR/skaffold run -p helm
+    KUBECONFIG="$kubeconfig" "$RUN_DIR/skaffold" run -p helm
   fi
 
   local service_name
@@ -170,7 +134,7 @@ run_eats_helmful() {
   src_dir=$(mktemp -d)
   cp -a "$EIRINI_DIR" "$src_dir"
   cp "$HOME/.kube/$cluster_name.yml" "$src_dir"
-  trap "rm -rf $src_dir" EXIT
+  trap 'rm -rf $src_dir' EXIT
 
   KUBECONFIG="$kubeconfig" telepresence \
     --method container \
@@ -184,7 +148,6 @@ run_eats_helmful() {
     -e EIRINI_SYSTEM_NS=eirini-core \
     -e EIRINI_WORKLOADS_NS=eirini \
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
-    -e USE_MULTI_NAMESPACE="$multi_ns_support" \
     -e INTEGRATION_KUBECONFIG="/usr/src/app/$cluster_name.yml" \
     eirini/ci \
     /usr/src/app/scripts/run_eats_tests.sh "$@"
@@ -205,20 +168,12 @@ run_subset() {
     run_integration_tests "$@"
   fi
 
-  if [[ "$run_eats_helmless_single_ns" == "true" ]]; then
-    run_eats_helmless_single_ns "$@"
+  if [[ "$run_eats_helmless" == "true" ]]; then
+    run_eats_helmless "$@"
   fi
 
-  if [[ "$run_eats_helmful_single_ns" == "true" ]]; then
-    run_eats_helmful_single_ns "$@"
-  fi
-
-  if [[ "$run_eats_helmless_multi_ns" == "true" ]]; then
-    run_eats_helmless_multi_ns "$@"
-  fi
-
-  if [[ "$run_eats_helmful_multi_ns" == "true" ]]; then
-    run_eats_helmful_multi_ns "$@"
+  if [[ "$run_eats_helmful" == "true" ]]; then
+    run_eats_helmful "$@"
   fi
 
   if [[ "$run_linter" == "true" ]]; then
@@ -243,7 +198,7 @@ run_everything() {
   fi
   tmux new-window -n eirini-tests "/bin/bash -c \"$0 -u; bash --init-file <(echo 'history -s $0 -u')\""
   tmux split-window -h -p 50 "/bin/bash -c \"$0 -i $do_not_deploy; bash --init-file <(echo 'history -s $0 -i $do_not_deploy')\""
-  tmux split-window -v -p 50 "/bin/bash -c \"$0 -eEfF $do_not_deploy; bash --init-file <(echo 'history -s $0 -eEfF $do_not_deploy')\""
+  tmux split-window -v -p 50 "/bin/bash -c \"$0 -ef $do_not_deploy; bash --init-file <(echo 'history -s $0 -ef $do_not_deploy')\""
   tmux select-pane -L
   tmux split-window -v -p 50 "/bin/bash -c \"$0 -l; bash --init-file <(echo 'history -s $0 -l')\""
 }
@@ -254,10 +209,8 @@ main() {
 Usage: check-everything.sh [options]
 Options:
   -a  run all tests (default)
-  -e  EATs tests (helmless / single NS)
-  -f  EATs test (helmful / single NS)
-  -E  EATs tests (helmless / multi NS)
-  -F  EATs test (helmful / multi NS)
+  -e  EATs tests helmless
+  -f  EATs test helmful
   -h  this help
   -i  integration tests
   -l  golangci-lint
@@ -266,20 +219,15 @@ Options:
 EOF
   )
 
-  local additional_values \
-    run_eats_helmless_single_ns="false" \
-    run_eats_helmful_single_ns="false" \
-    run_eats_helmless_multi_ns="false" \
-    run_eats_helmful_multi_ns="false" \
+  local run_eats_helmless="false" \
+    run_eats_helmful="false" \
     run_unit_tests="false" \
     run_integration_tests="false" \
     run_linter="false" \
-    skip_docker_build="false" \
     redeploy="true" \
     run_subset="false"
 
-  additional_values=""
-  while getopts "auieEfFnhl" opt; do
+  while getopts "auiefnhl" opt; do
     case ${opt} in
       n)
         redeploy="false"
@@ -296,19 +244,11 @@ EOF
         run_subset="true"
         ;;
       e)
-        run_eats_helmless_single_ns="true"
+        run_eats_helmless="true"
         run_subset="true"
         ;;
       f)
-        run_eats_helmful_single_ns="true"
-        run_subset="true"
-        ;;
-      E)
-        run_eats_helmless_multi_ns="true"
-        run_subset="true"
-        ;;
-      F)
-        run_eats_helmful_multi_ns="true"
+        run_eats_helmful="true"
         run_subset="true"
         ;;
       l)
@@ -340,4 +280,4 @@ EOF
   fi
 }
 
-main $@
+main "$@"

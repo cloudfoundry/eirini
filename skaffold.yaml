@@ -57,39 +57,16 @@ build:
 # differ way too much
 deploy:
 profiles:
-- name: helmless-single
-  deploy:
-    kubectl:
-      manifests:
-      - ../eirini-release/deploy/core/*.yml
-      - ../eirini-release/deploy/core/single-namespace/*.yml
-      - ../eirini-release/deploy/events/*.yml
-      - ../eirini-release/deploy/events/single-namespace/*.yml
-      - ../eirini-release/deploy/metrics/*.yml
-      - ../eirini-release/deploy/metrics/single-namespace/*.yml
-      - ../eirini-release/deploy/workloads/*.yml
-      - ../eirini-release/deploy/testing/cc-wiremock/*.yml
-- name: helmless-multi
-  deploy:
-    kubectl:
-      manifests:
-      - ../eirini-release/deploy/core/*.yml
-      - ../eirini-release/deploy/core/multi-namespace/*.yml
-      - ../eirini-release/deploy/events/*.yml
-      - ../eirini-release/deploy/events/multi-namespace/*.yml
-      - ../eirini-release/deploy/metrics/*.yml
-      - ../eirini-release/deploy/metrics/multi-namespace/*.yml
-      - ../eirini-release/deploy/workloads/*.yml
-      - ../eirini-release/deploy/testing/cc-wiremock/*.yml
-# Warning: this profile should only be used for helmless deletion. It is
-# useful if you are trying to delete a helmless deployment but are unsure
-# how it was deployed
 - name: helmless
   deploy:
     kubectl:
       manifests:
-      - ../eirini-release/deploy/**/*.yml
-      - ../eirini-release/deploy/**/**/*.yml
+      - ../eirini-release/deploy/core/*.yml
+      - ../eirini-release/deploy/events/*.yml
+      - ../eirini-release/deploy/metrics/*.yml
+      - ../eirini-release/deploy/workloads/*.yml
+      - ../eirini-release/deploy/workloads/core/*.yml
+      - ../eirini-release/deploy/testing/cc-wiremock/*.yml
 - name: helm
   deploy:
     kubectl:
@@ -112,7 +89,6 @@ profiles:
         - ../eirini-release/helm/scripts/assets/helm-values-template.yml
         setValueTemplates:
           kube.external_ips[0]: "{{.CLUSTER_IP}}"
-          opi.enable_multi_namespace_support: "{{.HELM_ENABLE_MULTI_NS}}"
         artifactOverrides:
           opi.image: eirini/opi
           opi.route_collector_image: eirini/route-collector

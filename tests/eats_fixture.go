@@ -42,14 +42,6 @@ func NewEATSFixture(baseFixture Fixture, dynamicClientset dynamic.Interface, wir
 	}
 }
 
-func (f *EATSFixture) SetUp() {
-	if IsMultiNamespaceEnabled() {
-		f.Fixture.SetUp()
-	} else {
-		f.Namespace = GetEiriniWorkloadsNamespace()
-	}
-}
-
 func (f *EATSFixture) TearDown() {
 	if f == nil {
 		Fail("failed to initialize fixture")

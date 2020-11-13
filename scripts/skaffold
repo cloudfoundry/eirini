@@ -4,7 +4,6 @@ set -euo pipefail
 
 trap revert_manifest_shas EXIT
 
-export HELM_ENABLE_MULTI_NS=${HELM_ENABLE_MULTI_NS:-false}
 export NATS_PASSWORD=${NATS_PASSWORD:-$(pass eirini/ci/nats-password)}
 export CLUSTER_IP="$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')"
 
