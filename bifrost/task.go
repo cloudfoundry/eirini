@@ -34,7 +34,7 @@ type JSONClient interface {
 }
 
 type TaskNamespacer interface {
-	GetNamespace(requestedNamespace string) (string, error)
+	GetNamespace(requestedNamespace string) string
 }
 
 type Task struct {
@@ -74,10 +74,7 @@ func (t *Task) TransferTask(ctx context.Context, taskGUID string, taskRequest cf
 		return errors.Wrap(err, "failed to convert task")
 	}
 
-	namespace, err := t.Namespacer.GetNamespace(taskRequest.Namespace)
-	if err != nil {
-		return errors.Wrap(err, "invalid namespace")
-	}
+	namespace := t.Namespacer.GetNamespace(taskRequest.Namespace)
 
 	return errors.Wrap(t.TaskDesirer.Desire(namespace, &desiredTask), "failed to desire")
 }

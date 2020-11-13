@@ -38,17 +38,7 @@ func main() {
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
-	namespace := ""
-
-	if !cfg.EnableMultiNamespaceSupport {
-		if cfg.Namespace == "" {
-			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
-		}
-
-		namespace = cfg.Namespace
-	}
-
-	collector := k8s.NewRouteCollector(clientset, namespace, logger)
+	collector := k8s.NewRouteCollector(clientset, cfg.WorkloadsNamespace, logger)
 
 	scheduler := route.CollectorScheduler{
 		Collector: collector,

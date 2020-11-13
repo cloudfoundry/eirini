@@ -11,15 +11,13 @@ import (
 type DiskMetricsClient struct {
 	nodeClient    NodeAPI
 	kubeletClient API
-	namespace     string
 	logger        lager.Logger
 }
 
-func NewDiskMetricsClient(nodeClient NodeAPI, kubeletClient API, namespace string, logger lager.Logger) DiskMetricsClient {
+func NewDiskMetricsClient(nodeClient NodeAPI, kubeletClient API, logger lager.Logger) DiskMetricsClient {
 	return DiskMetricsClient{
 		nodeClient:    nodeClient,
 		kubeletClient: kubeletClient,
-		namespace:     namespace,
 		logger:        logger,
 	}
 }
@@ -43,7 +41,7 @@ func (d DiskMetricsClient) GetPodMetrics() (map[string]float64, error) {
 	}
 
 	for _, p := range pods {
-		if p.PodRef.Namespace == d.namespace && len(p.Containers) != 0 {
+		if len(p.Containers) != 0 {
 			logsBytes := getUsedBytes(p.Containers[0].Logs)
 			rootfsBytes := getUsedBytes(p.Containers[0].Rootfs)
 			metrics[p.PodRef.Name] = logsBytes + rootfsBytes

@@ -57,8 +57,8 @@ func main() {
 		Logger: taskLogger,
 	}
 
-	jobsClient := client.NewJob(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport)
-	podUpdater := client.NewPod(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport)
+	jobsClient := client.NewJob(clientset, cfg.WorkloadsNamespace)
+	podUpdater := client.NewPod(clientset, cfg.WorkloadsNamespace)
 
 	completionCallbackRetryLimit := cfg.CompletionCallbackRetryLimit
 	if completionCallbackRetryLimit == 0 {
@@ -70,14 +70,7 @@ func main() {
 		MetricsBindAddress: "0",
 		Scheme:             kscheme.Scheme,
 		Logger:             util.NewLagerLogr(taskLogger),
-	}
-
-	if !cfg.EnableMultiNamespaceSupport {
-		if cfg.Namespace == "" {
-			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
-		}
-
-		mgrOptions.Namespace = cfg.Namespace
+		Namespace:          cfg.WorkloadsNamespace,
 	}
 
 	mgr, err := manager.New(kubeConfig, mgrOptions)
@@ -88,7 +81,7 @@ func main() {
 		jobsClient,
 		podUpdater,
 		reporter,
-		initTaskDeleter(clientset, cfg.Namespace, cfg.EnableMultiNamespaceSupport),
+		initTaskDeleter(clientset, cfg.WorkloadsNamespace),
 		completionCallbackRetryLimit,
 		cfg.TTLSeconds,
 	)
@@ -104,13 +97,13 @@ func main() {
 	cmdcommons.ExitfIfError(err, "Failed to start manager")
 }
 
-func initTaskDeleter(clientset kubernetes.Interface, namespace string, enableMultiNamespaceSupport bool) k8stask.Deleter {
+func initTaskDeleter(clientset kubernetes.Interface, workloadsNamespace string) k8stask.Deleter {
 	logger := lager.NewLogger("task-deleter")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	return k8s.NewTaskDeleter(
 		logger,
-		client.NewJob(clientset, namespace, enableMultiNamespaceSupport),
+		client.NewJob(clientset, workloadsNamespace),
 		client.NewSecret(clientset),
 	)
 }

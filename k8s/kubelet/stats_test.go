@@ -19,7 +19,6 @@ var _ = Describe("Stats", func() {
 		kubeletClient     *kubeletfakes.FakeAPI
 		logger            *lagertest.TestLogger
 	)
-	const namespace = "ns-1"
 
 	createStatsSummary := func(podName string, namespace string, rootfsBytes, logsBytes uint64) kubelet.StatsSummary {
 		return kubelet.StatsSummary{
@@ -49,7 +48,7 @@ var _ = Describe("Stats", func() {
 		kubeletClient = new(kubeletfakes.FakeAPI)
 		logger = lagertest.NewTestLogger("statstest")
 
-		diskMetricsClient = kubelet.NewDiskMetricsClient(nodeClient, kubeletClient, namespace, logger)
+		diskMetricsClient = kubelet.NewDiskMetricsClient(nodeClient, kubeletClient, logger)
 	})
 
 	It("should return the disk metrics for all pods on all nodes", func() {
@@ -64,7 +63,7 @@ var _ = Describe("Stats", func() {
 			},
 		}, nil)
 		kubeletClient.StatsSummaryReturnsOnCall(0, createStatsSummary("pod-1", "ns-1", 300, 700), nil)
-		kubeletClient.StatsSummaryReturnsOnCall(1, createStatsSummary("pod-2", "ns-1", 200, 256), nil)
+		kubeletClient.StatsSummaryReturnsOnCall(1, createStatsSummary("pod-2", "ns-2", 200, 256), nil)
 
 		metrics, err := diskMetricsClient.GetPodMetrics()
 		Expect(err).ToNot(HaveOccurred())
@@ -74,25 +73,6 @@ var _ = Describe("Stats", func() {
 		Expect(kubeletClient.StatsSummaryArgsForCall(1)).To(Equal("node2"))
 		Expect(metrics).To(HaveKeyWithValue("pod-1", float64(1000)))
 		Expect(metrics).To(HaveKeyWithValue("pod-2", float64(456)))
-	})
-
-	It("should ignore pods in other namespaces", func() {
-		nodeClient.ListReturns(&corev1.NodeList{
-			Items: []corev1.Node{
-				{ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				}},
-				{ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				}},
-			},
-		}, nil)
-		kubeletClient.StatsSummaryReturnsOnCall(0, createStatsSummary("pod-1", "ns-1", 300, 700), nil)
-		kubeletClient.StatsSummaryReturnsOnCall(1, createStatsSummary("pod-2", "ns-2", 200, 256), nil)
-
-		metrics, _ := diskMetricsClient.GetPodMetrics()
-		Expect(metrics).To(HaveLen(1))
-		Expect(metrics).To(HaveKeyWithValue("pod-1", float64(1000)))
 	})
 
 	When("the node client return an error", func() {

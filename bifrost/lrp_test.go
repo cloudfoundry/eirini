@@ -27,7 +27,7 @@ var _ = Describe("Bifrost LRP", func() {
 		lrpConverter = new(bifrostfakes.FakeLRPConverter)
 		lrpDesirer = new(bifrostfakes.FakeLRPDesirer)
 		lrpNamespacer = new(bifrostfakes.FakeLRPNamespacer)
-		lrpNamespacer.GetNamespaceReturns("my-namespace", nil)
+		lrpNamespacer.GetNamespaceReturns("my-namespace")
 
 		request = cf.DesireLRPRequest{
 			GUID:      "my-guid",
@@ -111,19 +111,7 @@ var _ = Describe("Bifrost LRP", func() {
 					Expect(lrpBifrost.Transfer(context.Background(), request)).To(MatchError(ContainSubstring("failed to desire")))
 				})
 			})
-
-			Context("when the namespacer fails", func() {
-				BeforeEach(func() {
-					lrpNamespacer.GetNamespaceReturns("", errors.New("oopsie"))
-				})
-
-				It("propagates the error", func() {
-					Expect(lrpBifrost.Transfer(context.Background(), request)).To(MatchError(ContainSubstring("oopsie")))
-				})
-
-			})
 		})
-
 	})
 
 	Describe("List LRP", func() {

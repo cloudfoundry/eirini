@@ -71,19 +71,9 @@ func launchMetricsEmitter(
 	loggregatorClient metrics.LoggregatorClient,
 	cfg *eirini.MetricsCollectorConfig,
 ) {
-	namespace := ""
+	podClient := client.NewPod(clientset, cfg.WorkloadsNamespace)
 
-	if !cfg.EnableMultiNamespaceSupport {
-		if cfg.Namespace == "" {
-			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
-		}
-
-		namespace = cfg.Namespace
-	}
-
-	podClient := client.NewPod(clientset, namespace, cfg.EnableMultiNamespaceSupport)
-
-	podMetricsClient := metricsClient.MetricsV1beta1().PodMetricses(namespace)
+	podMetricsClient := metricsClient.MetricsV1beta1().PodMetricses(cfg.WorkloadsNamespace)
 	metricsLogger := lager.NewLogger("metrics")
 	metricsLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
@@ -102,7 +92,6 @@ func launchMetricsEmitter(
 	kubeletClient := kubelet.NewClient(clientset.CoreV1().RESTClient())
 	diskClient := kubelet.NewDiskMetricsClient(clientset.CoreV1().Nodes(),
 		kubeletClient,
-		namespace,
 		diskClientLogger)
 	collector := k8s.NewMetricsCollector(podMetricsClient, podClient, diskClient, metricsCollectorLogger)
 

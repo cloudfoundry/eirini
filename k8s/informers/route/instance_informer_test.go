@@ -15,10 +15,6 @@ import (
 )
 
 var _ = Describe("InstanceChangeInformer", func() {
-	const (
-		namespace = "test-me"
-	)
-
 	var (
 		informer      eiriniroute.Informer
 		client        kubernetes.Interface
@@ -43,7 +39,6 @@ var _ = Describe("InstanceChangeInformer", func() {
 		informer = &InstanceChangeInformer{
 			Client:        client,
 			Cancel:        stopChan,
-			Namespace:     namespace,
 			UpdateHandler: updateHandler,
 		}
 		go informer.Start()

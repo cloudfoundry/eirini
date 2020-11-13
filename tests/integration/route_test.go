@@ -34,11 +34,11 @@ var _ = Describe("Routes", func() {
 		odinLRP = createLRP("ödin")
 		logger := lagertest.NewTestLogger("test")
 		desirer = &k8s.StatefulSetDesirer{
-			Pods:                      client.NewPod(fixture.Clientset, "", true),
+			Pods:                      client.NewPod(fixture.Clientset, fixture.Namespace),
 			Secrets:                   client.NewSecret(fixture.Clientset),
-			StatefulSets:              client.NewStatefulSet(fixture.Clientset, "", true),
+			StatefulSets:              client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
 			PodDisruptionBudgets:      client.NewPodDisruptionBudget(fixture.Clientset),
-			EventsClient:              client.NewEvent(fixture.Clientset, "", true),
+			EventsClient:              client.NewEvent(fixture.Clientset),
 			StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
 			RegistrySecretName:        "registry-secret",
 			LivenessProbeCreator:      k8s.CreateLivenessProbe,
@@ -170,7 +170,6 @@ fi;`,
 			informer := &informerroute.URIChangeInformer{
 				Client:        fixture.Clientset,
 				Cancel:        stopChan,
-				Namespace:     fixture.Namespace,
 				UpdateHandler: updateEventHandler,
 				DeleteHandler: deleteEventHandler,
 			}
@@ -283,7 +282,6 @@ fi;`,
 			informer := &informerroute.InstanceChangeInformer{
 				Client:        fixture.Clientset,
 				Cancel:        stopChan,
-				Namespace:     fixture.Namespace,
 				UpdateHandler: updateEventHandler,
 			}
 			go func() {

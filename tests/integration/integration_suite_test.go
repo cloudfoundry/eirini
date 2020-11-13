@@ -142,9 +142,21 @@ func podNamesFromPods(pods []corev1.Pod) []string {
 	return names
 }
 
-func createPods(ns string, names ...string) {
+func createTaskPods(ns string, names ...string) {
 	for _, name := range names {
-		createPod(ns, name, map[string]string{})
+		createPod(ns, name, map[string]string{k8s.LabelSourceType: "TASK"})
+	}
+}
+
+func createLrpPods(ns string, names ...string) {
+	for _, name := range names {
+		createPod(ns, name, map[string]string{k8s.LabelSourceType: "APP"})
+	}
+}
+
+func createStagingPods(ns string, names ...string) {
+	for _, name := range names {
+		createPod(ns, name, map[string]string{k8s.LabelSourceType: "STG"})
 	}
 }
 

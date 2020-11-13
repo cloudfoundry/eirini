@@ -64,18 +64,18 @@ var ErrNotFound = errors.New("not found")
 var ErrInvalidInstanceIndex = errors.New("invalid instance index")
 
 type Config struct {
-	Properties Properties `yaml:"opi"`
+	Properties         Properties `yaml:"opi"`
+	WorkloadsNamespace string
 }
 
 type KubeConfig struct {
-	Namespace                   string `yaml:"app_namespace"`
-	EnableMultiNamespaceSupport bool   `yaml:"enable_multi_namespace_support"`
-	ConfigPath                  string `yaml:"kube_config_path"`
+	ConfigPath string `yaml:"kube_config_path"`
 }
 
 type Properties struct { //nolint:maligned
-	TLSPort       int `yaml:"tls_port"`
-	PlaintextPort int `yaml:"plaintext_port"`
+	DefaultWorkloadsNamespace string `yaml:"app_namespace"`
+	TLSPort                   int    `yaml:"tls_port"`
+	PlaintextPort             int    `yaml:"plaintext_port"`
 
 	RegistrySecretName               string `yaml:"registry_secret_name"`
 	AppMetricsEmissionIntervalInSecs int    `yaml:"app_metrics_emission_interval_in_secs"`
@@ -107,6 +107,8 @@ type EventReporterConfig struct {
 	CCKeyPath  string
 	CCCAPath   string
 
+	WorkloadsNamespace string
+
 	KubeConfig `yaml:",inline"`
 }
 
@@ -115,6 +117,7 @@ type RouteEmitterConfig struct {
 	NatsIP              string `yaml:"nats_ip"`
 	NatsPort            int    `yaml:"nats_port"`
 	EmitPeriodInSeconds uint   `yaml:"emit_period_in_seconds"`
+	WorkloadsNamespace  string
 
 	KubeConfig `yaml:",inline"`
 }
@@ -122,6 +125,7 @@ type RouteEmitterConfig struct {
 type MetricsCollectorConfig struct {
 	LoggregatorAddress string `yaml:"loggregator_address"`
 
+	WorkloadsNamespace  string
 	LoggregatorCertPath string
 	LoggregatorKeyPath  string
 	LoggregatorCAPath   string
@@ -139,6 +143,8 @@ type TaskReporterConfig struct {
 	CompletionCallbackRetryLimit int    `yaml:"completion_callback_retry_limit"`
 	TTLSeconds                   int    `yaml:"ttl_seconds"`
 
+	WorkloadsNamespace string
+
 	KubeConfig `yaml:",inline"`
 }
 
@@ -147,6 +153,8 @@ type InstanceIndexEnvInjectorConfig struct {
 	ServiceNamespace           string `yaml:"service_namespace"`
 	ServicePort                int32  `yaml:"service_port"`
 	EiriniXOperatorFingerprint string
+
+	WorkloadsNamespace string
 
 	KubeConfig `yaml:",inline"`
 }

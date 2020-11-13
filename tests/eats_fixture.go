@@ -41,6 +41,7 @@ func NewEATSFixture(baseFixture Fixture, dynamicClientset dynamic.Interface, wir
 		Wiremock:         wiremock,
 	}
 }
+
 func (f *EATSFixture) SetUp() {
 	if IsMultiNamespaceEnabled() {
 		f.Fixture.SetUp()
@@ -142,7 +143,7 @@ func (f *EATSFixture) GetEiriniWorkloadsNamespace() string {
 
 	Expect(yaml.Unmarshal([]byte(opiYml), &config)).To(Succeed())
 
-	return config.Properties.Namespace
+	return config.Properties.DefaultWorkloadsNamespace
 }
 
 func NewWiremock() *wiremock.Wiremock {

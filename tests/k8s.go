@@ -189,19 +189,19 @@ func MakeTestHTTPClient() (*http.Client, error) {
 
 func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 	return &eirini.Config{
+		WorkloadsNamespace: namespace,
 		Properties: eirini.Properties{
 			KubeConfig: eirini.KubeConfig{
-				ConfigPath:                  GetKubeconfig(),
-				Namespace:                   namespace,
-				EnableMultiNamespaceSupport: false,
+				ConfigPath: GetKubeconfig(),
 			},
-			CCCAPath:       PathToTestFixture("cert"),
-			CCCertPath:     PathToTestFixture("cert"),
-			CCKeyPath:      PathToTestFixture("key"),
-			ServerCertPath: PathToTestFixture("cert"),
-			ServerKeyPath:  PathToTestFixture("key"),
-			ClientCAPath:   PathToTestFixture("cert"),
-			TLSPort:        tlsPort,
+			DefaultWorkloadsNamespace: namespace,
+			CCCAPath:                  PathToTestFixture("cert"),
+			CCCertPath:                PathToTestFixture("cert"),
+			CCKeyPath:                 PathToTestFixture("key"),
+			ServerCertPath:            PathToTestFixture("cert"),
+			ServerKeyPath:             PathToTestFixture("key"),
+			ClientCAPath:              PathToTestFixture("cert"),
+			TLSPort:                   tlsPort,
 
 			ApplicationServiceAccount: GetApplicationServiceAccount(),
 			RegistrySecretName:        "registry-secret",

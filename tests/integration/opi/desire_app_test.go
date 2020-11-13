@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -129,43 +128,6 @@ var _ = Describe("Desire App", func() {
 
 			Expect(statefulsets.Items).To(HaveLen(1))
 			Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
-		})
-	})
-
-	When("the app is requested in non-allowed namespace", func() {
-		var appGUID string
-
-		BeforeEach(func() {
-			appGUID = tests.GenerateGUID()
-			anotherNamespace := fixture.CreateExtraNamespace()
-
-			body = fmt.Sprintf(`{
-					"guid": "%s",
-					"version": "0.0.0",
-					"namespace": "%s",
-					"ports" : [8080],
-					"disk_mb": 512,
-					"lifecycle": {
-						"docker_lifecycle": {
-						"image": "eirini/busybox",
-						"command": ["/bin/sleep", "100"]
-						}
-					},
-					"instances": 1
-				}`, appGUID, anotherNamespace)
-		})
-
-		It("should return a 400 Bad Request HTTP code", func() {
-			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
-		})
-
-		It("does not create the app", func() {
-			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets("").List(context.Background(), metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, appGUID),
-			})
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(statefulsets.Items).To(BeEmpty())
 		})
 	})
 

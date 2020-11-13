@@ -262,35 +262,6 @@ var _ = Describe("Tasks", func() {
 				Expect(jobs.Items[0].Name).To(Equal(request.GUID))
 			})
 		})
-
-		When("the task is requested in non-allowed namespace", func() {
-			BeforeEach(func() {
-				request = cf.TaskRequest{
-					GUID:      tests.GenerateGUID(),
-					Namespace: fixture.CreateExtraNamespace(),
-					Lifecycle: cf.Lifecycle{
-						DockerLifecycle: &cf.DockerLifecycle{
-							Image:   "eirini/busybox",
-							Command: []string{"/bin/echo", "hello"},
-						},
-					},
-				}
-			})
-
-			It("should return a 500 Internal Server Error HTTP code", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
-			})
-
-			It("does not create the task", func() {
-				var err error
-				jobs, err = fixture.Clientset.BatchV1().Jobs("").List(context.Background(), metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, request.GUID),
-				})
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(jobs.Items).To(BeEmpty())
-			})
-		})
 	})
 
 	Describe("cancelling", func() {

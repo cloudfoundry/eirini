@@ -22,15 +22,20 @@ type Pod struct {
 	workloadsNamespace string
 }
 
-func NewPod(clientSet kubernetes.Interface, workloadsNamespace string, enableMultiNamespaceSupport bool) *Pod {
+func NewPod(clientSet kubernetes.Interface, workloadsNamespace string) *Pod {
 	return &Pod{
 		clientSet:          clientSet,
-		workloadsNamespace: getNamespace(workloadsNamespace, enableMultiNamespaceSupport),
+		workloadsNamespace: workloadsNamespace,
 	}
 }
 
 func (c *Pod) GetAll() ([]corev1.Pod, error) {
-	podList, err := c.clientSet.CoreV1().Pods(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{})
+	podList, err := c.clientSet.CoreV1().Pods(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf(
+			"%s in (%s,%s,%s)",
+			k8s.LabelSourceType, "STG", "APP", "TASK",
+		),
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list pods")
 	}
@@ -90,10 +95,10 @@ type StatefulSet struct {
 	workloadsNamespace string
 }
 
-func NewStatefulSet(clientSet kubernetes.Interface, workloadsNamespace string, enableMultiNamespaceSupport bool) *StatefulSet {
+func NewStatefulSet(clientSet kubernetes.Interface, workloadsNamespace string) *StatefulSet {
 	return &StatefulSet{
 		clientSet:          clientSet,
-		workloadsNamespace: getNamespace(workloadsNamespace, enableMultiNamespaceSupport),
+		workloadsNamespace: workloadsNamespace,
 	}
 }
 
@@ -145,26 +150,26 @@ func (c *StatefulSet) Delete(namespace string, name string) error {
 
 type Job struct {
 	clientSet          kubernetes.Interface
+	workloadsNamespace string
 	jobType            string
 	guidLabel          string
-	workloadsNamespace string
 }
 
-func NewJob(clientSet kubernetes.Interface, workloadsNamespace string, enableMultiNamespaceSupport bool) *Job {
+func NewJob(clientSet kubernetes.Interface, workloadsNamespace string) *Job {
 	return &Job{
 		clientSet:          clientSet,
+		workloadsNamespace: workloadsNamespace,
 		jobType:            "TASK",
 		guidLabel:          k8s.LabelGUID,
-		workloadsNamespace: getNamespace(workloadsNamespace, enableMultiNamespaceSupport),
 	}
 }
 
-func NewStagingJob(clientSet kubernetes.Interface, workloadsNamespace string, enableMultiNamespaceSupport bool) *Job {
+func NewStagingJob(clientSet kubernetes.Interface, workloadsNamespace string) *Job {
 	return &Job{
 		clientSet:          clientSet,
+		workloadsNamespace: workloadsNamespace,
 		jobType:            "STG",
 		guidLabel:          k8s.LabelStagingGUID,
-		workloadsNamespace: getNamespace(workloadsNamespace, enableMultiNamespaceSupport),
 	}
 }
 
@@ -250,19 +255,17 @@ func (c *Secret) Delete(namespace string, name string) error {
 }
 
 type Event struct {
-	clientSet          kubernetes.Interface
-	workloadsNamespace string
+	clientSet kubernetes.Interface
 }
 
-func NewEvent(clientSet kubernetes.Interface, workloadsNamespace string, enableMultiNamespaceSupport bool) *Event {
+func NewEvent(clientSet kubernetes.Interface) *Event {
 	return &Event{
-		clientSet:          clientSet,
-		workloadsNamespace: getNamespace(workloadsNamespace, enableMultiNamespaceSupport),
+		clientSet: clientSet,
 	}
 }
 
 func (c *Event) GetByPod(pod corev1.Pod) ([]corev1.Event, error) {
-	eventList, err := c.clientSet.CoreV1().Events(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
+	eventList, err := c.clientSet.CoreV1().Events("").List(context.Background(), metav1.ListOptions{
 		FieldSelector: fmt.Sprintf(
 			"involvedObject.namespace=%s,involvedObject.uid=%s,involvedObject.name=%s",
 			pod.Namespace,
@@ -286,7 +289,7 @@ func (c *Event) GetByInstanceAndReason(namespace string, ownerRef metav1.OwnerRe
 	)
 	labelSelector := fmt.Sprintf("cloudfoundry.org/instance_index=%d", instanceIndex)
 
-	kubeEvents, err := c.clientSet.CoreV1().Events(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
+	kubeEvents, err := c.clientSet.CoreV1().Events(namespace).List(context.Background(), metav1.ListOptions{
 		FieldSelector: fieldSelector,
 		LabelSelector: labelSelector,
 	})
@@ -307,12 +310,4 @@ func (c *Event) Create(namespace string, event *corev1.Event) (*corev1.Event, er
 
 func (c *Event) Update(namespace string, event *corev1.Event) (*corev1.Event, error) {
 	return c.clientSet.CoreV1().Events(namespace).Update(context.Background(), event, metav1.UpdateOptions{})
-}
-
-func getNamespace(workloadsNamespace string, enableMultiNamespaceSupport bool) string {
-	if enableMultiNamespaceSupport {
-		return ""
-	}
-
-	return workloadsNamespace
 }

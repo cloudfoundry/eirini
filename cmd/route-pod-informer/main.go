@@ -32,24 +32,15 @@ func main() {
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
 	podUpdateHandler := event.PodUpdateHandler{
-		Client:       clientset.AppsV1().StatefulSets(cfg.Namespace),
+		// TODO: Use the statefulset client wrapper
+		Client:       clientset.AppsV1().StatefulSets(cfg.WorkloadsNamespace),
 		Logger:       logger.Session("pod-update-handler"),
 		RouteEmitter: routeEmitter,
 	}
 
-	namespace := ""
-
-	if !cfg.EnableMultiNamespaceSupport {
-		if cfg.Namespace == "" {
-			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
-		}
-
-		namespace = cfg.Namespace
-	}
-
 	instanceInformer := k8sroute.NewInstanceChangeInformer(
 		clientset,
-		namespace,
+		cfg.WorkloadsNamespace,
 		podUpdateHandler,
 	)
 	instanceInformer.Start()

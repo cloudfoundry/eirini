@@ -14,10 +14,6 @@ import (
 )
 
 var _ = Describe("URIChangeInformer", func() {
-	const (
-		namespace = "test-me"
-	)
-
 	var (
 		informer      URIChangeInformer
 		client        kubernetes.Interface
@@ -44,7 +40,6 @@ var _ = Describe("URIChangeInformer", func() {
 		informer = URIChangeInformer{
 			Client:        client,
 			Cancel:        stopChan,
-			Namespace:     namespace,
 			UpdateHandler: updateHandler,
 			DeleteHandler: deleteHandler,
 		}

@@ -32,30 +32,20 @@ func main() {
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
 	deleteHandler := event.StatefulSetDeleteHandler{
-		Pods:         clientset.CoreV1().Pods(cfg.Namespace),
+		Pods:         clientset.CoreV1().Pods(""),
 		Logger:       logger.Session("uri-delete-informer"),
 		RouteEmitter: routeEmitter,
 	}
 
 	updateHandler := event.URIAnnotationUpdateHandler{
-		Pods:         clientset.CoreV1().Pods(cfg.Namespace),
+		Pods:         clientset.CoreV1().Pods(""),
 		Logger:       logger.Session("update-handler"),
 		RouteEmitter: routeEmitter,
 	}
 
-	namespace := ""
-
-	if !cfg.EnableMultiNamespaceSupport {
-		if cfg.Namespace == "" {
-			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
-		}
-
-		namespace = cfg.Namespace
-	}
-
 	uriInformer := k8sroute.NewURIChangeInformer(
 		clientset,
-		namespace,
+		cfg.WorkloadsNamespace,
 		updateHandler,
 		deleteHandler,
 	)

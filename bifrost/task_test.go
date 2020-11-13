@@ -35,7 +35,7 @@ var _ = Describe("Task", func() {
 		taskGUID = "task-guid"
 		task = opi.Task{GUID: "my-guid"}
 		taskConverter.ConvertTaskReturns(task, nil)
-		namespacer.GetNamespaceReturns("our-namespace", nil)
+		namespacer.GetNamespaceReturns("our-namespace")
 
 		taskBifrost = &bifrost.Task{
 			Converter:   taskConverter,
@@ -110,22 +110,10 @@ var _ = Describe("Task", func() {
 				Expect(err).To(MatchError(ContainSubstring("desire-task-err")))
 			})
 		})
-
-		When("the namespacer fails", func() {
-			BeforeEach(func() {
-				namespacer.GetNamespaceReturns("", errors.New("oopsie"))
-			})
-
-			It("propagates the error", func() {
-				Expect(err).To(MatchError(ContainSubstring("oopsie")))
-			})
-		})
 	})
 
 	Describe("GetTask", func() {
-		var (
-			taskResponse cf.TaskResponse
-		)
+		var taskResponse cf.TaskResponse
 
 		BeforeEach(func() {
 			taskDesirer.GetReturns(&opi.Task{GUID: taskGUID}, nil)
@@ -157,9 +145,7 @@ var _ = Describe("Task", func() {
 	})
 
 	Describe("ListTasks", func() {
-		var (
-			tasksResponse cf.TasksResponse
-		)
+		var tasksResponse cf.TasksResponse
 
 		BeforeEach(func() {
 			taskDesirer.ListReturns([]*opi.Task{{GUID: taskGUID}}, nil)

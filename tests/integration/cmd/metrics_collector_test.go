@@ -19,8 +19,7 @@ var _ = Describe("MetricsCollector", func() {
 	BeforeEach(func() {
 		config = &eirini.MetricsCollectorConfig{
 			KubeConfig: eirini.KubeConfig{
-				ConfigPath:                  pathToTestFixture("kube.conf"),
-				EnableMultiNamespaceSupport: true,
+				ConfigPath: pathToTestFixture("kube.conf"),
 			},
 			LoggregatorCAPath:   pathToTestFixture("cert"),
 			LoggregatorCertPath: pathToTestFixture("cert"),
@@ -104,28 +103,6 @@ var _ = Describe("MetricsCollector", func() {
 		It("should exit with a useful error message", func() {
 			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).Should(gbytes.Say(`Failed to create loggregator tls config: cannot parse ca cert`))
-		})
-	})
-
-	When("EnableMultiNamespaceSupport is false", func() {
-		BeforeEach(func() {
-			config.EnableMultiNamespaceSupport = false
-			config.Namespace = fixture.Namespace
-		})
-
-		It("should be able to start properly", func() {
-			Consistently(session, "5s").ShouldNot(gexec.Exit())
-		})
-
-		When("the namespace is not set", func() {
-			BeforeEach(func() {
-				config.Namespace = ""
-			})
-
-			It("should exit with a useful error message", func() {
-				Eventually(session).Should(gexec.Exit(1))
-				Expect(session.Err).To(gbytes.Say("must set namespace in config when enableMultiNamespaceSupport is not set"))
-			})
 		})
 	})
 })

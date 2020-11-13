@@ -84,26 +84,4 @@ var _ = Describe("RoutePodInformer", func() {
 			Expect(session.Err).To(gbytes.Say("Failed to get kubeconfig: invalid configuration: no configuration has been provided"))
 		})
 	})
-
-	When("EnableMultiNamespaceSupport is false", func() {
-		BeforeEach(func() {
-			config.EnableMultiNamespaceSupport = false
-			config.Namespace = fixture.Namespace
-		})
-
-		It("should be able to start properly", func() {
-			Consistently(session, "5s").ShouldNot(gexec.Exit())
-		})
-
-		When("the namespace is not set", func() {
-			BeforeEach(func() {
-				config.Namespace = ""
-			})
-
-			It("should exit with a useful error message", func() {
-				Eventually(session).Should(gexec.Exit(1))
-				Expect(session.Err).To(gbytes.Say("must set namespace in config when enableMultiNamespaceSupport is not set"))
-			})
-		})
-	})
 })

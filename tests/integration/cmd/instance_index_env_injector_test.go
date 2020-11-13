@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"syscall"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests"
@@ -29,9 +28,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 		fingerprint = tests.GenerateGUID()
 		config = &eirini.InstanceIndexEnvInjectorConfig{
 			KubeConfig: eirini.KubeConfig{
-				ConfigPath:                  fixture.KubeConfigPath,
-				EnableMultiNamespaceSupport: false,
-				Namespace:                   "default",
+				ConfigPath: fixture.KubeConfigPath,
 			},
 			ServiceName:                "foo",
 			ServiceNamespace:           "default",
@@ -98,35 +95,6 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 			Eventually(session, "10s").Should(gexec.Exit())
 			Expect(session.ExitCode()).NotTo(BeZero())
 			Expect(session.Err).To(gbytes.Say("setting up the webhook server certificate: an empty namespace may not be set when a resource name is provided"))
-		})
-	})
-
-	When("multi-namespace is enabled", func() {
-		BeforeEach(func() {
-			config.EnableMultiNamespaceSupport = true
-			config.Namespace = ""
-		})
-
-		It("starts ok with namespace unset", func() {
-			Expect(session.Command.Process.Signal(syscall.Signal(0))).To(Succeed())
-			Eventually(func() error {
-				_, err := net.Dial("tcp", fmt.Sprintf(":%d", config.ServicePort))
-
-				return err
-			}, "5s").Should(Succeed())
-		})
-	})
-
-	When("workload namespace is not given, and multi-namespace support is off", func() {
-		BeforeEach(func() {
-			config.EnableMultiNamespaceSupport = false
-			config.Namespace = ""
-		})
-
-		It("panics starting the service", func() {
-			Eventually(session).Should(gexec.Exit())
-			Expect(session.ExitCode).ToNot(BeZero())
-			Expect(session.Err).To(gbytes.Say("must set namespace"))
 		})
 	})
 })

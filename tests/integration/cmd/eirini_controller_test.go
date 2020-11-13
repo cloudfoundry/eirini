@@ -7,7 +7,6 @@ import (
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 )
 
@@ -37,28 +36,5 @@ var _ = Describe("EiriniController", func() {
 
 	It("should be able to start properly", func() {
 		Consistently(session).ShouldNot(gexec.Exit())
-	})
-
-	When("namespace is not configured", func() {
-		BeforeEach(func() {
-			config.Properties.Namespace = ""
-		})
-
-		It("panics", func() {
-			Eventually(session).Should(gexec.Exit())
-			Expect(session.ExitCode).ToNot(BeZero())
-			Expect(session.Err).To(gbytes.Say("must set namespace"))
-		})
-	})
-
-	When("listening on multiple namespaces", func() {
-		BeforeEach(func() {
-			config.Properties.EnableMultiNamespaceSupport = true
-			config.Properties.Namespace = ""
-		})
-
-		It("starts ok", func() {
-			Consistently(session).ShouldNot(gexec.Exit())
-		})
 	})
 })

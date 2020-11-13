@@ -34,7 +34,7 @@ var _ = Describe("CrashEventGenerator", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("crash-event-logger-test")
 		clientset = fake.NewSimpleClientset()
-		eventsClient := client.NewEvent(clientset, "", true)
+		eventsClient := client.NewEvent(clientset)
 		generator = event.NewDefaultCrashEventGenerator(eventsClient)
 	})
 

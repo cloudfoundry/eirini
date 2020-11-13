@@ -63,8 +63,7 @@ func pathToTestFixture(relativePath string) string {
 func defaultRouteEmitterConfig(natsServerOpts natsserver.Options) *eirini.RouteEmitterConfig {
 	config := &eirini.RouteEmitterConfig{
 		KubeConfig: eirini.KubeConfig{
-			ConfigPath:                  pathToTestFixture("kube.conf"),
-			EnableMultiNamespaceSupport: true,
+			ConfigPath: pathToTestFixture("kube.conf"),
 		},
 		NatsIP:       natsServerOpts.Host,
 		NatsPort:     natsServerOpts.Port,

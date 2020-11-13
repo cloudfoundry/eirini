@@ -40,11 +40,11 @@ var _ = Describe("StatefulSetDesirer", func() {
 	JustBeforeEach(func() {
 		logger := lagertest.NewTestLogger("test")
 		desirer = &k8s.StatefulSetDesirer{
-			Pods:                      client.NewPod(fixture.Clientset, "", true),
+			Pods:                      client.NewPod(fixture.Clientset, fixture.Namespace),
 			Secrets:                   client.NewSecret(fixture.Clientset),
-			StatefulSets:              client.NewStatefulSet(fixture.Clientset, "", true),
+			StatefulSets:              client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
 			PodDisruptionBudgets:      client.NewPodDisruptionBudget(fixture.Clientset),
-			EventsClient:              client.NewEvent(fixture.Clientset, "", true),
+			EventsClient:              client.NewEvent(fixture.Clientset),
 			StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
 			RegistrySecretName:        "registry-secret",
 			LivenessProbeCreator:      k8s.CreateLivenessProbe,

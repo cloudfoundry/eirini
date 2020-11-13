@@ -49,14 +49,13 @@ var _ = Describe("Events", func() {
 
 		config = &eirini.EventReporterConfig{
 			KubeConfig: eirini.KubeConfig{
-				Namespace:                   fixture.Namespace,
-				EnableMultiNamespaceSupport: false,
-				ConfigPath:                  fixture.KubeConfigPath,
+				ConfigPath: fixture.KubeConfigPath,
 			},
-			CcInternalAPI: capiServer.URL(),
-			CCCertPath:    certPath,
-			CCKeyPath:     keyPath,
-			CCCAPath:      certPath,
+			WorkloadsNamespace: fixture.Namespace,
+			CcInternalAPI:      capiServer.URL(),
+			CCCertPath:         certPath,
+			CCKeyPath:          keyPath,
+			CCCAPath:           certPath,
 		}
 	})
 
@@ -84,11 +83,11 @@ var _ = Describe("Events", func() {
 
 		BeforeEach(func() {
 			lrpDesirer = &k8s.StatefulSetDesirer{
-				Pods:                      client.NewPod(fixture.Clientset, "", true),
+				Pods:                      client.NewPod(fixture.Clientset, fixture.Namespace),
 				Secrets:                   client.NewSecret(fixture.Clientset),
-				StatefulSets:              client.NewStatefulSet(fixture.Clientset, "", true),
+				StatefulSets:              client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
 				PodDisruptionBudgets:      client.NewPodDisruptionBudget(fixture.Clientset),
-				EventsClient:              client.NewEvent(fixture.Clientset, "", true),
+				EventsClient:              client.NewEvent(fixture.Clientset),
 				StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
 				RegistrySecretName:        "registry-secret",
 				LivenessProbeCreator:      k8s.CreateLivenessProbe,
@@ -153,11 +152,11 @@ var _ = Describe("Events", func() {
 
 					config = &eirini.EventReporterConfig{
 						KubeConfig: eirini.KubeConfig{
-							Namespace:  fixture.Namespace,
 							ConfigPath: fixture.KubeConfigPath,
 						},
-						CcInternalAPI: noTLSCapiServer.URL(),
-						CCTLSDisabled: true,
+						WorkloadsNamespace: fixture.Namespace,
+						CcInternalAPI:      noTLSCapiServer.URL(),
+						CCTLSDisabled:      true,
 					}
 				})
 
@@ -228,7 +227,7 @@ var _ = Describe("Events", func() {
 		BeforeEach(func() {
 			taskDesirer = k8s.NewTaskDesirer(
 				logger,
-				client.NewJob(fixture.Clientset, "", true),
+				client.NewJob(fixture.Clientset, fixture.Namespace),
 				nil,
 				tests.GetApplicationServiceAccount(),
 				"",

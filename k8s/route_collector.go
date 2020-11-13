@@ -30,6 +30,7 @@ func NewRouteCollector(client kubernetes.Interface, namespace string, logger lag
 }
 
 func (c RouteCollector) Collect() ([]route.Message, error) {
+	// TODO: Use the pods client wrapper
 	pods, err := c.client.CoreV1().Pods(c.namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list pods")

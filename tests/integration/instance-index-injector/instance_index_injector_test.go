@@ -24,11 +24,9 @@ var _ = Describe("InstanceIndexInjector", func() {
 		hookSession    *gexec.Session
 		pod            *corev1.Pod
 		fingerprint    string
-		namespace      string
 	)
 
 	BeforeEach(func() {
-		namespace = fixture.Namespace
 		port := tests.GetTelepresencePort()
 		telepresenceService := tests.GetTelepresenceServiceName()
 		fingerprint = "instance-id-" + tests.GenerateGUID()[:8]
@@ -38,10 +36,9 @@ var _ = Describe("InstanceIndexInjector", func() {
 			ServicePort:                int32(port),
 			ServiceNamespace:           "default",
 			EiriniXOperatorFingerprint: fingerprint,
+			WorkloadsNamespace:         fixture.Namespace,
 			KubeConfig: eirini.KubeConfig{
-				ConfigPath:                  fixture.KubeConfigPath,
-				Namespace:                   fixture.Namespace,
-				EnableMultiNamespaceSupport: false,
+				ConfigPath: fixture.KubeConfigPath,
 			},
 		}
 		hookSession, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
@@ -99,7 +96,7 @@ var _ = Describe("InstanceIndexInjector", func() {
 
 	JustBeforeEach(func() {
 		var err error
-		pod, err = fixture.Clientset.CoreV1().Pods(namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+		pod, err = fixture.Clientset.CoreV1().Pods(fixture.Namespace).Create(context.Background(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -127,17 +124,6 @@ var _ = Describe("InstanceIndexInjector", func() {
 
 	It("does not set CF_INSTANCE_INDEX on the non-opi container", func() {
 		Expect(getCFInstanceIndex(pod, "not-opi")).To(Equal(""))
-	})
-
-	When("an eirini LRP pod is created in a not-monitored namespace", func() {
-		BeforeEach(func() {
-			namespace = fixture.CreateExtraNamespace()
-		})
-
-		It("doesn't set CF_INSTANCE_INDEX in any container", func() {
-			Expect(getCFInstanceIndex(pod, k8s.OPIContainerName)).To(Equal(""))
-			Expect(getCFInstanceIndex(pod, "not-opi")).To(Equal(""))
-		})
 	})
 })
 

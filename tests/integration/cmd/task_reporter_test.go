@@ -20,9 +20,7 @@ var _ = Describe("TaskReporter", func() {
 	BeforeEach(func() {
 		config = &eirini.TaskReporterConfig{
 			KubeConfig: eirini.KubeConfig{
-				Namespace:                   "default",
-				EnableMultiNamespaceSupport: false,
-				ConfigPath:                  fixture.KubeConfigPath,
+				ConfigPath: fixture.KubeConfigPath,
 			},
 			CCTLSDisabled: false,
 			CCCertPath:    pathToTestFixture("cert"),
@@ -46,18 +44,6 @@ var _ = Describe("TaskReporter", func() {
 
 	It("should be able to start properly", func() {
 		Consistently(session).ShouldNot(gexec.Exit())
-	})
-
-	When("namespace is not configured", func() {
-		BeforeEach(func() {
-			config.Namespace = ""
-		})
-
-		It("panics", func() {
-			Eventually(session).Should(gexec.Exit())
-			Expect(session.ExitCode).ToNot(BeZero())
-			Expect(session.Err).To(gbytes.Say("must set namespace"))
-		})
 	})
 
 	When("the config file doesn't exist", func() {
@@ -111,17 +97,6 @@ var _ = Describe("TaskReporter", func() {
 		It("should exit with a useful error message", func() {
 			Eventually(session).Should(gexec.Exit(1))
 			Expect(session.Err).Should(gbytes.Say(`"CC Key" file at "/somewhere/over/the/rainbow" does not exist`))
-		})
-	})
-
-	When("listening on multiple namespaces", func() {
-		BeforeEach(func() {
-			config.EnableMultiNamespaceSupport = true
-			config.Namespace = ""
-		})
-
-		It("starts ok", func() {
-			Consistently(session).ShouldNot(gexec.Exit())
 		})
 	})
 })

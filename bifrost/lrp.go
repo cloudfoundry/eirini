@@ -29,7 +29,7 @@ type LRPDesirer interface {
 }
 
 type LRPNamespacer interface {
-	GetNamespace(requestedNamespace string) (string, error)
+	GetNamespace(requestedNamespace string) string
 }
 
 type LRP struct {
@@ -44,10 +44,7 @@ func (l *LRP) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
 		return errors.Wrap(err, "failed to convert request")
 	}
 
-	namespace, err := l.Namespacer.GetNamespace(request.Namespace)
-	if err != nil {
-		return errors.Wrap(err, "invalid namespace")
-	}
+	namespace := l.Namespacer.GetNamespace(request.Namespace)
 
 	return errors.Wrap(l.Desirer.Desire(namespace, &desiredLRP), "failed to desire")
 }

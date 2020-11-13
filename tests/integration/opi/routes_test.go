@@ -60,9 +60,9 @@ var _ = Describe("Routes", func() {
 			NatsIP:              natsConfig.Host,
 			NatsPort:            natsConfig.Port,
 			EmitPeriodInSeconds: 1,
+			WorkloadsNamespace:  fixture.Namespace,
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: fixture.KubeConfigPath,
-				Namespace:  fixture.Namespace,
 			},
 		}
 		collectorSession, collectorConfig = eiriniBins.RouteCollector.Run(eiriniRouteConfig)

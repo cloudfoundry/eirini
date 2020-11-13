@@ -42,14 +42,7 @@ func main() {
 		RegisterWebHook:     &register,
 		OperatorFingerprint: cfg.EiriniXOperatorFingerprint,
 		KubeConfig:          cfg.ConfigPath,
-	}
-
-	if !cfg.EnableMultiNamespaceSupport {
-		if cfg.Namespace == "" {
-			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
-		}
-
-		managerOptions.Namespace = cfg.Namespace
+		Namespace:           cfg.WorkloadsNamespace,
 	}
 
 	manager := eirinix.NewManager(managerOptions)

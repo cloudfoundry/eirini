@@ -29,9 +29,7 @@ var _ = Describe("Tasks completion", func() {
 	BeforeEach(func() {
 		taskReporterConfig = &eirini.TaskReporterConfig{
 			KubeConfig: eirini.KubeConfig{
-				Namespace:                   fixture.Namespace,
-				EnableMultiNamespaceSupport: false,
-				ConfigPath:                  fixture.KubeConfigPath,
+				ConfigPath: fixture.KubeConfigPath,
 			},
 			CCCertPath:                   certPath,
 			CAPath:                       certPath,

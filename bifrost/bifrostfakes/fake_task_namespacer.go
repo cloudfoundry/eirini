@@ -8,24 +8,22 @@ import (
 )
 
 type FakeTaskNamespacer struct {
-	GetNamespaceStub        func(string) (string, error)
+	GetNamespaceStub        func(string) string
 	getNamespaceMutex       sync.RWMutex
 	getNamespaceArgsForCall []struct {
 		arg1 string
 	}
 	getNamespaceReturns struct {
 		result1 string
-		result2 error
 	}
 	getNamespaceReturnsOnCall map[int]struct {
 		result1 string
-		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskNamespacer) GetNamespace(arg1 string) (string, error) {
+func (fake *FakeTaskNamespacer) GetNamespace(arg1 string) string {
 	fake.getNamespaceMutex.Lock()
 	ret, specificReturn := fake.getNamespaceReturnsOnCall[len(fake.getNamespaceArgsForCall)]
 	fake.getNamespaceArgsForCall = append(fake.getNamespaceArgsForCall, struct {
@@ -39,9 +37,9 @@ func (fake *FakeTaskNamespacer) GetNamespace(arg1 string) (string, error) {
 		return stub(arg1)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1
 	}
-	return fakeReturns.result1, fakeReturns.result2
+	return fakeReturns.result1
 }
 
 func (fake *FakeTaskNamespacer) GetNamespaceCallCount() int {
@@ -50,7 +48,7 @@ func (fake *FakeTaskNamespacer) GetNamespaceCallCount() int {
 	return len(fake.getNamespaceArgsForCall)
 }
 
-func (fake *FakeTaskNamespacer) GetNamespaceCalls(stub func(string) (string, error)) {
+func (fake *FakeTaskNamespacer) GetNamespaceCalls(stub func(string) string) {
 	fake.getNamespaceMutex.Lock()
 	defer fake.getNamespaceMutex.Unlock()
 	fake.GetNamespaceStub = stub
@@ -63,30 +61,27 @@ func (fake *FakeTaskNamespacer) GetNamespaceArgsForCall(i int) string {
 	return argsForCall.arg1
 }
 
-func (fake *FakeTaskNamespacer) GetNamespaceReturns(result1 string, result2 error) {
+func (fake *FakeTaskNamespacer) GetNamespaceReturns(result1 string) {
 	fake.getNamespaceMutex.Lock()
 	defer fake.getNamespaceMutex.Unlock()
 	fake.GetNamespaceStub = nil
 	fake.getNamespaceReturns = struct {
 		result1 string
-		result2 error
-	}{result1, result2}
+	}{result1}
 }
 
-func (fake *FakeTaskNamespacer) GetNamespaceReturnsOnCall(i int, result1 string, result2 error) {
+func (fake *FakeTaskNamespacer) GetNamespaceReturnsOnCall(i int, result1 string) {
 	fake.getNamespaceMutex.Lock()
 	defer fake.getNamespaceMutex.Unlock()
 	fake.GetNamespaceStub = nil
 	if fake.getNamespaceReturnsOnCall == nil {
 		fake.getNamespaceReturnsOnCall = make(map[int]struct {
 			result1 string
-			result2 error
 		})
 	}
 	fake.getNamespaceReturnsOnCall[i] = struct {
 		result1 string
-		result2 error
-	}{result1, result2}
+	}{result1}
 }
 
 func (fake *FakeTaskNamespacer) Invocations() map[string][][]interface{} {

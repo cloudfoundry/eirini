@@ -67,20 +67,12 @@ func main() {
 		Logger:             util.NewLagerLogr(logger),
 	}
 
-	if !eiriniCfg.Properties.EnableMultiNamespaceSupport {
-		if eiriniCfg.Properties.Namespace == "" {
-			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
-		}
-
-		managerOptions.Namespace = eiriniCfg.Properties.Namespace
-	}
-
 	mgr, err := manager.New(kubeConfig, managerOptions)
 	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
 
 	lrpReconciler := createLRPReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
 	taskReconciler := createTaskReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
-	podCrashReconciler := createPodCrashReconciler(logger, eiriniCfg, controllerClient, clientset)
+	podCrashReconciler := createPodCrashReconciler(logger, eiriniCfg.WorkloadsNamespace, controllerClient, clientset)
 
 	err = builder.
 		ControllerManagedBy(mgr).
@@ -127,11 +119,11 @@ func createLRPReconciler(
 	scheme *runtime.Scheme,
 ) *reconciler.LRP {
 	stDesirer := &k8s.StatefulSetDesirer{
-		Pods:                              client.NewPod(clientset, eiriniCfg.Properties.Namespace, eiriniCfg.Properties.EnableMultiNamespaceSupport),
+		Pods:                              client.NewPod(clientset, eiriniCfg.WorkloadsNamespace),
 		Secrets:                           client.NewSecret(clientset),
-		StatefulSets:                      client.NewStatefulSet(clientset, eiriniCfg.Properties.Namespace, eiriniCfg.Properties.EnableMultiNamespaceSupport),
+		StatefulSets:                      client.NewStatefulSet(clientset, eiriniCfg.WorkloadsNamespace),
 		PodDisruptionBudgets:              client.NewPodDisruptionBudget(clientset),
-		EventsClient:                      client.NewEvent(clientset, eiriniCfg.Properties.Namespace, eiriniCfg.Properties.EnableMultiNamespaceSupport),
+		EventsClient:                      client.NewEvent(clientset),
 		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
 		RegistrySecretName:                eiriniCfg.Properties.RegistrySecretName,
 		LivenessProbeCreator:              k8s.CreateLivenessProbe,
@@ -145,7 +137,7 @@ func createLRPReconciler(
 		logger,
 		controllerClient,
 		stDesirer,
-		client.NewStatefulSet(clientset, eiriniCfg.Properties.Namespace, eiriniCfg.Properties.EnableMultiNamespaceSupport),
+		client.NewStatefulSet(clientset, eiriniCfg.WorkloadsNamespace),
 		scheme)
 }
 
@@ -157,7 +149,7 @@ func createTaskReconciler(
 	scheme *runtime.Scheme) *reconciler.Task {
 	taskDesirer := k8s.NewTaskDesirer(
 		logger,
-		client.NewJob(clientset, eiriniCfg.Properties.Namespace, eiriniCfg.Properties.EnableMultiNamespaceSupport),
+		client.NewJob(clientset, eiriniCfg.WorkloadsNamespace),
 		client.NewSecret(clientset),
 		eiriniCfg.Properties.ApplicationServiceAccount,
 		eiriniCfg.Properties.RegistrySecretName,
@@ -169,11 +161,11 @@ func createTaskReconciler(
 
 func createPodCrashReconciler(
 	logger lager.Logger,
-	eiriniCfg *eirini.Config,
+	workloadsNamespace string,
 	controllerClient runtimeclient.Client,
 	clientset kubernetes.Interface) *reconciler.PodCrash {
-	eventsClient := client.NewEvent(clientset, eiriniCfg.Properties.Namespace, eiriniCfg.Properties.EnableMultiNamespaceSupport)
-	statefulSetClient := client.NewStatefulSet(clientset, eiriniCfg.Properties.Namespace, eiriniCfg.Properties.EnableMultiNamespaceSupport)
+	eventsClient := client.NewEvent(clientset)
+	statefulSetClient := client.NewStatefulSet(clientset, workloadsNamespace)
 	crashEventGenerator := eirinievent.NewDefaultCrashEventGenerator(eventsClient)
 
 	return reconciler.NewPodCrash(logger, controllerClient, crashEventGenerator, eventsClient, statefulSetClient)

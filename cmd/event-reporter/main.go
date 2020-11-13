@@ -65,32 +65,18 @@ func main() {
 	controllerClient, err := runtimeclient.New(kubeConfig, runtimeclient.Options{Scheme: kscheme.Scheme})
 	cmdcommons.ExitfIfError(err, "Failed to create k8s runtime client")
 
-	namespace := ""
-
-	if !cfg.EnableMultiNamespaceSupport {
-		if cfg.Namespace == "" {
-			cmdcommons.Exitf("must set namespace in config when enableMultiNamespaceSupport is not set")
-		}
-
-		namespace = cfg.Namespace
-	}
-
 	crashReconciler := k8sevent.NewCrashReconciler(
 		crashLogger,
 		controllerClient,
-		k8sevent.NewDefaultCrashEventGenerator(
-			k8sclient.NewEvent(
-				clientset,
-				namespace,
-				cfg.EnableMultiNamespaceSupport)),
+		k8sevent.NewDefaultCrashEventGenerator(k8sclient.NewEvent(clientset)),
 		emitter,
 	)
 
 	mgr, err := manager.New(kubeConfig, manager.Options{
 		// do not serve prometheus metrics; disabled because port clashes during integration tests
 		MetricsBindAddress: "0",
+		Namespace:          cfg.WorkloadsNamespace,
 		Scheme:             kscheme.Scheme,
-		Namespace:          namespace,
 		Logger:             util.NewLagerLogr(crashLogger),
 	})
 	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
