@@ -129,7 +129,6 @@ func (f *Fixture) CreateExtraNamespace() string {
 func (f *Fixture) configureNewNamespace() string {
 	namespace := CreateRandomNamespace(f.Clientset)
 	Expect(CreatePodCreationPSP(namespace, getPspName(namespace), GetApplicationServiceAccount(), f.Clientset)).To(Succeed(), "failed to create pod creation PSP")
-	CopyRolesAndBindings(namespace, f.Clientset)
 
 	return namespace
 }

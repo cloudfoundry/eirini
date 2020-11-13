@@ -42,6 +42,11 @@ func NewEATSFixture(baseFixture Fixture, dynamicClientset dynamic.Interface, wir
 	}
 }
 
+func (f *EATSFixture) SetUp() {
+	f.Fixture.SetUp()
+	CopyRolesAndBindings(f.Namespace, f.Fixture.Clientset)
+}
+
 func (f *EATSFixture) TearDown() {
 	if f == nil {
 		Fail("failed to initialize fixture")
