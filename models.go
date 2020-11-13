@@ -65,7 +65,7 @@ var ErrInvalidInstanceIndex = errors.New("invalid instance index")
 
 type Config struct {
 	Properties         Properties `yaml:"opi"`
-	WorkloadsNamespace string     `yaml:"-"`
+	WorkloadsNamespace string
 }
 
 type KubeConfig struct {
@@ -82,12 +82,12 @@ type Properties struct { //nolint:maligned
 
 	CCTLSDisabled bool `yaml:"cc_tls_disabled"`
 
-	CCCertPath     string `yaml:"-"`
-	CCKeyPath      string `yaml:"-"`
-	CCCAPath       string `yaml:"-"`
-	ClientCAPath   string `yaml:"-"`
-	ServerCertPath string `yaml:"-"`
-	ServerKeyPath  string `yaml:"-"`
+	CCCertPath     string
+	CCKeyPath      string
+	CCCAPath       string
+	ClientCAPath   string
+	ServerCertPath string
+	ServerKeyPath  string
 
 	KubeConfig `yaml:",inline"`
 
@@ -103,11 +103,11 @@ type EventReporterConfig struct {
 	CcInternalAPI string `yaml:"cc_internal_api"`
 	CCTLSDisabled bool   `yaml:"cc_tls_disabled"`
 
-	CCCertPath string `yaml:"-"`
-	CCKeyPath  string `yaml:"-"`
-	CCCAPath   string `yaml:"-"`
+	CCCertPath string
+	CCKeyPath  string
+	CCCAPath   string
 
-	WorkloadsNamespace string `yaml:"-"`
+	WorkloadsNamespace string
 
 	KubeConfig `yaml:",inline"`
 }
@@ -117,7 +117,7 @@ type RouteEmitterConfig struct {
 	NatsIP              string `yaml:"nats_ip"`
 	NatsPort            int    `yaml:"nats_port"`
 	EmitPeriodInSeconds uint   `yaml:"emit_period_in_seconds"`
-	WorkloadsNamespace  string `yaml:"-"`
+	WorkloadsNamespace  string
 
 	KubeConfig `yaml:",inline"`
 }
@@ -125,10 +125,10 @@ type RouteEmitterConfig struct {
 type MetricsCollectorConfig struct {
 	LoggregatorAddress string `yaml:"loggregator_address"`
 
-	WorkloadsNamespace  string `yaml:"-"`
-	LoggregatorCertPath string `yaml:"-"`
-	LoggregatorKeyPath  string `yaml:"-"`
-	LoggregatorCAPath   string `yaml:"-"`
+	WorkloadsNamespace  string
+	LoggregatorCertPath string
+	LoggregatorKeyPath  string
+	LoggregatorCAPath   string
 
 	AppMetricsEmissionIntervalInSecs int `yaml:"app_metrics_emission_interval_in_secs"`
 
@@ -136,14 +136,14 @@ type MetricsCollectorConfig struct {
 }
 
 type TaskReporterConfig struct {
-	CCTLSDisabled                bool   `yaml:"cc_tls_disabled"`
-	CCCertPath                   string `yaml:"cc_cert_path"`
-	CCKeyPath                    string `yaml:"cc_key_path"`
-	CAPath                       string `yaml:"ca_path"`
-	CompletionCallbackRetryLimit int    `yaml:"completion_callback_retry_limit"`
-	TTLSeconds                   int    `yaml:"ttl_seconds"`
+	CCTLSDisabled                bool `yaml:"cc_tls_disabled"`
+	CCCertPath                   string
+	CCKeyPath                    string
+	CAPath                       string
+	CompletionCallbackRetryLimit int `yaml:"completion_callback_retry_limit"`
+	TTLSeconds                   int `yaml:"ttl_seconds"`
 
-	WorkloadsNamespace string `yaml:"-"`
+	WorkloadsNamespace string
 
 	KubeConfig `yaml:",inline"`
 }
@@ -154,7 +154,7 @@ type InstanceIndexEnvInjectorConfig struct {
 	ServicePort                int32  `yaml:"service_port"`
 	EiriniXOperatorFingerprint string
 
-	WorkloadsNamespace string `yaml:"-"`
+	WorkloadsNamespace string
 
 	KubeConfig `yaml:",inline"`
 }
