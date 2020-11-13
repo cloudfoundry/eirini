@@ -57,7 +57,7 @@ run_integration_tests() {
   src_dir=$(mktemp -d)
   cp -a "$EIRINI_DIR" "$src_dir"
   cp "$HOME/.kube/$cluster_name.yml" "$src_dir"
-  trap 'rm -rf $src_dir' EXIT
+  trap "rm -rf $src_dir" EXIT
 
   KUBECONFIG=$HOME/.kube/integration-tests.yml telepresence \
     --method container \
@@ -94,10 +94,11 @@ run_eats_helmless() {
   local service_name
   service_name=telepresence-$(uuidgen)
 
+  local src_dir
   src_dir=$(mktemp -d)
   cp -a "$EIRINI_DIR" "$src_dir"
   cp "$HOME/.kube/$cluster_name.yml" "$src_dir"
-  trap 'rm -rf $src_dir' EXIT
+  trap "rm -rf $src_dir" EXIT
 
   KUBECONFIG="$kubeconfig" telepresence \
     --method container \
@@ -131,10 +132,11 @@ run_eats_helmful() {
   local service_name
   service_name=telepresence-$(uuidgen)
 
+  local src_dir
   src_dir=$(mktemp -d)
   cp -a "$EIRINI_DIR" "$src_dir"
   cp "$HOME/.kube/$cluster_name.yml" "$src_dir"
-  trap 'rm -rf $src_dir' EXIT
+  trap "rm -rf $src_dir" EXIT
 
   KUBECONFIG="$kubeconfig" telepresence \
     --method container \
