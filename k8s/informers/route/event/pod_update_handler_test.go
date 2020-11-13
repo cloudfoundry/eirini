@@ -22,7 +22,7 @@ import (
 
 var _ = Describe("UpdateEventHandler", func() {
 	var (
-		statefulSetClient *eventfakes.FakeStatefulSetInterface
+		statefulSetGetter *eventfakes.FakeStatefulSetGetter
 		logger            *lagertest.TestLogger
 		routeEmitter      *eiriniroutefakes.FakeEmitter
 		handler           route.PodUpdateEventHandler
@@ -63,7 +63,7 @@ var _ = Describe("UpdateEventHandler", func() {
 	}
 
 	BeforeEach(func() {
-		statefulSetClient = new(eventfakes.FakeStatefulSetInterface)
+		statefulSetGetter = new(eventfakes.FakeStatefulSetGetter)
 		logger = lagertest.NewTestLogger("instance-informer-test")
 		routeEmitter = new(eiriniroutefakes.FakeEmitter)
 
@@ -84,14 +84,14 @@ var _ = Describe("UpdateEventHandler", func() {
 				},
 			},
 		}
-		statefulSetClient.GetReturns(st, nil)
+		statefulSetGetter.GetReturns(st, nil)
 		pod = createPod("mr-stateful-0")
 		updatedPod = createPod("mr-stateful-0")
 
 		handler = event.PodUpdateHandler{
-			Client:       statefulSetClient,
-			Logger:       logger,
-			RouteEmitter: routeEmitter,
+			StatefulSetGetter: statefulSetGetter,
+			Logger:            logger,
+			RouteEmitter:      routeEmitter,
 		}
 	})
 

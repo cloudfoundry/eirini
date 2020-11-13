@@ -53,7 +53,11 @@ var _ = Describe("Routes", func() {
 
 		BeforeEach(func() {
 			logger := lagertest.NewTestLogger("test")
-			collector = k8s.NewRouteCollector(fixture.Clientset, fixture.Namespace, logger)
+			collector = k8s.NewRouteCollector(
+				client.NewPod(fixture.Clientset, fixture.Namespace),
+				client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
+				logger,
+			)
 		})
 
 		When("an LRP is desired", func() {
@@ -275,9 +279,9 @@ fi;`,
 			logger := lagertest.NewTestLogger("instance-informer-test")
 			fakeRouteEmitter = new(routefakes.FakeEmitter)
 			updateEventHandler := event.PodUpdateHandler{
-				Client:       fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace),
-				Logger:       logger,
-				RouteEmitter: fakeRouteEmitter,
+				StatefulSetGetter: client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
+				Logger:            logger,
+				RouteEmitter:      fakeRouteEmitter,
 			}
 			informer := &informerroute.InstanceChangeInformer{
 				Client:        fixture.Clientset,

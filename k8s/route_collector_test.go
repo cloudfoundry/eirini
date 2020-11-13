@@ -1,12 +1,12 @@
 package k8s_test
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 
 	. "code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
@@ -16,29 +16,29 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/fake"
-	testcore "k8s.io/client-go/testing"
 )
 
 var _ = Describe("RouteCollector", func() {
 	var (
-		pods          []*corev1.Pod
-		statefulsets  []*appsv1.StatefulSet
-		statefulset1  *appsv1.StatefulSet
-		statefulset2  *appsv1.StatefulSet
-		pod11         *corev1.Pod
-		pod21         *corev1.Pod
-		pod22         *corev1.Pod
-		routeMessages []route.Message
-		client        *fake.Clientset
-		collector     RouteCollector
-		logger        *lagertest.TestLogger
-		err           error
+		pods               []corev1.Pod
+		statefulsets       []appsv1.StatefulSet
+		podsClient         *k8sfakes.FakePodClient
+		statefulSetGetter  *k8sfakes.FakeStatefulSetGetter
+		statefulset1       appsv1.StatefulSet
+		statefulset2       appsv1.StatefulSet
+		pod11              corev1.Pod
+		pod21              corev1.Pod
+		pod22              corev1.Pod
+		routeMessages      []route.Message
+		collector          RouteCollector
+		logger             *lagertest.TestLogger
+		err                error
+		getStatefulSetsErr error
+		getPodsErr         error
 	)
 
-	createPod := func(name string, ssName string, ip string) *corev1.Pod {
-		return &corev1.Pod{
+	createPod := func(name string, ssName string, ip string) corev1.Pod {
+		return corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 				Labels: map[string]string{
@@ -61,8 +61,8 @@ var _ = Describe("RouteCollector", func() {
 			},
 		}
 	}
-	createStatefulSet := func(name string, routes string) *appsv1.StatefulSet {
-		return &appsv1.StatefulSet{
+	createStatefulSet := func(name string, routes string) appsv1.StatefulSet {
+		return appsv1.StatefulSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 				Annotations: map[string]string{
@@ -83,22 +83,20 @@ var _ = Describe("RouteCollector", func() {
 		pod11 = createPod("pod-11", "ss-1", "10.0.0.1")
 		pod21 = createPod("pod-21", "ss-2", "10.0.0.2")
 		pod22 = createPod("pod-22", "ss-2", "10.0.0.3")
-		client = fake.NewSimpleClientset()
+		pods = []corev1.Pod{}
+		statefulsets = []appsv1.StatefulSet{}
+		getPodsErr = nil
+		getStatefulSetsErr = nil
+
+		podsClient = new(k8sfakes.FakePodClient)
+		statefulSetGetter = new(k8sfakes.FakeStatefulSetGetter)
 		logger = lagertest.NewTestLogger("collector-test")
-		collector = NewRouteCollector(client, "default", logger)
-		pods = []*corev1.Pod{}
-		statefulsets = []*appsv1.StatefulSet{}
+		collector = NewRouteCollector(podsClient, statefulSetGetter, logger)
 	})
 
 	JustBeforeEach(func() {
-		for _, p := range pods {
-			_, createErr := client.CoreV1().Pods("default").Create(context.Background(), p, metav1.CreateOptions{})
-			Expect(createErr).ToNot(HaveOccurred())
-		}
-		for _, s := range statefulsets {
-			_, createErr := client.AppsV1().StatefulSets("default").Create(context.Background(), s, metav1.CreateOptions{})
-			Expect(createErr).ToNot(HaveOccurred())
-		}
+		podsClient.GetAllReturns(pods, getPodsErr)
+		statefulSetGetter.GetBySourceTypeReturns(statefulsets, getStatefulSetsErr)
 		routeMessages, err = collector.Collect()
 	})
 
@@ -109,8 +107,8 @@ var _ = Describe("RouteCollector", func() {
 
 	Context("when there are pods and statefulsets", func() {
 		BeforeEach(func() {
-			pods = []*corev1.Pod{pod11, pod21, pod22}
-			statefulsets = []*appsv1.StatefulSet{statefulset1, statefulset2}
+			pods = []corev1.Pod{pod11, pod21, pod22}
+			statefulsets = []appsv1.StatefulSet{statefulset1, statefulset2}
 		})
 
 		It("should not return an error", func() {
@@ -216,6 +214,7 @@ var _ = Describe("RouteCollector", func() {
 				}))
 			})
 		})
+
 		Context("and there is a pod which has no condition statuses", func() {
 			BeforeEach(func() {
 				pods[0].Status.Conditions[0].Type = corev1.PodInitialized
@@ -246,10 +245,11 @@ var _ = Describe("RouteCollector", func() {
 				}))
 			})
 		})
+
 		Context("and there is a pod without an owner", func() {
 			BeforeEach(func() {
 				pod11.OwnerReferences = nil
-				pods = []*corev1.Pod{pod11}
+				pods = []corev1.Pod{pod11}
 			})
 
 			It("should not register any routes for the pod", func() {
@@ -261,7 +261,7 @@ var _ = Describe("RouteCollector", func() {
 		Context("and there is a pod owned by a nonexistent statefulset", func() {
 			BeforeEach(func() {
 				pod11.OwnerReferences[0].Name = "does-not-exist"
-				pods = []*corev1.Pod{pod11}
+				pods = []corev1.Pod{pod11}
 			})
 
 			It("should not register any routes for the pod", func() {
@@ -282,7 +282,7 @@ var _ = Describe("RouteCollector", func() {
 		Context("and there is a pod not owned by a statefulset", func() {
 			BeforeEach(func() {
 				pod11.OwnerReferences[0].Kind = "Job"
-				pods = []*corev1.Pod{pod11}
+				pods = []corev1.Pod{pod11}
 			})
 
 			It("should not register any routes for the pod", func() {
@@ -299,7 +299,7 @@ var _ = Describe("RouteCollector", func() {
 					Kind: "StatefulSet",
 					Name: statefulset1.Name,
 				})
-				pods = []*corev1.Pod{pod11}
+				pods = []corev1.Pod{pod11}
 			})
 
 			It("should return route", func() {
@@ -365,10 +365,8 @@ var _ = Describe("RouteCollector", func() {
 
 		Context("when listing pods fails", func() {
 			BeforeEach(func() {
-				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-					return true, nil, errors.New("boom")
-				}
-				client.PrependReactor("list", "pods", reaction)
+				pods = nil
+				getPodsErr = errors.New("boom")
 			})
 
 			It("should return error if listing pods fails", func() {
@@ -378,10 +376,8 @@ var _ = Describe("RouteCollector", func() {
 
 		Context("when listing statefulsets fails", func() {
 			BeforeEach(func() {
-				reaction := func(action testcore.Action) (handled bool, ret runtime.Object, err error) {
-					return true, nil, errors.New("boom")
-				}
-				client.PrependReactor("list", "statefulsets", reaction)
+				statefulsets = nil
+				getStatefulSetsErr = errors.New("boom")
 			})
 
 			It("should return error if listing statefulsets fails", func() {

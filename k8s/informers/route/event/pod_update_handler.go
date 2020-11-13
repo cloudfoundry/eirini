@@ -1,7 +1,6 @@
 package event
 
 import (
-	"context"
 	"encoding/json"
 
 	"code.cloudfoundry.org/eirini/k8s"
@@ -10,18 +9,20 @@ import (
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
-	apps "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	types "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
 
-//counterfeiter:generate -o eventfakes/fake_statefulset_interface.go k8s.io/client-go/kubernetes/typed/apps/v1.StatefulSetInterface
+//counterfeiter:generate . StatefulSetGetter
+
+type StatefulSetGetter interface {
+	Get(namespace, name string) (*appsv1.StatefulSet, error)
+}
 
 type PodUpdateHandler struct {
-	Client       types.StatefulSetInterface
-	Logger       lager.Logger
-	RouteEmitter eiriniroute.Emitter
+	StatefulSetGetter StatefulSetGetter
+	Logger            lager.Logger
+	RouteEmitter      eiriniroute.Emitter
 }
 
 func (h PodUpdateHandler) Handle(oldPod, updatedPod *corev1.Pod) {
@@ -85,7 +86,7 @@ func (h PodUpdateHandler) getUserDefinedRoutes(pod *corev1.Pod) ([]cf.Route, err
 	return decodeRoutes(owner.Annotations[k8s.AnnotationRegisteredRoutes])
 }
 
-func (h PodUpdateHandler) getOwner(pod *corev1.Pod) (*apps.StatefulSet, error) {
+func (h PodUpdateHandler) getOwner(pod *corev1.Pod) (*appsv1.StatefulSet, error) {
 	ownerReferences := pod.OwnerReferences
 
 	if len(ownerReferences) == 0 {
@@ -94,7 +95,7 @@ func (h PodUpdateHandler) getOwner(pod *corev1.Pod) (*apps.StatefulSet, error) {
 
 	for _, owner := range ownerReferences {
 		if owner.Kind == "StatefulSet" {
-			return h.Client.Get(context.Background(), owner.Name, meta.GetOptions{})
+			return h.StatefulSetGetter.Get(pod.Namespace, owner.Name)
 		}
 	}
 

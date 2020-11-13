@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -11,27 +10,30 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
-type RouteCollector struct {
-	client    kubernetes.Interface
-	namespace string
-	logger    lager.Logger
+//counterfeiter:generate . StatefulSetGetter
+
+type StatefulSetGetter interface {
+	GetBySourceType(sourceType string) ([]appsv1.StatefulSet, error)
 }
 
-func NewRouteCollector(client kubernetes.Interface, namespace string, logger lager.Logger) RouteCollector {
+type RouteCollector struct {
+	podsClient        PodClient
+	statefulSetGetter StatefulSetGetter
+	logger            lager.Logger
+}
+
+func NewRouteCollector(podClient PodClient, statefulSetGetter StatefulSetGetter, logger lager.Logger) RouteCollector {
 	return RouteCollector{
-		client:    client,
-		namespace: namespace,
-		logger:    logger,
+		podsClient:        podClient,
+		statefulSetGetter: statefulSetGetter,
+		logger:            logger,
 	}
 }
 
 func (c RouteCollector) Collect() ([]route.Message, error) {
-	// TODO: Use the pods client wrapper
-	pods, err := c.client.CoreV1().Pods(c.namespace).List(context.Background(), metav1.ListOptions{})
+	pods, err := c.podsClient.GetAll()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list pods")
 	}
@@ -43,7 +45,7 @@ func (c RouteCollector) Collect() ([]route.Message, error) {
 
 	routeMessages := []route.Message{}
 
-	for _, p := range pods.Items {
+	for _, p := range pods {
 		routes, err := c.getRoutes(p, statefulsets)
 		if err != nil {
 			c.logger.Debug("collect.failed-to-get-routes", lager.Data{"error": err.Error()})
@@ -101,14 +103,14 @@ func (c RouteCollector) getRoutes(pod corev1.Pod, statefulsets map[string]appsv1
 }
 
 func (c RouteCollector) getStatefulSets() (map[string]appsv1.StatefulSet, error) {
-	statefulsetList, err := c.client.AppsV1().StatefulSets(c.namespace).List(context.Background(), metav1.ListOptions{})
+	statefulsetList, err := c.statefulSetGetter.GetBySourceType(AppSourceType)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}
 
 	statefulsetsMap := make(map[string]appsv1.StatefulSet)
 
-	for _, s := range statefulsetList.Items {
+	for _, s := range statefulsetList {
 		statefulsetsMap[s.Name] = s
 	}
 

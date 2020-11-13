@@ -72,9 +72,11 @@ func CopyRolesAndBindings(namespace string, clientset kubernetes.Interface) {
 		newBinding.Namespace = namespace
 		newBinding.Name = binding.Name
 		newBinding.Subjects = binding.Subjects
+
 		if binding.Name == "eirini-workloads-app-rolebinding" {
 			newBinding.Subjects[0].Namespace = namespace
 		}
+
 		newBinding.RoleRef = binding.RoleRef
 		_, err := clientset.RbacV1().RoleBindings(namespace).Create(context.Background(), newBinding, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())

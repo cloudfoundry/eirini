@@ -4,6 +4,7 @@ import (
 	"os"
 
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
+	"code.cloudfoundry.org/eirini/k8s/client"
 	k8sroute "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/k8s/informers/route/event"
 	"code.cloudfoundry.org/eirini/route"
@@ -32,10 +33,9 @@ func main() {
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
 	podUpdateHandler := event.PodUpdateHandler{
-		// TODO: Use the statefulset client wrapper
-		Client:       clientset.AppsV1().StatefulSets(cfg.WorkloadsNamespace),
-		Logger:       logger.Session("pod-update-handler"),
-		RouteEmitter: routeEmitter,
+		StatefulSetGetter: client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
+		Logger:            logger.Session("pod-update-handler"),
+		RouteEmitter:      routeEmitter,
 	}
 
 	instanceInformer := k8sroute.NewInstanceChangeInformer(

@@ -6,6 +6,7 @@ import (
 
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
@@ -37,8 +38,10 @@ func main() {
 	cmdcommons.ExitfIfError(err, "Failed to create route emitter")
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
+	podClient := client.NewPod(clientset, cfg.WorkloadsNamespace)
+	statefulSetClient := client.NewStatefulSet(clientset, cfg.WorkloadsNamespace)
 
-	collector := k8s.NewRouteCollector(clientset, cfg.WorkloadsNamespace, logger)
+	collector := k8s.NewRouteCollector(podClient, statefulSetClient, logger)
 
 	scheduler := route.CollectorScheduler{
 		Collector: collector,
