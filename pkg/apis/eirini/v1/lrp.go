@@ -33,6 +33,7 @@ type LRPSpec struct {
 	Env                    map[string]string `json:"env,omitempty"`
 	Health                 Healtcheck        `json:"health"`
 	Ports                  []int32           `json:"ports,omitempty"`
+	User                   string            `json:"user,omitempty"`
 	Instances              int               `json:"instances"`
 	MemoryMB               int64             `json:"memoryMB"`
 	DiskMB                 int64             `json:"diskMB"`

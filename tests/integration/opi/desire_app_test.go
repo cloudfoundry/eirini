@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -162,6 +163,56 @@ var _ = Describe("Desire App", func() {
 			Expect(statefulsets.Items).To(HaveLen(1))
 			Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
 			Expect(statefulsets.Items[0].Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
+		})
+	})
+
+	When("user is specified as non-parseable string", func() {
+		BeforeEach(func() {
+			body = `{
+			"guid": "the-app-guid",
+			"version": "0.0.0",
+			"ports": [8080],
+			"disk_mb": 400,
+		    "lifecycle": {
+				"docker_lifecycle": {
+					"image": "foo",
+					"command": ["bar", "baz"],
+					"user": "foobrizzle",
+				}
+			}
+		}`
+		})
+
+		It("should return a 400 Bad Request HTTP code", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(statefulsets.Items[0].Spec.Template.Spec.SecurityContext.RunAsUser).To(PointTo(Equal(int64(1000))))
+		})
+	})
+
+	When("user is specified as an int parseable string", func() {
+		BeforeEach(func() {
+			body = `{
+			"guid": "the-app-guid",
+			"version": "0.0.0",
+			"ports": [8080],
+			"disk_mb": 400,
+		    "lifecycle": {
+				"docker_lifecycle": {
+					"image": "foo",
+					"command": ["bar", "baz"],
+					"user": "1001"
+				}
+			}
+		}`
+		})
+
+		It("security context should respect specified user", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(statefulsets.Items[0].Spec.Template.Spec.SecurityContext.RunAsUser).To(PointTo(Equal(int64(1001))))
 		})
 	})
 

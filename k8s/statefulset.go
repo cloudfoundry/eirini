@@ -3,6 +3,7 @@ package k8s
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"code.cloudfoundry.org/eirini"
@@ -731,8 +732,15 @@ func (m *StatefulSetDesirer) getGetSecurityContext(lrp *opi.LRP) *corev1.PodSecu
 
 	runAsNonRoot := true
 
+	uid, err := m.parseUser(lrp)
+	if err != nil {
+		uid = 1000
+	}
+	var uidInt = int64(uid)
+
 	return &corev1.PodSecurityContext{
 		RunAsNonRoot: &runAsNonRoot,
+		RunAsUser:    &uidInt,
 	}
 }
 
@@ -802,4 +810,8 @@ func applyOpts(statefulset *appsv1.StatefulSet, opts ...DesireOption) error {
 	}
 
 	return nil
+}
+
+func (m *StatefulSetDesirer) parseUser(lrp *opi.LRP) (int, error) {
+	return strconv.Atoi(lrp.User)
 }

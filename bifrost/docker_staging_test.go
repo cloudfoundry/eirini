@@ -92,7 +92,7 @@ var _ = Describe("DockerStager", func() {
 			Expect(payload.LifecycleType).To(Equal("docker"))
 			Expect(payload.LifecycleMetadata.DockerImage).To(Equal("eirini/some-app:some-tag"))
 			Expect(payload.ProcessTypes.Web).To(BeEmpty())
-			Expect(payload.ExecutionMetadata).To(Equal(`{"cmd":[],"ports":[{"Port":8888,"Protocol":"tcp"}],"user":{"User":"foobrizzle"}}`))
+			Expect(payload.ExecutionMetadata).To(Equal(`{"cmd":[],"ports":[{"Port":8888,"Protocol":"tcp"}],"user":"foobrizzle"}`))
 		})
 
 		Context("when the image is from a private registry", func() {

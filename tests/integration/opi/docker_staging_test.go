@@ -39,7 +39,7 @@ var _ = Describe("Docker Staging", func() {
 				Expect(request.Error).To(BeNil())
 				stagingResult := bifrost.StagingResult{}
 				Expect(json.Unmarshal(*request.Result, &stagingResult)).To(Succeed())
-				Expect(stagingResult.ExecutionMetadata).To(Equal(`{"cmd":[],"ports":[{"Port":8888,"Protocol":"tcp"}]}`))
+				Expect(stagingResult.ExecutionMetadata).To(Equal(`{"cmd":[],"ports":[{"Port":8888,"Protocol":"tcp"}],"user":{"User":"1001"}}`))
 				Expect(stagingResult.LifecycleType).To(Equal("docker"))
 				Expect(stagingResult.LifecycleMetadata.DockerImage).To(Equal("eirini/custom-port"))
 				Expect(stagingResult.ProcessTypes).To(Equal(bifrost.ProcessTypes{Web: ""}))

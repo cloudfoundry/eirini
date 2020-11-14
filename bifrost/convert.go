@@ -19,6 +19,7 @@ var dockerRX = regexp.MustCompile(`([a-zA-Z0-9.-]+)(:([0-9]+))?/(\S+/\S+)`) //no
 
 type lifecycleOptions struct {
 	command         []string
+	user            string
 	env             map[string]string
 	image           string
 	privateRegistry *opi.PrivateRegistry
@@ -98,6 +99,7 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 		Env:                    mergeMaps(request.Environment, env, lrpLifecycleOptions.env),
 		Health:                 healthcheck,
 		Ports:                  request.Ports,
+		User:                   lrpLifecycleOptions.user,
 		MemoryMB:               request.MemoryMB,
 		DiskMB:                 request.DiskMB,
 		CPUWeight:              request.CPUWeight,
@@ -253,6 +255,7 @@ func (c *OPIConverter) getLifecycleOptions(request cf.DesireLRPRequest) (*lifecy
 	lifecycle := request.Lifecycle.DockerLifecycle
 	options.image = lifecycle.Image
 	options.command = lifecycle.Command
+	options.user = lifecycle.User
 	options.runsAsRoot, err = c.isAllowedToRunAsRoot(lifecycle)
 
 	if err != nil {

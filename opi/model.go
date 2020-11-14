@@ -39,6 +39,7 @@ type LRP struct {
 	Env                    map[string]string
 	Health                 Healtcheck
 	Ports                  []int32
+	User				   string
 	TargetInstances        int
 	RunningInstances       int
 	MemoryMB               int64

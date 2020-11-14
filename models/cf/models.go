@@ -79,6 +79,7 @@ type Lifecycle struct {
 type DockerLifecycle struct {
 	Image            string   `json:"image"`
 	Command          []string `json:"command"`
+	User             string   `json:"user"`
 	RegistryUsername string   `json:"registry_username"`
 	RegistryPassword string   `json:"registry_password"`
 }
@@ -139,6 +140,7 @@ type StagingLifecycle struct {
 
 type StagingDockerLifecycle struct {
 	Image            string `json:"image"`
+	User             string `json:"user"`
 	RegistryUsername string `json:"registry_username"`
 	RegistryPassword string `json:"registry_password"`
 }
