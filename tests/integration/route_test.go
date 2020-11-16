@@ -287,6 +287,7 @@ fi;`,
 				Client:        fixture.Clientset,
 				Cancel:        stopChan,
 				UpdateHandler: updateEventHandler,
+				Namespace:     fixture.Namespace,
 			}
 			go func() {
 				informer.Start()
