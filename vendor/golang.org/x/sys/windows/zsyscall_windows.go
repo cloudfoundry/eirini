@@ -138,6 +138,7 @@ var (
 	procCertAddCertificateContextToStore                     = modcrypt32.NewProc("CertAddCertificateContextToStore")
 	procCertCloseStore                                       = modcrypt32.NewProc("CertCloseStore")
 	procCertCreateCertificateContext                         = modcrypt32.NewProc("CertCreateCertificateContext")
+	procCertDeleteCertificateFromStore                       = modcrypt32.NewProc("CertDeleteCertificateFromStore")
 	procCertEnumCertificatesInStore                          = modcrypt32.NewProc("CertEnumCertificatesInStore")
 	procCertFreeCertificateChain                             = modcrypt32.NewProc("CertFreeCertificateChain")
 	procCertFreeCertificateContext                           = modcrypt32.NewProc("CertFreeCertificateContext")
@@ -247,6 +248,7 @@ var (
 	procGetVolumePathNamesForVolumeNameW                     = modkernel32.NewProc("GetVolumePathNamesForVolumeNameW")
 	procGetWindowsDirectoryW                                 = modkernel32.NewProc("GetWindowsDirectoryW")
 	procIsWow64Process                                       = modkernel32.NewProc("IsWow64Process")
+	procIsWow64Process2                                      = modkernel32.NewProc("IsWow64Process2")
 	procLoadLibraryExW                                       = modkernel32.NewProc("LoadLibraryExW")
 	procLoadLibraryW                                         = modkernel32.NewProc("LoadLibraryW")
 	procLocalFree                                            = modkernel32.NewProc("LocalFree")
@@ -1120,6 +1122,14 @@ func CertCreateCertificateContext(certEncodingType uint32, certEncoded *byte, en
 	r0, _, e1 := syscall.Syscall(procCertCreateCertificateContext.Addr(), 3, uintptr(certEncodingType), uintptr(unsafe.Pointer(certEncoded)), uintptr(encodedLen))
 	context = (*CertContext)(unsafe.Pointer(r0))
 	if context == nil {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func CertDeleteCertificateFromStore(certContext *CertContext) (err error) {
+	r1, _, e1 := syscall.Syscall(procCertDeleteCertificateFromStore.Addr(), 1, uintptr(unsafe.Pointer(certContext)), 0, 0)
+	if r1 == 0 {
 		err = errnoErr(e1)
 	}
 	return
@@ -2046,6 +2056,18 @@ func IsWow64Process(handle Handle, isWow64 *bool) (err error) {
 	return
 }
 
+func IsWow64Process2(handle Handle, processMachine *uint16, nativeMachine *uint16) (err error) {
+	err = procIsWow64Process2.Find()
+	if err != nil {
+		return
+	}
+	r1, _, e1 := syscall.Syscall(procIsWow64Process2.Addr(), 3, uintptr(handle), uintptr(unsafe.Pointer(processMachine)), uintptr(unsafe.Pointer(nativeMachine)))
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
 func LoadLibraryEx(libname string, zero Handle, flags uintptr) (handle Handle, err error) {
 	var _p0 *uint16
 	_p0, err = syscall.UTF16PtrFromString(libname)
@@ -2307,8 +2329,8 @@ func ResumeThread(thread Handle) (ret uint32, err error) {
 	return
 }
 
-func SetConsoleCursorPosition(console Handle, position Coord) (err error) {
-	r1, _, e1 := syscall.Syscall(procSetConsoleCursorPosition.Addr(), 2, uintptr(console), uintptr(*((*uint32)(unsafe.Pointer(&position)))), 0)
+func setConsoleCursorPosition(console Handle, position uint32) (err error) {
+	r1, _, e1 := syscall.Syscall(procSetConsoleCursorPosition.Addr(), 2, uintptr(console), uintptr(position), 0)
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}

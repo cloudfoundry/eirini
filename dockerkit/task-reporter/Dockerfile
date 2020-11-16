@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:experimental
 
-FROM golang:1.15.3 as builder
+FROM golang:1.15.5 as builder
 WORKDIR /eirini/
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/go-build \

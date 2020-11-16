@@ -9,7 +9,7 @@ replace (
 )
 
 require (
-	cloud.google.com/go v0.71.0 // indirect
+	cloud.google.com/go v0.72.0 // indirect
 	code.cloudfoundry.org/bbs v0.0.0-20200615191359-7b6fa295fa8d // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/clock v1.0.0 // indirect
@@ -28,7 +28,8 @@ require (
 	code.cloudfoundry.org/tlsconfig v0.0.0-20200131000646-bbe0f8da39b3
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
-	github.com/Azure/go-autorest/autorest v0.11.10 // indirect
+	github.com/Azure/go-autorest/autorest v0.11.11 // indirect
+	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/cloudflare/cfssl v1.5.0 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/containerd/continuity v0.0.0-20200928162600-f2cc35102c2a // indirect
@@ -45,13 +46,14 @@ require (
 	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/google/certificate-transparency-go v1.1.1 // indirect
+	github.com/google/go-cmp v0.5.3 // indirect
 	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hashicorp/consul/api v1.7.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
-	github.com/hashicorp/go-retryablehttp v0.6.7
+	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
@@ -69,6 +71,8 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.8.0 // indirect
+	github.com/prometheus/common v0.15.0 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/afero v1.4.1 // indirect
 	github.com/spf13/cobra v1.1.1
@@ -76,25 +80,25 @@ require (
 	github.com/urfave/cli v1.22.5 // indirect
 	github.com/zmap/zcrypto v0.0.0-20201103164829-2760ff0e1c25 // indirect
 	go.uber.org/zap v1.16.0
-	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897 // indirect
-	golang.org/x/net v0.0.0-20201031054903-ff519b6c9102 // indirect
-	golang.org/x/sys v0.0.0-20201101102859-da207088b7d1 // indirect
-	golang.org/x/text v0.3.4 // indirect
-	golang.org/x/tools v0.0.0-20201103190053-ac612affd56b // indirect
+	golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9 // indirect
+	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
+	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58 // indirect
+	golang.org/x/sys v0.0.0-20201113233024-12cec1faf1ba // indirect
+	golang.org/x/tools v0.0.0-20201116002733-ac45abd4c88c // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20201103154000-415bd0cd5df6 // indirect
-	google.golang.org/grpc v1.33.1
+	google.golang.org/genproto v0.0.0-20201113130914-ce600e9a6f9e // indirect
+	google.golang.org/grpc v1.33.2
 	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.19.3
-	k8s.io/apiextensions-apiserver v0.19.3 // indirect
-	k8s.io/apimachinery v0.19.3
+	k8s.io/api v0.19.4
+	k8s.io/apiextensions-apiserver v0.19.4 // indirect
+	k8s.io/apimachinery v0.19.4
 	k8s.io/client-go v1.5.1
-	k8s.io/code-generator v0.19.3
+	k8s.io/code-generator v0.19.4
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.4.0 // indirect
-	k8s.io/metrics v0.19.3
-	k8s.io/utils v0.0.0-20201027101359-01387209bb0d // indirect
+	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd // indirect
+	k8s.io/metrics v0.19.4
+	k8s.io/utils v0.0.0-20201110183641-67b214c5f920 // indirect
 	sigs.k8s.io/controller-runtime v0.6.3
-	sigs.k8s.io/structured-merge-diff/v4 v4.0.2 // indirect
 )
