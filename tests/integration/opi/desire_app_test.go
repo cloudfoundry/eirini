@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -131,6 +132,39 @@ var _ = Describe("Desire App", func() {
 		})
 	})
 
+	When("a registry secret name is configured", func() {
+		BeforeEach(func() {
+			generateRegistryCredsSecret("registry-secret", "https://index.docker.io/v1/", "eiriniuser", tests.GetEiriniDockerHubPassword())
+			eiriniConfig.Properties.RegistrySecretName = "registry-secret"
+			body = `{
+					"guid": "the-app-guid",
+					"version": "0.0.0",
+					"ports" : [8080],
+					"disk_mb": 512,
+					"lifecycle": {
+						"docker_lifecycle": {
+						"image": "eiriniuser/notdora",
+						"command": ["/bin/sleep", "100"]
+						}
+					},
+					"instances": 1
+				}`
+		})
+
+		It("should return a 202 Accepted HTTP code", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+		})
+
+		It("can desire apps that use private images from that registry", func() {
+			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(statefulsets.Items).To(HaveLen(1))
+			Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
+			Expect(statefulsets.Items[0].Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
+		})
+	})
+
 	Describe("automounting serviceacccount token", func() {
 		const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
 		var podMountPaths []string
@@ -189,3 +223,22 @@ var _ = Describe("Desire App", func() {
 		})
 	})
 })
+
+func generateRegistryCredsSecret(name, server, username, password string) {
+	dockerConfig := dockerutils.NewDockerConfig(server, username, password)
+
+	dockerConfigJSON, err := dockerConfig.JSON()
+	Expect(err).NotTo(HaveOccurred())
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Type: corev1.SecretTypeDockerConfigJson,
+		StringData: map[string]string{
+			dockerutils.DockerConfigKey: dockerConfigJSON,
+		},
+	}
+	_, err = fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Create(context.Background(), secret, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred())
+}
