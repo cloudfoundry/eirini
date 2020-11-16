@@ -87,8 +87,6 @@ profiles:
         namespace: eirini-core
         valuesFiles:
         - ../eirini-release/helm/scripts/assets/helm-values-template.yml
-        setValueTemplates:
-          kube.external_ips[0]: "{{.CLUSTER_IP}}"
         artifactOverrides:
           opi.image: eirini/opi
           opi.route_collector_image: eirini/route-collector
