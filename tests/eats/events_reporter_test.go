@@ -66,7 +66,7 @@ var _ = Describe("EventsReporter", func() {
 		})
 	})
 
-	When("the app exists with non-zero code", func() {
+	When("the app exits with non-zero code", func() {
 		BeforeEach(func() {
 			statusCode := desireLRP(cf.DesireLRPRequest{
 				Namespace:    fixture.Namespace,
@@ -92,7 +92,7 @@ var _ = Describe("EventsReporter", func() {
 		})
 	})
 
-	When("the app exists with zero code", func() {
+	When("the app exits with zero code", func() {
 		BeforeEach(func() {
 			statusCode := desireLRP(cf.DesireLRPRequest{
 				Namespace:    fixture.Namespace,
