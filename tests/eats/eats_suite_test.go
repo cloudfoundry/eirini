@@ -29,18 +29,25 @@ func TestEats(t *testing.T) {
 
 var fixture *tests.EATSFixture
 
-var _ = BeforeSuite(func() {
-	baseFixture := tests.NewFixture(GinkgoWriter)
-	config, err := clientcmd.BuildConfigFromFlags("", baseFixture.KubeConfigPath)
-	Expect(err).NotTo(HaveOccurred(), "failed to build config from flags")
+var _ = SynchronizedBeforeSuite(
+	func() []byte {
+		Expect(tests.NewWiremock().Reset()).To(Succeed())
+		return nil
+	},
 
-	dynamicClientset, err := dynamic.NewForConfig(config)
-	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
+	func(_ []byte) {
+		baseFixture := tests.NewFixture(GinkgoWriter)
+		config, err := clientcmd.BuildConfigFromFlags("", baseFixture.KubeConfigPath)
+		Expect(err).NotTo(HaveOccurred(), "failed to build config from flags")
 
-	wiremockClient := tests.NewWiremock()
+		dynamicClientset, err := dynamic.NewForConfig(config)
+		Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
 
-	fixture = tests.NewEATSFixture(*baseFixture, dynamicClientset, wiremockClient)
-})
+		wiremockClient := tests.NewWiremock()
+
+		fixture = tests.NewEATSFixture(*baseFixture, dynamicClientset, wiremockClient)
+	},
+)
 
 var _ = AfterSuite(func() {
 	fixture.Destroy()
