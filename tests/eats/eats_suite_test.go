@@ -32,6 +32,7 @@ var fixture *tests.EATSFixture
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		Expect(tests.NewWiremock().Reset()).To(Succeed())
+
 		return nil
 	},
 
