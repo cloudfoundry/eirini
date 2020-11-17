@@ -46,8 +46,6 @@ const (
 
 	AppSourceType = "APP"
 
-	AnnotationStagingGUID = "cloudfoundry.org/staging_guid"
-
 	LabelGUID        = AnnotationGUID
 	LabelOrgGUID     = AnnotationOrgGUID
 	LabelOrgName     = AnnotationOrgName
@@ -58,8 +56,6 @@ const (
 	LabelAppGUID     = "cloudfoundry.org/app_guid"
 	LabelProcessType = "cloudfoundry.org/process_type"
 	LabelSourceType  = "cloudfoundry.org/source_type"
-
-	LabelStagingGUID = "cloudfoundry.org/staging_guid"
 
 	LabelTaskCompleted = "cloudfoundry.org/task_completed"
 	TaskCompletedTrue  = "true"

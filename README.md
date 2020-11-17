@@ -38,8 +38,7 @@ Eirini is composed of:
 - `route-collector`: A component that continuously collects routes and registers them in [Gorouter](https://github.com/cloudfoundry/gorouter) using [NATS](https://nats.io/). Usually deployed in combination with `route-pod-informer` and `route-statefulset-informer`.
 - `route-pod-informer`: A Kubernetes informer that reacts to LRP scale (up & down) operations and registers/unregisters routes in [Gorouter](https://github.com/cloudfoundry/gorouter). Usually deployed in combination with `route-collector` and `route-statefulset-informer`.
 - `route-statefulset-informer`: A Kubernetes informer that reacts to [`cf map-route`](https://cli.cloudfoundry.org/en-US/v6/map-route.html) and [`cf unmap-route`](https://cli.cloudfoundry.org/en-US/v6/unmap-route.html) operations and registers/unregisters routes in [Gorouter](https://github.com/cloudfoundry/gorouter). Usually deployed in combination with `route-collector` and `route-pod-informer`.
-- `staging-reporter`: A Kubernetes informer that reports _staging_ failures to `opi`.
-- `task-reporter`: A Kubernetes reconciler that reports the outcome of _non-staging_ tasks to the [Cloud Controller](https://github.com/cloudfoundry/cloud_controller_ng/) and deletes the underlying Kubernetes Jobs after a configurable TTL has elapsed.
+- `task-reporter`: A Kubernetes reconciler that reports the outcome of tasks to the [Cloud Controller](https://github.com/cloudfoundry/cloud_controller_ng/) and deletes the underlying Kubernetes Jobs after a configurable TTL has elapsed.
 - `eirini-controller`: A Kubernetes reconciler that acts on create/delete/update operations on Eirini's own Custom Resouce Definitions (CRDs). This is still experimental.
 
 ## CI Pipelines

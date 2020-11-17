@@ -200,7 +200,7 @@ var _ = Describe("Metrics", func() {
 			})
 		})
 
-		When("a pod name doesn't have an index (e.g. staging tasks)", func() {
+		When("a pod name doesn't have an index", func() {
 			It("should skip such pod", func() {
 				aPodHasNoIndex := "i-dont-have-an-index"
 

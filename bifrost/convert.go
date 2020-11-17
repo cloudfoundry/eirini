@@ -110,7 +110,7 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 }
 
 func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi.Task, error) {
-	c.logger.Debug("convert-task", lager.Data{"app-id": request.AppGUID, "staging-guid": taskGUID})
+	c.logger.Debug("convert-task", lager.Data{"app-id": request.AppGUID, "task-guid": taskGUID})
 
 	env := map[string]string{
 		"HOME":   "/home/vcap/app",

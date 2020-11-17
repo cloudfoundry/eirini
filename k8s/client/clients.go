@@ -32,8 +32,8 @@ func NewPod(clientSet kubernetes.Interface, workloadsNamespace string) *Pod {
 func (c *Pod) GetAll() ([]corev1.Pod, error) {
 	podList, err := c.clientSet.CoreV1().Pods(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf(
-			"%s in (%s,%s,%s)",
-			k8s.LabelSourceType, "STG", "APP", "TASK",
+			"%s in (%s,%s)",
+			k8s.LabelSourceType, "APP", "TASK",
 		),
 	})
 	if err != nil {
@@ -164,15 +164,6 @@ func NewJob(clientSet kubernetes.Interface, workloadsNamespace string) *Job {
 	}
 }
 
-func NewStagingJob(clientSet kubernetes.Interface, workloadsNamespace string) *Job {
-	return &Job{
-		clientSet:          clientSet,
-		workloadsNamespace: workloadsNamespace,
-		jobType:            "STG",
-		guidLabel:          k8s.LabelStagingGUID,
-	}
-}
-
 func (c *Job) Create(namespace string, job *batchv1.Job) (*batchv1.Job, error) {
 	return c.clientSet.BatchV1().Jobs(namespace).Create(context.Background(), job, metav1.CreateOptions{})
 }
@@ -187,7 +178,7 @@ func (c *Job) Delete(namespace string, name string) error {
 }
 
 func (c *Job) GetByGUID(guid string, includeCompleted bool) ([]batchv1.Job, error) {
-	labelSelector := fmt.Sprintf("%s=%s", c.getGUIDLabel(), guid)
+	labelSelector := fmt.Sprintf("%s=%s", k8s.LabelGUID, guid)
 
 	if !includeCompleted {
 		labelSelector += fmt.Sprintf(",%s!=%s", k8s.LabelTaskCompleted, k8s.TaskCompletedTrue)
@@ -220,14 +211,6 @@ func (c *Job) SetLabel(job *batchv1.Job, label, value string) (*batchv1.Job, err
 		job.Name,
 		types.JSONPatchType,
 		patchBytes, metav1.PatchOptions{})
-}
-
-func (c *Job) getGUIDLabel() string {
-	if c.jobType == "TASK" {
-		return k8s.LabelGUID
-	}
-
-	return k8s.LabelStagingGUID
 }
 
 type Secret struct {

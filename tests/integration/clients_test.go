@@ -33,9 +33,8 @@ var _ = Describe("Pod", func() {
 		BeforeEach(func() {
 			extraNs = fixture.CreateExtraNamespace()
 
-			createLrpPods(fixture.Namespace, "one", "two")
-			createTaskPods(extraNs, "three", "four")
-			createStagingPods(extraNs, "five", "six")
+			createLrpPods(fixture.Namespace, "one", "two", "three")
+			createTaskPods(extraNs, "four", "five", "six")
 			createPod(extraNs, "sadpod", map[string]string{})
 		})
 
@@ -63,8 +62,8 @@ var _ = Describe("Pod", func() {
 
 					return podNames(pods)
 				}).Should(SatisfyAll(
-					ContainElements("one", "two"),
-					Not(ContainElements("three", "four", "five", "six", "sadpod")),
+					ContainElements("one", "two", "three"),
+					Not(ContainElements("four", "five", "six", "sadpod")),
 				))
 			})
 		})
@@ -481,7 +480,6 @@ var _ = Describe("Jobs", func() {
 			taskGUID          string
 			extraTaskGUID     string
 			completedTaskGUID string
-			stagingGUID       string
 			extraNs           string
 		)
 
@@ -489,7 +487,6 @@ var _ = Describe("Jobs", func() {
 			taskGUID = tests.GenerateGUID()
 			extraTaskGUID = tests.GenerateGUID()
 			completedTaskGUID = tests.GenerateGUID()
-			stagingGUID = tests.GenerateGUID()
 			extraNs = fixture.CreateExtraNamespace()
 
 			createJob(fixture.Namespace, "foo", map[string]string{
@@ -504,10 +501,6 @@ var _ = Describe("Jobs", func() {
 			createJob(extraNs, "bas", map[string]string{
 				k8s.LabelGUID:       extraTaskGUID,
 				k8s.LabelSourceType: "TASK",
-			})
-			createJob(fixture.Namespace, "boo", map[string]string{
-				k8s.LabelGUID:       stagingGUID,
-				k8s.LabelSourceType: "STG",
 			})
 		})
 
@@ -524,19 +517,11 @@ var _ = Describe("Jobs", func() {
 			It("lists all task jobs", func() {
 				Eventually(listJobGUIDs(true)).Should(ContainElements(taskGUID, extraTaskGUID, completedTaskGUID))
 			})
-
-			It("does not list staging jobs", func() {
-				Consistently(listJobGUIDs(true)).ShouldNot(ContainElement(stagingGUID))
-			})
 		})
 
 		When("excluding completed tasks", func() {
 			It("does not list completed tasks", func() {
 				Consistently(listJobGUIDs(false)).ShouldNot(ContainElements(completedTaskGUID))
-			})
-
-			It("does not list staging jobs", func() {
-				Consistently(listJobGUIDs(false)).ShouldNot(ContainElement(stagingGUID))
 			})
 		})
 
@@ -546,10 +531,7 @@ var _ = Describe("Jobs", func() {
 			})
 
 			It("lists task jobs from the workloads namespace only", func() {
-				Eventually(listJobGUIDs(true)).Should(SatisfyAll(
-					ContainElements(taskGUID, completedTaskGUID),
-					Not(ContainElements(extraTaskGUID, stagingGUID)),
-				))
+				Eventually(listJobGUIDs(true)).Should(ContainElements(taskGUID, completedTaskGUID))
 			})
 		})
 	})
@@ -602,122 +584,14 @@ var _ = Describe("Jobs", func() {
 		When("setting an existing label", func() {
 			BeforeEach(func() {
 				label = k8s.LabelSourceType
-				value = "STG"
+				value = "APP"
 			})
 
 			It("replaces the label", func() {
 				job, err := getJob(taskGUID)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(job.Labels).To(HaveKeyWithValue(k8s.LabelSourceType, "STG"))
-			})
-		})
-	})
-})
-
-var _ = Describe("StagingJobs", func() {
-	var jobsClient *client.Job
-
-	BeforeEach(func() {
-		jobsClient = client.NewStagingJob(fixture.Clientset, "")
-	})
-
-	Describe("GetByGUID", func() {
-		BeforeEach(func() {
-			createJob(fixture.Namespace, "foo", map[string]string{
-				k8s.LabelStagingGUID: "bar",
-			})
-
-			extraNs := fixture.CreateExtraNamespace()
-			createJob(extraNs, "baz", map[string]string{
-				k8s.LabelStagingGUID: "bar",
-			})
-		})
-
-		It("gets all jobs matching the specified guid", func() {
-			Eventually(func() []string {
-				jobs, err := jobsClient.GetByGUID("bar", false)
-				Expect(err).NotTo(HaveOccurred())
-
-				return jobNames(jobs)
-			}).Should(ConsistOf("foo", "baz"))
-		})
-	})
-
-	Describe("List", func() {
-		var (
-			taskGUID      string
-			stagingGUID   string
-			completedGUID string
-			extraGUID     string
-		)
-
-		BeforeEach(func() {
-			taskGUID = tests.GenerateGUID()
-			stagingGUID = tests.GenerateGUID()
-			completedGUID = tests.GenerateGUID()
-			extraGUID = tests.GenerateGUID()
-			extraNs := fixture.CreateExtraNamespace()
-
-			createJob(fixture.Namespace, "foo", map[string]string{
-				k8s.LabelGUID:       taskGUID,
-				k8s.LabelSourceType: "TASK",
-			})
-			createJob(fixture.Namespace, "boo", map[string]string{
-				k8s.LabelGUID:       stagingGUID,
-				k8s.LabelSourceType: "STG",
-			})
-			createJob(fixture.Namespace, "coo", map[string]string{
-				k8s.LabelGUID:          completedGUID,
-				k8s.LabelSourceType:    "STG",
-				k8s.LabelTaskCompleted: "true",
-			})
-			createJob(extraNs, "coo", map[string]string{
-				k8s.LabelGUID:          extraGUID,
-				k8s.LabelSourceType:    "STG",
-				k8s.LabelTaskCompleted: "true",
-			})
-		})
-
-		listJobGUIDs := func(includeCompleted bool) func() []string {
-			return func() []string {
-				jobs, err := jobsClient.List(includeCompleted)
-				Expect(err).NotTo(HaveOccurred())
-
-				return jobGUIDs(jobs)
-			}
-		}
-
-		When("including completed tasks", func() {
-			It("lists all staging jobs", func() {
-				Eventually(listJobGUIDs(true)).Should(ContainElements(stagingGUID, completedGUID, extraGUID))
-			})
-
-			It("does not list task jobs", func() {
-				Consistently(listJobGUIDs(true)).ShouldNot(ContainElement(taskGUID))
-			})
-		})
-
-		When("excluding completed tasks", func() {
-			It("does not list completed tasks", func() {
-				Consistently(listJobGUIDs(false)).ShouldNot(ContainElement(completedGUID))
-			})
-
-			It("does not list task jobs", func() {
-				Consistently(listJobGUIDs(false)).ShouldNot(ContainElement(taskGUID))
-			})
-		})
-
-		When("the workloads namespace is set", func() {
-			BeforeEach(func() {
-				jobsClient = client.NewStagingJob(fixture.Clientset, fixture.Namespace)
-			})
-
-			It("lists staging jobs from the workloads namespace only", func() {
-				Eventually(listJobGUIDs(true)).Should(SatisfyAll(
-					ContainElements(stagingGUID, completedGUID),
-					Not(ContainElements(extraGUID, taskGUID)),
-				))
+				Expect(job.Labels).To(HaveKeyWithValue(k8s.LabelSourceType, "APP"))
 			})
 		})
 	})

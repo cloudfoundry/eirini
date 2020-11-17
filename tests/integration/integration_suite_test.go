@@ -154,12 +154,6 @@ func createLrpPods(ns string, names ...string) {
 	}
 }
 
-func createStagingPods(ns string, names ...string) {
-	for _, name := range names {
-		createPod(ns, name, map[string]string{k8s.LabelSourceType: "STG"})
-	}
-}
-
 func createPod(ns, name string, labels map[string]string) {
 	_, err := fixture.Clientset.CoreV1().Pods(ns).Create(context.Background(), &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

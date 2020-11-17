@@ -8,7 +8,6 @@ const (
 	EnvDownloadURL        = "DOWNLOAD_URL"
 	EnvDropletUploadURL   = "DROPLET_UPLOAD_URL"
 	EnvAppID              = "APP_ID"
-	EnvStagingGUID        = "STAGING_GUID"
 	EnvCompletionCallback = "COMPLETION_CALLBACK"
 	EnvEiriniAddress      = "EIRINI_ADDRESS"
 
@@ -21,22 +20,7 @@ const (
 	EnvCFInstancePort       = "CF_INSTANCE_PORT"
 	EnvCFInstancePorts      = "CF_INSTANCE_PORTS"
 
-	RecipeWorkspaceDir     = "/recipe_workspace"
-	RecipeWorkspaceName    = "recipe-workspace"
-	RecipeOutputName       = "staging-output"
-	RecipeOutputLocation   = "/out"
-	RecipePacksBuilderPath = "/packs/builder"
-
 	AppMetricsEmissionIntervalInSecs = 15
-
-	// Staging TLS:
-	CertsMountPath   = "/etc/config/certs"
-	CertsVolumeName  = "certs-volume"
-	CACertName       = "internal-ca-cert"
-	CCAPICertName    = "cc-server-crt"
-	CCAPIKeyName     = "cc-server-crt-key"
-	EiriniClientCert = "eirini-client-crt"
-	EiriniClientKey  = "eirini-client-crt-key"
 
 	RegistrySecretName = "default-image-pull-secret"
 

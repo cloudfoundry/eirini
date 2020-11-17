@@ -51,12 +51,6 @@ func (d *TaskDeleter) Delete(guid string) (string, error) {
 	return d.delete(logger, job)
 }
 
-func (d *TaskDeleter) DeleteStaging(guid string) error {
-	_, err := d.Delete(guid)
-
-	return err
-}
-
 func (d *TaskDeleter) getJobByGUID(logger lager.Logger, guid string) (batchv1.Job, error) {
 	jobs, err := d.jobClient.GetByGUID(guid, true)
 	if err != nil {
