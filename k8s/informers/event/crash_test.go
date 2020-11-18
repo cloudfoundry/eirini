@@ -3,12 +3,16 @@ package event_test
 import (
 	"context"
 	"errors"
+	"strconv"
+	"time"
 
 	"code.cloudfoundry.org/eirini/events"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/k8s/informers/event/eventfakes"
 	"code.cloudfoundry.org/eirini/k8s/reconciler/reconcilerfakes"
 	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -43,6 +47,9 @@ var _ = Describe("Event", func() {
 
 		crashEvent = events.CrashEvent{
 			ProcessGUID: "blahblah",
+			AppCrashedRequest: cc_messages.AppCrashedRequest{
+				CrashTimestamp: time.Now().Unix(),
+			},
 		}
 
 		controllerClient = new(reconcilerfakes.FakeClient)
@@ -105,6 +112,25 @@ var _ = Describe("Event", func() {
 
 		actualevent := crashEmitter.EmitArgsForCall(0)
 		Expect(actualevent.ProcessGUID).To(Equal("blahblah"))
+	})
+
+	It("sets the last reported crash timestamp on pod annotations", func() {
+		Expect(controllerClient.PatchCallCount()).To(Equal(1))
+		_, p, patch, _ := controllerClient.PatchArgsForCall(0)
+
+		pd, ok := p.(*corev1.Pod)
+		Expect(ok).To(BeTrue(), "didn't pass a *Pod to patch")
+
+		Expect(pd.Name).To(Equal(pod.Name))
+		Expect(pd.Namespace).To(Equal(pod.Namespace))
+
+		patchBytes, err := patch.Data(p)
+		Expect(err).NotTo(HaveOccurred())
+		timestamp := strconv.FormatInt(crashEvent.CrashTimestamp, 10)
+		Expect(string(patchBytes)).To(SatisfyAll(
+			ContainSubstring(k8s.AnnotationLastReportedAppCrash),
+			ContainSubstring(timestamp),
+		))
 	})
 
 	When("the app does not have to be reported", func() {

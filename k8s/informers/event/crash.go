@@ -2,8 +2,10 @@ package event
 
 import (
 	"context"
+	"strconv"
 
 	"code.cloudfoundry.org/eirini/events"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -88,6 +90,17 @@ func (c *CrashReconciler) Reconcile(request reconcile.Request) (reconcile.Result
 	}
 
 	logger.Info("emitted-event")
+
+	newPod := pod.DeepCopy()
+	if newPod.Annotations == nil {
+		newPod.Annotations = map[string]string{}
+	}
+
+	newPod.Annotations[k8s.AnnotationLastReportedAppCrash] = strconv.FormatInt(event.CrashTimestamp, 10)
+
+	if err = c.client.Patch(context.Background(), newPod, client.MergeFrom(pod)); err != nil {
+		logger.Error("failed-to-set-last-crash-time-on-pod", err)
+	}
 
 	return reconcile.Result{}, nil
 }

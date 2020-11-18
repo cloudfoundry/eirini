@@ -42,6 +42,7 @@ const (
 	AnnotationOpiTaskContainerName           = "cloudfoundry.org/opi-task-container-name"
 	AnnotationOpiTaskCompletionReportCounter = "cloudfoundry.org/task_completion_report_counter"
 	AnnotationCCAckedTaskCompletion          = "cloudfoundry.org/cc_acked_task_completion"
+	AnnotationLastReportedAppCrash           = "cloudfoundry.org/last_reported_app_crash"
 	AnnotationGUID                           = "cloudfoundry.org/guid"
 
 	AppSourceType = "APP"
