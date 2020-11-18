@@ -604,7 +604,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9
+# golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
 ## explicit
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
@@ -647,16 +647,19 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20201113233024-12cec1faf1ba
+# golang.org/x/sys v0.0.0-20201117222635-ba5294a509c7
 ## explicit
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
 golang.org/x/sys/windows/svc
 golang.org/x/sys/windows/svc/eventlog
 golang.org/x/sys/windows/svc/mgr
+# golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
+golang.org/x/term
 # golang.org/x/text v0.3.4
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
@@ -681,7 +684,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20201116002733-ac45abd4c88c
+# golang.org/x/tools v0.0.0-20201117233101-74a3905de184
 ## explicit
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
@@ -718,7 +721,7 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20201113130914-ce600e9a6f9e
+# google.golang.org/genproto v0.0.0-20201117123952-62d171c70ae1
 ## explicit
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/api/httpbody
