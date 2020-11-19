@@ -51,7 +51,7 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 
 	lastTerminatedEventSent := pod.Annotations[k8s.AnnotationLastReportedAppCrash]
 	if appStatus.State.Terminated != nil {
-		if lastTerminatedEventSent == strconv.FormatInt(appStatus.State.Terminated.StartedAt.Unix(), 10) {
+		if lastTerminatedEventSent == strconv.FormatInt(appStatus.State.Terminated.FinishedAt.Unix(), 10) {
 			return events.CrashEvent{}, false
 		}
 
@@ -59,15 +59,15 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 	}
 
 	if appStatus.LastTerminationState.Terminated != nil {
-		if lastTerminatedEventSent == strconv.FormatInt(appStatus.LastTerminationState.Terminated.StartedAt.Unix(), 10) {
+		if lastTerminatedEventSent == strconv.FormatInt(appStatus.LastTerminationState.Terminated.FinishedAt.Unix(), 10) {
 			return events.CrashEvent{}, false
 		}
 
 		exitStatus := int(appStatus.LastTerminationState.Terminated.ExitCode)
 		exitDescription := appStatus.LastTerminationState.Terminated.Reason
-		crashTimestamp := appStatus.LastTerminationState.Terminated.StartedAt.Unix()
+		crashTimestamp := appStatus.LastTerminationState.Terminated.FinishedAt.Unix()
 
-		return generateReport(pod, appStatus.LastTerminationState.Terminated.Reason, exitStatus, exitDescription, crashTimestamp, calculateCrashCount(appStatus.RestartCount)), true
+		return generateReport(pod, appStatus.LastTerminationState.Terminated.Reason, exitStatus, exitDescription, crashTimestamp, calculateCrashCount(appStatus)), true
 	}
 
 	logger.Debug("skipping-pod-healthy")
@@ -91,7 +91,7 @@ func (g DefaultCrashEventGenerator) generateReportForTerminatedPod(pod *v1.Pod, 
 
 	terminated := status.State.Terminated
 
-	return generateReport(pod, terminated.Reason, int(terminated.ExitCode), terminated.Reason, terminated.StartedAt.Unix(), calculateCrashCount(status.RestartCount)), true
+	return generateReport(pod, terminated.Reason, int(terminated.ExitCode), terminated.Reason, terminated.FinishedAt.Unix(), calculateCrashCount(status)), true
 }
 
 func generateReport(
@@ -128,9 +128,17 @@ func getOPIContainerStatus(statuses []v1.ContainerStatus) *v1.ContainerStatus {
 	return nil
 }
 
-func calculateCrashCount(restartCount int32) int {
-	// if this is the first time that an app has crashed,
-	// this means that the restart count will be 0. Currently
-	// the RestartCount is limited to 5 by K8s Garbage Collection
-	return int(restartCount + 1)
+func calculateCrashCount(containerState *v1.ContainerStatus) int {
+	// warning: apparently the RestartCount is limited to 5 by K8s Garbage
+	// Collection. However, we have observed it at 6 at least!
+
+	// If container is running, the restart count will be the crash count.  If
+	// container is terminated or waiting, we need to add 1, as it has not yet
+	// been restarted
+
+	if containerState.State.Running != nil {
+		return int(containerState.RestartCount)
+	}
+
+	return int(containerState.RestartCount + 1)
 }

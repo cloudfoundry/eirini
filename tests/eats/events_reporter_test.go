@@ -151,7 +151,7 @@ func exposeLRP(namespace, guid string, appPort int32, pingPath ...string) string
 			},
 		},
 	}, metav1.CreateOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	if len(pingPath) > 0 {
 		pingURL := &url.URL{
@@ -160,7 +160,7 @@ func exposeLRP(namespace, guid string, appPort int32, pingPath ...string) string
 			Path:   pingPath[0],
 		}
 
-		Eventually(func() error {
+		EventuallyWithOffset(1, func() error {
 			resp, err := http.Get(pingURL.String())
 			if err != nil {
 				return err
@@ -179,17 +179,17 @@ func exposeLRP(namespace, guid string, appPort int32, pingPath ...string) string
 }
 
 func unexposeLRP(namespace, serviceName string) {
-	Expect(fixture.Clientset.CoreV1().Services(namespace).Delete(context.Background(), serviceName, metav1.DeleteOptions{})).To(Succeed())
+	ExpectWithOffset(1, fixture.Clientset.CoreV1().Services(namespace).Delete(context.Background(), serviceName, metav1.DeleteOptions{})).To(Succeed())
 }
 
 func verifyCrashRequest(requestMatcher wiremock.RequestMatcher, exitStatus int) {
 	body, err := fixture.Wiremock.GetRequestBody(requestMatcher)
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	var request cc_messages.AppCrashedRequest
 	err = json.Unmarshal([]byte(body), &request)
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-	Expect(request.ExitStatus).To(Equal(exitStatus))
-	Expect(request.CrashCount).To(Equal(1))
+	ExpectWithOffset(1, request.ExitStatus).To(Equal(exitStatus))
+	ExpectWithOffset(1, request.CrashCount).To(Equal(1))
 }

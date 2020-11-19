@@ -110,40 +110,57 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 	}
 
 	if kubeEvent != nil {
-		return r.updateEvent(logger, kubeEvent, crashEvent, request.Namespace)
+		err = r.updateEvent(logger, kubeEvent, crashEvent, request.Namespace)
+	} else {
+		err = r.createEvent(logger, lrpRef, crashEvent, request.Namespace)
 	}
 
-	return r.createEvent(logger, lrpRef, crashEvent, request.Namespace)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	newPod := pod.DeepCopy()
+	if newPod.Annotations == nil {
+		newPod.Annotations = map[string]string{}
+	}
+
+	newPod.Annotations[k8s.AnnotationLastReportedAppCrash] = strconv.FormatInt(crashEvent.CrashTimestamp, 10)
+
+	if err = r.pods.Patch(context.Background(), newPod, client.MergeFrom(pod)); err != nil {
+		logger.Error("failed-to-set-last-crash-time-on-pod", err)
+	}
+
+	return reconcile.Result{}, nil
 }
 
-func (r PodCrash) createEvent(logger lager.Logger, ownerRef metav1.OwnerReference, crashEvent events.CrashEvent, namespace string) (reconcile.Result, error) {
+func (r PodCrash) createEvent(logger lager.Logger, ownerRef metav1.OwnerReference, crashEvent events.CrashEvent, namespace string) error {
 	var err error
 
 	event := r.makeEvent(crashEvent, namespace, ownerRef)
 	if event, err = r.eventsClient.Create(namespace, event); err != nil {
 		logger.Error("failed-to-create-event", err)
 
-		return reconcile.Result{}, errors.Wrap(err, "failed to create event")
+		return errors.Wrap(err, "failed to create event")
 	}
 
 	logger.Debug("event-created", lager.Data{"name": event.Name, "namespace": event.Namespace})
 
-	return reconcile.Result{}, nil
+	return nil
 }
 
-func (r PodCrash) updateEvent(logger lager.Logger, kubeEvent *corev1.Event, crashEvent events.CrashEvent, namespace string) (reconcile.Result, error) {
+func (r PodCrash) updateEvent(logger lager.Logger, kubeEvent *corev1.Event, crashEvent events.CrashEvent, namespace string) error {
 	kubeEvent.Count++
 	kubeEvent.LastTimestamp = metav1.NewTime(time.Unix(crashEvent.CrashTimestamp, 0))
 
 	if _, err := r.eventsClient.Update(namespace, kubeEvent); err != nil {
 		logger.Error("failed-to-update-event", err)
 
-		return reconcile.Result{}, errors.Wrap(err, "failed to update event")
+		return errors.Wrap(err, "failed to update event")
 	}
 
 	logger.Debug("event-updated", lager.Data{"name": kubeEvent.Name, "namespace": kubeEvent.Namespace})
 
-	return reconcile.Result{}, nil
+	return nil
 }
 
 func (r PodCrash) makeEvent(crashEvent events.CrashEvent, namespace string, involvedObjRef metav1.OwnerReference) *corev1.Event {

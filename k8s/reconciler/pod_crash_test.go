@@ -2,9 +2,11 @@ package reconciler_test
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"code.cloudfoundry.org/eirini/events"
+	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	"code.cloudfoundry.org/eirini/k8s/reconciler/reconcilerfakes"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -169,6 +171,26 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 			Expect(event.Count).To(Equal(int32(1)))
 			Expect(event.Source).To(Equal(corev1.EventSource{Component: "eirini-controller"}))
 			Expect(event.Type).To(Equal("Warning"))
+		})
+
+		It("records the crash timestamp as an annotation on the pod", func() {
+			Expect(controllerClient.PatchCallCount()).To(Equal(1))
+
+			_, p, patch, _ := controllerClient.PatchArgsForCall(0)
+
+			pd, ok := p.(*corev1.Pod)
+			Expect(ok).To(BeTrue(), "didn't pass a *Pod to patch")
+
+			Expect(pd.Name).To(Equal("app-instance"))
+			Expect(pd.Namespace).To(Equal("some-ns"))
+
+			patchBytes, err := patch.Data(p)
+			Expect(err).NotTo(HaveOccurred())
+			patchTimestamp := strconv.FormatInt(timestamp.Unix(), 10)
+			Expect(string(patchBytes)).To(SatisfyAll(
+				ContainSubstring(k8s.AnnotationLastReportedAppCrash),
+				ContainSubstring(patchTimestamp),
+			))
 		})
 
 		When("the crashed pod does not have a StatefulSet owner", func() {

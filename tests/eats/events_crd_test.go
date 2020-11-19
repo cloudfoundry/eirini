@@ -93,21 +93,6 @@ var _ = Describe("PodCrashEvents", func() {
 			})))
 		})
 
-		It("creates crash loop backoff events", func() {
-			eventsClient := fixture.Clientset.CoreV1().Events(fixture.Namespace)
-			getEvents := func() []corev1.Event {
-				eventList, err := eventsClient.List(context.Background(), metav1.ListOptions{
-					FieldSelector: "involvedObject.kind=LRP",
-				})
-				Expect(err).NotTo(HaveOccurred())
-
-				return eventList.Items
-			}
-			Eventually(getEvents).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Reason": Equal("Container: CrashLoopBackOff"),
-			})))
-		})
-
 		It("populates the events with relevant information", func() {
 			eventsClient := fixture.Clientset.CoreV1().Events(fixture.Namespace)
 			var events []corev1.Event
