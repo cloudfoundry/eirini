@@ -149,7 +149,6 @@ var _ = Describe("CrashEventGenerator", func() {
 					})
 
 					It("doesn't send a crash report", func() {
-						fmt.Printf("pod = %+v\n", pod)
 						_, returned := generator.Generate(pod, logger)
 						Expect(returned).To(BeFalse())
 					})
@@ -239,9 +238,9 @@ var _ = Describe("CrashEventGenerator", func() {
 						},
 						LastTerminationState: v1.ContainerState{
 							Terminated: &v1.ContainerStateTerminated{
-								Reason:    "better luck next time",
-								StartedAt: crashTime,
-								ExitCode:  1,
+								Reason:     "better luck next time",
+								FinishedAt: crashTime,
+								ExitCode:   1,
 							},
 						},
 					},
@@ -269,9 +268,9 @@ var _ = Describe("CrashEventGenerator", func() {
 					},
 					LastTerminationState: v1.ContainerState{
 						Terminated: &v1.ContainerStateTerminated{
-							Reason:    "better luck next time",
-							StartedAt: crashTime,
-							ExitCode:  1,
+							Reason:     "better luck next time",
+							FinishedAt: crashTime,
+							ExitCode:   1,
 						},
 					},
 				},
@@ -331,9 +330,9 @@ var _ = Describe("CrashEventGenerator", func() {
 					RestartCount: 1,
 					State: v1.ContainerState{
 						Terminated: &v1.ContainerStateTerminated{
-							Reason:    "better luck next time",
-							StartedAt: crashTime,
-							ExitCode:  1,
+							Reason:     "better luck next time",
+							FinishedAt: crashTime,
+							ExitCode:   1,
 						},
 					},
 				},
@@ -372,9 +371,9 @@ func newTerminatedPod() *v1.Pod {
 			RestartCount: 8,
 			State: v1.ContainerState{
 				Terminated: &v1.ContainerStateTerminated{
-					Reason:    "better luck next time",
-					StartedAt: crashTime,
-					ExitCode:  0,
+					Reason:     "better luck next time",
+					FinishedAt: crashTime,
+					ExitCode:   0,
 				},
 			},
 		},
@@ -398,9 +397,9 @@ func newRunningLastTerminatedPod() *v1.Pod {
 			},
 			LastTerminationState: v1.ContainerState{
 				Terminated: &v1.ContainerStateTerminated{
-					Reason:    "better luck next time",
-					StartedAt: crashTime,
-					ExitCode:  0,
+					Reason:     "better luck next time",
+					FinishedAt: crashTime,
+					ExitCode:   0,
 				},
 			},
 		},
@@ -421,9 +420,9 @@ func newTerminatedSidecarPod() *v1.Pod {
 			RestartCount: 8,
 			State: v1.ContainerState{
 				Terminated: &v1.ContainerStateTerminated{
-					Reason:    "better luck next time",
-					StartedAt: crashTime,
-					ExitCode:  0,
+					Reason:     "better luck next time",
+					FinishedAt: crashTime,
+					ExitCode:   0,
 				},
 			},
 		},
