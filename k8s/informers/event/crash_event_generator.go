@@ -128,14 +128,13 @@ func getOPIContainerStatus(statuses []v1.ContainerStatus) *v1.ContainerStatus {
 	return nil
 }
 
+// warning: apparently the RestartCount is limited to 5 by K8s Garbage
+// Collection. However, we have observed it at 6 at least!
+
+// If container is running, the restart count will be the crash count.  If
+// container is terminated or waiting, we need to add 1, as it has not yet
+// been restarted
 func calculateCrashCount(containerState *v1.ContainerStatus) int {
-	// warning: apparently the RestartCount is limited to 5 by K8s Garbage
-	// Collection. However, we have observed it at 6 at least!
-
-	// If container is running, the restart count will be the crash count.  If
-	// container is terminated or waiting, we need to add 1, as it has not yet
-	// been restarted
-
 	if containerState.State.Running != nil {
 		return int(containerState.RestartCount)
 	}

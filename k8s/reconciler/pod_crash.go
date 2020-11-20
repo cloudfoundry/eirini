@@ -119,6 +119,12 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 		return reconcile.Result{}, err
 	}
 
+	r.setCrashTimestampOnPod(logger, pod, crashEvent)
+
+	return reconcile.Result{}, nil
+}
+
+func (r PodCrash) setCrashTimestampOnPod(logger lager.Logger, pod *corev1.Pod, crashEvent events.CrashEvent) {
 	newPod := pod.DeepCopy()
 	if newPod.Annotations == nil {
 		newPod.Annotations = map[string]string{}
@@ -126,11 +132,9 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 
 	newPod.Annotations[k8s.AnnotationLastReportedAppCrash] = strconv.FormatInt(crashEvent.CrashTimestamp, 10)
 
-	if err = r.pods.Patch(context.Background(), newPod, client.MergeFrom(pod)); err != nil {
+	if err := r.pods.Patch(context.Background(), newPod, client.MergeFrom(pod)); err != nil {
 		logger.Error("failed-to-set-last-crash-time-on-pod", err)
 	}
-
-	return reconcile.Result{}, nil
 }
 
 func (r PodCrash) createEvent(logger lager.Logger, ownerRef metav1.OwnerReference, crashEvent events.CrashEvent, namespace string) error {

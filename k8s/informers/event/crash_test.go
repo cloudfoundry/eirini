@@ -124,7 +124,8 @@ var _ = Describe("Event", func() {
 		Expect(pd.Name).To(Equal(pod.Name))
 		Expect(pd.Namespace).To(Equal(pod.Namespace))
 
-		patchBytes, err := patch.Data(p)
+		var patchBytes []byte
+		patchBytes, err = patch.Data(p)
 		Expect(err).NotTo(HaveOccurred())
 		timestamp := strconv.FormatInt(crashEvent.CrashTimestamp, 10)
 		Expect(string(patchBytes)).To(SatisfyAll(
