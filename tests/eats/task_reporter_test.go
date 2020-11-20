@@ -16,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Tasks Reporter", func() {
+var _ = Describe("Tasks Reporter [needs-logs-for: eirini-api, eirini-task-reporter]", func() {
 	var (
 		taskRequest        cf.TaskRequest
 		taskGUID           string

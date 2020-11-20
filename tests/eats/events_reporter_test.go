@@ -18,7 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("EventsReporter", func() {
+var _ = Describe("EventsReporter [needs-logs-for: eirini-api, eirini-event-reporter]", func() {
 	var (
 		guid            string
 		version         string

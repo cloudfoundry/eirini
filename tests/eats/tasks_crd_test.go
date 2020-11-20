@@ -16,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Tasks CRD", func() {
+var _ = Describe("Tasks CRD [needs-logs-for: eirini-api, eirini-controller]", func() {
 	var (
 		task           *eiriniv1.Task
 		taskName       string

@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("PodCrashEvents", func() {
+var _ = Describe("PodCrashEvents [needs-logs-for: eirini-api, eirini-controller]", func() {
 	var (
 		lrpName    string
 		lrpGUID    string

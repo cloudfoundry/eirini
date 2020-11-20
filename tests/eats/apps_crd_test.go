@@ -18,8 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var _ = Describe("Apps CRDs", func() {
-
+var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", func() {
 	var (
 		namespace   string
 		lrpName     string
@@ -88,7 +87,6 @@ var _ = Describe("Apps CRDs", func() {
 				AppRoutes:              []eiriniv1.Route{{Hostname: "app-hostname-1", Port: 8080}},
 			},
 		}
-
 	})
 
 	AfterEach(func() {
@@ -188,9 +186,7 @@ var _ = Describe("Apps CRDs", func() {
 	})
 
 	Describe("Update an app", func() {
-		var (
-			clientErr error
-		)
+		var clientErr error
 
 		BeforeEach(func() {
 			_, err := fixture.EiriniClientset.

@@ -16,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Tasks", func() {
+var _ = Describe("Tasks [needs-logs-for: eirini-api, eirini-task-reporter]", func() {
 	var (
 		guid               string
 		completionCallback string

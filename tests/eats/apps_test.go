@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Apps", func() {
+var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 	var (
 		namespace      string
 		lrpGUID        string

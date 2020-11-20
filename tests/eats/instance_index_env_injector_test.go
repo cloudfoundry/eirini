@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("InstanceIndexEnvInjector", func() {
+var _ = Describe("InstanceIndexEnvInjector [needs-logs-for: eirini-api, instance-index-env-injector]", func() {
 	var (
 		namespace   string
 		lrpGUID     string
