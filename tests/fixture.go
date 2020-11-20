@@ -121,6 +121,7 @@ func (f *Fixture) Destroy() {
 
 func (f *Fixture) CreateExtraNamespace() string {
 	name := f.configureNewNamespace()
+	fmt.Fprintf(GinkgoWriter, "Created namespace %q\n", name)
 	f.extraNamespaces = append(f.extraNamespaces, name)
 
 	return name
