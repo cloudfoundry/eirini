@@ -45,10 +45,18 @@ run_unit_tests() {
 }
 
 run_integration_tests() {
-  echo "Running integration tests on kind"
+  local kubeconfig="$HOME/.kube/config"
 
-  local cluster_name="integration-tests"
-  ensure_kind_cluster "$cluster_name"
+  if [[ "$use_kind" == "true" ]]; then
+    local cluster_name="integration-tests"
+    kubeconfig="$HOME/.kube/$cluster_name.yml"
+    ensure_kind_cluster "$cluster_name"
+  fi
+
+  echo "#########################################"
+  echo "Running integration tests on $(KUBECONFIG=$kubeconfig kubectl config current-context)"
+  echo "#########################################"
+  echo
 
   local service_name
   service_name=telepresence-$(uuidgen)
@@ -56,10 +64,10 @@ run_integration_tests() {
   local src_dir
   src_dir=$(mktemp -d)
   cp -a "$EIRINI_DIR" "$src_dir"
-  cp "$HOME/.kube/$cluster_name.yml" "$src_dir"
+  cp "$kubeconfig" "$src_dir"
   trap "rm -rf $src_dir" EXIT
 
-  KUBECONFIG=$HOME/.kube/integration-tests.yml telepresence \
+  KUBECONFIG="$kubeconfig" telepresence \
     --method container \
     --new-deployment "$service_name" \
     --expose 10000 \
@@ -70,7 +78,7 @@ run_integration_tests() {
     --rm \
     -v "$src_dir":/usr/src/app \
     -v "$HOME"/.cache:/root/.cache \
-    -e INTEGRATION_KUBECONFIG=/usr/src/app/integration-tests.yml \
+    -e INTEGRATION_KUBECONFIG="/usr/src/app/$(basename $kubeconfig)" \
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
     -e TELEPRESENCE_EXPOSE_PORT_START=10000 \
     -e TELEPRESENCE_SERVICE_NAME="$service_name" \
@@ -80,14 +88,21 @@ run_integration_tests() {
 }
 
 run_eats_helmless() {
-  echo "Running EATs against helmless deployed eirini on kind"
+  local kubeconfig="$HOME/.kube/config"
 
-  local cluster_name="eats-helmless"
-  local kubeconfig="$HOME/.kube/$cluster_name.yml"
+  if [[ "$use_kind" == "true" ]]; then
+    local cluster_name="eats-helmless"
+    kubeconfig="$HOME/.kube/$cluster_name.yml"
+    ensure_kind_cluster "$cluster_name"
+  fi
 
-  ensure_kind_cluster "$cluster_name"
+  echo "#########################################"
+  echo "Running EATs against helmless deployed eirini on $(KUBECONFIG=$kubeconfig kubectl config current-context)"
+  echo "#########################################"
+  echo
+
   if [[ "$redeploy" == "true" ]]; then
-    skaffold delete -p helmless
+    KUBECONFIG="$kubeconfig" skaffold delete -p helmless
     KUBECONFIG="$kubeconfig" "$RUN_DIR/skaffold" run -p helmless
   fi
 
@@ -97,7 +112,7 @@ run_eats_helmless() {
   local src_dir
   src_dir=$(mktemp -d)
   cp -a "$EIRINI_DIR" "$src_dir"
-  cp "$HOME/.kube/$cluster_name.yml" "$src_dir"
+  cp "$kubeconfig" "$src_dir"
   trap "rm -rf $src_dir" EXIT
 
   KUBECONFIG="$kubeconfig" telepresence \
@@ -112,20 +127,27 @@ run_eats_helmless() {
     -e EIRINI_SYSTEM_NS=eirini-core \
     -e EIRINI_WORKLOADS_NS=eirini-workloads \
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
-    -e INTEGRATION_KUBECONFIG="/usr/src/app/$cluster_name.yml" \
+    -e INTEGRATION_KUBECONFIG="/usr/src/app/$(basename $kubeconfig)" \
     eirini/ci \
     /usr/src/app/scripts/run_eats_tests.sh "$@"
 }
 
 run_eats_helmful() {
-  echo "Running EATs against helm deployed eirini on kind"
+  local kubeconfig="$HOME/.kube/config"
 
-  local cluster_name="eats-helmful"
-  local kubeconfig="$HOME/.kube/$cluster_name.yml"
+  if [[ "$use_kind" == "true" ]]; then
+    local cluster_name="eats-helmful"
+    kubeconfig="$HOME/.kube/$cluster_name.yml"
+    ensure_kind_cluster "$cluster_name"
+  fi
 
-  ensure_kind_cluster "$cluster_name"
+  echo "#########################################"
+  echo "Running EATs against helm deployed eirini on $(KUBECONFIG=$kubeconfig kubectl config current-context)"
+  echo "#########################################"
+  echo
+
   if [[ "$redeploy" == "true" ]]; then
-    skaffold delete -p helm || true # helm will fail if nothing is deployed
+    KUBECONFIG="$kubeconfig" skaffold delete -p helm || true # helm will fail if nothing is deployed
     KUBECONFIG="$kubeconfig" "$RUN_DIR/skaffold" run -p helm
   fi
 
@@ -135,7 +157,7 @@ run_eats_helmful() {
   local src_dir
   src_dir=$(mktemp -d)
   cp -a "$EIRINI_DIR" "$src_dir"
-  cp "$HOME/.kube/$cluster_name.yml" "$src_dir"
+  cp "$kubeconfig" "$src_dir"
   trap "rm -rf $src_dir" EXIT
 
   KUBECONFIG="$kubeconfig" telepresence \
@@ -150,7 +172,7 @@ run_eats_helmful() {
     -e EIRINI_SYSTEM_NS=eirini-core \
     -e EIRINI_WORKLOADS_NS=eirini \
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
-    -e INTEGRATION_KUBECONFIG="/usr/src/app/$cluster_name.yml" \
+    -e INTEGRATION_KUBECONFIG="/usr/src/app/$(basename $kubeconfig)" \
     eirini/ci \
     /usr/src/app/scripts/run_eats_tests.sh "$@"
 }
@@ -192,6 +214,10 @@ print_message() {
 }
 
 run_everything() {
+  if [[ "$use_kind" == "false" ]]; then
+    print_message "Running all tests in parallel against a targeted cluster is unsafe. Bailing out!" $RED
+    exit 1
+  fi
   print_message "about to run tests in parallel, it will be awesome" $GREEN
   print_message "ctrl-d panes when they are done" $RED
   local do_not_deploy="-n "
@@ -217,6 +243,7 @@ Options:
   -i  integration tests
   -l  golangci-lint
   -n  do not redeploy eirini when running eats
+  -r  use targeted remote cluster rather than local kind
   -u  unit tests
 EOF
   )
@@ -227,15 +254,19 @@ EOF
     run_integration_tests="false" \
     run_linter="false" \
     redeploy="true" \
+    use_kind="true" \
     run_subset="false"
 
-  while getopts "auiefnhl" opt; do
+  while getopts "auiefrnhl" opt; do
     case ${opt} in
       n)
         redeploy="false"
         ;;
       a)
         run_subset="false"
+        ;;
+      r)
+        use_kind="false"
         ;;
       u)
         run_unit_tests="true"
