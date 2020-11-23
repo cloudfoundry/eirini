@@ -50,6 +50,9 @@ linters:
     - exhaustivestruct
     # we don't believe in wrapping all errors, especially from our interfaces
     - wrapcheck
+    # paralleltest seems to think all tests should be parallel. We'll let ginkgo
+    # decide that.
+    - paralleltest
 
 issues:
   exclude-use-default: true
