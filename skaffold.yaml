@@ -66,6 +66,7 @@ profiles:
       - ../eirini-release/deploy/metrics/*.yml
       - ../eirini-release/deploy/workloads/*.yml
       - ../eirini-release/deploy/workloads/core/*.yml
+      - ../eirini-release/deploy/workloads/events/*.yml
       - ../eirini-release/deploy/testing/cc-wiremock/*.yml
 - name: helm
   deploy:
