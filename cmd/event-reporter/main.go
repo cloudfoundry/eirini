@@ -72,13 +72,23 @@ func main() {
 		emitter,
 	)
 
-	mgr, err := manager.New(kubeConfig, manager.Options{
+	managerOptions := manager.Options{
 		// do not serve prometheus metrics; disabled because port clashes during integration tests
 		MetricsBindAddress: "0",
 		Namespace:          cfg.WorkloadsNamespace,
 		Scheme:             kscheme.Scheme,
 		Logger:             util.NewLagerLogr(crashLogger),
-	})
+		LeaderElection:     true,
+		LeaderElectionID:   "event-reporter-leader",
+	}
+
+	if cmdcommons.RunningOutsideCluster(cfg.ConfigPath) {
+		managerOptions.LeaderElectionNamespace = "default"
+		managerOptions.LeaderElectionID = "event-reporter-leader-" + cfg.WorkloadsNamespace
+	}
+
+	mgr, err := manager.New(kubeConfig, managerOptions)
+
 	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
 
 	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate("APP")}

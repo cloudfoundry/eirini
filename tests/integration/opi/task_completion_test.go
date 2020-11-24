@@ -31,6 +31,7 @@ var _ = Describe("Tasks completion", func() {
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: fixture.KubeConfigPath,
 			},
+			WorkloadsNamespace:           fixture.Namespace,
 			CCCertPath:                   certPath,
 			CAPath:                       certPath,
 			CCKeyPath:                    keyPath,

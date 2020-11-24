@@ -71,6 +71,13 @@ func main() {
 		Scheme:             kscheme.Scheme,
 		Logger:             util.NewLagerLogr(taskLogger),
 		Namespace:          cfg.WorkloadsNamespace,
+		LeaderElection:     true,
+		LeaderElectionID:   "task-reporter-leader",
+	}
+
+	if cmdcommons.RunningOutsideCluster(cfg.ConfigPath) {
+		mgrOptions.LeaderElectionNamespace = "default"
+		mgrOptions.LeaderElectionID = "task-reporter-leader-" + cfg.WorkloadsNamespace
 	}
 
 	mgr, err := manager.New(kubeConfig, mgrOptions)

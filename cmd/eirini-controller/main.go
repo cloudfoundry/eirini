@@ -69,7 +69,7 @@ func main() {
 		LeaderElectionID:   "eirini-controller-leader",
 	}
 
-	if runningOutsideCluster(eiriniCfg) {
+	if cmdcommons.RunningOutsideCluster(eiriniCfg.Properties.ConfigPath) {
 		managerOptions.LeaderElectionNamespace = "default"
 	}
 
@@ -175,8 +175,4 @@ func createPodCrashReconciler(
 	crashEventGenerator := eirinievent.NewDefaultCrashEventGenerator(eventsClient)
 
 	return reconciler.NewPodCrash(logger, controllerClient, crashEventGenerator, eventsClient, statefulSetClient)
-}
-
-func runningOutsideCluster(cfg *eirini.Config) bool {
-	return cfg.Properties.ConfigPath != ""
 }
