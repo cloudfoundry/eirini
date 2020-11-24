@@ -69,6 +69,10 @@ func main() {
 		LeaderElectionID:   "eirini-controller-leader",
 	}
 
+	if runningOutsideCluster(eiriniCfg) {
+		managerOptions.LeaderElectionNamespace = "default"
+	}
+
 	mgr, err := manager.New(kubeConfig, managerOptions)
 	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
 
@@ -171,4 +175,8 @@ func createPodCrashReconciler(
 	crashEventGenerator := eirinievent.NewDefaultCrashEventGenerator(eventsClient)
 
 	return reconciler.NewPodCrash(logger, controllerClient, crashEventGenerator, eventsClient, statefulSetClient)
+}
+
+func runningOutsideCluster(cfg *eirini.Config) bool {
+	return cfg.Properties.ConfigPath != ""
 }
