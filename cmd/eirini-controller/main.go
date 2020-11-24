@@ -65,6 +65,8 @@ func main() {
 		MetricsBindAddress: "0",
 		Scheme:             eirinischeme.Scheme,
 		Logger:             util.NewLagerLogr(logger),
+		LeaderElection:     true,
+		LeaderElectionID:   "eirini-controller-leader",
 	}
 
 	mgr, err := manager.New(kubeConfig, managerOptions)
