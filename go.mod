@@ -28,11 +28,11 @@ require (
 	code.cloudfoundry.org/tlsconfig v0.0.0-20200131000646-bbe0f8da39b3
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
-	github.com/Azure/go-autorest/autorest v0.11.11 // indirect
+	github.com/Azure/go-autorest/autorest v0.11.12 // indirect
 	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/cloudflare/cfssl v1.5.0 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
-	github.com/containerd/continuity v0.0.0-20200928162600-f2cc35102c2a // indirect
+	github.com/containerd/continuity v0.0.0-20201119173150-04c754faca46 // indirect
 	github.com/containers/image v3.0.2+incompatible
 	github.com/containers/storage v1.23.5 // indirect
 	github.com/deckarep/golang-set v1.7.1
@@ -46,7 +46,7 @@ require (
 	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/google/certificate-transparency-go v1.1.1 // indirect
-	github.com/google/go-cmp v0.5.3 // indirect
+	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
@@ -78,16 +78,16 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	github.com/urfave/cli v1.22.5 // indirect
-	github.com/zmap/zcrypto v0.0.0-20201103164829-2760ff0e1c25 // indirect
+	github.com/zmap/zcrypto v0.0.0-20201123005704-f810c33cd2eb // indirect
 	go.uber.org/zap v1.16.0
-	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9 // indirect
+	golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392 // indirect
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58 // indirect
-	golang.org/x/sys v0.0.0-20201117222635-ba5294a509c7 // indirect
-	golang.org/x/tools v0.0.0-20201117233101-74a3905de184 // indirect
+	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 // indirect
+	golang.org/x/tools v0.0.0-20201124202034-299f270db459 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20201117123952-62d171c70ae1 // indirect
+	google.golang.org/genproto v0.0.0-20201119123407-9b1e624d6bc4 // indirect
 	google.golang.org/grpc v1.33.2
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.19.4
@@ -100,5 +100,5 @@ require (
 	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd // indirect
 	k8s.io/metrics v0.19.4
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920 // indirect
-	sigs.k8s.io/controller-runtime v0.6.3
+	sigs.k8s.io/controller-runtime v0.6.4
 )
