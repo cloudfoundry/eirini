@@ -2,7 +2,6 @@ package task_reporter_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -121,18 +120,14 @@ var _ = Describe("TaskReporter", func() {
 	})
 
 	It("labels the job as completed", func() {
-		Eventually(func() (map[string]string, error) {
-			tasks, err := getTaskJobsFn(task.GUID)()
+		Eventually(func() ([]batchv1.Job, error) {
+			tasks, err := getCompletedTaskJobsFn(task.GUID)()
 			if err != nil {
 				return nil, err
 			}
 
-			if len(tasks) != 1 {
-				return nil, errors.New("task missing")
-			}
-
-			return tasks[0].Labels, nil
-		}).Should(HaveKeyWithValue(k8s.LabelTaskCompleted, "true"))
+			return tasks, nil
+		}).Should(HaveLen(1))
 	})
 
 	When("the Cloud Controller is not using TLS", func() {
@@ -264,15 +259,34 @@ var _ = Describe("TaskReporter", func() {
 })
 
 func getTaskJobsFn(guid string) func() ([]batchv1.Job, error) {
-	return func() ([]batchv1.Job, error) {
-		jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{
-			LabelSelector: fmt.Sprintf(
-				"%s=%s, %s=%s",
-				k8s.LabelSourceType, "TASK",
-				k8s.LabelGUID, guid,
-			),
-		})
+	selector := fmt.Sprintf(
+		"%s=%s, %s=%s",
+		k8s.LabelSourceType, "TASK",
+		k8s.LabelGUID, guid,
+	)
 
-		return jobs.Items, err
+	return func() ([]batchv1.Job, error) {
+		return getTasksWithSelector(selector)
 	}
+}
+
+func getCompletedTaskJobsFn(guid string) func() ([]batchv1.Job, error) {
+	selector := fmt.Sprintf(
+		"%s=%s, %s=%s, %s=%s",
+		k8s.LabelSourceType, "TASK",
+		k8s.LabelGUID, guid,
+		k8s.LabelTaskCompleted, k8s.TaskCompletedTrue,
+	)
+
+	return func() ([]batchv1.Job, error) {
+		return getTasksWithSelector(selector)
+	}
+}
+
+func getTasksWithSelector(selector string) ([]batchv1.Job, error) {
+	jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: selector,
+	})
+
+	return jobs.Items, err
 }
