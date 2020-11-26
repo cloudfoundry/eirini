@@ -81,6 +81,10 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 		return reconcile.Result{}, nil
 	}
 
+	if r.eventAlreadyEmitted(crashEvent, pod) {
+		return reconcile.Result{}, nil
+	}
+
 	statefulSetRef, err := r.getOwner(pod, statefulSetKind)
 	if err != nil {
 		logger.Debug("pod-without-statefulset-owner")
@@ -109,12 +113,7 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 		return reconcile.Result{}, errors.Wrap(err, "failed to get existing event")
 	}
 
-	if kubeEvent != nil {
-		err = r.updateEvent(logger, kubeEvent, crashEvent, request.Namespace)
-	} else {
-		err = r.createEvent(logger, lrpRef, crashEvent, request.Namespace)
-	}
-
+	err = r.setEvent(logger, kubeEvent, lrpRef, crashEvent, request.Namespace)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -124,13 +123,26 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 	return reconcile.Result{}, nil
 }
 
+func (r PodCrash) setEvent(logger lager.Logger, kubeEvent *corev1.Event, lrpRef metav1.OwnerReference,
+	crashEvent events.CrashEvent, namespace string) error {
+	if kubeEvent != nil {
+		return r.updateEvent(logger, kubeEvent, crashEvent, namespace)
+	}
+
+	return r.createEvent(logger, lrpRef, crashEvent, namespace)
+}
+
+func (r PodCrash) eventAlreadyEmitted(crashEvent events.CrashEvent, pod *corev1.Pod) bool {
+	return strconv.FormatInt(crashEvent.CrashTimestamp, 10) == pod.Annotations[k8s.AnnotationLastReportedLRPCrash]
+}
+
 func (r PodCrash) setCrashTimestampOnPod(logger lager.Logger, pod *corev1.Pod, crashEvent events.CrashEvent) {
 	newPod := pod.DeepCopy()
 	if newPod.Annotations == nil {
 		newPod.Annotations = map[string]string{}
 	}
 
-	newPod.Annotations[k8s.AnnotationLastReportedAppCrash] = strconv.FormatInt(crashEvent.CrashTimestamp, 10)
+	newPod.Annotations[k8s.AnnotationLastReportedLRPCrash] = strconv.FormatInt(crashEvent.CrashTimestamp, 10)
 
 	if err := r.pods.Patch(context.Background(), newPod, client.MergeFrom(pod)); err != nil {
 		logger.Error("failed-to-set-last-crash-time-on-pod", err)

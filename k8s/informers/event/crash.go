@@ -80,6 +80,12 @@ func (c *CrashReconciler) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, nil
 	}
 
+	if strconv.FormatInt(event.CrashTimestamp, 10) == pod.Annotations[k8s.AnnotationLastReportedAppCrash] {
+		logger.Debug("event-already-sent")
+
+		return reconcile.Result{}, nil
+	}
+
 	logger.Info("generated-event", lager.Data{"event": event})
 
 	err = c.crashEmitter.Emit(event)

@@ -34,6 +34,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 		resultErr           error
 		podOwners           []metav1.OwnerReference
 		podGetError         error
+		podAnnotations      map[string]string
 	)
 
 	BeforeEach(func() {
@@ -49,6 +50,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 			eventsClient,
 			statefulSetGetter,
 		)
+		podAnnotations = nil
 
 		statefulSet := appsv1.StatefulSet{
 			ObjectMeta: metav1.ObjectMeta{
@@ -88,6 +90,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 			pod.Namespace = "some-ns"
 			pod.Name = "app-instance"
 			pod.OwnerReferences = podOwners
+			pod.Annotations = podAnnotations
 
 			return podGetError
 		}
@@ -188,9 +191,25 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 			Expect(err).NotTo(HaveOccurred())
 			patchTimestamp := strconv.FormatInt(timestamp.Unix(), 10)
 			Expect(string(patchBytes)).To(SatisfyAll(
-				ContainSubstring(k8s.AnnotationLastReportedAppCrash),
+				ContainSubstring(k8s.AnnotationLastReportedLRPCrash),
 				ContainSubstring(patchTimestamp),
 			))
+		})
+
+		When("the app crash has already been reported", func() {
+			BeforeEach(func() {
+				podAnnotations = map[string]string{
+					k8s.AnnotationLastReportedLRPCrash: strconv.FormatInt(timestamp.Unix(), 10),
+				}
+			})
+
+			It("does not requeue", func() {
+				Expect(resultErr).NotTo(HaveOccurred())
+			})
+
+			It("does not create an event", func() {
+				Expect(eventsClient.CreateCallCount()).To(Equal(0))
+			})
 		})
 
 		When("the crashed pod does not have a StatefulSet owner", func() {

@@ -32,6 +32,7 @@ var _ = Describe("Event", func() {
 		crashReconciler  *event.CrashReconciler
 		controllerClient *reconcilerfakes.FakeClient
 		pod              *corev1.Pod
+		getPodError      error
 		crashEvent       events.CrashEvent
 		result           reconcile.Result
 		err              error
@@ -42,8 +43,12 @@ var _ = Describe("Event", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",
+				Annotations: map[string]string{
+					k8s.AnnotationLastReportedAppCrash: "42",
+				},
 			},
 		}
+		getPodError = nil
 
 		crashEvent = events.CrashEvent{
 			ProcessGUID: "blahblah",
@@ -53,13 +58,6 @@ var _ = Describe("Event", func() {
 		}
 
 		controllerClient = new(reconcilerfakes.FakeClient)
-		controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o runtime.Object) error {
-			p := o.(*corev1.Pod)
-			p.Name = pod.Name
-			p.Namespace = pod.Namespace
-
-			return nil
-		}
 
 		logger = lagertest.NewTestLogger("crash-event-logger-test")
 
@@ -77,6 +75,19 @@ var _ = Describe("Event", func() {
 	})
 
 	JustBeforeEach(func() {
+		controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o runtime.Object) error {
+			if getPodError != nil {
+				return getPodError
+			}
+
+			p := o.(*corev1.Pod)
+			p.Name = pod.Name
+			p.Namespace = pod.Namespace
+			p.Annotations = pod.Annotations
+
+			return nil
+		}
+
 		result, err = crashReconciler.Reconcile(reconcile.Request{
 			NamespacedName: types.NamespacedName{
 				Name:      pod.Name,
@@ -144,11 +155,32 @@ var _ = Describe("Event", func() {
 		})
 	})
 
+	When("the app crash has not previously crashed", func() {
+		BeforeEach(func() {
+			pod.Annotations = nil
+			eventGenerator.GenerateReturns(crashEvent, true)
+		})
+
+		It("sends a crash event", func() {
+			Expect(crashEmitter.EmitCallCount()).To(Equal(1))
+		})
+	})
+
+	When("the app crash has already been reported", func() {
+		BeforeEach(func() {
+			pod.Annotations[k8s.AnnotationLastReportedAppCrash] = "123456"
+			crashEvent.CrashTimestamp = 123456
+			eventGenerator.GenerateReturns(crashEvent, true)
+		})
+
+		It("does NOT send a crash event", func() {
+			Expect(crashEmitter.EmitCallCount()).To(Equal(0))
+		})
+	})
+
 	When("the Pod doesn't exist", func() {
 		BeforeEach(func() {
-			controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o runtime.Object) error {
-				return apierrors.NewNotFound(schema.GroupResource{}, "")
-			}
+			getPodError = apierrors.NewNotFound(schema.GroupResource{}, "")
 		})
 
 		It("does not return an error", func() {
@@ -164,9 +196,7 @@ var _ = Describe("Event", func() {
 
 	When("getting the Pod fails", func() {
 		BeforeEach(func() {
-			controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o runtime.Object) error {
-				return errors.New("get-pod-error")
-			}
+			getPodError = errors.New("get-pod-error")
 		})
 
 		It("returns an error", func() {

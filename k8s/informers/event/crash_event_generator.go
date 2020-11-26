@@ -1,8 +1,6 @@
 package event
 
 import (
-	"strconv"
-
 	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/util"
@@ -49,20 +47,11 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 		return events.CrashEvent{}, false
 	}
 
-	lastTerminatedEventSent := pod.Annotations[k8s.AnnotationLastReportedAppCrash]
 	if appStatus.State.Terminated != nil {
-		if lastTerminatedEventSent == strconv.FormatInt(appStatus.State.Terminated.FinishedAt.Unix(), 10) {
-			return events.CrashEvent{}, false
-		}
-
 		return g.generateReportForTerminatedPod(pod, appStatus, logger)
 	}
 
 	if appStatus.LastTerminationState.Terminated != nil {
-		if lastTerminatedEventSent == strconv.FormatInt(appStatus.LastTerminationState.Terminated.FinishedAt.Unix(), 10) {
-			return events.CrashEvent{}, false
-		}
-
 		exitStatus := int(appStatus.LastTerminationState.Terminated.ExitCode)
 		exitDescription := appStatus.LastTerminationState.Terminated.Reason
 		crashTimestamp := appStatus.LastTerminationState.Terminated.FinishedAt.Unix()
