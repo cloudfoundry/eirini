@@ -4,7 +4,9 @@ go:
   - 1.15.x
 
 env:
-  - GO111MODULE=on
+  global:
+    - GO111MODULE=on
+    - CC_TEST_REPORTER=e24944d4ddf351bc732c4cbeac66ae5d18a7c7aea40f46769b2aa2f84718b294
 
 git:
   depth: 1
@@ -14,13 +16,22 @@ go_import_path: code.cloudfoundry.org/eirini
 
 # Install dependencies responsible for testing/linting
 before_install:
-    - pushd .. && go get github.com/onsi/ginkgo/ginkgo && popd
-    - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $GOPATH/bin
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - pushd .. && go get github.com/onsi/ginkgo/ginkgo && popd
+  - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $GOPATH/bin
 
 # Skip install step; use vendored dependencies
 install: true
 
+before_script:
+  - ./cc-test-reporter before-build
+
 script:
-    - go vet -mod=vendor ./...
-    - scripts/run_unit_tests.sh
-    - golangci-lint run -v
+  - go vet -mod=vendor ./...
+  - scripts/run_unit_tests.sh
+  - golangci-lint run -v
+  - find -type f -name '*suite_test.go' | xargs -IN dirname N | grep -v '^./tests/' | xargs go test -coverprofile c.out
+
+after_script:
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
