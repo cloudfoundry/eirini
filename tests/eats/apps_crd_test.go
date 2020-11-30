@@ -139,6 +139,31 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 			}).Should(Equal(int32(1)))
 		})
 
+		When("the the app has sidecars", func() {
+			BeforeEach(func() {
+				lrp.Spec.Image = "eirini/busybox"
+				lrp.Spec.Command = []string{"/bin/sh", "-c", "echo Hello from app; sleep 3600"}
+				lrp.Spec.Sidecars = []eiriniv1.Sidecar{
+					{
+						Name:     "the-sidecar",
+						Command:  []string{"/bin/sh", "-c", "echo Hello from sidecar; sleep 3600"},
+						MemoryMB: 256,
+					},
+				}
+			})
+
+			It("deploys the app with the sidcar container", func() {
+				Eventually(getStatefulSet).ShouldNot(BeNil())
+				Eventually(func() bool {
+					return getPodReadiness(lrpGUID, lrpVersion)
+				}).Should(BeTrue(), "LRP Pod not ready")
+
+				st := getStatefulSet()
+
+				Expect(st.Spec.Template.Spec.Containers).To(HaveLen(2))
+			})
+		})
+
 		When("the disk quota is not specified", func() {
 			It("fails", func() {
 				obj := &unstructured.Unstructured{

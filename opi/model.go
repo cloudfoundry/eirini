@@ -35,6 +35,7 @@ type LRP struct {
 	SpaceGUID              string
 	Image                  string
 	Command                []string
+	Sidecars               []Sidecar
 	PrivateRegistry        *PrivateRegistry
 	Env                    map[string]string
 	Health                 Healtcheck
@@ -50,6 +51,13 @@ type LRP struct {
 	AppURIs                []Route
 	LastUpdated            string
 	UserDefinedAnnotations map[string]string
+}
+
+type Sidecar struct {
+	Name     string
+	Command  []string
+	MemoryMB int64
+	Env      map[string]string
 }
 
 type Route struct {

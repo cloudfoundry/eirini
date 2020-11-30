@@ -122,11 +122,17 @@ func getPodReadiness(lrpGUID, lrpVersion string) bool {
 	}
 
 	containerStatuses := pods.Items[0].Status.ContainerStatuses
-	if len(containerStatuses) != 1 {
+	if len(containerStatuses) == 0 {
 		return false
 	}
 
-	return containerStatuses[0].Ready
+	for _, cs := range containerStatuses {
+		if cs.Ready == false {
+			return false
+		}
+	}
+
+	return true
 }
 
 func getInstances(processGUID, versionGUID string) (*cf.GetInstancesResponse, error) {

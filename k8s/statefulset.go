@@ -555,6 +555,7 @@ func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP)
 
 	livenessProbe := m.LivenessProbeCreator(lrp)
 	readinessProbe := m.ReadinessProbeCreator(lrp)
+	sidecarContainers := getSidecarContainers(lrp)
 
 	memory := *resource.NewScaledQuantity(lrp.MemoryMB, resource.Mega)
 	cpu := toCPUMillicores(lrp.CPUWeight)
@@ -564,6 +565,34 @@ func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP)
 	allowPrivilegeEscalation := false
 	imagePullSecrets := m.calculateImagePullSecrets(statefulSetName, lrp)
 
+	containers := []corev1.Container{
+		{
+			Name:            OPIContainerName,
+			Image:           lrp.Image,
+			ImagePullPolicy: corev1.PullAlways,
+			Command:         lrp.Command,
+			Env:             envs,
+			Ports:           ports,
+			SecurityContext: &corev1.SecurityContext{
+				AllowPrivilegeEscalation: &allowPrivilegeEscalation,
+			},
+			Resources: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceMemory:           memory,
+					corev1.ResourceEphemeralStorage: ephemeralStorage,
+				},
+				Requests: corev1.ResourceList{
+					corev1.ResourceMemory: memory,
+					corev1.ResourceCPU:    cpu,
+				},
+			},
+			LivenessProbe:  livenessProbe,
+			ReadinessProbe: readinessProbe,
+			VolumeMounts:   volumeMounts,
+		},
+	}
+
+	containers = append(containers, sidecarContainers...)
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: statefulSetName,
@@ -573,33 +602,8 @@ func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP)
 			Replicas:            int32ptr(lrp.TargetInstances),
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
-					ImagePullSecrets: imagePullSecrets,
-					Containers: []corev1.Container{
-						{
-							Name:            OPIContainerName,
-							Image:           lrp.Image,
-							ImagePullPolicy: corev1.PullAlways,
-							Command:         lrp.Command,
-							Env:             envs,
-							Ports:           ports,
-							SecurityContext: &corev1.SecurityContext{
-								AllowPrivilegeEscalation: &allowPrivilegeEscalation,
-							},
-							Resources: corev1.ResourceRequirements{
-								Limits: corev1.ResourceList{
-									corev1.ResourceMemory:           memory,
-									corev1.ResourceEphemeralStorage: ephemeralStorage,
-								},
-								Requests: corev1.ResourceList{
-									corev1.ResourceMemory: memory,
-									corev1.ResourceCPU:    cpu,
-								},
-							},
-							LivenessProbe:  livenessProbe,
-							ReadinessProbe: readinessProbe,
-							VolumeMounts:   volumeMounts,
-						},
-					},
+					Containers:         containers,
+					ImagePullSecrets:   imagePullSecrets,
 					SecurityContext:    m.getGetSecurityContext(lrp),
 					ServiceAccountName: m.ApplicationServiceAccount,
 					Volumes:            volumes,
@@ -690,6 +694,25 @@ func toLabelSelectorRequirements(selector *metav1.LabelSelector) []metav1.LabelS
 	}
 
 	return reqs
+}
+
+func getSidecarContainers(lrp *opi.LRP) []corev1.Container {
+	containers := []corev1.Container{}
+	for _, s := range lrp.Sidecars {
+		c := corev1.Container{
+			Name:    s.Name,
+			Command: s.Command,
+			Image:   lrp.Image,
+			Env:     MapToEnvVar(s.Env),
+			Resources: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceMemory: *resource.NewScaledQuantity(s.MemoryMB, resource.Mega),
+				},
+			},
+		}
+		containers = append(containers, c)
+	}
+	return containers
 }
 
 func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount) {

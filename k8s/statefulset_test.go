@@ -323,6 +323,38 @@ var _ = Describe("Statefulset Desirer", func() {
 			))
 		})
 
+		It("should set the sidecar containers", func() {
+			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
+
+			containers := statefulSet.Spec.Template.Spec.Containers
+			Expect(containers).To(HaveLen(3))
+
+			Expect(containers).To(ContainElements(
+				corev1.Container{
+					Name:    "first-sidecar",
+					Image:   "busybox",
+					Command: []string{"echo", "the first sidecar"},
+					Env:     []corev1.EnvVar{{Name: "FOO", Value: "BAR"}},
+					Resources: corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: *resource.NewScaledQuantity(256, resource.Mega),
+						},
+					},
+				},
+				corev1.Container{
+					Name:    "second-sidecar",
+					Image:   "busybox",
+					Command: []string{"echo", "the second sidecar"},
+					Env:     []corev1.EnvVar{{Name: "FOO", Value: "BAZ"}},
+					Resources: corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: *resource.NewScaledQuantity(1024, resource.Mega),
+						},
+					},
+				},
+			))
+		})
+
 		When("automounting service account token is allowed", func() {
 			BeforeEach(func() {
 				statefulSetDesirer.AllowAutomountServiceAccountToken = true
@@ -1180,6 +1212,24 @@ func createLRP(name string, routes []opi.Route) *opi.LRP {
 		Ports:            []int32{8888, 9999},
 		LastUpdated:      lastUpdated,
 		AppURIs:          routes,
+		Sidecars: []opi.Sidecar{
+			{
+				Name:    "first-sidecar",
+				Command: []string{"echo", "the first sidecar"},
+				Env: map[string]string{
+					"FOO": "BAR",
+				},
+				MemoryMB: 256,
+			},
+			{
+				Name:    "second-sidecar",
+				Command: []string{"echo", "the second sidecar"},
+				Env: map[string]string{
+					"FOO": "BAZ",
+				},
+				MemoryMB: 1024,
+			},
+		},
 		VolumeMounts: []opi.VolumeMount{
 			{
 				ClaimName: "some-claim",

@@ -29,6 +29,7 @@ type LRPSpec struct {
 	SpaceGUID              string            `json:"spaceGUID"`
 	Image                  string            `json:"image"`
 	Command                []string          `json:"command,omitempty"`
+	Sidecars               []Sidecar         `json:"sidecars"`
 	PrivateRegistry        *PrivateRegistry  `json:"privateRegistry,omitempty"`
 	Env                    map[string]string `json:"env,omitempty"`
 	Health                 Healtcheck        `json:"health"`
@@ -51,6 +52,13 @@ type LRPStatus struct {
 type Route struct {
 	Hostname string `json:"hostname"`
 	Port     int32  `json:"port"`
+}
+
+type Sidecar struct {
+	Name     string            `json:"name"`
+	Command  []string          `json:"command"`
+	MemoryMB int64             `json:"memory_mb"`
+	Env      map[string]string `json:"env,omitempty"`
 }
 
 type PrivateRegistry struct {

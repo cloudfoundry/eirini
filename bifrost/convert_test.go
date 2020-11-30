@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("OPI Converter", func() {
-
 	var (
 		logger              *lagertest.TestLogger
 		err                 error
