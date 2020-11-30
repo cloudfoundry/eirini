@@ -6,10 +6,12 @@
 <div>&nbsp;</div>
 
 [![Build Status](https://travis-ci.org/cloudfoundry-incubator/eirini.svg?branch=master)](https://travis-ci.org/cloudfoundry-incubator/eirini)
+[![Maintainability](https://api.codeclimate.com/v1/badges/e624538795c9e66d8667/maintainability)](https://codeclimate.com/github/cloudfoundry-incubator/eirini/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/e624538795c9e66d8667/test_coverage)](https://codeclimate.com/github/cloudfoundry-incubator/eirini/test_coverage)
 
 ## What is Eirini?
 
-*Eirini* is a Kubernetes backend for Cloud Foundry. It deploys CF applications
+_Eirini_ is a Kubernetes backend for Cloud Foundry. It deploys CF applications
 to a Kubernetes backend, using OCI images and Kubernetes `StatefulSet`s.
 
 Since scheduling is increasingly commoditized, Eirini provides an _Orchestrator
@@ -72,9 +74,7 @@ Eirini is composed of:
   [Gorouter](https://github.com/cloudfoundry/gorouter). Usually deployed in
   combination with `route-collector` and `route-statefulset-informer`.
 
-- `route-statefulset-informer`: A Kubernetes informer that reacts to [`cf
-  map-route`](https://cli.cloudfoundry.org/en-US/v6/map-route.html) and [`cf
-  unmap-route`](https://cli.cloudfoundry.org/en-US/v6/unmap-route.html)
+- `route-statefulset-informer`: A Kubernetes informer that reacts to [`cf map-route`](https://cli.cloudfoundry.org/en-US/v6/map-route.html) and [`cf unmap-route`](https://cli.cloudfoundry.org/en-US/v6/unmap-route.html)
   operations and registers/unregisters routes in
   [Gorouter](https://github.com/cloudfoundry/gorouter). Usually deployed in
   combination with `route-collector` and `route-pod-informer`.
