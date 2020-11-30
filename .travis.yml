@@ -6,7 +6,7 @@ go:
 env:
   global:
     - GO111MODULE=on
-    - CC_TEST_REPORTER=e24944d4ddf351bc732c4cbeac66ae5d18a7c7aea40f46769b2aa2f84718b294
+    - CC_TEST_REPORTER_ID=e24944d4ddf351bc732c4cbeac66ae5d18a7c7aea40f46769b2aa2f84718b294
 
 git:
   depth: 1
