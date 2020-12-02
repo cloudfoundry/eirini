@@ -32,7 +32,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/cloudflare/cfssl v1.5.0 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
-	github.com/containerd/continuity v0.0.0-20201119173150-04c754faca46 // indirect
+	github.com/containerd/continuity v0.0.0-20201201154230-62ef0fffa6a1 // indirect
 	github.com/containers/image v3.0.2+incompatible
 	github.com/containers/storage v1.23.5 // indirect
 	github.com/deckarep/golang-set v1.7.1
@@ -58,11 +58,11 @@ require (
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jessevdk/go-flags v1.4.0
-	github.com/jinzhu/copier v0.0.0-20201025035756-632e723a6687
+	github.com/jinzhu/copier v0.1.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0
-	github.com/nats-io/jwt v1.2.0 // indirect
+	github.com/nats-io/jwt v1.2.2 // indirect
 	github.com/nats-io/nats-server/v2 v2.1.9
 	github.com/nats-io/nats.go v1.10.0
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
@@ -78,18 +78,19 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	github.com/urfave/cli v1.22.5 // indirect
-	github.com/zmap/zcrypto v0.0.0-20201123005704-f810c33cd2eb // indirect
+	github.com/zmap/zcrypto v0.0.0-20201128221613-3719af1573cf // indirect
 	go.uber.org/zap v1.16.0
-	golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392 // indirect
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
+	golang.org/x/mod v0.4.0 // indirect
+	golang.org/x/net v0.0.0-20201201195509-5d6afe98e0b7 // indirect
 	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58 // indirect
-	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 // indirect
-	golang.org/x/tools v0.0.0-20201124202034-299f270db459 // indirect
+	golang.org/x/sys v0.0.0-20201201145000-ef89a241ccb3 // indirect
+	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1 // indirect
+	golang.org/x/tools v0.0.0-20201201210846-92771a23d8e3 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20201119123407-9b1e624d6bc4 // indirect
+	google.golang.org/genproto v0.0.0-20201201144952-b05cb90ed32e // indirect
 	google.golang.org/grpc v1.33.2
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.19.4
 	k8s.io/apiextensions-apiserver v0.19.4 // indirect
 	k8s.io/apimachinery v0.19.4
