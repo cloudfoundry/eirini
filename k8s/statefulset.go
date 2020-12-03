@@ -555,11 +555,6 @@ func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP)
 
 	livenessProbe := m.LivenessProbeCreator(lrp)
 	readinessProbe := m.ReadinessProbeCreator(lrp)
-	sidecarContainers := getSidecarContainers(lrp)
-
-	memory := *resource.NewScaledQuantity(lrp.MemoryMB, resource.Mega)
-	cpu := toCPUMillicores(lrp.CPUWeight)
-	ephemeralStorage := *resource.NewScaledQuantity(lrp.DiskMB, resource.Mega)
 
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
 	allowPrivilegeEscalation := false
@@ -576,22 +571,14 @@ func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP)
 			SecurityContext: &corev1.SecurityContext{
 				AllowPrivilegeEscalation: &allowPrivilegeEscalation,
 			},
-			Resources: corev1.ResourceRequirements{
-				Limits: corev1.ResourceList{
-					corev1.ResourceMemory:           memory,
-					corev1.ResourceEphemeralStorage: ephemeralStorage,
-				},
-				Requests: corev1.ResourceList{
-					corev1.ResourceMemory: memory,
-					corev1.ResourceCPU:    cpu,
-				},
-			},
+			Resources:      getContainerResources(lrp.CPUWeight, lrp.MemoryMB, lrp.DiskMB),
 			LivenessProbe:  livenessProbe,
 			ReadinessProbe: readinessProbe,
 			VolumeMounts:   volumeMounts,
 		},
 	}
 
+	sidecarContainers := getSidecarContainers(lrp)
 	containers = append(containers, sidecarContainers...)
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -681,6 +668,23 @@ func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP)
 	return statefulSet, nil
 }
 
+func getContainerResources(cpuWeight uint8, memoryMB, diskMB int64) corev1.ResourceRequirements {
+	memory := *resource.NewScaledQuantity(memoryMB, resource.Mega)
+	cpu := toCPUMillicores(cpuWeight)
+	ephemeralStorage := *resource.NewScaledQuantity(diskMB, resource.Mega)
+
+	return corev1.ResourceRequirements{
+		Limits: corev1.ResourceList{
+			corev1.ResourceMemory:           memory,
+			corev1.ResourceEphemeralStorage: ephemeralStorage,
+		},
+		Requests: corev1.ResourceList{
+			corev1.ResourceMemory: memory,
+			corev1.ResourceCPU:    cpu,
+		},
+	}
+}
+
 func toLabelSelectorRequirements(selector *metav1.LabelSelector) []metav1.LabelSelectorRequirement {
 	labels := selector.MatchLabels
 	reqs := make([]metav1.LabelSelectorRequirement, 0, len(labels))
@@ -698,20 +702,18 @@ func toLabelSelectorRequirements(selector *metav1.LabelSelector) []metav1.LabelS
 
 func getSidecarContainers(lrp *opi.LRP) []corev1.Container {
 	containers := []corev1.Container{}
+
 	for _, s := range lrp.Sidecars {
 		c := corev1.Container{
-			Name:    s.Name,
-			Command: s.Command,
-			Image:   lrp.Image,
-			Env:     MapToEnvVar(s.Env),
-			Resources: corev1.ResourceRequirements{
-				Limits: corev1.ResourceList{
-					corev1.ResourceMemory: *resource.NewScaledQuantity(s.MemoryMB, resource.Mega),
-				},
-			},
+			Name:      s.Name,
+			Command:   s.Command,
+			Image:     lrp.Image,
+			Env:       MapToEnvVar(s.Env),
+			Resources: getContainerResources(lrp.CPUWeight, s.MemoryMB, lrp.DiskMB),
 		}
 		containers = append(containers, c)
 	}
+
 	return containers
 }
 

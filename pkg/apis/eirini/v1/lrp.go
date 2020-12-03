@@ -29,7 +29,7 @@ type LRPSpec struct {
 	SpaceGUID              string            `json:"spaceGUID"`
 	Image                  string            `json:"image"`
 	Command                []string          `json:"command,omitempty"`
-	Sidecars               []Sidecar         `json:"sidecars"`
+	Sidecars               []Sidecar         `json:"sidecars,omitempty"`
 	PrivateRegistry        *PrivateRegistry  `json:"privateRegistry,omitempty"`
 	Env                    map[string]string `json:"env,omitempty"`
 	Health                 Healtcheck        `json:"health"`
@@ -57,7 +57,7 @@ type Route struct {
 type Sidecar struct {
 	Name     string            `json:"name"`
 	Command  []string          `json:"command"`
-	MemoryMB int64             `json:"memory_mb"`
+	MemoryMB int64             `json:"memoryMB"`
 	Env      map[string]string `json:"env,omitempty"`
 }
 

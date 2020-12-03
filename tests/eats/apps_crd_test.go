@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -140,6 +141,10 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		})
 
 		When("the the app has sidecars", func() {
+			assertEqualValues := func(actual, expected *resource.Quantity) {
+				Expect(actual.Value()).To(Equal(expected.Value()))
+			}
+
 			BeforeEach(func() {
 				lrp.Spec.Image = "eirini/busybox"
 				lrp.Spec.Command = []string{"/bin/sh", "-c", "echo Hello from app; sleep 3600"}
@@ -147,7 +152,7 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 					{
 						Name:     "the-sidecar",
 						Command:  []string{"/bin/sh", "-c", "echo Hello from sidecar; sleep 3600"},
-						MemoryMB: 256,
+						MemoryMB: 101,
 					},
 				}
 			})
@@ -161,6 +166,32 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 				st := getStatefulSet()
 
 				Expect(st.Spec.Template.Spec.Containers).To(HaveLen(2))
+			})
+
+			It("sets resource limits on the sidecar container", func() {
+				Eventually(getStatefulSet).ShouldNot(BeNil())
+				Eventually(func() bool {
+					return getPodReadiness(lrpGUID, lrpVersion)
+				}).Should(BeTrue(), "LRP Pod not ready")
+
+				st := getStatefulSet()
+
+				containers := st.Spec.Template.Spec.Containers
+				for _, container := range containers {
+					if container.Name == "the-sidecar" {
+						limits := container.Resources.Limits
+						requests := container.Resources.Requests
+
+						expectedMemory := resource.NewScaledQuantity(101, resource.Mega)
+						expectedDisk := resource.NewScaledQuantity(lrp.Spec.DiskMB, resource.Mega)
+						expectedCPU := resource.NewScaledQuantity(int64(lrp.Spec.CPUWeight*10), resource.Milli)
+
+						assertEqualValues(limits.Memory(), expectedMemory)
+						assertEqualValues(limits.StorageEphemeral(), expectedDisk)
+						assertEqualValues(requests.Memory(), expectedMemory)
+						assertEqualValues(requests.Cpu(), expectedCPU)
+					}
+				}
 			})
 		})
 
