@@ -8,6 +8,7 @@
 [![Build Status](https://travis-ci.org/cloudfoundry-incubator/eirini.svg?branch=master)](https://travis-ci.org/cloudfoundry-incubator/eirini)
 [![Maintainability](https://api.codeclimate.com/v1/badges/e624538795c9e66d8667/maintainability)](https://codeclimate.com/github/cloudfoundry-incubator/eirini/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/e624538795c9e66d8667/test_coverage)](https://codeclimate.com/github/cloudfoundry-incubator/eirini/test_coverage)
+[![Go Report Card](https://goreportcard.com/badge/github.com/cloudfoundry-incubator/eirini)](https://goreportcard.com/report/github.com/cloudfoundry-incubator/eirini)
 [![Slack Status](https://slack.cloudfoundry.org/badge.svg)](https://slack.cloudfoundry.org)
 
 ## What is Eirini?
