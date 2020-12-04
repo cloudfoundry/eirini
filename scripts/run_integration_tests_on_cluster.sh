@@ -8,7 +8,10 @@ start=$(($(date +%s%N) / 1000000))
 readonly BASEDIR="$(cd "$(dirname "$0")"/.. && pwd)"
 readonly POD_NAME="eirini-integration-tests-$(openssl rand -hex 5)"
 readonly SKIP_CLEANUP="${SKIP_CLEANUP:-false}"
-export EIRINIUSER_PASSWORD="${EIRINIUSER_PASSWORD:-$(pass eirini/docker-hub)}"
+
+if [ -z ${EIRINIUSER_PASSWORD+x} ]; then
+  EIRINIUSER_PASSWORD="$(pass eirini/docker-hub)"
+fi
 
 echo "Running tests in pod ${POD_NAME}"
 

@@ -4,7 +4,9 @@ set -euo pipefail
 
 readonly BASEDIR="$(cd "$(dirname "$0")"/.. && pwd)"
 export GO111MODULE=on
-export EIRINIUSER_PASSWORD="${EIRINIUSER_PASSWORD:-$(pass eirini/docker-hub)}"
+if [ -z ${EIRINIUSER_PASSWORD+x} ]; then
+  EIRINIUSER_PASSWORD="$(pass eirini/docker-hub)"
+fi
 
 nodes=""
 if [[ "${NODES:-}" != "" ]]; then

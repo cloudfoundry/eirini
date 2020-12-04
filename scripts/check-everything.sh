@@ -6,8 +6,7 @@ IFS=$'\n\t'
 RUN_DIR="$(cd "$(dirname "$0")" && pwd)"
 EIRINI_DIR="$RUN_DIR/.."
 
-EIRINIUSER_PASSWORD=""
-if command -v pass &>/dev/null; then
+if [ -z ${EIRINIUSER_PASSWORD+x} ]; then
   EIRINIUSER_PASSWORD="$(pass eirini/docker-hub)"
 fi
 
