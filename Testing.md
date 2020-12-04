@@ -5,13 +5,13 @@ and how one can run it both locally and on CI.
 
 ## Unit tests
 
-Unit tests live next to the packages the test. You can trigger unit tests by runnint the [run_unit_tests.sh script](https://github.com/cloudfoundry-incubator/eirini/blob/wip-no-eirini-instance/scripts/run_unit_tests.sh).
+Unit tests live next to the packages the test. You can trigger unit tests by runnint the [run_unit_tests.sh script](https://github.com/cloudfoundry-incubator/eirini/blob/master/scripts/run_unit_tests.sh).
 
 ## EATs (Eirini Acceptance Tests)
 
-This suite need a deployed Eirini to run against. Currently there are 2 ways to deploy Eirini. There are [helm templates](https://github.com/cloudfoundry-incubator/eirini-release/tree/master/helm) and there are [plain yaml files](https://github.com/cloudfoundry-incubator/eirini-release/tree/master/deploy).
+This suite needs a deployed Eirini to run against. Currently there are 2 ways to deploy Eirini. There are [helm templates](https://github.com/cloudfoundry-incubator/eirini-release/tree/master/helm) and there are [plain yaml files](https://github.com/cloudfoundry-incubator/eirini-release/tree/master/deploy).
 
-Assuming you have a running kubernets cluster, the following commands should run EATs for you:
+Assuming you have a running kubernetes cluster, the following commands should run EATs for you:
 
 ```
 $ cd eirini-release
