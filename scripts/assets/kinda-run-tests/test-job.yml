@@ -12,13 +12,21 @@ spec:
       containers:
       - name: tests
         image: eirini/ci
+        env:
+        - name: EIRINI_DIR
+          value: "/eirini"
+        - name: TEST_SCRIPT
+          valueFrom:
+            configMapKeyRef:
+              name: test-config
+              key: TEST_SCRIPT
         envFrom:
         - secretRef:
             name: test-secret
         command:
         - /bin/bash
         - -c
-        - /eirini/scripts/run_integration_tests.sh
+        - "cd $EIRINI_DIR && $TEST_SCRIPT"
         volumeMounts:
         - name: eirini-code
           mountPath: /eirini

@@ -8,6 +8,7 @@ readonly CLUSTER_NAME="run-tests"
 readonly TMP_DIR="$(mktemp -d)"
 readonly KIND_CONF="${TMP_DIR}/kind-config-run-tests"
 readonly EIRINIUSER_PASSWORD=${EIRINIUSER_PASSWORD:-}
+readonly TEST_SCRIPT=${TEST_SCRIPT:-"scripts/run_unit_tests.sh"}
 
 trap "rm -rf $TMP_DIR" EXIT
 
@@ -53,7 +54,8 @@ run_integration_tests() {
   local pod_name
 
   kubectl create namespace eirini-test
-  kubectl --namespace eirini-test delete secret test-secret || true
+
+  kubectl --namespace eirini-test create configmap test-config --from-literal="TEST_SCRIPT=$TEST_SCRIPT"
   kubectl --namespace eirini-test create secret generic test-secret --from-literal="EIRINIUSER_PASSWORD=${EIRINIUSER_PASSWORD}"
 
   kubectl apply -f "$SCRIPT_DIR/assets/kinda-run-tests/test-job.yml"
