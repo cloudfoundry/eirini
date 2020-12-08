@@ -26,7 +26,7 @@ spec:
         command:
         - /bin/bash
         - -c
-        - "cd $EIRINI_DIR && $TEST_SCRIPT"
+        - "cd $EIRINI_DIR && $TEST_SCRIPT run"
         volumeMounts:
         - name: eirini-code
           mountPath: /eirini

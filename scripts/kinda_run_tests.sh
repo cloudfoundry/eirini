@@ -8,7 +8,7 @@ readonly CLUSTER_NAME="run-tests"
 readonly TMP_DIR="$(mktemp -d)"
 readonly KIND_CONF="${TMP_DIR}/kind-config-run-tests"
 readonly EIRINIUSER_PASSWORD=${EIRINIUSER_PASSWORD:-}
-readonly TEST_SCRIPT=${TEST_SCRIPT:-"scripts/run_unit_tests.sh"}
+readonly TEST_SCRIPT=${TEST_SCRIPT:-"scripts/run_integration_tests.sh"}
 
 trap "rm -rf $TMP_DIR" EXIT
 
@@ -16,7 +16,8 @@ main() {
   ensure_kind_cluster
   cleanup
 
-  run_integration_tests
+  build_tests
+  run_tests
 }
 
 cleanup() {
@@ -50,7 +51,11 @@ EOF
   kind export kubeconfig --name "$CLUSTER_NAME" --kubeconfig "$HOME/.kube/$CLUSTER_NAME.yml"
 }
 
-run_integration_tests() {
+build_tests() {
+  "$TEST_SCRIPT" build
+}
+
+run_tests() {
   local pod_name
 
   kubectl create namespace eirini-test

@@ -13,13 +13,28 @@ if [[ "${NODES:-}" != "" ]]; then
   nodes="-nodes $NODES"
 fi
 
-main() {
+build() {
+  ginkgo build -mod=vendor -r
+}
+
+run() {
   export EIRINI_BINS_PATH
   EIRINI_BINS_PATH=$(mktemp -d)
   trap "rm -rf $EIRINI_BINS_PATH" EXIT
 
+  ginkgo -mod=vendor -r -p $nodes -keepGoing -randomizeAllSpecs -randomizeSuites -timeout=20m "$@" $(find . -name "*.test")
+}
+
+main() {
+  action=${1:-"run"}
+  if [ $# -gt 0 ]; then
+    shift
+  fi
+
   pushd "$BASEDIR"/tests/integration >/dev/null || exit 1
-  ginkgo -mod=vendor -p $nodes -r -keepGoing -tags=integration -randomizeAllSpecs -randomizeSuites -timeout=20m "$@"
+  {
+    ${action}
+  }
   popd >/dev/null || exit 1
 }
 
