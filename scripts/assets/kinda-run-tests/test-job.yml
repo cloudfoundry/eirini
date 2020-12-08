@@ -15,14 +15,11 @@ spec:
         env:
         - name: EIRINI_DIR
           value: "/eirini"
-        - name: TEST_SCRIPT
-          valueFrom:
-            configMapKeyRef:
-              name: test-config
-              key: TEST_SCRIPT
         envFrom:
         - secretRef:
             name: test-secret
+        - configMapRef:
+            name: test-config
         command:
         - /bin/bash
         - -c

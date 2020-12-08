@@ -6,11 +6,15 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pw
 readonly EIRINI_DIR="$(readlink -f $SCRIPT_DIR/..)"
 readonly CLUSTER_NAME="run-tests"
 readonly TMP_DIR="$(mktemp -d)"
+readonly EIRINI_BINS="$EIRINI_DIR/tmp"
 readonly KIND_CONF="${TMP_DIR}/kind-config-run-tests"
 readonly EIRINIUSER_PASSWORD=${EIRINIUSER_PASSWORD:-}
 readonly TEST_SCRIPT=${TEST_SCRIPT:-"scripts/run_integration_tests.sh"}
 
 trap "rm -rf $TMP_DIR" EXIT
+
+mkdir -p "$EIRINI_BINS"
+trap "rm -rf $EIRINI_BINS" EXIT
 
 main() {
   ensure_kind_cluster
@@ -52,7 +56,7 @@ EOF
 }
 
 build_tests() {
-  "$TEST_SCRIPT" build
+  EIRINI_BINS_PATH="$EIRINI_BINS" "$TEST_SCRIPT" build
 }
 
 run_tests() {
@@ -60,8 +64,12 @@ run_tests() {
 
   kubectl create namespace eirini-test
 
-  kubectl --namespace eirini-test create configmap test-config --from-literal="TEST_SCRIPT=$TEST_SCRIPT"
-  kubectl --namespace eirini-test create secret generic test-secret --from-literal="EIRINIUSER_PASSWORD=${EIRINIUSER_PASSWORD}"
+  kubectl --namespace eirini-test create configmap test-config \
+    --from-literal="TEST_SCRIPT=$TEST_SCRIPT" \
+    --from-literal="EIRINI_BINS_PATH=/eirini/tmp"
+
+  kubectl --namespace eirini-test create secret generic test-secret \
+    --from-literal="EIRINIUSER_PASSWORD=${EIRINIUSER_PASSWORD}"
 
   kubectl apply -f "$SCRIPT_DIR/assets/kinda-run-tests/test-job.yml"
 

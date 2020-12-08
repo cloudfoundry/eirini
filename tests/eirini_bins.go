@@ -137,6 +137,10 @@ func (b *Binary) Build() {
 }
 
 func (b *Binary) buildIfNecessary() {
+	if _, err := os.Stat(b.BinPath); err == nil {
+		return
+	}
+
 	lock := flock.New(b.BinPath + ".lock")
 	err := lock.Lock()
 	Expect(err).NotTo(HaveOccurred())
