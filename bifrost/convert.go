@@ -92,6 +92,7 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 		SpaceGUID:              request.SpaceGUID,
 		LRPIdentifier:          identifier,
 		ProcessType:            request.ProcessType,
+		PlacementTags:          request.PlacementTags,
 		Image:                  lrpLifecycleOptions.image,
 		TargetInstances:        request.NumInstances,
 		Command:                lrpLifecycleOptions.command,

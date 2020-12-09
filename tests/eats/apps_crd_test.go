@@ -140,6 +140,41 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 			}).Should(Equal(int32(1)))
 		})
 
+		When("the app has placement tags", func() {
+			BeforeEach(func() {
+				lrp.Spec.PlacementTags = []string{"segment-2", "segment-76"}
+			})
+
+			It("sets node affinity for the app", func() {
+				Eventually(getStatefulSet).ShouldNot(BeNil())
+				statefulset := getStatefulSet()
+
+				Expect(statefulset.Spec.Template.Spec.Affinity).ToNot(BeNil())
+				Expect(statefulset.Spec.Template.Spec.Affinity.NodeAffinity).ToNot(BeNil())
+
+				nodeAffinity := statefulset.Spec.Template.Spec.Affinity.NodeAffinity
+				Expect(nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution).To(BeEmpty())
+
+				nodeSelectorTerms := nodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms
+				Expect(nodeSelectorTerms).To(ConsistOf(
+					corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{{
+							Key:      "segment-76",
+							Operator: corev1.NodeSelectorOpIn,
+							Values:   []string{""},
+						}},
+					},
+					corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{{
+							Key:      "segment-2",
+							Operator: corev1.NodeSelectorOpIn,
+							Values:   []string{""},
+						}},
+					},
+				))
+			})
+		})
+
 		When("the the app has sidecars", func() {
 			assertEqualValues := func(actual, expected *resource.Quantity) {
 				Expect(actual.Value()).To(Equal(expected.Value()))

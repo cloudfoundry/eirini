@@ -302,6 +302,41 @@ var _ = Describe("Statefulset Desirer", func() {
 			Expect(pdbClient.CreateCallCount()).To(BeZero())
 		})
 
+		It("should not set node affinity", func() {
+			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
+			Expect(statefulSet.Spec.Template.Spec.Affinity.NodeAffinity).To(BeNil())
+		})
+
+		When("placement tags are set", func() {
+			BeforeEach(func() {
+				lrp.PlacementTags = []string{"segment-2", "segment-1"}
+			})
+
+			It("should set isolation segment node affinity", func() {
+				_, statefulSet := statefulSetClient.CreateArgsForCall(0)
+				nodeAffinity := statefulSet.Spec.Template.Spec.Affinity.NodeAffinity
+				Expect(nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution).To(BeEmpty())
+
+				nodeSelectorTerms := nodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms
+				Expect(nodeSelectorTerms).To(ConsistOf(
+					corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{{
+							Key:      "segment-1",
+							Operator: corev1.NodeSelectorOpIn,
+							Values:   []string{""},
+						}},
+					},
+					corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{{
+							Key:      "segment-2",
+							Operator: corev1.NodeSelectorOpIn,
+							Values:   []string{""},
+						}},
+					},
+				))
+			})
+		})
+
 		It("should set soft inter-pod anti-affinity", func() {
 			_, statefulSet := statefulSetClient.CreateArgsForCall(0)
 			podAntiAffinity := statefulSet.Spec.Template.Spec.Affinity.PodAntiAffinity

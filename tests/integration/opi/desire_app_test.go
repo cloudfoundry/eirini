@@ -165,6 +165,56 @@ var _ = Describe("Desire App", func() {
 		})
 	})
 
+	When("placement tags are specified", func() {
+		BeforeEach(func() {
+			body = `{
+				"guid": "the-app-guid",
+				"version": "0.0.0",
+				"ports" : [8080],
+				"disk_mb": 512,
+				"lifecycle": {
+					"docker_lifecycle": {
+						"image": "eirini/busybox",
+						"command": ["/bin/sleep", "100"]
+					}
+				},
+				"instances": 1,
+				"placement_tags": ["segment-2", "segment-1"]
+			}`
+		})
+
+		It("returns a 202 Accepted HTTP code", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+		})
+
+		It("sets node affinity rules on the pod spec", func() {
+			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(statefulsets.Items).To(HaveLen(1))
+			nodeAffinity := statefulsets.Items[0].Spec.Template.Spec.Affinity.NodeAffinity
+			Expect(nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution).To(BeEmpty())
+
+			nodeSelectorTerms := nodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms
+			Expect(nodeSelectorTerms).To(ConsistOf(
+				corev1.NodeSelectorTerm{
+					MatchExpressions: []corev1.NodeSelectorRequirement{{
+						Key:      "segment-1",
+						Operator: corev1.NodeSelectorOpIn,
+						Values:   []string{""},
+					}},
+				},
+				corev1.NodeSelectorTerm{
+					MatchExpressions: []corev1.NodeSelectorRequirement{{
+						Key:      "segment-2",
+						Operator: corev1.NodeSelectorOpIn,
+						Values:   []string{""},
+					}},
+				},
+			))
+		})
+	})
+
 	Describe("automounting serviceacccount token", func() {
 		const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
 		var podMountPaths []string

@@ -116,6 +116,11 @@ func (in *LRPSpec) DeepCopyInto(out *LRPSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.PlacementTags != nil {
+		in, out := &in.PlacementTags, &out.PlacementTags
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.PrivateRegistry != nil {
 		in, out := &in.PrivateRegistry, &out.PrivateRegistry
 		*out = new(PrivateRegistry)

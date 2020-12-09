@@ -37,6 +37,7 @@ type LRP struct {
 	Command                []string
 	Sidecars               []Sidecar
 	PrivateRegistry        *PrivateRegistry
+	PlacementTags          []string
 	Env                    map[string]string
 	Health                 Healtcheck
 	Ports                  []int32

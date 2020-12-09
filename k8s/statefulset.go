@@ -623,6 +623,29 @@ func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP)
 		},
 	}
 
+	if len(lrp.PlacementTags) > 0 {
+		nodeSelectorTerms := []corev1.NodeSelectorTerm{}
+
+		for _, tag := range lrp.PlacementTags {
+			term := corev1.NodeSelectorTerm{
+				MatchExpressions: []corev1.NodeSelectorRequirement{
+					{
+						Key:      tag,
+						Operator: corev1.NodeSelectorOpIn,
+						Values:   []string{""},
+					},
+				},
+			}
+			nodeSelectorTerms = append(nodeSelectorTerms, term)
+		}
+
+		statefulSet.Spec.Template.Spec.Affinity.NodeAffinity = &corev1.NodeAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+				NodeSelectorTerms: nodeSelectorTerms,
+			},
+		}
+	}
+
 	labels := map[string]string{
 		LabelOrgGUID:     lrp.OrgGUID,
 		LabelOrgName:     lrp.OrgName,

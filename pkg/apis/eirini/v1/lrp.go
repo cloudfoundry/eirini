@@ -30,6 +30,7 @@ type LRPSpec struct {
 	Image                  string            `json:"image"`
 	Command                []string          `json:"command,omitempty"`
 	Sidecars               []Sidecar         `json:"sidecars,omitempty"`
+	PlacementTags          []string          `json:"placement_tags,omitempty"`
 	PrivateRegistry        *PrivateRegistry  `json:"privateRegistry,omitempty"`
 	Env                    map[string]string `json:"env,omitempty"`
 	Health                 Healtcheck        `json:"health"`
