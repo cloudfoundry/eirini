@@ -9,7 +9,7 @@ readonly TMP_DIR="$(mktemp -d)"
 readonly EIRINI_BINS="$EIRINI_DIR/tmp"
 readonly KIND_CONF="${TMP_DIR}/kind-config-run-tests"
 readonly EIRINIUSER_PASSWORD=${EIRINIUSER_PASSWORD:-}
-readonly TEST_SCRIPT=${TEST_SCRIPT:-"scripts/run_integration_tests.sh"}
+readonly TEST_SCRIPT="$@"
 
 trap "rm -rf $TMP_DIR" EXIT
 
@@ -20,16 +20,17 @@ main() {
   ensure_kind_cluster
   cleanup
 
-  build_tests
   run_tests
 }
 
 cleanup() {
-  kubectl delete namespace eirini-test || true
+  kubectl delete --wait=true -f "$SCRIPT_DIR/assets/kinda-run-tests/test-job.yml" || true
+  kubectl --namespace eirini-test delete configmap test-config || true
+  kubectl --namespace eirini-test delete secret test-secret || true
 
   for ns in $(kubectl get namespaces | grep "opi-integration-test" | awk '{ print $1 }'); do
     echo Deleting leftover namespace $ns
-    kubectl delete namespace --wait=false "$ns"
+    kubectl delete namespace --wait=false "$ns" || true
   done
 }
 
@@ -44,7 +45,7 @@ nodes:
   extraMounts:
   - containerPath: /eirini
     hostPath: $EIRINI_DIR
-    readOnly: false
+    readOnly: true
 EOF
     kind create cluster --name "$CLUSTER_NAME" --config "$KIND_CONF" --wait 5m
 
@@ -55,18 +56,14 @@ EOF
   kind export kubeconfig --name "$CLUSTER_NAME" --kubeconfig "$HOME/.kube/$CLUSTER_NAME.yml"
 }
 
-build_tests() {
-  EIRINI_BINS_PATH="$EIRINI_BINS" "$TEST_SCRIPT" build
-}
-
 run_tests() {
   local pod_name
 
-  kubectl create namespace eirini-test
+  kubectl apply -f "$SCRIPT_DIR/assets/kinda-run-tests/namespace.yml"
+  kubectl apply -f "$SCRIPT_DIR/assets/kinda-run-tests/go-cache-pvc.yml"
 
   kubectl --namespace eirini-test create configmap test-config \
-    --from-literal="TEST_SCRIPT=$TEST_SCRIPT" \
-    --from-literal="EIRINI_BINS_PATH=/eirini/tmp"
+    --from-literal="TEST_SCRIPT=$TEST_SCRIPT"
 
   kubectl --namespace eirini-test create secret generic test-secret \
     --from-literal="EIRINIUSER_PASSWORD=${EIRINIUSER_PASSWORD}"

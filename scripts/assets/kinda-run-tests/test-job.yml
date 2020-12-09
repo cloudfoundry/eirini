@@ -13,8 +13,6 @@ spec:
       - name: tests
         image: eirini/ci
         env:
-        - name: EIRINI_DIR
-          value: "/eirini"
         envFrom:
         - secretRef:
             name: test-secret
@@ -23,16 +21,21 @@ spec:
         command:
         - /bin/bash
         - -c
-        - "cd $EIRINI_DIR && $TEST_SCRIPT run"
+        - "/eirini/scripts/assets/kinda-run-tests/prepare_test_run.sh"
         volumeMounts:
         - name: eirini-code
           mountPath: /eirini
+        - name: go-cache
+          mountPath: /root/.cache/go-build
       restartPolicy: Never
       volumes:
       - name: eirini-code
         hostPath:
           path: /eirini
           type: Directory
+      - name: go-cache
+        persistentVolumeClaim:
+          claimName: go-cache
 ---
 apiVersion: v1
 kind: ServiceAccount
