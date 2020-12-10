@@ -34,7 +34,7 @@ require (
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/containerd/continuity v0.0.0-20201201154230-62ef0fffa6a1 // indirect
 	github.com/containers/image v3.0.2+incompatible
-	github.com/containers/storage v1.23.5 // indirect
+	github.com/containers/image/v5 v5.9.0
 	github.com/deckarep/golang-set v1.7.1
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
@@ -68,7 +68,7 @@ require (
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.3
-	github.com/opencontainers/image-spec v1.0.1
+	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.8.0 // indirect
 	github.com/prometheus/common v0.15.0 // indirect
