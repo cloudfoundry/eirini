@@ -75,13 +75,13 @@ var _ = Describe("RouteStatefulSetInformer", func() {
 
 	When("config is missing kubeconfig path", func() {
 		BeforeEach(func() {
-			config.ConfigPath = ""
+			config.ConfigPath = "foo"
 		})
 
 		It("fails", func() {
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).NotTo(BeZero())
-			Expect(session.Err).To(gbytes.Say("Failed to get kubeconfig: invalid configuration: no configuration has been provided"))
+			Expect(session.Err).To(gbytes.Say("foo: no such file or directory"))
 		})
 	})
 })

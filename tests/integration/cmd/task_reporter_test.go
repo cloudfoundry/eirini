@@ -55,15 +55,15 @@ var _ = Describe("TaskReporter", func() {
 		})
 	})
 
-	When("config is missing kubeconfig path", func() {
+	When("nonexistent kubeconfig path is provided", func() {
 		BeforeEach(func() {
-			config.ConfigPath = ""
+			config.ConfigPath = "foo"
 		})
 
 		It("fails", func() {
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).NotTo(BeZero())
-			Expect(session.Err).To(gbytes.Say("invalid configuration: no configuration has been provided"))
+			Expect(session.Err).To(gbytes.Say("foo: no such file or directory"))
 		})
 	})
 

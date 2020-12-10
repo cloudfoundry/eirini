@@ -48,9 +48,6 @@ var _ = Describe("connect command", func() {
 	})
 
 	JustBeforeEach(func() {
-		configFile, err := tests.CreateConfigFile(config)
-		Expect(err).ToNot(HaveOccurred())
-		configFilePath = configFile.Name()
 		session, configFilePath = eiriniBins.OPI.Run(config)
 	})
 
@@ -138,27 +135,29 @@ var _ = Describe("connect command", func() {
 		})
 	})
 
-	When("config is missing kubeconfig path", func() {
+	When("nonexistent kubeconfig path is provided", func() {
 		BeforeEach(func() {
-			config.Properties.ConfigPath = ""
+			config.Properties.ConfigPath = "foo"
 		})
 
 		It("fails", func() {
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).NotTo(BeZero())
-			Expect(session.Err).To(gbytes.Say("invalid configuration: no configuration has been provided"))
+			Expect(session.Err).To(gbytes.Say("foo: no such file or directory"))
 		})
 	})
 
-	Context("invoke connect command with an empty config", func() {
+	Context("invoke connect command with a nonexistent config", func() {
+		var failingSession *gexec.Session
+
 		BeforeEach(func() {
-			config = nil
+			failingSession = eiriniBins.OPI.RunWithConfig("foo")
 		})
 
 		It("fails", func() {
-			Eventually(session, "10s").Should(gexec.Exit())
-			Expect(session.ExitCode()).NotTo(BeZero())
-			Expect(session.Err).To(gbytes.Say("invalid configuration: no configuration has been provided"))
+			Eventually(failingSession, "10s").Should(gexec.Exit())
+			Expect(failingSession.ExitCode()).NotTo(BeZero())
+			Expect(failingSession.Err).To(gbytes.Say("foo: no such file or directory"))
 		})
 	})
 

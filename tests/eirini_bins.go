@@ -91,8 +91,6 @@ func NewBinary(packagePath, binsPath string, extraArgs []string) Binary {
 }
 
 func (b *Binary) Run(config interface{}, envVars ...string) (*gexec.Session, string) {
-	b.buildIfNecessary()
-
 	configBytes, err := yaml.Marshal(config)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -101,10 +99,12 @@ func (b *Binary) Run(config interface{}, envVars ...string) (*gexec.Session, str
 		configFile = WriteTempFile(configBytes, filepath.Base(b.BinPath)+"-config.yaml")
 	}
 
-	return b.runWithConfig(configFile, envVars...), configFile
+	return b.RunWithConfig(configFile, envVars...), configFile
 }
 
-func (b *Binary) runWithConfig(configFilePath string, envVars ...string) *gexec.Session {
+func (b *Binary) RunWithConfig(configFilePath string, envVars ...string) *gexec.Session {
+	b.buildIfNecessary()
+
 	args := b.ExtraArgs
 	if configFilePath != "" {
 		args = append(args, "-c", configFilePath)
@@ -122,7 +122,7 @@ func (b *Binary) Restart(configFilePath string, runningSession *gexec.Session) *
 	envVars := runningSession.Command.Env
 	runningSession.Kill().Wait()
 
-	return b.runWithConfig(configFilePath, envVars...)
+	return b.RunWithConfig(configFilePath, envVars...)
 }
 
 // Build builds the binary. Normally, you should not use this function as it is
