@@ -68,7 +68,7 @@ func GetEiriniAddress() string {
 
 func lookupOptionalEnv(key string) string {
 	value, set := os.LookupEnv(key)
-	if !set {
+	if !set || value == "" {
 		Skip("Please export optional environment variable " + key + " to run this test")
 	}
 
