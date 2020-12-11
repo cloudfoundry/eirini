@@ -2,7 +2,7 @@
 
 ARG baseimage=cloudfoundry/run:tiny
 
-FROM golang:1.15.5 as builder
+FROM golang:1.15.6 as builder
 WORKDIR /eirini/
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/go-build \

@@ -10,8 +10,8 @@ replace (
 )
 
 require (
-	cloud.google.com/go v0.72.0 // indirect
-	code.cloudfoundry.org/bbs v0.0.0-20200615191359-7b6fa295fa8d // indirect
+	cloud.google.com/go v0.74.0 // indirect
+	code.cloudfoundry.org/bbs v0.0.0-20201203185820-4070ad0e44b1 // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/clock v1.0.0 // indirect
 	code.cloudfoundry.org/consuladapter v0.0.0-20200131002136-ac1daf48ba97 // indirect
@@ -29,15 +29,16 @@ require (
 	code.cloudfoundry.org/tlsconfig v0.0.0-20200131000646-bbe0f8da39b3
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
-	github.com/Azure/go-autorest/autorest v0.11.12 // indirect
-	github.com/Microsoft/go-winio v0.4.15 // indirect
+	github.com/Azure/go-autorest/autorest v0.11.13 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.9.9 // indirect
+	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/cloudflare/cfssl v1.5.0 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
-	github.com/containerd/continuity v0.0.0-20201201154230-62ef0fffa6a1 // indirect
 	github.com/containers/image v3.0.2+incompatible
 	github.com/containers/storage v1.23.5 // indirect
 	github.com/deckarep/golang-set v1.7.1
 	github.com/docker/distribution v2.7.1+incompatible
+	github.com/docker/docker v20.10.0+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
@@ -47,7 +48,6 @@ require (
 	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/google/certificate-transparency-go v1.1.1 // indirect
-	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
@@ -68,39 +68,33 @@ require (
 	github.com/nats-io/nats.go v1.10.0
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/onsi/ginkgo v1.14.2
-	github.com/onsi/gomega v1.10.3
+	github.com/onsi/gomega v1.10.4
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.8.0 // indirect
 	github.com/prometheus/common v0.15.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
-	github.com/spf13/afero v1.4.1 // indirect
+	github.com/spf13/afero v1.5.1 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	github.com/urfave/cli v1.22.5 // indirect
-	github.com/zmap/zcrypto v0.0.0-20201128221613-3719af1573cf // indirect
+	github.com/zmap/zcrypto v0.0.0-20201208175039-946fec672f0a // indirect
 	go.uber.org/zap v1.16.0
-	golang.org/x/mod v0.4.0 // indirect
-	golang.org/x/net v0.0.0-20201201195509-5d6afe98e0b7 // indirect
-	golang.org/x/oauth2 v0.0.0-20201109201403-9fd604954f58 // indirect
-	golang.org/x/sys v0.0.0-20201201145000-ef89a241ccb3 // indirect
-	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1 // indirect
-	golang.org/x/tools v0.0.0-20201201210846-92771a23d8e3 // indirect
+	golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9 // indirect
+	golang.org/x/sys v0.0.0-20201211090839-8ad439b19e0f // indirect
+	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
+	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324 // indirect
+	golang.org/x/tools v0.0.0-20201211025543-abf6a1d87e11 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
-	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20201201144952-b05cb90ed32e // indirect
-	google.golang.org/grpc v1.33.2
+	google.golang.org/grpc v1.34.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.19.4
-	k8s.io/apiextensions-apiserver v0.19.4 // indirect
-	k8s.io/apimachinery v0.19.4
+	k8s.io/api v0.20.0
+	k8s.io/apiextensions-apiserver v0.20.0 // indirect
+	k8s.io/apimachinery v0.20.0
 	k8s.io/client-go v1.5.1
-	k8s.io/code-generator v0.19.4
+	k8s.io/code-generator v0.20.0
 	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.4.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd // indirect
-	k8s.io/metrics v0.19.4
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920 // indirect
+	k8s.io/metrics v0.20.0
 	sigs.k8s.io/controller-runtime v0.6.4
 )
