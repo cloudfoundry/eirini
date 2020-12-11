@@ -823,7 +823,7 @@ gopkg.in/tomb.v1
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 gopkg.in/yaml.v3
-# k8s.io/api v0.19.4
+# k8s.io/api v0.19.4 => k8s.io/api v0.19.2
 ## explicit
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1
@@ -1260,4 +1260,5 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 # github.com/coreos/bbolt => github.com/coreos/bbolt v1.3.0
 # google.golang.org/grpc => google.golang.org/grpc v1.29.1
+# k8s.io/api => k8s.io/api v0.19.2
 # k8s.io/client-go => k8s.io/client-go v0.19.2
