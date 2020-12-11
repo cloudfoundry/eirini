@@ -51,11 +51,13 @@ var _ = Describe("Events", func() {
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: fixture.KubeConfigPath,
 			},
-			WorkloadsNamespace: fixture.Namespace,
-			CcInternalAPI:      capiServer.URL(),
-			CCCertPath:         certPath,
-			CCKeyPath:          keyPath,
-			CCCAPath:           certPath,
+			WorkloadsNamespace:      fixture.Namespace,
+			CcInternalAPI:           capiServer.URL(),
+			CCCertPath:              certPath,
+			CCKeyPath:               keyPath,
+			CCCAPath:                certPath,
+			LeaderElectionID:        fmt.Sprintf("test-event-reporter-%d", GinkgoParallelNode()),
+			LeaderElectionNamespace: fixture.Namespace,
 		}
 	})
 
@@ -154,9 +156,11 @@ var _ = Describe("Events", func() {
 						KubeConfig: eirini.KubeConfig{
 							ConfigPath: fixture.KubeConfigPath,
 						},
-						WorkloadsNamespace: fixture.Namespace,
-						CcInternalAPI:      noTLSCapiServer.URL(),
-						CCTLSDisabled:      true,
+						WorkloadsNamespace:      fixture.Namespace,
+						CcInternalAPI:           noTLSCapiServer.URL(),
+						CCTLSDisabled:           true,
+						LeaderElectionID:        fmt.Sprintf("test-event-reporter-%d", GinkgoParallelNode()),
+						LeaderElectionNamespace: fixture.Namespace,
 					}
 				})
 

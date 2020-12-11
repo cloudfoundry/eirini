@@ -69,8 +69,9 @@ func main() {
 		LeaderElectionID:   "eirini-controller-leader",
 	}
 
-	if cmdcommons.RunningOutsideCluster(eiriniCfg.Properties.ConfigPath) {
-		managerOptions.LeaderElectionNamespace = "default"
+	if eiriniCfg.LeaderElectionID != "" {
+		managerOptions.LeaderElectionNamespace = eiriniCfg.LeaderElectionNamespace
+		managerOptions.LeaderElectionID = eiriniCfg.LeaderElectionID
 	}
 
 	mgr, err := manager.New(kubeConfig, managerOptions)

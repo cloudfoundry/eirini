@@ -37,6 +37,8 @@ var _ = Describe("Tasks completion", func() {
 			CCKeyPath:                    keyPath,
 			CompletionCallbackRetryLimit: 3,
 			TTLSeconds:                   600,
+			LeaderElectionID:             fmt.Sprintf("test-task-reporter-%d", GinkgoParallelNode()),
+			LeaderElectionNamespace:      fixture.Namespace,
 		}
 	})
 

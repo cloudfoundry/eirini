@@ -74,7 +74,3 @@ func GetExistingFile(path, defaultPath, name string) string {
 
 	return path
 }
-
-func RunningOutsideCluster(kubeConfigPath string) bool {
-	return kubeConfigPath != ""
-}

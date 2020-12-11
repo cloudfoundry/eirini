@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"fmt"
 	"os"
 
 	"code.cloudfoundry.org/eirini"
@@ -22,10 +23,12 @@ var _ = Describe("EventReporter", func() {
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: fixture.KubeConfigPath,
 			},
-			CcInternalAPI: "doesitmatter.com",
-			CCCertPath:    pathToTestFixture("cert"),
-			CCCAPath:      pathToTestFixture("cert"),
-			CCKeyPath:     pathToTestFixture("key"),
+			CcInternalAPI:           "doesitmatter.com",
+			CCCertPath:              pathToTestFixture("cert"),
+			CCCAPath:                pathToTestFixture("cert"),
+			CCKeyPath:               pathToTestFixture("key"),
+			LeaderElectionID:        fmt.Sprintf("test-event-reporter-%d", GinkgoParallelNode()),
+			LeaderElectionNamespace: fixture.Namespace,
 		}
 	})
 

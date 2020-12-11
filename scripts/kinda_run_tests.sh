@@ -24,9 +24,7 @@ main() {
 }
 
 cleanup() {
-  kubectl delete --wait=true -f "$SCRIPT_DIR/assets/kinda-run-tests/test-job.yml" || true
-  kubectl --namespace eirini-test delete configmap test-config || true
-  kubectl --namespace eirini-test delete secret test-secret || true
+  kubectl --namespace eirini-test delete job,configmap,secret --all --wait=true
 
   for ns in $(kubectl get namespaces | grep "opi-integration-test" | awk '{ print $1 }'); do
     echo Deleting leftover namespace $ns

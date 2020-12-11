@@ -75,9 +75,9 @@ func main() {
 		LeaderElectionID:   "task-reporter-leader",
 	}
 
-	if cmdcommons.RunningOutsideCluster(cfg.ConfigPath) {
-		mgrOptions.LeaderElectionNamespace = "default"
-		mgrOptions.LeaderElectionID = "task-reporter-leader-" + cfg.WorkloadsNamespace
+	if cfg.LeaderElectionID != "" {
+		mgrOptions.LeaderElectionNamespace = cfg.LeaderElectionNamespace
+		mgrOptions.LeaderElectionID = cfg.LeaderElectionID
 	}
 
 	mgr, err := manager.New(kubeConfig, mgrOptions)

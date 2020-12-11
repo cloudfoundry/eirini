@@ -48,8 +48,10 @@ var ErrNotFound = errors.New("not found")
 var ErrInvalidInstanceIndex = errors.New("invalid instance index")
 
 type Config struct {
-	Properties         Properties `yaml:"opi"`
-	WorkloadsNamespace string
+	Properties              Properties `yaml:"opi"`
+	WorkloadsNamespace      string
+	LeaderElectionID        string
+	LeaderElectionNamespace string
 }
 
 type KubeConfig struct {
@@ -91,7 +93,9 @@ type EventReporterConfig struct {
 	CCKeyPath  string
 	CCCAPath   string
 
-	WorkloadsNamespace string
+	WorkloadsNamespace      string
+	LeaderElectionID        string
+	LeaderElectionNamespace string
 
 	KubeConfig `yaml:",inline"`
 }
@@ -124,6 +128,8 @@ type TaskReporterConfig struct {
 	CCCertPath                   string
 	CCKeyPath                    string
 	CAPath                       string
+	LeaderElectionID             string
+	LeaderElectionNamespace      string
 	CompletionCallbackRetryLimit int `yaml:"completion_callback_retry_limit"`
 	TTLSeconds                   int `yaml:"ttl_seconds"`
 

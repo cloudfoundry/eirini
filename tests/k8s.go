@@ -13,6 +13,7 @@ import (
 	"code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/tlsconfig"
+	"github.com/onsi/ginkgo"
 	ginkgoconfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -223,7 +224,9 @@ func MakeTestHTTPClient() (*http.Client, error) {
 
 func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 	return &eirini.Config{
-		WorkloadsNamespace: namespace,
+		WorkloadsNamespace:      namespace,
+		LeaderElectionID:        fmt.Sprintf("test-eirini-%d", ginkgo.GinkgoParallelNode()),
+		LeaderElectionNamespace: namespace,
 		Properties: eirini.Properties{
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: GetKubeconfig(),
