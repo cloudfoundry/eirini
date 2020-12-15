@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/bifrost"
-	"github.com/containers/image/types"
+	"github.com/containers/image/v5/types"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 

@@ -102,6 +102,34 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	FDescribe("Desiring windows app", func() {
+		var (
+			clientErr   error
+			serviceName string
+		)
+
+		BeforeEach(func() {
+			serviceName = ""
+			lrp.Spec.Image = "mcr.microsoft.com/windows/servercore/iis:windowsservercore-ltsc2019"
+		})
+
+		AfterEach(func() {
+			unexposeLRP(fixture.Namespace, serviceName)
+		})
+
+		JustBeforeEach(func() {
+			_, clientErr = fixture.EiriniClientset.
+				EiriniV1().
+				LRPs(namespace).
+				Create(context.Background(), lrp, metav1.CreateOptions{})
+		})
+
+		It("succeeds", func() {
+			Expect(clientErr).NotTo(HaveOccurred())
+			serviceName = exposeLRP(fixture.Namespace, lrp.Spec.GUID, 80, "/")
+		})
+	})
+
 	Describe("Desiring an app", func() {
 		var clientErr error
 

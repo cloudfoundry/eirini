@@ -557,7 +557,7 @@ func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP)
 	readinessProbe := m.ReadinessProbeCreator(lrp)
 
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
-	allowPrivilegeEscalation := false
+	// allowPrivilegeEscalation := false
 	imagePullSecrets := m.calculateImagePullSecrets(statefulSetName, lrp)
 
 	containers := []corev1.Container{
@@ -568,9 +568,9 @@ func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP)
 			Command:         lrp.Command,
 			Env:             envs,
 			Ports:           ports,
-			SecurityContext: &corev1.SecurityContext{
-				AllowPrivilegeEscalation: &allowPrivilegeEscalation,
-			},
+			// SecurityContext: &corev1.SecurityContext{
+			// 	AllowPrivilegeEscalation: &allowPrivilegeEscalation,
+			// },
 			Resources:      getContainerResources(lrp.CPUWeight, lrp.MemoryMB, lrp.DiskMB),
 			LivenessProbe:  livenessProbe,
 			ReadinessProbe: readinessProbe,
@@ -589,9 +589,12 @@ func (m *StatefulSetDesirer) toStatefulSet(statefulSetName string, lrp *opi.LRP)
 			Replicas:            int32ptr(lrp.TargetInstances),
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
-					Containers:         containers,
-					ImagePullSecrets:   imagePullSecrets,
-					SecurityContext:    m.getGetSecurityContext(lrp),
+					NodeSelector: map[string]string{
+						"kubernetes.io/os": "windows",
+					},
+					Containers:       containers,
+					ImagePullSecrets: imagePullSecrets,
+					// SecurityContext:    m.getGetSecurityContext(lrp),
 					ServiceAccountName: m.ApplicationServiceAccount,
 					Volumes:            volumes,
 				},

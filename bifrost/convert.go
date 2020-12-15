@@ -9,7 +9,7 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
-	"github.com/containers/image/types"
+	"github.com/containers/image/v5/types"
 	"github.com/pkg/errors"
 )
 
