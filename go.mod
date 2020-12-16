@@ -7,6 +7,7 @@ replace (
 	google.golang.org/grpc => google.golang.org/grpc v1.29.1
 	k8s.io/api => k8s.io/api v0.19.2
 	k8s.io/client-go => k8s.io/client-go v0.19.2
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.6.4
 )
 
 require (
@@ -96,5 +97,5 @@ require (
 	k8s.io/code-generator v0.20.0
 	k8s.io/klog v1.0.0
 	k8s.io/metrics v0.20.0
-	sigs.k8s.io/controller-runtime v0.6.4
+	sigs.k8s.io/controller-runtime v0.6.3
 )
