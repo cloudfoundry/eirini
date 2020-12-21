@@ -3,6 +3,7 @@ package k8s_test
 import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
@@ -24,7 +25,7 @@ var _ = Describe("Metrics", func() {
 
 	Describe("Collect", func() {
 		var (
-			podClient        *k8sfakes.FakePodClient
+			podsGetter       *k8sfakes.FakePodsGetter
 			podMetricsClient *k8sfakes.FakePodMetricsInterface
 			collector        k8s.MetricsCollector
 			diskClient       *k8sfakes.FakeDiskAPI
@@ -32,11 +33,11 @@ var _ = Describe("Metrics", func() {
 		)
 
 		BeforeEach(func() {
-			podClient = new(k8sfakes.FakePodClient)
+			podsGetter = new(k8sfakes.FakePodsGetter)
 			podMetricsClient = new(k8sfakes.FakePodMetricsInterface)
 			diskClient = new(k8sfakes.FakeDiskAPI)
 			logger = lagertest.NewTestLogger("metrics-test")
-			collector = k8s.NewMetricsCollector(podMetricsClient, podClient, diskClient, logger)
+			collector = k8s.NewMetricsCollector(podMetricsClient, podsGetter, diskClient, logger)
 		})
 
 		When("all metrics are valid", func() {
@@ -50,7 +51,7 @@ var _ = Describe("Metrics", func() {
 				podMetricsClient.ListReturns(podMetrics, nil)
 
 				podList := []v1.Pod{*createPod(podName1), *createPod(podName2)}
-				podClient.GetAllReturns(podList, nil)
+				podsGetter.GetAllReturns(podList, nil)
 
 				diskClient.GetPodMetricsReturns(map[string]float64{
 					podName1: 50,
@@ -84,7 +85,7 @@ var _ = Describe("Metrics", func() {
 
 		When("there are no pods", func() {
 			It("should return empty list", func() {
-				podClient.GetAllReturns([]v1.Pod{}, nil)
+				podsGetter.GetAllReturns([]v1.Pod{}, nil)
 
 				podMetrics := metricsv1beta1api.PodMetricsList{
 					Items: []metricsv1beta1api.PodMetrics{createMetrics(podName1)},
@@ -107,7 +108,7 @@ var _ = Describe("Metrics", func() {
 				podMetricsClient.ListReturns(podMetrics, nil)
 
 				podList := []v1.Pod{*createPod(podName1)}
-				podClient.GetAllReturns(podList, nil)
+				podsGetter.GetAllReturns(podList, nil)
 
 				diskClient.GetPodMetricsReturns(nil, errors.New("oopsie"))
 			})
@@ -135,7 +136,7 @@ var _ = Describe("Metrics", func() {
 		})
 		When("listing pods returns an error", func() {
 			It("should return an error", func() {
-				podClient.GetAllReturns([]v1.Pod{}, errors.New("something done broke"))
+				podsGetter.GetAllReturns([]v1.Pod{}, errors.New("something done broke"))
 
 				collected, err := collector.Collect()
 				Expect(err).To(HaveOccurred())
@@ -149,7 +150,7 @@ var _ = Describe("Metrics", func() {
 					podName1: 50,
 				}, nil)
 
-				podClient.GetAllReturns([]v1.Pod{*createPod(podName1)}, nil)
+				podsGetter.GetAllReturns([]v1.Pod{*createPod(podName1)}, nil)
 
 				podMetrics := metricsv1beta1api.PodMetricsList{
 					Items: []metricsv1beta1api.PodMetrics{},
@@ -182,7 +183,7 @@ var _ = Describe("Metrics", func() {
 				podMetricsClient.ListReturns(podMetrics, nil)
 
 				podList := []v1.Pod{*createPod(podName1)}
-				podClient.GetAllReturns(podList, nil)
+				podsGetter.GetAllReturns(podList, nil)
 
 				collected, err := collector.Collect()
 				Expect(err).ToNot(HaveOccurred())
@@ -204,7 +205,7 @@ var _ = Describe("Metrics", func() {
 			It("should skip such pod", func() {
 				aPodHasNoIndex := "i-dont-have-an-index"
 
-				podClient.GetAllReturns([]v1.Pod{*createPod(aPodHasNoIndex), *createPod(podName2)}, nil)
+				podsGetter.GetAllReturns([]v1.Pod{*createPod(aPodHasNoIndex), *createPod(podName2)}, nil)
 
 				podMetrics := metricsv1beta1api.PodMetricsList{
 					Items: []metricsv1beta1api.PodMetrics{createMetrics(aPodHasNoIndex), createMetrics(podName2)},
@@ -233,7 +234,7 @@ var _ = Describe("Metrics", func() {
 		When("metrics client returns an error", func() {
 			BeforeEach(func() {
 				podList := []v1.Pod{*createPod(podName1)}
-				podClient.GetAllReturns(podList, nil)
+				podsGetter.GetAllReturns(podList, nil)
 				podMetricsClient.ListReturns(&metricsv1beta1api.PodMetricsList{}, errors.New("oopsie"))
 				diskClient.GetPodMetricsReturns(map[string]float64{
 					podName1: 50,
@@ -299,7 +300,7 @@ func createPod(podName string) *v1.Pod {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
 			Labels: map[string]string{
-				k8s.LabelGUID: podName,
+				stset.LabelGUID: podName,
 			},
 			UID: types.UID(podName + "-uid"),
 		},

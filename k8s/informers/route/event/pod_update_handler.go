@@ -3,8 +3,8 @@ package event
 import (
 	"encoding/json"
 
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/route"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/models/cf"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
@@ -26,7 +26,7 @@ type PodUpdateHandler struct {
 }
 
 func (h PodUpdateHandler) Handle(oldPod, updatedPod *corev1.Pod) {
-	loggerSession := h.Logger.Session("pod-update", lager.Data{"pod-name": updatedPod.Name, "guid": updatedPod.Annotations[k8s.AnnotationProcessGUID]})
+	loggerSession := h.Logger.Session("pod-update", lager.Data{"pod-name": updatedPod.Name, "guid": updatedPod.Annotations[stset.AnnotationProcessGUID]})
 
 	userDefinedRoutes, err := h.getUserDefinedRoutes(updatedPod)
 	if err != nil {
@@ -59,7 +59,7 @@ func (h PodUpdateHandler) Handle(oldPod, updatedPod *corev1.Pod) {
 }
 
 func (h PodUpdateHandler) unregisterPodRoutes(pod *corev1.Pod, userDefinedRoutes []cf.Route) {
-	loggerSession := h.Logger.Session("pod-delete", lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[k8s.AnnotationProcessGUID]})
+	loggerSession := h.Logger.Session("pod-delete", lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[stset.AnnotationProcessGUID]})
 
 	for _, r := range userDefinedRoutes {
 		routes, err := route.NewRouteMessage(
@@ -83,7 +83,7 @@ func (h PodUpdateHandler) getUserDefinedRoutes(pod *corev1.Pod) ([]cf.Route, err
 		return []cf.Route{}, errors.Wrap(err, "failed to get owner")
 	}
 
-	return decodeRoutes(owner.Annotations[k8s.AnnotationRegisteredRoutes])
+	return decodeRoutes(owner.Annotations[stset.AnnotationRegisteredRoutes])
 }
 
 func (h PodUpdateHandler) getOwner(pod *corev1.Pod) (*appsv1.StatefulSet, error) {

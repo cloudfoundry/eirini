@@ -7,6 +7,7 @@ import (
 
 	. "code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/k8sfakes"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
@@ -22,7 +23,7 @@ var _ = Describe("RouteCollector", func() {
 	var (
 		pods               []corev1.Pod
 		statefulsets       []appsv1.StatefulSet
-		podsClient         *k8sfakes.FakePodClient
+		podsGetter         *k8sfakes.FakePodsGetter
 		statefulSetGetter  *k8sfakes.FakeStatefulSetGetter
 		statefulset1       appsv1.StatefulSet
 		statefulset2       appsv1.StatefulSet
@@ -42,7 +43,7 @@ var _ = Describe("RouteCollector", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 				Labels: map[string]string{
-					LabelGUID: fmt.Sprintf("%s-guid", name),
+					stset.LabelGUID: fmt.Sprintf("%s-guid", name),
 				},
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: "apps/v1",
@@ -66,7 +67,7 @@ var _ = Describe("RouteCollector", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 				Annotations: map[string]string{
-					AnnotationRegisteredRoutes: routes,
+					stset.AnnotationRegisteredRoutes: routes,
 				},
 			},
 		}
@@ -88,14 +89,14 @@ var _ = Describe("RouteCollector", func() {
 		getPodsErr = nil
 		getStatefulSetsErr = nil
 
-		podsClient = new(k8sfakes.FakePodClient)
+		podsGetter = new(k8sfakes.FakePodsGetter)
 		statefulSetGetter = new(k8sfakes.FakeStatefulSetGetter)
 		logger = lagertest.NewTestLogger("collector-test")
-		collector = NewRouteCollector(podsClient, statefulSetGetter, logger)
+		collector = NewRouteCollector(podsGetter, statefulSetGetter, logger)
 	})
 
 	JustBeforeEach(func() {
-		podsClient.GetAllReturns(pods, getPodsErr)
+		podsGetter.GetAllReturns(pods, getPodsErr)
 		statefulSetGetter.GetBySourceTypeReturns(statefulsets, getStatefulSetsErr)
 		routeMessages, err = collector.Collect()
 	})
@@ -157,7 +158,7 @@ var _ = Describe("RouteCollector", func() {
 					{Hostname: "bar.example.com", Port: 443},
 				})
 				Expect(marshalErr).ToNot(HaveOccurred())
-				statefulsets[0].Annotations[AnnotationRegisteredRoutes] = string(routes)
+				statefulsets[0].Annotations[stset.AnnotationRegisteredRoutes] = string(routes)
 			})
 
 			It("should return a route message for each registered route", func() {
@@ -343,7 +344,7 @@ var _ = Describe("RouteCollector", func() {
 
 		Context("and a statefulset has invalid routes", func() {
 			BeforeEach(func() {
-				statefulsets[1].Annotations[AnnotationRegisteredRoutes] = "{invalid json"
+				statefulsets[1].Annotations[stset.AnnotationRegisteredRoutes] = "{invalid json"
 			})
 
 			It("should not return routes for that statefulset", func() {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
@@ -39,7 +39,7 @@ var _ = Describe("InstanceIndexEnvInjector [needs-logs-for: eirini-api, instance
 
 	getCFInstanceIndex := func(pod corev1.Pod) string {
 		for _, container := range pod.Spec.Containers {
-			if container.Name != k8s.OPIContainerName {
+			if container.Name != stset.OPIContainerName {
 				continue
 			}
 
@@ -61,7 +61,7 @@ var _ = Describe("InstanceIndexEnvInjector [needs-logs-for: eirini-api, instance
 		lrpGUID = tests.GenerateGUID()
 		lrpVersion = tests.GenerateGUID()
 		appListOpts = metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, lrpGUID, k8s.LabelVersion, lrpVersion),
+			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
 		}
 
 		lrp := &eiriniv1.LRP{

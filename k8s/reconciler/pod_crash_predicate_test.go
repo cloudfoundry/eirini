@@ -1,8 +1,8 @@
 package reconciler_test
 
 import (
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -27,7 +27,7 @@ var _ = Describe("PodCrashPredicate", func() {
 		p := corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: map[string]string{
-					k8s.LabelSourceType: "sic-mundus",
+					stset.LabelSourceType: "sic-mundus",
 				},
 			},
 		}
@@ -40,7 +40,7 @@ var _ = Describe("PodCrashPredicate", func() {
 		p := corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: map[string]string{
-					k8s.LabelSourceType: "very-wow-much-awesome",
+					stset.LabelSourceType: "very-wow-much-awesome",
 				},
 			},
 		}

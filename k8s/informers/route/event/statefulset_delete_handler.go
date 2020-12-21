@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
 	set "github.com/deckarep/golang-set"
@@ -22,7 +22,7 @@ type StatefulSetDeleteHandler struct {
 }
 
 func (h StatefulSetDeleteHandler) Handle(deletedStatefulSet *appsv1.StatefulSet) {
-	loggerSession := h.Logger.Session("statefulset-delete", lager.Data{"guid": deletedStatefulSet.Annotations[k8s.AnnotationProcessGUID]})
+	loggerSession := h.Logger.Session("statefulset-delete", lager.Data{"guid": deletedStatefulSet.Annotations[stset.AnnotationProcessGUID]})
 
 	routeSet, err := decodeRoutesAsSet(deletedStatefulSet)
 	if err != nil {

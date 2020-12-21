@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/lager"
@@ -36,7 +36,7 @@ func NewTask(logger lager.Logger, client client.Client, taskDesirer TaskDesirer,
 }
 
 type TaskDesirer interface {
-	Desire(namespace string, task *opi.Task, opts ...k8s.DesireOption) error
+	Desire(namespace string, task *opi.Task, opts ...shared.Option) error
 }
 
 func (t *Task) Reconcile(request reconcile.Request) (reconcile.Result, error) {

@@ -13,6 +13,8 @@ import (
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/eirini/stager/docker"
 	"code.cloudfoundry.org/eirini/util"
@@ -117,28 +119,21 @@ func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) *stager.Callb
 	return stager.NewCallbackStagingCompleter(logger, retryableJSONClient)
 }
 
-func initTaskDesirer(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.TaskDesirer {
+func initTaskClient(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.TaskClient {
 	logger := lager.NewLogger("task-desirer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	return k8s.NewTaskDesirer(
-		logger,
-		client.NewJob(clientset, cfg.WorkloadsNamespace),
-		client.NewSecret(clientset),
+	taskToJob := jobs.NewTaskToJob(
 		cfg.Properties.ApplicationServiceAccount,
 		cfg.Properties.RegistrySecretName,
 		cfg.Properties.UnsafeAllowAutomountServiceAccountToken,
 	)
-}
 
-func initTaskDeleter(clientset kubernetes.Interface, jobClient k8s.JobDeletingClient) *k8s.TaskDeleter {
-	logger := lager.NewLogger("task-desirer")
-	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
-
-	return k8s.NewTaskDeleter(
+	return k8s.NewTaskClient(
 		logger,
-		jobClient,
+		client.NewJob(clientset, cfg.WorkloadsNamespace),
 		client.NewSecret(clientset),
+		taskToJob,
 	)
 }
 
@@ -157,16 +152,14 @@ func initDockerStagingBifrost(cfg *eirini.Config) *bifrost.DockerStaging {
 
 func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.Task {
 	converter := initConverter(cfg)
-	taskDesirer := initTaskDesirer(cfg, clientset)
-	jobClient := client.NewJob(clientset, cfg.WorkloadsNamespace)
-	taskDeleter := initTaskDeleter(clientset, jobClient)
+	taskClient := initTaskClient(cfg, clientset)
 	retryableJSONClient := initRetryableJSONClient(cfg)
 	namespacer := bifrost.NewNamespacer(cfg.Properties.DefaultWorkloadsNamespace)
 
 	return &bifrost.Task{
 		Converter:   converter,
-		TaskDesirer: taskDesirer,
-		TaskDeleter: taskDeleter,
+		TaskDesirer: taskClient,
+		TaskDeleter: taskClient,
 		JSONClient:  retryableJSONClient,
 		Namespacer:  namespacer,
 	}
@@ -187,26 +180,30 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	desirer := &k8s.StatefulSetDesirer{
-		Pods:                              client.NewPod(clientset, cfg.WorkloadsNamespace),
-		Secrets:                           client.NewSecret(clientset),
-		StatefulSets:                      client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
-		PodDisruptionBudgets:              client.NewPodDisruptionBudget(clientset),
-		EventsClient:                      client.NewEvent(clientset),
-		StatefulSetToLRPMapper:            k8s.StatefulSetToLRP,
-		RegistrySecretName:                cfg.Properties.RegistrySecretName,
-		LivenessProbeCreator:              k8s.CreateLivenessProbe,
-		ReadinessProbeCreator:             k8s.CreateReadinessProbe,
-		Logger:                            desireLogger,
-		ApplicationServiceAccount:         cfg.Properties.ApplicationServiceAccount,
-		AllowAutomountServiceAccountToken: cfg.Properties.UnsafeAllowAutomountServiceAccountToken,
-	}
+	lrpToStatefulSet := stset.NewLRPToStatefulSet(
+		cfg.Properties.ApplicationServiceAccount,
+		cfg.Properties.RegistrySecretName,
+		cfg.Properties.UnsafeAllowAutomountServiceAccountToken,
+		k8s.CreateLivenessProbe,
+		k8s.CreateReadinessProbe,
+	)
+	lrpClient := k8s.NewLRPClient(
+		desireLogger,
+		client.NewSecret(clientset),
+		client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
+		client.NewPod(clientset, cfg.WorkloadsNamespace),
+		client.NewPodDisruptionBudget(clientset),
+		client.NewEvent(clientset),
+		lrpToStatefulSet,
+		stset.MapStatefulSetToLRP,
+	)
+
 	converter := initConverter(cfg)
 	namespacer := bifrost.NewNamespacer(cfg.Properties.DefaultWorkloadsNamespace)
 
 	return &bifrost.LRP{
 		Converter:  converter,
-		Desirer:    desirer,
+		Desirer:    lrpClient,
 		Namespacer: namespacer,
 	}
 }

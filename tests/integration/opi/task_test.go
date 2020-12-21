@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/patching"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
@@ -26,7 +26,7 @@ import (
 var _ = Describe("Tasks", func() {
 	var (
 		request  cf.TaskRequest
-		jobs     *batchv1.JobList
+		jobsList *batchv1.JobList
 		response *http.Response
 	)
 
@@ -67,18 +67,18 @@ var _ = Describe("Tasks", func() {
 
 				Eventually(func() ([]batchv1.Job, error) {
 					var err error
-					jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+					jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 
-					return jobs.Items, err
+					return jobsList.Items, err
 				}).Should(HaveLen(1))
 
 				By("creating a job for the task", func() {
-					Expect(jobs.Items).To(HaveLen(1))
-					Expect(jobs.Items[0].Name).To(HavePrefix("my-app-my-space-my-task"))
+					Expect(jobsList.Items).To(HaveLen(1))
+					Expect(jobsList.Items[0].Name).To(HavePrefix("my-app-my-space-my-task"))
 				})
 
 				By("specifying the right containers", func() {
-					jobContainers := jobs.Items[0].Spec.Template.Spec.Containers
+					jobContainers := jobsList.Items[0].Spec.Template.Spec.Containers
 					Expect(jobContainers).To(HaveLen(1))
 					Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
 					Expect(jobContainers[0].Image).To(Equal("eirini/busybox"))
@@ -108,9 +108,9 @@ var _ = Describe("Tasks", func() {
 
 				By("completing the task", func() {
 					Eventually(func() []batchv1.JobCondition {
-						jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+						jobsList, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 
-						return jobs.Items[0].Status.Conditions
+						return jobsList.Items[0].Status.Conditions
 					}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(batchv1.JobComplete),
 						"Status": Equal(corev1.ConditionTrue),
@@ -128,12 +128,12 @@ var _ = Describe("Tasks", func() {
 				It("creates a new secret and points the job to it", func() {
 					Eventually(func() ([]batchv1.Job, error) {
 						var err error
-						jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+						jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 
-						return jobs.Items, err
+						return jobsList.Items, err
 					}).Should(HaveLen(1))
 
-					imagePullSecrets := jobs.Items[0].Spec.Template.Spec.ImagePullSecrets
+					imagePullSecrets := jobsList.Items[0].Spec.Template.Spec.ImagePullSecrets
 					var registrySecretName string
 					for _, imagePullSecret := range imagePullSecrets {
 						if strings.HasPrefix(imagePullSecret.Name, "my-app-my-space-registry-secret-") {
@@ -158,9 +158,9 @@ var _ = Describe("Tasks", func() {
 
 					By("allowing the task to complete", func() {
 						Eventually(func() []batchv1.JobCondition {
-							jobs, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+							jobsList, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 
-							return jobs.Items[0].Status.Conditions
+							return jobsList.Items[0].Status.Conditions
 						}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 							"Type":   Equal(batchv1.JobComplete),
 							"Status": Equal(corev1.ConditionTrue),
@@ -253,13 +253,13 @@ var _ = Describe("Tasks", func() {
 
 				Eventually(func() ([]batchv1.Job, error) {
 					var err error
-					jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+					jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 
-					return jobs.Items, err
+					return jobsList.Items, err
 				}).Should(HaveLen(1))
 
-				Expect(jobs.Items).To(HaveLen(1))
-				Expect(jobs.Items[0].Name).To(Equal(request.GUID))
+				Expect(jobsList.Items).To(HaveLen(1))
+				Expect(jobsList.Items[0].Name).To(Equal(request.GUID))
 			})
 		})
 	})
@@ -305,9 +305,9 @@ var _ = Describe("Tasks", func() {
 			// Ensure the job is created
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
-				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+				jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 
-				return jobs.Items, err
+				return jobsList.Items, err
 			}).Should(HaveLen(1))
 
 			// Cancel the task
@@ -326,9 +326,9 @@ var _ = Describe("Tasks", func() {
 			// Ensure the job is deleted
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
-				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+				jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 
-				return jobs.Items, err
+				return jobsList.Items, err
 			}).Should(BeEmpty())
 
 			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
@@ -408,9 +408,9 @@ var _ = Describe("Tasks", func() {
 		JustBeforeEach(func() {
 			Eventually(func() ([]batchv1.Job, error) {
 				var err error
-				jobs, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+				jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 
-				return jobs.Items, err
+				return jobsList.Items, err
 			}).Should(HaveLen(1))
 		})
 
@@ -431,11 +431,11 @@ var _ = Describe("Tasks", func() {
 
 		When("the task is marked as completed", func() {
 			JustBeforeEach(func() {
-				jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+				allJobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 				Expect(err).NotTo(HaveOccurred())
-				job := jobs.Items[0]
+				job := allJobs.Items[0]
 
-				patchBytes := patching.NewLabel(k8s.LabelTaskCompleted, "true").GetJSONPatchBytes()
+				patchBytes := patching.NewLabel(jobs.LabelTaskCompleted, "true").GetJSONPatchBytes()
 
 				_, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).Patch(
 					context.Background(),

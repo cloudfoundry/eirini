@@ -5,17 +5,17 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/bifrost"
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/opi"
 )
 
 type FakeLRPDesirer struct {
-	DesireStub        func(string, *opi.LRP, ...k8s.DesireOption) error
+	DesireStub        func(string, *opi.LRP, ...shared.Option) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
 		arg1 string
 		arg2 *opi.LRP
-		arg3 []k8s.DesireOption
+		arg3 []shared.Option
 	}
 	desireReturns struct {
 		result1 error
@@ -99,13 +99,13 @@ type FakeLRPDesirer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeLRPDesirer) Desire(arg1 string, arg2 *opi.LRP, arg3 ...k8s.DesireOption) error {
+func (fake *FakeLRPDesirer) Desire(arg1 string, arg2 *opi.LRP, arg3 ...shared.Option) error {
 	fake.desireMutex.Lock()
 	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
 	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
 		arg1 string
 		arg2 *opi.LRP
-		arg3 []k8s.DesireOption
+		arg3 []shared.Option
 	}{arg1, arg2, arg3})
 	stub := fake.DesireStub
 	fakeReturns := fake.desireReturns
@@ -126,13 +126,13 @@ func (fake *FakeLRPDesirer) DesireCallCount() int {
 	return len(fake.desireArgsForCall)
 }
 
-func (fake *FakeLRPDesirer) DesireCalls(stub func(string, *opi.LRP, ...k8s.DesireOption) error) {
+func (fake *FakeLRPDesirer) DesireCalls(stub func(string, *opi.LRP, ...shared.Option) error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = stub
 }
 
-func (fake *FakeLRPDesirer) DesireArgsForCall(i int) (string, *opi.LRP, []k8s.DesireOption) {
+func (fake *FakeLRPDesirer) DesireArgsForCall(i int) (string, *opi.LRP, []shared.Option) {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	argsForCall := fake.desireArgsForCall[i]

@@ -62,3 +62,7 @@ func tcpSocketAction(lrp *opi.LRP) *v1.TCPSocketAction {
 		Port: intstr.IntOrString{Type: intstr.Int, IntVal: lrp.Health.Port},
 	}
 }
+
+func toSeconds(millis uint) int32 {
+	return int32(millis / 1000) //nolint:gomnd
+}

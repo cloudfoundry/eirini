@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini/events"
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
@@ -65,8 +66,8 @@ func getStatefulSet(ns, name string) *appsv1.StatefulSet {
 func labelSelector(identifier opi.LRPIdentifier) string {
 	return fmt.Sprintf(
 		"%s=%s,%s=%s",
-		k8s.LabelGUID, identifier.GUID,
-		k8s.LabelVersion, identifier.Version,
+		stset.LabelGUID, identifier.GUID,
+		stset.LabelVersion, identifier.Version,
 	)
 }
 
@@ -86,8 +87,8 @@ func listAllStatefulSets(lrp1, lrp2 *opi.LRP) []appsv1.StatefulSet {
 	list, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf(
 			"%s in (%s, %s),%s in (%s, %s)",
-			k8s.LabelGUID, lrp1.LRPIdentifier.GUID, lrp2.LRPIdentifier.GUID,
-			k8s.LabelVersion, lrp1.LRPIdentifier.Version, lrp2.LRPIdentifier.Version,
+			stset.LabelGUID, lrp1.LRPIdentifier.GUID, lrp2.LRPIdentifier.GUID,
+			stset.LabelVersion, lrp1.LRPIdentifier.Version, lrp2.LRPIdentifier.Version,
 		),
 	})
 	Expect(err).NotTo(HaveOccurred())
@@ -144,13 +145,13 @@ func podNamesFromPods(pods []corev1.Pod) []string {
 
 func createTaskPods(ns string, names ...string) {
 	for _, name := range names {
-		createPod(ns, name, map[string]string{k8s.LabelSourceType: "TASK"})
+		createPod(ns, name, map[string]string{jobs.LabelSourceType: "TASK"})
 	}
 }
 
 func createLrpPods(ns string, names ...string) {
 	for _, name := range names {
-		createPod(ns, name, map[string]string{k8s.LabelSourceType: "APP"})
+		createPod(ns, name, map[string]string{stset.LabelSourceType: "APP"})
 	}
 }
 

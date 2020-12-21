@@ -3,7 +3,7 @@ package bifrost
 import (
 	"context"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"github.com/pkg/errors"
@@ -20,7 +20,7 @@ type TaskConverter interface {
 }
 
 type TaskDesirer interface {
-	Desire(namespace string, task *opi.Task, opts ...k8s.DesireOption) error
+	Desire(namespace string, task *opi.Task, opts ...shared.Option) error
 	Get(guid string) (*opi.Task, error)
 	List() ([]*opi.Task, error)
 }

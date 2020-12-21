@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
@@ -29,12 +29,12 @@ var _ = Describe("Reporter", func() {
 		return &corev1.Pod{
 			ObjectMeta: v1.ObjectMeta{
 				Labels: map[string]string{
-					k8s.LabelSourceType: "TASK",
+					jobs.LabelSourceType: "TASK",
 				},
 				Annotations: map[string]string{
-					k8s.AnnotationOpiTaskContainerName: "opi-task",
-					k8s.AnnotationGUID:                 "the-task-guid",
-					k8s.AnnotationCompletionCallback:   fmt.Sprintf("%s/the-callback-url", server.URL()),
+					jobs.AnnotationOpiTaskContainerName: "opi-task",
+					jobs.AnnotationGUID:                 "the-task-guid",
+					jobs.AnnotationCompletionCallback:   fmt.Sprintf("%s/the-callback-url", server.URL()),
 				},
 			},
 			Status: corev1.PodStatus{
@@ -130,7 +130,6 @@ var _ = Describe("Reporter", func() {
 		It("notifies the cloud controller", func() {
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 		})
-
 	})
 
 	When("the cloud controller returns an unexpected status code", func() {
@@ -147,7 +146,5 @@ var _ = Describe("Reporter", func() {
 		It("returns an error", func() {
 			Expect(err).To(MatchError(ContainSubstring("status=502 potato")))
 		})
-
 	})
-
 })

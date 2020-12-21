@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
@@ -63,7 +63,7 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-api, eirini-controller]", fu
 		taskName = tests.GenerateGUID()
 		taskGUID = tests.GenerateGUID()
 		taskListOpts = metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, taskGUID),
+			LabelSelector: fmt.Sprintf("%s=%s", jobs.LabelGUID, taskGUID),
 		}
 		bgDelete := metav1.DeletePropagationBackground
 		taskDeleteOpts = metav1.DeleteOptions{
@@ -119,14 +119,14 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-api, eirini-controller]", fu
 		It("creates a corresponding job in the same namespace", func() {
 			Eventually(listTaskJobs).Should(HaveLen(1))
 
-			jobs := listTaskJobs()
-			job := jobs[0]
+			allJobs := listTaskJobs()
+			job := allJobs[0]
 			Expect(job.Name).To(Equal(fmt.Sprintf("wavey-the-space-%s", taskName)))
 			Expect(job.Labels).To(SatisfyAll(
-				HaveKeyWithValue(k8s.LabelGUID, task.Spec.GUID),
-				HaveKeyWithValue(k8s.LabelAppGUID, task.Spec.AppGUID),
-				HaveKeyWithValue(k8s.LabelSourceType, "TASK"),
-				HaveKeyWithValue(k8s.LabelName, task.Spec.Name),
+				HaveKeyWithValue(jobs.LabelGUID, task.Spec.GUID),
+				HaveKeyWithValue(jobs.LabelAppGUID, task.Spec.AppGUID),
+				HaveKeyWithValue(jobs.LabelSourceType, "TASK"),
+				HaveKeyWithValue(jobs.LabelName, task.Spec.Name),
 			))
 			Expect(job.Spec.Template.Spec.Containers).To(HaveLen(1))
 

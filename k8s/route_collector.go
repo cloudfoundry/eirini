@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
@@ -19,21 +20,21 @@ type StatefulSetGetter interface {
 }
 
 type RouteCollector struct {
-	podsClient        PodClient
+	podsGetter        PodsGetter
 	statefulSetGetter StatefulSetGetter
 	logger            lager.Logger
 }
 
-func NewRouteCollector(podClient PodClient, statefulSetGetter StatefulSetGetter, logger lager.Logger) RouteCollector {
+func NewRouteCollector(podsGetter PodsGetter, statefulSetGetter StatefulSetGetter, logger lager.Logger) RouteCollector {
 	return RouteCollector{
-		podsClient:        podClient,
+		podsGetter:        podsGetter,
 		statefulSetGetter: statefulSetGetter,
 		logger:            logger,
 	}
 }
 
 func (c RouteCollector) Collect() ([]route.Message, error) {
-	pods, err := c.podsClient.GetAll()
+	pods, err := c.podsGetter.GetAll()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list pods")
 	}
@@ -56,7 +57,7 @@ func (c RouteCollector) Collect() ([]route.Message, error) {
 		for _, r := range routes {
 			routeMessage := route.Message{
 				InstanceID: p.Name,
-				Name:       p.Labels[LabelGUID],
+				Name:       p.Labels[stset.LabelGUID],
 				Address:    p.Status.PodIP,
 				Port:       uint32(r.Port),
 				TLSPort:    0,
@@ -87,7 +88,7 @@ func (c RouteCollector) getRoutes(pod corev1.Pod, statefulsets map[string]appsv1
 		return nil, fmt.Errorf("statefulset for pod %s not found", pod.Name)
 	}
 
-	routeJSON, ok := s.Annotations[AnnotationRegisteredRoutes]
+	routeJSON, ok := s.Annotations[stset.AnnotationRegisteredRoutes]
 
 	if !ok {
 		return nil, fmt.Errorf("pod %s has no registered routes annotation", pod.Name)
@@ -103,7 +104,7 @@ func (c RouteCollector) getRoutes(pod corev1.Pod, statefulsets map[string]appsv1
 }
 
 func (c RouteCollector) getStatefulSets() (map[string]appsv1.StatefulSet, error) {
-	statefulsetList, err := c.statefulSetGetter.GetBySourceType(AppSourceType)
+	statefulsetList, err := c.statefulSetGetter.GetBySourceType(stset.AppSourceType)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/pkg/apis/eirini"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
@@ -61,7 +61,7 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		lrpGUID = tests.GenerateGUID()
 		lrpVersion = tests.GenerateGUID()
 		appListOpts = metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, lrpGUID, k8s.LabelVersion, lrpVersion),
+			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
 		}
 
 		lrp = &eiriniv1.LRP{
@@ -124,10 +124,10 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 
 			st := getStatefulSet()
 			Expect(st.Labels).To(SatisfyAll(
-				HaveKeyWithValue(k8s.LabelGUID, lrpGUID),
-				HaveKeyWithValue(k8s.LabelVersion, lrpVersion),
-				HaveKeyWithValue(k8s.LabelSourceType, "APP"),
-				HaveKeyWithValue(k8s.LabelAppGUID, "the-app-guid"),
+				HaveKeyWithValue(stset.LabelGUID, lrpGUID),
+				HaveKeyWithValue(stset.LabelVersion, lrpVersion),
+				HaveKeyWithValue(stset.LabelSourceType, "APP"),
+				HaveKeyWithValue(stset.LabelAppGUID, "the-app-guid"),
 			))
 			Expect(st.Spec.Replicas).To(PointTo(Equal(int32(1))))
 			Expect(st.Spec.Template.Spec.Containers[0].Image).To(Equal("eirini/dorini"))
@@ -276,7 +276,7 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 
 			It("updates the underlying statefulset", func() {
 				Eventually(func() string {
-					return getStatefulSet().Annotations[k8s.AnnotationRegisteredRoutes]
+					return getStatefulSet().Annotations[stset.AnnotationRegisteredRoutes]
 				}).Should(MatchJSON(`[{"hostname": "app-hostname-1", "port": 8080}]`))
 			})
 		})

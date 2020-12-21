@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
@@ -117,7 +117,7 @@ func getTask(guid string) (cf.TaskResponse, error) {
 
 func getJob(taskGUID string) *batchv1.Job {
 	jobs, err := fixture.Clientset.BatchV1().Jobs("").List(context.Background(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, taskGUID),
+		LabelSelector: fmt.Sprintf("%s=%s", jobs.LabelGUID, taskGUID),
 	})
 	Expect(err).NotTo(HaveOccurred())
 

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
 	"code.cloudfoundry.org/eirini/k8s/informers/task/taskfakes"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/reconciler/reconcilerfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
@@ -53,10 +53,10 @@ var _ = Describe("Task Completion Reconciler", func() {
 				Name:      "name",
 				Namespace: "namespace",
 				Labels: map[string]string{
-					k8s.LabelGUID: "the-task-pod-guid",
+					jobs.LabelGUID: "the-task-pod-guid",
 				},
 				Annotations: map[string]string{
-					k8s.AnnotationOpiTaskContainerName: "opi-task",
+					jobs.AnnotationOpiTaskContainerName: "opi-task",
 				},
 			},
 			Status: corev1.PodStatus{
@@ -85,7 +85,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 			pod.DeepCopyInto(p)
 			pod = p
 
-			p.Labels[k8s.LabelGUID] = nn.Name + "-guid"
+			p.Labels[jobs.LabelGUID] = nn.Name + "-guid"
 
 			return nil
 		}
@@ -131,8 +131,8 @@ var _ = Describe("Task Completion Reconciler", func() {
 		Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
 		actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
 		Expect(actualPod).To(Equal(pod))
-		Expect(key).To(Equal(k8s.AnnotationCCAckedTaskCompletion))
-		Expect(value).To(Equal(k8s.TaskCompletedTrue))
+		Expect(key).To(Equal(jobs.AnnotationCCAckedTaskCompletion))
+		Expect(value).To(Equal(jobs.TaskCompletedTrue))
 	})
 
 	It("deletes the task", func() {
@@ -143,8 +143,8 @@ var _ = Describe("Task Completion Reconciler", func() {
 	It("labels the task as completed", func() {
 		Expect(jobsClient.SetLabelCallCount()).To(Equal(1))
 		_, label, value := jobsClient.SetLabelArgsForCall(0)
-		Expect(label).To(Equal(k8s.LabelTaskCompleted))
-		Expect(value).To(Equal(k8s.TaskCompletedTrue))
+		Expect(label).To(Equal(jobs.LabelTaskCompleted))
+		Expect(value).To(Equal(jobs.TaskCompletedTrue))
 	})
 
 	When("TTL has not yet expired", func() {
@@ -166,7 +166,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 	When("CC has been notified and TTL has expired", func() {
 		BeforeEach(func() {
 			pod.Status.ContainerStatuses[0].State.Terminated.FinishedAt = metav1.NewTime(time.Now().Add(-60 * time.Second))
-			pod.ObjectMeta.Annotations[k8s.AnnotationCCAckedTaskCompletion] = k8s.TaskCompletedTrue
+			pod.ObjectMeta.Annotations[jobs.AnnotationCCAckedTaskCompletion] = jobs.TaskCompletedTrue
 		})
 
 		It("deletes the job", func() {
@@ -290,14 +290,14 @@ var _ = Describe("Task Completion Reconciler", func() {
 		})
 
 		It("does not set the 'cc acked' annotation on the pod", func() {
-			Expect(pod.Annotations[k8s.AnnotationCCAckedTaskCompletion]).To(BeEmpty())
+			Expect(pod.Annotations[jobs.AnnotationCCAckedTaskCompletion]).To(BeEmpty())
 		})
 
 		It("updates the pod setting the updated call count but not reporting success", func() {
 			Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
 			actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
 			Expect(actualPod).To(Equal(pod))
-			Expect(key).To(Equal(k8s.AnnotationOpiTaskCompletionReportCounter))
+			Expect(key).To(Equal(jobs.AnnotationOpiTaskCompletionReportCounter))
 			Expect(value).To(Equal("1"))
 		})
 
@@ -310,7 +310,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 				Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
 				actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
 				Expect(actualPod).To(Equal(pod))
-				Expect(key).To(Equal(k8s.AnnotationOpiTaskCompletionReportCounter))
+				Expect(key).To(Equal(jobs.AnnotationOpiTaskCompletionReportCounter))
 				Expect(value).To(Equal("1"))
 			})
 
@@ -321,14 +321,14 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 		When("it's a subsequent time within the retry limit", func() {
 			BeforeEach(func() {
-				pod.ObjectMeta.Annotations[k8s.AnnotationOpiTaskCompletionReportCounter] = "1"
+				pod.ObjectMeta.Annotations[jobs.AnnotationOpiTaskCompletionReportCounter] = "1"
 			})
 
 			It("increments the reporting count", func() {
 				Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
 				actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
 				Expect(actualPod).To(Equal(pod))
-				Expect(key).To(Equal(k8s.AnnotationOpiTaskCompletionReportCounter))
+				Expect(key).To(Equal(jobs.AnnotationOpiTaskCompletionReportCounter))
 				Expect(value).To(Equal("2"))
 			})
 
@@ -339,7 +339,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 		When("it hits the retry limit", func() {
 			BeforeEach(func() {
-				pod.ObjectMeta.Annotations[k8s.AnnotationOpiTaskCompletionReportCounter] = "2"
+				pod.ObjectMeta.Annotations[jobs.AnnotationOpiTaskCompletionReportCounter] = "2"
 			})
 
 			It("does not retry any more", func() {

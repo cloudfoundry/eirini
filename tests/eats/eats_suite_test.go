@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
@@ -113,7 +113,7 @@ func getLRPs() ([]cf.DesiredLRPSchedulingInfo, error) {
 
 func getPodReadiness(lrpGUID, lrpVersion string) bool {
 	pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, lrpGUID, k8s.LabelVersion, lrpVersion),
+		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
 	})
 	Expect(err).NotTo(HaveOccurred())
 

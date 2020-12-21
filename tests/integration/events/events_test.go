@@ -11,6 +11,8 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -78,25 +80,29 @@ var _ = Describe("Events", func() {
 
 	Describe("LRP events", func() {
 		var (
-			lrpDesirer *k8s.StatefulSetDesirer
+			lrpClient  *k8s.LRPClient
 			lrp        opi.LRP
 			lrpCommand []string
 		)
 
 		BeforeEach(func() {
-			lrpDesirer = &k8s.StatefulSetDesirer{
-				Pods:                      client.NewPod(fixture.Clientset, fixture.Namespace),
-				Secrets:                   client.NewSecret(fixture.Clientset),
-				StatefulSets:              client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
-				PodDisruptionBudgets:      client.NewPodDisruptionBudget(fixture.Clientset),
-				EventsClient:              client.NewEvent(fixture.Clientset),
-				StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
-				RegistrySecretName:        "registry-secret",
-				LivenessProbeCreator:      k8s.CreateLivenessProbe,
-				ReadinessProbeCreator:     k8s.CreateReadinessProbe,
-				Logger:                    logger,
-				ApplicationServiceAccount: tests.GetApplicationServiceAccount(),
-			}
+			lrpToStatefulSet := stset.NewLRPToStatefulSet(
+				tests.GetApplicationServiceAccount(),
+				"registry-secret",
+				false,
+				k8s.CreateLivenessProbe,
+				k8s.CreateReadinessProbe,
+			)
+			lrpClient = k8s.NewLRPClient(
+				logger,
+				client.NewSecret(fixture.Clientset),
+				client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
+				client.NewPod(fixture.Clientset, fixture.Namespace),
+				client.NewPodDisruptionBudget(fixture.Clientset),
+				client.NewEvent(fixture.Clientset),
+				lrpToStatefulSet,
+				stset.MapStatefulSetToLRP,
+			)
 		})
 
 		JustBeforeEach(func() {
@@ -106,7 +112,7 @@ var _ = Describe("Events", func() {
 				Image:           "eirini/busybox",
 				LRPIdentifier:   opi.LRPIdentifier{GUID: tests.GenerateGUID(), Version: tests.GenerateGUID()},
 			}
-			Expect(lrpDesirer.Desire(fixture.Namespace, &lrp)).To(Succeed())
+			Expect(lrpClient.Desire(fixture.Namespace, &lrp)).To(Succeed())
 		})
 
 		When("the LRP does not terminate", func() {
@@ -226,16 +232,15 @@ var _ = Describe("Events", func() {
 	})
 
 	Describe("Task events", func() {
-		var taskDesirer *k8s.TaskDesirer
+		var taskDesirer jobs.Desirer
 
 		BeforeEach(func() {
-			taskDesirer = k8s.NewTaskDesirer(
+			taskToJob := jobs.NewTaskToJob(tests.GetApplicationServiceAccount(), "", false)
+			taskDesirer = jobs.NewDesirer(
 				logger,
+				taskToJob,
 				client.NewJob(fixture.Clientset, fixture.Namespace),
 				nil,
-				tests.GetApplicationServiceAccount(),
-				"",
-				false,
 			)
 		})
 

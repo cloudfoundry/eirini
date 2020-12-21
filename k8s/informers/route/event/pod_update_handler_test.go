@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/k8s/informers/route/event"
 	"code.cloudfoundry.org/eirini/k8s/informers/route/event/eventfakes"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	eiriniroutefakes "code.cloudfoundry.org/eirini/route/routefakes"
 	"code.cloudfoundry.org/lager"
@@ -35,9 +35,9 @@ var _ = Describe("UpdateEventHandler", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 				Labels: map[string]string{
-					k8s.LabelGUID: fmt.Sprintf("%s-guid", name),
+					stset.LabelGUID: fmt.Sprintf("%s-guid", name),
 				},
-				Annotations: map[string]string{k8s.AnnotationProcessGUID: fmt.Sprintf("%s-anno", name)},
+				Annotations: map[string]string{stset.AnnotationProcessGUID: fmt.Sprintf("%s-anno", name)},
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind: "StatefulSet",
@@ -71,7 +71,7 @@ var _ = Describe("UpdateEventHandler", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "mr-stateful",
 				Annotations: map[string]string{
-					k8s.AnnotationRegisteredRoutes: `[
+					stset.AnnotationRegisteredRoutes: `[
 						{
 							"hostname": "mr-stateful.50.60.70.80.nip.io",
 							"port": 8080

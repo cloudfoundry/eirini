@@ -3,7 +3,7 @@ package route
 import (
 	"errors"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -71,7 +71,7 @@ func NewRouteMessage(pod *corev1.Pod, port uint32, routes eiriniroute.Routes) (*
 		Routes: eiriniroute.Routes{
 			UnregisteredRoutes: routes.UnregisteredRoutes,
 		},
-		Name:       pod.Labels[k8s.LabelGUID],
+		Name:       pod.Labels[stset.LabelGUID],
 		InstanceID: pod.Name,
 		Address:    pod.Status.PodIP,
 		Port:       port,

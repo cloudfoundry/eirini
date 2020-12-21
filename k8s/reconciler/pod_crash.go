@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini/events"
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -133,7 +133,7 @@ func (r PodCrash) setEvent(logger lager.Logger, kubeEvent *corev1.Event, lrpRef 
 }
 
 func (r PodCrash) eventAlreadyEmitted(crashEvent events.CrashEvent, pod *corev1.Pod) bool {
-	return strconv.FormatInt(crashEvent.CrashTimestamp, 10) == pod.Annotations[k8s.AnnotationLastReportedLRPCrash]
+	return strconv.FormatInt(crashEvent.CrashTimestamp, 10) == pod.Annotations[stset.AnnotationLastReportedLRPCrash]
 }
 
 func (r PodCrash) setCrashTimestampOnPod(logger lager.Logger, pod *corev1.Pod, crashEvent events.CrashEvent) {
@@ -142,7 +142,7 @@ func (r PodCrash) setCrashTimestampOnPod(logger lager.Logger, pod *corev1.Pod, c
 		newPod.Annotations = map[string]string{}
 	}
 
-	newPod.Annotations[k8s.AnnotationLastReportedLRPCrash] = strconv.FormatInt(crashEvent.CrashTimestamp, 10)
+	newPod.Annotations[stset.AnnotationLastReportedLRPCrash] = strconv.FormatInt(crashEvent.CrashTimestamp, 10)
 
 	if err := r.pods.Patch(context.Background(), newPod, client.MergeFrom(pod)); err != nil {
 		logger.Error("failed-to-set-last-crash-time-on-pod", err)
@@ -188,7 +188,7 @@ func (r PodCrash) makeEvent(crashEvent events.CrashEvent, namespace string, invo
 				labelInstanceIndex: strconv.Itoa(crashEvent.Index),
 			},
 			Annotations: map[string]string{
-				k8s.AnnotationProcessGUID: crashEvent.ProcessGUID,
+				stset.AnnotationProcessGUID: crashEvent.ProcessGUID,
 			},
 		},
 		InvolvedObject: corev1.ObjectReference{

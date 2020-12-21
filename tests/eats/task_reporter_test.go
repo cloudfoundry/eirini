@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/eats/wiremock"
@@ -117,7 +117,7 @@ func listJobs(guid string) []batchv1.Job {
 		Jobs(fixture.Namespace).
 		List(context.Background(),
 			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, guid),
+				LabelSelector: fmt.Sprintf("%s=%s", jobs.LabelGUID, guid),
 			},
 		)
 
@@ -135,6 +135,6 @@ func cleanupJob(guid string) error {
 		DeleteCollection(
 			context.Background(),
 			metav1.DeleteOptions{PropagationPolicy: &bgDelete},
-			metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, guid)},
+			metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", jobs.LabelGUID, guid)},
 		)
 }

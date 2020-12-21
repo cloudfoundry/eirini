@@ -3,7 +3,7 @@ package task
 import (
 	"net/http"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/lager"
@@ -17,8 +17,8 @@ type StateReporter struct {
 }
 
 func (r StateReporter) Report(pod *corev1.Pod) error {
-	taskGUID := pod.Annotations[k8s.AnnotationGUID]
-	uri := pod.Annotations[k8s.AnnotationCompletionCallback]
+	taskGUID := pod.Annotations[jobs.AnnotationGUID]
+	uri := pod.Annotations[jobs.AnnotationCompletionCallback]
 
 	logger := r.Logger.Session("report", lager.Data{"task-guid": taskGUID})
 
@@ -55,7 +55,7 @@ func (r StateReporter) generateTaskCompletedRequest(logger lager.Logger, guid st
 }
 
 func getTaskContainerStatus(pod *corev1.Pod) (corev1.ContainerStatus, bool) {
-	taskContainerName := pod.Annotations[k8s.AnnotationOpiTaskContainerName]
+	taskContainerName := pod.Annotations[jobs.AnnotationOpiTaskContainerName]
 	for _, status := range pod.Status.ContainerStatuses {
 		if status.Name == taskContainerName {
 			return status, true

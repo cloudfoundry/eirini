@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/util"
 	eirinix "code.cloudfoundry.org/eirinix"
 	"code.cloudfoundry.org/lager"
@@ -65,7 +65,7 @@ func injectInstanceIndex(logger lager.Logger, pod *corev1.Pod) error {
 
 	for c := range pod.Spec.Containers {
 		container := &pod.Spec.Containers[c]
-		if container.Name == k8s.OPIContainerName {
+		if container.Name == stset.OPIContainerName {
 			cfInstanceVar := corev1.EnvVar{Name: eirini.EnvCFInstanceIndex, Value: strconv.Itoa(index)}
 			container.Env = append(container.Env, cfInstanceVar)
 

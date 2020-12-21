@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
@@ -48,7 +48,7 @@ var _ = Describe("Tasks [needs-logs-for: eirini-api, eirini-task-reporter]", fun
 		It("creates a job", func() {
 			job := getJob(guid)
 			Expect(job).NotTo(BeNil())
-			Expect(job.Labels[k8s.LabelGUID]).To(Equal(guid))
+			Expect(job.Labels[jobs.LabelGUID]).To(Equal(guid))
 		})
 	})
 
@@ -157,7 +157,7 @@ func cancelTask(guid string) error {
 
 func getJob(taskGUID string) *batchv1.Job {
 	jobs, err := fixture.Clientset.BatchV1().Jobs("").List(context.Background(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, taskGUID),
+		LabelSelector: fmt.Sprintf("%s=%s", jobs.LabelGUID, taskGUID),
 	})
 	Expect(err).NotTo(HaveOccurred())
 

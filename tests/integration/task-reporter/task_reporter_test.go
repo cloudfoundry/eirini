@@ -10,8 +10,8 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/bifrost"
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
@@ -33,7 +33,7 @@ var _ = Describe("TaskReporter", func() {
 		certPath              string
 		keyPath               string
 		session               *gexec.Session
-		taskDesirer           *k8s.TaskDesirer
+		taskDesirer           jobs.Desirer
 		task                  *opi.Task
 		config                *eirini.TaskReporterConfig
 		ttlSeconds            int
@@ -63,13 +63,12 @@ var _ = Describe("TaskReporter", func() {
 			LeaderElectionNamespace:      fixture.Namespace,
 		}
 
-		taskDesirer = k8s.NewTaskDesirer(
+		taskToJob := jobs.NewTaskToJob("", "", false)
+		taskDesirer = jobs.NewDesirer(
 			lagertest.NewTestLogger("test-task-desirer"),
+			taskToJob,
 			client.NewJob(fixture.Clientset, fixture.Namespace),
 			client.NewSecret(fixture.Clientset),
-			"",
-			"",
-			false,
 		)
 
 		taskGUID := tests.GenerateGUID()
@@ -263,8 +262,8 @@ var _ = Describe("TaskReporter", func() {
 func getTaskJobsFn(guid string) func() ([]batchv1.Job, error) {
 	selector := fmt.Sprintf(
 		"%s=%s, %s=%s",
-		k8s.LabelSourceType, "TASK",
-		k8s.LabelGUID, guid,
+		jobs.LabelSourceType, "TASK",
+		jobs.LabelGUID, guid,
 	)
 
 	return func() ([]batchv1.Job, error) {
@@ -275,9 +274,9 @@ func getTaskJobsFn(guid string) func() ([]batchv1.Job, error) {
 func getCompletedTaskJobsFn(guid string) func() ([]batchv1.Job, error) {
 	selector := fmt.Sprintf(
 		"%s=%s, %s=%s, %s=%s",
-		k8s.LabelSourceType, "TASK",
-		k8s.LabelGUID, guid,
-		k8s.LabelTaskCompleted, k8s.TaskCompletedTrue,
+		jobs.LabelSourceType, "TASK",
+		jobs.LabelGUID, guid,
+		jobs.LabelTaskCompleted, jobs.TaskCompletedTrue,
 	)
 
 	return func() ([]batchv1.Job, error) {

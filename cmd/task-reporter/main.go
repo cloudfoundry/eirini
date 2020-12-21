@@ -8,9 +8,9 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	k8stask "code.cloudfoundry.org/eirini/k8s/informers/task"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
@@ -108,11 +108,16 @@ func initTaskDeleter(clientset kubernetes.Interface, workloadsNamespace string) 
 	logger := lager.NewLogger("task-deleter")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	return k8s.NewTaskDeleter(
+	jobClient := client.NewJob(clientset, workloadsNamespace)
+	secretClient := client.NewSecret(clientset)
+	deleter := jobs.NewDeleter(
 		logger,
-		client.NewJob(clientset, workloadsNamespace),
-		client.NewSecret(clientset),
+		jobClient,
+		jobClient,
+		secretClient,
 	)
+
+	return &deleter
 }
 
 func readConfigFile(path string) (eirini.TaskReporterConfig, error) {

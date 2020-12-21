@@ -5,8 +5,9 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini/events"
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
@@ -78,19 +79,19 @@ var _ = Describe("Pod", func() {
 			guid = tests.GenerateGUID()
 
 			createPod(fixture.Namespace, "four", map[string]string{
-				k8s.LabelGUID:    guid,
-				k8s.LabelVersion: "42",
+				stset.LabelGUID:    guid,
+				stset.LabelVersion: "42",
 			})
 			createPod(fixture.Namespace, "five", map[string]string{
-				k8s.LabelGUID:    guid,
-				k8s.LabelVersion: "42",
+				stset.LabelGUID:    guid,
+				stset.LabelVersion: "42",
 			})
 
 			extraNs = fixture.CreateExtraNamespace()
 
 			createPod(extraNs, "six", map[string]string{
-				k8s.LabelGUID:    guid,
-				k8s.LabelVersion: "42",
+				stset.LabelGUID:    guid,
+				stset.LabelVersion: "42",
 			})
 		})
 
@@ -259,7 +260,7 @@ var _ = Describe("StatefulSets", func() {
 			guid = tests.GenerateGUID()
 
 			createStatefulSet(fixture.Namespace, "foo", map[string]string{
-				k8s.LabelGUID: guid,
+				stset.LabelGUID: guid,
 			})
 
 			extraNs = fixture.CreateExtraNamespace()
@@ -272,7 +273,7 @@ var _ = Describe("StatefulSets", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(statefulSet.Name).To(Equal("foo"))
-			Expect(statefulSet.Labels[k8s.LabelGUID]).To(Equal(guid))
+			Expect(statefulSet.Labels[stset.LabelGUID]).To(Equal(guid))
 		})
 	})
 
@@ -281,16 +282,16 @@ var _ = Describe("StatefulSets", func() {
 
 		BeforeEach(func() {
 			createStatefulSet(fixture.Namespace, "one", map[string]string{
-				k8s.LabelSourceType: "FOO",
+				stset.LabelSourceType: "FOO",
 			})
 			createStatefulSet(fixture.Namespace, "two", map[string]string{
-				k8s.LabelSourceType: "BAR",
+				stset.LabelSourceType: "BAR",
 			})
 
 			extraNs = fixture.CreateExtraNamespace()
 
 			createStatefulSet(extraNs, "three", map[string]string{
-				k8s.LabelSourceType: "FOO",
+				stset.LabelSourceType: "FOO",
 			})
 		})
 
@@ -318,15 +319,15 @@ var _ = Describe("StatefulSets", func() {
 			guid = tests.GenerateGUID()
 
 			createStatefulSet(fixture.Namespace, "one", map[string]string{
-				k8s.LabelGUID:    guid,
-				k8s.LabelVersion: "42",
+				stset.LabelGUID:    guid,
+				stset.LabelVersion: "42",
 			})
 
 			extraNs = fixture.CreateExtraNamespace()
 
 			createStatefulSet(extraNs, "two", map[string]string{
-				k8s.LabelGUID:    guid,
-				k8s.LabelVersion: "42",
+				stset.LabelGUID:    guid,
+				stset.LabelVersion: "42",
 			})
 		})
 
@@ -438,17 +439,17 @@ var _ = Describe("Jobs", func() {
 	Describe("GetByGUID", func() {
 		BeforeEach(func() {
 			createJob(fixture.Namespace, "foo", map[string]string{
-				k8s.LabelGUID: "bar",
+				jobs.LabelGUID: "bar",
 			})
 
 			createJob(fixture.Namespace, "foo-complete", map[string]string{
-				k8s.LabelGUID:          "baz",
-				k8s.LabelTaskCompleted: k8s.TaskCompletedTrue,
+				jobs.LabelGUID:          "baz",
+				jobs.LabelTaskCompleted: jobs.TaskCompletedTrue,
 			})
 
 			extraNs := fixture.CreateExtraNamespace()
 			createJob(extraNs, "foo2", map[string]string{
-				k8s.LabelGUID: "bar",
+				jobs.LabelGUID: "bar",
 			})
 		})
 
@@ -490,17 +491,17 @@ var _ = Describe("Jobs", func() {
 			extraNs = fixture.CreateExtraNamespace()
 
 			createJob(fixture.Namespace, "foo", map[string]string{
-				k8s.LabelGUID:       taskGUID,
-				k8s.LabelSourceType: "TASK",
+				jobs.LabelGUID:       taskGUID,
+				jobs.LabelSourceType: "TASK",
 			})
 			createJob(fixture.Namespace, "completedfoo", map[string]string{
-				k8s.LabelGUID:          completedTaskGUID,
-				k8s.LabelSourceType:    "TASK",
-				k8s.LabelTaskCompleted: "true",
+				jobs.LabelGUID:          completedTaskGUID,
+				jobs.LabelSourceType:    "TASK",
+				jobs.LabelTaskCompleted: "true",
 			})
 			createJob(extraNs, "bas", map[string]string{
-				k8s.LabelGUID:       extraTaskGUID,
-				k8s.LabelSourceType: "TASK",
+				jobs.LabelGUID:       extraTaskGUID,
+				jobs.LabelSourceType: "TASK",
 			})
 		})
 
@@ -546,8 +547,8 @@ var _ = Describe("Jobs", func() {
 		BeforeEach(func() {
 			taskGUID = tests.GenerateGUID()
 			createJob(fixture.Namespace, "foo", map[string]string{
-				k8s.LabelGUID:       taskGUID,
-				k8s.LabelSourceType: "TASK",
+				jobs.LabelGUID:       taskGUID,
+				jobs.LabelSourceType: "TASK",
 			})
 
 			Eventually(func() (*batchv1.Job, error) {
@@ -577,13 +578,13 @@ var _ = Describe("Jobs", func() {
 			job, err := getJob(taskGUID)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(job.Labels).To(HaveKeyWithValue(k8s.LabelGUID, taskGUID))
-			Expect(job.Labels).To(HaveKeyWithValue(k8s.LabelSourceType, "TASK"))
+			Expect(job.Labels).To(HaveKeyWithValue(jobs.LabelGUID, taskGUID))
+			Expect(job.Labels).To(HaveKeyWithValue(jobs.LabelSourceType, "TASK"))
 		})
 
 		When("setting an existing label", func() {
 			BeforeEach(func() {
-				label = k8s.LabelSourceType
+				label = jobs.LabelSourceType
 				value = "APP"
 			})
 
@@ -591,7 +592,7 @@ var _ = Describe("Jobs", func() {
 				job, err := getJob(taskGUID)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(job.Labels).To(HaveKeyWithValue(k8s.LabelSourceType, "APP"))
+				Expect(job.Labels).To(HaveKeyWithValue(jobs.LabelSourceType, "APP"))
 			})
 		})
 	})
@@ -611,7 +612,7 @@ var _ = Describe("Secrets", func() {
 			guid = tests.GenerateGUID()
 
 			createSecret(fixture.Namespace, "foo", map[string]string{
-				k8s.LabelGUID: guid,
+				stset.LabelGUID: guid,
 			})
 
 			extraNs = fixture.CreateExtraNamespace()
@@ -624,7 +625,7 @@ var _ = Describe("Secrets", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(secret.Name).To(Equal("foo"))
-			Expect(secret.Labels[k8s.LabelGUID]).To(Equal(guid))
+			Expect(secret.Labels[stset.LabelGUID]).To(Equal(guid))
 		})
 	})
 
@@ -839,10 +840,10 @@ func jobNames(jobs []batchv1.Job) []string {
 	return names
 }
 
-func jobGUIDs(jobs []batchv1.Job) []string {
-	guids := make([]string, 0, len(jobs))
-	for _, job := range jobs {
-		guids = append(guids, job.Labels[k8s.LabelGUID])
+func jobGUIDs(allJobs []batchv1.Job) []string {
+	guids := make([]string, 0, len(allJobs))
+	for _, job := range allJobs {
+		guids = append(guids, job.Labels[jobs.LabelGUID])
 	}
 
 	return guids
@@ -868,7 +869,7 @@ func eventNames(events []corev1.Event) []string {
 
 func getJob(taskGUID string) (*batchv1.Job, error) {
 	jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelGUID, taskGUID),
+		LabelSelector: fmt.Sprintf("%s=%s", jobs.LabelGUID, taskGUID),
 	})
 	if err != nil {
 		return nil, err

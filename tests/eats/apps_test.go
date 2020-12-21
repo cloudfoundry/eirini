@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
@@ -465,7 +465,7 @@ func processGUID(guid, version string) string {
 
 func getStatefulSet(guid, version string) *appsv1.StatefulSet {
 	statefulSets, err := fixture.Clientset.AppsV1().StatefulSets("").List(context.Background(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", k8s.LabelGUID, guid, k8s.LabelVersion, version),
+		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, guid, stset.LabelVersion, version),
 	})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(statefulSets.Items).To(HaveLen(1))

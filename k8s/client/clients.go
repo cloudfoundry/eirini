@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/patching"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/opi"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -33,7 +34,7 @@ func (c *Pod) GetAll() ([]corev1.Pod, error) {
 	podList, err := c.clientSet.CoreV1().Pods(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf(
 			"%s in (%s,%s)",
-			k8s.LabelSourceType, "APP", "TASK",
+			stset.LabelSourceType, "APP", "TASK",
 		),
 	})
 	if err != nil {
@@ -47,8 +48,8 @@ func (c *Pod) GetByLRPIdentifier(id opi.LRPIdentifier) ([]corev1.Pod, error) {
 	podList, err := c.clientSet.CoreV1().Pods(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf(
 			"%s=%s,%s=%s",
-			k8s.LabelGUID, id.GUID,
-			k8s.LabelVersion, id.Version,
+			stset.LabelGUID, id.GUID,
+			stset.LabelVersion, id.Version,
 		),
 	})
 	if err != nil {
@@ -112,7 +113,7 @@ func (c *StatefulSet) Get(namespace, name string) (*appsv1.StatefulSet, error) {
 
 func (c *StatefulSet) GetBySourceType(sourceType string) ([]appsv1.StatefulSet, error) {
 	statefulSetList, err := c.clientSet.AppsV1().StatefulSets(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", k8s.LabelSourceType, sourceType),
+		LabelSelector: fmt.Sprintf("%s=%s", stset.LabelSourceType, sourceType),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets by resource type")
@@ -125,8 +126,8 @@ func (c *StatefulSet) GetByLRPIdentifier(id opi.LRPIdentifier) ([]appsv1.Statefu
 	statefulSetList, err := c.clientSet.AppsV1().StatefulSets(c.workloadsNamespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf(
 			"%s=%s,%s=%s",
-			k8s.LabelGUID, id.GUID,
-			k8s.LabelVersion, id.Version,
+			stset.LabelGUID, id.GUID,
+			stset.LabelVersion, id.Version,
 		),
 	})
 	if err != nil {
@@ -160,7 +161,7 @@ func NewJob(clientSet kubernetes.Interface, workloadsNamespace string) *Job {
 		clientSet:          clientSet,
 		workloadsNamespace: workloadsNamespace,
 		jobType:            "TASK",
-		guidLabel:          k8s.LabelGUID,
+		guidLabel:          jobs.LabelGUID,
 	}
 }
 
@@ -178,10 +179,10 @@ func (c *Job) Delete(namespace string, name string) error {
 }
 
 func (c *Job) GetByGUID(guid string, includeCompleted bool) ([]batchv1.Job, error) {
-	labelSelector := fmt.Sprintf("%s=%s", k8s.LabelGUID, guid)
+	labelSelector := fmt.Sprintf("%s=%s", jobs.LabelGUID, guid)
 
 	if !includeCompleted {
-		labelSelector += fmt.Sprintf(",%s!=%s", k8s.LabelTaskCompleted, k8s.TaskCompletedTrue)
+		labelSelector += fmt.Sprintf(",%s!=%s", jobs.LabelTaskCompleted, jobs.TaskCompletedTrue)
 	}
 
 	listOpts := metav1.ListOptions{LabelSelector: labelSelector}
@@ -191,10 +192,10 @@ func (c *Job) GetByGUID(guid string, includeCompleted bool) ([]batchv1.Job, erro
 }
 
 func (c *Job) List(includeCompleted bool) ([]batchv1.Job, error) {
-	labelSelector := fmt.Sprintf("%s=%s", k8s.LabelSourceType, c.jobType)
+	labelSelector := fmt.Sprintf("%s=%s", jobs.LabelSourceType, c.jobType)
 
 	if !includeCompleted {
-		labelSelector += fmt.Sprintf(",%s!=%s", k8s.LabelTaskCompleted, k8s.TaskCompletedTrue)
+		labelSelector += fmt.Sprintf(",%s!=%s", jobs.LabelTaskCompleted, jobs.TaskCompletedTrue)
 	}
 
 	listOpts := metav1.ListOptions{LabelSelector: labelSelector}

@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini/events"
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/informers/event"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
@@ -86,7 +86,7 @@ var _ = Describe("CrashEventGenerator", func() {
 				BeforeEach(func() {
 					pod = newPod([]v1.ContainerStatus{
 						{
-							Name:         k8s.OPIContainerName,
+							Name:         stset.OPIContainerName,
 							RestartCount: 0,
 							State: v1.ContainerState{
 								Waiting: &v1.ContainerStateWaiting{
@@ -174,7 +174,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			BeforeEach(func() {
 				pod = newPod([]v1.ContainerStatus{
 					{
-						Name:         k8s.OPIContainerName,
+						Name:         stset.OPIContainerName,
 						RestartCount: 1,
 						State: v1.ContainerState{
 							Running: &v1.ContainerStateRunning{},
@@ -211,7 +211,7 @@ var _ = Describe("CrashEventGenerator", func() {
 		BeforeEach(func() {
 			pod = newPod([]v1.ContainerStatus{
 				{
-					Name:         k8s.OPIContainerName,
+					Name:         stset.OPIContainerName,
 					RestartCount: 1,
 					State: v1.ContainerState{
 						Waiting: &v1.ContainerStateWaiting{
@@ -320,7 +320,7 @@ func newTerminatedPod() *v1.Pod {
 			},
 		},
 		{
-			Name:         k8s.OPIContainerName,
+			Name:         stset.OPIContainerName,
 			RestartCount: 8,
 			State: v1.ContainerState{
 				Terminated: &v1.ContainerStateTerminated{
@@ -343,7 +343,7 @@ func newRunningLastTerminatedPod() *v1.Pod {
 			},
 		},
 		{
-			Name:         k8s.OPIContainerName,
+			Name:         stset.OPIContainerName,
 			RestartCount: 8,
 			State: v1.ContainerState{
 				Running: &v1.ContainerStateRunning{},
@@ -362,7 +362,7 @@ func newRunningLastTerminatedPod() *v1.Pod {
 func newTerminatedSidecarPod() *v1.Pod {
 	return newPod([]v1.ContainerStatus{
 		{
-			Name:         k8s.OPIContainerName,
+			Name:         stset.OPIContainerName,
 			RestartCount: 1,
 			State: v1.ContainerState{
 				Running: &v1.ContainerStateRunning{},
@@ -389,11 +389,11 @@ func newPod(statuses []v1.ContainerStatus) *v1.Pod {
 		ObjectMeta: meta.ObjectMeta{
 			Name: fmt.Sprintf("%s-%d", name, 0),
 			Labels: map[string]string{
-				k8s.LabelSourceType: k8s.AppSourceType,
+				stset.LabelSourceType: stset.AppSourceType,
 			},
 			Annotations: map[string]string{
-				k8s.AnnotationProcessGUID: fmt.Sprintf("%s-anno", name),
-				k8s.AnnotationVersion:     fmt.Sprintf("%s-version", name),
+				stset.AnnotationProcessGUID: fmt.Sprintf("%s-anno", name),
+				stset.AnnotationVersion:     fmt.Sprintf("%s-version", name),
 			},
 			OwnerReferences: []meta.OwnerReference{
 				{

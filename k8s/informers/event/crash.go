@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/eirini/events"
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -80,7 +80,7 @@ func (c *CrashReconciler) Reconcile(request reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, nil
 	}
 
-	if strconv.FormatInt(event.CrashTimestamp, 10) == pod.Annotations[k8s.AnnotationLastReportedAppCrash] {
+	if strconv.FormatInt(event.CrashTimestamp, 10) == pod.Annotations[stset.AnnotationLastReportedAppCrash] {
 		logger.Debug("event-already-sent")
 
 		return reconcile.Result{}, nil
@@ -102,7 +102,7 @@ func (c *CrashReconciler) Reconcile(request reconcile.Request) (reconcile.Result
 		newPod.Annotations = map[string]string{}
 	}
 
-	newPod.Annotations[k8s.AnnotationLastReportedAppCrash] = strconv.FormatInt(event.CrashTimestamp, 10)
+	newPod.Annotations[stset.AnnotationLastReportedAppCrash] = strconv.FormatInt(event.CrashTimestamp, 10)
 
 	if err = c.client.Patch(context.Background(), newPod, client.MergeFrom(pod)); err != nil {
 		logger.Error("failed-to-set-last-crash-time-on-pod", err)

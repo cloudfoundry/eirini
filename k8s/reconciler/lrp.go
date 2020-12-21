@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
@@ -27,7 +27,7 @@ import (
 //counterfeiter:generate . StatefulSetGetter
 
 type LRPDesirer interface {
-	Desire(namespace string, lrp *opi.LRP, opts ...k8s.DesireOption) error
+	Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) error
 	Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
 	Update(lrp *opi.LRP) error
 }

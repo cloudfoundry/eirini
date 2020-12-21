@@ -1,7 +1,7 @@
 package reconciler
 
 import (
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
@@ -17,7 +17,7 @@ func (p SourceTypeUpdatePredicate) Update(e event.UpdateEvent) bool {
 	obj := e.MetaNew
 	labels := obj.GetLabels()
 
-	return labels[k8s.LabelSourceType] == p.sourceType
+	return labels[stset.LabelSourceType] == p.sourceType
 }
 
 func (SourceTypeUpdatePredicate) Create(event.CreateEvent) bool {

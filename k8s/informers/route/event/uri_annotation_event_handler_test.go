@@ -3,10 +3,10 @@ package event_test
 import (
 	"time"
 
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/k8s/informers/route/event"
 	"code.cloudfoundry.org/eirini/k8s/informers/route/event/eventfakes"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	eiriniroutefakes "code.cloudfoundry.org/eirini/route/routefakes"
 	"code.cloudfoundry.org/lager"
@@ -790,8 +790,8 @@ func createStatefulSetWithRoutes(routes string) *appsv1.StatefulSet {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "mr-stateful",
 			Annotations: map[string]string{
-				k8s.AnnotationRegisteredRoutes: routes,
-				k8s.AnnotationProcessGUID:      "myguid",
+				stset.AnnotationRegisteredRoutes: routes,
+				stset.AnnotationProcessGUID:      "myguid",
 			},
 		},
 		Spec: appsv1.StatefulSetSpec{
@@ -815,7 +815,7 @@ func createPod(name, ip string) corev1.Pod {
 				},
 			},
 			Labels: map[string]string{
-				k8s.LabelGUID: name + "-guid",
+				stset.LabelGUID: name + "-guid",
 			},
 		},
 		Status: corev1.PodStatus{

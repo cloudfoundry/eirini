@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini/events"
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/k8s/informers/event/eventfakes"
 	"code.cloudfoundry.org/eirini/k8s/reconciler/reconcilerfakes"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
@@ -44,7 +44,7 @@ var _ = Describe("Event", func() {
 				Name:      "name",
 				Namespace: "namespace",
 				Annotations: map[string]string{
-					k8s.AnnotationLastReportedAppCrash: "42",
+					stset.AnnotationLastReportedAppCrash: "42",
 				},
 			},
 		}
@@ -140,7 +140,7 @@ var _ = Describe("Event", func() {
 		Expect(err).NotTo(HaveOccurred())
 		timestamp := strconv.FormatInt(crashEvent.CrashTimestamp, 10)
 		Expect(string(patchBytes)).To(SatisfyAll(
-			ContainSubstring(k8s.AnnotationLastReportedAppCrash),
+			ContainSubstring(stset.AnnotationLastReportedAppCrash),
 			ContainSubstring(timestamp),
 		))
 	})
@@ -168,7 +168,7 @@ var _ = Describe("Event", func() {
 
 	When("the app crash has already been reported", func() {
 		BeforeEach(func() {
-			pod.Annotations[k8s.AnnotationLastReportedAppCrash] = "123456"
+			pod.Annotations[stset.AnnotationLastReportedAppCrash] = "123456"
 			crashEvent.CrashTimestamp = 123456
 			eventGenerator.GenerateReturns(crashEvent, true)
 		})

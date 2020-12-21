@@ -3,11 +3,14 @@ package event
 import (
 	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	v1 "k8s.io/api/core/v1"
 )
+
+const eventKilling = "Killing"
 
 type DefaultCrashEventGenerator struct {
 	eventsClient k8s.EventsClient
@@ -23,8 +26,8 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 	logger = logger.Session("generate-crash-event",
 		lager.Data{
 			"pod-name": pod.Name,
-			"guid":     pod.Annotations[k8s.AnnotationProcessGUID],
-			"version":  pod.Annotations[k8s.AnnotationVersion],
+			"guid":     pod.Annotations[stset.AnnotationProcessGUID],
+			"version":  pod.Annotations[stset.AnnotationVersion],
 		})
 
 	statuses := pod.Status.ContainerStatuses
@@ -34,7 +37,7 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 		return events.CrashEvent{}, false
 	}
 
-	if pod.Labels[k8s.LabelSourceType] != k8s.AppSourceType {
+	if pod.Labels[stset.LabelSourceType] != stset.AppSourceType {
 		logger.Debug("skipping-non-eirini-pod")
 
 		return events.CrashEvent{}, false
@@ -72,7 +75,7 @@ func (g DefaultCrashEventGenerator) generateReportForTerminatedPod(pod *v1.Pod, 
 		return events.CrashEvent{}, false
 	}
 
-	if k8s.IsStopped(podEvents) {
+	if isStopped(podEvents) {
 		logger.Debug("skipping-pod-stopped")
 
 		return events.CrashEvent{}, false
@@ -94,7 +97,7 @@ func generateReport(
 	index, _ := util.ParseAppIndex(pod.Name)
 
 	return events.CrashEvent{
-		ProcessGUID: pod.Annotations[k8s.AnnotationProcessGUID],
+		ProcessGUID: pod.Annotations[stset.AnnotationProcessGUID],
 		AppCrashedRequest: cc_messages.AppCrashedRequest{
 			Reason:          reason,
 			Instance:        pod.Name,
@@ -109,7 +112,7 @@ func generateReport(
 
 func getOPIContainerStatus(statuses []v1.ContainerStatus) *v1.ContainerStatus {
 	for _, status := range statuses {
-		if status.Name == k8s.OPIContainerName {
+		if status.Name == stset.OPIContainerName {
 			return &status
 		}
 	}
@@ -129,4 +132,14 @@ func calculateCrashCount(containerState *v1.ContainerStatus) int {
 	}
 
 	return int(containerState.RestartCount + 1)
+}
+
+func isStopped(events []v1.Event) bool {
+	if len(events) == 0 {
+		return false
+	}
+
+	event := events[len(events)-1]
+
+	return event.Reason == eventKilling
 }

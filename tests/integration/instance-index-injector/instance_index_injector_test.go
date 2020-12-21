@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -63,13 +63,13 @@ var _ = Describe("InstanceIndexInjector", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "app-name-0",
 				Labels: map[string]string{
-					k8s.LabelSourceType: "APP",
+					stset.LabelSourceType: "APP",
 				},
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
 					{
-						Name:  k8s.OPIContainerName,
+						Name:  stset.OPIContainerName,
 						Image: "eirini/dorini",
 					},
 					{
@@ -119,7 +119,7 @@ var _ = Describe("InstanceIndexInjector", func() {
 	}
 
 	It("sets CF_INSTANCE_INDEX in the opi container environment", func() {
-		Expect(getCFInstanceIndex(pod, k8s.OPIContainerName)).To(Equal("0"))
+		Expect(getCFInstanceIndex(pod, stset.OPIContainerName)).To(Equal("0"))
 	})
 
 	It("does not set CF_INSTANCE_INDEX on the non-opi container", func() {

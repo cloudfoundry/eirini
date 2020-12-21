@@ -4,20 +4,26 @@ import (
 	"context"
 	"strconv"
 
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/metrics"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
-	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	metricsv1beta1 "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
 )
 
+//counterfeiter:generate . PodsGetter
 //counterfeiter:generate . MetricsCollector
 //counterfeiter:generate . DiskAPI
 //counterfeiter:generate . Emitter
 //counterfeiter:generate -o k8sfakes/fake_pod_metrics_interface.go k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1.PodMetricsInterface
+
+type PodsGetter interface {
+	GetAll() ([]corev1.Pod, error)
+}
 
 type MetricsCollector interface {
 	Collect() ([]metrics.Message, error)
@@ -46,25 +52,25 @@ func ForwardMetricsToEmitter(collector MetricsCollector, emitter Emitter) error 
 
 type metricsCollector struct {
 	metricsClient metricsv1beta1.PodMetricsInterface
-	podClient     PodClient
+	podsGetter    PodsGetter
 	diskClient    DiskAPI
 	logger        lager.Logger
 }
 
 func NewMetricsCollector(metricsClient metricsv1beta1.PodMetricsInterface,
-	podClient PodClient,
+	podsGetter PodsGetter,
 	diskClient DiskAPI,
 	logger lager.Logger) MetricsCollector {
 	return &metricsCollector{
 		metricsClient: metricsClient,
-		podClient:     podClient,
+		podsGetter:    podsGetter,
 		diskClient:    diskClient,
 		logger:        logger,
 	}
 }
 
 func (c *metricsCollector) Collect() ([]metrics.Message, error) {
-	pods, err := c.podClient.GetAll()
+	pods, err := c.podsGetter.GetAll()
 	if err != nil {
 		return []metrics.Message{}, errors.Wrap(err, "failed to list pods")
 	}
@@ -72,7 +78,7 @@ func (c *metricsCollector) Collect() ([]metrics.Message, error) {
 	return c.collectMetrics(pods), nil
 }
 
-func (c *metricsCollector) collectMetrics(pods []apiv1.Pod) []metrics.Message {
+func (c *metricsCollector) collectMetrics(pods []corev1.Pod) []metrics.Message {
 	logger := c.logger.Session("collect")
 
 	diskMetrics, err := c.diskClient.GetPodMetrics()
@@ -102,7 +108,7 @@ func (c *metricsCollector) collectMetrics(pods []apiv1.Pod) []metrics.Message {
 		diskUsage := diskMetrics[pod.Name]
 
 		messages = append(messages, metrics.Message{
-			AppID:       pod.Labels[LabelGUID],
+			AppID:       pod.Labels[stset.LabelGUID],
 			IndexID:     strconv.Itoa(indexID),
 			CPU:         cpuPercentage,
 			Memory:      memoryValue,
@@ -122,9 +128,9 @@ func parseMetrics(metric v1beta1.PodMetrics) (cpu float64, memory float64) {
 
 	container := metric.Containers[0]
 	usage := container.Usage
-	res := usage[apiv1.ResourceCPU]
+	res := usage[corev1.ResourceCPU]
 	cpu = toCPUPercentage(res.MilliValue())
-	res = usage[apiv1.ResourceMemory]
+	res = usage[corev1.ResourceMemory]
 	memory = float64(res.Value())
 
 	return
@@ -143,4 +149,8 @@ func (c *metricsCollector) getPodMetrics() (map[string]v1beta1.PodMetrics, error
 	}
 
 	return metricsMap, nil
+}
+
+func toCPUPercentage(cpuMillicores int64) float64 {
+	return float64(cpuMillicores) / 10 //nolint:gomnd
 }

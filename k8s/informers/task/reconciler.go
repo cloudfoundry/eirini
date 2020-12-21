@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/lager"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
@@ -91,7 +91,7 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 		return reconcile.Result{}, nil
 	}
 
-	guid := pod.Labels[k8s.LabelGUID]
+	guid := pod.Labels[jobs.LabelGUID]
 	logger = logger.WithData(lager.Data{"guid": guid})
 
 	jobsForPods, err := r.jobs.GetByGUID(guid, true)
@@ -108,12 +108,12 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 	}
 
 	if err = r.reportIfRequired(pod); err != nil {
-		logger.Error("completion-callback-failed", err, lager.Data{"tries": pod.Annotations[k8s.AnnotationOpiTaskCompletionReportCounter]})
+		logger.Error("completion-callback-failed", err, lager.Data{"tries": pod.Annotations[jobs.AnnotationOpiTaskCompletionReportCounter]})
 
 		return reconcile.Result{}, err
 	}
 
-	if _, err = r.jobs.SetLabel(&jobsForPods[0], k8s.LabelTaskCompleted, k8s.TaskCompletedTrue); err != nil {
+	if _, err = r.jobs.SetLabel(&jobsForPods[0], jobs.LabelTaskCompleted, jobs.TaskCompletedTrue); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to label the job as completed")
 	}
 
@@ -131,11 +131,11 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 }
 
 func (r *Reconciler) reportIfRequired(pod *corev1.Pod) error {
-	if pod.Annotations[k8s.AnnotationCCAckedTaskCompletion] == k8s.TaskCompletedTrue {
+	if pod.Annotations[jobs.AnnotationCCAckedTaskCompletion] == jobs.TaskCompletedTrue {
 		return nil
 	}
 
-	completionCounter := parseIntOrZero(pod.Annotations[k8s.AnnotationOpiTaskCompletionReportCounter])
+	completionCounter := parseIntOrZero(pod.Annotations[jobs.AnnotationOpiTaskCompletionReportCounter])
 	if completionCounter >= r.callbackRetryLimit {
 		return nil
 	}
@@ -143,14 +143,14 @@ func (r *Reconciler) reportIfRequired(pod *corev1.Pod) error {
 	if err := r.reporter.Report(pod); err != nil {
 		resultErr := multierror.Append(err)
 
-		if _, updateErr := r.pods.SetAnnotation(pod, k8s.AnnotationOpiTaskCompletionReportCounter, strconv.Itoa(completionCounter+1)); updateErr != nil {
+		if _, updateErr := r.pods.SetAnnotation(pod, jobs.AnnotationOpiTaskCompletionReportCounter, strconv.Itoa(completionCounter+1)); updateErr != nil {
 			resultErr = multierror.Append(resultErr, updateErr)
 		}
 
 		return resultErr.ErrorOrNil()
 	}
 
-	if _, updateErr := r.pods.SetAnnotation(pod, k8s.AnnotationCCAckedTaskCompletion, k8s.TaskCompletedTrue); updateErr != nil {
+	if _, updateErr := r.pods.SetAnnotation(pod, jobs.AnnotationCCAckedTaskCompletion, jobs.TaskCompletedTrue); updateErr != nil {
 		return errors.Wrap(updateErr, "failed to set task completion annotation")
 	}
 

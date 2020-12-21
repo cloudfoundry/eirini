@@ -3,8 +3,8 @@ package event
 import (
 	"reflect"
 
-	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/informers/route"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/models/cf"
 	eiriniroute "code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/lager"
@@ -33,7 +33,7 @@ func (h URIAnnotationUpdateHandler) Handle(oldStatefulSet, updatedStatefulSet *a
 }
 
 func (h URIAnnotationUpdateHandler) onUpdate(oldStatefulSet, updatedStatefulSet *appsv1.StatefulSet) {
-	loggerSession := h.Logger.Session("statefulset-update", lager.Data{"guid": updatedStatefulSet.Annotations[k8s.AnnotationProcessGUID]})
+	loggerSession := h.Logger.Session("statefulset-update", lager.Data{"guid": updatedStatefulSet.Annotations[stset.AnnotationProcessGUID]})
 
 	updatedSet, err := decodeRoutesAsSet(updatedStatefulSet)
 	if err != nil {
@@ -123,7 +123,7 @@ func groupRoutesByPort(remove, add set.Set) portGroup {
 func decodeRoutesAsSet(statefulset *appsv1.StatefulSet) (set.Set, error) {
 	routes := set.NewSet()
 
-	updatedUserDefinedRoutes, err := decodeRoutes(statefulset.Annotations[k8s.AnnotationRegisteredRoutes])
+	updatedUserDefinedRoutes, err := decodeRoutes(statefulset.Annotations[stset.AnnotationRegisteredRoutes])
 	if err != nil {
 		return set.NewSet(), err
 	}

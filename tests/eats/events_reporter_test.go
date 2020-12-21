@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"code.cloudfoundry.org/eirini/k8s"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/eats/wiremock"
@@ -147,7 +147,7 @@ func exposeLRP(namespace, guid string, appPort int32, pingPath ...string) string
 				},
 			},
 			Selector: map[string]string{
-				k8s.LabelGUID: guid,
+				stset.LabelGUID: guid,
 			},
 		},
 	}, metav1.CreateOptions{})

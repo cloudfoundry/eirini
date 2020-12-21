@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/client"
 	informerroute "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/k8s/informers/route/event"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/route/routefakes"
@@ -19,8 +20,8 @@ import (
 
 var _ = Describe("Routes", func() {
 	var (
-		desirer *k8s.StatefulSetDesirer
-		odinLRP *opi.LRP
+		lrpClient *k8s.LRPClient
+		odinLRP   *opi.LRP
 	)
 
 	AfterEach(func() {
@@ -33,19 +34,24 @@ var _ = Describe("Routes", func() {
 	BeforeEach(func() {
 		odinLRP = createLRP("ödin")
 		logger := lagertest.NewTestLogger("test")
-		desirer = &k8s.StatefulSetDesirer{
-			Pods:                      client.NewPod(fixture.Clientset, fixture.Namespace),
-			Secrets:                   client.NewSecret(fixture.Clientset),
-			StatefulSets:              client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
-			PodDisruptionBudgets:      client.NewPodDisruptionBudget(fixture.Clientset),
-			EventsClient:              client.NewEvent(fixture.Clientset),
-			StatefulSetToLRPMapper:    k8s.StatefulSetToLRP,
-			RegistrySecretName:        "registry-secret",
-			LivenessProbeCreator:      k8s.CreateLivenessProbe,
-			ReadinessProbeCreator:     k8s.CreateReadinessProbe,
-			Logger:                    logger,
-			ApplicationServiceAccount: tests.GetApplicationServiceAccount(),
-		}
+
+		lrpToStatefulSet := stset.NewLRPToStatefulSet(
+			tests.GetApplicationServiceAccount(),
+			"registry-secret",
+			false,
+			k8s.CreateLivenessProbe,
+			k8s.CreateReadinessProbe,
+		)
+		lrpClient = k8s.NewLRPClient(
+			logger,
+			client.NewSecret(fixture.Clientset),
+			client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
+			client.NewPod(fixture.Clientset, fixture.Namespace),
+			client.NewPodDisruptionBudget(fixture.Clientset),
+			client.NewEvent(fixture.Clientset),
+			lrpToStatefulSet,
+			stset.MapStatefulSetToLRP,
+		)
 	})
 
 	Describe("RouteCollector", func() {
@@ -62,7 +68,7 @@ var _ = Describe("Routes", func() {
 
 		When("an LRP is desired", func() {
 			It("sends register routes message", func() {
-				Expect(desirer.Desire(fixture.Namespace, odinLRP)).To(Succeed())
+				Expect(lrpClient.Desire(fixture.Namespace, odinLRP)).To(Succeed())
 				Eventually(func() bool {
 					pods := listPods(odinLRP.LRPIdentifier)
 					if len(pods) < 1 {
@@ -105,7 +111,7 @@ else
 	done;
 fi;`,
 					}
-					err := desirer.Desire(fixture.Namespace, odinLRP)
+					err := lrpClient.Desire(fixture.Namespace, odinLRP)
 					Expect(err).ToNot(HaveOccurred())
 					Eventually(func() bool {
 						pods := listPods(odinLRP.LRPIdentifier)
@@ -144,7 +150,7 @@ fi;`,
 		)
 
 		BeforeEach(func() {
-			err := desirer.Desire(fixture.Namespace, odinLRP)
+			err := lrpClient.Desire(fixture.Namespace, odinLRP)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(func() bool {
 				pods := listPods(odinLRP.LRPIdentifier)
@@ -191,7 +197,7 @@ fi;`,
 
 		When("an app is stopped", func() {
 			It("sends unregister routes message", func() {
-				Expect(desirer.Stop(odinLRP.LRPIdentifier)).To(Succeed())
+				Expect(lrpClient.Stop(odinLRP.LRPIdentifier)).To(Succeed())
 				pods := listPods(odinLRP.LRPIdentifier)
 
 				Eventually(fakeRouteEmitter.EmitCallCount).Should(Equal(2))
@@ -229,7 +235,7 @@ fi;`,
 					{Hostname: "foo.example.com", Port: 8080},
 					{Hostname: "bar.example.com", Port: 9090},
 				}
-				Expect(desirer.Update(odinLRP)).To(Succeed())
+				Expect(lrpClient.Update(odinLRP)).To(Succeed())
 				pods := listPods(odinLRP.LRPIdentifier)
 
 				Eventually(fakeRouteEmitter.EmitCallCount).Should(Equal(4))
@@ -262,7 +268,7 @@ fi;`,
 
 		BeforeEach(func() {
 			odinLRP.TargetInstances = 2
-			Expect(desirer.Desire(fixture.Namespace, odinLRP)).To(Succeed())
+			Expect(lrpClient.Desire(fixture.Namespace, odinLRP)).To(Succeed())
 			Eventually(func() bool {
 				pods := listPods(odinLRP.LRPIdentifier)
 				if len(pods) < 2 {
@@ -304,7 +310,7 @@ fi;`,
 			It("sends unregister routes message", func() {
 				pods := listPods(odinLRP.LRPIdentifier)
 				odinLRP.TargetInstances = 1
-				Expect(desirer.Update(odinLRP)).To(Succeed())
+				Expect(lrpClient.Update(odinLRP)).To(Succeed())
 
 				Eventually(fakeRouteEmitter.EmitCallCount).Should(Equal(1))
 				Expect(fakeRouteEmitter.EmitArgsForCall(0)).To(Equal(route.Message{
@@ -323,7 +329,7 @@ fi;`,
 		When("an app instance is stopped", func() {
 			It("sends unregister routes message", func() {
 				pods := listPods(odinLRP.LRPIdentifier)
-				Expect(desirer.StopInstance(odinLRP.LRPIdentifier, 0)).To(Succeed())
+				Expect(lrpClient.StopInstance(odinLRP.LRPIdentifier, 0)).To(Succeed())
 
 				Eventually(fakeRouteEmitter.EmitCallCount).Should(Equal(1))
 				Expect(fakeRouteEmitter.EmitArgsForCall(0)).To(Equal(route.Message{
