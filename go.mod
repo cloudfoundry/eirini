@@ -30,8 +30,8 @@ require (
 	code.cloudfoundry.org/tlsconfig v0.0.0-20200131000646-bbe0f8da39b3
 	code.cloudfoundry.org/tps v0.0.0-20190724214151-ce1ef3913d8e
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
-	github.com/Azure/go-autorest/autorest v0.11.14 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.9.9 // indirect
+	github.com/Azure/go-autorest/autorest v0.11.15 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.9.10 // indirect
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/cloudflare/cfssl v1.5.0 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
@@ -72,32 +72,31 @@ require (
 	github.com/onsi/gomega v1.10.4
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.8.0 // indirect
-	github.com/prometheus/common v0.15.0 // indirect
+	github.com/prometheus/client_golang v1.9.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/afero v1.5.1 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	github.com/urfave/cli v1.22.5 // indirect
-	github.com/zmap/zcrypto v0.0.0-20201211161100-e54a5822fb7e // indirect
+	github.com/zmap/zcrypto v0.0.0-20201222012629-deeac007a01d // indirect
 	go.uber.org/zap v1.16.0
-	golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9 // indirect
+	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
-	golang.org/x/sys v0.0.0-20201214210602-f9fddec55a1e // indirect
+	golang.org/x/sys v0.0.0-20201221093633-bc327ba9c2f0 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324 // indirect
-	golang.org/x/tools v0.0.0-20201215192005-fa10ef0b8743 // indirect
+	golang.org/x/tools v0.0.0-20201222163215-f2e330f49058 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d // indirect
 	google.golang.org/grpc v1.34.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.20.0
-	k8s.io/apiextensions-apiserver v0.20.0 // indirect
-	k8s.io/apimachinery v0.20.0
+	k8s.io/api v0.20.1
+	k8s.io/apiextensions-apiserver v0.20.1 // indirect
+	k8s.io/apimachinery v0.20.1
 	k8s.io/client-go v1.5.1
-	k8s.io/code-generator v0.20.0
+	k8s.io/code-generator v0.20.1
 	k8s.io/klog v1.0.0
-	k8s.io/metrics v0.20.0
+	k8s.io/metrics v0.20.1
 	sigs.k8s.io/controller-runtime v0.7.0
 )
