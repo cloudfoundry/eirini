@@ -15,7 +15,7 @@ import (
 
 const DockerHubHost = "index.docker.io/v1/"
 
-var dockerRX = regexp.MustCompile(`([a-zA-Z0-9.-]+)(:([0-9]+))?/(\S+/\S+)`) //nolint:gochecknoglobals
+var dockerRX = regexp.MustCompile(`([a-zA-Z0-9.-]+)(:([0-9]+))?/(\S+/\S+)`)
 
 type lifecycleOptions struct {
 	command         []string

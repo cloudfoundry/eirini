@@ -142,7 +142,6 @@ func (f *Fixture) deleteNamespace(namespace string) error {
 	return errs.ErrorOrNil()
 }
 
-//nolint:gocyclo
 func (f *Fixture) printDebugInfo() {
 	fmt.Fprintln(f.Writer, "Jobs:")
 

@@ -37,7 +37,7 @@ func toCPUMillicores(cpuPercentage uint8) resource.Quantity {
 }
 
 func toCPUPercentage(cpuMillicores int64) float64 {
-	return float64(cpuMillicores) / 10
+	return float64(cpuMillicores) / 10 //nolint:gomnd
 }
 
 func toSeconds(millis uint) int32 {

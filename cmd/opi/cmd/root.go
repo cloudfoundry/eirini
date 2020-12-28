@@ -23,7 +23,7 @@ func Execute() {
 	rootCmd.AddCommand(connectCmd)
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		fmt.Println(err) //nolint:makezero
 		os.Exit(1)
 	}
 }
