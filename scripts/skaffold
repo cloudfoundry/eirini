@@ -5,12 +5,13 @@ set -euo pipefail
 trap revert_manifest_shas EXIT
 
 export NATS_PASSWORD=${NATS_PASSWORD:-$(pass eirini/ci/nats-password)}
+export WIREMOCK_KEYSTORE_PASSWORD=${WIREMOCK_KEYSTORE_PASSWORD:-$(pass eirini/ci/wiremock-keystore-password)}
 
 main() {
   strip_manifest_shas
   init_helm
   create_namespaces
-  generate_secret
+  generate_secrets
   skaffold $@
 }
 
@@ -26,8 +27,8 @@ create_namespaces() {
   cat "$HOME"/workspace/eirini-release/deploy/**/namespace.yml | kubectl apply -f -
 }
 
-generate_secret() {
-  "$HOME/workspace/eirini-release/deploy/scripts/generate_eirini_tls.sh" "*.eirini-core.svc.cluster.local"
+generate_secrets() {
+  "$HOME/workspace/eirini-release/deploy/scripts/generate_eirini_tls.sh" "*.eirini-core.svc.cluster.local" "$WIREMOCK_KEYSTORE_PASSWORD"
   eirini_certs_json=$(kubectl get -n eirini-core secret eirini-certs -o json)
   echo "$eirini_certs_json" | jq --arg pass "$(echo -n $NATS_PASSWORD | base64)" '.data["nats-password"]=$pass' | kubectl apply -f -
 }

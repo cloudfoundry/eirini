@@ -31,7 +31,7 @@ var _ = Describe("Tasks Reporter [needs-logs-for: eirini-api, eirini-task-report
 			GUID:               taskGUID,
 			Namespace:          fixture.Namespace,
 			AppGUID:            tests.GenerateGUID(),
-			CompletionCallback: fmt.Sprintf("%s/%s", fixture.Wiremock.URL, taskGUID),
+			CompletionCallback: fmt.Sprintf("%s/%s", fixture.Wiremock.Address(), taskGUID),
 			Lifecycle: cf.Lifecycle{
 				DockerLifecycle: &cf.DockerLifecycle{
 					Image: "eirini/busybox",

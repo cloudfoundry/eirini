@@ -149,5 +149,5 @@ func NewWiremock() *wiremock.Wiremock {
 
 	RetryResolveHost(wireMockHost, "Is wiremock running in the cluster?")
 
-	return wiremock.New(fmt.Sprintf("http://%s", wireMockHost))
+	return wiremock.New(wireMockHost)
 }

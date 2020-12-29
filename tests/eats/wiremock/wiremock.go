@@ -12,11 +12,14 @@ import (
 )
 
 type Wiremock struct {
-	URL string
+	httpAddress, httpsAddress string
 }
 
-func New(url string) *Wiremock {
-	return &Wiremock{URL: url}
+func New(wiremockHost string) *Wiremock {
+	return &Wiremock{
+		httpAddress:  fmt.Sprintf("http://%s", wiremockHost),
+		httpsAddress: fmt.Sprintf("https://%s", wiremockHost),
+	}
 }
 
 func (w *Wiremock) Reset() error {
@@ -35,6 +38,10 @@ type RequestMatcher struct {
 
 type Response struct {
 	Status int `json:"status"`
+}
+
+func (w *Wiremock) Address() string {
+	return w.httpsAddress
 }
 
 func (w *Wiremock) AddStub(stub Stub) error {
@@ -116,7 +123,7 @@ func (w *Wiremock) postWithResponse(path string, body interface{}) (*http.Respon
 	}
 
 	resp, err := retryOnTemporaryError(func() (*http.Response, error) {
-		return http.Post(fmt.Sprintf("%s/__admin/%s", w.URL, path), "application/json", bytes.NewReader(bodyJSON))
+		return http.Post(fmt.Sprintf("%s/__admin/%s", w.httpAddress, path), "application/json", bytes.NewReader(bodyJSON))
 	}, 5, time.Second)
 	if err != nil {
 		return nil, err
