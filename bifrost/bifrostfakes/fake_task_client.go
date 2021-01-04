@@ -9,7 +9,20 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 )
 
-type FakeTaskDesirer struct {
+type FakeTaskClient struct {
+	DeleteStub        func(string) (string, error)
+	deleteMutex       sync.RWMutex
+	deleteArgsForCall []struct {
+		arg1 string
+	}
+	deleteReturns struct {
+		result1 string
+		result2 error
+	}
+	deleteReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	DesireStub        func(string, *opi.Task, ...shared.Option) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
@@ -52,7 +65,71 @@ type FakeTaskDesirer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskDesirer) Desire(arg1 string, arg2 *opi.Task, arg3 ...shared.Option) error {
+func (fake *FakeTaskClient) Delete(arg1 string) (string, error) {
+	fake.deleteMutex.Lock()
+	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
+	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.DeleteStub
+	fakeReturns := fake.deleteReturns
+	fake.recordInvocation("Delete", []interface{}{arg1})
+	fake.deleteMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeTaskClient) DeleteCallCount() int {
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
+	return len(fake.deleteArgsForCall)
+}
+
+func (fake *FakeTaskClient) DeleteCalls(stub func(string) (string, error)) {
+	fake.deleteMutex.Lock()
+	defer fake.deleteMutex.Unlock()
+	fake.DeleteStub = stub
+}
+
+func (fake *FakeTaskClient) DeleteArgsForCall(i int) string {
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
+	argsForCall := fake.deleteArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeTaskClient) DeleteReturns(result1 string, result2 error) {
+	fake.deleteMutex.Lock()
+	defer fake.deleteMutex.Unlock()
+	fake.DeleteStub = nil
+	fake.deleteReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeTaskClient) DeleteReturnsOnCall(i int, result1 string, result2 error) {
+	fake.deleteMutex.Lock()
+	defer fake.deleteMutex.Unlock()
+	fake.DeleteStub = nil
+	if fake.deleteReturnsOnCall == nil {
+		fake.deleteReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.deleteReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeTaskClient) Desire(arg1 string, arg2 *opi.Task, arg3 ...shared.Option) error {
 	fake.desireMutex.Lock()
 	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
 	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
@@ -73,26 +150,26 @@ func (fake *FakeTaskDesirer) Desire(arg1 string, arg2 *opi.Task, arg3 ...shared.
 	return fakeReturns.result1
 }
 
-func (fake *FakeTaskDesirer) DesireCallCount() int {
+func (fake *FakeTaskClient) DesireCallCount() int {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	return len(fake.desireArgsForCall)
 }
 
-func (fake *FakeTaskDesirer) DesireCalls(stub func(string, *opi.Task, ...shared.Option) error) {
+func (fake *FakeTaskClient) DesireCalls(stub func(string, *opi.Task, ...shared.Option) error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = stub
 }
 
-func (fake *FakeTaskDesirer) DesireArgsForCall(i int) (string, *opi.Task, []shared.Option) {
+func (fake *FakeTaskClient) DesireArgsForCall(i int) (string, *opi.Task, []shared.Option) {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	argsForCall := fake.desireArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeTaskDesirer) DesireReturns(result1 error) {
+func (fake *FakeTaskClient) DesireReturns(result1 error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = nil
@@ -101,7 +178,7 @@ func (fake *FakeTaskDesirer) DesireReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeTaskDesirer) DesireReturnsOnCall(i int, result1 error) {
+func (fake *FakeTaskClient) DesireReturnsOnCall(i int, result1 error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = nil
@@ -115,7 +192,7 @@ func (fake *FakeTaskDesirer) DesireReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeTaskDesirer) Get(arg1 string) (*opi.Task, error) {
+func (fake *FakeTaskClient) Get(arg1 string) (*opi.Task, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
@@ -134,26 +211,26 @@ func (fake *FakeTaskDesirer) Get(arg1 string) (*opi.Task, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeTaskDesirer) GetCallCount() int {
+func (fake *FakeTaskClient) GetCallCount() int {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	return len(fake.getArgsForCall)
 }
 
-func (fake *FakeTaskDesirer) GetCalls(stub func(string) (*opi.Task, error)) {
+func (fake *FakeTaskClient) GetCalls(stub func(string) (*opi.Task, error)) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = stub
 }
 
-func (fake *FakeTaskDesirer) GetArgsForCall(i int) string {
+func (fake *FakeTaskClient) GetArgsForCall(i int) string {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	argsForCall := fake.getArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeTaskDesirer) GetReturns(result1 *opi.Task, result2 error) {
+func (fake *FakeTaskClient) GetReturns(result1 *opi.Task, result2 error) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
@@ -163,7 +240,7 @@ func (fake *FakeTaskDesirer) GetReturns(result1 *opi.Task, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeTaskDesirer) GetReturnsOnCall(i int, result1 *opi.Task, result2 error) {
+func (fake *FakeTaskClient) GetReturnsOnCall(i int, result1 *opi.Task, result2 error) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
@@ -179,7 +256,7 @@ func (fake *FakeTaskDesirer) GetReturnsOnCall(i int, result1 *opi.Task, result2 
 	}{result1, result2}
 }
 
-func (fake *FakeTaskDesirer) List() ([]*opi.Task, error) {
+func (fake *FakeTaskClient) List() ([]*opi.Task, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
@@ -197,19 +274,19 @@ func (fake *FakeTaskDesirer) List() ([]*opi.Task, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeTaskDesirer) ListCallCount() int {
+func (fake *FakeTaskClient) ListCallCount() int {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakeTaskDesirer) ListCalls(stub func() ([]*opi.Task, error)) {
+func (fake *FakeTaskClient) ListCalls(stub func() ([]*opi.Task, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
 }
 
-func (fake *FakeTaskDesirer) ListReturns(result1 []*opi.Task, result2 error) {
+func (fake *FakeTaskClient) ListReturns(result1 []*opi.Task, result2 error) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
@@ -219,7 +296,7 @@ func (fake *FakeTaskDesirer) ListReturns(result1 []*opi.Task, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeTaskDesirer) ListReturnsOnCall(i int, result1 []*opi.Task, result2 error) {
+func (fake *FakeTaskClient) ListReturnsOnCall(i int, result1 []*opi.Task, result2 error) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
@@ -235,9 +312,11 @@ func (fake *FakeTaskDesirer) ListReturnsOnCall(i int, result1 []*opi.Task, resul
 	}{result1, result2}
 }
 
-func (fake *FakeTaskDesirer) Invocations() map[string][][]interface{} {
+func (fake *FakeTaskClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	fake.getMutex.RLock()
@@ -251,7 +330,7 @@ func (fake *FakeTaskDesirer) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeTaskDesirer) recordInvocation(key string, args []interface{}) {
+func (fake *FakeTaskClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -263,4 +342,4 @@ func (fake *FakeTaskDesirer) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ bifrost.TaskDesirer = new(FakeTaskDesirer)
+var _ bifrost.TaskClient = new(FakeTaskClient)

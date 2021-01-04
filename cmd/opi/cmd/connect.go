@@ -157,11 +157,10 @@ func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifros
 	namespacer := bifrost.NewNamespacer(cfg.Properties.DefaultWorkloadsNamespace)
 
 	return &bifrost.Task{
-		Converter:   converter,
-		TaskDesirer: taskClient,
-		TaskDeleter: taskClient,
-		JSONClient:  retryableJSONClient,
-		Namespacer:  namespacer,
+		Converter:  converter,
+		TaskClient: taskClient,
+		JSONClient: retryableJSONClient,
+		Namespacer: namespacer,
 	}
 }
 
@@ -203,7 +202,7 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 
 	return &bifrost.LRP{
 		Converter:  converter,
-		Desirer:    lrpClient,
+		LRPClient:  lrpClient,
 		Namespacer: namespacer,
 	}
 }

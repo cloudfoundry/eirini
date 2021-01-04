@@ -10,8 +10,7 @@ import (
 )
 
 //counterfeiter:generate . TaskConverter
-//counterfeiter:generate . TaskDesirer
-//counterfeiter:generate . TaskDeleter
+//counterfeiter:generate . TaskClient
 //counterfeiter:generate . JSONClient
 //counterfeiter:generate . TaskNamespacer
 
@@ -19,13 +18,10 @@ type TaskConverter interface {
 	ConvertTask(taskGUID string, request cf.TaskRequest) (opi.Task, error)
 }
 
-type TaskDesirer interface {
+type TaskClient interface {
 	Desire(namespace string, task *opi.Task, opts ...shared.Option) error
 	Get(guid string) (*opi.Task, error)
 	List() ([]*opi.Task, error)
-}
-
-type TaskDeleter interface {
 	Delete(guid string) (string, error)
 }
 
@@ -38,15 +34,14 @@ type TaskNamespacer interface {
 }
 
 type Task struct {
-	Namespacer  TaskNamespacer
-	Converter   TaskConverter
-	TaskDesirer TaskDesirer
-	TaskDeleter TaskDeleter
-	JSONClient  JSONClient
+	Namespacer TaskNamespacer
+	Converter  TaskConverter
+	TaskClient TaskClient
+	JSONClient JSONClient
 }
 
 func (t *Task) GetTask(taskGUID string) (cf.TaskResponse, error) {
-	task, err := t.TaskDesirer.Get(taskGUID)
+	task, err := t.TaskClient.Get(taskGUID)
 	if err != nil {
 		return cf.TaskResponse{}, errors.Wrap(err, "failed to get task")
 	}
@@ -55,7 +50,7 @@ func (t *Task) GetTask(taskGUID string) (cf.TaskResponse, error) {
 }
 
 func (t *Task) ListTasks() (cf.TasksResponse, error) {
-	tasks, err := t.TaskDesirer.List()
+	tasks, err := t.TaskClient.List()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list tasks")
 	}
@@ -76,11 +71,11 @@ func (t *Task) TransferTask(ctx context.Context, taskGUID string, taskRequest cf
 
 	namespace := t.Namespacer.GetNamespace(taskRequest.Namespace)
 
-	return errors.Wrap(t.TaskDesirer.Desire(namespace, &desiredTask), "failed to desire")
+	return errors.Wrap(t.TaskClient.Desire(namespace, &desiredTask), "failed to desire")
 }
 
 func (t *Task) CancelTask(taskGUID string) error {
-	callbackURL, err := t.TaskDeleter.Delete(taskGUID)
+	callbackURL, err := t.TaskClient.Delete(taskGUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete task %s", taskGUID)
 	}

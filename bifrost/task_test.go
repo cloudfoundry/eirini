@@ -17,8 +17,7 @@ var _ = Describe("Task", func() {
 		err           error
 		taskBifrost   *bifrost.Task
 		taskConverter *bifrostfakes.FakeTaskConverter
-		taskDesirer   *bifrostfakes.FakeTaskDesirer
-		taskDeleter   *bifrostfakes.FakeTaskDeleter
+		taskClient    *bifrostfakes.FakeTaskClient
 		jsonClient    *bifrostfakes.FakeJSONClient
 		namespacer    *bifrostfakes.FakeTaskNamespacer
 		taskGUID      string
@@ -27,8 +26,7 @@ var _ = Describe("Task", func() {
 
 	BeforeEach(func() {
 		taskConverter = new(bifrostfakes.FakeTaskConverter)
-		taskDesirer = new(bifrostfakes.FakeTaskDesirer)
-		taskDeleter = new(bifrostfakes.FakeTaskDeleter)
+		taskClient = new(bifrostfakes.FakeTaskClient)
 		jsonClient = new(bifrostfakes.FakeJSONClient)
 		namespacer = new(bifrostfakes.FakeTaskNamespacer)
 
@@ -38,11 +36,10 @@ var _ = Describe("Task", func() {
 		namespacer.GetNamespaceReturns("our-namespace")
 
 		taskBifrost = &bifrost.Task{
-			Converter:   taskConverter,
-			TaskDesirer: taskDesirer,
-			TaskDeleter: taskDeleter,
-			JSONClient:  jsonClient,
-			Namespacer:  namespacer,
+			Converter:  taskConverter,
+			TaskClient: taskClient,
+			JSONClient: jsonClient,
+			Namespacer: namespacer,
 		}
 	})
 
@@ -81,8 +78,8 @@ var _ = Describe("Task", func() {
 			Expect(actualTaskGUID).To(Equal(taskGUID))
 			Expect(actualTaskRequest).To(Equal(taskRequest))
 
-			Expect(taskDesirer.DesireCallCount()).To(Equal(1))
-			namespace, desiredTask, _ := taskDesirer.DesireArgsForCall(0)
+			Expect(taskClient.DesireCallCount()).To(Equal(1))
+			namespace, desiredTask, _ := taskClient.DesireArgsForCall(0)
 			Expect(desiredTask.GUID).To(Equal("my-guid"))
 			Expect(namespace).To(Equal("our-namespace"))
 		})
@@ -97,13 +94,13 @@ var _ = Describe("Task", func() {
 			})
 
 			It("does not desire the task", func() {
-				Expect(taskDesirer.DesireCallCount()).To(Equal(0))
+				Expect(taskClient.DesireCallCount()).To(Equal(0))
 			})
 		})
 
 		When("desiring the task fails", func() {
 			BeforeEach(func() {
-				taskDesirer.DesireReturns(errors.New("desire-task-err"))
+				taskClient.DesireReturns(errors.New("desire-task-err"))
 			})
 
 			It("returns the error", func() {
@@ -116,7 +113,7 @@ var _ = Describe("Task", func() {
 		var taskResponse cf.TaskResponse
 
 		BeforeEach(func() {
-			taskDesirer.GetReturns(&opi.Task{GUID: taskGUID}, nil)
+			taskClient.GetReturns(&opi.Task{GUID: taskGUID}, nil)
 		})
 
 		JustBeforeEach(func() {
@@ -128,14 +125,14 @@ var _ = Describe("Task", func() {
 		})
 
 		It("finds a task by GUID", func() {
-			Expect(taskDesirer.GetCallCount()).To(Equal(1))
-			Expect(taskDesirer.GetArgsForCall(0)).To(Equal(taskGUID))
+			Expect(taskClient.GetCallCount()).To(Equal(1))
+			Expect(taskClient.GetArgsForCall(0)).To(Equal(taskGUID))
 			Expect(taskResponse.GUID).To(Equal(taskGUID))
 		})
 
 		When("finding the task fails", func() {
 			BeforeEach(func() {
-				taskDesirer.GetReturns(nil, errors.New("task-error"))
+				taskClient.GetReturns(nil, errors.New("task-error"))
 			})
 
 			It("fails", func() {
@@ -148,7 +145,7 @@ var _ = Describe("Task", func() {
 		var tasksResponse cf.TasksResponse
 
 		BeforeEach(func() {
-			taskDesirer.ListReturns([]*opi.Task{{GUID: taskGUID}}, nil)
+			taskClient.ListReturns([]*opi.Task{{GUID: taskGUID}}, nil)
 		})
 
 		JustBeforeEach(func() {
@@ -160,14 +157,14 @@ var _ = Describe("Task", func() {
 		})
 
 		It("lists all tasks", func() {
-			Expect(taskDesirer.ListCallCount()).To(Equal(1))
+			Expect(taskClient.ListCallCount()).To(Equal(1))
 			Expect(tasksResponse).To(HaveLen(1))
 			Expect(tasksResponse[0].GUID).To(Equal(taskGUID))
 		})
 
 		When("listing tasks fails", func() {
 			BeforeEach(func() {
-				taskDesirer.ListReturns(nil, errors.New("list-tasks-error"))
+				taskClient.ListReturns(nil, errors.New("list-tasks-error"))
 			})
 
 			It("fails", func() {
@@ -177,7 +174,7 @@ var _ = Describe("Task", func() {
 
 		When("there are no tasks", func() {
 			BeforeEach(func() {
-				taskDesirer.ListReturns([]*opi.Task{}, nil)
+				taskClient.ListReturns([]*opi.Task{}, nil)
 			})
 
 			It("fails", func() {
@@ -190,7 +187,7 @@ var _ = Describe("Task", func() {
 
 	Describe("Cancel Task", func() {
 		BeforeEach(func() {
-			taskDeleter.DeleteReturns("the/callback/url", nil)
+			taskClient.DeleteReturns("the/callback/url", nil)
 		})
 
 		JustBeforeEach(func() {
@@ -202,13 +199,13 @@ var _ = Describe("Task", func() {
 		})
 
 		It("deletes the task", func() {
-			Expect(taskDeleter.DeleteCallCount()).To(Equal(1))
-			Expect(taskDeleter.DeleteArgsForCall(0)).To(Equal(taskGUID))
+			Expect(taskClient.DeleteCallCount()).To(Equal(1))
+			Expect(taskClient.DeleteArgsForCall(0)).To(Equal(taskGUID))
 		})
 
 		When("deleting the task fails", func() {
 			BeforeEach(func() {
-				taskDeleter.DeleteReturns("", errors.New("delete-task-err"))
+				taskClient.DeleteReturns("", errors.New("delete-task-err"))
 			})
 
 			It("returns the error", func() {
@@ -240,7 +237,7 @@ var _ = Describe("Task", func() {
 
 		When("the callback URL is empty", func() {
 			BeforeEach(func() {
-				taskDeleter.DeleteReturns("", nil)
+				taskClient.DeleteReturns("", nil)
 			})
 
 			It("still succeeds", func() {
