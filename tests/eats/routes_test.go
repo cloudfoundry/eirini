@@ -1,38 +1,25 @@
-package opi_test
+package eats_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
-	"os"
+	"time"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/route"
 	"code.cloudfoundry.org/eirini/tests"
 	"github.com/nats-io/nats-server/v2/server"
-	natstest "github.com/nats-io/nats-server/v2/test"
 	"github.com/nats-io/nats.go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 	. "github.com/onsi/gomega/gstruct"
-	"k8s.io/client-go/rest"
 )
 
 var _ = Describe("Routes", func() {
 	var (
-		collectorSession        *gexec.Session
-		collectorConfig         string
-		uriInformerSession      *gexec.Session
-		uriInformerConfig       string
-		instanceInformerSession *gexec.Session
-		instanceInformerConfig  string
-
 		natsConfig *server.Options
-		natsServer *server.Server
 		natsClient *nats.Conn
 
 		registerChan   chan *nats.Msg
@@ -46,28 +33,7 @@ var _ = Describe("Routes", func() {
 		unregisterChan = make(chan *nats.Msg)
 
 		natsConfig = getNatsServerConfig()
-		// natstest.RunServer will panic after 10 seconds and that can't be changed
-		Eventually(func() error {
-			var err error
-			natsServer, err = runNatsTestServer(natsConfig)
-
-			return err
-		}, "1m").Should(Succeed())
 		natsClient = subscribeToNats(natsConfig, registerChan, unregisterChan)
-
-		eiriniRouteConfig := eirini.RouteEmitterConfig{
-			NatsPassword:        natsConfig.Password,
-			NatsIP:              natsConfig.Host,
-			NatsPort:            natsConfig.Port,
-			EmitPeriodInSeconds: 1,
-			WorkloadsNamespace:  fixture.Namespace,
-			KubeConfig: eirini.KubeConfig{
-				ConfigPath: fixture.KubeConfigPath,
-			},
-		}
-		collectorSession, collectorConfig = eiriniBins.RouteCollector.Run(eiriniRouteConfig)
-		uriInformerSession, uriInformerConfig = eiriniBins.RouteStatefulsetInformer.Run(eiriniRouteConfig)
-		instanceInformerSession, instanceInformerConfig = eiriniBins.RoutePodInformer.Run(eiriniRouteConfig)
 
 		lrp = cf.DesireLRPRequest{
 			GUID:         tests.GenerateGUID(),
@@ -90,44 +56,35 @@ var _ = Describe("Routes", func() {
 	})
 
 	AfterEach(func() {
-		if collectorSession != nil {
-			collectorSession.Kill()
-		}
-		if uriInformerSession != nil {
-			uriInformerSession.Kill()
-		}
-		if instanceInformerSession != nil {
-			instanceInformerSession.Kill()
-		}
-		if natsServer != nil {
-			natsServer.Shutdown()
-		}
 		if natsClient != nil {
 			natsClient.Close()
 		}
-		Expect(os.Remove(collectorConfig)).To(Succeed())
-		Expect(os.Remove(uriInformerConfig)).To(Succeed())
-		Expect(os.Remove(instanceInformerConfig)).To(Succeed())
 	})
 
 	Describe("Desiring an app", func() {
 		JustBeforeEach(func() {
-			Expect(desireLRP(httpClient, url, lrp).StatusCode).To(Equal(http.StatusAccepted))
+			Expect(desireLRP(lrp)).To(Equal(http.StatusAccepted))
 		})
 
 		It("continuously registers its routes", func() {
-			var msg *nats.Msg
+			count := 0
 
-			for i := 0; i < 5; i++ {
-				Eventually(registerChan).Should(Receive(&msg))
+			Eventually(func() (int, error) {
+				msg := <-registerChan
 				var actualMessage route.RegistryMessage
 				Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
+				if actualMessage.App != lrp.GUID {
+					return count, nil
+				}
+
 				Expect(net.ParseIP(actualMessage.Host).IsUnspecified()).To(BeFalse())
 				Expect(actualMessage.Port).To(BeNumerically("==", 8080))
 				Expect(actualMessage.URIs).To(ConsistOf("app-hostname-1"))
-				Expect(actualMessage.App).To(Equal(lrp.GUID))
 				Expect(actualMessage.PrivateInstanceID).To(ContainSubstring(lrp.GUID))
-			}
+				count++
+
+				return count, nil
+			}).Should(BeNumerically(">", 2))
 		})
 
 		When("the app fails to start", func() {
@@ -136,7 +93,17 @@ var _ = Describe("Routes", func() {
 			})
 
 			It("does not register routes", func() {
-				Consistently(registerChan).ShouldNot(Receive())
+				Consistently(func() bool {
+					select {
+					case msg := <-registerChan:
+						var actualMessage route.RegistryMessage
+						Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
+
+						return actualMessage.App != lrp.GUID
+					case <-time.After(100 * time.Millisecond):
+						return true
+					}
+				}).Should(BeTrue())
 			})
 		})
 	})
@@ -144,39 +111,27 @@ var _ = Describe("Routes", func() {
 	Describe("Updating an app", func() {
 		var (
 			desiredRoutes []tests.RouteInfo
-			emittedRoutes []string
 			instances     int
 		)
 
-		appRoutes := func() []string {
-			var (
-				msg           *nats.Msg
-				actualMessage route.RegistryMessage
-			)
-
-			Eventually(registerChan).Should(Receive(&msg))
-			Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
-			emittedRoutes = append(emittedRoutes, actualMessage.URIs...)
-
-			return emittedRoutes
-		}
-
 		JustBeforeEach(func() {
-			Expect(desireLRP(httpClient, url, lrp).StatusCode).To(Equal(http.StatusAccepted))
-			Eventually(registerChan).Should(Receive())
+			Expect(desireLRP(lrp)).To(Equal(http.StatusAccepted))
+			Eventually(func() string {
+				msg := receivedMessage(registerChan)
 
-			resp, err := updateLRP(httpClient,
-				url,
-				cf.UpdateDesiredLRPRequest{
-					GUID:    lrp.GUID,
-					Version: lrp.Version,
-					Update: cf.DesiredLRPUpdate{
-						Instances: instances,
-						Routes: map[string]json.RawMessage{
-							"cf-router": tests.MarshalRoutes(desiredRoutes),
-						},
+				return msg.App
+			}).Should(Equal(lrp.GUID))
+
+			resp, err := updateLRP(cf.UpdateDesiredLRPRequest{
+				GUID:    lrp.GUID,
+				Version: lrp.Version,
+				Update: cf.DesiredLRPUpdate{
+					Instances: instances,
+					Routes: map[string]json.RawMessage{
+						"cf-router": tests.MarshalRoutes(desiredRoutes),
 					},
-				})
+				},
+			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
@@ -191,7 +146,12 @@ var _ = Describe("Routes", func() {
 			})
 
 			It("registers the new route", func() {
-				Eventually(appRoutes).Should(ContainElements("app-hostname-1", "app-hostname-2"))
+				Eventually(func() route.RegistryMessage {
+					return receivedMessage(registerChan)
+				}).Should(MatchFields(IgnoreExtras, Fields{
+					"App":  Equal(lrp.GUID),
+					"URIs": ConsistOf("app-hostname-1", "app-hostname-2"),
+				}))
 			})
 		})
 
@@ -202,17 +162,12 @@ var _ = Describe("Routes", func() {
 			})
 
 			It("unregisters the route", func() {
-				Eventually(func() []string {
-					var (
-						msg           *nats.Msg
-						actualMessage route.RegistryMessage
-					)
-
-					Eventually(unregisterChan).Should(Receive(&msg))
-					Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
-
-					return actualMessage.URIs
-				}).Should(ConsistOf("app-hostname-1"))
+				Eventually(func() route.RegistryMessage {
+					return receivedMessage(unregisterChan)
+				}).Should(MatchFields(IgnoreExtras, Fields{
+					"App":  Equal(lrp.GUID),
+					"URIs": ConsistOf("app-hostname-1"),
+				}))
 			})
 		})
 
@@ -228,6 +183,7 @@ var _ = Describe("Routes", func() {
 				Eventually(func() route.RegistryMessage {
 					return receivedMessage(registerChan)
 				}).Should(MatchFields(IgnoreExtras, Fields{
+					"App":               Equal(lrp.GUID),
 					"URIs":              ConsistOf("app-hostname-1"),
 					"PrivateInstanceID": SatisfyAll(ContainSubstring(lrp.GUID), MatchRegexp("-1$")),
 				}))
@@ -246,6 +202,7 @@ var _ = Describe("Routes", func() {
 				Eventually(func() route.RegistryMessage {
 					return receivedMessage(unregisterChan)
 				}).Should(MatchFields(IgnoreExtras, Fields{
+					"App":               Equal(lrp.GUID),
 					"URIs":              ConsistOf("app-hostname-1"),
 					"PrivateInstanceID": SatisfyAll(ContainSubstring(lrp.GUID), MatchRegexp("-0$")),
 				}))
@@ -255,29 +212,14 @@ var _ = Describe("Routes", func() {
 
 	Describe("Stopping an app", func() {
 		JustBeforeEach(func() {
-			Expect(desireLRP(httpClient, url, lrp).StatusCode).To(Equal(http.StatusAccepted))
-			Eventually(registerChan).Should(Receive())
+			Expect(desireLRP(lrp)).To(Equal(http.StatusAccepted))
+			Eventually(func() string {
+				msg := receivedMessage(registerChan)
 
-			resp, err := stopLRP(httpClient, url, lrp.GUID, lrp.Version)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-		})
+				return msg.App
+			}).Should(Equal(lrp.GUID))
 
-		It("unregisteres the app route", func() {
-			var msg *nats.Msg
-			Eventually(unregisterChan).Should(Receive(&msg))
-			var actualMessage route.RegistryMessage
-			Expect(json.Unmarshal(msg.Data, &actualMessage)).To(Succeed())
-			Expect(actualMessage.URIs).To(ConsistOf("app-hostname-1"))
-		})
-	})
-
-	Describe("Stopping an app instance", func() {
-		JustBeforeEach(func() {
-			Expect(desireLRP(httpClient, url, lrp).StatusCode).To(Equal(http.StatusAccepted))
-			Eventually(registerChan).Should(Receive())
-
-			resp, err := stopLRPInstance(httpClient, url, lrp.GUID, lrp.Version, 0)
+			resp, err := stopLRP(lrp.GUID, lrp.Version)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
@@ -286,12 +228,38 @@ var _ = Describe("Routes", func() {
 			Eventually(func() route.RegistryMessage {
 				return receivedMessage(unregisterChan)
 			}).Should(MatchFields(IgnoreExtras, Fields{
+				"App":  Equal(lrp.GUID),
+				"URIs": ConsistOf("app-hostname-1"),
+			}))
+		})
+	})
+
+	Describe("Stopping an app instance", func() {
+		JustBeforeEach(func() {
+			Expect(desireLRP(lrp)).To(Equal(http.StatusAccepted))
+			Eventually(func() string {
+				msg := receivedMessage(registerChan)
+
+				return msg.App
+			}).Should(Equal(lrp.GUID))
+
+			resp, err := stopLRPInstance(lrp.GUID, lrp.Version, 0)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		})
+
+		It("unregisters the app route", func() {
+			Eventually(func() route.RegistryMessage {
+				return receivedMessage(unregisterChan)
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"App":               Equal(lrp.GUID),
 				"URIs":              ConsistOf("app-hostname-1"),
 				"PrivateInstanceID": SatisfyAll(ContainSubstring(lrp.GUID), MatchRegexp("-0$")),
 			}))
 			Eventually(func() route.RegistryMessage {
 				return receivedMessage(registerChan)
 			}).Should(MatchFields(IgnoreExtras, Fields{
+				"App":               Equal(lrp.GUID),
 				"URIs":              ConsistOf("app-hostname-1"),
 				"PrivateInstanceID": SatisfyAll(ContainSubstring(lrp.GUID), MatchRegexp("-0$")),
 			}))
@@ -313,13 +281,13 @@ func receivedMessage(channel <-chan *nats.Msg) route.RegistryMessage {
 
 func getNatsServerConfig() *server.Options {
 	return &server.Options{
-		Host:           "127.0.0.1",
-		Port:           fixture.NextAvailablePort(),
+		Host:           "nats-client.eirini-core.svc.cluster.local",
+		Port:           4222,
 		NoLog:          true,
 		NoSigs:         true,
 		MaxControlLine: 2048,
 		Username:       "nats",
-		Password:       "s3cr3t",
+		Password:       "fuckhelmandeverythingaboutit",
 	}
 }
 
@@ -342,59 +310,4 @@ func subscribeToNats(natsConfig *server.Options, registerChan, unregisterChan ch
 	Expect(err).NotTo(HaveOccurred())
 
 	return natsClient
-}
-
-func runNatsTestServer(opts *server.Options) (server *server.Server, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("Failed to start test NATS server: %s", r)
-		}
-	}()
-
-	server = natstest.RunServer(opts)
-
-	return server, nil
-}
-
-func desireLRP(httpClient rest.HTTPClient, url string, lrpRequest cf.DesireLRPRequest) *http.Response {
-	body, err := json.Marshal(lrpRequest)
-	Expect(err).NotTo(HaveOccurred())
-	desireLrpReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s", url, lrpRequest.GUID), bytes.NewReader(body))
-	Expect(err).NotTo(HaveOccurred())
-	response, err := httpClient.Do(desireLrpReq)
-	Expect(err).NotTo(HaveOccurred())
-
-	return response
-}
-
-func stopLRP(httpClient rest.HTTPClient, url string, processGUID, versionGUID string) (*http.Response, error) {
-	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop", url, processGUID, versionGUID), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return httpClient.Do(request)
-}
-
-func stopLRPInstance(httpClient rest.HTTPClient, url string, processGUID, versionGUID string, instance int) (*http.Response, error) {
-	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop/%d", url, processGUID, versionGUID, instance), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return httpClient.Do(request)
-}
-
-func updateLRP(httpClient rest.HTTPClient, url string, updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error) {
-	body, err := json.Marshal(updateRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	updateLrpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/apps/%s", url, updateRequest.GUID), bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-
-	return httpClient.Do(updateLrpReq)
 }

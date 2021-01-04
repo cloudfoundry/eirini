@@ -101,7 +101,7 @@ run_eats_helmless() {
   echo
 
   if [[ "$redeploy" == "true" ]]; then
-    KUBECONFIG="$kubeconfig" skaffold delete -p helmless
+    KUBECONFIG="$kubeconfig" skaffold delete -p helmless || true # helm will fail if nothing is deployed
     KUBECONFIG="$kubeconfig" "$RUN_DIR/skaffold" run -p helmless
   fi
 
