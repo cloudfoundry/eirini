@@ -90,7 +90,6 @@ profiles:
       - name: nats
         remote: true
         chartPath: bitnami/nats
-        version: 4.5.8
         namespace: eirini-core
         setValueTemplates:
           auth.user: nats
