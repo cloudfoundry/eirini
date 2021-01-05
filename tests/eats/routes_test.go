@@ -287,7 +287,7 @@ func getNatsServerConfig() *server.Options {
 		NoSigs:         true,
 		MaxControlLine: 2048,
 		Username:       "nats",
-		Password:       "fuckhelmandeverythingaboutit",
+		Password:       fixture.GetNATSPassword(),
 	}
 }
 

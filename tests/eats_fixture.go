@@ -143,6 +143,13 @@ func (f *EATSFixture) GetEiriniWorkloadsNamespace() string {
 	return config.Properties.DefaultWorkloadsNamespace
 }
 
+func (f *EATSFixture) GetNATSPassword() string {
+	secret, err := f.Clientset.CoreV1().Secrets(GetEiriniSystemNamespace()).Get(context.Background(), "nats-secret", metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	return string(secret.Data["nats-password"])
+}
+
 func NewWiremock() *wiremock.Wiremock {
 	// We assume wiremock is exposed using a ClusterIP service which listens on port 80
 	wireMockHost := fmt.Sprintf("cc-wiremock.%s.svc.cluster.local", GetEiriniSystemNamespace())
