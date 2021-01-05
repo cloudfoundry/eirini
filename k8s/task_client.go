@@ -33,10 +33,10 @@ func NewTaskClient(
 	logger lager.Logger,
 	jobClient JobClient,
 	secretClient SecretClient,
-	taskToJob jobs.TaskToJob,
+	taskToJobConverter jobs.TaskToJobConverter,
 ) *TaskClient {
 	return &TaskClient{
-		Desirer: jobs.NewDesirer(logger, taskToJob, jobClient, secretClient),
+		Desirer: jobs.NewDesirer(logger, taskToJobConverter, jobClient, secretClient),
 		Getter:  jobs.NewGetter(jobClient),
 		Deleter: jobs.NewDeleter(logger, jobClient, jobClient, secretClient),
 		Lister:  jobs.NewLister(jobClient),

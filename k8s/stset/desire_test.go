@@ -30,7 +30,7 @@ var _ = Describe("Desirer", func() {
 		logger                     lager.Logger
 		secrets                    *stsetfakes.FakeSecretsCreator
 		statefulSets               *stsetfakes.FakeStatefulSetCreator
-		lrpToStatefulSet           *stsetfakes.FakeLRPToStatefulSet
+		lrpToStatefulSetConverter  *stsetfakes.FakeLRPToStatefulSetConverter
 		podDisruptionBudget        *stsetfakes.FakePodDisruptionBudgetCreator
 		desireOptOne, desireOptTwo *sharedfakes.FakeOption
 
@@ -44,8 +44,8 @@ var _ = Describe("Desirer", func() {
 		logger = lagertest.NewTestLogger("statefulset-desirer")
 		secrets = new(stsetfakes.FakeSecretsCreator)
 		statefulSets = new(stsetfakes.FakeStatefulSetCreator)
-		lrpToStatefulSet = new(stsetfakes.FakeLRPToStatefulSet)
-		lrpToStatefulSet.Stub = func(statefulSetName string, lrp *opi.LRP) (*v1.StatefulSet, error) {
+		lrpToStatefulSetConverter = new(stsetfakes.FakeLRPToStatefulSetConverter)
+		lrpToStatefulSetConverter.ConvertStub = func(statefulSetName string, lrp *opi.LRP) (*v1.StatefulSet, error) {
 			return &v1.StatefulSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: statefulSetName,
@@ -58,7 +58,7 @@ var _ = Describe("Desirer", func() {
 		desireOptOne = new(sharedfakes.FakeOption)
 		desireOptTwo = new(sharedfakes.FakeOption)
 
-		desirer = stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSet.Spy, podDisruptionBudget)
+		desirer = stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSetConverter, podDisruptionBudget)
 	})
 
 	JustBeforeEach(func() {

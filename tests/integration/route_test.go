@@ -35,7 +35,7 @@ var _ = Describe("Routes", func() {
 		odinLRP = createLRP("ödin")
 		logger := lagertest.NewTestLogger("test")
 
-		lrpToStatefulSet := stset.NewLRPToStatefulSet(
+		lrpToStatefulSetConverter := stset.NewLRPToStatefulSetConverter(
 			tests.GetApplicationServiceAccount(),
 			"registry-secret",
 			false,
@@ -49,8 +49,8 @@ var _ = Describe("Routes", func() {
 			client.NewPod(fixture.Clientset, fixture.Namespace),
 			client.NewPodDisruptionBudget(fixture.Clientset),
 			client.NewEvent(fixture.Clientset),
-			lrpToStatefulSet,
-			stset.MapStatefulSetToLRP,
+			lrpToStatefulSetConverter,
+			stset.NewStatefulSetToLRPConverter(),
 		)
 	})
 

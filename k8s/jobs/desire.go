@@ -13,11 +13,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-//counterfeiter:generate . TaskToJob
+//counterfeiter:generate . TaskToJobConverter
 //counterfeiter:generate . JobCreator
 //counterfeiter:generate . SecretCreator
 
-type TaskToJob func(*opi.Task) *batch.Job
+type TaskToJobConverter interface {
+	Convert(*opi.Task) *batch.Job
+}
 
 type JobCreator interface {
 	Create(namespace string, job *batch.Job) (*batch.Job, error)
@@ -28,30 +30,30 @@ type SecretCreator interface {
 }
 
 type Desirer struct {
-	logger        lager.Logger
-	taskToJob     TaskToJob
-	jobCreator    JobCreator
-	secretCreator SecretCreator
+	logger             lager.Logger
+	taskToJobConverter TaskToJobConverter
+	jobCreator         JobCreator
+	secretCreator      SecretCreator
 }
 
 func NewDesirer(
 	logger lager.Logger,
-	taskToJob TaskToJob,
+	taskToJobConverter TaskToJobConverter,
 	jobCreator JobCreator,
 	secretCreator SecretCreator,
 ) Desirer {
 	return Desirer{
-		logger:        logger,
-		taskToJob:     taskToJob,
-		jobCreator:    jobCreator,
-		secretCreator: secretCreator,
+		logger:             logger,
+		taskToJobConverter: taskToJobConverter,
+		jobCreator:         jobCreator,
+		secretCreator:      secretCreator,
 	}
 }
 
 func (d *Desirer) Desire(namespace string, task *opi.Task, opts ...shared.Option) error {
 	logger := d.logger.Session("desire-task", lager.Data{"guid": task.GUID, "name": task.Name, "namespace": namespace})
 
-	job := d.taskToJob(task)
+	job := d.taskToJobConverter.Convert(task)
 
 	if imageInPrivateRegistry(task) {
 		if err := d.addImagePullSecret(namespace, task, job); err != nil {

@@ -23,11 +23,11 @@ const (
 
 var _ = Describe("Get StatefulSet", func() {
 	var (
-		logger            lager.Logger
-		podGetter         *stsetfakes.FakePodGetter
-		eventGetter       *stsetfakes.FakeEventGetter
-		statefulSetGetter *stsetfakes.FakeStatefulSetByLRPIdentifierGetter
-		lrpMapper         *stsetfakes.FakeStatefulSetToLRP
+		logger                    lager.Logger
+		podGetter                 *stsetfakes.FakePodGetter
+		eventGetter               *stsetfakes.FakeEventGetter
+		statefulSetGetter         *stsetfakes.FakeStatefulSetByLRPIdentifierGetter
+		statefulsetToLRPConverter *stsetfakes.FakeStatefulSetToLRPConverter
 
 		getter stset.Getter
 	)
@@ -37,10 +37,10 @@ var _ = Describe("Get StatefulSet", func() {
 		podGetter = new(stsetfakes.FakePodGetter)
 		eventGetter = new(stsetfakes.FakeEventGetter)
 		statefulSetGetter = new(stsetfakes.FakeStatefulSetByLRPIdentifierGetter)
-		lrpMapper = new(stsetfakes.FakeStatefulSetToLRP)
-		lrpMapper.Returns(&opi.LRP{AppName: "baldur-app"}, nil)
+		statefulsetToLRPConverter = new(stsetfakes.FakeStatefulSetToLRPConverter)
+		statefulsetToLRPConverter.ConvertReturns(&opi.LRP{AppName: "baldur-app"}, nil)
 
-		getter = stset.NewGetter(logger, statefulSetGetter, podGetter, eventGetter, lrpMapper.Spy)
+		getter = stset.NewGetter(logger, statefulSetGetter, podGetter, eventGetter, statefulsetToLRPConverter)
 	})
 
 	Describe("Get", func() {
@@ -53,7 +53,7 @@ var _ = Describe("Get StatefulSet", func() {
 
 			statefulSetGetter.GetByLRPIdentifierReturns([]appsv1.StatefulSet{st}, nil)
 			lrp, _ := getter.Get(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
-			Expect(lrpMapper.CallCount()).To(Equal(1))
+			Expect(statefulsetToLRPConverter.ConvertCallCount()).To(Equal(1))
 			Expect(lrp.AppName).To(Equal("baldur-app"))
 		})
 

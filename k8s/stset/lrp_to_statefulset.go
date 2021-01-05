@@ -19,7 +19,7 @@ const PodAffinityTermWeight = 100
 
 type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
 
-type LRPToStatefulSetMapper struct {
+type LRPToStatefulSet struct {
 	applicationServiceAccount         string
 	registrySecretName                string
 	allowAutomountServiceAccountToken bool
@@ -27,23 +27,23 @@ type LRPToStatefulSetMapper struct {
 	readinessProbeCreator             ProbeCreator
 }
 
-func NewLRPToStatefulSet(
+func NewLRPToStatefulSetConverter(
 	applicationServiceAccount string,
 	registrySecretName string,
 	allowAutomountServiceAccountToken bool,
 	livenessProbeCreator ProbeCreator,
 	readinessProbeCreator ProbeCreator,
-) func(statefulSetName string, lrp *opi.LRP) (*appsv1.StatefulSet, error) {
-	return LRPToStatefulSetMapper{
+) *LRPToStatefulSet {
+	return &LRPToStatefulSet{
 		applicationServiceAccount:         applicationServiceAccount,
 		registrySecretName:                registrySecretName,
 		allowAutomountServiceAccountToken: allowAutomountServiceAccountToken,
 		livenessProbeCreator:              livenessProbeCreator,
 		readinessProbeCreator:             readinessProbeCreator,
-	}.toStatefulSet
+	}
 }
 
-func (c LRPToStatefulSetMapper) toStatefulSet(statefulSetName string, lrp *opi.LRP) (*appsv1.StatefulSet, error) {
+func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *opi.LRP) (*appsv1.StatefulSet, error) {
 	envs := shared.MapToEnvVar(lrp.Env)
 	fieldEnvs := []corev1.EnvVar{
 		{
@@ -201,7 +201,7 @@ func (c LRPToStatefulSetMapper) toStatefulSet(statefulSetName string, lrp *opi.L
 	return statefulSet, nil
 }
 
-func (c *LRPToStatefulSetMapper) calculateImagePullSecrets(statefulSetName string, lrp *opi.LRP) []corev1.LocalObjectReference {
+func (c *LRPToStatefulSet) calculateImagePullSecrets(statefulSetName string, lrp *opi.LRP) []corev1.LocalObjectReference {
 	imagePullSecrets := []corev1.LocalObjectReference{
 		{Name: c.registrySecretName},
 	}

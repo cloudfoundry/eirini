@@ -127,7 +127,7 @@ func createLRPReconciler(
 	eiriniCfg *eirini.Config,
 	scheme *runtime.Scheme,
 ) *reconciler.LRP {
-	lrpToStatefulSet := stset.NewLRPToStatefulSet(
+	lrpToStatefulSetConverter := stset.NewLRPToStatefulSetConverter(
 		eiriniCfg.Properties.ApplicationServiceAccount,
 		eiriniCfg.Properties.RegistrySecretName,
 		eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
@@ -141,8 +141,8 @@ func createLRPReconciler(
 		client.NewPod(clientset, eiriniCfg.WorkloadsNamespace),
 		client.NewPodDisruptionBudget(clientset),
 		client.NewEvent(clientset),
-		lrpToStatefulSet,
-		stset.MapStatefulSetToLRP,
+		lrpToStatefulSetConverter,
+		stset.NewStatefulSetToLRPConverter(),
 	)
 
 	return reconciler.NewLRP(
@@ -160,14 +160,14 @@ func createTaskReconciler(
 	eiriniCfg *eirini.Config,
 	scheme *runtime.Scheme,
 ) *reconciler.Task {
-	taskToJob := jobs.NewTaskToJob(
+	taskToJobConverter := jobs.NewTaskToJobConverter(
 		eiriniCfg.Properties.ApplicationServiceAccount,
 		eiriniCfg.Properties.RegistrySecretName,
 		eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
 	)
 	taskDesirer := jobs.NewDesirer(
 		logger,
-		taskToJob,
+		taskToJobConverter,
 		client.NewJob(clientset, eiriniCfg.WorkloadsNamespace),
 		client.NewSecret(clientset),
 	)

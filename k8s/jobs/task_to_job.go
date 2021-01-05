@@ -18,25 +18,25 @@ const (
 	completions          = 1
 )
 
-type TaskToJobMapper struct {
+type Converter struct {
 	serviceAccountName                string
 	registrySecretName                string
 	allowAutomountServiceAccountToken bool
 }
 
-func NewTaskToJob(
+func NewTaskToJobConverter(
 	serviceAccountName string,
 	registrySecretName string,
 	allowAutomountServiceAccountToken bool,
-) func(*opi.Task) *batch.Job {
-	return TaskToJobMapper{
+) *Converter {
+	return &Converter{
 		serviceAccountName:                serviceAccountName,
 		registrySecretName:                registrySecretName,
 		allowAutomountServiceAccountToken: allowAutomountServiceAccountToken,
-	}.toTaskJob
+	}
 }
 
-func (m TaskToJobMapper) toTaskJob(task *opi.Task) *batch.Job {
+func (m *Converter) Convert(task *opi.Task) *batch.Job {
 	job := m.toJob(task)
 	job.Spec.Template.Spec.ServiceAccountName = m.serviceAccountName
 	job.Labels[LabelSourceType] = taskSourceType
@@ -68,7 +68,7 @@ func (m TaskToJobMapper) toTaskJob(task *opi.Task) *batch.Job {
 	return job
 }
 
-func (m TaskToJobMapper) toJob(task *opi.Task) *batch.Job {
+func (m *Converter) toJob(task *opi.Task) *batch.Job {
 	runAsNonRoot := true
 
 	job := &batch.Job{

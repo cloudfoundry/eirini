@@ -14,9 +14,9 @@ import (
 
 var _ = Describe("List", func() {
 	var (
-		logger            lager.Logger
-		statefulSetGetter *stsetfakes.FakeStatefulSetsBySourceTypeGetter
-		lrpMapper         *stsetfakes.FakeStatefulSetToLRP
+		logger                    lager.Logger
+		statefulSetGetter         *stsetfakes.FakeStatefulSetsBySourceTypeGetter
+		statefulsetToLRPConverter *stsetfakes.FakeStatefulSetToLRPConverter
 
 		lister stset.Lister
 	)
@@ -24,9 +24,9 @@ var _ = Describe("List", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("test-list-statefulset")
 		statefulSetGetter = new(stsetfakes.FakeStatefulSetsBySourceTypeGetter)
-		lrpMapper = new(stsetfakes.FakeStatefulSetToLRP)
+		statefulsetToLRPConverter = new(stsetfakes.FakeStatefulSetToLRPConverter)
 
-		lister = stset.NewLister(logger, statefulSetGetter, lrpMapper.Spy)
+		lister = stset.NewLister(logger, statefulSetGetter, statefulsetToLRPConverter)
 	})
 
 	It("translates all existing statefulSets to opi.LRPs", func() {
@@ -51,7 +51,7 @@ var _ = Describe("List", func() {
 		statefulSetGetter.GetBySourceTypeReturns(st, nil)
 
 		Expect(lister.List()).To(HaveLen(3))
-		Expect(lrpMapper.CallCount()).To(Equal(3))
+		Expect(statefulsetToLRPConverter.ConvertCallCount()).To(Equal(3))
 	})
 
 	It("lists all statefulSets with APP source_type", func() {
@@ -69,7 +69,7 @@ var _ = Describe("List", func() {
 		It("returns an empy list of LRPs", func() {
 			statefulSetGetter.GetBySourceTypeReturns([]appsv1.StatefulSet{}, nil)
 			Expect(lister.List()).To(BeEmpty())
-			Expect(lrpMapper.CallCount()).To(Equal(0))
+			Expect(statefulsetToLRPConverter.ConvertCallCount()).To(Equal(0))
 		})
 	})
 

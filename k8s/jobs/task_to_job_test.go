@@ -80,7 +80,7 @@ var _ = Describe("TaskToJob", func() {
 	})
 
 	JustBeforeEach(func() {
-		job = jobs.NewTaskToJob(serviceAccount, registrySecret, allowAutomountServiceAccountToken)(task)
+		job = jobs.NewTaskToJobConverter(serviceAccount, registrySecret, allowAutomountServiceAccountToken).Convert(task)
 	})
 
 	It("returns a job for the task with the correct attributes", func() {

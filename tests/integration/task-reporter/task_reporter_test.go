@@ -63,10 +63,10 @@ var _ = Describe("TaskReporter", func() {
 			LeaderElectionNamespace:      fixture.Namespace,
 		}
 
-		taskToJob := jobs.NewTaskToJob("", "", false)
+		taskToJobConverter := jobs.NewTaskToJobConverter("", "", false)
 		taskDesirer = jobs.NewDesirer(
 			lagertest.NewTestLogger("test-task-desirer"),
-			taskToJob,
+			taskToJobConverter,
 			client.NewJob(fixture.Clientset, fixture.Namespace),
 			client.NewSecret(fixture.Clientset),
 		)

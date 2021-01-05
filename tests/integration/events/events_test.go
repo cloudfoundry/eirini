@@ -86,7 +86,7 @@ var _ = Describe("Events", func() {
 		)
 
 		BeforeEach(func() {
-			lrpToStatefulSet := stset.NewLRPToStatefulSet(
+			lrpToStatefulSetConverter := stset.NewLRPToStatefulSetConverter(
 				tests.GetApplicationServiceAccount(),
 				"registry-secret",
 				false,
@@ -100,8 +100,8 @@ var _ = Describe("Events", func() {
 				client.NewPod(fixture.Clientset, fixture.Namespace),
 				client.NewPodDisruptionBudget(fixture.Clientset),
 				client.NewEvent(fixture.Clientset),
-				lrpToStatefulSet,
-				stset.MapStatefulSetToLRP,
+				lrpToStatefulSetConverter,
+				stset.NewStatefulSetToLRPConverter(),
 			)
 		})
 
@@ -235,10 +235,10 @@ var _ = Describe("Events", func() {
 		var taskDesirer jobs.Desirer
 
 		BeforeEach(func() {
-			taskToJob := jobs.NewTaskToJob(tests.GetApplicationServiceAccount(), "", false)
+			taskToJobConverter := jobs.NewTaskToJobConverter(tests.GetApplicationServiceAccount(), "", false)
 			taskDesirer = jobs.NewDesirer(
 				logger,
-				taskToJob,
+				taskToJobConverter,
 				client.NewJob(fixture.Clientset, fixture.Namespace),
 				nil,
 			)

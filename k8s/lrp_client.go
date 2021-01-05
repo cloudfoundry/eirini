@@ -52,15 +52,15 @@ func NewLRPClient(
 	pods PodClient,
 	pdbs PodDisruptionBudgetClient,
 	events EventsClient,
-	lrpToStatefulSet stset.LRPToStatefulSet,
-	statefulSetToLRP stset.StatefulSetToLRP,
+	lrpToStatefulSetConverter stset.LRPToStatefulSetConverter,
+	statefulSetToLRPConverter stset.StatefulSetToLRPConverter,
 
 ) *LRPClient {
 	return &LRPClient{
-		Desirer: stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSet, pdbs),
-		Lister:  stset.NewLister(logger, statefulSets, statefulSetToLRP),
+		Desirer: stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSetConverter, pdbs),
+		Lister:  stset.NewLister(logger, statefulSets, statefulSetToLRPConverter),
 		Stopper: stset.NewStopper(logger, statefulSets, statefulSets, pods, pdbs, secrets),
 		Updater: stset.NewUpdater(logger, statefulSets, statefulSets, pdbs, pdbs),
-		Getter:  stset.NewGetter(logger, statefulSets, pods, events, statefulSetToLRP),
+		Getter:  stset.NewGetter(logger, statefulSets, pods, events, statefulSetToLRPConverter),
 	}
 }

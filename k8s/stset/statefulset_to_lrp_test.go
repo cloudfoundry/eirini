@@ -75,7 +75,8 @@ var _ = Describe("Statefulset to LRP Converter", func() {
 				ReadyReplicas: 2,
 			},
 		}
-		lrp, _ = stset.MapStatefulSetToLRP(statefulset)
+
+		lrp, _ = stset.NewStatefulSetToLRPConverter().Convert(statefulset)
 	})
 
 	It("should set the correct LRP identifier", func() {

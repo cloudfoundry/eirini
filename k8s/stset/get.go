@@ -30,11 +30,11 @@ type EventGetter interface {
 }
 
 type Getter struct {
-	logger         lager.Logger
-	podGetter      PodGetter
-	eventGetter    EventGetter
-	lrpMapper      StatefulSetToLRP
-	getStatefulSet getStatefulSetFunc
+	logger                    lager.Logger
+	podGetter                 PodGetter
+	eventGetter               EventGetter
+	statefulsetToLrpConverter StatefulSetToLRPConverter
+	getStatefulSet            getStatefulSetFunc
 }
 
 func NewGetter(
@@ -42,14 +42,14 @@ func NewGetter(
 	statefulSetGetter StatefulSetByLRPIdentifierGetter,
 	podGetter PodGetter,
 	eventGetter EventGetter,
-	lrpMapper StatefulSetToLRP,
+	statefulsetToLrpConverter StatefulSetToLRPConverter,
 ) Getter {
 	return Getter{
-		logger:         logger,
-		podGetter:      podGetter,
-		eventGetter:    eventGetter,
-		lrpMapper:      lrpMapper,
-		getStatefulSet: newGetStatefulSetFunc(statefulSetGetter),
+		logger:                    logger,
+		podGetter:                 podGetter,
+		eventGetter:               eventGetter,
+		statefulsetToLrpConverter: statefulsetToLrpConverter,
+		getStatefulSet:            newGetStatefulSetFunc(statefulSetGetter),
 	}
 }
 
@@ -125,7 +125,7 @@ func (g *Getter) getLRP(logger lager.Logger, identifier opi.LRPIdentifier) (*opi
 		return nil, err
 	}
 
-	lrp, err := g.lrpMapper(*statefulset)
+	lrp, err := g.statefulsetToLrpConverter.Convert(*statefulset)
 	if err != nil {
 		logger.Error("failed-to-map-statefulset-to-lrp", err)
 

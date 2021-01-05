@@ -17,9 +17,11 @@ import (
 
 //counterfeiter:generate . SecretsCreator
 //counterfeiter:generate . StatefulSetCreator
-//counterfeiter:generate . LRPToStatefulSet
+//counterfeiter:generate . LRPToStatefulSetConverter
 
-type LRPToStatefulSet func(statefulSetName string, lrp *opi.LRP) (*appsv1.StatefulSet, error)
+type LRPToStatefulSetConverter interface {
+	Convert(statefulSetName string, lrp *opi.LRP) (*appsv1.StatefulSet, error)
+}
 
 type SecretsCreator interface {
 	Create(namespace string, secret *corev1.Secret) (*corev1.Secret, error)
@@ -33,7 +35,7 @@ type Desirer struct {
 	logger                    lager.Logger
 	secrets                   SecretsCreator
 	statefulSets              StatefulSetCreator
-	lrpToStatefulSet          LRPToStatefulSet
+	lrpToStatefulSetConverter LRPToStatefulSetConverter
 	createPodDisruptionBudget createPodDisruptionBudgetFunc
 }
 
@@ -41,14 +43,14 @@ func NewDesirer(
 	logger lager.Logger,
 	secrets SecretsCreator,
 	statefulSets StatefulSetCreator,
-	lrpToStatefulSet LRPToStatefulSet,
+	lrpToStatefulSetConverter LRPToStatefulSetConverter,
 	podDisruptionBudget PodDisruptionBudgetCreator,
 ) Desirer {
 	return Desirer{
 		logger:                    logger,
 		secrets:                   secrets,
 		statefulSets:              statefulSets,
-		lrpToStatefulSet:          lrpToStatefulSet,
+		lrpToStatefulSetConverter: lrpToStatefulSetConverter,
 		createPodDisruptionBudget: newCreatePodDisruptionBudgetFunc(podDisruptionBudget),
 	}
 }
@@ -68,7 +70,7 @@ func (d *Desirer) Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) 
 		}
 	}
 
-	st, err := d.lrpToStatefulSet(statefulSetName, lrp)
+	st, err := d.lrpToStatefulSetConverter.Convert(statefulSetName, lrp)
 	if err != nil {
 		return err
 	}

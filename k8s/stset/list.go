@@ -7,32 +7,32 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
-//counterfeiter:generate . StatefulSetToLRP
+//counterfeiter:generate . StatefulSetToLRPConverter
 //counterfeiter:generate . StatefulSetsBySourceTypeGetter
 
-type (
-	StatefulSetToLRP func(s appsv1.StatefulSet) (*opi.LRP, error)
-)
+type StatefulSetToLRPConverter interface {
+	Convert(s appsv1.StatefulSet) (*opi.LRP, error)
+}
 
 type StatefulSetsBySourceTypeGetter interface {
 	GetBySourceType(sourceType string) ([]appsv1.StatefulSet, error)
 }
 
 type Lister struct {
-	logger            lager.Logger
-	statefulSetGetter StatefulSetsBySourceTypeGetter
-	lrpMapper         StatefulSetToLRP
+	logger                    lager.Logger
+	statefulSetGetter         StatefulSetsBySourceTypeGetter
+	statefulsetToLrpConverter StatefulSetToLRPConverter
 }
 
 func NewLister(
 	logger lager.Logger,
 	statefulSetGetter StatefulSetsBySourceTypeGetter,
-	lrpMapper StatefulSetToLRP,
+	statefulsetToLrpConverter StatefulSetToLRPConverter,
 ) Lister {
 	return Lister{
-		logger:            logger,
-		statefulSetGetter: statefulSetGetter,
-		lrpMapper:         lrpMapper,
+		logger:                    logger,
+		statefulSetGetter:         statefulSetGetter,
+		statefulsetToLrpConverter: statefulsetToLrpConverter,
 	}
 }
 
@@ -60,7 +60,7 @@ func (l *Lister) statefulSetsToLRPs(statefulSets []appsv1.StatefulSet) ([]*opi.L
 	lrps := []*opi.LRP{}
 
 	for _, s := range statefulSets {
-		lrp, err := l.lrpMapper(s)
+		lrp, err := l.statefulsetToLrpConverter.Convert(s)
 		if err != nil {
 			return nil, err
 		}

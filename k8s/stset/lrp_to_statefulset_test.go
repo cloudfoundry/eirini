@@ -32,10 +32,10 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 	})
 
 	JustBeforeEach(func() {
-		converter := stset.NewLRPToStatefulSet("eirini", "secret-name", allowAutomountServiceAccountToken, livenessProbeCreator.Spy, readinessProbeCreator.Spy)
+		converter := stset.NewLRPToStatefulSetConverter("eirini", "secret-name", allowAutomountServiceAccountToken, livenessProbeCreator.Spy, readinessProbeCreator.Spy)
 
 		var err error
-		statefulSet, err = converter("Baldur", lrp)
+		statefulSet, err = converter.Convert("Baldur", lrp)
 		Expect(err).NotTo(HaveOccurred())
 	})
 

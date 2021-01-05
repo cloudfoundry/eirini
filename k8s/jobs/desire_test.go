@@ -25,10 +25,10 @@ var _ = Describe("Desire", func() {
 	)
 
 	var (
-		jobCreator    *jobsfakes.FakeJobCreator
-		secretCreator *jobsfakes.FakeSecretCreator
-		taskToJob     *jobsfakes.FakeTaskToJob
-		desireOpt     *sharedfakes.FakeOption
+		jobCreator         *jobsfakes.FakeJobCreator
+		secretCreator      *jobsfakes.FakeSecretCreator
+		taskToJobConverter *jobsfakes.FakeTaskToJobConverter
+		desireOpt          *sharedfakes.FakeOption
 
 		job       *batch.Job
 		task      *opi.Task
@@ -51,8 +51,8 @@ var _ = Describe("Desire", func() {
 
 		jobCreator = new(jobsfakes.FakeJobCreator)
 		secretCreator = new(jobsfakes.FakeSecretCreator)
-		taskToJob = new(jobsfakes.FakeTaskToJob)
-		taskToJob.Returns(job)
+		taskToJobConverter = new(jobsfakes.FakeTaskToJobConverter)
+		taskToJobConverter.ConvertReturns(job)
 
 		task = &opi.Task{
 			Image:              image,
@@ -78,7 +78,7 @@ var _ = Describe("Desire", func() {
 
 		desirer = jobs.NewDesirer(
 			lagertest.NewTestLogger("desiretask"),
-			taskToJob.Spy,
+			taskToJobConverter,
 			jobCreator,
 			secretCreator,
 		)
@@ -110,8 +110,8 @@ var _ = Describe("Desire", func() {
 	})
 
 	It("converts the task to job", func() {
-		Expect(taskToJob.CallCount()).To(Equal(1))
-		Expect(taskToJob.ArgsForCall(0)).To(Equal(task))
+		Expect(taskToJobConverter.ConvertCallCount()).To(Equal(1))
+		Expect(taskToJobConverter.ConvertArgsForCall(0)).To(Equal(task))
 	})
 
 	It("sets the job namespace", func() {

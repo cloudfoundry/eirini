@@ -123,7 +123,7 @@ func initTaskClient(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Tas
 	logger := lager.NewLogger("task-desirer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	taskToJob := jobs.NewTaskToJob(
+	taskToJobConverter := jobs.NewTaskToJobConverter(
 		cfg.Properties.ApplicationServiceAccount,
 		cfg.Properties.RegistrySecretName,
 		cfg.Properties.UnsafeAllowAutomountServiceAccountToken,
@@ -133,7 +133,7 @@ func initTaskClient(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Tas
 		logger,
 		client.NewJob(clientset, cfg.WorkloadsNamespace),
 		client.NewSecret(clientset),
-		taskToJob,
+		taskToJobConverter,
 	)
 }
 
@@ -179,7 +179,7 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	lrpToStatefulSet := stset.NewLRPToStatefulSet(
+	lrpToStatefulSetConverter := stset.NewLRPToStatefulSetConverter(
 		cfg.Properties.ApplicationServiceAccount,
 		cfg.Properties.RegistrySecretName,
 		cfg.Properties.UnsafeAllowAutomountServiceAccountToken,
@@ -193,8 +193,8 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 		client.NewPod(clientset, cfg.WorkloadsNamespace),
 		client.NewPodDisruptionBudget(clientset),
 		client.NewEvent(clientset),
-		lrpToStatefulSet,
-		stset.MapStatefulSetToLRP,
+		lrpToStatefulSetConverter,
+		stset.NewStatefulSetToLRPConverter(),
 	)
 
 	converter := initConverter(cfg)
