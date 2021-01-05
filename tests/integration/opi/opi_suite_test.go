@@ -1,6 +1,7 @@
 package opi_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,11 +10,13 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 )
 
 func TestOpi(t *testing.T) {
@@ -90,3 +93,14 @@ var _ = AfterEach(func() {
 
 	fixture.TearDown()
 })
+
+func desireLRP(httpClient rest.HTTPClient, url string, lrpRequest cf.DesireLRPRequest) *http.Response {
+	body, err := json.Marshal(lrpRequest)
+	Expect(err).NotTo(HaveOccurred())
+	desireLrpReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s", url, lrpRequest.GUID), bytes.NewReader(body))
+	Expect(err).NotTo(HaveOccurred())
+	response, err := httpClient.Do(desireLrpReq)
+	Expect(err).NotTo(HaveOccurred())
+
+	return response
+}
