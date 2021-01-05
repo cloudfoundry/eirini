@@ -281,7 +281,7 @@ func receivedMessage(channel <-chan *nats.Msg) route.RegistryMessage {
 
 func getNatsServerConfig() *server.Options {
 	return &server.Options{
-		Host:           "nats-client.eirini-core.svc.cluster.local",
+		Host:           fmt.Sprintf("nats-client.%s.svc.cluster.local", tests.GetEiriniSystemNamespace()),
 		Port:           4222,
 		NoLog:          true,
 		NoSigs:         true,
