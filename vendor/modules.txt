@@ -257,7 +257,7 @@ github.com/docker/distribution/registry/client/auth/challenge
 github.com/docker/distribution/registry/client/transport
 github.com/docker/distribution/registry/storage/cache
 github.com/docker/distribution/registry/storage/cache/memory
-# github.com/docker/docker v20.10.1+incompatible
+# github.com/docker/docker v20.10.2+incompatible
 ## explicit
 github.com/docker/docker/api/types/versions
 github.com/docker/docker/pkg/homedir
@@ -351,7 +351,8 @@ github.com/google/go-cmp/cmp/internal/value
 # github.com/google/gofuzz v1.2.0
 github.com/google/gofuzz
 github.com/google/gofuzz/bytesource
-# github.com/google/uuid v1.1.2
+# github.com/google/uuid v1.1.4
+## explicit
 github.com/google/uuid
 # github.com/googleapis/gnostic v0.5.3
 ## explicit
@@ -559,11 +560,11 @@ github.com/tmc/grpc-websocket-proxy/wsproxy
 # github.com/urfave/cli v1.22.5
 ## explicit
 github.com/urfave/cli
-# github.com/weppos/publicsuffix-go v0.13.1-0.20201123112230-11e0470f3c80
+# github.com/weppos/publicsuffix-go v0.13.1-0.20201231103007-cb9948bdd70d
 github.com/weppos/publicsuffix-go/publicsuffix
 # github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2
 github.com/xiang90/probing
-# github.com/zmap/zcrypto v0.0.0-20201222012629-deeac007a01d
+# github.com/zmap/zcrypto v0.0.0-20201231140556-1eef27672b80
 ## explicit
 github.com/zmap/zcrypto/json
 github.com/zmap/zcrypto/util
@@ -638,7 +639,7 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20201223074533-0d417f636930
+# golang.org/x/sys v0.0.0-20210105210732-16f7687f5001
 ## explicit
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
@@ -677,7 +678,7 @@ golang.org/x/text/width
 # golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 ## explicit
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20201229221835-b8413747bbd4
+# golang.org/x/tools v0.0.0-20210105210202-9ed45478a130
 ## explicit
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
@@ -713,7 +714,7 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d
+# google.golang.org/genproto v0.0.0-20210105202744-fe13368bc0e1
 ## explicit
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/api/httpbody
@@ -812,7 +813,8 @@ gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
+# gopkg.in/yaml.v3 v3.0.0-20210105161348-2e78108cf5f8
+## explicit
 gopkg.in/yaml.v3
 # k8s.io/api v0.20.1 => k8s.io/api v0.19.2
 ## explicit

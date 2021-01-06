@@ -39,7 +39,7 @@ require (
 	github.com/containers/storage v1.23.5 // indirect
 	github.com/deckarep/golang-set v1.7.1
 	github.com/docker/distribution v2.7.1+incompatible
-	github.com/docker/docker v20.10.1+incompatible // indirect
+	github.com/docker/docker v20.10.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
@@ -49,6 +49,7 @@ require (
 	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/google/certificate-transparency-go v1.1.1 // indirect
+	github.com/google/uuid v1.1.4 // indirect
 	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
@@ -81,18 +82,19 @@ require (
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802 // indirect
 	github.com/urfave/cli v1.22.5 // indirect
-	github.com/zmap/zcrypto v0.0.0-20201222012629-deeac007a01d // indirect
+	github.com/zmap/zcrypto v0.0.0-20201231140556-1eef27672b80 // indirect
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
-	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
+	golang.org/x/sys v0.0.0-20210105210732-16f7687f5001 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324 // indirect
-	golang.org/x/tools v0.0.0-20201229221835-b8413747bbd4 // indirect
+	golang.org/x/tools v0.0.0-20210105210202-9ed45478a130 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
-	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d // indirect
+	google.golang.org/genproto v0.0.0-20210105202744-fe13368bc0e1 // indirect
 	google.golang.org/grpc v1.34.0
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.0-20210105161348-2e78108cf5f8 // indirect
 	k8s.io/api v0.20.1
 	k8s.io/apiextensions-apiserver v0.20.1 // indirect
 	k8s.io/apimachinery v0.20.1
