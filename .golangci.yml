@@ -5,6 +5,7 @@ run:
   skip-dirs:
     - vendor
     - pkg
+  modules-download-mode: vendor
 
 linters-settings:
   govet:
