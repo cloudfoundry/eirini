@@ -27,17 +27,17 @@ const (
 	// Certs
 	TLSSecretKey  = "tls.key"
 	TLSSecretCert = "tls.crt"
-	TLSSecretCA   = "ca.crt"
+	TLSSecretCA   = "tls.ca"
 
-	EiriniCAPath        = "/etc/eirini/certs/ca.crt"
+	EiriniCAPath        = "/etc/eirini/certs/tls.ca"
 	EiriniCrtPath       = "/etc/eirini/certs/tls.crt"
 	EiriniKeyPath       = "/etc/eirini/certs/tls.key"
 	CCCrtPath           = "/etc/cf-api/certs/tls.crt"
 	CCKeyPath           = "/etc/cf-api/certs/tls.key"
-	CCCAPath            = "/etc/cf-api/certs/ca.crt"
+	CCCAPath            = "/etc/cf-api/certs/tls.ca"
 	LoggregatorCertPath = "/etc/loggregator/certs/tls.crt"
 	LoggregatorKeyPath  = "/etc/loggregator/certs/tls.key"
-	LoggregatorCAPath   = "/etc/loggregator/certs/ca.crt"
+	LoggregatorCAPath   = "/etc/loggregator/certs/tls.ca"
 
 	CCUploaderSecretName   = "cc-uploader-certs"   //#nosec G101
 	EiriniClientSecretName = "eirini-client-certs" //#nosec G101
