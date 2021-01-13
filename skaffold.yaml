@@ -59,17 +59,6 @@ deploy:
 profiles:
 - name: helmless
   deploy:
-    helm:
-      releases:
-      - name: nats
-        remote: true
-        wait: true
-        chartPath: bitnami/nats
-        version: 4.5.8
-        namespace: eirini-core
-        setValueTemplates:
-          auth.user: nats
-          auth.password: "{{.NATS_PASSWORD}}"
     kubectl:
       manifests:
       - ../eirini-release/deploy/core/*.yml
@@ -87,13 +76,6 @@ profiles:
       - ../eirini-release/deploy/testing/cc-wiremock/*.yml
     helm:
       releases:
-      - name: nats
-        remote: true
-        chartPath: bitnami/nats
-        namespace: eirini-core
-        setValueTemplates:
-          auth.user: nats
-          auth.password: "{{.NATS_PASSWORD}}"
       - name: eirini
         chartPath: ../eirini-release/helm/eirini
         namespace: eirini-core

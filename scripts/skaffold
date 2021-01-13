@@ -11,6 +11,7 @@ main() {
   strip_manifest_shas
   init_helm
   create_namespaces
+  deploy_nats
   generate_secrets
   skaffold $@
 }
@@ -36,6 +37,15 @@ generate_secrets() {
 init_helm() {
   helm repo add bitnami https://charts.bitnami.com/bitnami
   helm repo update
+}
+
+deploy_nats() {
+  helm upgrade nats \
+    --install bitnami/nats \
+    --namespace eirini-core \
+    --set auth.user="nats" \
+    --set auth.password="$NATS_PASSWORD" \
+    --wait
 }
 
 revert_manifest_shas() {
