@@ -16,7 +16,9 @@ import (
 )
 
 type options struct {
-	ConfigFile string `short:"c" long:"config" description:"Config for running event-reporter"`
+	ConfigFile   string `short:"c" long:"config" description:"Config for running event-reporter"`
+	RegisterOnly bool   `short:"r" long:"register-only" description:"Register mutating webhook and exit"`
+	ExecuteOnly  bool   `short:"x" long:"execute-only" description:"Run webservice without registration"`
 }
 
 func main() {
@@ -30,8 +32,12 @@ func main() {
 	log := lager.NewLogger("instance-index-env-injector")
 	log.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	register := true
 	filterEiriniApps := true
+
+	register := true
+	if opts.ExecuteOnly {
+		register = false
+	}
 
 	managerOptions := eirinix.ManagerOptions{
 		Port:                cfg.ServicePort,
@@ -47,7 +53,14 @@ func main() {
 
 	manager := eirinix.NewManager(managerOptions)
 	err = manager.AddExtension(webhook.NewInstanceIndexEnvInjector(log))
-	cmdcommons.ExitfIfError(err, "failed to register the instance index env injector extension")
+	cmdcommons.ExitfIfError(err, "failed to add the instance index env injector extension")
+
+	if opts.RegisterOnly {
+		err = manager.RegisterExtensions()
+		cmdcommons.ExitfIfError(err, "failed to register the instance index env injector extension")
+
+		return
+	}
 
 	log.Fatal("instance-index-env-injector-errored", manager.Start())
 }

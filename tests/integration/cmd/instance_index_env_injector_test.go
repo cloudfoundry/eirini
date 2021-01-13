@@ -22,6 +22,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 		configFilePath string
 		session        *gexec.Session
 		fingerprint    string
+		hook           *admissionregistrationv1.MutatingWebhookConfiguration
 	)
 
 	BeforeEach(func() {
@@ -37,17 +38,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 		}
 	})
 
-	JustBeforeEach(func() {
-		session, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
-	})
-
 	AfterEach(func() {
-		Expect(fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().
-			DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{
-				FieldSelector: fmt.Sprintf("metadata.name=%s-mutating-hook", fingerprint),
-			}),
-		).To(Succeed())
-
 		if configFilePath != "" {
 			Expect(os.Remove(configFilePath)).To(Succeed())
 		}
@@ -57,44 +48,104 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 		}
 	})
 
-	It("starts properly with valid config", func() {
-		var hook *admissionregistrationv1.MutatingWebhookConfiguration
+	getHook := func() error {
+		var err error
+		hook, err = fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().
+			Get(context.Background(), fingerprint+"-mutating-hook", metav1.GetOptions{})
 
-		Eventually(func() error {
-			var err error
-			hook, err = fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().
-				Get(context.Background(), fingerprint+"-mutating-hook", metav1.GetOptions{})
+		return err
+	}
 
-			return err
-		}, "10s").Should(Succeed())
-
+	hookIsRegistered := func() {
+		Eventually(getHook, "10s").Should(Succeed())
 		Expect(hook.Webhooks).To(HaveLen(1))
+	}
 
-		Eventually(func() error {
-			_, err := net.Dial("tcp", fmt.Sprintf(":%d", config.ServicePort))
+	hookIsNotRegistered := func() {
+		ConsistentlyWithOffset(1, getHook, "2s").ShouldNot(Succeed())
+	}
 
-			return err
-		}).Should(Succeed())
-	})
+	dialService := func() error {
+		_, err := net.Dial("tcp", fmt.Sprintf(":%d", config.ServicePort))
 
-	When("the config file doesn't exist", func() {
-		It("exits reporting missing config file", func() {
-			session = eiriniBins.InstanceIndexEnvInjector.Restart("/does/not/exist", session)
-			Eventually(session).Should(gexec.Exit())
-			Expect(session.ExitCode).ToNot(BeZero())
-			Expect(session.Err).To(gbytes.Say("Failed to read config file: failed to read file"))
+		return err
+	}
+
+	serviceIsRunning := func() {
+		Eventually(dialService).Should(Succeed())
+	}
+
+	serviceIsNotRunning := func() {
+		Consistently(dialService).ShouldNot(Succeed(), "2s")
+	}
+
+	Describe("register and execute (default options)", func() {
+		JustBeforeEach(func() {
+			eiriniBins.InstanceIndexEnvInjector.ExtraArgs = []string{}
+			session, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
+		})
+
+		It("runs the webhook service and registers it", func() {
+			hookIsRegistered()
+			serviceIsRunning()
+
+			Consistently(session).ShouldNot(gexec.Exit())
+		})
+
+		When("the config file doesn't exist", func() {
+			It("exits reporting missing config file", func() {
+				session = eiriniBins.InstanceIndexEnvInjector.Restart("/does/not/exist", session)
+				Eventually(session).Should(gexec.Exit())
+				Expect(session.ExitCode).ToNot(BeZero())
+				Expect(session.Err).To(gbytes.Say("Failed to read config file: failed to read file"))
+			})
+		})
+
+		When("service namespace is missing in the config", func() {
+			BeforeEach(func() {
+				config.ServiceNamespace = ""
+			})
+
+			It("fails", func() {
+				Eventually(session, "10s").Should(gexec.Exit())
+				Expect(session.ExitCode()).NotTo(BeZero())
+				Expect(session.Err).To(gbytes.Say("setting up the webhook server certificate: an empty namespace may not be set when a resource name is provided"))
+			})
 		})
 	})
 
-	When("service namespace is missing in the config", func() {
-		BeforeEach(func() {
-			config.ServiceNamespace = ""
+	Describe("Hook Registration", func() {
+		JustBeforeEach(func() {
+			eiriniBins.InstanceIndexEnvInjector.ExtraArgs = []string{"--register-only"}
+			session, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
 		})
 
-		It("fails", func() {
-			Eventually(session, "10s").Should(gexec.Exit())
-			Expect(session.ExitCode()).NotTo(BeZero())
-			Expect(session.Err).To(gbytes.Say("setting up the webhook server certificate: an empty namespace may not be set when a resource name is provided"))
+		AfterEach(func() {
+			Expect(fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().
+				DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{
+					FieldSelector: fmt.Sprintf("metadata.name=%s-mutating-hook", fingerprint),
+				}),
+			).To(Succeed())
+		})
+
+		It("registers webhook but doesn't run service", func() {
+			hookIsRegistered()
+			serviceIsNotRunning()
+			Eventually(session).Should(gexec.Exit(0))
+		})
+	})
+
+	Describe("Hook service execution", func() {
+		JustBeforeEach(func() {
+			eiriniBins.InstanceIndexEnvInjector.ExtraArgs = []string{"--execute-only"}
+			session, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
+		})
+
+		It("runs the webhook service but does not register it", func() {
+			hookIsNotRegistered()
+			serviceIsRunning()
+
+			Consistently(session).ShouldNot(gexec.Exit())
 		})
 	})
 })
