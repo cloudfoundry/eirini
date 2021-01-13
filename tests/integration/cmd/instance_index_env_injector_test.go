@@ -57,7 +57,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 	}
 
 	hookIsRegistered := func() {
-		Eventually(getHook, "10s").Should(Succeed())
+		Eventually(getHook, "20s").Should(Succeed())
 		Expect(hook.Webhooks).To(HaveLen(1))
 	}
 
