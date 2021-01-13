@@ -26,24 +26,30 @@ const (
 
 // Copy copy things
 func Copy(toValue interface{}, fromValue interface{}) (err error) {
-	return copy(toValue, fromValue, false)
+	return copy(toValue, fromValue, false, false)
 }
 
+// Option sets copy options
 type Option struct {
 	IgnoreEmpty bool
+	DeepCopy    bool
 }
 
 // CopyWithOption copy with option
 func CopyWithOption(toValue interface{}, fromValue interface{}, option Option) (err error) {
-	return copy(toValue, fromValue, option.IgnoreEmpty)
+	return copy(toValue, fromValue, option.IgnoreEmpty, option.DeepCopy)
 }
 
-func copy(toValue interface{}, fromValue interface{}, ignoreEmpty bool) (err error) {
+func copy(toValue interface{}, fromValue interface{}, ignoreEmpty, deepCopy bool) (err error) {
 	var (
 		isSlice bool
 		amount  = 1
 		from    = indirect(reflect.ValueOf(fromValue))
 		to      = indirect(reflect.ValueOf(toValue))
+		options = Option{
+			IgnoreEmpty: ignoreEmpty,
+			DeepCopy:    deepCopy,
+		}
 	)
 
 	if !to.CanAddr() {
@@ -58,34 +64,54 @@ func copy(toValue interface{}, fromValue interface{}, ignoreEmpty bool) (err err
 	fromType := indirectType(from.Type())
 	toType := indirectType(to.Type())
 
+	if fromType.Kind() == reflect.Interface {
+		fromType = reflect.TypeOf(from.Interface())
+	}
+
+	if toType.Kind() == reflect.Interface {
+		toType = reflect.TypeOf(to.Interface())
+	}
+
 	// Just set it if possible to assign
 	// And need to do copy anyway if the type is struct
-	if fromType.Kind() != reflect.Struct && from.Type().AssignableTo(to.Type()) {
+	if fromType.Kind() != reflect.Struct && (!deepCopy || fromType.Kind() != reflect.Map) && from.Type().AssignableTo(to.Type()) {
 		to.Set(from)
 		return
 	}
 
 	if fromType.Kind() == reflect.Map && toType.Kind() == reflect.Map {
 		if !fromType.Key().ConvertibleTo(toType.Key()) {
-			return
+			return errors.New("map's key type doesn't match")
 		}
 		if to.IsNil() {
 			to.Set(reflect.MakeMapWithSize(toType, from.Len()))
 		}
 		for _, k := range from.MapKeys() {
 			toKey := indirect(reflect.New(toType.Key()))
-			if !set(toKey, k) {
+			if !set(toKey, k, deepCopy) {
 				continue
 			}
 
-			toValue := indirect(reflect.New(toType.Elem()))
-			if !set(toValue, from.MapIndex(k)) {
-				err = Copy(toValue.Addr().Interface(), from.MapIndex(k).Interface())
+			elemType := toType.Elem()
+			for elemType.Kind() == reflect.Ptr {
+				elemType = elemType.Elem()
+			}
+			toValue := indirect(reflect.New(elemType))
+			if !set(toValue, from.MapIndex(k), deepCopy) {
+				err = CopyWithOption(toValue.Addr().Interface(), from.MapIndex(k).Interface(), options)
 				if err != nil {
 					continue
 				}
 			}
-			to.SetMapIndex(toKey, toValue)
+
+			for {
+				if elemType == toType.Elem() {
+					to.SetMapIndex(toKey, toValue)
+					break
+				}
+				elemType = reflect.PtrTo(elemType)
+				toValue = toValue.Addr()
+			}
 		}
 	}
 
@@ -117,6 +143,13 @@ func copy(toValue interface{}, fromValue interface{}, ignoreEmpty bool) (err err
 			dest = indirect(to)
 		}
 
+		destKind := dest.Kind()
+		initDest := false
+		if destKind == reflect.Interface {
+			initDest = true
+			dest = indirect(reflect.New(toType))
+		}
+
 		// Get tag options
 		tagBitFlags := map[string]uint8{}
 		if dest.IsValid() {
@@ -126,7 +159,6 @@ func copy(toValue interface{}, fromValue interface{}, ignoreEmpty bool) (err err
 		// check source
 		if source.IsValid() {
 			fromTypeFields := deepFields(fromType)
-			// fmt.Printf("%#v", fromTypeFields)
 			// Copy from field to field or method
 			for _, field := range fromTypeFields {
 				name := field.Name
@@ -143,8 +175,8 @@ func copy(toValue interface{}, fromValue interface{}, ignoreEmpty bool) (err err
 					// has field
 					if toField := dest.FieldByName(name); toField.IsValid() {
 						if toField.CanSet() {
-							if !set(toField, fromField) {
-								if err := Copy(toField.Addr().Interface(), fromField.Interface()); err != nil {
+							if !set(toField, fromField, deepCopy) {
+								if err := CopyWithOption(toField.Addr().Interface(), fromField.Interface(), options); err != nil {
 									return err
 								}
 							} else {
@@ -185,7 +217,7 @@ func copy(toValue interface{}, fromValue interface{}, ignoreEmpty bool) (err err
 					if toField := dest.FieldByName(name); toField.IsValid() && toField.CanSet() {
 						values := fromMethod.Call([]reflect.Value{})
 						if len(values) >= 1 {
-							set(toField, values[0])
+							set(toField, values[0], deepCopy)
 						}
 					}
 				}
@@ -197,6 +229,9 @@ func copy(toValue interface{}, fromValue interface{}, ignoreEmpty bool) (err err
 			} else if dest.Type().AssignableTo(to.Type().Elem()) {
 				to.Set(reflect.Append(to, dest))
 			}
+		}
+		if initDest {
+			to.Set(dest)
 		}
 		err = checkBitFlags(tagBitFlags)
 	}
@@ -242,8 +277,9 @@ func indirectType(reflectType reflect.Type) reflect.Type {
 	return reflectType
 }
 
-func set(to, from reflect.Value) bool {
+func set(to, from reflect.Value, deepCopy bool) bool {
 	if from.IsValid() {
+
 		if to.Kind() == reflect.Ptr {
 			// set `to` to nil if from is nil
 			if from.Kind() == reflect.Ptr && from.IsNil() {
@@ -255,6 +291,18 @@ func set(to, from reflect.Value) bool {
 			to = to.Elem()
 		}
 
+		if deepCopy {
+			toKind := to.Kind()
+			if toKind == reflect.Interface && to.IsNil() {
+				to.Set(reflect.New(reflect.TypeOf(from.Interface())).Elem())
+				toKind = reflect.TypeOf(to.Interface()).Kind()
+			}
+
+			if toKind == reflect.Struct || toKind == reflect.Map {
+				return false
+			}
+		}
+
 		if from.Type().ConvertibleTo(to.Type()) {
 			to.Set(from.Convert(to.Type()))
 		} else if scanner, ok := to.Addr().Interface().(sql.Scanner); ok {
@@ -263,7 +311,7 @@ func set(to, from reflect.Value) bool {
 				return false
 			}
 		} else if from.Kind() == reflect.Ptr {
-			return set(to, from.Elem())
+			return set(to, from.Elem(), deepCopy)
 		} else {
 			return false
 		}
