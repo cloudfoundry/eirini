@@ -51,43 +51,31 @@ build:
       buildCommand: ./scripts/build task-reporter
       dependencies:
         command: ./scripts/deps task-reporter
-# Deployment steps are defined in the profiles below. In order to
-# run a profile do ./scripts/skaffold run -p <profile-name>
-# The reason why there is no default deployment is that our deployment
-# differ way too much
 deploy:
-profiles:
-- name: helmless
-  deploy:
-    kubectl:
-      manifests:
-      - ../eirini-release/deploy/core/*.yml
-      - ../eirini-release/deploy/routes/*.yml
-      - ../eirini-release/deploy/events/*.yml
-      - ../eirini-release/deploy/metrics/*.yml
-      - ../eirini-release/deploy/workloads/*.yml
-      - ../eirini-release/deploy/workloads/core/*.yml
-      - ../eirini-release/deploy/workloads/events/*.yml
-      - ../eirini-release/deploy/testing/cc-wiremock/*.yml
-- name: helm
-  deploy:
-    kubectl:
-      manifests:
-      - ../eirini-release/deploy/testing/cc-wiremock/*.yml
-    helm:
-      releases:
-      - name: eirini
-        chartPath: ../eirini-release/helm/eirini
-        namespace: eirini-core
-        valuesFiles:
-        - ../eirini-release/helm/scripts/assets/helm-values-template.yml
-        artifactOverrides:
-          opi.image: eirini/opi
-          opi.route_collector_image: eirini/route-collector
-          opi.eirini_controller_image: eirini/eirini-controller
-          opi.event_reporter_image: eirini/event-reporter
-          opi.metrics_collector_image: eirini/metrics-collector
-          opi.route_statefulset_informer_image: eirini/route-statefulset-informer
-          opi.route_pod_informer_image: eirini/route-pod-informer
-          opi.task_reporter_image: eirini/task-reporter
-          instanceIndexEnvInjector.image: eirini/instance-index-env-injector
+  kubectl:
+    manifests:
+    - ../eirini-release/scripts/assets/wiremock.yml
+  helm:
+    releases:
+    - name: nats
+      remote: true
+      chartPath: bitnami/nats
+      namespace: eirini-core
+      setValueTemplates:
+        auth.user: nats
+        auth.password: "{{.NATS_PASSWORD}}"
+    - name: eirini
+      chartPath: ../eirini-release/helm
+      namespace: eirini-core
+      valuesFiles:
+      - ../eirini-release/scripts/assets/value-overrides.yml
+      artifactOverrides:
+        images.api: eirini/opi
+        images.route_collector: eirini/route-collector
+        images.eirini_controller: eirini/eirini-controller
+        images.event_reporter: eirini/event-reporter
+        images.metrics_collector: eirini/metrics-collector
+        images.route_statefulset_informer: eirini/route-statefulset-informer
+        images.route_pod_informer: eirini/route-pod-informer
+        images.task_reporter: eirini/task-reporter
+        images.instance_index_env_injector: eirini/instance-index-env-injector

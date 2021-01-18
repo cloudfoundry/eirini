@@ -86,23 +86,23 @@ run_integration_tests() {
     /usr/src/app/scripts/run_integration_tests.sh "$@"
 }
 
-run_eats_helmless() {
+run_eats() {
   local kubeconfig="$HOME/.kube/config"
 
   if [[ "$use_kind" == "true" ]]; then
-    local cluster_name="eats-helmless"
+    local cluster_name="eats"
     kubeconfig="$HOME/.kube/$cluster_name.yml"
     ensure_kind_cluster "$cluster_name"
   fi
 
   echo "#########################################"
-  echo "Running EATs against helmless deployed eirini on $(KUBECONFIG=$kubeconfig kubectl config current-context)"
+  echo "Running EATs against deployed eirini on $(KUBECONFIG=$kubeconfig kubectl config current-context)"
   echo "#########################################"
   echo
 
   if [[ "$redeploy" == "true" ]]; then
-    KUBECONFIG="$kubeconfig" skaffold delete -p helmless || true # helm will fail if nothing is deployed
-    KUBECONFIG="$kubeconfig" "$RUN_DIR/skaffold" run -p helmless
+    KUBECONFIG="$kubeconfig" skaffold delete || true
+    KUBECONFIG="$kubeconfig" "$RUN_DIR/skaffold" run
   fi
 
   local service_name
@@ -131,51 +131,6 @@ run_eats_helmless() {
     /usr/src/app/scripts/run_eats_tests.sh "$@"
 }
 
-run_eats_helmful() {
-  local kubeconfig="$HOME/.kube/config"
-
-  if [[ "$use_kind" == "true" ]]; then
-    local cluster_name="eats-helmful"
-    kubeconfig="$HOME/.kube/$cluster_name.yml"
-    ensure_kind_cluster "$cluster_name"
-  fi
-
-  echo "#########################################"
-  echo "Running EATs against helm deployed eirini on $(KUBECONFIG=$kubeconfig kubectl config current-context)"
-  echo "#########################################"
-  echo
-
-  if [[ "$redeploy" == "true" ]]; then
-    KUBECONFIG="$kubeconfig" skaffold delete -p helm || true # helm will fail if nothing is deployed
-    KUBECONFIG="$kubeconfig" "$RUN_DIR/skaffold" run -p helm
-  fi
-
-  local service_name
-  service_name=telepresence-$(uuidgen)
-
-  local src_dir
-  src_dir=$(mktemp -d)
-  cp -a "$EIRINI_DIR" "$src_dir"
-  cp "$kubeconfig" "$src_dir"
-  trap "rm -rf $src_dir" EXIT
-
-  KUBECONFIG="$kubeconfig" telepresence \
-    --method container \
-    --new-deployment "$service_name" \
-    --docker-run \
-    --rm \
-    -v "$src_dir":/usr/src/app \
-    -v "$HOME"/.cache:/root/.cache \
-    -e EIRINI_ADDRESS="https://eirini-opi.eirini-core.svc.cluster.local:8085" \
-    -e EIRINI_TLS_SECRET=eirini-certs \
-    -e EIRINI_SYSTEM_NS=eirini-core \
-    -e EIRINI_WORKLOADS_NS=eirini \
-    -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
-    -e INTEGRATION_KUBECONFIG="/usr/src/app/$(basename $kubeconfig)" \
-    eirini/ci \
-    /usr/src/app/scripts/run_eats_tests.sh "$@"
-}
-
 run_linter() {
   echo "Running Linter"
   cd "$RUN_DIR"/.. || exit 1
@@ -191,12 +146,8 @@ run_subset() {
     run_integration_tests "$@"
   fi
 
-  if [[ "$run_eats_helmless" == "true" ]]; then
-    run_eats_helmless "$@"
-  fi
-
-  if [[ "$run_eats_helmful" == "true" ]]; then
-    run_eats_helmful "$@"
+  if [[ "$run_eats" == "true" ]]; then
+    run_eats "$@"
   fi
 
   if [[ "$run_linter" == "true" ]]; then
@@ -236,8 +187,7 @@ main() {
 Usage: check-everything.sh [options]
 Options:
   -a  run all tests (default)
-  -e  EATs tests helmless
-  -f  EATs test helmful
+  -e  EATs tests
   -h  this help
   -i  integration tests
   -l  golangci-lint
@@ -247,8 +197,7 @@ Options:
 EOF
   )
 
-  local run_eats_helmless="false" \
-    run_eats_helmful="false" \
+  local run_eats="false" \
     run_unit_tests="false" \
     run_integration_tests="false" \
     run_linter="false" \
@@ -276,11 +225,7 @@ EOF
         run_subset="true"
         ;;
       e)
-        run_eats_helmless="true"
-        run_subset="true"
-        ;;
-      f)
-        run_eats_helmful="true"
+        run_eats="true"
         run_subset="true"
         ;;
       l)
