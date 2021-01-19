@@ -50,7 +50,7 @@ var _ = Describe("InstanceIndexInjector", func() {
 		Eventually(func() (int, error) {
 			resp, err := client.Get(fmt.Sprintf("https://%s.default.svc:%d/0", telepresenceService, port))
 			if err != nil {
-				printMessage(fmt.Sprintf("failed to call telepresence: %s" + err.Error()))
+				printMessage(fmt.Sprintf("failed to call telepresence: %s", err.Error()))
 
 				return 0, err
 			}
