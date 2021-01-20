@@ -43,10 +43,7 @@ This suite needs a deployed Eirini to run against. Currently there are 2 ways to
 Assuming you have a running kubernetes cluster, the following commands should run EATs for you:
 
 ```shell
-# Run eats against helmless deployment
 ./scripts/check-everything.sh -e
-# Run eats against helm deployment
-./scripts/check-everything.sh -f
 ```
 
 EATs is an end-to-end suite, meaning it should check only final results/artifacts and not intermediate states (e.g. don't test that a LRP CR exists and a Pod is created, check its container is running as expected).

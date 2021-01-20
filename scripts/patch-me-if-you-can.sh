@@ -11,7 +11,6 @@ Options:
   -c <cluster-name>  - required unless skipping deloyment
   -s  skip docker builds
   -S  skip deployment (only update the eirini release SHAs)
-  -d  deploy the helmless YAML, rather than helm release
   -o <additional-values.yml>  - use additional values from file
   -h  this help
 EOF
@@ -32,10 +31,10 @@ main() {
     exit 1
   fi
 
-  local cluster_name="" additional_values skip_docker_build="false" use_helmless="false" skip_deployment="false"
+  local cluster_name="" additional_values skip_docker_build="false" skip_deployment="false"
 
   additional_values=""
-  while getopts "hc:o:sSd" opt; do
+  while getopts "hc:o:sS" opt; do
     case ${opt} in
       h)
         echo "$USAGE"
@@ -49,9 +48,6 @@ main() {
         ;;
       S)
         skip_deployment="true"
-        ;;
-      d)
-        use_helmless="true"
         ;;
       o)
         additional_values=$OPTARG
@@ -85,10 +81,8 @@ main() {
     exit 1
   fi
 
-  if [[ "$use_helmless" != "true" ]]; then
-    echo "Checking out latest stable cf-for-k8s..."
-    checkout_stable_cf4k8s
-  fi
+  echo "Checking out latest stable cf-for-k8s..."
+  checkout_stable_cf4k8s
 
   if [ "$skip_docker_build" != "true" ]; then
     if [ "$#" == "0" ]; then
@@ -111,11 +105,6 @@ main() {
     exit 0
   fi
 
-  if [[ "$use_helmless" == "true" ]]; then
-    deploy_helmless
-    exit 0
-  fi
-
   pull_private_config
   patch_cf_for_k8s "$additional_values"
   deploy_cf "$cluster_name"
@@ -132,11 +121,9 @@ checkout_stable_cf4k8s() {
   {
     echo "Cleaning dirty state in cf-for-k8s..."
     git checkout . && git clean -ffd
-    echo "Checking out latest release..."
-    git fetch --tags
-    stable_cf4k8s_release="$(git tag | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | sort --reverse | head -1)"
-    git checkout "$stable_cf4k8s_release"
-    echo "cf-for-k8s version: $stable_cf4k8s_release"
+    echo "Checking out helmless-ci branch"
+    git checkout helmless-ci
+    git pull ef helmless-ci
   }
   popd
 }
@@ -223,24 +210,16 @@ update_image_in_yaml_files() {
 }
 
 patch_cf_for_k8s() {
-  local build_path eirini_values user_values
-  user_values="$1"
+  local render_dir
+  render_dir="$(mktemp -d)"
+  trap "rm -rf $render_dir" EXIT
+
+  "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$render_dir" --values "$EIRINI_RELEASE_BASEDIR/scripts/assets/cf4k8s-value-overrides.yml"
+
   rm -rf "$CF4K8S_DIR/build/eirini/_vendir/eirini"
-
-  build_path="$CF4K8S_DIR/build/eirini/"
-  eirini_values="$build_path/eirini-values.yml"
-
-  if ! [[ -z "$user_values" ]]; then
-    yq merge --inplace "$eirini_values" "$user_values"
-  fi
-
-  cp -r "$EIRINI_RELEASE_BASEDIR/helm/eirini" "$CF4K8S_DIR/build/eirini/_vendir/"
+  mv "${render_dir}/templates" "$CF4K8S_DIR/build/eirini/_vendir/eirini"
 
   "$CF4K8S_DIR"/build/eirini/build.sh
-}
-
-deploy_helmless() {
-  "$EIRINI_RELEASE_BASEDIR/deploy/scripts/deploy.sh"
 }
 
 deploy_cf() {
