@@ -85,6 +85,14 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 			session, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
 		})
 
+		AfterEach(func() {
+			Expect(fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().
+				DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{
+					FieldSelector: fmt.Sprintf("metadata.name=%s-mutating-hook", fingerprint),
+				}),
+			).To(Succeed())
+		})
+
 		It("runs the webhook service and registers it", func() {
 			hookIsRegistered()
 			serviceIsRunning()
