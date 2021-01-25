@@ -214,7 +214,7 @@ patch_cf_for_k8s() {
   render_dir="$(mktemp -d)"
   trap "rm -rf $render_dir" EXIT
 
-  "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$render_dir" --values "$EIRINI_RELEASE_BASEDIR/scripts/assets/cf4k8s-value-overrides.yml"
+  "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$render_dir"
 
   rm -rf "$CF4K8S_DIR/build/eirini/_vendir/eirini"
   mv "${render_dir}/templates" "$CF4K8S_DIR/build/eirini/_vendir/eirini"
