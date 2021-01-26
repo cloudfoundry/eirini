@@ -7,12 +7,11 @@ import (
 )
 
 func CreateLivenessProbe(lrp *opi.LRP) *v1.Probe {
-	checkType := lrp.Health.Type
 	initialDelay := toSeconds(lrp.Health.TimeoutMs)
 
-	if checkType == "http" {
+	if lrp.Health.Type == "http" {
 		return createHTTPProbe(lrp, initialDelay, 4)
-	} else if checkType == "port" {
+	} else if lrp.Health.Type == "port" {
 		return createPortProbe(lrp, initialDelay, 4)
 	}
 
@@ -20,10 +19,9 @@ func CreateLivenessProbe(lrp *opi.LRP) *v1.Probe {
 }
 
 func CreateReadinessProbe(lrp *opi.LRP) *v1.Probe {
-	checkType := lrp.Health.Type
-	if checkType == "http" {
+	if lrp.Health.Type == "http" {
 		return createHTTPProbe(lrp, 0, 1)
-	} else if checkType == "port" {
+	} else if lrp.Health.Type == "port" {
 		return createPortProbe(lrp, 0, 1)
 	}
 
