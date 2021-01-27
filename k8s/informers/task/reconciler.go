@@ -124,6 +124,7 @@ func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, erro
 	}
 
 	logger.Debug("deleting-task")
+
 	if _, err = r.deleter.Delete(guid); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to delete job")
 	}
@@ -178,6 +179,7 @@ func (r Reconciler) taskHasExpired(logger lager.Logger, pod *corev1.Pod) bool {
 	}
 
 	ttlExpire := time.Now().Add(-time.Duration(r.ttlSeconds) * time.Second)
+
 	logger.Debug("task-has-completed", lager.Data{"expiration-time": ttlExpire, "completion-time": status.State.Terminated.FinishedAt.Time})
 
 	return status.State.Terminated.FinishedAt.Time.Before(ttlExpire)
