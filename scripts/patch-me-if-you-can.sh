@@ -177,8 +177,7 @@ update_component() {
   echo "--- Patching component $component ---"
   docker_build "$component"
   docker_push "$component"
-  update_image_in_yaml_files "$component" "$EIRINI_RELEASE_BASEDIR/helm/eirini/templates"
-  update_image_in_yaml_files "$component" "$EIRINI_RELEASE_BASEDIR/deploy"
+  update_image_in_yaml_files "$component"
 }
 
 docker_build() {
@@ -196,17 +195,11 @@ docker_push() {
 }
 
 update_image_in_yaml_files() {
-  deploy_dir=$2
-  echo "Applying docker image of $1 to kubernetes cluster in $2"
-
-  pushd "$deploy_dir"
-  {
-    local file new_image_ref
-    file=$(rg -l "image: eirini/${1}")
-    new_image_ref="$(docker inspect --format='{{index .RepoDigests 0}}' "eirini/${1}:$PATCH_TAG")"
-    sed -i -e "s|image: eirini/${1}.*$|image: ${new_image_ref}|g" "$file"
-  }
-  popd
+  local image_name new_image_ref
+  image_name="$1"
+  new_image_ref="$(docker inspect --format='{{index .RepoDigests 0}}' "eirini/${1}:$PATCH_TAG")"
+  echo "Updating $image_name to ref $new_image_ref"
+  sed -i -e "s|eirini/${image_name}@sha256:.*$|${new_image_ref}|g" "$EIRINI_RELEASE_BASEDIR/helm/values.yaml"
 }
 
 patch_cf_for_k8s() {
