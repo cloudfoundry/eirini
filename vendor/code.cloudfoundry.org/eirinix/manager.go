@@ -23,6 +23,7 @@ import (
 	fields "k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	machinerytypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -411,14 +412,10 @@ func (m *DefaultExtensionManager) setOperatorNamespaceLabel() error {
 		return errors.Wrap(err, "getting the namespace object")
 	}
 
-	labels := ns.GetLabels()
-	if labels == nil {
-		labels = map[string]string{}
-	}
-	labels[m.Options.getDefaultNamespaceLabel()] = m.Options.Namespace
-	ns.SetLabels(labels)
-	err = c.Update(ctx, ns)
-
+	err = c.Patch(ctx, ns, setLabelPatch{
+		name:  m.Options.getDefaultNamespaceLabel(),
+		value: m.Options.Namespace,
+	})
 	if err != nil {
 		return errors.Wrap(err, "updating the namespace object")
 	}
@@ -594,4 +591,22 @@ func (o *ManagerOptions) getDefaultNamespaceLabel() string {
 
 func (o *ManagerOptions) getSetupCertificateName() string {
 	return fmt.Sprintf("%s-setupcertificate", o.OperatorFingerprint)
+}
+
+type setLabelPatch struct {
+	name, value string
+}
+
+func (p setLabelPatch) Type() types.PatchType {
+	return types.MergePatchType
+}
+
+func (p setLabelPatch) Data(_ runtime.Object) ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"labels": map[string]interface{}{
+				p.name: p.value,
+			},
+		},
+	})
 }

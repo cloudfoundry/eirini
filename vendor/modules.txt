@@ -1,4 +1,4 @@
-# cloud.google.com/go v0.75.0
+# cloud.google.com/go v0.76.0
 ## explicit
 cloud.google.com/go/compute/metadata
 # code.cloudfoundry.org/bbs v0.0.0-20201203185820-4070ad0e44b1
@@ -15,7 +15,7 @@ code.cloudfoundry.org/cfhttp/v2
 ## explicit
 # code.cloudfoundry.org/diego-logging-client v0.0.0-20200130234554-60ef08820a45
 ## explicit
-# code.cloudfoundry.org/eirinix v0.4.0
+# code.cloudfoundry.org/eirinix v0.5.0
 ## explicit
 code.cloudfoundry.org/eirinix
 code.cloudfoundry.org/eirinix/util/ctxlog
@@ -257,7 +257,7 @@ github.com/docker/distribution/registry/client/auth/challenge
 github.com/docker/distribution/registry/client/transport
 github.com/docker/distribution/registry/storage/cache
 github.com/docker/distribution/registry/storage/cache/memory
-# github.com/docker/docker v20.10.2+incompatible
+# github.com/docker/docker v20.10.3+incompatible
 ## explicit
 github.com/docker/docker/api/types/versions
 github.com/docker/docker/pkg/homedir
@@ -355,7 +355,7 @@ github.com/google/gofuzz/bytesource
 # github.com/google/uuid v1.2.0
 ## explicit
 github.com/google/uuid
-# github.com/googleapis/gnostic v0.5.3
+# github.com/googleapis/gnostic v0.5.4
 ## explicit
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
@@ -470,7 +470,7 @@ github.com/nxadm/tail/watch
 github.com/nxadm/tail/winfile
 # github.com/olekukonko/tablewriter v0.0.4
 github.com/olekukonko/tablewriter
-# github.com/onsi/ginkgo v1.14.2
+# github.com/onsi/ginkgo v1.15.0
 ## explicit
 github.com/onsi/ginkgo
 github.com/onsi/ginkgo/config
@@ -492,7 +492,7 @@ github.com/onsi/ginkgo/reporters/stenographer
 github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable
 github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty
 github.com/onsi/ginkgo/types
-# github.com/onsi/gomega v1.10.4
+# github.com/onsi/gomega v1.10.5
 ## explicit
 github.com/onsi/gomega
 github.com/onsi/gomega/format
@@ -571,7 +571,7 @@ github.com/urfave/cli
 github.com/weppos/publicsuffix-go/publicsuffix
 # github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2
 github.com/xiang90/probing
-# github.com/zmap/zcrypto v0.0.0-20210124203036-4bcf4a972aee
+# github.com/zmap/zcrypto v0.0.0-20210129164807-7569a90888dc
 ## explicit
 github.com/zmap/zcrypto/json
 github.com/zmap/zcrypto/util
@@ -623,11 +623,9 @@ golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/mod v0.4.1
-## explicit
 golang.org/x/mod/module
 golang.org/x/mod/semver
 # golang.org/x/net v0.0.0-20210119194325-5f4716e94777
-## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
@@ -641,7 +639,7 @@ golang.org/x/net/internal/socks
 golang.org/x/net/internal/timeseries
 golang.org/x/net/proxy
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.0.0-20210126194326-f9ce19ea3013
+# golang.org/x/oauth2 v0.0.0-20210201163806-010130855d6c
 ## explicit
 golang.org/x/oauth2
 golang.org/x/oauth2/google
@@ -650,7 +648,6 @@ golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
 # golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c
-## explicit
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
@@ -665,7 +662,6 @@ golang.org/x/sys/windows/svc/mgr
 ## explicit
 golang.org/x/term
 # golang.org/x/text v0.3.5
-## explicit
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -691,7 +687,6 @@ golang.org/x/text/width
 ## explicit
 golang.org/x/time/rate
 # golang.org/x/tools v0.1.0
-## explicit
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/gcimporter
@@ -726,8 +721,7 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20210126160654-44e461bb6506
-## explicit
+# google.golang.org/genproto v0.0.0-20210202153253-cf70463f6119
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/api/httpbody
 google.golang.org/genproto/googleapis/rpc/status
@@ -1196,7 +1190,8 @@ k8s.io/gengo/types
 # k8s.io/klog v1.0.0
 ## explicit
 k8s.io/klog
-# k8s.io/klog/v2 v2.4.0
+# k8s.io/klog/v2 v2.5.0
+## explicit
 k8s.io/klog/v2
 # k8s.io/kube-openapi v0.0.0-20210113233702-8566a335510f
 ## explicit
