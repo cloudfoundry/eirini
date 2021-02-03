@@ -120,15 +120,21 @@ var _ = Describe("TaskReporter", func() {
 		Consistently(cloudControllerServer.ReceivedRequests, "1m").Should(HaveLen(1))
 	})
 
-	It("labels the job as completed", func() {
-		Eventually(func() ([]batchv1.Job, error) {
-			tasks, err := getCompletedTaskJobsFn(task.GUID)()
-			if err != nil {
-				return nil, err
-			}
+	Context("with a long TTL to ensure task doesn't get cleaned up", func() {
+		BeforeEach(func() {
+			config.TTLSeconds = 100
+		})
 
-			return tasks, nil
-		}).Should(HaveLen(1))
+		It("labels the job as completed", func() {
+			Eventually(func() ([]batchv1.Job, error) {
+				tasks, err := getCompletedTaskJobsFn(task.GUID)()
+				if err != nil {
+					return nil, err
+				}
+
+				return tasks, nil
+			}).Should(HaveLen(1))
+		})
 	})
 
 	When("the Cloud Controller is not using TLS", func() {
