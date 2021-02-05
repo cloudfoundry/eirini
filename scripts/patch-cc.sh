@@ -14,6 +14,19 @@ build_ccng_image() {
   popd
 }
 
+publish-image() {
+  if [[ "$(kubectl config current-context)" =~ "kind-" ]]; then
+    load-into-kind
+    return
+  fi
+
+  push-to-docker
+}
+
+push-to-docker() {
+  docker push $CCNG_IMAGE
+}
+
 load-into-kind() {
   local current_context kind_cluster_name
   # assume we are pointed to a kind cluster
@@ -45,7 +58,7 @@ EOF
 
 main() {
   build_ccng_image
-  load-into-kind
+  publish-image
   patch-cf-api-server
 }
 
