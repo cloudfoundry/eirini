@@ -62,6 +62,34 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		return l
 	}
 
+	getMetric := func(metric, name string) (int, error) {
+		result, _, err := prometheusAPI.Query(context.Background(), fmt.Sprintf(`%s{name="%s"} > 0`, metric, name), time.Now())
+		if err != nil {
+			return 0, err
+		}
+
+		resultVector, ok := result.(model.Vector)
+		if !ok {
+			return 0, fmt.Errorf("result is not a vector: %+v", result)
+		}
+
+		if len(resultVector) == 0 {
+			return 0, nil
+		}
+
+		if len(resultVector) > 1 {
+			return 0, fmt.Errorf("result vector contains multiple values: %+v", resultVector)
+		}
+
+		return int(resultVector[0].Value), nil
+	}
+
+	getMetricFn := func(metric, name string) func() (int, error) {
+		return func() (int, error) {
+			return getMetric(metric, name)
+		}
+	}
+
 	BeforeEach(func() {
 		namespace = fixture.Namespace
 		lrpName = tests.GenerateGUID()
@@ -155,18 +183,32 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		})
 
 		Describe("Prometheus metrics", func() {
-			var creationsBefore int
+			var (
+				creationsBefore              int
+				creationDurationSumsBefore   int
+				creationDurationCountsBefore int
+				err                          error
+			)
 
 			BeforeEach(func() {
-				var err error
-				creationsBefore, err = getLRPCreations(prometheusAPI, "eirini-controller")
+				creationsBefore, err = getMetric(prometheus.LRPCreations, "eirini-controller")
+				Expect(err).NotTo(HaveOccurred())
+				creationDurationSumsBefore, err = getMetric(prometheus.LRPCreationDurations+"_sum", "eirini-controller")
+				Expect(err).NotTo(HaveOccurred())
+				creationDurationCountsBefore, err = getMetric(prometheus.LRPCreationDurations+"_count", "eirini-controller")
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("increases the created LRP counter", func() {
-				Eventually(func() (int, error) {
-					return getLRPCreations(prometheusAPI, "eirini-controller")
-				}, "1m").Should(BeNumerically(">", creationsBefore))
+			It("increments the created LRP counter", func() {
+				Eventually(getMetricFn(prometheus.LRPCreations, "eirini-controller"), "1m").
+					Should(BeNumerically(">", creationsBefore))
+			})
+
+			It("observes the creation duration", func() {
+				Eventually(getMetricFn(prometheus.LRPCreationDurations+"_sum", "eirini-controller"), "1m").
+					Should(BeNumerically(">", creationDurationSumsBefore))
+				Eventually(getMetricFn(prometheus.LRPCreationDurations+"_count", "eirini-controller"), "1m").
+					Should(BeNumerically(">", creationDurationCountsBefore))
 			})
 		})
 
@@ -404,25 +446,3 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		})
 	})
 })
-
-func getLRPCreations(api prometheusv1.API, name string) (int, error) {
-	result, _, err := api.Query(context.Background(), fmt.Sprintf(`%s{name="%s"} > 0`, prometheus.LRPCreations, name), time.Now())
-	if err != nil {
-		return 0, err
-	}
-
-	resultVector, ok := result.(model.Vector)
-	if !ok {
-		return 0, fmt.Errorf("result is not a vector: %+v", result)
-	}
-
-	if len(resultVector) == 0 {
-		return 0, nil
-	}
-
-	if len(resultVector) > 1 {
-		return 0, fmt.Errorf("result vector contains multiple values: %+v", resultVector)
-	}
-
-	return int(resultVector[0].Value), nil
-}

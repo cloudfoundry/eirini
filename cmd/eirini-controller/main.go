@@ -154,7 +154,7 @@ func createLRPReconciler(
 		stset.NewStatefulSetToLRPConverter(),
 	)
 
-	prometheusRecorder, err := prometheus.NewRecorder(logger.Session("prometheus-recorder"), metrics.Registry)
+	decoratedLRPClient, err := prometheus.NewLRPClientDecorator(logger.Session("prometheus-decorator"), lrpClient, metrics.Registry)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func createLRPReconciler(
 	return reconciler.NewLRP(
 		logger,
 		controllerClient,
-		prometheus.NewLRPClientDecorator(lrpClient, prometheusRecorder),
+		decoratedLRPClient,
 		client.NewStatefulSet(clientset, eiriniCfg.WorkloadsNamespace),
 		scheme,
 	), nil
