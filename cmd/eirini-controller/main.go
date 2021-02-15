@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	eirinischeme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
+	"code.cloudfoundry.org/eirini/prometheus"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/jessevdk/go-flags"
@@ -31,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
@@ -63,12 +66,15 @@ func main() {
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	managerOptions := manager.Options{
-		// do not serve prometheus metrics; disabled because port clashes during integration tests
 		MetricsBindAddress: "0",
 		Scheme:             eirinischeme.Scheme,
 		Logger:             util.NewLagerLogr(logger),
 		LeaderElection:     true,
 		LeaderElectionID:   "eirini-controller-leader",
+	}
+
+	if eiriniCfg.Properties.PrometheusPort > 0 {
+		managerOptions.MetricsBindAddress = fmt.Sprintf(":%d", eiriniCfg.Properties.PrometheusPort)
 	}
 
 	if eiriniCfg.LeaderElectionID != "" {
@@ -79,7 +85,9 @@ func main() {
 	mgr, err := manager.New(kubeConfig, managerOptions)
 	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
 
-	lrpReconciler := createLRPReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
+	lrpReconciler, err := createLRPReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
+	cmdcommons.ExitfIfError(err, "Failed to create LRP reconciler")
+
 	taskReconciler := createTaskReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
 	podCrashReconciler := createPodCrashReconciler(logger, eiriniCfg.WorkloadsNamespace, controllerClient, clientset)
 
@@ -126,7 +134,8 @@ func createLRPReconciler(
 	clientset kubernetes.Interface,
 	eiriniCfg *eirini.Config,
 	scheme *runtime.Scheme,
-) *reconciler.LRP {
+) (*reconciler.LRP, error) {
+	logger = logger.Session("lrp-reconciler")
 	lrpToStatefulSetConverter := stset.NewLRPToStatefulSetConverter(
 		eiriniCfg.Properties.ApplicationServiceAccount,
 		eiriniCfg.Properties.RegistrySecretName,
@@ -145,12 +154,18 @@ func createLRPReconciler(
 		stset.NewStatefulSetToLRPConverter(),
 	)
 
+	prometheusRecorder, err := prometheus.NewRecorder(logger.Session("prometheus-recorder"), metrics.Registry)
+	if err != nil {
+		return nil, err
+	}
+
 	return reconciler.NewLRP(
 		logger,
 		controllerClient,
-		lrpClient,
+		prometheus.NewLRPClientDecorator(lrpClient, prometheusRecorder),
 		client.NewStatefulSet(clientset, eiriniCfg.WorkloadsNamespace),
-		scheme)
+		scheme,
+	), nil
 }
 
 func createTaskReconciler(

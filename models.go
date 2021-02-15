@@ -83,6 +83,8 @@ type Properties struct { //nolint:maligned
 	UnsafeAllowAutomountServiceAccountToken bool `yaml:"unsafe_allow_automount_service_account_token"`
 
 	ServePlaintext bool `yaml:"serve_plaintext"`
+
+	PrometheusPort int `yaml:"prometheus_port"`
 }
 
 type EventReporterConfig struct {

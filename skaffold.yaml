@@ -64,6 +64,10 @@ deploy:
       setValueTemplates:
         auth.user: nats
         auth.password: "{{.NATS_PASSWORD}}"
+    - name: prometheus
+      remote: true
+      chartPath: prometheus-community/prometheus
+      namespace: eirini-core
     - name: eirini
       chartPath: ../eirini-release/helm
       namespace: eirini-core

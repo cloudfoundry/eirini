@@ -3,14 +3,19 @@ package eats_test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/pkg/apis/eirini"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
+	"code.cloudfoundry.org/eirini/prometheus"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	"github.com/prometheus/client_golang/api"
+	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -21,12 +26,14 @@ import (
 
 var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", func() {
 	var (
-		namespace   string
-		lrpName     string
-		lrpGUID     string
-		lrpVersion  string
-		lrp         *eiriniv1.LRP
-		appListOpts metav1.ListOptions
+		namespace        string
+		lrpName          string
+		lrpGUID          string
+		lrpVersion       string
+		lrp              *eiriniv1.LRP
+		appListOpts      metav1.ListOptions
+		prometheusClient api.Client
+		prometheusAPI    prometheusv1.API
 	)
 
 	getStatefulSet := func() *appsv1.StatefulSet {
@@ -63,6 +70,13 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		appListOpts = metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
 		}
+
+		var connErr error
+		prometheusClient, connErr = api.NewClient(api.Config{
+			Address: fmt.Sprintf("http://prometheus-server.%s.svc.cluster.local:80", tests.GetEiriniSystemNamespace()),
+		})
+		Expect(connErr).NotTo(HaveOccurred())
+		prometheusAPI = prometheusv1.NewAPI(prometheusClient)
 
 		lrp = &eiriniv1.LRP{
 			ObjectMeta: metav1.ObjectMeta{
@@ -138,6 +152,22 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 			Eventually(func() int32 {
 				return getLRP().Status.Replicas
 			}).Should(Equal(int32(1)))
+		})
+
+		Describe("Prometheus metrics", func() {
+			var creationsBefore int
+
+			BeforeEach(func() {
+				var err error
+				creationsBefore, err = getLRPCreations(prometheusAPI, "eirini-controller")
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("increases the created LRP counter", func() {
+				Eventually(func() (int, error) {
+					return getLRPCreations(prometheusAPI, "eirini-controller")
+				}, "1m").Should(BeNumerically(">", creationsBefore))
+			})
 		})
 
 		When("the the app has sidecars", func() {
@@ -374,3 +404,25 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		})
 	})
 })
+
+func getLRPCreations(api prometheusv1.API, name string) (int, error) {
+	result, _, err := api.Query(context.Background(), fmt.Sprintf(`%s{name="%s"} > 0`, prometheus.LRPCreations, name), time.Now())
+	if err != nil {
+		return 0, err
+	}
+
+	resultVector, ok := result.(model.Vector)
+	if !ok {
+		return 0, fmt.Errorf("result is not a vector: %+v", result)
+	}
+
+	if len(resultVector) == 0 {
+		return 0, nil
+	}
+
+	if len(resultVector) > 1 {
+		return 0, fmt.Errorf("result vector contains multiple values: %+v", resultVector)
+	}
+
+	return int(resultVector[0].Value), nil
+}
