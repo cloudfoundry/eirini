@@ -73,6 +73,8 @@ deploy:
       namespace: eirini-core
       valuesFiles:
       - ../eirini-release/scripts/assets/value-overrides.yml
+      setValueTemplates:
+        webhook_ca_bundle: "{{.CA_BUNDLE}}"
       artifactOverrides:
         images.api: eirini/opi
         images.route_collector: eirini/route-collector

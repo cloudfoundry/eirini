@@ -4,15 +4,17 @@ set -euo pipefail
 
 export NATS_PASSWORD=${NATS_PASSWORD:-$(pass eirini/ci/nats-password)}
 export WIREMOCK_KEYSTORE_PASSWORD=${WIREMOCK_KEYSTORE_PASSWORD:-$(pass eirini/ci/wiremock-keystore-password)}
+export CA_BUNDLE
 
 main() {
   init_helm
   generate_secrets
+  CA_BUNDLE="$(kubectl get secret -n eirini-core injector-certs -o jsonpath="{.data['tls\.ca']}")"
   skaffold $@
 }
 
 generate_secrets() {
-  "$HOME/workspace/eirini-release/scripts/generate-secrets.sh" "*.eirini-core.svc.cluster.local" "$WIREMOCK_KEYSTORE_PASSWORD"
+  "$HOME/workspace/eirini-release/scripts/generate-secrets.sh" "*.eirini-core.svc" "$WIREMOCK_KEYSTORE_PASSWORD"
   eirini_certs_json=$(kubectl get -n eirini-core secret eirini-certs -o json)
   echo "$eirini_certs_json" | jq --arg pass "$(echo -n $NATS_PASSWORD | base64)" '.data["nats-password"]=$pass' | kubectl apply -f -
 }

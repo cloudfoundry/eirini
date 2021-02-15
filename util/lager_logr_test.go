@@ -2,10 +2,10 @@ package util_test
 
 import (
 	"errors"
-	"fmt"
 
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/eirini/util/utilfakes"
+	"code.cloudfoundry.org/lager"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,7 +30,7 @@ var _ = Describe("LagerLogr", func() {
 
 	Describe("Info", func() {
 		JustBeforeEach(func() {
-			lagerLogr.Info("some-message", "some-data")
+			lagerLogr.Info("some-message", "some-key", "some-value")
 		})
 
 		It("delegates to lagger's Info", func() {
@@ -38,13 +38,13 @@ var _ = Describe("LagerLogr", func() {
 			actualMsg, actualLagerData := fakeLogger.InfoArgsForCall(0)
 			Expect(actualMsg).To(Equal("some-message"))
 			Expect(actualLagerData).To(HaveLen(1))
-			Expect(fmt.Sprintf("%s", actualLagerData[0]["data"])).To(ContainSubstring("some-data"))
+			Expect(actualLagerData[0]).To(Equal(lager.Data{"some-key": "some-value"}))
 		})
 	})
 
 	Describe("Error", func() {
 		JustBeforeEach(func() {
-			lagerLogr.Error(errors.New("some-error"), "some-message", "some-data")
+			lagerLogr.Error(errors.New("some-error"), "some-message", "some-key", "some-value")
 		})
 
 		It("delegates to lagger's Error", func() {
@@ -53,33 +53,36 @@ var _ = Describe("LagerLogr", func() {
 			Expect(actualErr).To(MatchError("some-error"))
 			Expect(actualMsg).To(Equal("some-message"))
 			Expect(actualLagerData).To(HaveLen(1))
-			Expect(fmt.Sprintf("%s", actualLagerData[0]["data"])).To(ContainSubstring("some-data"))
+			Expect(actualLagerData[0]).To(Equal(lager.Data{"some-key": "some-value"}))
 		})
 	})
 
 	Describe("V", func() {
-		JustBeforeEach(func() {
-			lagerLogr.V(0).Info("some-message", "some-data")
-		})
-
-		It("delegates to lagger's Info", func() {
-			Expect(fakeLogger.InfoCallCount()).To(Equal(1))
-			actualMsg, actualLagerData := fakeLogger.InfoArgsForCall(0)
-			Expect(actualMsg).To(Equal("some-message"))
-			Expect(actualLagerData).To(HaveLen(1))
-			Expect(fmt.Sprintf("%s", actualLagerData[0]["data"])).To(ContainSubstring("some-data"))
+		It("returns the same logger", func() {
+			Expect(lagerLogr.V(42)).To(BeIdenticalTo(lagerLogr))
 		})
 	})
 
 	Describe("WithValues", func() {
-		It("returns the same logger", func() {
-			Expect(lagerLogr.WithValues()).To(BeIdenticalTo(lagerLogr))
+		It("adds data to the lager logger", func() {
+			lagerLogr.WithValues("additional-key", "additional-value")
+
+			Expect(fakeLogger.WithDataCallCount()).To(Equal(1))
+			actualData := fakeLogger.WithDataArgsForCall(0)
+			Expect(actualData).To(Equal(lager.Data{
+				"additional-key": "additional-value",
+			}))
 		})
 	})
 
 	Describe("WithName", func() {
-		It("returns the same logger", func() {
-			Expect(lagerLogr.WithName("foo")).To(BeIdenticalTo(lagerLogr))
+		It("creates a new lager session", func() {
+			lagerLogr.WithName("foo")
+
+			Expect(fakeLogger.SessionCallCount()).To(Equal(1))
+			actualName, actualData := fakeLogger.SessionArgsForCall(0)
+			Expect(actualName).To(Equal("foo"))
+			Expect(actualData).To(BeEmpty())
 		})
 	})
 })

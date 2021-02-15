@@ -141,12 +141,7 @@ type TaskReporterConfig struct {
 }
 
 type InstanceIndexEnvInjectorConfig struct {
-	ServiceName                string `yaml:"service_name"`
-	ServiceNamespace           string `yaml:"service_namespace"`
-	ServicePort                int32  `yaml:"service_port"`
-	EiriniXOperatorFingerprint string
-
-	WorkloadsNamespace string
-
+	Port       int32  `yaml:"service_port"`
+	CertDir    string `yaml:"cert_dir"`
 	KubeConfig `yaml:",inline"`
 }

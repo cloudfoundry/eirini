@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	arv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -27,19 +28,54 @@ var _ = Describe("InstanceIndexInjector", func() {
 	)
 
 	BeforeEach(func() {
-		port := tests.GetTelepresencePort()
+		port := int32(tests.GetTelepresencePort())
 		telepresenceService := tests.GetTelepresenceServiceName()
+		telepresenceDomain := fmt.Sprintf("%s.default.svc", telepresenceService)
 		fingerprint = "instance-id-" + tests.GenerateGUID()[:8]
+		certDir, caBundle := tests.GenerateKeyPairDir("tls", telepresenceDomain)
+		sideEffects := arv1.SideEffectClassNone
+		scope := arv1.NamespacedScope
+
+		_, err := fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().Create(context.Background(),
+			&arv1.MutatingWebhookConfiguration{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: fingerprint + "-mutating-hook",
+				},
+				Webhooks: []arv1.MutatingWebhook{
+					{
+						Name: fingerprint + "-mutating-webhook.cloudfoundry.org",
+						ClientConfig: arv1.WebhookClientConfig{
+							Service: &arv1.ServiceReference{
+								Namespace: "default",
+								Name:      telepresenceService,
+								Port:      &port,
+							},
+							CABundle: caBundle,
+						},
+						SideEffects:             &sideEffects,
+						AdmissionReviewVersions: []string{"v1beta1"},
+						Rules: []arv1.RuleWithOperations{
+							{
+								Operations: []arv1.OperationType{arv1.Create},
+								Rule: arv1.Rule{
+									APIGroups:   []string{""},
+									APIVersions: []string{"v1"},
+									Resources:   []string{"pods"},
+									Scope:       &scope,
+								},
+							},
+						},
+					},
+				},
+			}, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
 
 		config = &eirini.InstanceIndexEnvInjectorConfig{
-			ServiceName:                telepresenceService,
-			ServicePort:                int32(port),
-			ServiceNamespace:           "default",
-			EiriniXOperatorFingerprint: fingerprint,
-			WorkloadsNamespace:         fixture.Namespace,
+			Port: port,
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: fixture.KubeConfigPath,
 			},
+			CertDir: certDir,
 		}
 		hookSession, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
 
@@ -48,7 +84,7 @@ var _ = Describe("InstanceIndexInjector", func() {
 		}
 		client := &http.Client{Transport: tr}
 		Eventually(func() (int, error) {
-			resp, err := client.Get(fmt.Sprintf("https://%s.default.svc:%d/0", telepresenceService, port))
+			resp, err := client.Get(fmt.Sprintf("https://%s:%d/", telepresenceDomain, port))
 			if err != nil {
 				printMessage(fmt.Sprintf("failed to call telepresence: %s", err.Error()))
 
@@ -90,8 +126,6 @@ var _ = Describe("InstanceIndexInjector", func() {
 		}
 		err := fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().Delete(context.Background(), fingerprint+"-mutating-hook", metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		err = fixture.Clientset.CoreV1().Secrets("default").Delete(context.Background(), fingerprint+"-setupcertificate", metav1.DeleteOptions{})
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	JustBeforeEach(func() {
@@ -119,7 +153,7 @@ var _ = Describe("InstanceIndexInjector", func() {
 	}
 
 	It("sets CF_INSTANCE_INDEX in the opi container environment", func() {
-		Expect(getCFInstanceIndex(pod, stset.OPIContainerName)).To(Equal("0"))
+		Eventually(func() string { return getCFInstanceIndex(pod, stset.OPIContainerName) }).Should(Equal("0"))
 	})
 
 	It("does not set CF_INSTANCE_INDEX on the non-opi container", func() {

@@ -17,7 +17,6 @@ require (
 	code.cloudfoundry.org/clock v1.0.0 // indirect
 	code.cloudfoundry.org/consuladapter v0.0.0-20200131002136-ac1daf48ba97 // indirect
 	code.cloudfoundry.org/diego-logging-client v0.0.0-20200130234554-60ef08820a45 // indirect
-	code.cloudfoundry.org/eirinix v0.5.0
 	code.cloudfoundry.org/executor v0.0.0-20200629205945-23d8d6f82636 // indirect
 	code.cloudfoundry.org/garden v0.0.0-20200813151451-b404ff2d61e6 // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20190809170250-f77fb823c7ee // indirect
@@ -32,7 +31,6 @@ require (
 	code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 // indirect
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/Microsoft/go-winio v0.4.16 // indirect
-	github.com/cloudflare/cfssl v1.5.0 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/containers/image v3.0.2+incompatible
 	github.com/containers/storage v1.23.5 // indirect
@@ -44,37 +42,39 @@ require (
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/go-logr/logr v0.4.0
+	github.com/go-logr/zapr v0.1.1 // indirect
+	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/go-test/deep v1.0.7 // indirect
 	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/google/certificate-transparency-go v1.1.1 // indirect
+	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/googleapis/gnostic v0.5.4 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hashicorp/consul/api v1.7.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/hashicorp/go-uuid v1.0.2
+	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jinzhu/copier v0.2.4
-	github.com/jmoiron/sqlx v1.3.1 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
+	github.com/kr/text v0.2.0 // indirect
+	github.com/lib/pq v1.8.0 // indirect
 	github.com/magefile/mage v1.11.0 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
-	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0
+	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/nats-io/jwt v1.2.2 // indirect
 	github.com/nats-io/nats-server/v2 v2.1.9
 	github.com/nats-io/nats.go v1.10.0
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
-	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.5
 	github.com/opencontainers/image-spec v1.0.1
@@ -82,17 +82,12 @@ require (
 	github.com/prometheus/client_golang v1.9.0
 	github.com/prometheus/common v0.15.0
 	github.com/prometheus/procfs v0.6.0 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.7.1 // indirect
-	github.com/spf13/afero v1.5.1 // indirect
 	github.com/spf13/cobra v1.1.3
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
-	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802 // indirect
-	github.com/urfave/cli v1.22.5 // indirect
-	github.com/zmap/zcrypto v0.0.0-20210209183020-6380fde892f0 // indirect
-	go.uber.org/zap v1.16.0
+	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/zap v1.16.0 // indirect
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	golang.org/x/oauth2 v0.0.0-20210216194517-16ff1888fd2e // indirect
 	golang.org/x/sys v0.0.0-20210216224549-f992740a1bac // indirect
@@ -102,6 +97,7 @@ require (
 	google.golang.org/grpc v1.35.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 	k8s.io/api v0.20.2
 	k8s.io/apiextensions-apiserver v0.20.2 // indirect
 	k8s.io/apimachinery v0.20.2
