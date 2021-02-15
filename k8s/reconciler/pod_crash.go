@@ -60,11 +60,11 @@ func NewPodCrash(
 	}
 }
 
-func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r PodCrash) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	logger := r.logger.Session("crash-event-reconciler", lager.Data{"namespace": request.Namespace, "name": request.Name})
 
 	pod := &corev1.Pod{}
-	if err := r.pods.Get(context.Background(), request.NamespacedName, pod); err != nil {
+	if err := r.pods.Get(ctx, request.NamespacedName, pod); err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Error("pod does not exist", err)
 
@@ -118,7 +118,7 @@ func (r PodCrash) Reconcile(request reconcile.Request) (reconcile.Result, error)
 		return reconcile.Result{}, err
 	}
 
-	r.setCrashTimestampOnPod(logger, pod, crashEvent)
+	r.setCrashTimestampOnPod(ctx, logger, pod, crashEvent)
 
 	return reconcile.Result{}, nil
 }
@@ -136,7 +136,7 @@ func (r PodCrash) eventAlreadyEmitted(crashEvent events.CrashEvent, pod *corev1.
 	return strconv.FormatInt(crashEvent.CrashTimestamp, 10) == pod.Annotations[stset.AnnotationLastReportedLRPCrash]
 }
 
-func (r PodCrash) setCrashTimestampOnPod(logger lager.Logger, pod *corev1.Pod, crashEvent events.CrashEvent) {
+func (r PodCrash) setCrashTimestampOnPod(ctx context.Context, logger lager.Logger, pod *corev1.Pod, crashEvent events.CrashEvent) {
 	newPod := pod.DeepCopy()
 	if newPod.Annotations == nil {
 		newPod.Annotations = map[string]string{}
@@ -144,7 +144,7 @@ func (r PodCrash) setCrashTimestampOnPod(logger lager.Logger, pod *corev1.Pod, c
 
 	newPod.Annotations[stset.AnnotationLastReportedLRPCrash] = strconv.FormatInt(crashEvent.CrashTimestamp, 10)
 
-	if err := r.pods.Patch(context.Background(), newPod, client.MergeFrom(pod)); err != nil {
+	if err := r.pods.Patch(ctx, newPod, client.MergeFrom(pod)); err != nil {
 		logger.Error("failed-to-set-last-crash-time-on-pod", err)
 	}
 }

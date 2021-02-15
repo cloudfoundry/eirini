@@ -31,9 +31,7 @@ var _ = Describe("PodCrashPredicate", func() {
 				},
 			},
 		}
-		Expect(predicate.Update(event.UpdateEvent{
-			MetaNew: p.GetObjectMeta(),
-		})).To(BeFalse())
+		Expect(predicate.Update(event.UpdateEvent{ObjectNew: &p})).To(BeFalse())
 	})
 
 	It("allows all Update calls with specified source type", func() {
@@ -44,8 +42,6 @@ var _ = Describe("PodCrashPredicate", func() {
 				},
 			},
 		}
-		Expect(predicate.Update(event.UpdateEvent{
-			MetaNew: p.GetObjectMeta(),
-		})).To(BeTrue())
+		Expect(predicate.Update(event.UpdateEvent{ObjectNew: &p})).To(BeTrue())
 	})
 })

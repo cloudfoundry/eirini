@@ -14,10 +14,7 @@ func NewSourceTypeUpdatePredicate(sourceType string) SourceTypeUpdatePredicate {
 }
 
 func (p SourceTypeUpdatePredicate) Update(e event.UpdateEvent) bool {
-	obj := e.MetaNew
-	labels := obj.GetLabels()
-
-	return labels[stset.LabelSourceType] == p.sourceType
+	return e.ObjectNew.GetLabels()[stset.LabelSourceType] == p.sourceType
 }
 
 func (SourceTypeUpdatePredicate) Create(event.CreateEvent) bool {

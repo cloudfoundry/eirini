@@ -56,8 +56,8 @@ Expect a failure due to name of the configmap in cf-for-k8s
 
 ### Why do you need them
 
-* Standard EATs failure logs only contain standard Ginkgo output, i.e. no K8S logs
-* K8S logs might turn to be quite useful when troubleshooting a failure as they might tell you what has been going on on the cluster at the time the test failed
+- Standard EATs failure logs only contain standard Ginkgo output, i.e. no K8S logs
+- K8S logs might turn to be quite useful when troubleshooting a failure as they might tell you what has been going on on the cluster at the time the test failed
 
 ### How to get them
 

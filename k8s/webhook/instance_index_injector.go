@@ -12,7 +12,7 @@ import (
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	exterrors "github.com/pkg/errors"
-	admissionv1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )

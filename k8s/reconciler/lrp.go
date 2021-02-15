@@ -54,7 +54,7 @@ type LRP struct {
 	statefulsetGetter StatefulSetGetter
 }
 
-func (r *LRP) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *LRP) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	logger := r.logger.Session("reconcile-lrp",
 		lager.Data{
 			"name":      request.NamespacedName.Name,
@@ -62,7 +62,7 @@ func (r *LRP) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 		})
 
 	lrp := &eiriniv1.LRP{}
-	if err := r.lrps.Get(context.Background(), request.NamespacedName, lrp); err != nil {
+	if err := r.lrps.Get(ctx, request.NamespacedName, lrp); err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Error("lrp-not-found", err)
 
@@ -74,7 +74,7 @@ func (r *LRP) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 		return reconcile.Result{}, errors.Wrap(err, "failed to get lrp")
 	}
 
-	err := r.do(lrp)
+	err := r.do(ctx, lrp)
 	if err != nil {
 		logger.Error("failed-to-reconcile", err)
 	}
@@ -82,7 +82,7 @@ func (r *LRP) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	return reconcile.Result{}, err
 }
 
-func (r *LRP) do(lrp *eiriniv1.LRP) error {
+func (r *LRP) do(ctx context.Context, lrp *eiriniv1.LRP) error {
 	_, err := r.desirer.Get(opi.LRPIdentifier{
 		GUID:    lrp.Spec.GUID,
 		Version: lrp.Spec.Version,
@@ -107,7 +107,7 @@ func (r *LRP) do(lrp *eiriniv1.LRP) error {
 
 	var errs *multierror.Error
 
-	err = r.updateStatus(lrp, appLRP)
+	err = r.updateStatus(ctx, lrp, appLRP)
 	errs = multierror.Append(errs, errors.Wrap(err, "failed to update lrp status"))
 
 	err = r.desirer.Update(appLRP)
@@ -116,7 +116,7 @@ func (r *LRP) do(lrp *eiriniv1.LRP) error {
 	return errs.ErrorOrNil()
 }
 
-func (r *LRP) updateStatus(lrp *eiriniv1.LRP, appLRP *opi.LRP) error {
+func (r *LRP) updateStatus(ctx context.Context, lrp *eiriniv1.LRP, appLRP *opi.LRP) error {
 	statefulSetName, err := utils.GetStatefulsetName(appLRP)
 	if err != nil {
 		return err
@@ -129,7 +129,7 @@ func (r *LRP) updateStatus(lrp *eiriniv1.LRP, appLRP *opi.LRP) error {
 
 	lrp.Status.Replicas = st.Status.ReadyReplicas
 
-	return r.lrps.Status().Update(context.Background(), lrp)
+	return r.lrps.Status().Update(ctx, lrp)
 }
 
 func (r *LRP) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {

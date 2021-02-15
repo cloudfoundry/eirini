@@ -51,7 +51,7 @@ func NewCrashReconciler(
 	}
 }
 
-func (c *CrashReconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (c *CrashReconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	logger := c.logger.Session("reconcile-pod-crash",
 		lager.Data{
 			"name":      request.NamespacedName.Name,
@@ -60,7 +60,7 @@ func (c *CrashReconciler) Reconcile(request reconcile.Request) (reconcile.Result
 
 	pod := &corev1.Pod{}
 
-	err := c.client.Get(context.Background(), request.NamespacedName, pod)
+	err := c.client.Get(ctx, request.NamespacedName, pod)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Info("pod-not-found", lager.Data{"error": err})
@@ -104,7 +104,7 @@ func (c *CrashReconciler) Reconcile(request reconcile.Request) (reconcile.Result
 
 	newPod.Annotations[stset.AnnotationLastReportedAppCrash] = strconv.FormatInt(event.CrashTimestamp, 10)
 
-	if err = c.client.Patch(context.Background(), newPod, client.MergeFrom(pod)); err != nil {
+	if err = c.client.Patch(ctx, newPod, client.MergeFrom(pod)); err != nil {
 		logger.Error("failed-to-set-last-crash-time-on-pod", err)
 	}
 

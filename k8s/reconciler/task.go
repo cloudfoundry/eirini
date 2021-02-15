@@ -39,12 +39,12 @@ type TaskDesirer interface {
 	Desire(namespace string, task *opi.Task, opts ...shared.Option) error
 }
 
-func (t *Task) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	task := &eiriniv1.Task{}
 	logger := t.logger.Session("reconcile-task", lager.Data{"request": request})
 	logger.Debug("start")
 
-	err := t.client.Get(context.Background(), request.NamespacedName, task)
+	err := t.client.Get(ctx, request.NamespacedName, task)
 	if errors.IsNotFound(err) {
 		logger.Error("no-such-task", err)
 

@@ -16,9 +16,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -80,7 +80,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 			},
 		}
 
-		runtimeClient.GetStub = func(c context.Context, nn k8stypes.NamespacedName, o runtime.Object) error {
+		runtimeClient.GetStub = func(c context.Context, nn k8stypes.NamespacedName, o client.Object) error {
 			p := o.(*corev1.Pod)
 			pod.DeepCopyInto(p)
 			pod = p
@@ -99,7 +99,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 	})
 
 	JustBeforeEach(func() {
-		reconcileRes, reconcileErr = reconciler.Reconcile(reconcile.Request{
+		reconcileRes, reconcileErr = reconciler.Reconcile(context.Background(), reconcile.Request{
 			NamespacedName: k8stypes.NamespacedName{
 				Name:      "the-task-pod",
 				Namespace: "space",

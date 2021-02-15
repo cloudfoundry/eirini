@@ -71,11 +71,11 @@ func NewReconciler(
 	}
 }
 
-func (r Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	logger := r.logger.Session("task-completion-reconciler", lager.Data{"namespace": request.Namespace, "pod-name": request.Name})
 
 	pod := &corev1.Pod{}
-	if err := r.runtimeClient.Get(context.Background(), request.NamespacedName, pod); err != nil {
+	if err := r.runtimeClient.Get(ctx, request.NamespacedName, pod); err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Error("pod does not exist", err)
 

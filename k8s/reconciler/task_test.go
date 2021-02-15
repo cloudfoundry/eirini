@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -46,12 +47,12 @@ var _ = Describe("Task", func() {
 	})
 
 	JustBeforeEach(func() {
-		reconcileResult, reconcileErr = taskReconciler.Reconcile(reconcile.Request{NamespacedName: namespacedName})
+		reconcileResult, reconcileErr = taskReconciler.Reconcile(context.Background(), reconcile.Request{NamespacedName: namespacedName})
 	})
 
 	Context("creating a job", func() {
 		BeforeEach(func() {
-			controllerClient.GetStub = func(ctx context.Context, namespacedName types.NamespacedName, obj runtime.Object) error {
+			controllerClient.GetStub = func(ctx context.Context, namespacedName types.NamespacedName, obj client.Object) error {
 				task, ok := obj.(*eiriniv1.Task)
 				Expect(ok).To(BeTrue())
 

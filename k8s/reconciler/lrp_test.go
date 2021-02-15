@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -43,7 +44,7 @@ var _ = Describe("reconciler.LRP", func() {
 		scheme = eiriniv1scheme.Scheme
 		lrpreconciler = reconciler.NewLRP(logger, controllerClient, desirer, statefulsetGetter, scheme)
 
-		controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o runtime.Object) error {
+		controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o client.Object) error {
 			lrp := o.(*eiriniv1.LRP)
 			lrp.Name = "some-lrp"
 			lrp.Namespace = "some-ns"
@@ -63,7 +64,7 @@ var _ = Describe("reconciler.LRP", func() {
 	})
 
 	JustBeforeEach(func() {
-		_, resultErr = lrpreconciler.Reconcile(reconcile.Request{
+		_, resultErr = lrpreconciler.Reconcile(context.Background(), reconcile.Request{
 			NamespacedName: types.NamespacedName{
 				Namespace: "some-ns",
 				Name:      "app",
@@ -173,7 +174,7 @@ var _ = Describe("reconciler.LRP", func() {
 
 	When("the LRP doesn't exist", func() {
 		BeforeEach(func() {
-			controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o runtime.Object) error {
+			controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o client.Object) error {
 				return apierrors.NewNotFound(schema.GroupResource{}, "my-lrp")
 			}
 		})
@@ -185,7 +186,7 @@ var _ = Describe("reconciler.LRP", func() {
 
 	When("the controller client fails to get the CRD", func() {
 		BeforeEach(func() {
-			controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o runtime.Object) error {
+			controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o client.Object) error {
 				return errors.New("boom")
 			}
 		})
