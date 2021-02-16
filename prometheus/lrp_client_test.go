@@ -68,6 +68,7 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 		BeforeEach(func() {
 			lrpClient.DesireStub = func(s string, l *opi.LRP, o ...shared.Option) error {
 				time.Sleep(time.Second)
+
 				return nil
 			}
 		})
@@ -105,7 +106,7 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 		})
 
 		JustBeforeEach(func() {
-			otherDecorator.Desire("the-namespace", lrp, desireOpts...)
+			Expect(otherDecorator.Desire("the-namespace", lrp, desireOpts...)).To(Succeed())
 		})
 
 		It("adopts the existing counters", func() {

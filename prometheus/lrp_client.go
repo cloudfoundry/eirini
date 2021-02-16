@@ -41,6 +41,7 @@ func NewLRPClientDecorator(
 	if err != nil {
 		return nil, err
 	}
+
 	creationDurations, err := registerHistogram(registry, LRPCreationDurations, LRPCreationDurationsHelp)
 	if err != nil {
 		return nil, err
@@ -56,6 +57,7 @@ func NewLRPClientDecorator(
 
 func (d *LRPClientDecorator) Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) error {
 	start := time.Now()
+
 	err := d.LRPClient.Desire(namespace, lrp, opts...)
 	if err == nil {
 		d.creations.Inc()
