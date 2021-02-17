@@ -14,6 +14,7 @@ import (
 
 func GenerateKeyPair(name string) (string, string) {
 	dir, _ := GenerateKeyPairDir(name, name)
+
 	return path.Join(dir, fmt.Sprintf("%s.crt", name)), path.Join(dir, fmt.Sprintf("%s.key", name))
 }
 

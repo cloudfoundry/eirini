@@ -190,5 +190,6 @@ func ExpectAllowResponse(resp admission.Response, reason string) {
 func rawExt(obj interface{}) runtime.RawExtension {
 	rawObj, err := json.Marshal(obj)
 	Expect(err).NotTo(HaveOccurred())
+
 	return runtime.RawExtension{Raw: rawObj}
 }

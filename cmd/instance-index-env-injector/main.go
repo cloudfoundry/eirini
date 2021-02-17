@@ -40,6 +40,7 @@ func main() {
 
 	logr := util.NewLagerLogr(log)
 	ctrl.SetLogger(logr)
+
 	mgr, err := manager.New(kubeConfig, manager.Options{
 		// do not serve prometheus metrics; disabled because port clashes during integration tests
 		MetricsBindAddress: "0",

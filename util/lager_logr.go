@@ -34,11 +34,13 @@ func (l LagerLogr) V(_ int) logr.Logger {
 
 func (l LagerLogr) WithValues(kvs ...interface{}) logr.Logger {
 	l.logger = l.logger.WithData(toLagerData(kvs))
+
 	return l
 }
 
 func (l LagerLogr) WithName(name string) logr.Logger {
 	l.logger = l.logger.Session(name)
+
 	return l
 }
 
@@ -47,5 +49,6 @@ func toLagerData(kvs []interface{}) lager.Data {
 	for i := 0; i < len(kvs); i += 2 {
 		data[kvs[i].(string)] = kvs[i+1]
 	}
+
 	return data
 }

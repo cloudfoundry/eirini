@@ -50,6 +50,8 @@ func (f *EATSFixture) SetUp() {
 func (f *EATSFixture) TearDown() {
 	if f == nil {
 		Fail("failed to initialize fixture")
+
+		return
 	}
 
 	f.Fixture.TearDown()

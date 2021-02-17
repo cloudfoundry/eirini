@@ -50,6 +50,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 		It("runs the webhook service and registers it", func() {
 			Eventually(func() error {
 				_, err := net.Dial("tcp", fmt.Sprintf(":%d", config.Port))
+
 				return err
 			}).Should(Succeed())
 

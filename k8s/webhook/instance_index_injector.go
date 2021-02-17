@@ -37,6 +37,7 @@ func (i *InstanceIndexEnvInjector) Handle(ctx context.Context, req admission.Req
 	}
 
 	pod := &corev1.Pod{}
+
 	err := i.decoder.Decode(req, pod)
 	if err != nil {
 		logger.Error("no-pod-in-request", err)
