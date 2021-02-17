@@ -21,14 +21,17 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 	)
 
 	BeforeEach(func() {
-		certDir, _ := tests.GenerateKeyPairDir("tls", "my-domain")
 		config = &eirini.InstanceIndexEnvInjectorConfig{
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: fixture.KubeConfigPath,
 			},
-			Port:    int32(8080 + GinkgoParallelNode()),
-			CertDir: certDir,
+			Port: int32(8080 + GinkgoParallelNode()),
 		}
+		certDir, _ := tests.GenerateKeyPairDir("tls", "my-domain")
+
+		eiriniBins.InstanceIndexEnvInjector.ExtraArgs = []string{}
+		env := fmt.Sprintf("%s=%s", eirini.EnvInstanceEnvInjectorCertDir, certDir)
+		session, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config, env)
 	})
 
 	AfterEach(func() {
@@ -41,29 +44,22 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 		}
 	})
 
-	Describe("register and execute (default options)", func() {
-		JustBeforeEach(func() {
-			eiriniBins.InstanceIndexEnvInjector.ExtraArgs = []string{}
-			session, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
-		})
+	It("runs the webhook service and registers it", func() {
+		Eventually(func() error {
+			_, err := net.Dial("tcp", fmt.Sprintf(":%d", config.Port))
 
-		It("runs the webhook service and registers it", func() {
-			Eventually(func() error {
-				_, err := net.Dial("tcp", fmt.Sprintf(":%d", config.Port))
+			return err
+		}).Should(Succeed())
 
-				return err
-			}).Should(Succeed())
+		Consistently(session).ShouldNot(gexec.Exit())
+	})
 
-			Consistently(session).ShouldNot(gexec.Exit())
-		})
-
-		When("the config file doesn't exist", func() {
-			It("exits reporting missing config file", func() {
-				session = eiriniBins.InstanceIndexEnvInjector.Restart("/does/not/exist", session)
-				Eventually(session).Should(gexec.Exit())
-				Expect(session.ExitCode).ToNot(BeZero())
-				Expect(session.Err).To(gbytes.Say("Failed to read config file: failed to read file"))
-			})
+	When("the config file doesn't exist", func() {
+		It("exits reporting missing config file", func() {
+			session = eiriniBins.InstanceIndexEnvInjector.Restart("/does/not/exist", session)
+			Eventually(session).Should(gexec.Exit())
+			Expect(session.ExitCode).ToNot(BeZero())
+			Expect(session.Err).To(gbytes.Say("Failed to read config file: failed to read file"))
 		})
 	})
 })

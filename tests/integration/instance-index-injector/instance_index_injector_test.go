@@ -75,9 +75,9 @@ var _ = Describe("InstanceIndexInjector", func() {
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: fixture.KubeConfigPath,
 			},
-			CertDir: certDir,
 		}
-		hookSession, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config)
+		env := fmt.Sprintf("%s=%s", eirini.EnvInstanceEnvInjectorCertDir, certDir)
+		hookSession, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config, env)
 
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec

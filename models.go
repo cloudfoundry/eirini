@@ -4,12 +4,13 @@ import "errors"
 
 const (
 	// Environment Variable Names
-	EnvEiriniNamespace    = "EIRINI_NAMESPACE"
-	EnvDownloadURL        = "DOWNLOAD_URL"
-	EnvDropletUploadURL   = "DROPLET_UPLOAD_URL"
-	EnvAppID              = "APP_ID"
-	EnvCompletionCallback = "COMPLETION_CALLBACK"
-	EnvEiriniAddress      = "EIRINI_ADDRESS"
+	EnvEiriniNamespace            = "EIRINI_NAMESPACE"
+	EnvDownloadURL                = "DOWNLOAD_URL"
+	EnvDropletUploadURL           = "DROPLET_UPLOAD_URL"
+	EnvAppID                      = "APP_ID"
+	EnvCompletionCallback         = "COMPLETION_CALLBACK"
+	EnvEiriniAddress              = "EIRINI_ADDRESS"
+	EnvInstanceEnvInjectorCertDir = "INSTANCE_ENV_INJECTOR_CERTS_DIR"
 
 	EnvPodName              = "POD_NAME"
 	EnvCFInstanceIP         = "CF_INSTANCE_IP"
@@ -41,6 +42,8 @@ const (
 
 	CCUploaderSecretName   = "cc-uploader-certs"   //#nosec G101
 	EiriniClientSecretName = "eirini-client-certs" //#nosec G101
+
+	InstanceEnvInjectorCertDir = "/etc/eirini/certs"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -141,7 +144,6 @@ type TaskReporterConfig struct {
 }
 
 type InstanceIndexEnvInjectorConfig struct {
-	Port       int32  `yaml:"service_port"`
-	CertDir    string `yaml:"cert_dir"`
+	Port       int32 `yaml:"service_port"`
 	KubeConfig `yaml:",inline"`
 }

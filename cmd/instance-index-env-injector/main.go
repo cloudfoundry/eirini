@@ -41,6 +41,11 @@ func main() {
 	logr := util.NewLagerLogr(log)
 	ctrl.SetLogger(logr)
 
+	certDir := cmdcommons.GetOrDefault(
+		os.Getenv(eirini.EnvInstanceEnvInjectorCertDir),
+		eirini.InstanceEnvInjectorCertDir,
+	)
+
 	mgr, err := manager.New(kubeConfig, manager.Options{
 		// do not serve prometheus metrics; disabled because port clashes during integration tests
 		MetricsBindAddress: "0",
@@ -48,7 +53,7 @@ func main() {
 		Logger:             logr,
 		Port:               int(cfg.Port),
 		Host:               "0.0.0.0",
-		CertDir:            cfg.CertDir,
+		CertDir:            certDir,
 	})
 	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
 
