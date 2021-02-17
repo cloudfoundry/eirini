@@ -15,6 +15,8 @@ import (
 	"code.cloudfoundry.org/tlsconfig"
 	"github.com/onsi/ginkgo"
 	ginkgoconfig "github.com/onsi/ginkgo/config"
+
+	//nolint:revive
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	"gopkg.in/yaml.v2"

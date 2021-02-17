@@ -13,10 +13,10 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests/eats/wiremock"
 
-	// nolint:golint,stylecheck
+	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/ginkgo"
 
-	// nolint:golint,stylecheck
+	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

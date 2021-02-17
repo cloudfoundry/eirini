@@ -5,7 +5,7 @@ import (
 
 	"code.cloudfoundry.org/tlsconfig/certtest"
 
-	// nolint:golint,stylecheck
+	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/gomega"
 )
 

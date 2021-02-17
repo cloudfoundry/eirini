@@ -3,7 +3,7 @@ package tests
 import (
 	"encoding/json"
 
-	// nolint:golint,stylecheck
+	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/gomega"
 )
 

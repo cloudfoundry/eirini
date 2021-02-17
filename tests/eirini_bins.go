@@ -9,10 +9,10 @@ import (
 
 	"github.com/gofrs/flock"
 
-	// nolint:golint,stylecheck
+	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/ginkgo"
 
-	// nolint:golint,stylecheck
+	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"gopkg.in/yaml.v2"

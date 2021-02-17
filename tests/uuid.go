@@ -3,7 +3,7 @@ package tests
 import (
 	"github.com/hashicorp/go-uuid"
 
-	// nolint:golint,stylecheck
+	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/gomega"
 )
 

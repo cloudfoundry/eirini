@@ -53,6 +53,10 @@ linters:
     # paralleltest seems to think all tests should be parallel. We'll let ginkgo
     # decide that.
     - paralleltest
+    # durationcheck complains about *any* multiplication of time.Durations, as
+    # *some* might be incorrect. Unfortunately we do need to perform some of
+    # those multiplications.
+    - durationcheck
 
 issues:
   exclude-use-default: true

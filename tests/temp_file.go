@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	// nolint:golint,stylecheck
+	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/gomega"
 )
 
