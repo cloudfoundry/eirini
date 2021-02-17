@@ -7,6 +7,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CLUSTER_NAME=${CLUSTER_NAME:-cf-for-k8s-kind}
 CF_DOMAIN=${CF_DOMAIN:-vcap.me}
 EIRINI_RELEASE_BASEDIR=${EIRINI_RELEASE_BASEDIR:-$HOME/workspace/eirini-release}
+EIRINI_RENDER_DIR=$(mktemp -d)
+
+trap "rm -rf $EIRINI_RENDER_DIR" EXIT
 
 values_file="$SCRIPT_DIR/values/$CLUSTER_NAME.cf-values.yml"
 
@@ -15,6 +18,8 @@ if [[ ! -f "$values_file" ]]; then
   docker_username=eiriniuser
   docker_password=$(pass eirini/docker-hub)
   docker_repo_prefix=eirini
+else
+  echo " ⚠️  WARNING: Using existing values file: $values_file! If you want a clean deployment consider deleting this file!"
 fi
 
 pushd $HOME/workspace/cf-for-k8s
@@ -48,9 +53,12 @@ EOF
 
   fi
 
-  # patch current eirini helm into cf-for-k8s
+  # generate eirini yamls
+  "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$EIRINI_RENDER_DIR" --values "$EIRINI_RELEASE_BASEDIR/scripts/assets/cf-for-k8s-value-overrides.yml"
+
+  # patch generated eirini yamls into cf-for-k8s
   rm -rf "./build/eirini/_vendir/eirini"
-  cp -r "$EIRINI_RELEASE_BASEDIR/helm/eirini" "./build/eirini/_vendir/"
+  mv "$EIRINI_RENDER_DIR/templates" "./build/eirini/_vendir/eirini"
   ./build/eirini/build.sh
 
   kapp deploy -y -a cf -f <(ytt -f config -f "$values_file")

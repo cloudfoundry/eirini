@@ -9,7 +9,7 @@ export CA_BUNDLE
 main() {
   init_helm
   generate_secrets
-  CA_BUNDLE="$(kubectl get secret -n eirini-core injector-certs -o jsonpath="{.data['tls\.ca']}")"
+  CA_BUNDLE="$(kubectl get secret -n eirini-core instance-index-env-injector-certs -o jsonpath="{.data['tls\.ca']}")"
   skaffold $@
 }
 
