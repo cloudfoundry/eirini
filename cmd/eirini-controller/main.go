@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/client"
 	eirinievent "code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
+	"code.cloudfoundry.org/eirini/k8s/pdb"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
@@ -148,7 +149,7 @@ func createLRPReconciler(
 		client.NewSecret(clientset),
 		client.NewStatefulSet(clientset, eiriniCfg.WorkloadsNamespace),
 		client.NewPod(clientset, eiriniCfg.WorkloadsNamespace),
-		client.NewPodDisruptionBudget(clientset),
+		pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(clientset)),
 		client.NewEvent(clientset),
 		lrpToStatefulSetConverter,
 		stset.NewStatefulSetToLRPConverter(),

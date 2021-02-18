@@ -18,6 +18,7 @@ import (
 //counterfeiter:generate . SecretsCreator
 //counterfeiter:generate . StatefulSetCreator
 //counterfeiter:generate . LRPToStatefulSetConverter
+//counterfeiter:generate . PodDisruptionBudgetUpdater
 
 type LRPToStatefulSetConverter interface {
 	Convert(statefulSetName string, lrp *opi.LRP) (*appsv1.StatefulSet, error)
@@ -31,12 +32,16 @@ type StatefulSetCreator interface {
 	Create(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
 }
 
+type PodDisruptionBudgetUpdater interface {
+	Update(namespace, name string, lrp *opi.LRP) error
+}
+
 type Desirer struct {
-	logger                    lager.Logger
-	secrets                   SecretsCreator
-	statefulSets              StatefulSetCreator
-	lrpToStatefulSetConverter LRPToStatefulSetConverter
-	createPodDisruptionBudget createPodDisruptionBudgetFunc
+	logger                     lager.Logger
+	secrets                    SecretsCreator
+	statefulSets               StatefulSetCreator
+	lrpToStatefulSetConverter  LRPToStatefulSetConverter
+	podDisruptionBudgetCreator PodDisruptionBudgetUpdater
 }
 
 func NewDesirer(
@@ -44,14 +49,14 @@ func NewDesirer(
 	secrets SecretsCreator,
 	statefulSets StatefulSetCreator,
 	lrpToStatefulSetConverter LRPToStatefulSetConverter,
-	podDisruptionBudget PodDisruptionBudgetCreator,
+	podDisruptionBudgetCreator PodDisruptionBudgetUpdater,
 ) Desirer {
 	return Desirer{
-		logger:                    logger,
-		secrets:                   secrets,
-		statefulSets:              statefulSets,
-		lrpToStatefulSetConverter: lrpToStatefulSetConverter,
-		createPodDisruptionBudget: newCreatePodDisruptionBudgetFunc(podDisruptionBudget),
+		logger:                     logger,
+		secrets:                    secrets,
+		statefulSets:               statefulSets,
+		lrpToStatefulSetConverter:  lrpToStatefulSetConverter,
+		podDisruptionBudgetCreator: podDisruptionBudgetCreator,
 	}
 }
 
@@ -93,7 +98,7 @@ func (d *Desirer) Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) 
 		return errors.Wrap(err, "failed to create statefulset")
 	}
 
-	if err := d.createPodDisruptionBudget(namespace, statefulSetName, lrp); err != nil {
+	if err := d.podDisruptionBudgetCreator.Update(namespace, statefulSetName, lrp); err != nil {
 		logger.Error("failed-to-create-pod-disruption-budget", err)
 
 		return errors.Wrap(err, "failed to create pod disruption budget")

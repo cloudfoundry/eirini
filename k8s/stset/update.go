@@ -7,7 +7,6 @@ import (
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 )
 
@@ -18,28 +17,23 @@ type StatefulSetUpdater interface {
 }
 
 type Updater struct {
-	logger                     lager.Logger
-	statefulSetUpdater         StatefulSetUpdater
-	podDisruptionBudgetDeleter PodDisruptionBudgetDeleter
-	podDisruptionBudgetCreator PodDisruptionBudgetCreator
-	getStatefulSet             getStatefulSetFunc
-	createPodDisruptionBudget  createPodDisruptionBudgetFunc
+	logger             lager.Logger
+	statefulSetUpdater StatefulSetUpdater
+	getStatefulSet     getStatefulSetFunc
+	pdbUpdater         PodDisruptionBudgetUpdater
 }
 
 func NewUpdater(
 	logger lager.Logger,
 	statefulSetGetter StatefulSetByLRPIdentifierGetter,
 	statefulSetUpdater StatefulSetUpdater,
-	podDisruptionBudgetDeleter PodDisruptionBudgetDeleter,
-	podDisruptionBudgetCreator PodDisruptionBudgetCreator,
+	pdbUpdater PodDisruptionBudgetUpdater,
 ) Updater {
 	return Updater{
-		logger:                     logger,
-		statefulSetUpdater:         statefulSetUpdater,
-		podDisruptionBudgetDeleter: podDisruptionBudgetDeleter,
-		podDisruptionBudgetCreator: podDisruptionBudgetCreator,
-		getStatefulSet:             newGetStatefulSetFunc(statefulSetGetter),
-		createPodDisruptionBudget:  newCreatePodDisruptionBudgetFunc(podDisruptionBudgetCreator),
+		logger:             logger,
+		statefulSetUpdater: statefulSetUpdater,
+		pdbUpdater:         pdbUpdater,
+		getStatefulSet:     newGetStatefulSetFunc(statefulSetGetter),
 	}
 }
 
@@ -73,18 +67,19 @@ func (u *Updater) update(lrp *opi.LRP) error {
 		return err
 	}
 
-	_, err = u.statefulSetUpdater.Update(updatedStatefulSet.Namespace, updatedStatefulSet)
-	if err != nil {
+	if _, err = u.statefulSetUpdater.Update(updatedStatefulSet.Namespace, updatedStatefulSet); err != nil {
 		logger.Error("failed-to-update-statefulset", err, lager.Data{"namespace": statefulSet.Namespace})
 
 		return errors.Wrap(err, "failed to update statefulset")
 	}
 
-	return u.handlePodDisruptionBudget(logger,
-		statefulSet.Namespace,
-		statefulSet.Name,
-		lrp,
-	)
+	if err = u.pdbUpdater.Update(statefulSet.Namespace, statefulSet.Name, lrp); err != nil {
+		logger.Error("failed-to-update-disruption-budget", err, lager.Data{"namespace": statefulSet.Namespace})
+
+		return errors.Wrap(err, "failed to delete pod disruption budget")
+	}
+
+	return nil
 }
 
 func (u *Updater) getUpdatedStatefulSetObj(sts *appsv1.StatefulSet, routes []opi.Route, instances int, lastUpdated, image string) (*appsv1.StatefulSet, error) {
@@ -109,27 +104,4 @@ func (u *Updater) getUpdatedStatefulSetObj(sts *appsv1.StatefulSet, routes []opi
 	}
 
 	return updatedSts, nil
-}
-
-func (u *Updater) handlePodDisruptionBudget(logger lager.Logger, namespace, name string, lrp *opi.LRP) error {
-	if lrp.TargetInstances <= 1 {
-		err := u.podDisruptionBudgetDeleter.Delete(namespace, name)
-		if err != nil && !k8serrors.IsNotFound(err) {
-			logger.Error("failed-to-delete-disruption-budget", err, lager.Data{"namespace": namespace})
-
-			return errors.Wrap(err, "failed to delete pod disruption budget")
-		}
-
-		return nil
-	}
-
-	err := u.createPodDisruptionBudget(namespace, name, lrp)
-
-	if err != nil && !k8serrors.IsAlreadyExists(err) {
-		logger.Error("failed-to-create-disruption-budget", err, lager.Data{"namespace": namespace})
-
-		return err
-	}
-
-	return nil
 }

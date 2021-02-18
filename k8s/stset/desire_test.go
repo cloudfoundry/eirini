@@ -9,20 +9,17 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/shared/sharedfakes"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/k8s/stset/stsetfakes"
-	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 var _ = Describe("Desirer", func() {
@@ -31,7 +28,7 @@ var _ = Describe("Desirer", func() {
 		secrets                    *stsetfakes.FakeSecretsCreator
 		statefulSets               *stsetfakes.FakeStatefulSetCreator
 		lrpToStatefulSetConverter  *stsetfakes.FakeLRPToStatefulSetConverter
-		podDisruptionBudget        *stsetfakes.FakePodDisruptionBudgetCreator
+		podDisruptionBudgetUpdater *stsetfakes.FakePodDisruptionBudgetUpdater
 		desireOptOne, desireOptTwo *sharedfakes.FakeOption
 
 		lrp       *opi.LRP
@@ -53,12 +50,11 @@ var _ = Describe("Desirer", func() {
 			}, nil
 		}
 
-		podDisruptionBudget = new(stsetfakes.FakePodDisruptionBudgetCreator)
+		podDisruptionBudgetUpdater = new(stsetfakes.FakePodDisruptionBudgetUpdater)
 		lrp = createLRP("Baldur", []opi.Route{{Hostname: "my.example.route", Port: 1000}})
 		desireOptOne = new(sharedfakes.FakeOption)
 		desireOptTwo = new(sharedfakes.FakeOption)
-
-		desirer = stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSetConverter, podDisruptionBudget)
+		desirer = stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSetConverter, podDisruptionBudgetUpdater)
 	})
 
 	JustBeforeEach(func() {
@@ -78,8 +74,22 @@ var _ = Describe("Desirer", func() {
 		Expect(statefulSets.CreateCallCount()).To(Equal(1))
 	})
 
-	It("should not create a pod disruption budget", func() {
-		Expect(podDisruptionBudget.CreateCallCount()).To(BeZero())
+	It("updates the pod disruption budget", func() {
+		Expect(podDisruptionBudgetUpdater.UpdateCallCount()).To(Equal(1))
+		actualNamespace, actualName, actualLRP := podDisruptionBudgetUpdater.UpdateArgsForCall(0)
+		Expect(actualNamespace).To(Equal("the-namespace"))
+		Expect(actualName).To(Equal("baldur-space-foo-34f869d015"))
+		Expect(actualLRP).To(Equal(lrp))
+	})
+
+	When("updating the pod disruption budget fails", func() {
+		BeforeEach(func() {
+			podDisruptionBudgetUpdater.UpdateReturns(errors.New("update-error"))
+		})
+
+		It("returns an error", func() {
+			Expect(desireErr).To(MatchError(ContainSubstring("update-error")))
+		})
 	})
 
 	It("should invoke the opts with the StatefulSet", func() {
@@ -107,54 +117,23 @@ var _ = Describe("Desirer", func() {
 		})
 	})
 
-	When("the app has at least 2 instances", func() {
+	When("the statefulset already exists", func() {
 		BeforeEach(func() {
-			lrp.TargetInstances = 2
+			statefulSets.CreateReturns(nil, k8serrors.NewAlreadyExists(schema.GroupResource{}, "potato"))
 		})
 
-		It("should create a pod disruption budget for it", func() {
-			Expect(podDisruptionBudget.CreateCallCount()).To(Equal(1))
+		It("does not fail", func() {
+			Expect(desireErr).NotTo(HaveOccurred())
+		})
+	})
 
-			pdbNamespace, pdb := podDisruptionBudget.CreateArgsForCall(0)
-			Expect(pdbNamespace).To(Equal("the-namespace"))
-
-			expectedName, err := utils.GetStatefulsetName(lrp)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(pdb.Name).To(Equal(expectedName))
-			Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromInt(1))))
-			Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(stset.LabelGUID, lrp.GUID))
-			Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(stset.LabelVersion, lrp.Version))
-			Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(stset.LabelSourceType, "APP"))
+	When("creating the statefulset fails", func() {
+		BeforeEach(func() {
+			statefulSets.CreateReturns(nil, errors.New("potato"))
 		})
 
-		When("pod disruption budget creation fails", func() {
-			BeforeEach(func() {
-				podDisruptionBudget.CreateReturns(nil, errors.New("boom"))
-			})
-
-			It("should propagate the error", func() {
-				Expect(desireErr).To(MatchError(ContainSubstring("boom")))
-			})
-		})
-
-		When("the statefulset already exists", func() {
-			BeforeEach(func() {
-				statefulSets.CreateReturns(nil, k8serrors.NewAlreadyExists(schema.GroupResource{}, "potato"))
-			})
-
-			It("does not fail", func() {
-				Expect(desireErr).NotTo(HaveOccurred())
-			})
-		})
-
-		When("creating the statefulset fails", func() {
-			BeforeEach(func() {
-				statefulSets.CreateReturns(nil, errors.New("potato"))
-			})
-
-			It("propagates the error", func() {
-				Expect(desireErr).To(MatchError(ContainSubstring("potato")))
-			})
+		It("propagates the error", func() {
+			Expect(desireErr).To(MatchError(ContainSubstring("potato")))
 		})
 	})
 

@@ -18,7 +18,7 @@ var _ = Describe("EiriniController", func() {
 	)
 
 	BeforeEach(func() {
-		config = tests.DefaultEiriniConfig(fixture.Namespace, fixture.NextAvailablePort())
+		config = tests.DefaultEiriniControllerConfig(fixture.Namespace)
 	})
 
 	JustBeforeEach(func() {

@@ -138,7 +138,7 @@ func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *opi.LRP) (*appsv
 		statefulSet.Spec.Template.Spec.AutomountServiceAccountToken = &automountServiceAccountToken
 	}
 
-	statefulSet.Spec.Selector = statefulSetLabelSelector(lrp)
+	statefulSet.Spec.Selector = StatefulSetLabelSelector(lrp)
 
 	statefulSet.Spec.Template.Spec.Affinity = &corev1.Affinity{
 		PodAntiAffinity: &corev1.PodAntiAffinity{
@@ -309,7 +309,7 @@ func toLabelSelectorRequirements(selector *metav1.LabelSelector) []metav1.LabelS
 	return reqs
 }
 
-func statefulSetLabelSelector(lrp *opi.LRP) *metav1.LabelSelector {
+func StatefulSetLabelSelector(lrp *opi.LRP) *metav1.LabelSelector {
 	return &metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			LabelGUID:       lrp.GUID,

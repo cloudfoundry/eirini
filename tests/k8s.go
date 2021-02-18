@@ -226,9 +226,7 @@ func MakeTestHTTPClient() (*http.Client, error) {
 
 func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 	return &eirini.Config{
-		WorkloadsNamespace:      namespace,
-		LeaderElectionID:        fmt.Sprintf("test-eirini-%d", ginkgo.GinkgoParallelNode()),
-		LeaderElectionNamespace: namespace,
+		WorkloadsNamespace: namespace,
 		Properties: eirini.Properties{
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: GetKubeconfig(),
@@ -242,6 +240,22 @@ func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 			ClientCAPath:              PathToTestFixture("cert"),
 			TLSPort:                   tlsPort,
 
+			ApplicationServiceAccount: GetApplicationServiceAccount(),
+			RegistrySecretName:        "registry-secret",
+		},
+	}
+}
+
+func DefaultEiriniControllerConfig(namespace string) *eirini.Config {
+	return &eirini.Config{
+		WorkloadsNamespace:      namespace,
+		LeaderElectionID:        fmt.Sprintf("test-eirini-%d", ginkgo.GinkgoParallelNode()),
+		LeaderElectionNamespace: namespace,
+		Properties: eirini.Properties{
+			KubeConfig: eirini.KubeConfig{
+				ConfigPath: GetKubeconfig(),
+			},
+			DefaultWorkloadsNamespace: namespace,
 			ApplicationServiceAccount: GetApplicationServiceAccount(),
 			RegistrySecretName:        "registry-secret",
 		},

@@ -85,6 +85,8 @@ type Properties struct { //nolint:maligned
 	AllowRunImageAsRoot                     bool `yaml:"allow_run_image_as_root"`
 	UnsafeAllowAutomountServiceAccountToken bool `yaml:"unsafe_allow_automount_service_account_token"`
 
+	DefaultMinAvailableInstances string `yaml:"default_min_available_instances"`
+
 	ServePlaintext bool `yaml:"serve_plaintext"`
 
 	PrometheusPort int `yaml:"prometheus_port"`

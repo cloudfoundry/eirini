@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/client"
 	informerroute "code.cloudfoundry.org/eirini/k8s/informers/route"
 	"code.cloudfoundry.org/eirini/k8s/informers/route/event"
+	"code.cloudfoundry.org/eirini/k8s/pdb"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/route"
@@ -47,7 +48,7 @@ var _ = Describe("Routes", func() {
 			client.NewSecret(fixture.Clientset),
 			client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
 			client.NewPod(fixture.Clientset, fixture.Namespace),
-			client.NewPodDisruptionBudget(fixture.Clientset),
+			pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(fixture.Clientset)),
 			client.NewEvent(fixture.Clientset),
 			lrpToStatefulSetConverter,
 			stset.NewStatefulSetToLRPConverter(),

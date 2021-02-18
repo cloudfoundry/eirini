@@ -14,6 +14,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
+	"code.cloudfoundry.org/eirini/k8s/pdb"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/eirini/stager/docker"
@@ -191,7 +192,7 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 		client.NewSecret(clientset),
 		client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
 		client.NewPod(clientset, cfg.WorkloadsNamespace),
-		client.NewPodDisruptionBudget(clientset),
+		pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(clientset)),
 		client.NewEvent(clientset),
 		lrpToStatefulSetConverter,
 		stset.NewStatefulSetToLRPConverter(),

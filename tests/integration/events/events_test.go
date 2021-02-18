@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
+	"code.cloudfoundry.org/eirini/k8s/pdb"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
@@ -98,7 +99,7 @@ var _ = Describe("Events", func() {
 				client.NewSecret(fixture.Clientset),
 				client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
 				client.NewPod(fixture.Clientset, fixture.Namespace),
-				client.NewPodDisruptionBudget(fixture.Clientset),
+				pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(fixture.Clientset)),
 				client.NewEvent(fixture.Clientset),
 				lrpToStatefulSetConverter,
 				stset.NewStatefulSetToLRPConverter(),

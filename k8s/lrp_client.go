@@ -6,7 +6,6 @@ import (
 	"code.cloudfoundry.org/lager"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/api/policy/v1beta1"
 )
 
 type PodClient interface {
@@ -16,7 +15,7 @@ type PodClient interface {
 }
 
 type PodDisruptionBudgetClient interface {
-	Create(namespace string, podDisruptionBudget *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)
+	Update(namespace, name string, lrp *opi.LRP) error
 	Delete(namespace string, name string) error
 }
 
@@ -50,17 +49,17 @@ func NewLRPClient(
 	secrets SecretsClient,
 	statefulSets StatefulSetClient,
 	pods PodClient,
-	pdbs PodDisruptionBudgetClient,
+	pdbClient PodDisruptionBudgetClient,
 	events EventsClient,
 	lrpToStatefulSetConverter stset.LRPToStatefulSetConverter,
 	statefulSetToLRPConverter stset.StatefulSetToLRPConverter,
 
 ) *LRPClient {
 	return &LRPClient{
-		Desirer: stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSetConverter, pdbs),
+		Desirer: stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSetConverter, pdbClient),
 		Lister:  stset.NewLister(logger, statefulSets, statefulSetToLRPConverter),
-		Stopper: stset.NewStopper(logger, statefulSets, statefulSets, pods, pdbs, secrets),
-		Updater: stset.NewUpdater(logger, statefulSets, statefulSets, pdbs, pdbs),
+		Stopper: stset.NewStopper(logger, statefulSets, statefulSets, pods, pdbClient, secrets),
+		Updater: stset.NewUpdater(logger, statefulSets, statefulSets, pdbClient),
 		Getter:  stset.NewGetter(logger, statefulSets, pods, events, statefulSetToLRPConverter),
 	}
 }

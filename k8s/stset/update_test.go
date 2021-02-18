@@ -21,8 +21,7 @@ var _ = Describe("Update", func() {
 		logger             lager.Logger
 		statefulSetGetter  *stsetfakes.FakeStatefulSetByLRPIdentifierGetter
 		statefulSetUpdater *stsetfakes.FakeStatefulSetUpdater
-		pdbDeleter         *stsetfakes.FakePodDisruptionBudgetDeleter
-		pdbCreator         *stsetfakes.FakePodDisruptionBudgetCreator
+		pdbUpdater         *stsetfakes.FakePodDisruptionBudgetUpdater
 
 		updatedLRP *opi.LRP
 		err        error
@@ -33,8 +32,7 @@ var _ = Describe("Update", func() {
 
 		statefulSetGetter = new(stsetfakes.FakeStatefulSetByLRPIdentifierGetter)
 		statefulSetUpdater = new(stsetfakes.FakeStatefulSetUpdater)
-		pdbDeleter = new(stsetfakes.FakePodDisruptionBudgetDeleter)
-		pdbCreator = new(stsetfakes.FakePodDisruptionBudgetCreator)
+		pdbUpdater = new(stsetfakes.FakePodDisruptionBudgetUpdater)
 
 		updatedLRP = &opi.LRP{
 			LRPIdentifier: opi.LRPIdentifier{
@@ -80,7 +78,7 @@ var _ = Describe("Update", func() {
 	})
 
 	JustBeforeEach(func() {
-		updater := stset.NewUpdater(logger, statefulSetGetter, statefulSetUpdater, pdbDeleter, pdbCreator)
+		updater := stset.NewUpdater(logger, statefulSetGetter, statefulSetUpdater, pdbUpdater)
 		err = updater.Update(updatedLRP)
 	})
 
@@ -101,6 +99,24 @@ var _ = Describe("Update", func() {
 		Expect(st.Spec.Template.Spec.Containers[1].Image).To(Equal("new/image"))
 	})
 
+	It("updates the pod disruption budget", func() {
+		Expect(pdbUpdater.UpdateCallCount()).To(Equal(1))
+		actualNamespace, actualName, actualLRP := pdbUpdater.UpdateArgsForCall(0)
+		Expect(actualNamespace).To(Equal("the-namespace"))
+		Expect(actualName).To(Equal("baldur"))
+		Expect(actualLRP).To(Equal(updatedLRP))
+	})
+
+	When("updating the pod disruption budget fails", func() {
+		BeforeEach(func() {
+			pdbUpdater.UpdateReturns(errors.New("update-error"))
+		})
+
+		It("returns an error", func() {
+			Expect(err).To(MatchError(ContainSubstring("update-error")))
+		})
+	})
+
 	When("the image is missing", func() {
 		BeforeEach(func() {
 			updatedLRP.Image = ""
@@ -115,79 +131,6 @@ var _ = Describe("Update", func() {
 
 			_, st := statefulSetUpdater.UpdateArgsForCall(0)
 			Expect(st.Spec.Template.Spec.Containers[1].Image).To(Equal("old/image"))
-		})
-	})
-
-	When("lrp is scaled down to 1 instance", func() {
-		BeforeEach(func() {
-			updatedLRP.TargetInstances = 1
-		})
-
-		It("should delete the pod disruption budget for the lrp", func() {
-			Expect(pdbDeleter.DeleteCallCount()).To(Equal(1))
-			pdbNamespace, pdbName := pdbDeleter.DeleteArgsForCall(0)
-			Expect(pdbNamespace).To(Equal("the-namespace"))
-			Expect(pdbName).To(Equal("baldur"))
-		})
-
-		When("the pod disruption budget does not exist", func() {
-			BeforeEach(func() {
-				pdbDeleter.DeleteReturns(k8serrors.NewNotFound(schema.GroupResource{
-					Group:    "policy/v1beta1",
-					Resource: "PodDisruptionBudget",
-				}, "baldur"))
-			})
-
-			It("should ignore the error", func() {
-				Expect(err).NotTo(HaveOccurred())
-			})
-		})
-
-		When("the pod disruption budget deletion errors", func() {
-			BeforeEach(func() {
-				pdbDeleter.DeleteReturns(errors.New("pow"))
-			})
-
-			It("should propagate the error", func() {
-				Expect(err).To(MatchError(ContainSubstring("pow")))
-			})
-		})
-	})
-
-	When("lrp is scaled up to more than 1 instance", func() {
-		BeforeEach(func() {
-			updatedLRP.TargetInstances = 2
-		})
-
-		It("should create a pod disruption budget for the lrp in the same namespace", func() {
-			Expect(pdbCreator.CreateCallCount()).To(Equal(1))
-			namespace, pdb := pdbCreator.CreateArgsForCall(0)
-
-			Expect(pdb.Name).To(Equal("baldur"))
-			Expect(namespace).To(Equal("the-namespace"))
-		})
-
-		When("the pod disruption budget already exists", func() {
-			BeforeEach(func() {
-				pdbCreator.CreateReturns(nil, k8serrors.NewAlreadyExists(schema.GroupResource{
-					Group:    "policy/v1beta1",
-					Resource: "PodDisruptionBudget",
-				}, "baldur"))
-			})
-
-			It("should ignore the error", func() {
-				Expect(err).NotTo(HaveOccurred())
-			})
-		})
-
-		When("the pod disruption budget creation errors", func() {
-			BeforeEach(func() {
-				pdbCreator.CreateReturns(nil, errors.New("boom"))
-			})
-
-			It("should propagate the error", func() {
-				Expect(err).To(MatchError(ContainSubstring("boom")))
-			})
 		})
 	})
 
