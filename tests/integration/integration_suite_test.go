@@ -165,14 +165,22 @@ func createPod(ns, name string, labels map[string]string) {
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{
-					Name:  "busybox",
-					Image: "eirini/busybox",
+					Name:    "busybox",
+					Image:   "eirini/busybox",
+					Command: []string{"/bin/sleep", "60"},
 				},
 			},
 		},
 	}, metav1.CreateOptions{})
 
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func getPod(ns, name string) *corev1.Pod {
+	pod, err := fixture.Clientset.CoreV1().Pods(ns).Get(context.Background(), name, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	return pod
 }
 
 func nodeNamesFromPods(pods []corev1.Pod) []string {

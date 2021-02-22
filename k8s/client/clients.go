@@ -64,12 +64,12 @@ func (c *Pod) Delete(namespace, name string) error {
 }
 
 func (c *Pod) SetAnnotation(pod *corev1.Pod, key, value string) (*corev1.Pod, error) {
-	patchBytes := patching.NewAnnotation(key, value).GetJSONPatchBytes()
+	patchBytes := patching.NewAnnotation(key, value, pod.ObjectMeta.ResourceVersion).GetPatchBytes()
 
 	return c.clientSet.CoreV1().Pods(pod.Namespace).Patch(
 		context.Background(),
 		pod.Name,
-		types.JSONPatchType,
+		types.MergePatchType,
 		patchBytes,
 		metav1.PatchOptions{},
 	)
@@ -205,12 +205,12 @@ func (c *Job) List(includeCompleted bool) ([]batchv1.Job, error) {
 }
 
 func (c *Job) SetLabel(job *batchv1.Job, label, value string) (*batchv1.Job, error) {
-	patchBytes := patching.NewLabel(label, value).GetJSONPatchBytes()
+	patchBytes := patching.NewLabel(label, value, job.ObjectMeta.ResourceVersion).GetPatchBytes()
 
 	return c.clientSet.BatchV1().Jobs(job.Namespace).Patch(
 		context.Background(),
 		job.Name,
-		types.JSONPatchType,
+		types.MergePatchType,
 		patchBytes, metav1.PatchOptions{})
 }
 

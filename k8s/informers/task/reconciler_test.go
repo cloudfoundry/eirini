@@ -128,8 +128,14 @@ var _ = Describe("Task Completion Reconciler", func() {
 	It("reports the task pod", func() {
 		Expect(taskReporter.ReportCallCount()).To(Equal(1))
 		Expect(taskReporter.ReportArgsForCall(0).Name).To(Equal(pod.Name))
-		Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
+		Expect(podsClient.SetAnnotationCallCount()).To(Equal(2))
+
 		actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
+		Expect(actualPod).To(Equal(pod))
+		Expect(key).To(Equal(jobs.AnnotationOpiTaskCompletionReportCounter))
+		Expect(value).To(Equal("1"))
+
+		actualPod, key, value = podsClient.SetAnnotationArgsForCall(1)
 		Expect(actualPod).To(Equal(pod))
 		Expect(key).To(Equal(jobs.AnnotationCCAckedTaskCompletion))
 		Expect(value).To(Equal(jobs.TaskCompletedTrue))
@@ -357,11 +363,12 @@ var _ = Describe("Task Completion Reconciler", func() {
 				podsClient.SetAnnotationReturns(nil, errors.New("update-failed"))
 			})
 
+			It("doesn't attempt to contact CC", func() {
+				Expect(taskReporter.ReportCallCount()).To(BeZero())
+			})
+
 			It("returns an error with both failure messages", func() {
-				Expect(reconcileErr).To(MatchError(SatisfyAll(
-					ContainSubstring("task-reporter-error"),
-					ContainSubstring("update-failed"),
-				)))
+				Expect(reconcileErr).To(MatchError(ContainSubstring("update-failed")))
 			})
 		})
 	})

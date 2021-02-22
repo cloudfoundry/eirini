@@ -7,7 +7,6 @@ import (
 
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/lager"
-	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -142,14 +141,12 @@ func (r *Reconciler) reportIfRequired(pod *corev1.Pod) error {
 		return nil
 	}
 
+	if _, err := r.pods.SetAnnotation(pod, jobs.AnnotationOpiTaskCompletionReportCounter, strconv.Itoa(completionCounter+1)); err != nil {
+		return errors.Wrap(err, "failed to patch annotation on pod")
+	}
+
 	if err := r.reporter.Report(pod); err != nil {
-		resultErr := multierror.Append(err)
-
-		if _, updateErr := r.pods.SetAnnotation(pod, jobs.AnnotationOpiTaskCompletionReportCounter, strconv.Itoa(completionCounter+1)); updateErr != nil {
-			resultErr = multierror.Append(resultErr, updateErr)
-		}
-
-		return resultErr.ErrorOrNil()
+		return errors.Wrap(err, "failed to report task completion to CC")
 	}
 
 	if _, updateErr := r.pods.SetAnnotation(pod, jobs.AnnotationCCAckedTaskCompletion, jobs.TaskCompletedTrue); updateErr != nil {

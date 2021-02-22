@@ -128,8 +128,10 @@ var _ = Describe("Pod", func() {
 
 	Describe("SetAnnotation", func() {
 		var (
-			key   string
-			value string
+			key            string
+			value          string
+			oldPod, newPod *corev1.Pod
+			err            error
 		)
 
 		BeforeEach(func() {
@@ -137,29 +139,27 @@ var _ = Describe("Pod", func() {
 			value = "bar"
 
 			createLrpPods(fixture.Namespace, "foo")
-			Eventually(func() []string { return podNames(listAllPods()) }).Should(ContainElement("foo"))
+			Eventually(func() corev1.PodPhase {
+				oldPod = getPod(fixture.Namespace, "foo")
+
+				return oldPod.Status.Phase
+			}).Should(Equal(corev1.PodRunning))
 		})
 
 		JustBeforeEach(func() {
-			pods := listAllPods()
-			pod := pods[0]
+			newPod, err = podClient.SetAnnotation(oldPod, key, value)
+		})
 
-			_, err := podClient.SetAnnotation(&pod, key, value)
+		It("succeeds", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("sets a pod annotation", func() {
-			pods := listAllPods()
-			pod := pods[0]
-
-			Expect(pod.Annotations["foo"]).To(Equal("bar"))
+			Expect(newPod.Annotations["foo"]).To(Equal("bar"))
 		})
 
 		It("preserves existing annotations", func() {
-			pods := listAllPods()
-			pod := pods[0]
-
-			Expect(pod.Annotations["some"]).To(Equal("annotation"))
+			Expect(newPod.Annotations["some"]).To(Equal("annotation"))
 		})
 
 		When("setting an existing annotation", func() {
@@ -168,10 +168,19 @@ var _ = Describe("Pod", func() {
 			})
 
 			It("overrides that annotation", func() {
-				pods := listAllPods()
-				pod := pods[0]
+				Expect(err).NotTo(HaveOccurred())
+				Expect(newPod.Annotations["some"]).To(Equal("bar"))
+			})
+		})
 
-				Expect(pod.Annotations["some"]).To(Equal("bar"))
+		When("pod was updated since being read", func() {
+			BeforeEach(func() {
+				_, err = podClient.SetAnnotation(oldPod, "anything", "else")
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("fails", func() {
+				Expect(err).To(MatchError(ContainSubstring("the object has been modified")))
 			})
 		})
 	})
@@ -539,9 +548,11 @@ var _ = Describe("Jobs", func() {
 
 	Describe("SetLabel", func() {
 		var (
-			taskGUID string
-			label    string
-			value    string
+			taskGUID       string
+			label          string
+			value          string
+			oldJob, newJob *batchv1.Job
+			err            error
 		)
 
 		BeforeEach(func() {
@@ -551,35 +562,30 @@ var _ = Describe("Jobs", func() {
 				jobs.LabelSourceType: "TASK",
 			})
 
-			Eventually(func() (*batchv1.Job, error) {
-				return getJob(taskGUID)
-			}).ShouldNot(BeNil())
+			Eventually(func() int32 {
+				oldJob, err = getJob(taskGUID)
+				Expect(err).NotTo(HaveOccurred())
+
+				return oldJob.Status.Succeeded
+			}).Should(BeNumerically("==", 1))
 
 			label = "foo"
 			value = "bar"
 		})
 
 		JustBeforeEach(func() {
-			job, err := getJob(taskGUID)
-			Expect(err).NotTo(HaveOccurred())
-
-			_, err = jobsClient.SetLabel(job, label, value)
-			Expect(err).NotTo(HaveOccurred())
+			newJob, err = jobsClient.SetLabel(oldJob, label, value)
 		})
 
 		It("adds the foo label", func() {
-			job, err := getJob(taskGUID)
 			Expect(err).NotTo(HaveOccurred())
-
-			Expect(job.Labels).To(HaveKeyWithValue("foo", "bar"))
+			Expect(newJob.Labels).To(HaveKeyWithValue("foo", "bar"))
 		})
 
 		It("preserves old labels", func() {
-			job, err := getJob(taskGUID)
 			Expect(err).NotTo(HaveOccurred())
-
-			Expect(job.Labels).To(HaveKeyWithValue(jobs.LabelGUID, taskGUID))
-			Expect(job.Labels).To(HaveKeyWithValue(jobs.LabelSourceType, "TASK"))
+			Expect(newJob.Labels).To(HaveKeyWithValue(jobs.LabelGUID, taskGUID))
+			Expect(newJob.Labels).To(HaveKeyWithValue(jobs.LabelSourceType, "TASK"))
 		})
 
 		When("setting an existing label", func() {
@@ -589,10 +595,19 @@ var _ = Describe("Jobs", func() {
 			})
 
 			It("replaces the label", func() {
-				job, err := getJob(taskGUID)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(newJob.Labels).To(HaveKeyWithValue(jobs.LabelSourceType, "APP"))
+			})
+		})
 
-				Expect(job.Labels).To(HaveKeyWithValue(jobs.LabelSourceType, "APP"))
+		When("job is updated between getting and setting", func() {
+			BeforeEach(func() {
+				_, err = jobsClient.SetLabel(oldJob, "another", "label")
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("fails", func() {
+				Expect(err).To(MatchError(ContainSubstring("the object has been modified")))
 			})
 		})
 	})

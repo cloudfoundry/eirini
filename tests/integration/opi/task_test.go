@@ -435,12 +435,12 @@ var _ = Describe("Tasks", func() {
 				Expect(err).NotTo(HaveOccurred())
 				job := allJobs.Items[0]
 
-				patchBytes := patching.NewLabel(jobs.LabelTaskCompleted, "true").GetJSONPatchBytes()
+				patchBytes := patching.NewLabel(jobs.LabelTaskCompleted, "true", job.ObjectMeta.ResourceVersion).GetPatchBytes()
 
 				_, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).Patch(
 					context.Background(),
 					job.Name,
-					types.JSONPatchType,
+					types.MergePatchType,
 					patchBytes,
 					metav1.PatchOptions{},
 				)
