@@ -192,7 +192,7 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 		client.NewSecret(clientset),
 		client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
 		client.NewPod(clientset, cfg.WorkloadsNamespace),
-		pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(clientset)),
+		pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(clientset), cfg.Properties.DefaultMinAvailableInstances),
 		client.NewEvent(clientset),
 		lrpToStatefulSetConverter,
 		stset.NewStatefulSetToLRPConverter(),

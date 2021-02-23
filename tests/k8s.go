@@ -12,6 +12,7 @@ import (
 
 	"code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/tlsconfig"
 	"github.com/onsi/ginkgo"
 	ginkgoconfig "github.com/onsi/ginkgo/config"
@@ -300,4 +301,35 @@ func CreateTestServer(certPath, keyPath, caCertPath string) (*ghttp.Server, erro
 	testServer.HTTPTestServer.TLS = tlsConf
 
 	return testServer, nil
+}
+
+func GetPDBItems(clientset kubernetes.Interface, namespace, lrpGUID, lrpVersion string) ([]policyv1.PodDisruptionBudget, error) {
+	pdbList, err := clientset.PolicyV1beta1().PodDisruptionBudgets(namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return pdbList.Items, nil
+}
+
+func GetPDB(clientset kubernetes.Interface, namespace, lrpGUID, lrpVersion string) policyv1.PodDisruptionBudget {
+	var pdbs []policyv1.PodDisruptionBudget
+
+	Eventually(func() ([]policyv1.PodDisruptionBudget, error) {
+		var err error
+		pdbs, err = GetPDBItems(clientset, namespace, lrpGUID, lrpVersion)
+
+		return pdbs, err
+	}).Should(HaveLen(1))
+
+	Consistently(func() ([]policyv1.PodDisruptionBudget, error) {
+		var err error
+		pdbs, err = GetPDBItems(clientset, namespace, lrpGUID, lrpVersion)
+
+		return pdbs, err
+	}, "5s").Should(HaveLen(1))
+
+	return pdbs[0]
 }

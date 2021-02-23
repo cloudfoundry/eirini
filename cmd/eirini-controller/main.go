@@ -69,6 +69,7 @@ func main() {
 	managerOptions := manager.Options{
 		MetricsBindAddress: "0",
 		Scheme:             eirinischeme.Scheme,
+		Namespace:          eiriniCfg.WorkloadsNamespace,
 		Logger:             util.NewLagerLogr(logger),
 		LeaderElection:     true,
 		LeaderElectionID:   "eirini-controller-leader",
@@ -149,7 +150,10 @@ func createLRPReconciler(
 		client.NewSecret(clientset),
 		client.NewStatefulSet(clientset, eiriniCfg.WorkloadsNamespace),
 		client.NewPod(clientset, eiriniCfg.WorkloadsNamespace),
-		pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(clientset)),
+		pdb.NewCreatorDeleter(
+			client.NewPodDisruptionBudget(clientset),
+			eiriniCfg.Properties.DefaultMinAvailableInstances,
+		),
 		client.NewEvent(clientset),
 		lrpToStatefulSetConverter,
 		stset.NewStatefulSetToLRPConverter(),

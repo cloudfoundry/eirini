@@ -3,9 +3,7 @@ package eirini_controller_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
-	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
@@ -24,30 +22,6 @@ var _ = Describe("EiriniController", func() {
 		lrpVersion string
 		lrp        *eiriniv1.LRP
 	)
-
-	getPDBItems := func() ([]v1beta1.PodDisruptionBudget, error) {
-		pdbList, err := fixture.Clientset.PolicyV1beta1().PodDisruptionBudgets(fixture.Namespace).List(context.Background(), metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		return pdbList.Items, nil
-	}
-
-	getPDB := func() v1beta1.PodDisruptionBudget {
-		var pdbs []v1beta1.PodDisruptionBudget
-
-		Eventually(func() ([]v1beta1.PodDisruptionBudget, error) {
-			var err error
-			pdbs, err = getPDBItems()
-
-			return pdbs, err
-		}).Should(HaveLen(1))
-
-		return pdbs[0]
-	}
 
 	BeforeEach(func() {
 		lrpName = tests.GenerateGUID()
@@ -90,7 +64,7 @@ var _ = Describe("EiriniController", func() {
 	})
 
 	It("creates a default PDB", func() {
-		pdb := getPDB()
+		pdb := tests.GetPDB(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 		Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromInt(1))))
 		Expect(pdb.Spec.MaxUnavailable).To(BeNil())
 	})
@@ -101,13 +75,15 @@ var _ = Describe("EiriniController", func() {
 		})
 
 		It("does not create a PDB", func() {
-			Consistently(getPDBItems, "10s").Should(BeEmpty())
+			Consistently(func() ([]v1beta1.PodDisruptionBudget, error) {
+				return tests.GetPDBItems(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+			}, "10s").Should(BeEmpty())
 		})
 	})
 
 	When("scaling the LRP down to one instance", func() {
 		JustBeforeEach(func() {
-			Expect(getPDB()).NotTo(BeNil())
+			Expect(tests.GetPDB(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)).NotTo(BeNil())
 
 			patch := []struct {
 				Op    string `json:"op"`
@@ -126,17 +102,19 @@ var _ = Describe("EiriniController", func() {
 		})
 
 		It("deletes the PDB", func() {
-			Eventually(getPDBItems).Should(BeEmpty())
+			Eventually(func() ([]v1beta1.PodDisruptionBudget, error) {
+				return tests.GetPDBItems(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+			}).Should(BeEmpty())
 		})
 	})
 
-	XWhen("controller config has minAvailable set", func() {
+	When("controller config has minAvailable set", func() {
 		BeforeEach(func() {
 			config.Properties.DefaultMinAvailableInstances = "20%"
 		})
 
-		It("does something", func() {
-			pdb := getPDB()
+		It("creates apdb with the configured value", func() {
+			pdb := tests.GetPDB(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 			Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromString("20%"))))
 			Expect(pdb.Spec.MaxUnavailable).To(BeNil())
 		})
