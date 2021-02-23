@@ -35,6 +35,7 @@ type Deleter interface {
 
 type PodsClient interface {
 	SetAnnotation(pod *corev1.Pod, key, value string) (*corev1.Pod, error)
+	SetAndTestAnnotation(pod *corev1.Pod, key, value string, oldValue *string) (*corev1.Pod, error)
 }
 
 type Reconciler struct {
@@ -136,12 +137,25 @@ func (r *Reconciler) reportIfRequired(pod *corev1.Pod) error {
 		return nil
 	}
 
-	completionCounter := parseIntOrZero(pod.Annotations[jobs.AnnotationOpiTaskCompletionReportCounter])
+	completionCounterStr := pod.Annotations[jobs.AnnotationOpiTaskCompletionReportCounter]
+
+	completionCounter := parseIntOrZero(completionCounterStr)
 	if completionCounter >= r.callbackRetryLimit {
 		return nil
 	}
 
-	if _, err := r.pods.SetAnnotation(pod, jobs.AnnotationOpiTaskCompletionReportCounter, strconv.Itoa(completionCounter+1)); err != nil {
+	var counterPointer *string
+	if completionCounterStr != "" {
+		counterPointer = &completionCounterStr
+	}
+
+	_, err := r.pods.SetAndTestAnnotation(
+		pod,
+		jobs.AnnotationOpiTaskCompletionReportCounter,
+		strconv.Itoa(completionCounter+1),
+		counterPointer,
+	)
+	if err != nil {
 		return errors.Wrap(err, "failed to patch annotation on pod")
 	}
 

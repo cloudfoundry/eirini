@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -128,14 +129,16 @@ var _ = Describe("Task Completion Reconciler", func() {
 	It("reports the task pod", func() {
 		Expect(taskReporter.ReportCallCount()).To(Equal(1))
 		Expect(taskReporter.ReportArgsForCall(0).Name).To(Equal(pod.Name))
-		Expect(podsClient.SetAnnotationCallCount()).To(Equal(2))
+		Expect(podsClient.SetAndTestAnnotationCallCount()).To(Equal(1))
+		Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
 
-		actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
+		actualPod, key, value, prevValue := podsClient.SetAndTestAnnotationArgsForCall(0)
 		Expect(actualPod).To(Equal(pod))
 		Expect(key).To(Equal(jobs.AnnotationOpiTaskCompletionReportCounter))
 		Expect(value).To(Equal("1"))
+		Expect(prevValue).To(BeNil())
 
-		actualPod, key, value = podsClient.SetAnnotationArgsForCall(1)
+		actualPod, key, value = podsClient.SetAnnotationArgsForCall(0)
 		Expect(actualPod).To(Equal(pod))
 		Expect(key).To(Equal(jobs.AnnotationCCAckedTaskCompletion))
 		Expect(value).To(Equal(jobs.TaskCompletedTrue))
@@ -300,11 +303,12 @@ var _ = Describe("Task Completion Reconciler", func() {
 		})
 
 		It("updates the pod setting the updated call count but not reporting success", func() {
-			Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
-			actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
+			Expect(podsClient.SetAndTestAnnotationCallCount()).To(Equal(1))
+			actualPod, key, value, prevValue := podsClient.SetAndTestAnnotationArgsForCall(0)
 			Expect(actualPod).To(Equal(pod))
 			Expect(key).To(Equal(jobs.AnnotationOpiTaskCompletionReportCounter))
 			Expect(value).To(Equal("1"))
+			Expect(prevValue).To(BeNil())
 		})
 
 		It("does not label the task as completed", func() {
@@ -313,11 +317,12 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 		When("it's the first time", func() {
 			It("sets the 'retry counter' annotation", func() {
-				Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
-				actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
+				Expect(podsClient.SetAndTestAnnotationCallCount()).To(Equal(1))
+				actualPod, key, value, prevValue := podsClient.SetAndTestAnnotationArgsForCall(0)
 				Expect(actualPod).To(Equal(pod))
 				Expect(key).To(Equal(jobs.AnnotationOpiTaskCompletionReportCounter))
 				Expect(value).To(Equal("1"))
+				Expect(prevValue).To(BeNil())
 			})
 
 			It("does not delete the task", func() {
@@ -331,11 +336,12 @@ var _ = Describe("Task Completion Reconciler", func() {
 			})
 
 			It("increments the reporting count", func() {
-				Expect(podsClient.SetAnnotationCallCount()).To(Equal(1))
-				actualPod, key, value := podsClient.SetAnnotationArgsForCall(0)
+				Expect(podsClient.SetAndTestAnnotationCallCount()).To(Equal(1))
+				actualPod, key, value, prevValue := podsClient.SetAndTestAnnotationArgsForCall(0)
 				Expect(actualPod).To(Equal(pod))
 				Expect(key).To(Equal(jobs.AnnotationOpiTaskCompletionReportCounter))
 				Expect(value).To(Equal("2"))
+				Expect(prevValue).To(PointTo(Equal("1")))
 			})
 
 			It("does not delete the task", func() {
@@ -360,7 +366,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 		When("updating the annotation on the pod fails", func() {
 			BeforeEach(func() {
-				podsClient.SetAnnotationReturns(nil, errors.New("update-failed"))
+				podsClient.SetAndTestAnnotationReturns(nil, errors.New("update-failed"))
 			})
 
 			It("doesn't attempt to contact CC", func() {

@@ -20,7 +20,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 var _ = Describe("Tasks", func() {
@@ -435,13 +434,13 @@ var _ = Describe("Tasks", func() {
 				Expect(err).NotTo(HaveOccurred())
 				job := allJobs.Items[0]
 
-				patchBytes := patching.NewLabel(jobs.LabelTaskCompleted, "true", job.ObjectMeta.ResourceVersion).GetPatchBytes()
+				labelPatch := patching.NewLabel(jobs.LabelTaskCompleted, "true")
 
 				_, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).Patch(
 					context.Background(),
 					job.Name,
-					types.MergePatchType,
-					patchBytes,
+					labelPatch.Type(),
+					labelPatch.GetPatchBytes(),
 					metav1.PatchOptions{},
 				)
 				Expect(err).NotTo(HaveOccurred())

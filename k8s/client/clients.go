@@ -14,7 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -64,13 +63,25 @@ func (c *Pod) Delete(namespace, name string) error {
 }
 
 func (c *Pod) SetAnnotation(pod *corev1.Pod, key, value string) (*corev1.Pod, error) {
-	patchBytes := patching.NewAnnotation(key, value, pod.ObjectMeta.ResourceVersion).GetPatchBytes()
+	annotation := patching.NewAnnotation(key, value)
 
 	return c.clientSet.CoreV1().Pods(pod.Namespace).Patch(
 		context.Background(),
 		pod.Name,
-		types.MergePatchType,
-		patchBytes,
+		annotation.Type(),
+		annotation.GetPatchBytes(),
+		metav1.PatchOptions{},
+	)
+}
+
+func (c *Pod) SetAndTestAnnotation(pod *corev1.Pod, key, value string, oldValue *string) (*corev1.Pod, error) {
+	annotation := patching.NewTestingAnnotation(key, value, oldValue)
+
+	return c.clientSet.CoreV1().Pods(pod.Namespace).Patch(
+		context.Background(),
+		pod.Name,
+		annotation.Type(),
+		annotation.GetPatchBytes(),
 		metav1.PatchOptions{},
 	)
 }
@@ -205,13 +216,14 @@ func (c *Job) List(includeCompleted bool) ([]batchv1.Job, error) {
 }
 
 func (c *Job) SetLabel(job *batchv1.Job, label, value string) (*batchv1.Job, error) {
-	patchBytes := patching.NewLabel(label, value, job.ObjectMeta.ResourceVersion).GetPatchBytes()
+	labelPatch := patching.NewLabel(label, value)
 
 	return c.clientSet.BatchV1().Jobs(job.Namespace).Patch(
 		context.Background(),
 		job.Name,
-		types.MergePatchType,
-		patchBytes, metav1.PatchOptions{})
+		labelPatch.Type(),
+		labelPatch.GetPatchBytes(),
+		metav1.PatchOptions{})
 }
 
 type Secret struct {

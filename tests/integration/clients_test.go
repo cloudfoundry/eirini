@@ -139,11 +139,7 @@ var _ = Describe("Pod", func() {
 			value = "bar"
 
 			createLrpPods(fixture.Namespace, "foo")
-			Eventually(func() corev1.PodPhase {
-				oldPod = getPod(fixture.Namespace, "foo")
-
-				return oldPod.Status.Phase
-			}).Should(Equal(corev1.PodRunning))
+			oldPod = getPod(fixture.Namespace, "foo")
 		})
 
 		JustBeforeEach(func() {
@@ -175,12 +171,73 @@ var _ = Describe("Pod", func() {
 
 		When("pod was updated since being read", func() {
 			BeforeEach(func() {
-				_, err = podClient.SetAnnotation(oldPod, "anything", "else")
+				_, err = podClient.SetAnnotation(oldPod, "foo", "something-else")
 				Expect(err).NotTo(HaveOccurred())
 			})
 
+			It("overwrites the change without failing", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(newPod.Annotations["foo"]).To(Equal("bar"))
+			})
+		})
+	})
+
+	Describe("SetAndTestAnnotation", func() {
+		var (
+			key            string
+			value          string
+			prevValue      *string
+			oldPod, newPod *corev1.Pod
+			err            error
+		)
+
+		BeforeEach(func() {
+			key = "foo"
+			value = "bar"
+			prevValue = nil
+
+			createLrpPods(fixture.Namespace, "foo")
+			oldPod = getPod(fixture.Namespace, "foo")
+		})
+
+		JustBeforeEach(func() {
+			newPod, err = podClient.SetAndTestAnnotation(oldPod, key, value, prevValue)
+		})
+
+		It("succeeds", func() {
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("sets a pod annotation", func() {
+			Expect(newPod.Annotations["foo"]).To(Equal("bar"))
+		})
+
+		It("preserves existing annotations", func() {
+			Expect(newPod.Annotations["some"]).To(Equal("annotation"))
+		})
+
+		When("setting an existing annotation", func() {
+			BeforeEach(func() {
+				key = "some"
+				prevValueStr := "annotation"
+				prevValue = &prevValueStr
+			})
+
+			It("overrides that annotation", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(newPod.Annotations["some"]).To(Equal("bar"))
+			})
+		})
+
+		When("the previous value doesn't match that supplied", func() {
+			BeforeEach(func() {
+				key = "some"
+				prevValueStr := "notTheValue"
+				prevValue = &prevValueStr
+			})
+
 			It("fails", func() {
-				Expect(err).To(MatchError(ContainSubstring("the object has been modified")))
+				Expect(err).To(MatchError(ContainSubstring("the server rejected")))
 			})
 		})
 	})
@@ -562,12 +619,8 @@ var _ = Describe("Jobs", func() {
 				jobs.LabelSourceType: "TASK",
 			})
 
-			Eventually(func() int32 {
-				oldJob, err = getJob(taskGUID)
-				Expect(err).NotTo(HaveOccurred())
-
-				return oldJob.Status.Succeeded
-			}).Should(BeNumerically("==", 1))
+			oldJob, err = getJob(taskGUID)
+			Expect(err).NotTo(HaveOccurred())
 
 			label = "foo"
 			value = "bar"
@@ -602,12 +655,13 @@ var _ = Describe("Jobs", func() {
 
 		When("job is updated between getting and setting", func() {
 			BeforeEach(func() {
-				_, err = jobsClient.SetLabel(oldJob, "another", "label")
+				_, err = jobsClient.SetLabel(oldJob, "foo", "something-else")
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("fails", func() {
-				Expect(err).To(MatchError(ContainSubstring("the object has been modified")))
+			It("overwrites the changed value with the new value", func() {
+				Expect(err).NotTo(HaveOccurred())
+				Expect(newJob.Labels).To(HaveKeyWithValue("foo", "bar"))
 			})
 		})
 	})
