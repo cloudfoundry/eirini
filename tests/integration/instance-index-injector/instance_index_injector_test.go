@@ -25,6 +25,7 @@ var _ = Describe("InstanceIndexInjector", func() {
 		hookSession    *gexec.Session
 		pod            *corev1.Pod
 		fingerprint    string
+		certDir        string
 	)
 
 	BeforeEach(func() {
@@ -32,7 +33,8 @@ var _ = Describe("InstanceIndexInjector", func() {
 		telepresenceService := tests.GetTelepresenceServiceName()
 		telepresenceDomain := fmt.Sprintf("%s.default.svc", telepresenceService)
 		fingerprint = "instance-id-" + tests.GenerateGUID()[:8]
-		certDir, caBundle := tests.GenerateKeyPairDir("tls", telepresenceDomain)
+		var caBundle []byte
+		certDir, caBundle = tests.GenerateKeyPairDir("tls", telepresenceDomain)
 		sideEffects := arv1.SideEffectClassNone
 		scope := arv1.NamespacedScope
 
@@ -126,6 +128,8 @@ var _ = Describe("InstanceIndexInjector", func() {
 		}
 		err := fixture.Clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().Delete(context.Background(), fingerprint+"-mutating-hook", metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
+
+		Expect(os.RemoveAll(certDir)).To(Succeed())
 	})
 
 	JustBeforeEach(func() {

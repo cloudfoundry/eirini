@@ -34,9 +34,8 @@ var (
 	eiriniConfigFilePath string
 	session              *gexec.Session
 	url                  string
-	certPath             string
-	keyPath              string
 	eiriniConfig         *eirini.Config
+	opiEnvOverride       []string
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
@@ -52,7 +51,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 
 	fixture = tests.NewFixture(GinkgoWriter)
-	certPath, keyPath = tests.GenerateKeyPair("capi")
 })
 
 var _ = SynchronizedAfterSuite(func() {
@@ -71,13 +69,11 @@ var _ = BeforeEach(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	eiriniConfig = tests.DefaultEiriniConfig(fixture.Namespace, fixture.NextAvailablePort())
-	eiriniConfig.Properties.CCCertPath = certPath
-	eiriniConfig.Properties.CCKeyPath = keyPath
-	eiriniConfig.Properties.CCCAPath = certPath
+	opiEnvOverride = []string{}
 })
 
 var _ = JustBeforeEach(func() {
-	session, eiriniConfigFilePath = eiriniBins.OPI.Run(eiriniConfig)
+	session, eiriniConfigFilePath = eiriniBins.OPI.Run(eiriniConfig, opiEnvOverride...)
 
 	url = fmt.Sprintf("https://localhost:%d/", eiriniConfig.Properties.TLSPort)
 	Eventually(func() error {

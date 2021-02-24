@@ -11,6 +11,9 @@ const (
 	EnvCompletionCallback         = "COMPLETION_CALLBACK"
 	EnvEiriniAddress              = "EIRINI_ADDRESS"
 	EnvInstanceEnvInjectorCertDir = "INSTANCE_ENV_INJECTOR_CERTS_DIR"
+	EnvLoggregatorCertDir         = "LOGGREGATOR_CERTS_DIR"
+	EnvCCCertDir                  = "CC_CERTS_DIR"
+	EnvServerCertDir              = "SERVER_CERTS_DIR"
 
 	EnvPodName              = "POD_NAME"
 	EnvCFInstanceIP         = "CF_INSTANCE_IP"
@@ -30,15 +33,9 @@ const (
 	TLSSecretCert = "tls.crt"
 	TLSSecretCA   = "tls.ca"
 
-	EiriniCAPath        = "/etc/eirini/certs/tls.ca"
-	EiriniCrtPath       = "/etc/eirini/certs/tls.crt"
-	EiriniKeyPath       = "/etc/eirini/certs/tls.key"
-	CCCrtPath           = "/etc/cf-api/certs/tls.crt"
-	CCKeyPath           = "/etc/cf-api/certs/tls.key"
-	CCCAPath            = "/etc/cf-api/certs/tls.ca"
-	LoggregatorCertPath = "/etc/loggregator/certs/tls.crt"
-	LoggregatorKeyPath  = "/etc/loggregator/certs/tls.key"
-	LoggregatorCAPath   = "/etc/loggregator/certs/tls.ca"
+	EiriniCrtDir       = "/etc/eirini/certs/"
+	CCCrtDir           = "/etc/cf-api/certs/"
+	LoggregatorCertDir = "/etc/loggregator/certs/"
 
 	CCUploaderSecretName   = "cc-uploader-certs"   //#nosec G101
 	EiriniClientSecretName = "eirini-client-certs" //#nosec G101
@@ -71,13 +68,6 @@ type Properties struct { //nolint:maligned
 
 	CCTLSDisabled bool `yaml:"cc_tls_disabled"`
 
-	CCCertPath     string
-	CCKeyPath      string
-	CCCAPath       string
-	ClientCAPath   string
-	ServerCertPath string
-	ServerKeyPath  string
-
 	KubeConfig `yaml:",inline"`
 
 	ApplicationServiceAccount string `yaml:"application_service_account"`
@@ -95,10 +85,6 @@ type Properties struct { //nolint:maligned
 type EventReporterConfig struct {
 	CcInternalAPI string `yaml:"cc_internal_api"`
 	CCTLSDisabled bool   `yaml:"cc_tls_disabled"`
-
-	CCCertPath string
-	CCKeyPath  string
-	CCCAPath   string
 
 	WorkloadsNamespace      string
 	LeaderElectionID        string
@@ -120,10 +106,7 @@ type RouteEmitterConfig struct {
 type MetricsCollectorConfig struct {
 	LoggregatorAddress string `yaml:"loggregator_address"`
 
-	WorkloadsNamespace  string
-	LoggregatorCertPath string
-	LoggregatorKeyPath  string
-	LoggregatorCAPath   string
+	WorkloadsNamespace string
 
 	AppMetricsEmissionIntervalInSecs int `yaml:"app_metrics_emission_interval_in_secs"`
 
@@ -132,9 +115,6 @@ type MetricsCollectorConfig struct {
 
 type TaskReporterConfig struct {
 	CCTLSDisabled                bool `yaml:"cc_tls_disabled"`
-	CCCertPath                   string
-	CCKeyPath                    string
-	CAPath                       string
 	LeaderElectionID             string
 	LeaderElectionNamespace      string
 	CompletionCallbackRetryLimit int `yaml:"completion_callback_retry_limit"`

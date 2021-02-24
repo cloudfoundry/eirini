@@ -18,8 +18,9 @@ func TestStagingReporter(t *testing.T) {
 }
 
 var (
-	fixture    *tests.Fixture
-	eiriniBins tests.EiriniBinaries
+	fixture         *tests.Fixture
+	eiriniBins      tests.EiriniBinaries
+	envVarOverrides []string
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
@@ -44,6 +45,7 @@ var _ = SynchronizedAfterSuite(func() {
 })
 
 var _ = BeforeEach(func() {
+	envVarOverrides = []string{}
 	fixture.SetUp()
 
 	Expect(tests.CreateSecretWithStringData(fixture.Namespace, "cc-uploader-secret", fixture.Clientset, map[string]string{"foo1": "val1", "bar1": "val2"})).To(Succeed())

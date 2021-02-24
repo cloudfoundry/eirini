@@ -49,7 +49,7 @@ func main() {
 	tlsConf := &tls.Config{} // nolint:gosec // No need to check for min version as the empty config is only used when tls is disabled
 
 	if !cfg.CCTLSDisabled {
-		tlsConf, err = createTLSConfig(*cfg)
+		tlsConf, err = createTLSConfig()
 		cmdcommons.ExitfIfError(err, "Failed to create TLS config")
 	}
 
@@ -114,10 +114,8 @@ func readConfigFile(path string) (*eirini.EventReporterConfig, error) {
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
 }
 
-func createTLSConfig(cfg eirini.EventReporterConfig) (*tls.Config, error) {
-	crtPath := cmdcommons.GetExistingFile(cfg.CCCertPath, eirini.CCCrtPath, "CC Cert")
-	keyPath := cmdcommons.GetExistingFile(cfg.CCKeyPath, eirini.CCKeyPath, "CC Key")
-	caPath := cmdcommons.GetExistingFile(cfg.CCCAPath, eirini.CCCAPath, "CC CA")
+func createTLSConfig() (*tls.Config, error) {
+	crtPath, keyPath, caPath := cmdcommons.GetCertPaths(eirini.EnvCCCertDir, eirini.CCCrtDir, "Cloud Controller")
 
 	return tlsconfig.Build(
 		tlsconfig.WithInternalServiceDefaults(),

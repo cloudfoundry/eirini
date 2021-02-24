@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s"
@@ -33,8 +34,7 @@ var _ = Describe("Events", func() {
 		eventsSession    *gexec.Session
 
 		capiServer *ghttp.Server
-		certPath   string
-		keyPath    string
+		certDir    string
 		logger     *lagertest.TestLogger
 		config     *eirini.EventReporterConfig
 	)
@@ -43,9 +43,11 @@ var _ = Describe("Events", func() {
 		var err error
 		logger = lagertest.NewTestLogger("events")
 
-		certPath, keyPath = tests.GenerateKeyPair("capi")
+		certDir, _ = tests.GenerateKeyPairDir("tls", "localhost")
 		capiServer, err = tests.CreateTestServer(
-			certPath, keyPath, certPath,
+			filepath.Join(certDir, "tls.crt"),
+			filepath.Join(certDir, "tls.key"),
+			filepath.Join(certDir, "tls.ca"),
 		)
 		Expect(err).NotTo(HaveOccurred())
 		capiServer.HTTPTestServer.StartTLS()
@@ -56,12 +58,11 @@ var _ = Describe("Events", func() {
 			},
 			WorkloadsNamespace:      fixture.Namespace,
 			CcInternalAPI:           capiServer.URL(),
-			CCCertPath:              certPath,
-			CCKeyPath:               keyPath,
-			CCCAPath:                certPath,
 			LeaderElectionID:        fmt.Sprintf("test-event-reporter-%d", GinkgoParallelNode()),
 			LeaderElectionNamespace: fixture.Namespace,
 		}
+
+		envVarOverrides = []string{fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, certDir)}
 	})
 
 	AfterEach(func() {
@@ -69,13 +70,12 @@ var _ = Describe("Events", func() {
 			eventsSession.Kill()
 		}
 		Expect(os.Remove(eventsConfigFile)).To(Succeed())
-		Expect(os.Remove(certPath)).To(Succeed())
-		Expect(os.Remove(keyPath)).To(Succeed())
+		Expect(os.RemoveAll(certDir)).To(Succeed())
 		capiServer.Close()
 	})
 
 	JustBeforeEach(func() {
-		eventsSession, eventsConfigFile = eiriniBins.EventsReporter.Run(config)
+		eventsSession, eventsConfigFile = eiriniBins.EventsReporter.Run(config, envVarOverrides...)
 		Eventually(eventsSession).Should(gbytes.Say("Starting workers"))
 	})
 

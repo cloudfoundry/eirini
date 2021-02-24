@@ -3,8 +3,10 @@ package cmd_test
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -13,27 +15,26 @@ import (
 
 var _ = Describe("TaskReporter", func() {
 	var (
-		config         *eirini.TaskReporterConfig
-		configFilePath string
-		session        *gexec.Session
+		config          *eirini.TaskReporterConfig
+		configFilePath  string
+		session         *gexec.Session
+		envVarOverrides []string
 	)
 
 	BeforeEach(func() {
+		envVarOverrides = []string{}
 		config = &eirini.TaskReporterConfig{
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: fixture.KubeConfigPath,
 			},
 			CCTLSDisabled:           false,
-			CCCertPath:              pathToTestFixture("cert"),
-			CAPath:                  pathToTestFixture("cert"),
-			CCKeyPath:               pathToTestFixture("key"),
 			LeaderElectionID:        fmt.Sprintf("test-task-reporter-%d", GinkgoParallelNode()),
 			LeaderElectionNamespace: fixture.Namespace,
 		}
 	})
 
 	JustBeforeEach(func() {
-		session, configFilePath = eiriniBins.TaskReporter.Run(config)
+		session, configFilePath = eiriniBins.TaskReporter.Run(config, envVarOverrides...)
 	})
 
 	AfterEach(func() {
@@ -70,36 +71,54 @@ var _ = Describe("TaskReporter", func() {
 		})
 	})
 
-	When("the cc CA file is missing", func() {
+	Context("invoke connect command with non-existent TLS certs", func() {
+		var certDir string
+
 		BeforeEach(func() {
-			config.CAPath = "/somewhere/over/the/rainbow"
+			certDir, _ = tests.GenerateKeyPairDir("tls", "localhost")
+			envVarOverrides = []string{
+				fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, certDir),
+			}
 		})
 
-		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(1))
-			Expect(session.Err).Should(gbytes.Say(`"CC CA" file at "/somewhere/over/the/rainbow" does not exist`))
-		})
-	})
-
-	When("the cc cert file is missing", func() {
-		BeforeEach(func() {
-			config.CCCertPath = "/somewhere/over/the/rainbow"
+		AfterEach(func() {
+			Expect(os.RemoveAll(certDir)).To(Succeed())
 		})
 
-		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(1))
-			Expect(session.Err).Should(gbytes.Say(`"CC Cert" file at "/somewhere/over/the/rainbow" does not exist`))
-		})
-	})
+		When("the cc CA file is missing", func() {
+			BeforeEach(func() {
+				caPath := filepath.Join(certDir, "tls.ca")
+				Expect(os.RemoveAll(caPath)).To(Succeed())
+			})
 
-	When("the cc key file is missing", func() {
-		BeforeEach(func() {
-			config.CCKeyPath = "/somewhere/over/the/rainbow"
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(1))
+				Expect(session.Err).Should(gbytes.Say(`"Cloud Controller CA" file at ".*" does not exist`))
+			})
 		})
 
-		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(1))
-			Expect(session.Err).Should(gbytes.Say(`"CC Key" file at "/somewhere/over/the/rainbow" does not exist`))
+		When("the cc cert file is missing", func() {
+			BeforeEach(func() {
+				crtPath := filepath.Join(certDir, "tls.crt")
+				Expect(os.RemoveAll(crtPath)).To(Succeed())
+			})
+
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(1))
+				Expect(session.Err).Should(gbytes.Say(`"Cloud Controller Cert" file at ".*" does not exist`))
+			})
+		})
+
+		When("the cc key file is missing", func() {
+			BeforeEach(func() {
+				keyPath := filepath.Join(certDir, "tls.key")
+				Expect(os.RemoveAll(keyPath)).To(Succeed())
+			})
+
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(1))
+				Expect(session.Err).Should(gbytes.Say(`"Cloud Controller Key" file at ".*" does not exist`))
+			})
 		})
 	})
 })

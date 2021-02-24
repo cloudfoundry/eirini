@@ -59,9 +59,7 @@ func connect(cmd *cobra.Command, args []string) {
 func serveTLS(cfg *eirini.Config, handler http.Handler, logger lager.Logger) {
 	var server *http.Server
 
-	crtPath := cmdcommons.GetOrDefault(cfg.Properties.ServerCertPath, eirini.EiriniCrtPath)
-	keyPath := cmdcommons.GetOrDefault(cfg.Properties.ServerKeyPath, eirini.EiriniKeyPath)
-	caPath := cmdcommons.GetOrDefault(cfg.Properties.ClientCAPath, eirini.EiriniCAPath)
+	crtPath, keyPath, caPath := cmdcommons.GetCertPaths(eirini.EnvServerCertDir, eirini.EiriniCrtDir, "Eirini Server")
 
 	tlsConfig, err := tlsconfig.Build(
 		tlsconfig.WithInternalServiceDefaults(),
@@ -91,9 +89,7 @@ func initRetryableJSONClient(cfg *eirini.Config) *util.RetryableJSONClient {
 	httpClient := http.DefaultClient
 
 	if !cfg.Properties.CCTLSDisabled {
-		crtPath := cmdcommons.GetExistingFile(cfg.Properties.CCCertPath, eirini.CCCrtPath, "CC Cert")
-		keyPath := cmdcommons.GetExistingFile(cfg.Properties.CCKeyPath, eirini.CCKeyPath, "CC Key")
-		caPath := cmdcommons.GetExistingFile(cfg.Properties.CCCAPath, eirini.CCCAPath, "CC CA")
+		crtPath, keyPath, caPath := cmdcommons.GetCertPaths(eirini.EnvCCCertDir, eirini.CCCrtDir, "Cloud Controller")
 
 		var err error
 		httpClient, err = util.CreateTLSHTTPClient(

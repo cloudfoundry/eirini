@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
+	"code.cloudfoundry.org/eirini"
 	"k8s.io/client-go/kubernetes"
 
 	// Kubernetes has a tricky way to add authentication
@@ -62,6 +64,10 @@ func GetOrDefault(actualValue, defaultValue string) string {
 	return defaultValue
 }
 
+func GetEnvOrDefault(envVar, defaultValue string) string {
+	return GetOrDefault(os.Getenv(envVar), defaultValue)
+}
+
 func VerifyFileExists(filePath, fileName string) {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		Exitf("%q file at %q does not exist", fileName, filePath)
@@ -73,4 +79,26 @@ func GetExistingFile(path, defaultPath, name string) string {
 	VerifyFileExists(path, name)
 
 	return path
+}
+
+func GetExistingEnvFile(envVar, defaultPath, name string) string {
+	path := GetEnvOrDefault(envVar, defaultPath)
+	VerifyFileExists(path, name)
+
+	return path
+}
+
+func GetCertPaths(envVar, defaultPath, name string) (string, string, string) {
+	crtDir := GetEnvOrDefault(envVar, defaultPath)
+
+	crtPath := filepath.Join(crtDir, eirini.TLSSecretCert)
+	VerifyFileExists(crtPath, fmt.Sprintf("%s Cert", name))
+
+	keyPath := filepath.Join(crtDir, eirini.TLSSecretKey)
+	VerifyFileExists(keyPath, fmt.Sprintf("%s Key", name))
+
+	caPath := filepath.Join(crtDir, eirini.TLSSecretCA)
+	VerifyFileExists(caPath, fmt.Sprintf("%s CA", name))
+
+	return crtPath, keyPath, caPath
 }

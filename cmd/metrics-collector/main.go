@@ -38,11 +38,8 @@ func main() {
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 	metricsClient := cmdcommons.CreateMetricsClient(cfg.ConfigPath)
 
-	tlsConfig, err := loggregator.NewIngressTLSConfig(
-		cmdcommons.GetExistingFile(cfg.LoggregatorCAPath, eirini.LoggregatorCAPath, "Loggregator CA"),
-		cmdcommons.GetExistingFile(cfg.LoggregatorCertPath, eirini.LoggregatorCertPath, "Loggregator Cert"),
-		cmdcommons.GetExistingFile(cfg.LoggregatorKeyPath, eirini.LoggregatorKeyPath, "Loggregator Key"),
-	)
+	crtPath, keyPath, caPath := cmdcommons.GetCertPaths(eirini.EnvLoggregatorCertDir, eirini.LoggregatorCertDir, "Loggregator")
+	tlsConfig, err := loggregator.NewIngressTLSConfig(caPath, crtPath, keyPath)
 	cmdcommons.ExitfIfError(err, "Failed to create loggregator tls config")
 
 	loggregatorClient, err := loggregator.NewIngressClient(
@@ -54,7 +51,7 @@ func main() {
 
 	defer func() {
 		err = loggregatorClient.CloseSend()
-		cmdcommons.ExitfIfError(err, "Failed to close send stream to the loggregator ingress server")
+		cmdcommons.ExitfIfError(err, "Failed to close send stream to the lsoggregator ingress server")
 	}()
 
 	launchMetricsEmitter(

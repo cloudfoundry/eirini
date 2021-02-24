@@ -19,8 +19,9 @@ func TestStagingReporter(t *testing.T) {
 }
 
 var (
-	fixture    *tests.Fixture
-	eiriniBins tests.EiriniBinaries
+	fixture         *tests.Fixture
+	eiriniBins      tests.EiriniBinaries
+	envVarOverrides []string
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
@@ -45,6 +46,7 @@ var _ = SynchronizedAfterSuite(func() {
 })
 
 var _ = BeforeEach(func() {
+	envVarOverrides = []string{}
 	fixture.SetUp()
 })
 

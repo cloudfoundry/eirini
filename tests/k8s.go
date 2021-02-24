@@ -201,12 +201,12 @@ func DeletePSP(name string, clientset kubernetes.Interface) error {
 }
 
 func MakeTestHTTPClient() (*http.Client, error) {
-	bs, err := ioutil.ReadFile(PathToTestFixture("cert"))
+	bs, err := ioutil.ReadFile(PathToTestFixture("tls.ca"))
 	if err != nil {
 		return nil, err
 	}
 
-	clientCert, err := tls.LoadX509KeyPair(PathToTestFixture("cert"), PathToTestFixture("key"))
+	clientCert, err := tls.LoadX509KeyPair(PathToTestFixture("tls.crt"), PathToTestFixture("tls.key"))
 	if err != nil {
 		return nil, err
 	}
@@ -233,12 +233,6 @@ func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
 				ConfigPath: GetKubeconfig(),
 			},
 			DefaultWorkloadsNamespace: namespace,
-			CCCAPath:                  PathToTestFixture("cert"),
-			CCCertPath:                PathToTestFixture("cert"),
-			CCKeyPath:                 PathToTestFixture("key"),
-			ServerCertPath:            PathToTestFixture("cert"),
-			ServerKeyPath:             PathToTestFixture("key"),
-			ClientCAPath:              PathToTestFixture("cert"),
 			TLSPort:                   tlsPort,
 
 			ApplicationServiceAccount: GetApplicationServiceAccount(),
@@ -260,6 +254,14 @@ func DefaultEiriniControllerConfig(namespace string) *eirini.Config {
 			ApplicationServiceAccount: GetApplicationServiceAccount(),
 			RegistrySecretName:        "registry-secret",
 		},
+	}
+}
+
+func GetEiriniCertEnvVars() []string {
+	return []string{
+		fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, PathToTestFixture("")),
+		fmt.Sprintf("%s=%s", eirini.EnvServerCertDir, PathToTestFixture("")),
+		fmt.Sprintf("%s=%s", eirini.EnvLoggregatorCertDir, PathToTestFixture("")),
 	}
 }
 

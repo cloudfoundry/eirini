@@ -1,9 +1,11 @@
 package opi_test
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"code.cloudfoundry.org/eirini"
@@ -31,15 +33,16 @@ var _ = Describe("Metrics", func() {
 
 		grpcServer *grpc.Server
 		envelopes  chan *loggregator_v2.Envelope
-
-		metricsCertPath, metricsKeyPath string
+		certDir    string
 	)
 
 	BeforeEach(func() {
-		metricsCertPath, metricsKeyPath = tests.GenerateKeyPair("metron")
-
 		envelopes = make(chan *loggregator_v2.Envelope)
 		var metronAddress string
+
+		certDir, _ = tests.GenerateKeyPairDir("tls", "metron")
+		metricsCertPath := filepath.Join(certDir, "tls.crt")
+		metricsKeyPath := filepath.Join(certDir, "tls.key")
 		grpcServer, metronAddress = runMetronStub(metricsCertPath, metricsKeyPath, envelopes)
 
 		config := &eirini.MetricsCollectorConfig{
@@ -48,12 +51,10 @@ var _ = Describe("Metrics", func() {
 			},
 			WorkloadsNamespace:               fixture.Namespace,
 			LoggregatorAddress:               metronAddress,
-			LoggregatorCertPath:              metricsCertPath,
-			LoggregatorCAPath:                metricsCertPath,
-			LoggregatorKeyPath:               metricsKeyPath,
 			AppMetricsEmissionIntervalInSecs: 1,
 		}
-		metricsSession, metricsConfigFile = eiriniBins.MetricsCollector.Run(config)
+		certEnv := fmt.Sprintf("%s=%s", eirini.EnvLoggregatorCertDir, certDir)
+		metricsSession, metricsConfigFile = eiriniBins.MetricsCollector.Run(config, certEnv)
 	})
 
 	AfterEach(func() {
@@ -61,6 +62,7 @@ var _ = Describe("Metrics", func() {
 			metricsSession.Kill()
 		}
 		Expect(os.Remove(metricsConfigFile)).To(Succeed())
+		Expect(os.RemoveAll(certDir)).To(Succeed())
 
 		grpcServer.Stop()
 	})

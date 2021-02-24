@@ -99,7 +99,10 @@ func (b *Binary) Run(config interface{}, envVars ...string) (*gexec.Session, str
 		configFile = WriteTempFile(configBytes, filepath.Base(b.BinPath)+"-config.yaml")
 	}
 
-	return b.RunWithConfig(configFile, envVars...), configFile
+	defaultEnv := GetEiriniCertEnvVars()
+	env := append(defaultEnv, envVars...)
+
+	return b.RunWithConfig(configFile, env...), configFile
 }
 
 func (b *Binary) RunWithConfig(configFilePath string, envVars ...string) *gexec.Session {

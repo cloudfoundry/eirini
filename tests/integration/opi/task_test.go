@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/patching"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -268,7 +269,11 @@ var _ = Describe("Tasks", func() {
 
 		BeforeEach(func() {
 			var err error
-			cloudControllerServer, err = tests.CreateTestServer(certPath, keyPath, certPath)
+			cloudControllerServer, err = tests.CreateTestServer(
+				tests.PathToTestFixture("tls.crt"),
+				tests.PathToTestFixture("tls.key"),
+				tests.PathToTestFixture("tls.ca"),
+			)
 			Expect(err).ToNot(HaveOccurred())
 			cloudControllerServer.HTTPTestServer.StartTLS()
 
@@ -373,9 +378,7 @@ var _ = Describe("Tasks", func() {
 				)
 
 				eiriniConfig.Properties.CCTLSDisabled = true
-				eiriniConfig.Properties.CCCertPath = ""
-				eiriniConfig.Properties.CCKeyPath = ""
-				eiriniConfig.Properties.CCCAPath = ""
+				opiEnvOverride = []string{fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, "/does/not/exits")}
 
 				request.CompletionCallback = cloudControllerServer.URL()
 			})

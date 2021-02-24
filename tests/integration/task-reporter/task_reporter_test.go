@@ -30,8 +30,6 @@ var _ = Describe("TaskReporter", func() {
 		cloudControllerServer *ghttp.Server
 		handlers              []http.HandlerFunc
 		configFile            string
-		certPath              string
-		keyPath               string
 		session               *gexec.Session
 		taskDesirer           jobs.Desirer
 		task                  *opi.Task
@@ -41,10 +39,12 @@ var _ = Describe("TaskReporter", func() {
 	)
 
 	BeforeEach(func() {
-		certPath, keyPath = tests.GenerateKeyPair("cloud_controller")
-
 		var err error
-		cloudControllerServer, err = tests.CreateTestServer(certPath, keyPath, certPath)
+		cloudControllerServer, err = tests.CreateTestServer(
+			tests.PathToTestFixture("tls.crt"),
+			tests.PathToTestFixture("tls.key"),
+			tests.PathToTestFixture("tls.ca"),
+		)
 		Expect(err).ToNot(HaveOccurred())
 		cloudControllerServer.HTTPTestServer.StartTLS()
 		ttlSeconds = 10
@@ -54,9 +54,6 @@ var _ = Describe("TaskReporter", func() {
 				ConfigPath: fixture.KubeConfigPath,
 			},
 			WorkloadsNamespace:           fixture.Namespace,
-			CCCertPath:                   certPath,
-			CAPath:                       certPath,
-			CCKeyPath:                    keyPath,
 			CompletionCallbackRetryLimit: 3,
 			TTLSeconds:                   ttlSeconds,
 			LeaderElectionID:             fmt.Sprintf("test-task-reporter-%d", GinkgoParallelNode()),
@@ -99,7 +96,7 @@ var _ = Describe("TaskReporter", func() {
 	JustBeforeEach(func() {
 		cloudControllerServer.AppendHandlers(handlers...)
 
-		session, configFile = eiriniBins.TaskReporter.Run(config)
+		session, configFile = eiriniBins.TaskReporter.Run(config, envVarOverrides...)
 		Eventually(session).Should(gbytes.Say("Starting workers"))
 		Expect(taskDesirer.Desire(fixture.Namespace, task)).To(Succeed())
 		taskSubmittedAt = time.Now()
@@ -110,8 +107,6 @@ var _ = Describe("TaskReporter", func() {
 			session.Kill()
 		}
 		Expect(os.Remove(configFile)).To(Succeed())
-		Expect(os.Remove(keyPath)).To(Succeed())
-		Expect(os.Remove(certPath)).To(Succeed())
 		cloudControllerServer.Close()
 	})
 
@@ -140,9 +135,7 @@ var _ = Describe("TaskReporter", func() {
 	When("the Cloud Controller is not using TLS", func() {
 		BeforeEach(func() {
 			config.CCTLSDisabled = true
-			config.CCCertPath = ""
-			config.CCKeyPath = ""
-			config.CAPath = ""
+			envVarOverrides = []string{fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, "/does/not/exist")}
 			cloudControllerServer.Close()
 			cloudControllerServer = ghttp.NewServer()
 			task.CompletionCallback = fmt.Sprintf("%s/the-callback", cloudControllerServer.URL())

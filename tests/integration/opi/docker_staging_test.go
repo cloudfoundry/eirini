@@ -23,7 +23,9 @@ var _ = Describe("Docker Staging", func() {
 	BeforeEach(func() {
 		var err error
 		capiServer, err = tests.CreateTestServer(
-			certPath, keyPath, certPath,
+			tests.PathToTestFixture("tls.crt"),
+			tests.PathToTestFixture("tls.key"),
+			tests.PathToTestFixture("tls.ca"),
 		)
 		Expect(err).NotTo(HaveOccurred())
 		capiServer.HTTPTestServer.StartTLS()

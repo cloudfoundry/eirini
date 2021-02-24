@@ -18,6 +18,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 		config         *eirini.InstanceIndexEnvInjectorConfig
 		configFilePath string
 		session        *gexec.Session
+		certDir        string
 	)
 
 	BeforeEach(func() {
@@ -27,7 +28,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 			},
 			Port: int32(8080 + GinkgoParallelNode()),
 		}
-		certDir, _ := tests.GenerateKeyPairDir("tls", "my-domain")
+		certDir, _ = tests.GenerateKeyPairDir("tls", "my-domain")
 
 		eiriniBins.InstanceIndexEnvInjector.ExtraArgs = []string{}
 		env := fmt.Sprintf("%s=%s", eirini.EnvInstanceEnvInjectorCertDir, certDir)
@@ -42,6 +43,8 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 		if session != nil {
 			Eventually(session.Kill()).Should(gexec.Exit())
 		}
+
+		Expect(os.RemoveAll(certDir)).To(Succeed())
 	})
 
 	It("runs the webhook service and registers it", func() {

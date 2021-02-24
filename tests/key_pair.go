@@ -41,5 +41,8 @@ func GenerateKeyPairDir(name, domain string) (string, []byte) {
 	caBytes, err := authority.CertificatePEM()
 	Expect(err).NotTo(HaveOccurred())
 
+	err = ioutil.WriteFile(path.Join(tmpDir, fmt.Sprintf("%s.ca", name)), caBytes, os.ModePerm)
+	Expect(err).ToNot(HaveOccurred())
+
 	return tmpDir, caBytes
 }

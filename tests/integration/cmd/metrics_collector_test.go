@@ -1,9 +1,13 @@
 package cmd_test
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -12,23 +16,22 @@ import (
 
 var _ = Describe("MetricsCollector", func() {
 	var (
-		config         *eirini.MetricsCollectorConfig
-		configFilePath string
-		session        *gexec.Session
+		config          *eirini.MetricsCollectorConfig
+		configFilePath  string
+		session         *gexec.Session
+		envVarOverrides []string
 	)
 	BeforeEach(func() {
+		envVarOverrides = []string{}
 		config = &eirini.MetricsCollectorConfig{
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: pathToTestFixture("kube.conf"),
 			},
-			LoggregatorCAPath:   pathToTestFixture("cert"),
-			LoggregatorCertPath: pathToTestFixture("cert"),
-			LoggregatorKeyPath:  pathToTestFixture("key"),
 		}
 	})
 
 	JustBeforeEach(func() {
-		session, configFilePath = eiriniBins.MetricsCollector.Run(config)
+		session, configFilePath = eiriniBins.MetricsCollector.Run(config, envVarOverrides...)
 	})
 
 	AfterEach(func() {
@@ -61,48 +64,64 @@ var _ = Describe("MetricsCollector", func() {
 			Expect(session.Err).To(gbytes.Say("Failed to read config file: failed to unmarshal yaml"))
 		})
 	})
+	Context("invoke connect command with non-existent TLS certs", func() {
+		var certDir string
 
-	When("the loggregator CA file is missing", func() {
 		BeforeEach(func() {
-			config.LoggregatorCAPath = "/somewhere/over/the/rainbow"
+			certDir, _ = tests.GenerateKeyPairDir("tls", "localhost")
+			envVarOverrides = []string{fmt.Sprintf("%s=%s", eirini.EnvLoggregatorCertDir, certDir)}
 		})
 
-		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(1))
-			Expect(session.Err).Should(gbytes.Say(`"Loggregator CA" file at "/somewhere/over/the/rainbow" does not exist`))
-		})
-	})
-
-	When("the loggregator cert file is missing", func() {
-		BeforeEach(func() {
-			config.LoggregatorCertPath = "/somewhere/over/the/rainbow"
+		AfterEach(func() {
+			Expect(os.RemoveAll(certDir)).To(Succeed())
 		})
 
-		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(1))
-			Expect(session.Err).Should(gbytes.Say(`"Loggregator Cert" file at "/somewhere/over/the/rainbow" does not exist`))
-		})
-	})
+		When("the loggregator CA file is missing", func() {
+			BeforeEach(func() {
+				caPath := filepath.Join(certDir, "tls.ca")
+				Expect(os.RemoveAll(caPath)).To(Succeed())
+			})
 
-	When("the loggregator key file is missing", func() {
-		BeforeEach(func() {
-			config.LoggregatorKeyPath = "/somewhere/over/the/rainbow"
-		})
-
-		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(1))
-			Expect(session.Err).Should(gbytes.Say(`"Loggregator Key" file at "/somewhere/over/the/rainbow" does not exist`))
-		})
-	})
-
-	When("the loggregator CA file is invalid", func() {
-		BeforeEach(func() {
-			config.LoggregatorCAPath = pathToTestFixture("kube.conf")
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(1))
+				Expect(session.Err).Should(gbytes.Say(`"Loggregator CA" file at ".*" does not exist`))
+			})
 		})
 
-		It("should exit with a useful error message", func() {
-			Eventually(session).Should(gexec.Exit(1))
-			Expect(session.Err).Should(gbytes.Say(`Failed to create loggregator tls config: cannot parse ca cert`))
+		When("the loggregator cert file is missing", func() {
+			BeforeEach(func() {
+				crtPath := filepath.Join(certDir, "tls.crt")
+				Expect(os.RemoveAll(crtPath)).To(Succeed())
+			})
+
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(1))
+				Expect(session.Err).Should(gbytes.Say(`"Loggregator Cert" file at ".*" does not exist`))
+			})
+		})
+
+		When("the loggregator key file is missing", func() {
+			BeforeEach(func() {
+				keyPath := filepath.Join(certDir, "tls.key")
+				Expect(os.RemoveAll(keyPath)).To(Succeed())
+			})
+
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(1))
+				Expect(session.Err).Should(gbytes.Say(`"Loggregator Key" file at ".*" does not exist`))
+			})
+		})
+
+		When("the loggregator CA file is invalid", func() {
+			BeforeEach(func() {
+				caPath := filepath.Join(certDir, "tls.ca")
+				Expect(ioutil.WriteFile(caPath, []byte("I'm not a cert"), 0600)).To(Succeed())
+			})
+
+			It("should exit with a useful error message", func() {
+				Eventually(session).Should(gexec.Exit(1))
+				Expect(session.Err).Should(gbytes.Say(`Failed to create loggregator tls config: cannot parse ca cert`))
+			})
 		})
 	})
 })

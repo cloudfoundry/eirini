@@ -41,8 +41,8 @@ func main() {
 	logr := util.NewLagerLogr(log)
 	ctrl.SetLogger(logr)
 
-	certDir := cmdcommons.GetOrDefault(
-		os.Getenv(eirini.EnvInstanceEnvInjectorCertDir),
+	certDir := cmdcommons.GetEnvOrDefault(
+		eirini.EnvInstanceEnvInjectorCertDir,
 		eirini.InstanceEnvInjectorCertDir,
 	)
 

@@ -137,12 +137,14 @@ func createHTTPClient(cfg eirini.TaskReporterConfig) (*http.Client, error) {
 		return http.DefaultClient, nil
 	}
 
+	crtPath, keyPath, caPath := cmdcommons.GetCertPaths(eirini.EnvCCCertDir, eirini.CCCrtDir, "Cloud Controller")
+
 	return util.CreateTLSHTTPClient(
 		[]util.CertPaths{
 			{
-				Crt: cmdcommons.GetExistingFile(cfg.CCCertPath, eirini.CCCrtPath, "CC Cert"),
-				Key: cmdcommons.GetExistingFile(cfg.CCKeyPath, eirini.CCKeyPath, "CC Key"),
-				Ca:  cmdcommons.GetExistingFile(cfg.CAPath, eirini.CCCAPath, "CC CA"),
+				Crt: crtPath,
+				Key: keyPath,
+				Ca:  caPath,
 			},
 		},
 	)
