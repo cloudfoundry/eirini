@@ -47,39 +47,38 @@ var ErrNotFound = errors.New("not found")
 
 var ErrInvalidInstanceIndex = errors.New("invalid instance index")
 
-type Config struct {
-	Properties              Properties `yaml:"opi"`
-	WorkloadsNamespace      string
+type CommonConfig struct {
+	KubeConfig `yaml:",inline"`
+
+	ApplicationServiceAccount               string `yaml:"application_service_account"`
+	RegistrySecretName                      string `yaml:"registry_secret_name"`
+	AllowRunImageAsRoot                     bool   `yaml:"allow_run_image_as_root"`
+	UnsafeAllowAutomountServiceAccountToken bool   `yaml:"unsafe_allow_automount_service_account_token"`
+	DefaultMinAvailableInstances            string `yaml:"default_min_available_instances"`
+
+	WorkloadsNamespace string
+}
+
+type APIConfig struct {
+	CommonConfig `yaml:",inline"`
+
+	DefaultWorkloadsNamespace string `yaml:"app_namespace"`
+	CCTLSDisabled             bool   `yaml:"cc_tls_disabled"`
+	ServePlaintext            bool   `yaml:"serve_plaintext"`
+	TLSPort                   int    `yaml:"tls_port"`
+	PlaintextPort             int    `yaml:"plaintext_port"`
+}
+
+type ControllerConfig struct {
+	CommonConfig   `yaml:",inline"`
+	PrometheusPort int `yaml:"prometheus_port"`
+
 	LeaderElectionID        string
 	LeaderElectionNamespace string
 }
 
 type KubeConfig struct {
 	ConfigPath string `yaml:"kube_config_path"`
-}
-
-type Properties struct { //nolint:maligned
-	DefaultWorkloadsNamespace string `yaml:"app_namespace"`
-	TLSPort                   int    `yaml:"tls_port"`
-	PlaintextPort             int    `yaml:"plaintext_port"`
-
-	RegistrySecretName               string `yaml:"registry_secret_name"`
-	AppMetricsEmissionIntervalInSecs int    `yaml:"app_metrics_emission_interval_in_secs"`
-
-	CCTLSDisabled bool `yaml:"cc_tls_disabled"`
-
-	KubeConfig `yaml:",inline"`
-
-	ApplicationServiceAccount string `yaml:"application_service_account"`
-
-	AllowRunImageAsRoot                     bool `yaml:"allow_run_image_as_root"`
-	UnsafeAllowAutomountServiceAccountToken bool `yaml:"unsafe_allow_automount_service_account_token"`
-
-	DefaultMinAvailableInstances string `yaml:"default_min_available_instances"`
-
-	ServePlaintext bool `yaml:"serve_plaintext"`
-
-	PrometheusPort int `yaml:"prometheus_port"`
 }
 
 type EventReporterConfig struct {

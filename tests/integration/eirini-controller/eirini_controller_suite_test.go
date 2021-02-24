@@ -24,7 +24,7 @@ var (
 	fixture        *tests.Fixture
 	configFilePath string
 	session        *gexec.Session
-	config         *eirini.Config
+	config         *eirini.ControllerConfig
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
@@ -53,7 +53,7 @@ var _ = SynchronizedAfterSuite(func() {
 var _ = BeforeEach(func() {
 	fixture.SetUp()
 
-	config = tests.DefaultEiriniControllerConfig(fixture.Namespace)
+	config = tests.DefaultControllerConfig(fixture.Namespace)
 })
 
 var _ = JustBeforeEach(func() {

@@ -134,15 +134,15 @@ func (f *EATSFixture) getSecret(namespace, secretName, secretPath string) string
 }
 
 func (f *EATSFixture) GetEiriniWorkloadsNamespace() string {
-	cm, err := f.Clientset.CoreV1().ConfigMaps(GetEiriniSystemNamespace()).Get(context.Background(), "eirini", metav1.GetOptions{})
+	cm, err := f.Clientset.CoreV1().ConfigMaps(GetEiriniSystemNamespace()).Get(context.Background(), "api", metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
-	opiYml := cm.Data["opi.yml"]
-	config := eirini.Config{}
+	opiYml := cm.Data["api.yml"]
+	config := eirini.APIConfig{}
 
 	Expect(yaml.Unmarshal([]byte(opiYml), &config)).To(Succeed())
 
-	return config.Properties.DefaultWorkloadsNamespace
+	return config.DefaultWorkloadsNamespace
 }
 
 func (f *EATSFixture) GetNATSPassword() string {

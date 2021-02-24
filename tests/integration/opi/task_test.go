@@ -171,7 +171,7 @@ var _ = Describe("Tasks", func() {
 
 			When("unsafe_allow_automount_service_account_token is set", func() {
 				BeforeEach(func() {
-					eiriniConfig.Properties.UnsafeAllowAutomountServiceAccountToken = true
+					apiConfig.UnsafeAllowAutomountServiceAccountToken = true
 				})
 
 				getPods := func() []corev1.Pod {
@@ -377,7 +377,7 @@ var _ = Describe("Tasks", func() {
 					),
 				)
 
-				eiriniConfig.Properties.CCTLSDisabled = true
+				apiConfig.CCTLSDisabled = true
 				opiEnvOverride = []string{fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, "/does/not/exits")}
 
 				request.CompletionCallback = cloudControllerServer.URL()

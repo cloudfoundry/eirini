@@ -34,7 +34,7 @@ var (
 	eiriniConfigFilePath string
 	session              *gexec.Session
 	url                  string
-	eiriniConfig         *eirini.Config
+	apiConfig            *eirini.APIConfig
 	opiEnvOverride       []string
 )
 
@@ -68,14 +68,14 @@ var _ = BeforeEach(func() {
 	httpClient, err = tests.MakeTestHTTPClient()
 	Expect(err).ToNot(HaveOccurred())
 
-	eiriniConfig = tests.DefaultEiriniConfig(fixture.Namespace, fixture.NextAvailablePort())
+	apiConfig = tests.DefaultAPIConfig(fixture.Namespace, fixture.NextAvailablePort())
 	opiEnvOverride = []string{}
 })
 
 var _ = JustBeforeEach(func() {
-	session, eiriniConfigFilePath = eiriniBins.OPI.Run(eiriniConfig, opiEnvOverride...)
+	session, eiriniConfigFilePath = eiriniBins.OPI.Run(apiConfig, opiEnvOverride...)
 
-	url = fmt.Sprintf("https://localhost:%d/", eiriniConfig.Properties.TLSPort)
+	url = fmt.Sprintf("https://localhost:%d/", apiConfig.TLSPort)
 	Eventually(func() error {
 		_, getErr := httpClient.Get(url)
 

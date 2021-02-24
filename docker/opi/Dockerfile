@@ -16,7 +16,7 @@ USER 1001
 ENTRYPOINT [ "/usr/local/bin/opi", \
 	"connect", \
 	"--config", \
-	"/etc/eirini/config/opi.yml" \
+	"/etc/eirini/config/api.yml" \
 ]
 ARG GIT_SHA
 LABEL org.opencontainers.image.revision=$GIT_SHA \

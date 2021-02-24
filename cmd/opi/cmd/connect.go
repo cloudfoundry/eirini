@@ -38,7 +38,7 @@ func connect(cmd *cobra.Command, args []string) {
 	}
 
 	cfg := setConfigFromFile(path)
-	clientset := cmdcommons.CreateKubeClient(cfg.Properties.ConfigPath)
+	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
 	dockerStagingBifrost := initDockerStagingBifrost(cfg)
 	taskBifrost := initTaskBifrost(cfg, clientset)
@@ -49,14 +49,14 @@ func connect(cmd *cobra.Command, args []string) {
 	handler := handler.New(bifrost, dockerStagingBifrost, taskBifrost, handlerLogger)
 	handlerLogger.Info("opi-connected")
 
-	if cfg.Properties.ServePlaintext {
+	if cfg.ServePlaintext {
 		servePlaintext(cfg, handler, handlerLogger)
 	}
 
 	serveTLS(cfg, handler, handlerLogger)
 }
 
-func serveTLS(cfg *eirini.Config, handler http.Handler, logger lager.Logger) {
+func serveTLS(cfg *eirini.APIConfig, handler http.Handler, logger lager.Logger) {
 	var server *http.Server
 
 	crtPath, keyPath, caPath := cmdcommons.GetCertPaths(eirini.EnvServerCertDir, eirini.EiriniCrtDir, "Eirini Server")
@@ -69,7 +69,7 @@ func serveTLS(cfg *eirini.Config, handler http.Handler, logger lager.Logger) {
 	cmdcommons.ExitfIfError(err, "Failed to build TLS config")
 
 	server = &http.Server{
-		Addr:      fmt.Sprintf("0.0.0.0:%d", cfg.Properties.TLSPort),
+		Addr:      fmt.Sprintf("0.0.0.0:%d", cfg.TLSPort),
 		Handler:   handler,
 		TLSConfig: tlsConfig,
 	}
@@ -77,18 +77,18 @@ func serveTLS(cfg *eirini.Config, handler http.Handler, logger lager.Logger) {
 		server.ListenAndServeTLS(crtPath, keyPath))
 }
 
-func servePlaintext(cfg *eirini.Config, handler http.Handler, logger lager.Logger) {
+func servePlaintext(cfg *eirini.APIConfig, handler http.Handler, logger lager.Logger) {
 	server := &http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%d", cfg.Properties.PlaintextPort),
+		Addr:    fmt.Sprintf("0.0.0.0:%d", cfg.PlaintextPort),
 		Handler: handler,
 	}
 	logger.Fatal("opi-crashed", server.ListenAndServe())
 }
 
-func initRetryableJSONClient(cfg *eirini.Config) *util.RetryableJSONClient {
+func initRetryableJSONClient(cfg *eirini.APIConfig) *util.RetryableJSONClient {
 	httpClient := http.DefaultClient
 
-	if !cfg.Properties.CCTLSDisabled {
+	if !cfg.CCTLSDisabled {
 		crtPath, keyPath, caPath := cmdcommons.GetCertPaths(eirini.EnvCCCertDir, eirini.CCCrtDir, "Cloud Controller")
 
 		var err error
@@ -110,20 +110,20 @@ func initRetryableJSONClient(cfg *eirini.Config) *util.RetryableJSONClient {
 	return util.NewRetryableJSONClient(httpClient)
 }
 
-func initStagingCompleter(cfg *eirini.Config, logger lager.Logger) *stager.CallbackStagingCompleter {
+func initStagingCompleter(cfg *eirini.APIConfig, logger lager.Logger) *stager.CallbackStagingCompleter {
 	retryableJSONClient := initRetryableJSONClient(cfg)
 
 	return stager.NewCallbackStagingCompleter(logger, retryableJSONClient)
 }
 
-func initTaskClient(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.TaskClient {
+func initTaskClient(cfg *eirini.APIConfig, clientset kubernetes.Interface) *k8s.TaskClient {
 	logger := lager.NewLogger("task-desirer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	taskToJobConverter := jobs.NewTaskToJobConverter(
-		cfg.Properties.ApplicationServiceAccount,
-		cfg.Properties.RegistrySecretName,
-		cfg.Properties.UnsafeAllowAutomountServiceAccountToken,
+		cfg.ApplicationServiceAccount,
+		cfg.RegistrySecretName,
+		cfg.UnsafeAllowAutomountServiceAccountToken,
 	)
 
 	return k8s.NewTaskClient(
@@ -134,7 +134,7 @@ func initTaskClient(cfg *eirini.Config, clientset kubernetes.Interface) *k8s.Tas
 	)
 }
 
-func initDockerStagingBifrost(cfg *eirini.Config) *bifrost.DockerStaging {
+func initDockerStagingBifrost(cfg *eirini.APIConfig) *bifrost.DockerStaging {
 	logger := lager.NewLogger("docker-staging-bifrost")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	stagingCompleter := initStagingCompleter(cfg, logger)
@@ -147,11 +147,11 @@ func initDockerStagingBifrost(cfg *eirini.Config) *bifrost.DockerStaging {
 	}
 }
 
-func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifrost.Task {
+func initTaskBifrost(cfg *eirini.APIConfig, clientset kubernetes.Interface) *bifrost.Task {
 	converter := initConverter(cfg)
 	taskClient := initTaskClient(cfg, clientset)
 	retryableJSONClient := initRetryableJSONClient(cfg)
-	namespacer := bifrost.NewNamespacer(cfg.Properties.DefaultWorkloadsNamespace)
+	namespacer := bifrost.NewNamespacer(cfg.DefaultWorkloadsNamespace)
 
 	return &bifrost.Task{
 		Converter:  converter,
@@ -161,25 +161,25 @@ func initTaskBifrost(cfg *eirini.Config, clientset kubernetes.Interface) *bifros
 	}
 }
 
-func setConfigFromFile(path string) *eirini.Config {
+func setConfigFromFile(path string) *eirini.APIConfig {
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
 	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
-	var conf eirini.Config
+	var conf eirini.APIConfig
 	err = yaml.Unmarshal(fileBytes, &conf)
 	cmdcommons.ExitfIfError(err, "Failed to unmarshal config file")
 
 	return &conf
 }
 
-func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost.LRP {
+func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.APIConfig) *bifrost.LRP {
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	lrpToStatefulSetConverter := stset.NewLRPToStatefulSetConverter(
-		cfg.Properties.ApplicationServiceAccount,
-		cfg.Properties.RegistrySecretName,
-		cfg.Properties.UnsafeAllowAutomountServiceAccountToken,
+		cfg.ApplicationServiceAccount,
+		cfg.RegistrySecretName,
+		cfg.UnsafeAllowAutomountServiceAccountToken,
 		k8s.CreateLivenessProbe,
 		k8s.CreateReadinessProbe,
 	)
@@ -188,14 +188,14 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 		client.NewSecret(clientset),
 		client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
 		client.NewPod(clientset, cfg.WorkloadsNamespace),
-		pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(clientset), cfg.Properties.DefaultMinAvailableInstances),
+		pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(clientset), cfg.DefaultMinAvailableInstances),
 		client.NewEvent(clientset),
 		lrpToStatefulSetConverter,
 		stset.NewStatefulSetToLRPConverter(),
 	)
 
 	converter := initConverter(cfg)
-	namespacer := bifrost.NewNamespacer(cfg.Properties.DefaultWorkloadsNamespace)
+	namespacer := bifrost.NewNamespacer(cfg.DefaultWorkloadsNamespace)
 
 	return &bifrost.LRP{
 		Converter:  converter,
@@ -204,7 +204,7 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.Config) *bifrost
 	}
 }
 
-func initConverter(cfg *eirini.Config) *bifrost.OPIConverter {
+func initConverter(cfg *eirini.APIConfig) *bifrost.OPIConverter {
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
@@ -212,6 +212,6 @@ func initConverter(cfg *eirini.Config) *bifrost.OPIConverter {
 		convertLogger,
 		docker.Fetch,
 		docker.Parse,
-		cfg.Properties.AllowRunImageAsRoot,
+		cfg.AllowRunImageAsRoot,
 	)
 }

@@ -12,13 +12,13 @@ import (
 
 var _ = Describe("EiriniController", func() {
 	var (
-		config         *eirini.Config
+		config         *eirini.ControllerConfig
 		configFilePath string
 		session        *gexec.Session
 	)
 
 	BeforeEach(func() {
-		config = tests.DefaultEiriniControllerConfig(fixture.Namespace)
+		config = tests.DefaultControllerConfig(fixture.Namespace)
 	})
 
 	JustBeforeEach(func() {

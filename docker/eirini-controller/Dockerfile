@@ -15,7 +15,7 @@ COPY --from=builder /eirini/eirini-controller /usr/local/bin/eirini-controller
 USER 1001
 ENTRYPOINT [ "/usr/local/bin/eirini-controller", \
 	"--config", \
-	"/etc/eirini/config/eirini-controller.yml" \
+	"/etc/eirini/config/controller.yml" \
 ]
 ARG GIT_SHA
 LABEL org.opencontainers.image.revision=$GIT_SHA \

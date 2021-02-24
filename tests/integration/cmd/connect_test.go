@@ -21,13 +21,13 @@ var _ = Describe("connect command", func() {
 		httpClient *http.Client
 
 		session         *gexec.Session
-		config          *eirini.Config
+		config          *eirini.APIConfig
 		configFilePath  string
 		envVarOverrides []string
 	)
 
 	makeRequest := func() (*http.Response, error) {
-		resp, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/apps", config.Properties.TLSPort))
+		resp, err := httpClient.Get(fmt.Sprintf("https://localhost:%d/apps", config.TLSPort))
 		if err != nil {
 			return nil, err
 		}
@@ -47,7 +47,7 @@ var _ = Describe("connect command", func() {
 
 		configFilePath = ""
 		session = nil
-		config = tests.DefaultEiriniConfig("test-ns", fixture.NextAvailablePort())
+		config = tests.DefaultAPIConfig("test-ns", fixture.NextAvailablePort())
 	})
 
 	JustBeforeEach(func() {
@@ -140,7 +140,7 @@ var _ = Describe("connect command", func() {
 
 	When("nonexistent kubeconfig path is provided", func() {
 		BeforeEach(func() {
-			config.Properties.ConfigPath = "foo"
+			config.ConfigPath = "foo"
 		})
 
 		It("fails", func() {
@@ -214,9 +214,9 @@ var _ = Describe("connect command", func() {
 
 		When("eirini is configured to serve plaintext", func() {
 			BeforeEach(func() {
-				config = tests.DefaultEiriniConfig("test-ns", fixture.NextAvailablePort())
-				config.Properties.ServePlaintext = true
-				config.Properties.PlaintextPort = fixture.NextAvailablePort()
+				config = tests.DefaultAPIConfig("test-ns", fixture.NextAvailablePort())
+				config.ServePlaintext = true
+				config.PlaintextPort = fixture.NextAvailablePort()
 
 				configFile, err := tests.CreateConfigFile(config)
 				Expect(err).ToNot(HaveOccurred())
@@ -227,7 +227,7 @@ var _ = Describe("connect command", func() {
 				plaintextClient := &http.Client{}
 
 				Eventually(func() error {
-					_, err := plaintextClient.Get(fmt.Sprintf("http://localhost:%d/", config.Properties.PlaintextPort))
+					_, err := plaintextClient.Get(fmt.Sprintf("http://localhost:%d/", config.PlaintextPort))
 
 					return err
 				}, "10s").Should(Succeed())

@@ -51,10 +51,10 @@ func main() {
 	_, err := flags.ParseArgs(&opts, os.Args)
 	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
-	eiriniCfg, err := readConfigFile(opts.ConfigFile)
+	cfg, err := readConfigFile(opts.ConfigFile)
 	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", eiriniCfg.Properties.ConfigPath)
+	kubeConfig, err := clientcmd.BuildConfigFromFlags("", cfg.ConfigPath)
 	cmdcommons.ExitfIfError(err, "Failed to build kubeconfig")
 
 	controllerClient, err := runtimeclient.New(kubeConfig, runtimeclient.Options{Scheme: eirinischeme.Scheme})
@@ -69,29 +69,29 @@ func main() {
 	managerOptions := manager.Options{
 		MetricsBindAddress: "0",
 		Scheme:             eirinischeme.Scheme,
-		Namespace:          eiriniCfg.WorkloadsNamespace,
+		Namespace:          cfg.WorkloadsNamespace,
 		Logger:             util.NewLagerLogr(logger),
 		LeaderElection:     true,
 		LeaderElectionID:   "eirini-controller-leader",
 	}
 
-	if eiriniCfg.Properties.PrometheusPort > 0 {
-		managerOptions.MetricsBindAddress = fmt.Sprintf(":%d", eiriniCfg.Properties.PrometheusPort)
+	if cfg.PrometheusPort > 0 {
+		managerOptions.MetricsBindAddress = fmt.Sprintf(":%d", cfg.PrometheusPort)
 	}
 
-	if eiriniCfg.LeaderElectionID != "" {
-		managerOptions.LeaderElectionNamespace = eiriniCfg.LeaderElectionNamespace
-		managerOptions.LeaderElectionID = eiriniCfg.LeaderElectionID
+	if cfg.LeaderElectionID != "" {
+		managerOptions.LeaderElectionNamespace = cfg.LeaderElectionNamespace
+		managerOptions.LeaderElectionID = cfg.LeaderElectionID
 	}
 
 	mgr, err := manager.New(kubeConfig, managerOptions)
 	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
 
-	lrpReconciler, err := createLRPReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
+	lrpReconciler, err := createLRPReconciler(logger, controllerClient, clientset, cfg, mgr.GetScheme())
 	cmdcommons.ExitfIfError(err, "Failed to create LRP reconciler")
 
-	taskReconciler := createTaskReconciler(logger, controllerClient, clientset, eiriniCfg, mgr.GetScheme())
-	podCrashReconciler := createPodCrashReconciler(logger, eiriniCfg.WorkloadsNamespace, controllerClient, clientset)
+	taskReconciler := createTaskReconciler(logger, controllerClient, clientset, cfg, mgr.GetScheme())
+	podCrashReconciler := createPodCrashReconciler(logger, cfg.WorkloadsNamespace, controllerClient, clientset)
 
 	err = builder.
 		ControllerManagedBy(mgr).
@@ -118,13 +118,13 @@ func main() {
 	cmdcommons.ExitfIfError(err, "Failed to start manager")
 }
 
-func readConfigFile(path string) (*eirini.Config, error) {
+func readConfigFile(path string) (*eirini.ControllerConfig, error) {
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read file")
 	}
 
-	var conf eirini.Config
+	var conf eirini.ControllerConfig
 	err = yaml.Unmarshal(fileBytes, &conf)
 
 	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
@@ -134,25 +134,25 @@ func createLRPReconciler(
 	logger lager.Logger,
 	controllerClient runtimeclient.Client,
 	clientset kubernetes.Interface,
-	eiriniCfg *eirini.Config,
+	cfg *eirini.ControllerConfig,
 	scheme *runtime.Scheme,
 ) (*reconciler.LRP, error) {
 	logger = logger.Session("lrp-reconciler")
 	lrpToStatefulSetConverter := stset.NewLRPToStatefulSetConverter(
-		eiriniCfg.Properties.ApplicationServiceAccount,
-		eiriniCfg.Properties.RegistrySecretName,
-		eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
+		cfg.ApplicationServiceAccount,
+		cfg.RegistrySecretName,
+		cfg.UnsafeAllowAutomountServiceAccountToken,
 		k8s.CreateLivenessProbe,
 		k8s.CreateReadinessProbe,
 	)
 	lrpClient := k8s.NewLRPClient(
 		logger.Session("stateful-set-desirer"),
 		client.NewSecret(clientset),
-		client.NewStatefulSet(clientset, eiriniCfg.WorkloadsNamespace),
-		client.NewPod(clientset, eiriniCfg.WorkloadsNamespace),
+		client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
+		client.NewPod(clientset, cfg.WorkloadsNamespace),
 		pdb.NewCreatorDeleter(
 			client.NewPodDisruptionBudget(clientset),
-			eiriniCfg.Properties.DefaultMinAvailableInstances,
+			cfg.DefaultMinAvailableInstances,
 		),
 		client.NewEvent(clientset),
 		lrpToStatefulSetConverter,
@@ -168,7 +168,7 @@ func createLRPReconciler(
 		logger,
 		controllerClient,
 		decoratedLRPClient,
-		client.NewStatefulSet(clientset, eiriniCfg.WorkloadsNamespace),
+		client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
 		scheme,
 	), nil
 }
@@ -177,18 +177,18 @@ func createTaskReconciler(
 	logger lager.Logger,
 	controllerClient runtimeclient.Client,
 	clientset kubernetes.Interface,
-	eiriniCfg *eirini.Config,
+	cfg *eirini.ControllerConfig,
 	scheme *runtime.Scheme,
 ) *reconciler.Task {
 	taskToJobConverter := jobs.NewTaskToJobConverter(
-		eiriniCfg.Properties.ApplicationServiceAccount,
-		eiriniCfg.Properties.RegistrySecretName,
-		eiriniCfg.Properties.UnsafeAllowAutomountServiceAccountToken,
+		cfg.ApplicationServiceAccount,
+		cfg.RegistrySecretName,
+		cfg.UnsafeAllowAutomountServiceAccountToken,
 	)
 	taskDesirer := jobs.NewDesirer(
 		logger,
 		taskToJobConverter,
-		client.NewJob(clientset, eiriniCfg.WorkloadsNamespace),
+		client.NewJob(clientset, cfg.WorkloadsNamespace),
 		client.NewSecret(clientset),
 	)
 

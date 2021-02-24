@@ -225,35 +225,34 @@ func MakeTestHTTPClient() (*http.Client, error) {
 	return httpClient, nil
 }
 
-func DefaultEiriniConfig(namespace string, tlsPort int) *eirini.Config {
-	return &eirini.Config{
-		WorkloadsNamespace: namespace,
-		Properties: eirini.Properties{
+func DefaultAPIConfig(namespace string, tlsPort int) *eirini.APIConfig {
+	return &eirini.APIConfig{
+		CommonConfig: eirini.CommonConfig{
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: GetKubeconfig(),
 			},
-			DefaultWorkloadsNamespace: namespace,
-			TLSPort:                   tlsPort,
 
 			ApplicationServiceAccount: GetApplicationServiceAccount(),
 			RegistrySecretName:        "registry-secret",
+			WorkloadsNamespace:        namespace,
 		},
+		DefaultWorkloadsNamespace: namespace,
+		TLSPort:                   tlsPort,
 	}
 }
 
-func DefaultEiriniControllerConfig(namespace string) *eirini.Config {
-	return &eirini.Config{
-		WorkloadsNamespace:      namespace,
-		LeaderElectionID:        fmt.Sprintf("test-eirini-%d", ginkgo.GinkgoParallelNode()),
-		LeaderElectionNamespace: namespace,
-		Properties: eirini.Properties{
+func DefaultControllerConfig(namespace string) *eirini.ControllerConfig {
+	return &eirini.ControllerConfig{
+		CommonConfig: eirini.CommonConfig{
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: GetKubeconfig(),
 			},
-			DefaultWorkloadsNamespace: namespace,
 			ApplicationServiceAccount: GetApplicationServiceAccount(),
 			RegistrySecretName:        "registry-secret",
+			WorkloadsNamespace:        namespace,
 		},
+		LeaderElectionID:        fmt.Sprintf("test-eirini-%d", ginkgo.GinkgoParallelNode()),
+		LeaderElectionNamespace: namespace,
 	}
 }
 

@@ -110,7 +110,7 @@ var _ = Describe("EiriniController", func() {
 
 	When("controller config has minAvailable set", func() {
 		BeforeEach(func() {
-			config.Properties.DefaultMinAvailableInstances = "20%"
+			config.DefaultMinAvailableInstances = "20%"
 		})
 
 		It("creates apdb with the configured value", func() {

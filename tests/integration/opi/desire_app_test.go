@@ -170,7 +170,7 @@ var _ = Describe("Desire App", func() {
 
 		When("there is a minAvailable value specified in the config", func() {
 			BeforeEach(func() {
-				eiriniConfig.Properties.DefaultMinAvailableInstances = "20%"
+				apiConfig.DefaultMinAvailableInstances = "20%"
 			})
 
 			It("creates a PDB eith the configured value", func() {
@@ -184,7 +184,7 @@ var _ = Describe("Desire App", func() {
 	When("a registry secret name is configured", func() {
 		BeforeEach(func() {
 			generateRegistryCredsSecret("registry-secret", "https://index.docker.io/v1/", "eiriniuser", tests.GetEiriniDockerHubPassword())
-			eiriniConfig.Properties.RegistrySecretName = "registry-secret"
+			apiConfig.RegistrySecretName = "registry-secret"
 			body = `{
 					"guid": "the-app-guid",
 					"version": "0.0.0",
@@ -244,7 +244,7 @@ var _ = Describe("Desire App", func() {
 
 		When("unsafe_allow_automount_service_account_token is set", func() {
 			BeforeEach(func() {
-				eiriniConfig.Properties.UnsafeAllowAutomountServiceAccountToken = true
+				apiConfig.UnsafeAllowAutomountServiceAccountToken = true
 			})
 
 			It("mounts the service account token (because this is how K8S works by default)", func() {
