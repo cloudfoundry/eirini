@@ -13,6 +13,8 @@ import (
 	"code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/stset"
+	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
+	eiriniclient "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
 	"code.cloudfoundry.org/tlsconfig"
 	"github.com/onsi/ginkgo"
 	ginkgoconfig "github.com/onsi/ginkgo/config"
@@ -21,6 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	"gopkg.in/yaml.v2"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -333,4 +336,36 @@ func GetPDB(clientset kubernetes.Interface, namespace, lrpGUID, lrpVersion strin
 	}, "5s").Should(HaveLen(1))
 
 	return pdbs[0]
+}
+
+func GetStatefulSet(clientset kubernetes.Interface, namespace, guid, version string) *appsv1.StatefulSet {
+	appListOpts := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, guid, stset.LabelVersion, version),
+	}
+
+	stsList, err := clientset.
+		AppsV1().
+		StatefulSets(namespace).
+		List(context.Background(), appListOpts)
+
+	Expect(err).NotTo(HaveOccurred())
+
+	if len(stsList.Items) == 0 {
+		return nil
+	}
+
+	Expect(stsList.Items).To(HaveLen(1))
+
+	return &stsList.Items[0]
+}
+
+func GetLRP(clientset eiriniclient.Interface, namespace, lrpName string) *eiriniv1.LRP {
+	l, err := clientset.
+		EiriniV1().
+		LRPs(namespace).
+		Get(context.Background(), lrpName, metav1.GetOptions{})
+
+	Expect(err).NotTo(HaveOccurred())
+
+	return l
 }

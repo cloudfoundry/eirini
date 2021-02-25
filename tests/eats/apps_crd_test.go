@@ -3,6 +3,7 @@ package eats_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
@@ -12,13 +13,9 @@ import (
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 	"github.com/prometheus/client_golang/api"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -26,7 +23,6 @@ import (
 
 var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", func() {
 	var (
-		namespace        string
 		lrpName          string
 		lrpGUID          string
 		lrpVersion       string
@@ -36,25 +32,10 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		prometheusAPI    prometheusv1.API
 	)
 
-	getStatefulSet := func() *appsv1.StatefulSet {
-		stsList, err := fixture.Clientset.
-			AppsV1().
-			StatefulSets(fixture.Namespace).
-			List(context.Background(), appListOpts)
-
-		Expect(err).NotTo(HaveOccurred())
-		if len(stsList.Items) == 0 {
-			return nil
-		}
-		Expect(stsList.Items).To(HaveLen(1))
-
-		return &stsList.Items[0]
-	}
-
 	getLRP := func() *eiriniv1.LRP {
 		l, err := fixture.EiriniClientset.
 			EiriniV1().
-			LRPs(namespace).
+			LRPs(fixture.Namespace).
 			Get(context.Background(), lrpName, metav1.GetOptions{})
 
 		Expect(err).NotTo(HaveOccurred())
@@ -91,7 +72,6 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 	}
 
 	BeforeEach(func() {
-		namespace = fixture.Namespace
 		lrpName = tests.GenerateGUID()
 		lrpGUID = tests.GenerateGUID()
 		lrpVersion = tests.GenerateGUID()
@@ -136,7 +116,7 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		bgDelete := metav1.DeletePropagationBackground
 		err := fixture.EiriniClientset.
 			EiriniV1().
-			LRPs(namespace).
+			LRPs(fixture.Namespace).
 			DeleteCollection(context.Background(),
 				metav1.DeleteOptions{PropagationPolicy: &bgDelete},
 				metav1.ListOptions{FieldSelector: "metadata.name=" + lrpName},
@@ -145,35 +125,30 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 	})
 
 	Describe("Desiring an app", func() {
-		var clientErr error
+		var (
+			clientErr      error
+			appServiceName string
+		)
 
 		JustBeforeEach(func() {
 			_, clientErr = fixture.EiriniClientset.
 				EiriniV1().
-				LRPs(namespace).
+				LRPs(fixture.Namespace).
 				Create(context.Background(), lrp, metav1.CreateOptions{})
+
+			appServiceName = exposeLRP(fixture.Namespace, lrpGUID, 8080)
+		})
+
+		AfterEach(func() {
+			unexposeLRP(fixture.Namespace, appServiceName)
 		})
 
 		It("succeeds", func() {
 			Expect(clientErr).NotTo(HaveOccurred())
 		})
 
-		It("deploys the app to the same namespace as the CRD", func() {
-			Eventually(getStatefulSet).ShouldNot(BeNil())
-			Eventually(func() bool {
-				return getPodReadiness(lrpGUID, lrpVersion)
-			}).Should(BeTrue(), "LRP Pod not ready")
-
-			st := getStatefulSet()
-			Expect(st.Labels).To(SatisfyAll(
-				HaveKeyWithValue(stset.LabelGUID, lrpGUID),
-				HaveKeyWithValue(stset.LabelVersion, lrpVersion),
-				HaveKeyWithValue(stset.LabelSourceType, "APP"),
-				HaveKeyWithValue(stset.LabelAppGUID, "the-app-guid"),
-			))
-			Expect(st.Spec.Replicas).To(PointTo(Equal(int32(1))))
-			Expect(st.Spec.Template.Spec.Containers[0].Image).To(Equal("eirini/dorini"))
-			Expect(st.Spec.Template.Spec.Containers[0].Env).To(ContainElement(corev1.EnvVar{Name: "FOO", Value: "BAR"}))
+		It("starts the app", func() {
+			Eventually(pingLRPFn(fixture.Namespace, appServiceName, 8080, "/")).Should(ContainSubstring("Hi, I'm not Dora!"))
 		})
 
 		It("updates the CRD status", func() {
@@ -212,61 +187,6 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 			})
 		})
 
-		When("the the app has sidecars", func() {
-			assertEqualValues := func(actual, expected *resource.Quantity) {
-				Expect(actual.Value()).To(Equal(expected.Value()))
-			}
-
-			BeforeEach(func() {
-				lrp.Spec.Image = "eirini/busybox"
-				lrp.Spec.Command = []string{"/bin/sh", "-c", "echo Hello from app; sleep 3600"}
-				lrp.Spec.Sidecars = []eiriniv1.Sidecar{
-					{
-						Name:     "the-sidecar",
-						Command:  []string{"/bin/sh", "-c", "echo Hello from sidecar; sleep 3600"},
-						MemoryMB: 101,
-					},
-				}
-			})
-
-			It("deploys the app with the sidcar container", func() {
-				Eventually(getStatefulSet).ShouldNot(BeNil())
-				Eventually(func() bool {
-					return getPodReadiness(lrpGUID, lrpVersion)
-				}).Should(BeTrue(), "LRP Pod not ready")
-
-				st := getStatefulSet()
-
-				Expect(st.Spec.Template.Spec.Containers).To(HaveLen(2))
-			})
-
-			It("sets resource limits on the sidecar container", func() {
-				Eventually(getStatefulSet).ShouldNot(BeNil())
-				Eventually(func() bool {
-					return getPodReadiness(lrpGUID, lrpVersion)
-				}).Should(BeTrue(), "LRP Pod not ready")
-
-				st := getStatefulSet()
-
-				containers := st.Spec.Template.Spec.Containers
-				for _, container := range containers {
-					if container.Name == "the-sidecar" {
-						limits := container.Resources.Limits
-						requests := container.Resources.Requests
-
-						expectedMemory := resource.NewScaledQuantity(101, resource.Mega)
-						expectedDisk := resource.NewScaledQuantity(lrp.Spec.DiskMB, resource.Mega)
-						expectedCPU := resource.NewScaledQuantity(int64(lrp.Spec.CPUWeight*10), resource.Milli)
-
-						assertEqualValues(limits.Memory(), expectedMemory)
-						assertEqualValues(limits.StorageEphemeral(), expectedDisk)
-						assertEqualValues(requests.Memory(), expectedMemory)
-						assertEqualValues(requests.Cpu(), expectedCPU)
-					}
-				}
-			})
-		})
-
 		When("the disk quota is not specified", func() {
 			It("fails", func() {
 				obj := &unstructured.Unstructured{
@@ -296,7 +216,7 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 						Version:  "v1",
 						Resource: "lrps",
 					}).
-					Namespace(namespace).
+					Namespace(fixture.Namespace).
 					Create(context.Background(), obj, metav1.CreateOptions{})
 				Expect(err).To(MatchError(ContainSubstring("diskMB: Required value")))
 			})
@@ -314,12 +234,15 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 	})
 
 	Describe("Update an app", func() {
-		var clientErr error
+		var (
+			clientErr      error
+			appServiceName string
+		)
 
 		BeforeEach(func() {
 			_, err := fixture.EiriniClientset.
 				EiriniV1().
-				LRPs(namespace).
+				LRPs(fixture.Namespace).
 				Create(context.Background(), lrp, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -333,24 +256,14 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		JustBeforeEach(func() {
 			_, clientErr = fixture.EiriniClientset.
 				EiriniV1().
-				LRPs(namespace).
+				LRPs(fixture.Namespace).
 				Update(context.Background(), lrp, metav1.UpdateOptions{})
+
+			appServiceName = exposeLRP(fixture.Namespace, lrpGUID, 8080)
 		})
 
-		When("routes are updated", func() {
-			BeforeEach(func() {
-				lrp.Spec.AppRoutes = []eiriniv1.Route{{Hostname: "app-hostname-1", Port: 8080}}
-			})
-
-			It("succeeds", func() {
-				Expect(clientErr).NotTo(HaveOccurred())
-			})
-
-			It("updates the underlying statefulset", func() {
-				Eventually(func() string {
-					return getStatefulSet().Annotations[stset.AnnotationRegisteredRoutes]
-				}).Should(MatchJSON(`[{"hostname": "app-hostname-1", "port": 8080}]`))
-			})
+		AfterEach(func() {
+			unexposeLRP(fixture.Namespace, appServiceName)
 		})
 
 		When("instance count is updated", func() {
@@ -362,53 +275,62 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 				Expect(clientErr).NotTo(HaveOccurred())
 			})
 
-			It("updates the underlying statefulset", func() {
-				Eventually(func() int32 {
-					return *getStatefulSet().Spec.Replicas
-				}).Should(Equal(int32(3)))
+			It("serves responses from 3 distinct containers", func() {
+				guids := map[string]bool{}
+				re := regexp.MustCompile(`CF_INSTANCE_GUID=(.*)`)
+				Eventually(func() int {
+					envvars, err := pingLRPFn(fixture.Namespace, appServiceName, 8080, "/env")()
+					if err != nil {
+						return 0
+					}
+					matches := re.FindStringSubmatch(envvars)
+					if len(matches) == 2 {
+						guids[matches[1]] = true
+					}
 
-				Eventually(func() int32 {
-					return getLRP().Status.Replicas
-				}).Should(Equal(int32(3)))
-			})
-		})
-
-		When("the image is updated", func() {
-			BeforeEach(func() {
-				lrp.Spec.Image = "new/image"
-			})
-
-			It("updates the underlying statefulset", func() {
-				Eventually(func() string {
-					return getStatefulSet().Spec.Template.Spec.Containers[0].Image
-				}).Should(Equal("new/image"))
+					return len(guids)
+				}).Should(Equal(3))
 			})
 		})
 	})
 
 	Describe("Stop an app", func() {
+		var appServiceName string
+
 		BeforeEach(func() {
 			_, err := fixture.EiriniClientset.
 				EiriniV1().
-				LRPs(namespace).
+				LRPs(fixture.Namespace).
 				Create(context.Background(), lrp, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(func() int32 {
-				return getLRP().Status.Replicas
-			}).Should(Equal(int32(1)))
+			appServiceName = exposeLRP(fixture.Namespace, lrpGUID, 8080, "/")
+		})
+
+		AfterEach(func() {
+			unexposeLRP(fixture.Namespace, appServiceName)
 		})
 
 		JustBeforeEach(func() {
 			Expect(fixture.EiriniClientset.
 				EiriniV1().
-				LRPs(namespace).
+				LRPs(fixture.Namespace).
 				Delete(context.Background(), lrpName, metav1.DeleteOptions{}),
 			).To(Succeed())
 		})
 
-		It("deletes the underlying statefulset", func() {
-			Eventually(getStatefulSet).Should(BeNil())
+		It("should stop", func() {
+			Eventually(func() error {
+				_, err := pingLRPFn(fixture.Namespace, appServiceName, 8080, "/")()
+
+				return err
+			}).Should(HaveOccurred())
+
+			Consistently(func() error {
+				_, err := pingLRPFn(fixture.Namespace, appServiceName, 8080, "/")()
+
+				return err
+			}, "2s").Should(HaveOccurred())
 		})
 	})
 
@@ -417,7 +339,7 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 			BeforeEach(func() {
 				_, err := fixture.EiriniClientset.
 					EiriniV1().
-					LRPs(namespace).
+					LRPs(fixture.Namespace).
 					Create(context.Background(), lrp, metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 

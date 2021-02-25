@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -219,4 +222,71 @@ func desireTask(taskRequest cf.TaskRequest) {
 	defer response.Body.Close()
 
 	Expect(response).To(HaveHTTPStatus(http.StatusAccepted))
+}
+
+func exposeLRP(namespace, guid string, appPort int32, pingPath ...string) string {
+	service, err := fixture.Clientset.CoreV1().Services(namespace).Create(context.Background(), &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "service-" + guid,
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Port: appPort,
+				},
+			},
+			Selector: map[string]string{
+				stset.LabelGUID: guid,
+			},
+		},
+	}, metav1.CreateOptions{})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	if len(pingPath) > 0 {
+		EventuallyWithOffset(1, func() error {
+			_, err := pingLRPFn(namespace, service.Name, appPort, pingPath[0])()
+
+			return err
+		}).Should(Succeed())
+	}
+
+	return service.Name
+}
+
+func pingLRPFn(namespace, serviceName string, appPort int32, pingPath string) func() (string, error) {
+	client := &http.Client{
+		Timeout: time.Second,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+		},
+	}
+
+	return func() (string, error) {
+		pingURL := &url.URL{
+			Scheme: "http",
+			Host:   fmt.Sprintf("%s.%s:%d", serviceName, namespace, appPort),
+			Path:   pingPath,
+		}
+
+		resp, err := client.Get(pingURL.String())
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("request failed: %s", resp.Status)
+		}
+
+		content, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+
+		return string(content), nil
+	}
+}
+
+func unexposeLRP(namespace, serviceName string) {
+	ExpectWithOffset(1, fixture.Clientset.CoreV1().Services(namespace).Delete(context.Background(), serviceName, metav1.DeleteOptions{})).To(Succeed())
 }

@@ -57,6 +57,8 @@ linters:
     # *some* might be incorrect. Unfortunately we do need to perform some of
     # those multiplications.
     - durationcheck
+    # Didn't like it complaining about always using port 8080 in a function
+    - unparam
 
 issues:
   exclude-use-default: true

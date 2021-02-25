@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 func main() {
@@ -14,6 +15,7 @@ func main() {
 	}
 
 	http.HandleFunc("/", HelloHandler)
+	http.HandleFunc("/env", EnvHandler)
 	http.HandleFunc("/exit", ExitHandler)
 
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
@@ -24,6 +26,10 @@ func main() {
 
 func HelloHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Hi, I'm not Dora!")
+}
+
+func EnvHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, strings.Join(os.Environ(), "\n"))
 }
 
 func ExitHandler(w http.ResponseWriter, r *http.Request) {

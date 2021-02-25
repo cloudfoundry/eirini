@@ -17,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-var _ = Describe("EiriniController", func() {
+var _ = Describe("PodDisruptionBudgets", func() {
 	var (
 		lrpName    string
 		lrpGUID    string
@@ -127,18 +127,6 @@ var _ = Describe("EiriniController", func() {
 
 		It("deletes the PDB", func() {
 			Eventually(getPDBItems).Should(BeEmpty())
-		})
-	})
-
-	XWhen("controller config has minAvailable set", func() {
-		BeforeEach(func() {
-			config.DefaultMinAvailableInstances = "20%"
-		})
-
-		It("does something", func() {
-			pdb := getPDB()
-			Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromString("20%"))))
-			Expect(pdb.Spec.MaxUnavailable).To(BeNil())
 		})
 	})
 })
