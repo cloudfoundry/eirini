@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -58,12 +57,6 @@ var _ = Describe("Desire App", func() {
 		Expect(statefulsets.Items).To(HaveLen(1))
 		Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
 		Expect(statefulsets.Items[0].Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
-	})
-
-	It("should not create a PDB", func() {
-		Consistently(func() ([]v1beta1.PodDisruptionBudget, error) {
-			return tests.GetPDBItems(fixture.Clientset, fixture.Namespace, "the-app-guid", "0.0.0")
-		}, "10s").Should(BeEmpty())
 	})
 
 	Context("when the app has user defined annotations", func() {
@@ -166,18 +159,6 @@ var _ = Describe("Desire App", func() {
 			pdb := tests.GetPDB(fixture.Clientset, fixture.Namespace, appGUID, "0.0.0")
 			Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromInt(1))))
 			Expect(pdb.Spec.MaxUnavailable).To(BeNil())
-		})
-
-		When("there is a minAvailable value specified in the config", func() {
-			BeforeEach(func() {
-				apiConfig.DefaultMinAvailableInstances = "20%"
-			})
-
-			It("creates a PDB eith the configured value", func() {
-				pdb := tests.GetPDB(fixture.Clientset, fixture.Namespace, appGUID, "0.0.0")
-				Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromString("20%"))))
-				Expect(pdb.Spec.MaxUnavailable).To(BeNil())
-			})
 		})
 	})
 

@@ -18,15 +18,14 @@ import (
 
 var _ = Describe("Pdb", func() {
 	var (
-		creator                      *pdb.CreatorDeleter
-		k8sClient                    *pdbfakes.FakeK8sClient
-		defaultMinAvailableInstances string
-		lrp                          *opi.LRP
+		creator   *pdb.CreatorDeleter
+		k8sClient *pdbfakes.FakeK8sClient
+		lrp       *opi.LRP
 	)
 
 	BeforeEach(func() {
 		k8sClient = new(pdbfakes.FakeK8sClient)
-		defaultMinAvailableInstances = ""
+		creator = pdb.NewCreatorDeleter(k8sClient)
 
 		lrp = &opi.LRP{
 			LRPIdentifier: opi.LRPIdentifier{
@@ -37,10 +36,6 @@ var _ = Describe("Pdb", func() {
 			SpaceName:       "spaceName",
 			TargetInstances: 2,
 		}
-	})
-
-	JustBeforeEach(func() {
-		creator = pdb.NewCreatorDeleter(k8sClient, defaultMinAvailableInstances)
 	})
 
 	Describe("Update", func() {
@@ -64,19 +59,6 @@ var _ = Describe("Pdb", func() {
 			Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(stset.LabelGUID, lrp.GUID))
 			Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(stset.LabelVersion, lrp.Version))
 			Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(stset.LabelSourceType, "APP"))
-		})
-
-		When("a DefaultMinAvailableInstances value is specified", func() {
-			BeforeEach(func() {
-				defaultMinAvailableInstances = "20%"
-			})
-
-			It("creates a pod disruption budget with the correct minAvailable instances", func() {
-				Expect(k8sClient.CreateCallCount()).To(Equal(1))
-				_, pdb := k8sClient.CreateArgsForCall(0)
-
-				Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromString("20%"))))
-			})
 		})
 
 		When("pod disruption budget creation fails", func() {

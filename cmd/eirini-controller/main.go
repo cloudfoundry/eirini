@@ -150,10 +150,7 @@ func createLRPReconciler(
 		client.NewSecret(clientset),
 		client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
 		client.NewPod(clientset, cfg.WorkloadsNamespace),
-		pdb.NewCreatorDeleter(
-			client.NewPodDisruptionBudget(clientset),
-			cfg.DefaultMinAvailableInstances,
-		),
+		pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(clientset)),
 		client.NewEvent(clientset),
 		lrpToStatefulSetConverter,
 		stset.NewStatefulSetToLRPConverter(),

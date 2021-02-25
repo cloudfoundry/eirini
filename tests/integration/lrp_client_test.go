@@ -54,7 +54,7 @@ var _ = Describe("LRPClient", func() {
 			client.NewSecret(fixture.Clientset),
 			client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
 			client.NewPod(fixture.Clientset, fixture.Namespace),
-			pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(fixture.Clientset), "20%"),
+			pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(fixture.Clientset)),
 			client.NewEvent(fixture.Clientset),
 			lrpToStatefulSetConverter,
 			stset.NewStatefulSetToLRPConverter(),
@@ -109,7 +109,6 @@ var _ = Describe("LRPClient", func() {
 			pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pdb).NotTo(BeNil())
-			Expect(pdb.Spec.MinAvailable.StrVal).To(Equal("20%"))
 		})
 
 		Context("when the lrp has 1 instance", func() {

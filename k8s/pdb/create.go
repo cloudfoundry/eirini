@@ -17,21 +17,21 @@ type K8sClient interface {
 	Delete(namespace string, name string) error
 }
 
-const defaultMinAvailanleInstancesb = 1
+const PdbMinAvailableInstances = 1
 
 type CreatorDeleter struct {
-	pdbClient             K8sClient
-	minAvailableInstances string
+	pdbClient K8sClient
 }
 
-func NewCreatorDeleter(pdbClient K8sClient, minAvailableInstances string) *CreatorDeleter {
+func NewCreatorDeleter(pdbClient K8sClient) *CreatorDeleter {
 	return &CreatorDeleter{
-		pdbClient:             pdbClient,
-		minAvailableInstances: minAvailableInstances,
+		pdbClient: pdbClient,
 	}
 }
 
 func (c *CreatorDeleter) Update(namespace, name string, lrp *opi.LRP) error {
+	minAvailable := intstr.FromInt(PdbMinAvailableInstances)
+
 	if lrp.TargetInstances > 1 {
 		_, err := c.pdbClient.Create(namespace, &v1beta1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
@@ -42,7 +42,7 @@ func (c *CreatorDeleter) Update(namespace, name string, lrp *opi.LRP) error {
 				},
 			},
 			Spec: v1beta1.PodDisruptionBudgetSpec{
-				MinAvailable: c.calculateMinAvailableInstances(),
+				MinAvailable: &minAvailable,
 				Selector:     stset.StatefulSetLabelSelector(lrp),
 			},
 		})
@@ -61,16 +61,6 @@ func (c *CreatorDeleter) Update(namespace, name string, lrp *opi.LRP) error {
 	}
 
 	return errors.Wrap(err, "failed to delete pod distruption budget")
-}
-
-func (c *CreatorDeleter) calculateMinAvailableInstances() *intstr.IntOrString {
-	minAvailable := intstr.FromInt(defaultMinAvailanleInstancesb)
-
-	if c.minAvailableInstances != "" {
-		minAvailable = intstr.FromString(c.minAvailableInstances)
-	}
-
-	return &minAvailable
 }
 
 func (c *CreatorDeleter) Delete(namespace, name string) error {
