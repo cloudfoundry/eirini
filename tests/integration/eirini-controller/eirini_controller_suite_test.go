@@ -11,6 +11,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -24,7 +25,7 @@ func TestEiriniController(t *testing.T) {
 }
 
 var (
-	eiriniBins     tests.EiriniBinaries
+	eiriniBins     integration.EiriniBinaries
 	fixture        *tests.Fixture
 	configFilePath string
 	session        *gexec.Session
@@ -32,7 +33,7 @@ var (
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	eiriniBins = tests.NewEiriniBinaries()
+	eiriniBins = integration.NewEiriniBinaries()
 	eiriniBins.EiriniController.Build()
 
 	data, err := json.Marshal(eiriniBins)
@@ -56,7 +57,7 @@ var _ = SynchronizedAfterSuite(func() {
 
 var _ = BeforeEach(func() {
 	fixture.SetUp()
-	config = tests.DefaultControllerConfig(fixture.Namespace)
+	config = integration.DefaultControllerConfig(fixture.Namespace)
 	session, configFilePath = eiriniBins.EiriniController.Run(config)
 })
 

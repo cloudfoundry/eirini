@@ -8,6 +8,7 @@ import (
 
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -156,7 +157,7 @@ var _ = Describe("Desire App", func() {
 		})
 
 		It("creates a default PDB", func() {
-			pdb := tests.GetPDB(fixture.Clientset, fixture.Namespace, appGUID, "0.0.0")
+			pdb := integration.GetPDB(fixture.Clientset, fixture.Namespace, appGUID, "0.0.0")
 			Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromInt(1))))
 			Expect(pdb.Spec.MaxUnavailable).To(BeNil())
 		})

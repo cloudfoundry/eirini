@@ -8,6 +8,7 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	natsserver "github.com/nats-io/nats-server/v2/server"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,11 +17,11 @@ import (
 
 var (
 	fixture    *tests.Fixture
-	eiriniBins tests.EiriniBinaries
+	eiriniBins integration.EiriniBinaries
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	eiriniBins = tests.NewEiriniBinaries()
+	eiriniBins = integration.NewEiriniBinaries()
 
 	data, err := json.Marshal(eiriniBins)
 	Expect(err).NotTo(HaveOccurred())

@@ -6,6 +6,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -66,14 +67,14 @@ var _ = Describe("App", func() {
 
 		It("deploys the app as a stateful set with correct properties", func() {
 			Eventually(func() *appsv1.StatefulSet {
-				return tests.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+				return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 			}).ShouldNot(BeNil())
 
 			Eventually(func() bool {
 				return getPodReadiness(lrpGUID, lrpVersion)
 			}).Should(BeTrue(), "LRP Pod not ready")
 
-			st := tests.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+			st := integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 			Expect(st.Labels).To(SatisfyAll(
 				HaveKeyWithValue(stset.LabelGUID, lrpGUID),
 				HaveKeyWithValue(stset.LabelVersion, lrpVersion),
@@ -104,28 +105,28 @@ var _ = Describe("App", func() {
 
 			It("deploys the app with the sidcar container", func() {
 				Eventually(func() *appsv1.StatefulSet {
-					return tests.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+					return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 				}).ShouldNot(BeNil())
 
 				Eventually(func() bool {
 					return getPodReadiness(lrpGUID, lrpVersion)
 				}).Should(BeTrue(), "LRP Pod not ready")
 
-				st := tests.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+				st := integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 
 				Expect(st.Spec.Template.Spec.Containers).To(HaveLen(2))
 			})
 
 			It("sets resource limits on the sidecar container", func() {
 				Eventually(func() *appsv1.StatefulSet {
-					return tests.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+					return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 				}).ShouldNot(BeNil())
 
 				Eventually(func() bool {
 					return getPodReadiness(lrpGUID, lrpVersion)
 				}).Should(BeTrue(), "LRP Pod not ready")
 
-				st := tests.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+				st := integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 
 				containers := st.Spec.Template.Spec.Containers
 				for _, container := range containers {
@@ -158,7 +159,7 @@ var _ = Describe("App", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() int32 {
-				lrp = tests.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName)
+				lrp = integration.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName)
 
 				return lrp.Status.Replicas
 			}).Should(Equal(int32(1)))
@@ -182,7 +183,7 @@ var _ = Describe("App", func() {
 
 			It("updates the underlying statefulset", func() {
 				Eventually(func() string {
-					return tests.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion).Annotations[stset.AnnotationRegisteredRoutes]
+					return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion).Annotations[stset.AnnotationRegisteredRoutes]
 				}).Should(MatchJSON(`[{"hostname": "another-hostname-1", "port": 8080}]`))
 			})
 		})
@@ -194,7 +195,7 @@ var _ = Describe("App", func() {
 
 			It("updates the underlying statefulset", func() {
 				Eventually(func() string {
-					return tests.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion).Spec.Template.Spec.Containers[0].Image
+					return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion).Spec.Template.Spec.Containers[0].Image
 				}).Should(Equal("eirini/custom-port"))
 			})
 		})
@@ -206,11 +207,11 @@ var _ = Describe("App", func() {
 
 			It("updates the underlying statefulset", func() {
 				Eventually(func() int32 {
-					return *tests.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion).Spec.Replicas
+					return *integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion).Spec.Replicas
 				}).Should(Equal(int32(3)))
 
 				Eventually(func() int32 {
-					return tests.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName).Status.Replicas
+					return integration.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName).Status.Replicas
 				}).Should(Equal(int32(3)))
 			})
 		})
@@ -225,7 +226,7 @@ var _ = Describe("App", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() int32 {
-				return tests.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName).Status.Replicas
+				return integration.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName).Status.Replicas
 			}).Should(Equal(int32(1)))
 		})
 
@@ -239,7 +240,7 @@ var _ = Describe("App", func() {
 
 		It("deletes the underlying statefulset", func() {
 			Eventually(func() *appsv1.StatefulSet {
-				return tests.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+				return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 			}).Should(BeNil())
 		})
 	})

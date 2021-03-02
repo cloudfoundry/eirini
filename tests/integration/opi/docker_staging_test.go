@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,10 +23,10 @@ var _ = Describe("Docker Staging", func() {
 
 	BeforeEach(func() {
 		var err error
-		capiServer, err = tests.CreateTestServer(
-			tests.PathToTestFixture("tls.crt"),
-			tests.PathToTestFixture("tls.key"),
-			tests.PathToTestFixture("tls.ca"),
+		capiServer, err = integration.CreateTestServer(
+			integration.PathToTestFixture("tls.crt"),
+			integration.PathToTestFixture("tls.key"),
+			integration.PathToTestFixture("tls.ca"),
 		)
 		Expect(err).NotTo(HaveOccurred())
 		capiServer.HTTPTestServer.StartTLS()

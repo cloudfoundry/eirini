@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -17,11 +18,11 @@ func TestInstanceIndexInjector(t *testing.T) {
 
 var (
 	fixture    *tests.Fixture
-	eiriniBins tests.EiriniBinaries
+	eiriniBins integration.EiriniBinaries
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	eiriniBins = tests.NewEiriniBinaries()
+	eiriniBins = integration.NewEiriniBinaries()
 
 	data, err := json.Marshal(eiriniBins)
 	Expect(err).NotTo(HaveOccurred())

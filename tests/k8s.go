@@ -2,28 +2,14 @@ package tests
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
-	"net/http"
 	"os"
 
-	"code.cloudfoundry.org/cfhttp/v2"
-	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/k8s/stset"
-	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
-	eiriniclient "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
-	"code.cloudfoundry.org/tlsconfig"
-	"github.com/onsi/ginkgo"
 	ginkgoconfig "github.com/onsi/ginkgo/config"
 
 	//nolint:revive
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/ghttp"
-	"gopkg.in/yaml.v2"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -31,7 +17,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const randUpperBound = 100000000
+const (
+	randUpperBound                   = 100000000
+	DefaultApplicationServiceAccount = "eirini"
+)
 
 func CreateRandomNamespace(clientset kubernetes.Interface) string {
 	namespace := fmt.Sprintf("opi-integration-test-%d-%d", rand.Intn(randUpperBound), ginkgoconfig.GinkgoConfig.ParallelNode)
@@ -172,29 +161,6 @@ func CreatePodCreationPSP(namespace, pspName, serviceAccountName string, clients
 	return err
 }
 
-func CreateEmptySecret(namespace, secretName string, clientset kubernetes.Interface) error {
-	_, err := clientset.CoreV1().Secrets(namespace).Create(context.Background(), &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: namespace,
-		},
-	}, metav1.CreateOptions{})
-
-	return err
-}
-
-func CreateSecretWithStringData(namespace, secretName string, clientset kubernetes.Interface, stringData map[string]string) error {
-	_, err := clientset.CoreV1().Secrets(namespace).Create(context.Background(), &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: namespace,
-		},
-		StringData: stringData,
-	}, metav1.CreateOptions{})
-
-	return err
-}
-
 func DeleteNamespace(namespace string, clientset kubernetes.Interface) error {
 	return clientset.CoreV1().Namespaces().Delete(context.Background(), namespace, metav1.DeleteOptions{})
 }
@@ -203,169 +169,11 @@ func DeletePSP(name string, clientset kubernetes.Interface) error {
 	return clientset.PolicyV1beta1().PodSecurityPolicies().Delete(context.Background(), name, metav1.DeleteOptions{})
 }
 
-func MakeTestHTTPClient() (*http.Client, error) {
-	bs, err := ioutil.ReadFile(PathToTestFixture("tls.ca"))
-	if err != nil {
-		return nil, err
+func GetApplicationServiceAccount() string {
+	serviceAccountName := os.Getenv("APPLICATION_SERVICE_ACCOUNT")
+	if serviceAccountName != "" {
+		return serviceAccountName
 	}
 
-	clientCert, err := tls.LoadX509KeyPair(PathToTestFixture("tls.crt"), PathToTestFixture("tls.key"))
-	if err != nil {
-		return nil, err
-	}
-
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(bs) {
-		return nil, err
-	}
-
-	tlsConfig := &tls.Config{
-		RootCAs:      certPool,
-		Certificates: []tls.Certificate{clientCert},
-	}
-	httpClient := cfhttp.NewClient(cfhttp.WithTLSConfig(tlsConfig))
-
-	return httpClient, nil
-}
-
-func DefaultAPIConfig(namespace string, tlsPort int) *eirini.APIConfig {
-	return &eirini.APIConfig{
-		CommonConfig: eirini.CommonConfig{
-			KubeConfig: eirini.KubeConfig{
-				ConfigPath: GetKubeconfig(),
-			},
-
-			ApplicationServiceAccount: GetApplicationServiceAccount(),
-			RegistrySecretName:        "registry-secret",
-			WorkloadsNamespace:        namespace,
-		},
-		DefaultWorkloadsNamespace: namespace,
-		TLSPort:                   tlsPort,
-	}
-}
-
-func DefaultControllerConfig(namespace string) *eirini.ControllerConfig {
-	return &eirini.ControllerConfig{
-		CommonConfig: eirini.CommonConfig{
-			KubeConfig: eirini.KubeConfig{
-				ConfigPath: GetKubeconfig(),
-			},
-			ApplicationServiceAccount: GetApplicationServiceAccount(),
-			RegistrySecretName:        "registry-secret",
-			WorkloadsNamespace:        namespace,
-		},
-		LeaderElectionID:        fmt.Sprintf("test-eirini-%d", ginkgo.GinkgoParallelNode()),
-		LeaderElectionNamespace: namespace,
-	}
-}
-
-func GetEiriniCertEnvVars() []string {
-	return []string{
-		fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, PathToTestFixture("")),
-		fmt.Sprintf("%s=%s", eirini.EnvServerCertDir, PathToTestFixture("")),
-		fmt.Sprintf("%s=%s", eirini.EnvLoggregatorCertDir, PathToTestFixture("")),
-	}
-}
-
-func CreateConfigFile(config interface{}) (*os.File, error) {
-	yamlBytes, err := yaml.Marshal(config)
-	if err != nil {
-		return nil, err
-	}
-
-	configFile, err := ioutil.TempFile("", "config.yml")
-	if err != nil {
-		return nil, err
-	}
-
-	err = ioutil.WriteFile(configFile.Name(), yamlBytes, os.ModePerm)
-
-	return configFile, err
-}
-
-func PathToTestFixture(relativePath string) string {
-	cwd, err := os.Getwd()
-	Expect(err).NotTo(HaveOccurred())
-
-	return fmt.Sprintf("%s/../fixtures/%s", cwd, relativePath)
-}
-
-func CreateTestServer(certPath, keyPath, caCertPath string) (*ghttp.Server, error) {
-	tlsConf, err := tlsconfig.Build(
-		tlsconfig.WithInternalServiceDefaults(),
-		tlsconfig.WithIdentityFromFile(certPath, keyPath),
-	).Server(
-		tlsconfig.WithClientAuthenticationFromFile(caCertPath),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	testServer := ghttp.NewUnstartedServer()
-	testServer.HTTPTestServer.TLS = tlsConf
-
-	return testServer, nil
-}
-
-func GetPDBItems(clientset kubernetes.Interface, namespace, lrpGUID, lrpVersion string) ([]policyv1.PodDisruptionBudget, error) {
-	pdbList, err := clientset.PolicyV1beta1().PodDisruptionBudgets(namespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return pdbList.Items, nil
-}
-
-func GetPDB(clientset kubernetes.Interface, namespace, lrpGUID, lrpVersion string) policyv1.PodDisruptionBudget {
-	var pdbs []policyv1.PodDisruptionBudget
-
-	Eventually(func() ([]policyv1.PodDisruptionBudget, error) {
-		var err error
-		pdbs, err = GetPDBItems(clientset, namespace, lrpGUID, lrpVersion)
-
-		return pdbs, err
-	}).Should(HaveLen(1))
-
-	Consistently(func() ([]policyv1.PodDisruptionBudget, error) {
-		var err error
-		pdbs, err = GetPDBItems(clientset, namespace, lrpGUID, lrpVersion)
-
-		return pdbs, err
-	}, "5s").Should(HaveLen(1))
-
-	return pdbs[0]
-}
-
-func GetStatefulSet(clientset kubernetes.Interface, namespace, guid, version string) *appsv1.StatefulSet {
-	appListOpts := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, guid, stset.LabelVersion, version),
-	}
-
-	stsList, err := clientset.
-		AppsV1().
-		StatefulSets(namespace).
-		List(context.Background(), appListOpts)
-
-	Expect(err).NotTo(HaveOccurred())
-
-	if len(stsList.Items) == 0 {
-		return nil
-	}
-
-	Expect(stsList.Items).To(HaveLen(1))
-
-	return &stsList.Items[0]
-}
-
-func GetLRP(clientset eiriniclient.Interface, namespace, lrpName string) *eiriniv1.LRP {
-	l, err := clientset.
-		EiriniV1().
-		LRPs(namespace).
-		Get(context.Background(), lrpName, metav1.GetOptions{})
-
-	Expect(err).NotTo(HaveOccurred())
-
-	return l
+	return DefaultApplicationServiceAccount
 }

@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -28,7 +29,7 @@ func TestOpi(t *testing.T) {
 const secretName = "certs-secret"
 
 var (
-	eiriniBins           tests.EiriniBinaries
+	eiriniBins           integration.EiriniBinaries
 	fixture              *tests.Fixture
 	httpClient           *http.Client
 	eiriniConfigFilePath string
@@ -39,7 +40,7 @@ var (
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	eiriniBins = tests.NewEiriniBinaries()
+	eiriniBins = integration.NewEiriniBinaries()
 	eiriniBins.OPI.Build()
 
 	data, err := json.Marshal(eiriniBins)
@@ -62,13 +63,13 @@ var _ = SynchronizedAfterSuite(func() {
 var _ = BeforeEach(func() {
 	fixture.SetUp()
 
-	Expect(tests.CreateEmptySecret(fixture.Namespace, secretName, fixture.Clientset)).To(Succeed())
+	Expect(integration.CreateEmptySecret(fixture.Namespace, secretName, fixture.Clientset)).To(Succeed())
 
 	var err error
-	httpClient, err = tests.MakeTestHTTPClient()
+	httpClient, err = integration.MakeTestHTTPClient()
 	Expect(err).ToNot(HaveOccurred())
 
-	apiConfig = tests.DefaultAPIConfig(fixture.Namespace, fixture.NextAvailablePort())
+	apiConfig = integration.DefaultAPIConfig(fixture.Namespace, fixture.NextAvailablePort())
 	opiEnvOverride = []string{}
 })
 

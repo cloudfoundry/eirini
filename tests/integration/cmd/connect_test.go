@@ -9,6 +9,7 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -42,12 +43,12 @@ var _ = Describe("connect command", func() {
 	BeforeEach(func() {
 		envVarOverrides = []string{}
 		var err error
-		httpClient, err = tests.MakeTestHTTPClient()
+		httpClient, err = integration.MakeTestHTTPClient()
 		Expect(err).ToNot(HaveOccurred())
 
 		configFilePath = ""
 		session = nil
-		config = tests.DefaultAPIConfig("test-ns", fixture.NextAvailablePort())
+		config = integration.DefaultAPIConfig("test-ns", fixture.NextAvailablePort())
 	})
 
 	JustBeforeEach(func() {
@@ -214,11 +215,11 @@ var _ = Describe("connect command", func() {
 
 		When("eirini is configured to serve plaintext", func() {
 			BeforeEach(func() {
-				config = tests.DefaultAPIConfig("test-ns", fixture.NextAvailablePort())
+				config = integration.DefaultAPIConfig("test-ns", fixture.NextAvailablePort())
 				config.ServePlaintext = true
 				config.PlaintextPort = fixture.NextAvailablePort()
 
-				configFile, err := tests.CreateConfigFile(config)
+				configFile, err := integration.CreateConfigFile(config)
 				Expect(err).ToNot(HaveOccurred())
 				configFilePath = configFile.Name()
 			})

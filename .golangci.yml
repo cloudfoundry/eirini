@@ -82,6 +82,11 @@ issues:
       - gosec
       - golint
       - stylecheck
+    - path: tests/integration/k8s\.go
+      linters:
+        - golint
+        - revive
+        - stylecheck
     - path: tests/eats/eats_suite_test.go
       linters:
       - gosec

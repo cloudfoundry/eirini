@@ -17,6 +17,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
@@ -44,7 +45,7 @@ var _ = Describe("Events", func() {
 		logger = lagertest.NewTestLogger("events")
 
 		certDir, _ = tests.GenerateKeyPairDir("tls", "localhost")
-		capiServer, err = tests.CreateTestServer(
+		capiServer, err = integration.CreateTestServer(
 			filepath.Join(certDir, "tls.crt"),
 			filepath.Join(certDir, "tls.key"),
 			filepath.Join(certDir, "tls.ca"),

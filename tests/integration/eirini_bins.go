@@ -1,4 +1,4 @@
-package tests
+package integration
 
 import (
 	"io/ioutil"
@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"code.cloudfoundry.org/eirini/tests"
 	"github.com/gofrs/flock"
 
 	// nolint:golint,stylecheck,revive
@@ -96,7 +97,7 @@ func (b *Binary) Run(config interface{}, envVars ...string) (*gexec.Session, str
 
 	var configFile string
 	if config != nil {
-		configFile = WriteTempFile(configBytes, filepath.Base(b.BinPath)+"-config.yaml")
+		configFile = tests.WriteTempFile(configBytes, filepath.Base(b.BinPath)+"-config.yaml")
 	}
 
 	defaultEnv := GetEiriniCertEnvVars()

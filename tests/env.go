@@ -12,8 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const DefaultApplicationServiceAccount = "eirini"
-
 func GetKubeconfig() string {
 	kubeconfPath := os.Getenv("INTEGRATION_KUBECONFIG")
 	if kubeconfPath != "" {
@@ -39,15 +37,6 @@ func GetKubeconfig() string {
 
 func GetEiriniDockerHubPassword() string {
 	return lookupOptionalEnv("EIRINIUSER_PASSWORD")
-}
-
-func GetApplicationServiceAccount() string {
-	serviceAccountName := os.Getenv("APPLICATION_SERVICE_ACCOUNT")
-	if serviceAccountName != "" {
-		return serviceAccountName
-	}
-
-	return DefaultApplicationServiceAccount
 }
 
 func GetEiriniSystemNamespace() string {

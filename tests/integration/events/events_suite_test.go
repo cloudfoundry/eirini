@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -20,12 +21,12 @@ func TestStagingReporter(t *testing.T) {
 
 var (
 	fixture         *tests.Fixture
-	eiriniBins      tests.EiriniBinaries
+	eiriniBins      integration.EiriniBinaries
 	envVarOverrides []string
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	eiriniBins = tests.NewEiriniBinaries()
+	eiriniBins = integration.NewEiriniBinaries()
 	eiriniBins.EventsReporter.Build()
 
 	data, err := json.Marshal(eiriniBins)

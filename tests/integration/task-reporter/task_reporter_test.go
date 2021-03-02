@@ -15,6 +15,7 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -40,10 +41,10 @@ var _ = Describe("TaskReporter", func() {
 
 	BeforeEach(func() {
 		var err error
-		cloudControllerServer, err = tests.CreateTestServer(
-			tests.PathToTestFixture("tls.crt"),
-			tests.PathToTestFixture("tls.key"),
-			tests.PathToTestFixture("tls.ca"),
+		cloudControllerServer, err = integration.CreateTestServer(
+			integration.PathToTestFixture("tls.crt"),
+			integration.PathToTestFixture("tls.key"),
+			integration.PathToTestFixture("tls.ca"),
 		)
 		Expect(err).ToNot(HaveOccurred())
 		cloudControllerServer.HTTPTestServer.StartTLS()
