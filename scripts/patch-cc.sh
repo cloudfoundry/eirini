@@ -4,12 +4,12 @@ set -eu
 
 CCNG_DIR="$HOME/workspace/capi-release/src/cloud_controller_ng"
 TAG=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 8)
-CCNG_IMAGE="eirini/dev-ccng:$TAG"
+CCNG_IMAGE="eirini/dev-ccng"
 
 build_ccng_image() {
   pushd "$CCNG_DIR"
   {
-    pack build --builder "paketobuildpacks/builder:full" "$CCNG_IMAGE"
+    pack build --builder "paketobuildpacks/builder:full" --tag "$CCNG_IMAGE:$TAG" "$CCNG_IMAGE"
   }
   popd
 }
@@ -34,7 +34,7 @@ load-into-kind() {
   # strip the 'kind-' prefix that kind puts in the context name
   kind_cluster_name=${current_context#"kind-"}
 
-  kind load docker-image --name "$kind_cluster_name" "$CCNG_IMAGE"
+  kind load docker-image --name "$kind_cluster_name" "$CCNG_IMAGE:$TAG"
 }
 
 patch-cf-api-server() {
@@ -49,7 +49,7 @@ spec:
     spec:
       containers:
       - name: cf-api-server
-        image: "$CCNG_IMAGE"
+        image: "$CCNG_IMAGE:$TAG"
         imagePullPolicy: IfNotPresent
 EOF
 
