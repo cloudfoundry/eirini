@@ -54,7 +54,7 @@ EOF
   fi
 
   # generate eirini yamls
-  "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$EIRINI_RENDER_DIR" --values "$EIRINI_RELEASE_BASEDIR/scripts/assets/cf-for-k8s-value-overrides.yml"
+  "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$EIRINI_RENDER_DIR"
 
   # patch generated eirini yamls into cf-for-k8s
   rm -rf "./build/eirini/_vendir/eirini"
