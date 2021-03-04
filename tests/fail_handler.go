@@ -95,7 +95,7 @@ func getSinglePodLog(clientset kubernetes.Interface, podName string) (string, er
 
 	logStream, err := req.Stream(context.Background())
 	if err != nil {
-		return "", nil
+		return "", nil //nolint:nilerr
 	}
 	defer logStream.Close()
 

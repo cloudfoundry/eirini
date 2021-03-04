@@ -2,6 +2,7 @@ package reconciler
 
 import (
 	"context"
+	"fmt"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/shared"
@@ -134,7 +135,11 @@ func (r *LRP) updateStatus(ctx context.Context, lrp *eiriniv1.LRP, appLRP *opi.L
 
 func (r *LRP) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {
 	return func(resource interface{}) error {
-		obj := resource.(metav1.Object)
+		obj, ok := resource.(metav1.Object)
+		if !ok {
+			return fmt.Errorf("failed to cast %v to metav1.Object", resource)
+		}
+
 		if err := ctrl.SetControllerReference(lrp, obj, r.scheme); err != nil {
 			return errors.Wrap(err, "failed to set controller reference")
 		}

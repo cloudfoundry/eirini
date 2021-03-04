@@ -104,14 +104,14 @@ func groupRoutesByPort(remove, add set.Set) portGroup {
 	group := make(portGroup)
 
 	for _, toAdd := range add.ToSlice() {
-		current := toAdd.(cf.Route)
+		current := toAdd.(cf.Route) //nolint:forcetypeassert
 		routes := group[current.Port]
 		routes.RegisteredRoutes = append(routes.RegisteredRoutes, current.Hostname)
 		group[current.Port] = routes
 	}
 
 	for _, toRemove := range remove.ToSlice() {
-		current := toRemove.(cf.Route)
+		current := toRemove.(cf.Route) //nolint:forcetypeassert
 		routes := group[current.Port]
 		routes.UnregisteredRoutes = append(routes.UnregisteredRoutes, current.Hostname)
 		group[current.Port] = routes

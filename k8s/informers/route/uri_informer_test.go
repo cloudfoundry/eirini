@@ -24,7 +24,8 @@ var _ = Describe("URIChangeInformer", func() {
 	)
 
 	setWatcher := func(cs kubernetes.Interface) {
-		fakecs := cs.(*fake.Clientset)
+		fakecs, ok := cs.(*fake.Clientset)
+		Expect(ok).To(BeTrue())
 		watcher = watch.NewFake()
 		fakecs.PrependWatchReactor("statefulsets", testcore.DefaultWatchReactor(watcher, nil))
 	}

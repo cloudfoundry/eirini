@@ -49,12 +49,12 @@ func (i *URIChangeInformer) Start() {
 	informer := factory.Apps().V1().StatefulSets().Informer()
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(oldObj, updatedObj interface{}) {
-			oldStatefulSet := oldObj.(*appsv1.StatefulSet)
-			updatedStatefulSet := updatedObj.(*appsv1.StatefulSet)
+			oldStatefulSet := oldObj.(*appsv1.StatefulSet)         //nolint:forcetypeassert
+			updatedStatefulSet := updatedObj.(*appsv1.StatefulSet) //nolint:forcetypeassert
 			i.UpdateHandler.Handle(oldStatefulSet, updatedStatefulSet)
 		},
 		DeleteFunc: func(obj interface{}) {
-			statefulSet := obj.(*appsv1.StatefulSet)
+			statefulSet := obj.(*appsv1.StatefulSet) //nolint:forcetypeassert
 			i.DeleteHandler.Handle(statefulSet)
 		},
 	})

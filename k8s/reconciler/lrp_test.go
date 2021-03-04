@@ -45,7 +45,8 @@ var _ = Describe("reconciler.LRP", func() {
 		lrpreconciler = reconciler.NewLRP(logger, controllerClient, desirer, statefulsetGetter, scheme)
 
 		controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o client.Object) error {
-			lrp := o.(*eiriniv1.LRP)
+			lrp, ok := o.(*eiriniv1.LRP)
+			Expect(ok).To(BeTrue())
 			lrp.Name = "some-lrp"
 			lrp.Namespace = "some-ns"
 			lrp.Spec.GUID = "the-lrp-guid"
@@ -139,7 +140,8 @@ var _ = Describe("reconciler.LRP", func() {
 
 			Expect(statusWriter.UpdateCallCount()).To(Equal(1))
 			_, obj, _ := statusWriter.UpdateArgsForCall(0)
-			lrp := obj.(*eiriniv1.LRP)
+			lrp, ok := obj.(*eiriniv1.LRP)
+			Expect(ok).To(BeTrue())
 			Expect(lrp.Status).To(Equal(eiriniv1.LRPStatus{
 				Replicas: 9,
 			}))

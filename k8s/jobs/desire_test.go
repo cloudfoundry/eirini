@@ -43,7 +43,8 @@ var _ = Describe("Desire", func() {
 		desireOpt = new(sharedfakes.FakeOption)
 		desireOpt.Stub = func(resource interface{}) error {
 			Expect(resource).To(BeAssignableToTypeOf(&batch.Job{}))
-			j := resource.(*batch.Job)
+			j, ok := resource.(*batch.Job)
+			Expect(ok).To(BeTrue())
 			Expect(j.Namespace).NotTo(BeEmpty())
 
 			return nil

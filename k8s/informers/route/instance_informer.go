@@ -40,8 +40,8 @@ func (c *InstanceChangeInformer) Start() {
 	podInformer := factory.Core().V1().Pods().Informer()
 	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(oldObj, updatedObj interface{}) {
-			oldPod := oldObj.(*v1.Pod)
-			updatedPod := updatedObj.(*v1.Pod)
+			oldPod := oldObj.(*v1.Pod)         //nolint:forcetypeassert
+			updatedPod := updatedObj.(*v1.Pod) //nolint:forcetypeassert
 			c.UpdateHandler.Handle(oldPod, updatedPod)
 		},
 	})

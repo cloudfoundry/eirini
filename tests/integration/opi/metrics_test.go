@@ -175,7 +175,7 @@ func batchSenderStub(envelopes chan *loggregator_v2.Envelope) BatchSenderStub {
 		for {
 			batch, err := server.Recv()
 			if err != nil {
-				return nil
+				return nil //nolint:nilerr
 			}
 
 			for _, envelope := range batch.Batch {

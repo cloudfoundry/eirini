@@ -77,7 +77,11 @@ func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconc
 
 func (t *Task) setOwnerFn(task *eiriniv1.Task) func(interface{}) error {
 	return func(resource interface{}) error {
-		obj := resource.(metav1.Object)
+		obj, ok := resource.(metav1.Object)
+		if !ok {
+			return fmt.Errorf("could not cast %v to metav1.Object", resource)
+		}
+
 		if err := ctrl.SetControllerReference(task, obj, t.scheme); err != nil {
 			return exterrors.Wrap(err, "failed to set controller reference")
 		}

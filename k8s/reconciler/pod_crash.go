@@ -89,7 +89,7 @@ func (r PodCrash) Reconcile(ctx context.Context, request reconcile.Request) (rec
 	if err != nil {
 		logger.Debug("pod-without-statefulset-owner")
 
-		return reconcile.Result{}, nil
+		return reconcile.Result{}, nil //nolint:nilerr
 	}
 
 	statefulSet, err := r.statefulSetGetter.Get(pod.Namespace, statefulSetRef.Name)
@@ -103,7 +103,7 @@ func (r PodCrash) Reconcile(ctx context.Context, request reconcile.Request) (rec
 	if err != nil {
 		logger.Debug("statefulset-without-lrp-owner", lager.Data{"statefulset-name": statefulSet.Name})
 
-		return reconcile.Result{}, nil
+		return reconcile.Result{}, nil //nolint:nilerr
 	}
 
 	kubeEvent, err := r.eventsClient.GetByInstanceAndReason(request.Namespace, lrpRef, crashEvent.Index, failureReason(crashEvent))

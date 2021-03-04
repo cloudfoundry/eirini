@@ -86,7 +86,8 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 
 	JustBeforeEach(func() {
 		controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o client.Object) error {
-			pod := o.(*corev1.Pod)
+			pod, ok := o.(*corev1.Pod)
+			Expect(ok).To(BeTrue())
 			pod.Namespace = "some-ns"
 			pod.Name = "app-instance"
 			pod.OwnerReferences = podOwners

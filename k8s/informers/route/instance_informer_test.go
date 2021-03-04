@@ -24,7 +24,8 @@ var _ = Describe("InstanceChangeInformer", func() {
 	)
 
 	setWatcher := func(cs kubernetes.Interface) {
-		fakecs := cs.(*fake.Clientset)
+		fakecs, ok := cs.(*fake.Clientset)
+		Expect(ok).To(BeTrue())
 		podWatcher = watch.NewFake()
 		fakecs.PrependWatchReactor("pods", testcore.DefaultWatchReactor(podWatcher, nil))
 	}

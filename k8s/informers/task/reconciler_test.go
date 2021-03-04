@@ -82,7 +82,8 @@ var _ = Describe("Task Completion Reconciler", func() {
 		}
 
 		runtimeClient.GetStub = func(c context.Context, nn k8stypes.NamespacedName, o client.Object) error {
-			p := o.(*corev1.Pod)
+			p, ok := o.(*corev1.Pod)
+			Expect(ok).To(BeTrue())
 			pod.DeepCopyInto(p)
 			pod = p
 

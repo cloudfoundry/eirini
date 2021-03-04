@@ -80,7 +80,8 @@ var _ = Describe("Event", func() {
 				return getPodError
 			}
 
-			p := o.(*corev1.Pod)
+			p, ok := o.(*corev1.Pod)
+			Expect(ok).To(BeTrue())
 			p.Name = pod.Name
 			p.Namespace = pod.Namespace
 			p.Annotations = pod.Annotations
