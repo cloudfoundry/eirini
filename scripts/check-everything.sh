@@ -180,7 +180,7 @@ run_everything() {
   fi
   tmux new-window -n eirini-tests "/bin/bash -c \"$0 -u; bash --init-file <(echo 'history -s $0 -u')\""
   tmux split-window -h -p 50 "/bin/bash -c \"$0 -i $do_not_deploy; bash --init-file <(echo 'history -s $0 -i $do_not_deploy')\""
-  tmux split-window -v -p 50 "/bin/bash -c \"$0 -ef $do_not_deploy; bash --init-file <(echo 'history -s $0 -ef $do_not_deploy')\""
+  tmux split-window -v -p 50 "/bin/bash -c \"$0 -e $do_not_deploy; bash --init-file <(echo 'history -s $0 -e $do_not_deploy')\""
   tmux select-pane -L
   tmux split-window -v -p 50 "/bin/bash -c \"$0 -l; bash --init-file <(echo 'history -s $0 -l')\""
 }
