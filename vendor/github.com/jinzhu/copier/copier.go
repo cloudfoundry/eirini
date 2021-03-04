@@ -17,7 +17,7 @@ const (
 	// value is not copied. The program will return an error instead.
 	tagNoPanic
 
-	// Ignore a destation field from being copied to.
+	// Ignore a destination field from being copied to.
 	tagIgnore
 
 	// Denotes that the value as been copied
@@ -26,6 +26,8 @@ const (
 
 // Option sets copy options
 type Option struct {
+	// setting this value to true will ignore copying zero values of all the fields, including bools, as well as a
+	// struct having all it's fields set to their zero values respectively (see IsZero() in reflect/value.go)
 	IgnoreEmpty bool
 	DeepCopy    bool
 }
@@ -192,23 +194,24 @@ func copier(toValue interface{}, fromValue interface{}, opt Option) (err error) 
 					// process for nested anonymous field
 					destFieldNotSet := false
 					if f, ok := dest.Type().FieldByName(name); ok {
-						for idx, x := range f.Index {
-							destFieldKind := dest.Field(x).Kind()
-							if destFieldKind != reflect.Ptr {
+						for idx := range f.Index {
+							destField := dest.FieldByIndex(f.Index[:idx+1])
+
+							if destField.Kind() != reflect.Ptr {
 								continue
 							}
 
-							if !dest.Field(x).IsNil() {
+							if !destField.IsNil() {
 								continue
 							}
-
-							if !dest.Field(x).CanSet() {
+							if !destField.CanSet() {
 								destFieldNotSet = true
 								break
 							}
 
-							newValue := reflect.New(dest.FieldByIndex(f.Index[0 : idx+1]).Type().Elem())
-							dest.Field(x).Set(newValue)
+							// destField is a nil pointer that can be set
+							newValue := reflect.New(destField.Type().Elem())
+							destField.Set(newValue)
 						}
 					}
 
@@ -447,7 +450,7 @@ func checkBitFlags(flagsList map[string]uint8) (err error) {
 		if flags&hasCopied == 0 {
 			switch {
 			case flags&tagMust != 0 && flags&tagNoPanic != 0:
-				err = fmt.Errorf("Field %s has must tag but was not copied", name)
+				err = fmt.Errorf("field %s has must tag but was not copied", name)
 				return
 			case flags&(tagMust) != 0:
 				panic(fmt.Sprintf("Field %s has must tag but was not copied", name))

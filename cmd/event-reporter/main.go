@@ -15,7 +15,7 @@ import (
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/tlsconfig"
-	"code.cloudfoundry.org/tps/cc_client"
+	"github.com/cloudfoundry/tps/cc_client"
 	"github.com/jessevdk/go-flags"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
