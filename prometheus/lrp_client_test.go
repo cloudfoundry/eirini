@@ -16,6 +16,7 @@ import (
 	"github.com/onsi/gomega/types"
 	api "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"k8s.io/apimachinery/pkg/util/clock"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
@@ -28,6 +29,8 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 		desireErr  error
 		logger     *lagertest.TestLogger
 		registry   metrics.RegistererGatherer
+		fakeClock  *clock.FakePassiveClock
+		t0         time.Time
 	)
 
 	BeforeEach(func() {
@@ -39,8 +42,11 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 		lrp = &opi.LRP{}
 		registry = api.NewRegistry()
 
+		t0 = time.Now()
+		fakeClock = clock.NewFakePassiveClock(t0)
+
 		var err error
-		decorator, err = prometheus.NewLRPClientDecorator(logger, lrpClient, registry)
+		decorator, err = prometheus.NewLRPClientDecorator(logger, lrpClient, registry, fakeClock)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -67,7 +73,7 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 	Describe("observing durations", func() {
 		BeforeEach(func() {
 			lrpClient.DesireStub = func(s string, l *opi.LRP, o ...shared.Option) error {
-				time.Sleep(time.Second)
+				fakeClock.SetTime(t0.Add(time.Second))
 
 				return nil
 			}
@@ -101,7 +107,7 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 
 		BeforeEach(func() {
 			var err error
-			otherDecorator, err = prometheus.NewLRPClientDecorator(logger, lrpClient, registry)
+			otherDecorator, err = prometheus.NewLRPClientDecorator(logger, lrpClient, registry, fakeClock)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

@@ -2,12 +2,12 @@ package prometheus
 
 import (
 	"errors"
-	"time"
 
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	api "github.com/prometheus/client_golang/prometheus"
+	"k8s.io/apimachinery/pkg/util/clock"
 )
 
 const (
@@ -30,12 +30,14 @@ type LRPClientDecorator struct {
 	logger            lager.Logger
 	creations         api.Counter
 	creationDurations api.Histogram
+	clock             clock.PassiveClock
 }
 
 func NewLRPClientDecorator(
 	logger lager.Logger,
 	lrpClient LRPClient,
 	registry api.Registerer,
+	clck clock.PassiveClock,
 ) (*LRPClientDecorator, error) {
 	creations, err := registerCounter(registry, LRPCreations, "The total number of created lrps")
 	if err != nil {
@@ -52,16 +54,17 @@ func NewLRPClientDecorator(
 		logger:            logger,
 		creations:         creations,
 		creationDurations: creationDurations,
+		clock:             clck,
 	}, nil
 }
 
 func (d *LRPClientDecorator) Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) error {
-	start := time.Now()
+	start := d.clock.Now()
 
 	err := d.LRPClient.Desire(namespace, lrp, opts...)
 	if err == nil {
 		d.creations.Inc()
-		d.creationDurations.Observe(float64(time.Since(start).Milliseconds()))
+		d.creationDurations.Observe(float64(d.clock.Since(start).Milliseconds()))
 	}
 
 	return err

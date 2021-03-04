@@ -27,6 +27,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
@@ -156,7 +157,7 @@ func createLRPReconciler(
 		stset.NewStatefulSetToLRPConverter(),
 	)
 
-	decoratedLRPClient, err := prometheus.NewLRPClientDecorator(logger.Session("prometheus-decorator"), lrpClient, metrics.Registry)
+	decoratedLRPClient, err := prometheus.NewLRPClientDecorator(logger.Session("prometheus-decorator"), lrpClient, metrics.Registry, clock.RealClock{})
 	if err != nil {
 		return nil, err
 	}
