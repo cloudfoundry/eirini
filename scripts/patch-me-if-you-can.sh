@@ -129,7 +129,7 @@ checkout_stable_cf4k8s() {
 }
 
 checkout_stable_cf_for_k8s_deps() {
-  local stable_cf4k8s_release capi_k8s_release_sha capi_release_sha
+  local capi_k8s_release_sha ccng_image ccng_sha
 
   echo "Dear future us, take a deep breath as I am checking out stable revisions of cf-for-k8s dependencies for you..."
 
@@ -144,7 +144,10 @@ checkout_stable_cf_for_k8s_deps() {
 
   pushd "$CAPIK8S_DIR"
   {
-    ccng_sha=$(git show -s "$capi_k8s_release_sha" | awk '/ccng:/ {found=1}; /sha:/ { if (found == 1) print $2; found = 0 }')
+    ccng_image="$(git show "$capi_k8s_release_sha:values/images.yml" | awk '/ccng:/ { print $2 }')"
+    echo "Pulling the ccng image in order to read its metadata"
+    docker pull $ccng_image
+    ccng_sha="$(docker inspect "$ccng_image" | jq -r '.[] | .Config.Labels["io.deplab.metadata"]' | jq -r '.dependencies[] | select(.source.type=="git") | .source.version.commit')"
     echo "cloud_controller_ng version: $ccng_sha"
   }
   popd
