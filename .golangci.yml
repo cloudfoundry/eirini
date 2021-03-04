@@ -14,9 +14,6 @@ linters-settings:
   gocyclo:
     # minimal code complexity to report
     min-complexity: 10
-  maligned:
-    # print struct with more effective memory layout
-    suggest-new: true
   lll:
     line-length: 512
 
@@ -59,6 +56,10 @@ linters:
     - durationcheck
     # Didn't like it complaining about always using port 8080 in a function
     - unparam
+    # interfacer is deprecated
+    - interfacer
+    # maligned is deprecated
+    - maligned
 
 issues:
   exclude-use-default: true
