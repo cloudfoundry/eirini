@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
+	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -208,7 +208,7 @@ var _ = Describe("TaskReporter", func() {
 		BeforeEach(func() {
 			task.Image = "eiriniuser/notdora"
 			task.PrivateRegistry = &opi.PrivateRegistry{
-				Server:   bifrost.DockerHubHost,
+				Server:   util.DockerHubHost,
 				Username: "eiriniuser",
 				Password: tests.GetEiriniDockerHubPassword(),
 			}

@@ -3,19 +3,15 @@ package bifrost
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/containers/image/types"
 	"github.com/pkg/errors"
 )
-
-const DockerHubHost = "index.docker.io/v1/"
-
-var dockerRX = regexp.MustCompile(`([a-zA-Z0-9.-]+)(:([0-9]+))?/(\S+/\S+)`)
 
 type lifecycleOptions struct {
 	command         []string
@@ -141,7 +137,7 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 
 	if lifecycle.RegistryUsername != "" || lifecycle.RegistryPassword != "" {
 		task.PrivateRegistry = &opi.PrivateRegistry{
-			Server:   parseRegistryHost(lifecycle.Image),
+			Server:   util.ParseImageRegistryHost(lifecycle.Image),
 			Username: lifecycle.RegistryUsername,
 			Password: lifecycle.RegistryPassword,
 		}
@@ -218,16 +214,6 @@ func mergeMaps(maps ...map[string]string) map[string]string {
 	return result
 }
 
-func parseRegistryHost(imageURL string) string {
-	if !dockerRX.MatchString(imageURL) {
-		return DockerHubHost
-	}
-
-	matches := dockerRX.FindStringSubmatch(imageURL)
-
-	return matches[1]
-}
-
 func mergeEnvs(requestEnv []cf.EnvironmentVariable, appliedEnv map[string]string) map[string]string {
 	result := make(map[string]string)
 	for _, v := range requestEnv {
@@ -264,7 +250,7 @@ func (c *OPIConverter) getLifecycleOptions(request cf.DesireLRPRequest) (*lifecy
 
 	if registryUsername != "" || registryPassword != "" {
 		options.privateRegistry = &opi.PrivateRegistry{
-			Server:   parseRegistryHost(options.image),
+			Server:   util.ParseImageRegistryHost(options.image),
 			Username: registryUsername,
 			Password: registryPassword,
 		}

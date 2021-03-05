@@ -9,6 +9,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
+	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
@@ -158,6 +159,10 @@ func toOpiLrp(lrp *eiriniv1.LRP) (*opi.LRP, error) {
 
 	if err := copier.Copy(&opiLrp.AppURIs, lrp.Spec.AppRoutes); err != nil {
 		return nil, errors.Wrap(err, "failed to copy app routes")
+	}
+
+	if lrp.Spec.PrivateRegistry != nil {
+		opiLrp.PrivateRegistry.Server = util.ParseImageRegistryHost(lrp.Spec.Image)
 	}
 
 	return opiLrp, nil

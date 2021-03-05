@@ -85,6 +85,7 @@ var _ = Describe("reconciler.LRP", func() {
 		Expect(lrp.Version).To(Equal("the-lrp-version"))
 		Expect(lrp.Command).To(ConsistOf("ls", "-la"))
 		Expect(lrp.TargetInstances).To(Equal(10))
+		Expect(lrp.PrivateRegistry).To(BeNil())
 		Expect(lrp.AppURIs).To(ConsistOf(
 			opi.Route{Hostname: "foo.io", Port: 8080},
 			opi.Route{Hostname: "bar.io", Port: 9090},
@@ -104,6 +105,54 @@ var _ = Describe("reconciler.LRP", func() {
 		Expect(st.ObjectMeta.OwnerReferences).To(HaveLen(1))
 		Expect(st.ObjectMeta.OwnerReferences[0].Kind).To(Equal("LRP"))
 		Expect(st.ObjectMeta.OwnerReferences[0].Name).To(Equal("some-lrp"))
+	})
+
+	When("private registry credentials are specified in the LRP CRD", func() {
+		BeforeEach(func() {
+			controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o client.Object) error {
+				lrp, ok := o.(*eiriniv1.LRP)
+				Expect(ok).To(BeTrue())
+
+				lrp.Spec.Image = "private-registry.com:5000/repo/app-image:latest"
+				lrp.Spec.PrivateRegistry = &eiriniv1.PrivateRegistry{
+					Username: "docker-user",
+					Password: "docker-password",
+				}
+
+				return nil
+			}
+		})
+
+		It("configures a private registry", func() {
+			_, lrp, _ := desirer.DesireArgsForCall(0)
+			privateRegistry := lrp.PrivateRegistry
+			Expect(privateRegistry).NotTo(BeNil())
+			Expect(privateRegistry.Username).To(Equal("docker-user"))
+			Expect(privateRegistry.Password).To(Equal("docker-password"))
+			Expect(privateRegistry.Server).To(Equal("private-registry.com"))
+		})
+
+		When("the image URL does not contain an image registry host", func() {
+			BeforeEach(func() {
+				controllerClient.GetStub = func(c context.Context, nn types.NamespacedName, o client.Object) error {
+					lrp, ok := o.(*eiriniv1.LRP)
+					Expect(ok).To(BeTrue())
+
+					lrp.Spec.Image = "eirini/dorini"
+					lrp.Spec.PrivateRegistry = &eiriniv1.PrivateRegistry{
+						Username: "docker-user",
+						Password: "docker-password",
+					}
+
+					return nil
+				}
+			})
+
+			It("configures the private registry server with the dockerhub host", func() {
+				_, lrp, _ := desirer.DesireArgsForCall(0)
+				Expect(lrp.PrivateRegistry.Server).To(Equal("index.docker.io/v1/"))
+			})
+		})
 	})
 
 	When("a CRD for this app already exists", func() {

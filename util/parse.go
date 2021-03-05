@@ -2,11 +2,16 @@ package util
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
 )
+
+const DockerHubHost = "index.docker.io/v1/"
+
+var dockerRX = regexp.MustCompile(`([a-zA-Z0-9.-]+)(:([0-9]+))?/(\S+/\S+)`)
 
 func ParseAppIndex(podName string) (int, error) {
 	sl := strings.Split(podName, "-")
@@ -21,4 +26,14 @@ func ParseAppIndex(podName string) (int, error) {
 	}
 
 	return index, nil
+}
+
+func ParseImageRegistryHost(imageURL string) string {
+	if !dockerRX.MatchString(imageURL) {
+		return DockerHubHost
+	}
+
+	matches := dockerRX.FindStringSubmatch(imageURL)
+
+	return matches[1]
 }
