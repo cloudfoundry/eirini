@@ -62,7 +62,6 @@ type Sidecar struct {
 }
 
 type PrivateRegistry struct {
-	Server   string `json:"server"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
