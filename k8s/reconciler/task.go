@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
+	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	exterrors "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -111,9 +112,9 @@ func toOpiTask(task *eiriniv1.Task) *opi.Task {
 
 	if task.Spec.PrivateRegistry != nil {
 		opiTask.PrivateRegistry = &opi.PrivateRegistry{
-			Server:   task.Spec.PrivateRegistry.Server,
 			Username: task.Spec.PrivateRegistry.Username,
 			Password: task.Spec.PrivateRegistry.Password,
+			Server:   util.ParseImageRegistryHost(task.Spec.Image),
 		}
 	}
 

@@ -90,7 +90,6 @@ var _ = Describe("Tasks", func() {
 				task.Spec.Image = "eiriniuser/notdora:latest"
 				task.Spec.Command = []string{"/bin/echo", "hello"}
 				task.Spec.PrivateRegistry = &eiriniv1.PrivateRegistry{
-					Server:   "index.docker.io/v1/",
 					Username: "eiriniuser",
 					Password: tests.GetEiriniDockerHubPassword(),
 				}

@@ -63,7 +63,6 @@ var _ = Describe("Task", func() {
 				task.Spec.Image = "my-task-image"
 				task.Spec.CompletionCallback = "my-task-completion-callback"
 				task.Spec.PrivateRegistry = &eiriniv1.PrivateRegistry{
-					Server:   "pr-server",
 					Username: "pr-username",
 					Password: "pr-password",
 				}
@@ -104,7 +103,7 @@ var _ = Describe("Task", func() {
 				Expect(opiTask.Image).To(Equal("my-task-image"))
 				Expect(opiTask.CompletionCallback).To(Equal("my-task-completion-callback"))
 				Expect(opiTask.PrivateRegistry).To(Equal(&opi.PrivateRegistry{
-					Server:   "pr-server",
+					Server:   "index.docker.io/v1/",
 					Username: "pr-username",
 					Password: "pr-password",
 				}))

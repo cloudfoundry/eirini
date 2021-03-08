@@ -79,7 +79,6 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 			BeforeEach(func() {
 				task.Spec.Image = "eiriniuser/notdora:latest"
 				task.Spec.PrivateRegistry = &eiriniv1.PrivateRegistry{
-					Server:   "index.docker.io/v1/",
 					Username: "eiriniuser",
 					Password: tests.GetEiriniDockerHubPassword(),
 				}
