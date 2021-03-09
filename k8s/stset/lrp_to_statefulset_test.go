@@ -175,7 +175,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 	})
 
 	It("should set cpu request", func() {
-		expectedLimit := resource.NewScaledQuantity(20, resource.Milli)
+		expectedLimit := resource.NewScaledQuantity(2, resource.Milli)
 		actualLimit := statefulSet.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu()
 		Expect(actualLimit).To(Equal(expectedLimit))
 	})
@@ -275,7 +275,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 						},
 						Requests: corev1.ResourceList{
 							corev1.ResourceMemory: *resource.NewScaledQuantity(101, resource.Mega),
-							corev1.ResourceCPU:    *resource.NewScaledQuantity(int64(lrp.CPUWeight)*10, resource.Milli),
+							corev1.ResourceCPU:    *resource.NewScaledQuantity(int64(lrp.CPUWeight), resource.Milli),
 						},
 					},
 				},
@@ -291,7 +291,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 						},
 						Requests: corev1.ResourceList{
 							corev1.ResourceMemory: *resource.NewScaledQuantity(102, resource.Mega),
-							corev1.ResourceCPU:    *resource.NewScaledQuantity(int64(lrp.CPUWeight)*10, resource.Milli),
+							corev1.ResourceCPU:    *resource.NewScaledQuantity(int64(lrp.CPUWeight), resource.Milli),
 						},
 					},
 				},

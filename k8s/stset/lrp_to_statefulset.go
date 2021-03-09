@@ -276,7 +276,7 @@ func getContainerResources(cpuWeight uint8, memoryMB, diskMB int64) corev1.Resou
 }
 
 func toCPUMillicores(cpuPercentage uint8) resource.Quantity {
-	return *resource.NewScaledQuantity(int64(cpuPercentage)*10, resource.Milli) //nolint:gomnd
+	return *resource.NewScaledQuantity(int64(cpuPercentage), resource.Milli)
 }
 
 func getSidecarContainers(lrp *opi.LRP) []corev1.Container {
