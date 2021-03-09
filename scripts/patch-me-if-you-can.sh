@@ -121,9 +121,9 @@ checkout_stable_cf4k8s() {
   {
     echo "Cleaning dirty state in cf-for-k8s..."
     git checkout . && git clean -ffd
-    echo "Checking out helmless-ci branch"
-    git checkout helmless-ci
-    git pull ef helmless-ci
+    echo "Checking out pending-prs branch"
+    git checkout pending-prs
+    git pull ef pending-prs
   }
   popd
 }
