@@ -67,7 +67,12 @@ func copier(toValue interface{}, fromValue interface{}, opt Option) (err error) 
 	}
 
 	if toType.Kind() == reflect.Interface {
-		toType = reflect.TypeOf(to.Interface())
+		toType, _ = indirectType(reflect.TypeOf(to.Interface()))
+		oldTo := to
+		to = reflect.New(reflect.TypeOf(to.Interface())).Elem()
+		defer func() {
+			oldTo.Set(to)
+		}()
 	}
 
 	// Just set it if possible to assign for normal types
@@ -122,7 +127,12 @@ func copier(toValue interface{}, fromValue interface{}, opt Option) (err error) 
 			slice := reflect.MakeSlice(reflect.SliceOf(to.Type().Elem()), from.Len(), from.Cap())
 			to.Set(slice)
 		}
+
 		for i := 0; i < from.Len(); i++ {
+			if to.Len() < i+1 {
+				to.Set(reflect.Append(to, reflect.New(to.Type().Elem()).Elem()))
+			}
+
 			if !set(to.Index(i), from.Index(i), opt.DeepCopy) {
 				err = CopyWithOption(to.Index(i).Addr().Interface(), from.Index(i).Interface(), opt)
 				if err != nil {
@@ -226,11 +236,10 @@ func copier(toValue interface{}, fromValue interface{}, opt Option) (err error) 
 								if err := copier(toField.Addr().Interface(), fromField.Interface(), opt); err != nil {
 									return err
 								}
-							} else {
-								if fieldFlags != 0 {
-									// Note that a copy was made
-									tagBitFlags[name] = fieldFlags | hasCopied
-								}
+							}
+							if fieldFlags != 0 {
+								// Note that a copy was made
+								tagBitFlags[name] = fieldFlags | hasCopied
 							}
 						}
 					} else {
