@@ -2,42 +2,30 @@ package bifrost_test
 
 import (
 	"encoding/json"
-	"errors"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/bifrost"
-	"code.cloudfoundry.org/eirini/bifrost/bifrostfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 var _ = Describe("OPI Converter", func() {
 	var (
-		logger              *lagertest.TestLogger
-		err                 error
-		converter           *bifrost.OPIConverter
-		imgMetadataFetcher  *bifrostfakes.FakeImageMetadataFetcher
-		imgRefParser        *bifrostfakes.FakeImageRefParser
-		allowRunImageAsRoot bool
+		logger    *lagertest.TestLogger
+		err       error
+		converter *bifrost.OPIConverter
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("converter-test")
-		imgMetadataFetcher = new(bifrostfakes.FakeImageMetadataFetcher)
-		imgRefParser = new(bifrostfakes.FakeImageRefParser)
-		allowRunImageAsRoot = false
 	})
 
 	JustBeforeEach(func() {
 		converter = bifrost.NewOPIConverter(
 			logger,
-			imgMetadataFetcher.Spy,
-			imgRefParser.Spy,
-			allowRunImageAsRoot,
 		)
 	})
 
@@ -275,10 +263,6 @@ var _ = Describe("OPI Converter", func() {
 				Expect(lrp.PrivateRegistry).To(BeNil())
 			})
 
-			It("assumes that the pod should run as root", func() {
-				Expect(lrp.RunsAsRoot).To(BeFalse())
-			})
-
 			Context("when the image lives in a private registry", func() {
 				BeforeEach(func() {
 					desireLRPRequest.Lifecycle = cf.Lifecycle{
@@ -316,117 +300,6 @@ var _ = Describe("OPI Converter", func() {
 
 					It("should default to the docker hub", func() {
 						Expect(lrp.PrivateRegistry.Server).To(Equal("index.docker.io/v1/"))
-					})
-				})
-			})
-
-			Context("when running docker images with root user is allowed", func() {
-				BeforeEach(func() {
-					allowRunImageAsRoot = true
-					imgMetadataFetcher.Returns(&v1.ImageConfig{}, nil)
-					imgRefParser.Returns("//some-docker-image-ref", nil)
-				})
-
-				It("should parse the docker image ref", func() {
-					Expect(imgRefParser.CallCount()).To(Equal(1))
-					Expect(imgRefParser.ArgsForCall(0)).To(Equal(lrp.Image))
-				})
-
-				It("should fetch the image metadata", func() {
-					Expect(imgMetadataFetcher.CallCount()).To(Equal(1))
-					dockerRef, sysCtx := imgMetadataFetcher.ArgsForCall(0)
-
-					Expect(dockerRef).To(Equal("//some-docker-image-ref"))
-					Expect(sysCtx.DockerAuthConfig.Username).To(BeEmpty())
-					Expect(sysCtx.DockerAuthConfig.Password).To(BeEmpty())
-				})
-
-				Context("and the image user is root", func() {
-					BeforeEach(func() {
-						imgMetadataFetcher.Returns(&v1.ImageConfig{
-							User: "root",
-						}, nil)
-					})
-
-					It("should be allowed to run as root", func() {
-						Expect(lrp.RunsAsRoot).To(BeTrue())
-					})
-				})
-
-				Context("and the image user is empty", func() {
-					BeforeEach(func() {
-						imgMetadataFetcher.Returns(&v1.ImageConfig{
-							User: "",
-						}, nil)
-					})
-
-					It("should be allowed to run as root", func() {
-						Expect(lrp.RunsAsRoot).To(BeTrue())
-					})
-				})
-
-				Context("and the image user is UID 0", func() {
-					BeforeEach(func() {
-						imgMetadataFetcher.Returns(&v1.ImageConfig{
-							User: "0",
-						}, nil)
-					})
-
-					It("should be allowed to run as root", func() {
-						Expect(lrp.RunsAsRoot).To(BeTrue())
-					})
-				})
-
-				Context("and the image user is not root", func() {
-					BeforeEach(func() {
-						imgMetadataFetcher.Returns(&v1.ImageConfig{
-							User: "vcap",
-						}, nil)
-					})
-
-					It("should not be allowed to run as root", func() {
-						Expect(lrp.RunsAsRoot).To(BeFalse())
-					})
-				})
-
-				Context("when the image lives in a private registry", func() {
-					BeforeEach(func() {
-						desireLRPRequest.Lifecycle = cf.Lifecycle{
-							DockerLifecycle: &cf.DockerLifecycle{
-								Image:            "my-secret-docker-registry.docker.io:5000/repo/the-mighty-image:not-latest",
-								Command:          []string{"command-in-docker"},
-								RegistryUsername: "super-user",
-								RegistryPassword: "super-password",
-							},
-						}
-					})
-
-					It("should provide username & password", func() {
-						Expect(imgMetadataFetcher.CallCount()).To(Equal(1))
-						_, sysCtx := imgMetadataFetcher.ArgsForCall(0)
-
-						Expect(sysCtx.DockerAuthConfig.Username).To(Equal("super-user"))
-						Expect(sysCtx.DockerAuthConfig.Password).To(Equal("super-password"))
-					})
-				})
-
-				Context("when image ref parsing fails", func() {
-					BeforeEach(func() {
-						imgRefParser.Returns("", errors.New("uh-oh-parsing-failed"))
-					})
-
-					It("should propagate the error", func() {
-						Expect(err).To(MatchError(ContainSubstring("uh-oh-parsing-failed")))
-					})
-				})
-
-				Context("when metadata fetching fails", func() {
-					BeforeEach(func() {
-						imgMetadataFetcher.Returns(nil, errors.New("uh-oh-fetching-failed"))
-					})
-
-					It("should propagate the error", func() {
-						Expect(err).To(MatchError(ContainSubstring("uh-oh-fetching-failed")))
 					})
 				})
 			})

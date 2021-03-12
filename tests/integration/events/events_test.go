@@ -92,6 +92,7 @@ var _ = Describe("Events", func() {
 				tests.GetApplicationServiceAccount(),
 				"registry-secret",
 				false,
+				false,
 				k8s.CreateLivenessProbe,
 				k8s.CreateReadinessProbe,
 			)

@@ -9,7 +9,6 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
-	"github.com/containers/image/types"
 	"github.com/pkg/errors"
 )
 
@@ -18,22 +17,15 @@ type lifecycleOptions struct {
 	env             map[string]string
 	image           string
 	privateRegistry *opi.PrivateRegistry
-	runsAsRoot      bool
 }
 
 type OPIConverter struct {
-	logger               lager.Logger
-	imageMetadataFetcher ImageMetadataFetcher
-	imageRefParser       ImageRefParser
-	allowRunImageAsRoot  bool
+	logger lager.Logger
 }
 
-func NewOPIConverter(logger lager.Logger, imageMetadataFetcher ImageMetadataFetcher, imageRefParser ImageRefParser, allowRunImageAsRoot bool) *OPIConverter {
+func NewOPIConverter(logger lager.Logger) *OPIConverter {
 	return &OPIConverter{
-		logger:               logger,
-		imageMetadataFetcher: imageMetadataFetcher,
-		imageRefParser:       imageRefParser,
-		allowRunImageAsRoot:  allowRunImageAsRoot,
+		logger: logger,
 	}
 }
 
@@ -101,7 +93,6 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 		LRP:                    request.LRP,
 		UserDefinedAnnotations: request.UserDefinedAnnotations,
 		PrivateRegistry:        lrpLifecycleOptions.privateRegistry,
-		RunsAsRoot:             lrpLifecycleOptions.runsAsRoot,
 	}, nil
 }
 
@@ -146,38 +137,6 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 	task.Env = mergeEnvs(request.Environment, env)
 
 	return task, nil
-}
-
-func (c *OPIConverter) isAllowedToRunAsRoot(lifecycle *cf.DockerLifecycle) (bool, error) {
-	if !c.allowRunImageAsRoot {
-		return false, nil
-	}
-
-	user, err := c.getImageUser(lifecycle)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get the user of the image")
-	}
-
-	return user == "" || user == "root" || user == "0", nil
-}
-
-func (c *OPIConverter) getImageUser(lifecycle *cf.DockerLifecycle) (string, error) {
-	dockerRef, err := c.imageRefParser.Parse(lifecycle.Image)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to parse image ref")
-	}
-
-	imgMetadata, err := c.imageMetadataFetcher.Fetch(dockerRef, types.SystemContext{
-		DockerAuthConfig: &types.DockerAuthConfig{
-			Username: lifecycle.RegistryUsername,
-			Password: lifecycle.RegistryPassword,
-		},
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "failed to fetch image metadata")
-	}
-
-	return imgMetadata.User, nil
 }
 
 func getRequestedRoutes(request cf.DesireLRPRequest) ([]opi.Route, error) {
@@ -239,7 +198,6 @@ func (c *OPIConverter) getLifecycleOptions(request cf.DesireLRPRequest) (*lifecy
 	lifecycle := request.Lifecycle.DockerLifecycle
 	options.image = lifecycle.Image
 	options.command = lifecycle.Command
-	options.runsAsRoot, err = c.isAllowedToRunAsRoot(lifecycle)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to verify if docker image needs root user")

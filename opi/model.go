@@ -44,7 +44,6 @@ type LRP struct {
 	RunningInstances       int
 	MemoryMB               int64
 	DiskMB                 int64
-	RunsAsRoot             bool
 	CPUWeight              uint8
 	VolumeMounts           []VolumeMount
 	LRP                    string

@@ -18,6 +18,7 @@ import (
 var _ = Describe("LRP to StatefulSet Converter", func() {
 	var (
 		allowAutomountServiceAccountToken bool
+		allowRunImageAsRoot               bool
 		livenessProbeCreator              *stsetfakes.FakeProbeCreator
 		readinessProbeCreator             *stsetfakes.FakeProbeCreator
 		lrp                               *opi.LRP
@@ -26,13 +27,14 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 
 	BeforeEach(func() {
 		allowAutomountServiceAccountToken = false
+		allowRunImageAsRoot = false
 		livenessProbeCreator = new(stsetfakes.FakeProbeCreator)
 		readinessProbeCreator = new(stsetfakes.FakeProbeCreator)
 		lrp = createLRP("Baldur", []opi.Route{{Hostname: "my.example.route", Port: 1000}})
 	})
 
 	JustBeforeEach(func() {
-		converter := stset.NewLRPToStatefulSetConverter("eirini", "secret-name", allowAutomountServiceAccountToken, livenessProbeCreator.Spy, readinessProbeCreator.Spy)
+		converter := stset.NewLRPToStatefulSetConverter("eirini", "secret-name", allowAutomountServiceAccountToken, allowRunImageAsRoot, livenessProbeCreator.Spy, readinessProbeCreator.Spy)
 
 		var err error
 		statefulSet, err = converter.Convert("Baldur", lrp)
@@ -306,7 +308,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 
 	When("application should run as root", func() {
 		BeforeEach(func() {
-			lrp.RunsAsRoot = true
+			allowRunImageAsRoot = true
 		})
 
 		It("does not set privileged context", func() {

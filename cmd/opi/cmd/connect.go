@@ -180,6 +180,7 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.APIConfig) *bifr
 		cfg.ApplicationServiceAccount,
 		cfg.RegistrySecretName,
 		cfg.UnsafeAllowAutomountServiceAccountToken,
+		cfg.AllowRunImageAsRoot,
 		k8s.CreateLivenessProbe,
 		k8s.CreateReadinessProbe,
 	)
@@ -210,8 +211,5 @@ func initConverter(cfg *eirini.APIConfig) *bifrost.OPIConverter {
 
 	return bifrost.NewOPIConverter(
 		convertLogger,
-		docker.Fetch,
-		docker.Parse,
-		cfg.AllowRunImageAsRoot,
 	)
 }

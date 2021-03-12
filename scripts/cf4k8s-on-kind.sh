@@ -54,11 +54,11 @@ EOF
   fi
 
   # generate eirini yamls
-  "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$EIRINI_RENDER_DIR"
+  # "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$EIRINI_RENDER_DIR"
 
   # patch generated eirini yamls into cf-for-k8s
-  rm -rf "./build/eirini/_vendir/eirini"
-  mv "$EIRINI_RENDER_DIR/templates" "./build/eirini/_vendir/eirini"
+  # rm -rf "./build/eirini/_vendir/eirini"
+  # mv "$EIRINI_RENDER_DIR/templates" "./build/eirini/_vendir/eirini"
 
   # generate config/eirini/_ytt_lib/eirini/rendered.yml
   ./build/eirini/build.sh

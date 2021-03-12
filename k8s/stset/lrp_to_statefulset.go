@@ -23,6 +23,7 @@ type LRPToStatefulSet struct {
 	applicationServiceAccount         string
 	registrySecretName                string
 	allowAutomountServiceAccountToken bool
+	allowRunImageAsRoot               bool
 	livenessProbeCreator              ProbeCreator
 	readinessProbeCreator             ProbeCreator
 }
@@ -31,6 +32,7 @@ func NewLRPToStatefulSetConverter(
 	applicationServiceAccount string,
 	registrySecretName string,
 	allowAutomountServiceAccountToken bool,
+	allowRunImageAsRoot bool,
 	livenessProbeCreator ProbeCreator,
 	readinessProbeCreator ProbeCreator,
 ) *LRPToStatefulSet {
@@ -38,6 +40,7 @@ func NewLRPToStatefulSetConverter(
 		applicationServiceAccount:         applicationServiceAccount,
 		registrySecretName:                registrySecretName,
 		allowAutomountServiceAccountToken: allowAutomountServiceAccountToken,
+		allowRunImageAsRoot:               allowRunImageAsRoot,
 		livenessProbeCreator:              livenessProbeCreator,
 		readinessProbeCreator:             readinessProbeCreator,
 	}
@@ -125,7 +128,7 @@ func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *opi.LRP) (*appsv
 				Spec: corev1.PodSpec{
 					Containers:         containers,
 					ImagePullSecrets:   imagePullSecrets,
-					SecurityContext:    getGetSecurityContext(lrp),
+					SecurityContext:    c.getGetSecurityContext(lrp),
 					ServiceAccountName: c.applicationServiceAccount,
 					Volumes:            volumes,
 				},
@@ -215,6 +218,18 @@ func (c *LRPToStatefulSet) calculateImagePullSecrets(statefulSetName string, lrp
 	return imagePullSecrets
 }
 
+func (c *LRPToStatefulSet) getGetSecurityContext(lrp *opi.LRP) *corev1.PodSecurityContext {
+	if c.allowRunImageAsRoot {
+		return nil
+	}
+
+	runAsNonRoot := true
+
+	return &corev1.PodSecurityContext{
+		RunAsNonRoot: &runAsNonRoot,
+	}
+}
+
 func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount) {
 	volumes := []corev1.Volume{}
 	volumeMounts := []corev1.VolumeMount{}
@@ -280,18 +295,6 @@ func int32ptr(i int) *int32 {
 	u := int32(i)
 
 	return &u
-}
-
-func getGetSecurityContext(lrp *opi.LRP) *corev1.PodSecurityContext {
-	if lrp.RunsAsRoot {
-		return nil
-	}
-
-	runAsNonRoot := true
-
-	return &corev1.PodSecurityContext{
-		RunAsNonRoot: &runAsNonRoot,
-	}
 }
 
 func toLabelSelectorRequirements(selector *metav1.LabelSelector) []metav1.LabelSelectorRequirement {

@@ -21,12 +21,14 @@ import (
 
 var _ = Describe("LRPClient", func() {
 	var (
-		lrpClient *k8s.LRPClient
-		odinLRP   *opi.LRP
-		thorLRP   *opi.LRP
+		allowRunImageAsRoot bool
+		lrpClient           *k8s.LRPClient
+		odinLRP             *opi.LRP
+		thorLRP             *opi.LRP
 	)
 
 	BeforeEach(func() {
+		allowRunImageAsRoot = false
 		odinLRP = createLRP("ödin")
 		thorLRP = createLRP("thor")
 	})
@@ -46,6 +48,7 @@ var _ = Describe("LRPClient", func() {
 			tests.GetApplicationServiceAccount(),
 			"registry-secret",
 			false,
+			allowRunImageAsRoot,
 			k8s.CreateLivenessProbe,
 			k8s.CreateReadinessProbe,
 		)
@@ -214,9 +217,10 @@ var _ = Describe("LRPClient", func() {
 
 		Context("When using a docker image that needs root access", func() {
 			BeforeEach(func() {
+				allowRunImageAsRoot = true
+
 				odinLRP.Image = "eirini/nginx-integration"
 				odinLRP.Command = nil
-				odinLRP.RunsAsRoot = true
 				odinLRP.Health.Type = "http"
 				odinLRP.Health.Port = 8080
 			})
