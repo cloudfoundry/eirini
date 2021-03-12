@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 func TestMigration(t *testing.T) {
