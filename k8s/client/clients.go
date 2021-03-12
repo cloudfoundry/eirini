@@ -13,6 +13,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -150,6 +151,30 @@ func (c *StatefulSet) GetByLRPIdentifier(id opi.LRPIdentifier) ([]appsv1.Statefu
 
 func (c *StatefulSet) Update(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error) {
 	return c.clientSet.AppsV1().StatefulSets(namespace).Update(context.Background(), statefulSet, metav1.UpdateOptions{})
+}
+
+func (c *StatefulSet) SetAnnotation(statefulSet *appsv1.StatefulSet, key, value string) (*appsv1.StatefulSet, error) {
+	annotation := patching.NewAnnotation(key, value)
+
+	return c.clientSet.AppsV1().StatefulSets(statefulSet.Namespace).Patch(
+		context.Background(),
+		statefulSet.Name,
+		annotation.Type(),
+		annotation.GetPatchBytes(),
+		metav1.PatchOptions{},
+	)
+}
+
+func (c *StatefulSet) SetCPURequest(statefulSet *appsv1.StatefulSet, cpuRequest *resource.Quantity) (*appsv1.StatefulSet, error) {
+	cpuRequestPatch := patching.NewCPURequestPatch(statefulSet, cpuRequest)
+
+	return c.clientSet.AppsV1().StatefulSets(statefulSet.Namespace).Patch(
+		context.Background(),
+		statefulSet.Name,
+		cpuRequestPatch.Type(),
+		cpuRequestPatch.GetPatchBytes(),
+		metav1.PatchOptions{},
+	)
 }
 
 func (c *StatefulSet) Delete(namespace string, name string) error {

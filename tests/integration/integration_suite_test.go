@@ -262,9 +262,10 @@ func createPDB(ns, name string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func createStatefulSet(ns, name string, labels map[string]string) *appsv1.StatefulSet {
+func createStatefulSetSpec(ns, name string, labels map[string]string, containers []corev1.Container) *appsv1.StatefulSet {
 	id := tests.GenerateGUID()
-	statefulSet, err := fixture.Clientset.AppsV1().StatefulSets(ns).Create(context.Background(), &appsv1.StatefulSet{
+
+	return &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
 			Labels: labels,
@@ -281,9 +282,32 @@ func createStatefulSet(ns, name string, labels map[string]string) *appsv1.Statef
 						"id": id,
 					},
 				},
+				Spec: corev1.PodSpec{
+					Containers: containers,
+				},
 			},
 		},
-	}, metav1.CreateOptions{})
+	}
+}
+
+func createStatefulSet(ns, name string, labels map[string]string) *appsv1.StatefulSet {
+	statefulSet, err := fixture.Clientset.AppsV1().StatefulSets(ns).Create(
+		context.Background(),
+		createStatefulSetSpec(ns, name, labels, nil),
+		metav1.CreateOptions{},
+	)
+
+	Expect(err).NotTo(HaveOccurred())
+
+	return statefulSet
+}
+
+func createStatefulSetWithContainers(ns, name string, containers []corev1.Container) *appsv1.StatefulSet {
+	statefulSet, err := fixture.Clientset.AppsV1().StatefulSets(ns).Create(
+		context.Background(),
+		createStatefulSetSpec(ns, name, nil, containers),
+		metav1.CreateOptions{},
+	)
 
 	Expect(err).NotTo(HaveOccurred())
 

@@ -17,6 +17,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -424,6 +425,92 @@ var _ = Describe("StatefulSets", func() {
 			Eventually(func() string {
 				return getStatefulSet(fixture.Namespace, "foo").Labels["label"]
 			}).Should(Equal("new-value"))
+		})
+	})
+
+	Describe("SetCPURequest", func() {
+		var (
+			statefulSet    *appsv1.StatefulSet
+			containers     []corev1.Container
+			cpuRequest     resource.Quantity
+			newStatefulSet *appsv1.StatefulSet
+		)
+
+		BeforeEach(func() {
+			cpuRequest = resource.MustParse("321m")
+
+			containers = []corev1.Container{
+				{
+					Name:    "not-opi",
+					Image:   "eirini/busybox",
+					Command: []string{"echo", "hi"},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("120m"),
+						},
+					},
+				},
+				{
+					Name:    stset.OPIContainerName,
+					Image:   "eirini/busybox",
+					Command: []string{"echo", "hi"},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("120m"),
+						},
+					},
+				},
+			}
+		})
+
+		JustBeforeEach(func() {
+			statefulSet = createStatefulSetWithContainers(fixture.Namespace, "foo", containers)
+
+			var err error
+			newStatefulSet, err = statefulSetClient.SetCPURequest(statefulSet, &cpuRequest)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		getCPURequests := func(stSet *appsv1.StatefulSet) []int64 {
+			millis := []int64{}
+
+			for _, c := range stSet.Spec.Template.Spec.Containers {
+				q := c.Resources.Requests[corev1.ResourceCPU]
+				millis = append(millis, (&q).MilliValue())
+			}
+
+			return millis
+		}
+
+		It("patches CPU request onto an OPI container only on a StatefulSet", func() {
+			Expect(getCPURequests(newStatefulSet)).To(Equal([]int64{120, 321}))
+
+			Eventually(func() []int64 {
+				stSet := getStatefulSet(fixture.Namespace, "foo")
+
+				return getCPURequests(stSet)
+			}).Should(Equal([]int64{120, 321}))
+		})
+
+		When("the stateful set doesn't have an opi container", func() {
+			BeforeEach(func() {
+				containers = []corev1.Container{
+					{
+						Name:    "not-opi",
+						Image:   "eirini/busybox",
+						Command: []string{"echo", "hi"},
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU: resource.MustParse("120m"),
+							},
+						},
+					},
+				}
+			})
+
+			It("does not modify cpu requests", func() {
+				Expect(getCPURequests(newStatefulSet)).To(Equal([]int64{120}))
+			})
 		})
 	})
 
