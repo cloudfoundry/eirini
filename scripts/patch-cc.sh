@@ -37,8 +37,9 @@ load-into-kind() {
   kind load docker-image --name "$kind_cluster_name" "$CCNG_IMAGE:$TAG"
 }
 
-patch-cf-api-server() {
-  local patch_file
+patch-cf-api-component() {
+  local patch_file component_name
+  component_name="$1"
 
   patch_file=$(mktemp)
   trap "rm $patch_file" EXIT
@@ -48,18 +49,21 @@ spec:
   template:
     spec:
       containers:
-      - name: cf-api-server
+      - name: $component_name
         image: "$CCNG_IMAGE:$TAG"
         imagePullPolicy: IfNotPresent
 EOF
 
-  kubectl -n cf-system patch deployment cf-api-server --patch "$(cat "$patch_file")"
+  kubectl -n cf-system patch deployment "$component_name" --patch "$(cat "$patch_file")"
 }
 
 main() {
   build_ccng_image
   publish-image
-  patch-cf-api-server
+  patch-cf-api-component cf-api-server
+  patch-cf-api-component cf-api-clock
+  patch-cf-api-component cf-api-worker
+  patch-cf-api-component cf-api-deployment-updater
 }
 
 main
