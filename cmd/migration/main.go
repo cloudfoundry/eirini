@@ -41,6 +41,10 @@ func main() {
 }
 
 func readConfigFile(path string) (eirini.MigrationConfig, error) {
+	if path == "" {
+		return eirini.MigrationConfig{}, nil
+	}
+
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return eirini.MigrationConfig{}, errors.Wrap(err, "failed to read file")
