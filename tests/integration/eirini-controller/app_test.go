@@ -83,8 +83,29 @@ var _ = Describe("App", func() {
 			))
 			Expect(st.Annotations).To(HaveKeyWithValue(stset.AnnotationLatestMigration, "1"))
 			Expect(st.Spec.Replicas).To(PointTo(Equal(int32(1))))
+			Expect(st.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(BeTrue()))
 			Expect(st.Spec.Template.Spec.Containers[0].Image).To(Equal("eirini/dorini"))
 			Expect(st.Spec.Template.Spec.Containers[0].Env).To(ContainElement(corev1.EnvVar{Name: "FOO", Value: "BAR"}))
+		})
+
+		When("AllowRunImageAsRoot is true", func() {
+			BeforeEach(func() {
+				config.AllowRunImageAsRoot = true
+			})
+
+			It("doesn't set `runAsNonRoot` in the PodSecurityContext", func() {
+				Eventually(func() *appsv1.StatefulSet {
+					return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+				}).ShouldNot(BeNil())
+
+				Eventually(func() bool {
+					return getPodReadiness(lrpGUID, lrpVersion)
+				}).Should(BeTrue(), "LRP Pod not ready")
+
+				st := integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+
+				Expect(st.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(BeNil())
+			})
 		})
 
 		When("the the app has sidecars", func() {
@@ -152,7 +173,7 @@ var _ = Describe("App", func() {
 	Describe("Update an app", func() {
 		var clientErr error
 
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 			_, err := fixture.EiriniClientset.
 				EiriniV1().
 				LRPs(fixture.Namespace).
@@ -164,9 +185,7 @@ var _ = Describe("App", func() {
 
 				return lrp.Status.Replicas
 			}).Should(Equal(int32(1)))
-		})
 
-		JustBeforeEach(func() {
 			_, clientErr = fixture.EiriniClientset.
 				EiriniV1().
 				LRPs(fixture.Namespace).
@@ -219,7 +238,7 @@ var _ = Describe("App", func() {
 	})
 
 	Describe("Stop an app", func() {
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 			_, err := fixture.EiriniClientset.
 				EiriniV1().
 				LRPs(fixture.Namespace).
@@ -229,9 +248,7 @@ var _ = Describe("App", func() {
 			Eventually(func() int32 {
 				return integration.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName).Status.Replicas
 			}).Should(Equal(int32(1)))
-		})
 
-		JustBeforeEach(func() {
 			Expect(fixture.EiriniClientset.
 				EiriniV1().
 				LRPs(fixture.Namespace).

@@ -58,6 +58,9 @@ var _ = SynchronizedAfterSuite(func() {
 var _ = BeforeEach(func() {
 	fixture.SetUp()
 	config = integration.DefaultControllerConfig(fixture.Namespace)
+})
+
+var _ = JustBeforeEach(func() {
 	session, configFilePath = eiriniBins.EiriniController.Run(config)
 })
 
