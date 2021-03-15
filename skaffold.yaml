@@ -51,6 +51,11 @@ build:
       buildCommand: ./scripts/build task-reporter
       dependencies:
         command: ./scripts/deps task-reporter
+  - image: eirini/migration
+    custom:
+      buildCommand: ./scripts/build migration
+      dependencies:
+        command: ./scripts/deps migration
 deploy:
   kubectl:
     manifests:
@@ -85,3 +90,4 @@ deploy:
         images.route_pod_informer: eirini/route-pod-informer
         images.task_reporter: eirini/task-reporter
         images.instance_index_env_injector: eirini/instance-index-env-injector
+        images.migration: eirini/migration
