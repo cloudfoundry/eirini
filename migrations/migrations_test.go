@@ -79,7 +79,7 @@ func (matcher *BeSortedMatcher) NegatedFailureMessage(actual interface{}) (messa
 func sequenceIds(actual interface{}) []int {
 	ids := []int{}
 
-	migrationSteps := actual.([]migrations.MigrationStep)
+	migrationSteps, _ := actual.([]migrations.MigrationStep)
 	for _, step := range migrationSteps {
 		ids = append(ids, step.SequenceID())
 	}
