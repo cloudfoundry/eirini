@@ -37,7 +37,6 @@ type LRPSpec struct {
 	Instances              int               `json:"instances"`
 	MemoryMB               int64             `json:"memoryMB"`
 	DiskMB                 int64             `json:"diskMB"`
-	RunsAsRoot             bool              `json:"runsAsRoot"`
 	CPUWeight              uint8             `json:"cpuWeight"`
 	VolumeMounts           []VolumeMount     `json:"volumeMounts,omitempty"`
 	LastUpdated            string            `json:"lastUpdated"`
