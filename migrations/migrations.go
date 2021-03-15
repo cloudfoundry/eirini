@@ -1,28 +1,25 @@
 package migrations
 
-type ProductionMigrationStepsProvider struct {
-	cpuRequestSetter CPURequestSetter
+import "sort"
+
+type MigrationStepsProvider struct {
+	migrationSteps []MigrationStep
 }
 
-func NewProductionMigrationStepsProvider(cpuRequestSetter CPURequestSetter) ProductionMigrationStepsProvider {
-	return ProductionMigrationStepsProvider{cpuRequestSetter: cpuRequestSetter}
+func NewMigrationStepsProvider(migrationSteps []MigrationStep) MigrationStepsProvider {
+	sort.Slice(migrationSteps, func(i, j int) bool {
+		return migrationSteps[i].SequenceID() < migrationSteps[j].SequenceID()
+	})
+
+	return MigrationStepsProvider{migrationSteps: migrationSteps}
 }
 
-func (p ProductionMigrationStepsProvider) Provide() []MigrationStep {
-	return []MigrationStep{
-		NewAdjustCPURequest(p.cpuRequestSetter),
-	}
+func (p MigrationStepsProvider) Provide() []MigrationStep {
+	return p.migrationSteps
 }
 
-func (p ProductionMigrationStepsProvider) GetLatestMigrationIndex() int {
-	max := -1
+func (p MigrationStepsProvider) GetLatestMigrationIndex() int {
+	migrationSteps := p.Provide()
 
-	for _, s := range p.Provide() {
-		seq := s.SequenceID()
-		if seq > max {
-			max = seq
-		}
-	}
-
-	return max
+	return migrationSteps[len(migrationSteps)-1].SequenceID()
 }

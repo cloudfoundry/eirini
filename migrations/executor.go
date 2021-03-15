@@ -33,6 +33,7 @@ type MigrationStep interface {
 
 type MigrationProvider interface {
 	Provide() []MigrationStep
+	GetLatestMigrationIndex() int
 }
 
 type Executor struct {
@@ -107,7 +108,7 @@ func (e *Executor) MigrateStatefulSets(logger lager.Logger) error {
 }
 
 func (e *Executor) verifySequenceIDs() error {
-	ids := map[int]int{}
+	ids := make(map[int]int, len(e.migrationSteps))
 
 	for _, m := range e.migrationSteps {
 		id := m.SequenceID()

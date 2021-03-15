@@ -8,11 +8,19 @@ import (
 )
 
 type FakeMigrationProvider struct {
+	GetLatestMigrationIndexStub        func() int
+	getLatestMigrationIndexMutex       sync.RWMutex
+	getLatestMigrationIndexArgsForCall []struct{}
+	getLatestMigrationIndexReturns     struct {
+		result1 int
+	}
+	getLatestMigrationIndexReturnsOnCall map[int]struct {
+		result1 int
+	}
 	ProvideStub        func() []migrations.MigrationStep
 	provideMutex       sync.RWMutex
-	provideArgsForCall []struct {
-	}
-	provideReturns struct {
+	provideArgsForCall []struct{}
+	provideReturns     struct {
 		result1 []migrations.MigrationStep
 	}
 	provideReturnsOnCall map[int]struct {
@@ -22,11 +30,62 @@ type FakeMigrationProvider struct {
 	invocationsMutex sync.RWMutex
 }
 
+func (fake *FakeMigrationProvider) GetLatestMigrationIndex() int {
+	fake.getLatestMigrationIndexMutex.Lock()
+	ret, specificReturn := fake.getLatestMigrationIndexReturnsOnCall[len(fake.getLatestMigrationIndexArgsForCall)]
+	fake.getLatestMigrationIndexArgsForCall = append(fake.getLatestMigrationIndexArgsForCall, struct{}{})
+	stub := fake.GetLatestMigrationIndexStub
+	fakeReturns := fake.getLatestMigrationIndexReturns
+	fake.recordInvocation("GetLatestMigrationIndex", []interface{}{})
+	fake.getLatestMigrationIndexMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeMigrationProvider) GetLatestMigrationIndexCallCount() int {
+	fake.getLatestMigrationIndexMutex.RLock()
+	defer fake.getLatestMigrationIndexMutex.RUnlock()
+	return len(fake.getLatestMigrationIndexArgsForCall)
+}
+
+func (fake *FakeMigrationProvider) GetLatestMigrationIndexCalls(stub func() int) {
+	fake.getLatestMigrationIndexMutex.Lock()
+	defer fake.getLatestMigrationIndexMutex.Unlock()
+	fake.GetLatestMigrationIndexStub = stub
+}
+
+func (fake *FakeMigrationProvider) GetLatestMigrationIndexReturns(result1 int) {
+	fake.getLatestMigrationIndexMutex.Lock()
+	defer fake.getLatestMigrationIndexMutex.Unlock()
+	fake.GetLatestMigrationIndexStub = nil
+	fake.getLatestMigrationIndexReturns = struct {
+		result1 int
+	}{result1}
+}
+
+func (fake *FakeMigrationProvider) GetLatestMigrationIndexReturnsOnCall(i int, result1 int) {
+	fake.getLatestMigrationIndexMutex.Lock()
+	defer fake.getLatestMigrationIndexMutex.Unlock()
+	fake.GetLatestMigrationIndexStub = nil
+	if fake.getLatestMigrationIndexReturnsOnCall == nil {
+		fake.getLatestMigrationIndexReturnsOnCall = make(map[int]struct {
+			result1 int
+		})
+	}
+	fake.getLatestMigrationIndexReturnsOnCall[i] = struct {
+		result1 int
+	}{result1}
+}
+
 func (fake *FakeMigrationProvider) Provide() []migrations.MigrationStep {
 	fake.provideMutex.Lock()
 	ret, specificReturn := fake.provideReturnsOnCall[len(fake.provideArgsForCall)]
-	fake.provideArgsForCall = append(fake.provideArgsForCall, struct {
-	}{})
+	fake.provideArgsForCall = append(fake.provideArgsForCall, struct{}{})
 	stub := fake.ProvideStub
 	fakeReturns := fake.provideReturns
 	fake.recordInvocation("Provide", []interface{}{})
@@ -78,6 +137,8 @@ func (fake *FakeMigrationProvider) ProvideReturnsOnCall(i int, result1 []migrati
 func (fake *FakeMigrationProvider) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.getLatestMigrationIndexMutex.RLock()
+	defer fake.getLatestMigrationIndexMutex.RUnlock()
 	fake.provideMutex.RLock()
 	defer fake.provideMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

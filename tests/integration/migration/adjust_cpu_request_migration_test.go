@@ -2,6 +2,7 @@ package migration_test
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
@@ -14,6 +15,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const originalRequestAnnotationValue = 12
+
 var _ = Describe("Adjust CPU request migration", func() {
 	BeforeEach(func() {
 		stSet := &appsv1.StatefulSet{
@@ -24,7 +27,7 @@ var _ = Describe("Adjust CPU request migration", func() {
 					stset.LabelSourceType: "APP",
 				},
 				Annotations: map[string]string{
-					stset.AnnotationOriginalRequest: `{"cpu_weight":12}`,
+					stset.AnnotationOriginalRequest: fmt.Sprintf(`{"cpu_weight":%d}`, originalRequestAnnotationValue),
 				},
 			},
 			Spec: appsv1.StatefulSetSpec{
@@ -67,11 +70,11 @@ var _ = Describe("Adjust CPU request migration", func() {
 		Expect(version).To(BeNumerically(">=", 1))
 	})
 
-	It("sets the cpu resource limit of the opi container to the requested value", func() {
+	It("sets the cpu resource limit of the opi container to the value of the original request annotation", func() {
 		stSet, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).Get(context.Background(), "my-stset", metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		cpuRequest := stSet.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu()
 
-		Expect(cpuRequest.MilliValue()).To(Equal(int64(12)))
+		Expect(cpuRequest.MilliValue()).To(Equal(int64(originalRequestAnnotationValue)))
 	})
 })

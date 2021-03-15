@@ -23,8 +23,7 @@ var _ = Describe("Migration Executor", func() {
 		migrationStep5    *migrationsfakes.FakeMigrationStep
 		migrationStep6    *migrationsfakes.FakeMigrationStep
 		migrationStep7    *migrationsfakes.FakeMigrationStep
-		stSet1            *appsv1.StatefulSet
-		stSet2            *appsv1.StatefulSet
+		stSetv5           *appsv1.StatefulSet
 		logger            *lagertest.TestLogger
 	)
 
@@ -52,11 +51,10 @@ var _ = Describe("Migration Executor", func() {
 	}
 
 	BeforeEach(func() {
-		stSet1 = newStatefulSet("ns1", "name1", "5")
-		stSet2 = newStatefulSet("ns2", "name2", "6")
+		stSetv5 = newStatefulSet("ns1", "name1", "5")
 
 		stSetClient = new(migrationsfakes.FakeStatefulsetsClient)
-		stSetClient.GetBySourceTypeReturns([]appsv1.StatefulSet{*stSet1}, nil)
+		stSetClient.GetBySourceTypeReturns([]appsv1.StatefulSet{*stSetv5}, nil)
 
 		migrationStep4 = newMigrationStep(4)
 		migrationStep5 = newMigrationStep(5)
@@ -64,7 +62,7 @@ var _ = Describe("Migration Executor", func() {
 		migrationStep7 = newMigrationStep(7)
 
 		migrationProvider = new(migrationsfakes.FakeMigrationProvider)
-		migrationProvider.ProvideReturns([]migrations.MigrationStep{migrationStep7, migrationStep6, migrationStep5, migrationStep4})
+		migrationProvider.ProvideReturns([]migrations.MigrationStep{migrationStep4, migrationStep5, migrationStep6, migrationStep7})
 
 		logger = lagertest.NewTestLogger("migration-test")
 		executor = migrations.NewExecutor(stSetClient, migrationProvider)
@@ -90,12 +88,13 @@ var _ = Describe("Migration Executor", func() {
 		Expect(migrationStep6.ApplyCallCount()).To(Equal(1))
 		Expect(migrationStep7.ApplyCallCount()).To(Equal(1))
 
-		Expect(migrationStep6.ApplyArgsForCall(0)).To(Equal(stSet1))
+		Expect(migrationStep6.ApplyArgsForCall(0)).To(Equal(stSetv5))
 	})
 
 	When("there is more than one stateful set listed", func() {
 		BeforeEach(func() {
-			stSetClient.GetBySourceTypeReturns([]appsv1.StatefulSet{*stSet1, *stSet2}, nil)
+			stSetv6 := newStatefulSet("ns2", "name2", "6")
+			stSetClient.GetBySourceTypeReturns([]appsv1.StatefulSet{*stSetv5, *stSetv6}, nil)
 		})
 
 		It("applies the migration steps with sequence > st set migtation annotation", func() {
@@ -109,7 +108,7 @@ var _ = Describe("Migration Executor", func() {
 	It("bumps the latest migration annotation on the stateful set", func() {
 		Expect(stSetClient.SetAnnotationCallCount()).To(Equal(2))
 		actualStSet, actualAnnotationName, actualAnnotationValue := stSetClient.SetAnnotationArgsForCall(0)
-		Expect(actualStSet).To(Equal(stSet1))
+		Expect(actualStSet).To(Equal(stSetv5))
 		Expect(actualAnnotationName).To(Equal(migrations.LatestMigrationAnnotation))
 		Expect(actualAnnotationValue).To(Equal("6"))
 	})
@@ -187,7 +186,7 @@ var _ = Describe("Migration Executor", func() {
 
 	When("a stateful set has a unparseable latest migration annotation", func() {
 		BeforeEach(func() {
-			stSet1.Annotations[migrations.LatestMigrationAnnotation] = "nope"
+			stSetv5.Annotations[migrations.LatestMigrationAnnotation] = "nope"
 		})
 
 		It("returns the error and stops processing", func() {
@@ -198,7 +197,7 @@ var _ = Describe("Migration Executor", func() {
 
 	When("a stateful set does not have the latest migration annotation set", func() {
 		BeforeEach(func() {
-			delete(stSet1.Annotations, migrations.LatestMigrationAnnotation)
+			delete(stSetv5.Annotations, migrations.LatestMigrationAnnotation)
 		})
 
 		It("applies all the migrations", func() {
