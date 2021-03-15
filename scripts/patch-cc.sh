@@ -24,7 +24,7 @@ publish-image() {
 }
 
 push-to-docker() {
-  docker push $CCNG_IMAGE
+  docker push "$CCNG_IMAGE:$TAG"
 }
 
 load-into-kind() {
