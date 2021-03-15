@@ -4,7 +4,6 @@ package migrations
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
@@ -40,14 +39,9 @@ type Executor struct {
 }
 
 func NewExecutor(stSetClient StatefulsetsClient, migrationStepProvider MigrationProvider) *Executor {
-	migrationSteps := migrationStepProvider.Provide()
-	sort.Slice(migrationSteps, func(i, j int) bool {
-		return migrationSteps[i].SequenceID() < migrationSteps[j].SequenceID()
-	})
-
 	return &Executor{
 		stSetClient:    stSetClient,
-		migrationSteps: migrationSteps,
+		migrationSteps: migrationStepProvider.Provide(),
 	}
 }
 
