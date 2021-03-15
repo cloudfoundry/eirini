@@ -2,6 +2,7 @@ package stset
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/shared"
@@ -24,6 +25,7 @@ type LRPToStatefulSet struct {
 	registrySecretName                string
 	allowAutomountServiceAccountToken bool
 	allowRunImageAsRoot               bool
+	latestMigration                   int
 	livenessProbeCreator              ProbeCreator
 	readinessProbeCreator             ProbeCreator
 }
@@ -33,6 +35,7 @@ func NewLRPToStatefulSetConverter(
 	registrySecretName string,
 	allowAutomountServiceAccountToken bool,
 	allowRunImageAsRoot bool,
+	latestMigration int,
 	livenessProbeCreator ProbeCreator,
 	readinessProbeCreator ProbeCreator,
 ) *LRPToStatefulSet {
@@ -41,6 +44,7 @@ func NewLRPToStatefulSetConverter(
 		registrySecretName:                registrySecretName,
 		allowAutomountServiceAccountToken: allowAutomountServiceAccountToken,
 		allowRunImageAsRoot:               allowRunImageAsRoot,
+		latestMigration:                   latestMigration,
 		livenessProbeCreator:              livenessProbeCreator,
 		readinessProbeCreator:             readinessProbeCreator,
 	}
@@ -191,6 +195,7 @@ func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *opi.LRP) (*appsv
 		AnnotationAppName:          lrp.AppName,
 		AnnotationOrgName:          lrp.OrgName,
 		AnnotationOrgGUID:          lrp.OrgGUID,
+		AnnotationLatestMigration:  strconv.Itoa(c.latestMigration),
 	}
 
 	for k, v := range lrp.UserDefinedAnnotations {

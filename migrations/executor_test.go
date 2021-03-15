@@ -38,7 +38,7 @@ var _ = Describe("Migration Executor", func() {
 		s := new(appsv1.StatefulSet)
 		s.Namespace = namespace
 		s.Name = name
-		s.Annotations = map[string]string{migrations.LatestMigrationAnnotation: seq}
+		s.Annotations = map[string]string{stset.AnnotationLatestMigration: seq}
 
 		return s
 	}
@@ -109,7 +109,7 @@ var _ = Describe("Migration Executor", func() {
 		Expect(stSetClient.SetAnnotationCallCount()).To(Equal(2))
 		actualStSet, actualAnnotationName, actualAnnotationValue := stSetClient.SetAnnotationArgsForCall(0)
 		Expect(actualStSet).To(Equal(stSetv5))
-		Expect(actualAnnotationName).To(Equal(migrations.LatestMigrationAnnotation))
+		Expect(actualAnnotationName).To(Equal(stset.AnnotationLatestMigration))
 		Expect(actualAnnotationValue).To(Equal("6"))
 	})
 
@@ -186,7 +186,7 @@ var _ = Describe("Migration Executor", func() {
 
 	When("a stateful set has a unparseable latest migration annotation", func() {
 		BeforeEach(func() {
-			stSetv5.Annotations[migrations.LatestMigrationAnnotation] = "nope"
+			stSetv5.Annotations[stset.AnnotationLatestMigration] = "nope"
 		})
 
 		It("returns the error and stops processing", func() {
@@ -197,7 +197,7 @@ var _ = Describe("Migration Executor", func() {
 
 	When("a stateful set does not have the latest migration annotation set", func() {
 		BeforeEach(func() {
-			delete(stSetv5.Annotations, migrations.LatestMigrationAnnotation)
+			delete(stSetv5.Annotations, stset.AnnotationLatestMigration)
 		})
 
 		It("applies all the migrations", func() {

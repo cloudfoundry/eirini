@@ -93,6 +93,7 @@ var _ = Describe("Events", func() {
 				"registry-secret",
 				false,
 				false,
+				1,
 				k8s.CreateLivenessProbe,
 				k8s.CreateReadinessProbe,
 			)

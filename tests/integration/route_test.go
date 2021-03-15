@@ -41,6 +41,7 @@ var _ = Describe("Routes", func() {
 			"registry-secret",
 			false,
 			false,
+			1,
 			k8s.CreateLivenessProbe,
 			k8s.CreateReadinessProbe,
 		)

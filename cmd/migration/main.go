@@ -30,11 +30,7 @@ func main() {
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
 	stSetClient := client.NewStatefulSet(clientset, cfg.WorkloadsNamespace)
-	migrationSteps := []migrations.MigrationStep{
-		migrations.NewAdjustCPURequest(stSetClient),
-	}
-
-	provider := migrations.NewMigrationStepsProvider(migrationSteps)
+	provider := cmdcommons.CreateMigrationStepsProvider(stSetClient, cfg.WorkloadsNamespace)
 	executor := migrations.NewExecutor(stSetClient, provider)
 
 	logger := lager.NewLogger("migration")

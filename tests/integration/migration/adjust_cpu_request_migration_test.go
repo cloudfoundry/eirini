@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/migrations"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -65,9 +64,9 @@ var _ = Describe("Adjust CPU request migration", func() {
 		stSet, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).Get(context.Background(), "my-stset", metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		version, err := strconv.Atoi(stSet.Annotations[migrations.LatestMigrationAnnotation])
+		version, err := strconv.Atoi(stSet.Annotations[stset.AnnotationLatestMigration])
 		Expect(err).NotTo(HaveOccurred())
-		Expect(version).To(BeNumerically(">=", 1))
+		Expect(version).To(BeNumerically(">", 0))
 	})
 
 	It("sets the cpu resource limit of the opi container to the value of the original request annotation", func() {

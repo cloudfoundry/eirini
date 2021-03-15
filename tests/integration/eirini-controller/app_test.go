@@ -81,6 +81,7 @@ var _ = Describe("App", func() {
 				HaveKeyWithValue(stset.LabelSourceType, "APP"),
 				HaveKeyWithValue(stset.LabelAppGUID, "the-app-guid"),
 			))
+			Expect(st.Annotations).To(HaveKeyWithValue(stset.AnnotationLatestMigration, "1"))
 			Expect(st.Spec.Replicas).To(PointTo(Equal(int32(1))))
 			Expect(st.Spec.Template.Spec.Containers[0].Image).To(Equal("eirini/dorini"))
 			Expect(st.Spec.Template.Spec.Containers[0].Env).To(ContainElement(corev1.EnvVar{Name: "FOO", Value: "BAR"}))

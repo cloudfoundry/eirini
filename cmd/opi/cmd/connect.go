@@ -40,9 +40,12 @@ func connect(cmd *cobra.Command, args []string) {
 	cfg := setConfigFromFile(path)
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
+	stSetClient := client.NewStatefulSet(clientset, cfg.WorkloadsNamespace)
+	provider := cmdcommons.CreateMigrationStepsProvider(stSetClient, cfg.WorkloadsNamespace)
+
 	dockerStagingBifrost := initDockerStagingBifrost(cfg)
 	taskBifrost := initTaskBifrost(cfg, clientset)
-	bifrost := initLRPBifrost(clientset, cfg)
+	bifrost := initLRPBifrost(clientset, cfg, provider.GetLatestMigrationIndex())
 
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
@@ -172,7 +175,7 @@ func setConfigFromFile(path string) *eirini.APIConfig {
 	return &conf
 }
 
-func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.APIConfig) *bifrost.LRP {
+func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.APIConfig, latestMigration int) *bifrost.LRP {
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
@@ -181,6 +184,7 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.APIConfig) *bifr
 		cfg.RegistrySecretName,
 		cfg.UnsafeAllowAutomountServiceAccountToken,
 		cfg.AllowRunImageAsRoot,
+		latestMigration,
 		k8s.CreateLivenessProbe,
 		k8s.CreateReadinessProbe,
 	)

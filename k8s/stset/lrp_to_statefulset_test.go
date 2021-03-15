@@ -34,7 +34,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 	})
 
 	JustBeforeEach(func() {
-		converter := stset.NewLRPToStatefulSetConverter("eirini", "secret-name", allowAutomountServiceAccountToken, allowRunImageAsRoot, livenessProbeCreator.Spy, readinessProbeCreator.Spy)
+		converter := stset.NewLRPToStatefulSetConverter("eirini", "secret-name", allowAutomountServiceAccountToken, allowRunImageAsRoot, 999, livenessProbeCreator.Spy, readinessProbeCreator.Spy)
 
 		var err error
 		statefulSet, err = converter.Convert("Baldur", lrp)
@@ -63,6 +63,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		Entry("SpaceGUID", stset.AnnotationSpaceGUID, "space-guid"),
 		Entry("OrgName", stset.AnnotationOrgName, "org-foo"),
 		Entry("OrgGUID", stset.AnnotationOrgGUID, "org-guid"),
+		Entry("LatestMigration", stset.AnnotationLatestMigration, "999"),
 	)
 
 	DescribeTable("Statefulset Template Annotations",
@@ -79,6 +80,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		Entry("SpaceGUID", stset.AnnotationSpaceGUID, "space-guid"),
 		Entry("OrgName", stset.AnnotationOrgName, "org-foo"),
 		Entry("OrgGUID", stset.AnnotationOrgGUID, "org-guid"),
+		Entry("LatestMigration", stset.AnnotationLatestMigration, "999"),
 	)
 
 	It("should provide last updated to the statefulset annotation", func() {

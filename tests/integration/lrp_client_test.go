@@ -49,6 +49,7 @@ var _ = Describe("LRPClient", func() {
 			"registry-secret",
 			false,
 			allowRunImageAsRoot,
+			1,
 			k8s.CreateLivenessProbe,
 			k8s.CreateReadinessProbe,
 		)

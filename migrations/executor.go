@@ -13,8 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-const LatestMigrationAnnotation = "eirini.cloudfoundry.org/latestMigration"
-
 //counterfeiter:generate . StatefulsetsClient
 
 type StatefulsetsClient interface {
@@ -74,7 +72,7 @@ func (e *Executor) MigrateStatefulSets(logger lager.Logger) error {
 		stSet := stSets[i]
 		logger = logger.WithData(lager.Data{"namespace": stSet.Namespace, "name": stSet.Name})
 
-		migrationAnnotationValue, err := parseLatestMigration(stSet.Annotations[LatestMigrationAnnotation])
+		migrationAnnotationValue, err := parseLatestMigration(stSet.Annotations[stset.AnnotationLatestMigration])
 		if err != nil {
 			logger.Error("cannot-parse-latest-migration-annotation", err)
 
@@ -96,7 +94,7 @@ func (e *Executor) MigrateStatefulSets(logger lager.Logger) error {
 				return fmt.Errorf("failed to apply migration: %w", err)
 			}
 
-			if _, err := e.stSetClient.SetAnnotation(&stSet, LatestMigrationAnnotation, strconv.Itoa(seq)); err != nil {
+			if _, err := e.stSetClient.SetAnnotation(&stSet, stset.AnnotationLatestMigration, strconv.Itoa(seq)); err != nil {
 				logger.Error("patch-migration-annotation-failed", err)
 
 				return fmt.Errorf("failed patching stateful set to set migration annotation: %w", err)
@@ -128,7 +126,7 @@ func (e *Executor) verifySequenceIDs() error {
 
 func parseLatestMigration(annotationValue string) (int, error) {
 	if annotationValue == "" {
-		return -1, nil
+		return 0, nil
 	}
 
 	return strconv.Atoi(annotationValue)

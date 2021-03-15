@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
@@ -58,6 +59,14 @@ var _ = Describe("Desire App", func() {
 		Expect(statefulsets.Items).To(HaveLen(1))
 		Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
 		Expect(statefulsets.Items[0].Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
+	})
+
+	It("should set the latest migration index annotation", func() {
+		statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(statefulsets.Items).To(HaveLen(1))
+		Expect(statefulsets.Items[0].Annotations[stset.AnnotationLatestMigration]).To(Equal("1"))
 	})
 
 	Context("when the app has user defined annotations", func() {

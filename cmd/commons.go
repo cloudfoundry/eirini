@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/k8s/client"
+	"code.cloudfoundry.org/eirini/migrations"
 	"k8s.io/client-go/kubernetes"
 
 	// Kubernetes has a tricky way to add authentication
@@ -101,4 +103,12 @@ func GetCertPaths(envVar, defaultPath, name string) (string, string, string) {
 	VerifyFileExists(caPath, fmt.Sprintf("%s CA", name))
 
 	return crtPath, keyPath, caPath
+}
+
+func CreateMigrationStepsProvider(stSetClient *client.StatefulSet, workloadsNamespace string) migrations.MigrationProvider {
+	migrationSteps := []migrations.MigrationStep{
+		migrations.NewAdjustCPURequest(stSetClient),
+	}
+
+	return migrations.NewMigrationStepsProvider(migrationSteps)
 }

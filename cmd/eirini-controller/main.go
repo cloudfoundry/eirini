@@ -88,7 +88,10 @@ func main() {
 	mgr, err := manager.New(kubeConfig, managerOptions)
 	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
 
-	lrpReconciler, err := createLRPReconciler(logger, controllerClient, clientset, cfg, mgr.GetScheme())
+	stSetClient := client.NewStatefulSet(clientset, cfg.WorkloadsNamespace)
+	provider := cmdcommons.CreateMigrationStepsProvider(stSetClient, cfg.WorkloadsNamespace)
+
+	lrpReconciler, err := createLRPReconciler(logger, controllerClient, clientset, cfg, mgr.GetScheme(), provider.GetLatestMigrationIndex())
 	cmdcommons.ExitfIfError(err, "Failed to create LRP reconciler")
 
 	taskReconciler := createTaskReconciler(logger, controllerClient, clientset, cfg, mgr.GetScheme())
@@ -137,6 +140,7 @@ func createLRPReconciler(
 	clientset kubernetes.Interface,
 	cfg *eirini.ControllerConfig,
 	scheme *runtime.Scheme,
+	latestMigration int,
 ) (*reconciler.LRP, error) {
 	logger = logger.Session("lrp-reconciler")
 	lrpToStatefulSetConverter := stset.NewLRPToStatefulSetConverter(
@@ -144,6 +148,7 @@ func createLRPReconciler(
 		cfg.RegistrySecretName,
 		cfg.UnsafeAllowAutomountServiceAccountToken,
 		cfg.AllowRunImageAsRoot,
+		latestMigration,
 		k8s.CreateLivenessProbe,
 		k8s.CreateReadinessProbe,
 	)
