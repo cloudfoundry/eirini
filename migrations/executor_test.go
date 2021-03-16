@@ -127,25 +127,25 @@ var _ = Describe("Migration Executor", func() {
 	})
 
 	Describe("migration ordering", func() {
-		var orderChecker []int
+		var mingrationHistory []migrations.MigrationStep
 
 		BeforeEach(func() {
-			orderChecker = []int{}
+			mingrationHistory = []migrations.MigrationStep{}
 
-			stub := func(seq int) func(o runtime.Object) error {
+			addToMigrationHistory := func(step migrations.MigrationStep) func(o runtime.Object) error {
 				return func(_ runtime.Object) error {
-					orderChecker = append(orderChecker, seq)
+					mingrationHistory = append(mingrationHistory, step)
 
 					return nil
 				}
 			}
 
-			migrationStep6.ApplyStub = stub(6)
-			migrationStep7.ApplyStub = stub(7)
+			migrationStep6.ApplyStub = addToMigrationHistory(migrationStep6)
+			migrationStep7.ApplyStub = addToMigrationHistory(migrationStep7)
 		})
 
 		It("applies the applicable steps in their sequence order", func() {
-			Expect(orderChecker).To(Equal([]int{6, 7}))
+			Expect(mingrationHistory).To(BeSorted())
 		})
 	})
 
