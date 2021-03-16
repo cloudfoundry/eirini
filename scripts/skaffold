@@ -27,7 +27,7 @@ init_helm() {
 }
 
 delete_migration_job() {
-  kubectl -n eirini-core delete job migration || true
+  kubectl -n eirini-core delete job eirini-app-migration || true
 }
 
 main $@
