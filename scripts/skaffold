@@ -10,6 +10,7 @@ main() {
   init_helm
   generate_secrets
   CA_BUNDLE="$(kubectl get secret -n eirini-core instance-index-env-injector-certs -o jsonpath="{.data['tls\.ca']}")"
+  delete_migration_job
   skaffold $@
 }
 
@@ -23,6 +24,10 @@ init_helm() {
   helm repo add bitnami https://charts.bitnami.com/bitnami
   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
   helm repo update
+}
+
+delete_migration_job() {
+  kubectl -n eirini-core delete job migration || true
 }
 
 main $@
