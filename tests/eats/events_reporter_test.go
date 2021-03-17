@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("EventsReporter [needs-logs-for: eirini-api, eirini-event-reporter]", func() {
+var _ = Describe("EventsReporter [needs-logs-for: eirini-api, eirini-event-reporter, cc-wiremock]", func() {
 	var (
 		guid            string
 		version         string
