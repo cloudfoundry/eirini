@@ -10,8 +10,9 @@ import (
 type FakeMigrationProvider struct {
 	GetLatestMigrationIndexStub        func() int
 	getLatestMigrationIndexMutex       sync.RWMutex
-	getLatestMigrationIndexArgsForCall []struct{}
-	getLatestMigrationIndexReturns     struct {
+	getLatestMigrationIndexArgsForCall []struct {
+	}
+	getLatestMigrationIndexReturns struct {
 		result1 int
 	}
 	getLatestMigrationIndexReturnsOnCall map[int]struct {
@@ -19,8 +20,9 @@ type FakeMigrationProvider struct {
 	}
 	ProvideStub        func() []migrations.MigrationStep
 	provideMutex       sync.RWMutex
-	provideArgsForCall []struct{}
-	provideReturns     struct {
+	provideArgsForCall []struct {
+	}
+	provideReturns struct {
 		result1 []migrations.MigrationStep
 	}
 	provideReturnsOnCall map[int]struct {
@@ -33,7 +35,8 @@ type FakeMigrationProvider struct {
 func (fake *FakeMigrationProvider) GetLatestMigrationIndex() int {
 	fake.getLatestMigrationIndexMutex.Lock()
 	ret, specificReturn := fake.getLatestMigrationIndexReturnsOnCall[len(fake.getLatestMigrationIndexArgsForCall)]
-	fake.getLatestMigrationIndexArgsForCall = append(fake.getLatestMigrationIndexArgsForCall, struct{}{})
+	fake.getLatestMigrationIndexArgsForCall = append(fake.getLatestMigrationIndexArgsForCall, struct {
+	}{})
 	stub := fake.GetLatestMigrationIndexStub
 	fakeReturns := fake.getLatestMigrationIndexReturns
 	fake.recordInvocation("GetLatestMigrationIndex", []interface{}{})
@@ -85,7 +88,8 @@ func (fake *FakeMigrationProvider) GetLatestMigrationIndexReturnsOnCall(i int, r
 func (fake *FakeMigrationProvider) Provide() []migrations.MigrationStep {
 	fake.provideMutex.Lock()
 	ret, specificReturn := fake.provideReturnsOnCall[len(fake.provideArgsForCall)]
-	fake.provideArgsForCall = append(fake.provideArgsForCall, struct{}{})
+	fake.provideArgsForCall = append(fake.provideArgsForCall, struct {
+	}{})
 	stub := fake.ProvideStub
 	fakeReturns := fake.provideReturns
 	fake.recordInvocation("Provide", []interface{}{})
