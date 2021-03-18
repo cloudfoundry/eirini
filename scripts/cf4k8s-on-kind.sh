@@ -4,7 +4,7 @@ set -euxo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-CLUSTER_NAME=${CLUSTER_NAME:-cf-for-k8s-kind}
+CLUSTER_NAME=${CLUSTER_NAME:-cf-for-k8s}
 CF_DOMAIN=${CF_DOMAIN:-vcap.me}
 EIRINI_RELEASE_BASEDIR=${EIRINI_RELEASE_BASEDIR:-$HOME/workspace/eirini-release}
 EIRINI_RENDER_DIR=$(mktemp -d)
