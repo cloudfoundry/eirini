@@ -137,7 +137,7 @@ checkout_stable_cf_for_k8s_deps() {
 
   pushd "$CF4K8S_DIR"
   {
-    capi_k8s_release_sha=$(yq r vendir.lock.yml 'directories.(path==config/capi/_ytt_lib/capi-k8s-release).contents[0].git.sha')
+    capi_k8s_release_sha=$(yq eval '.directories.[] | select(.path == "config/capi/_ytt_lib/capi-k8s-release").contents[0].git.sha' vendir.lock.yml)
     echo "capi-k8s-release version: $capi_k8s_release_sha"
   }
   popd

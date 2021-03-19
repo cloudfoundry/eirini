@@ -30,7 +30,7 @@ push-to-docker() {
 load-into-kind() {
   local current_context kind_cluster_name
   # assume we are pointed to a kind cluster
-  current_context=$(yq r "$HOME/.kube/config" 'current-context')
+  current_context=$(yq eval '.current-context' "$HOME/.kube/config")
   # strip the 'kind-' prefix that kind puts in the context name
   kind_cluster_name=${current_context#"kind-"}
 

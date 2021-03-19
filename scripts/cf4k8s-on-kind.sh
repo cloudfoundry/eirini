@@ -69,4 +69,4 @@ EOF
 popd
 
 cf api https://api.${CF_DOMAIN} --skip-ssl-validation
-cf auth admin $(yq r $values_file cf_admin_password)
+cf auth admin $(yq eval '.cf_admin_password' $values_file)
