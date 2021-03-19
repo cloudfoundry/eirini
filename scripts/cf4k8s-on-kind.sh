@@ -25,7 +25,11 @@ fi
 pushd $HOME/workspace/cf-for-k8s
 {
   if ! kind get clusters | grep -q "$CLUSTER_NAME"; then
-    kind create cluster --config=./deploy/kind/cluster.yml --image kindest/node:v1.19.1 --name "$CLUSTER_NAME"
+    # don't install the default CNI as it doesn't support NetworkPolicies
+    kind create cluster \
+      --config <(yq e '.networking.disableDefaultCNI = true' ./deploy/kind/cluster.yml) \
+      --image kindest/node:v1.19.1 \
+      --name "$CLUSTER_NAME"
   else
     kind export kubeconfig --name $CLUSTER_NAME
   fi
@@ -64,7 +68,10 @@ EOF
   ./build/eirini/build.sh
 
   # deploy everything
-  kapp deploy -y -a cf -f <(ytt -f config -f "$values_file")
+  # install Calico to get NetworkPolicy support
+  kapp deploy -y -a cf \
+    -f https://docs.projectcalico.org/manifests/calico.yaml \
+    -f <(ytt -f config -f "$values_file")
 }
 popd
 
