@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CLUSTER_NAME=${CLUSTER_NAME:-cf-for-k8s}
 CF_DOMAIN=${CF_DOMAIN:-vcap.me}
 EIRINI_RELEASE_BASEDIR=${EIRINI_RELEASE_BASEDIR:-$HOME/workspace/eirini-release}
+EIRINI_CI_BASEDIR=${EIRINI_CI_BASEDIR:-$HOME/workspace/eirini-ci}
 EIRINI_RENDER_DIR=$(mktemp -d)
 
 trap "rm -rf $EIRINI_RENDER_DIR" EXIT
@@ -26,8 +27,10 @@ pushd $HOME/workspace/cf-for-k8s
 {
   if ! kind get clusters | grep -q "$CLUSTER_NAME"; then
     # don't install the default CNI as it doesn't support NetworkPolicies
+    # use the cluster config in assets until cf-for-k8s release > 2.1.1
+    # which will contain the containerd configuration
     kind create cluster \
-      --config <(yq e '.networking.disableDefaultCNI = true' ./deploy/kind/cluster.yml) \
+      --config <(yq e '.networking.disableDefaultCNI = true' $SCRIPT_DIR/assets/kind/cluster.yml) \
       --image kindest/node:v1.19.1 \
       --name "$CLUSTER_NAME"
   else
@@ -69,9 +72,8 @@ EOF
 
   # deploy everything
   # install Calico to get NetworkPolicy support
-  kapp deploy -y -a cf \
-    -f https://docs.projectcalico.org/manifests/calico.yaml \
-    -f <(ytt -f config -f "$values_file")
+  kapp deploy -y -a calico -f https://docs.projectcalico.org/manifests/calico.yaml
+  kapp deploy -y -a cf -f <(ytt -f config -f "$EIRINI_CI_BASEDIR/cf-for-k8s/add-eirini-app-migration-net-policy.yml" -f "$values_file")
 }
 popd
 
