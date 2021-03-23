@@ -1,6 +1,7 @@
 package util_test
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -43,7 +44,7 @@ var _ = Describe("RetryableJSONClient", func() {
 		})
 
 		JustBeforeEach(func() {
-			err = retryableJSONClient.Post(server.URL(), data)
+			err = retryableJSONClient.Post(ctx, server.URL(), data)
 		})
 
 		It("succeeds", func() {
@@ -52,6 +53,18 @@ var _ = Describe("RetryableJSONClient", func() {
 
 		It("performs a POST request with a serialised body", func() {
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
+		})
+
+		When("the context is cancelled prior to calling POST", func() {
+			BeforeEach(func() {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithCancel(ctx)
+				cancel()
+			})
+
+			It("returns a cancelled context error", func() {
+				Expect(err).To(MatchError(ContainSubstring("context canceled")))
+			})
 		})
 
 		When("the server fails to handle the request", func() {

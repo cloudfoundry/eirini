@@ -45,7 +45,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 
 			It("should generate a crashed report", func() {
-				report, returned := generator.Generate(pod, logger)
+				report, returned := generator.Generate(ctx, pod, logger)
 				Expect(returned).To(BeTrue())
 				Expect(report).To(Equal(events.CrashEvent{
 					ProcessGUID: "test-pod-anno",
@@ -67,12 +67,12 @@ var _ = Describe("CrashEventGenerator", func() {
 				})
 
 				It("should not generate", func() {
-					_, returned := generator.Generate(pod, logger)
+					_, returned := generator.Generate(ctx, pod, logger)
 					Expect(returned).To(BeFalse())
 				})
 
 				It("should provide a helpful log message", func() {
-					generator.Generate(pod, logger)
+					generator.Generate(ctx, pod, logger)
 
 					logs := logger.Logs()
 					Expect(logs).To(HaveLen(1))
@@ -98,7 +98,7 @@ var _ = Describe("CrashEventGenerator", func() {
 				})
 
 				It("should not emit a crashed event", func() {
-					_, returned := generator.Generate(pod, logger)
+					_, returned := generator.Generate(ctx, pod, logger)
 					Expect(returned).To(BeFalse())
 				})
 			})
@@ -117,7 +117,7 @@ var _ = Describe("CrashEventGenerator", func() {
 				})
 
 				It("should not emit a crashed event", func() {
-					_, returned := generator.Generate(pod, logger)
+					_, returned := generator.Generate(ctx, pod, logger)
 					Expect(returned).To(BeFalse())
 				})
 			})
@@ -128,7 +128,7 @@ var _ = Describe("CrashEventGenerator", func() {
 				})
 
 				It("sends a crash report", func() {
-					_, returned := generator.Generate(pod, logger)
+					_, returned := generator.Generate(ctx, pod, logger)
 					Expect(returned).To(BeTrue())
 				})
 			})
@@ -142,12 +142,12 @@ var _ = Describe("CrashEventGenerator", func() {
 				})
 
 				It("should not emit a crashed event", func() {
-					_, returned := generator.Generate(pod, logger)
+					_, returned := generator.Generate(ctx, pod, logger)
 					Expect(returned).To(BeFalse())
 				})
 
 				It("should provide a helpful log message", func() {
-					generator.Generate(pod, logger)
+					generator.Generate(ctx, pod, logger)
 					logs := logger.Logs()
 					Expect(logs).To(HaveLen(1))
 					log := logs[0]
@@ -165,7 +165,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 
 			It("should not emit a crashed event", func() {
-				_, returned := generator.Generate(pod, logger)
+				_, returned := generator.Generate(ctx, pod, logger)
 				Expect(returned).To(BeFalse())
 			})
 		})
@@ -201,7 +201,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 
 			It("should not emit a crashed event", func() {
-				_, returned := generator.Generate(pod, logger)
+				_, returned := generator.Generate(ctx, pod, logger)
 				Expect(returned).To(BeFalse())
 			})
 		})
@@ -231,7 +231,7 @@ var _ = Describe("CrashEventGenerator", func() {
 		})
 
 		It("should return a crashed report", func() {
-			report, returned := generator.Generate(pod, logger)
+			report, returned := generator.Generate(ctx, pod, logger)
 			Expect(returned).To(BeTrue())
 			Expect(report).To(Equal(events.CrashEvent{
 				ProcessGUID: "test-pod-anno",
@@ -258,7 +258,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 
 			It("should not send any reports", func() {
-				_, returned := generator.Generate(pod, logger)
+				_, returned := generator.Generate(ctx, pod, logger)
 				Expect(returned).To(BeFalse())
 			})
 		})
@@ -269,7 +269,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			})
 
 			It("should not send any reports", func() {
-				_, returned := generator.Generate(pod, logger)
+				_, returned := generator.Generate(ctx, pod, logger)
 				Expect(returned).To(BeFalse())
 			})
 		})
@@ -293,12 +293,12 @@ var _ = Describe("CrashEventGenerator", func() {
 		})
 
 		It("should not send any reports", func() {
-			_, returned := generator.Generate(pod, logger)
+			_, returned := generator.Generate(ctx, pod, logger)
 			Expect(returned).To(BeFalse())
 		})
 
 		It("should provide a helpful log message", func() {
-			generator.Generate(pod, logger)
+			generator.Generate(ctx, pod, logger)
 			logs := logger.Logs()
 			Expect(logs).To(HaveLen(1))
 			log := logs[0]

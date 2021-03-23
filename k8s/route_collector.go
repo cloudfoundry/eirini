@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -16,7 +17,7 @@ import (
 //counterfeiter:generate . StatefulSetGetter
 
 type StatefulSetGetter interface {
-	GetBySourceType(sourceType string) ([]appsv1.StatefulSet, error)
+	GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.StatefulSet, error)
 }
 
 type RouteCollector struct {
@@ -33,13 +34,13 @@ func NewRouteCollector(podsGetter PodsGetter, statefulSetGetter StatefulSetGette
 	}
 }
 
-func (c RouteCollector) Collect() ([]route.Message, error) {
-	pods, err := c.podsGetter.GetAll()
+func (c RouteCollector) Collect(ctx context.Context) ([]route.Message, error) {
+	pods, err := c.podsGetter.GetAll(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list pods")
 	}
 
-	statefulsets, err := c.getStatefulSets()
+	statefulsets, err := c.getStatefulSets(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +104,8 @@ func (c RouteCollector) getRoutes(pod corev1.Pod, statefulsets map[string]appsv1
 	return routes, nil
 }
 
-func (c RouteCollector) getStatefulSets() (map[string]appsv1.StatefulSet, error) {
-	statefulsetList, err := c.statefulSetGetter.GetBySourceType(stset.AppSourceType)
+func (c RouteCollector) getStatefulSets(ctx context.Context) (map[string]appsv1.StatefulSet, error) {
+	statefulsetList, err := c.statefulSetGetter.GetBySourceType(ctx, stset.AppSourceType)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list statefulsets")
 	}

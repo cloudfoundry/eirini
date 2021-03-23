@@ -2,6 +2,7 @@
 package prometheusfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/shared"
@@ -10,12 +11,13 @@ import (
 )
 
 type FakeLRPClient struct {
-	DesireStub        func(string, *opi.LRP, ...shared.Option) error
+	DesireStub        func(context.Context, string, *opi.LRP, ...shared.Option) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
-		arg1 string
-		arg2 *opi.LRP
-		arg3 []shared.Option
+		arg1 context.Context
+		arg2 string
+		arg3 *opi.LRP
+		arg4 []shared.Option
 	}
 	desireReturns struct {
 		result1 error
@@ -23,10 +25,11 @@ type FakeLRPClient struct {
 	desireReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetStub        func(opi.LRPIdentifier) (*opi.LRP, error)
+	GetStub        func(context.Context, opi.LRPIdentifier) (*opi.LRP, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		arg1 opi.LRPIdentifier
+		arg1 context.Context
+		arg2 opi.LRPIdentifier
 	}
 	getReturns struct {
 		result1 *opi.LRP
@@ -36,10 +39,11 @@ type FakeLRPClient struct {
 		result1 *opi.LRP
 		result2 error
 	}
-	UpdateStub        func(*opi.LRP) error
+	UpdateStub        func(context.Context, *opi.LRP) error
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
-		arg1 *opi.LRP
+		arg1 context.Context
+		arg2 *opi.LRP
 	}
 	updateReturns struct {
 		result1 error
@@ -51,20 +55,21 @@ type FakeLRPClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeLRPClient) Desire(arg1 string, arg2 *opi.LRP, arg3 ...shared.Option) error {
+func (fake *FakeLRPClient) Desire(arg1 context.Context, arg2 string, arg3 *opi.LRP, arg4 ...shared.Option) error {
 	fake.desireMutex.Lock()
 	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
 	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
-		arg1 string
-		arg2 *opi.LRP
-		arg3 []shared.Option
-	}{arg1, arg2, arg3})
+		arg1 context.Context
+		arg2 string
+		arg3 *opi.LRP
+		arg4 []shared.Option
+	}{arg1, arg2, arg3, arg4})
 	stub := fake.DesireStub
 	fakeReturns := fake.desireReturns
-	fake.recordInvocation("Desire", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("Desire", []interface{}{arg1, arg2, arg3, arg4})
 	fake.desireMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3...)
+		return stub(arg1, arg2, arg3, arg4...)
 	}
 	if specificReturn {
 		return ret.result1
@@ -78,17 +83,17 @@ func (fake *FakeLRPClient) DesireCallCount() int {
 	return len(fake.desireArgsForCall)
 }
 
-func (fake *FakeLRPClient) DesireCalls(stub func(string, *opi.LRP, ...shared.Option) error) {
+func (fake *FakeLRPClient) DesireCalls(stub func(context.Context, string, *opi.LRP, ...shared.Option) error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = stub
 }
 
-func (fake *FakeLRPClient) DesireArgsForCall(i int) (string, *opi.LRP, []shared.Option) {
+func (fake *FakeLRPClient) DesireArgsForCall(i int) (context.Context, string, *opi.LRP, []shared.Option) {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	argsForCall := fake.desireArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeLRPClient) DesireReturns(result1 error) {
@@ -114,18 +119,19 @@ func (fake *FakeLRPClient) DesireReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeLRPClient) Get(arg1 opi.LRPIdentifier) (*opi.LRP, error) {
+func (fake *FakeLRPClient) Get(arg1 context.Context, arg2 opi.LRPIdentifier) (*opi.LRP, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		arg1 opi.LRPIdentifier
-	}{arg1})
+		arg1 context.Context
+		arg2 opi.LRPIdentifier
+	}{arg1, arg2})
 	stub := fake.GetStub
 	fakeReturns := fake.getReturns
-	fake.recordInvocation("Get", []interface{}{arg1})
+	fake.recordInvocation("Get", []interface{}{arg1, arg2})
 	fake.getMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -139,17 +145,17 @@ func (fake *FakeLRPClient) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
-func (fake *FakeLRPClient) GetCalls(stub func(opi.LRPIdentifier) (*opi.LRP, error)) {
+func (fake *FakeLRPClient) GetCalls(stub func(context.Context, opi.LRPIdentifier) (*opi.LRP, error)) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = stub
 }
 
-func (fake *FakeLRPClient) GetArgsForCall(i int) opi.LRPIdentifier {
+func (fake *FakeLRPClient) GetArgsForCall(i int) (context.Context, opi.LRPIdentifier) {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	argsForCall := fake.getArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeLRPClient) GetReturns(result1 *opi.LRP, result2 error) {
@@ -178,18 +184,19 @@ func (fake *FakeLRPClient) GetReturnsOnCall(i int, result1 *opi.LRP, result2 err
 	}{result1, result2}
 }
 
-func (fake *FakeLRPClient) Update(arg1 *opi.LRP) error {
+func (fake *FakeLRPClient) Update(arg1 context.Context, arg2 *opi.LRP) error {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
-		arg1 *opi.LRP
-	}{arg1})
+		arg1 context.Context
+		arg2 *opi.LRP
+	}{arg1, arg2})
 	stub := fake.UpdateStub
 	fakeReturns := fake.updateReturns
-	fake.recordInvocation("Update", []interface{}{arg1})
+	fake.recordInvocation("Update", []interface{}{arg1, arg2})
 	fake.updateMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -203,17 +210,17 @@ func (fake *FakeLRPClient) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeLRPClient) UpdateCalls(stub func(*opi.LRP) error) {
+func (fake *FakeLRPClient) UpdateCalls(stub func(context.Context, *opi.LRP) error) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakeLRPClient) UpdateArgsForCall(i int) *opi.LRP {
+func (fake *FakeLRPClient) UpdateArgsForCall(i int) (context.Context, *opi.LRP) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeLRPClient) UpdateReturns(result1 error) {

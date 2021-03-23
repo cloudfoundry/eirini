@@ -21,21 +21,21 @@ import (
 //counterfeiter:generate . Deleter
 
 type Reporter interface {
-	Report(*corev1.Pod) error
+	Report(context.Context, *corev1.Pod) error
 }
 
 type JobsClient interface {
-	GetByGUID(guid string, includeCompleted bool) ([]batchv1.Job, error)
-	SetLabel(job *batchv1.Job, key, value string) (*batchv1.Job, error)
+	GetByGUID(ctx context.Context, guid string, includeCompleted bool) ([]batchv1.Job, error)
+	SetLabel(ctx context.Context, job *batchv1.Job, key, value string) (*batchv1.Job, error)
 }
 
 type Deleter interface {
-	Delete(guid string) (string, error)
+	Delete(ctx context.Context, guid string) (string, error)
 }
 
 type PodsClient interface {
-	SetAnnotation(pod *corev1.Pod, key, value string) (*corev1.Pod, error)
-	SetAndTestAnnotation(pod *corev1.Pod, key, value string, oldValue *string) (*corev1.Pod, error)
+	SetAnnotation(ctx context.Context, pod *corev1.Pod, key, value string) (*corev1.Pod, error)
+	SetAndTestAnnotation(ctx context.Context, pod *corev1.Pod, key, value string, oldValue *string) (*corev1.Pod, error)
 }
 
 type Reconciler struct {
@@ -94,7 +94,7 @@ func (r Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (r
 	guid := pod.Labels[jobs.LabelGUID]
 	logger = logger.WithData(lager.Data{"guid": guid})
 
-	jobsForPods, err := r.jobs.GetByGUID(guid, true)
+	jobsForPods, err := r.jobs.GetByGUID(ctx, guid, true)
 	if err != nil {
 		logger.Error("failed to get related job by guid", err)
 
@@ -107,13 +107,13 @@ func (r Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (r
 		return reconcile.Result{}, nil
 	}
 
-	if err = r.reportIfRequired(pod); err != nil {
+	if err = r.reportIfRequired(ctx, pod); err != nil {
 		logger.Error("completion-callback-failed", err, lager.Data{"tries": pod.Annotations[jobs.AnnotationOpiTaskCompletionReportCounter]})
 
 		return reconcile.Result{}, err
 	}
 
-	if _, err = r.jobs.SetLabel(&jobsForPods[0], jobs.LabelTaskCompleted, jobs.TaskCompletedTrue); err != nil {
+	if _, err = r.jobs.SetLabel(ctx, &jobsForPods[0], jobs.LabelTaskCompleted, jobs.TaskCompletedTrue); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to label the job as completed")
 	}
 
@@ -125,14 +125,14 @@ func (r Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (r
 
 	logger.Debug("deleting-task")
 
-	if _, err = r.deleter.Delete(guid); err != nil {
+	if _, err = r.deleter.Delete(ctx, guid); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to delete job")
 	}
 
 	return reconcile.Result{}, nil
 }
 
-func (r *Reconciler) reportIfRequired(pod *corev1.Pod) error {
+func (r *Reconciler) reportIfRequired(ctx context.Context, pod *corev1.Pod) error {
 	if pod.Annotations[jobs.AnnotationCCAckedTaskCompletion] == jobs.TaskCompletedTrue {
 		return nil
 	}
@@ -150,6 +150,7 @@ func (r *Reconciler) reportIfRequired(pod *corev1.Pod) error {
 	}
 
 	_, err := r.pods.SetAndTestAnnotation(
+		ctx,
 		pod,
 		jobs.AnnotationOpiTaskCompletionReportCounter,
 		strconv.Itoa(completionCounter+1),
@@ -159,11 +160,11 @@ func (r *Reconciler) reportIfRequired(pod *corev1.Pod) error {
 		return errors.Wrap(err, "failed to patch annotation on pod")
 	}
 
-	if err := r.reporter.Report(pod); err != nil {
+	if err := r.reporter.Report(ctx, pod); err != nil {
 		return errors.Wrap(err, "failed to report task completion to CC")
 	}
 
-	if _, updateErr := r.pods.SetAnnotation(pod, jobs.AnnotationCCAckedTaskCompletion, jobs.TaskCompletedTrue); updateErr != nil {
+	if _, updateErr := r.pods.SetAnnotation(ctx, pod, jobs.AnnotationCCAckedTaskCompletion, jobs.TaskCompletedTrue); updateErr != nil {
 		return errors.Wrap(updateErr, "failed to set task completion annotation")
 	}
 

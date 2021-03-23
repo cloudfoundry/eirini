@@ -1,6 +1,7 @@
 package stset
 
 import (
+	"context"
 	"strings"
 
 	"code.cloudfoundry.org/eirini"
@@ -22,11 +23,11 @@ const (
 )
 
 type PodGetter interface {
-	GetByLRPIdentifier(opi.LRPIdentifier) ([]corev1.Pod, error)
+	GetByLRPIdentifier(ctx context.Context, id opi.LRPIdentifier) ([]corev1.Pod, error)
 }
 
 type EventGetter interface {
-	GetByPod(pod corev1.Pod) ([]corev1.Event, error)
+	GetByPod(ctx context.Context, pod corev1.Pod) ([]corev1.Event, error)
 }
 
 type Getter struct {
@@ -53,19 +54,19 @@ func NewGetter(
 	}
 }
 
-func (g *Getter) Get(identifier opi.LRPIdentifier) (*opi.LRP, error) {
+func (g *Getter) Get(ctx context.Context, identifier opi.LRPIdentifier) (*opi.LRP, error) {
 	logger := g.logger.Session("get", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
 
-	return g.getLRP(logger, identifier)
+	return g.getLRP(ctx, logger, identifier)
 }
 
-func (g *Getter) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
+func (g *Getter) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
 	logger := g.logger.Session("get-instance", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
-	if _, err := g.getLRP(logger, identifier); errors.Is(err, eirini.ErrNotFound) {
+	if _, err := g.getLRP(ctx, logger, identifier); errors.Is(err, eirini.ErrNotFound) {
 		return nil, err
 	}
 
-	pods, err := g.podGetter.GetByLRPIdentifier(identifier)
+	pods, err := g.podGetter.GetByLRPIdentifier(ctx, identifier)
 	if err != nil {
 		logger.Error("failed-to-list-pods", err)
 
@@ -75,7 +76,7 @@ func (g *Getter) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, er
 	instances := []*opi.Instance{}
 
 	for _, pod := range pods {
-		events, err := g.eventGetter.GetByPod(pod)
+		events, err := g.eventGetter.GetByPod(ctx, pod)
 		if err != nil {
 			logger.Error("failed-to-get-events", err)
 
@@ -117,8 +118,8 @@ func (g *Getter) GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, er
 	return instances, nil
 }
 
-func (g *Getter) getLRP(logger lager.Logger, identifier opi.LRPIdentifier) (*opi.LRP, error) {
-	statefulset, err := g.getStatefulSet(identifier)
+func (g *Getter) getLRP(ctx context.Context, logger lager.Logger, identifier opi.LRPIdentifier) (*opi.LRP, error) {
+	statefulset, err := g.getStatefulSet(ctx, identifier)
 	if err != nil {
 		logger.Error("failed-to-get-statefulset", err)
 

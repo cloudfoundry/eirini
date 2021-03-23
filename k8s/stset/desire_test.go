@@ -58,7 +58,7 @@ var _ = Describe("Desirer", func() {
 	})
 
 	JustBeforeEach(func() {
-		desireErr = desirer.Desire("the-namespace", lrp, desireOptOne.Spy, desireOptTwo.Spy)
+		desireErr = desirer.Desire(ctx, "the-namespace", lrp, desireOptOne.Spy, desireOptTwo.Spy)
 	})
 
 	It("should succeed", func() {
@@ -66,7 +66,7 @@ var _ = Describe("Desirer", func() {
 	})
 
 	It("should set name for the stateful set", func() {
-		_, statefulSet := statefulSets.CreateArgsForCall(0)
+		_, _, statefulSet := statefulSets.CreateArgsForCall(0)
 		Expect(statefulSet.Name).To(Equal("baldur-space-foo-34f869d015"))
 	})
 
@@ -76,7 +76,7 @@ var _ = Describe("Desirer", func() {
 
 	It("updates the pod disruption budget", func() {
 		Expect(podDisruptionBudgetUpdater.UpdateCallCount()).To(Equal(1))
-		actualNamespace, actualName, actualLRP := podDisruptionBudgetUpdater.UpdateArgsForCall(0)
+		_, actualNamespace, actualName, actualLRP := podDisruptionBudgetUpdater.UpdateArgsForCall(0)
 		Expect(actualNamespace).To(Equal("the-namespace"))
 		Expect(actualName).To(Equal("baldur-space-foo-34f869d015"))
 		Expect(actualLRP).To(Equal(lrp))
@@ -96,13 +96,13 @@ var _ = Describe("Desirer", func() {
 		Expect(desireOptOne.CallCount()).To(Equal(1))
 		Expect(desireOptTwo.CallCount()).To(Equal(1))
 
-		_, statefulSet := statefulSets.CreateArgsForCall(0)
+		_, _, statefulSet := statefulSets.CreateArgsForCall(0)
 		Expect(desireOptOne.ArgsForCall(0)).To(Equal(statefulSet))
 		Expect(desireOptTwo.ArgsForCall(0)).To(Equal(statefulSet))
 	})
 
 	It("should set namespace for the stateful set", func() {
-		namespace, _ := statefulSets.CreateArgsForCall(0)
+		_, namespace, _ := statefulSets.CreateArgsForCall(0)
 		Expect(namespace).To(Equal("the-namespace"))
 	})
 
@@ -112,7 +112,7 @@ var _ = Describe("Desirer", func() {
 		})
 
 		It("should use the guid as a name", func() {
-			_, statefulSet := statefulSets.CreateArgsForCall(0)
+			_, _, statefulSet := statefulSets.CreateArgsForCall(0)
 			Expect(statefulSet.Name).To(Equal("guid_1234-34f869d015"))
 		})
 	})
@@ -148,7 +148,7 @@ var _ = Describe("Desirer", func() {
 
 		It("should create a private repo secret containing the private repo credentials", func() {
 			Expect(secrets.CreateCallCount()).To(Equal(1))
-			secretNamespace, actualSecret := secrets.CreateArgsForCall(0)
+			_, secretNamespace, actualSecret := secrets.CreateArgsForCall(0)
 			Expect(secretNamespace).To(Equal("the-namespace"))
 			Expect(actualSecret.Name).To(Equal("baldur-space-foo-34f869d015-registry-credentials"))
 			Expect(actualSecret.Type).To(Equal(corev1.SecretTypeDockerConfigJson))

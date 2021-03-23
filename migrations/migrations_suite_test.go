@@ -1,6 +1,7 @@
 package migrations_test
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -15,6 +16,12 @@ func TestMigrations(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Migrations Suite")
 }
+
+var ctx context.Context
+
+var _ = BeforeEach(func() {
+	ctx = context.Background()
+})
 
 func BeSorted() types.GomegaMatcher {
 	return &BeSortedMatcher{}

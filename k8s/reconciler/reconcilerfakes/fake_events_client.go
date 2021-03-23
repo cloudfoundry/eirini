@@ -2,6 +2,7 @@
 package reconcilerfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
@@ -10,11 +11,12 @@ import (
 )
 
 type FakeEventsClient struct {
-	CreateStub        func(string, *v1.Event) (*v1.Event, error)
+	CreateStub        func(context.Context, string, *v1.Event) (*v1.Event, error)
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
-		arg1 string
-		arg2 *v1.Event
+		arg1 context.Context
+		arg2 string
+		arg3 *v1.Event
 	}
 	createReturns struct {
 		result1 *v1.Event
@@ -24,13 +26,14 @@ type FakeEventsClient struct {
 		result1 *v1.Event
 		result2 error
 	}
-	GetByInstanceAndReasonStub        func(string, v1a.OwnerReference, int, string) (*v1.Event, error)
+	GetByInstanceAndReasonStub        func(context.Context, string, v1a.OwnerReference, int, string) (*v1.Event, error)
 	getByInstanceAndReasonMutex       sync.RWMutex
 	getByInstanceAndReasonArgsForCall []struct {
-		arg1 string
-		arg2 v1a.OwnerReference
-		arg3 int
-		arg4 string
+		arg1 context.Context
+		arg2 string
+		arg3 v1a.OwnerReference
+		arg4 int
+		arg5 string
 	}
 	getByInstanceAndReasonReturns struct {
 		result1 *v1.Event
@@ -40,11 +43,12 @@ type FakeEventsClient struct {
 		result1 *v1.Event
 		result2 error
 	}
-	UpdateStub        func(string, *v1.Event) (*v1.Event, error)
+	UpdateStub        func(context.Context, string, *v1.Event) (*v1.Event, error)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
-		arg1 string
-		arg2 *v1.Event
+		arg1 context.Context
+		arg2 string
+		arg3 *v1.Event
 	}
 	updateReturns struct {
 		result1 *v1.Event
@@ -58,19 +62,20 @@ type FakeEventsClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeEventsClient) Create(arg1 string, arg2 *v1.Event) (*v1.Event, error) {
+func (fake *FakeEventsClient) Create(arg1 context.Context, arg2 string, arg3 *v1.Event) (*v1.Event, error) {
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
-		arg1 string
-		arg2 *v1.Event
-	}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 *v1.Event
+	}{arg1, arg2, arg3})
 	stub := fake.CreateStub
 	fakeReturns := fake.createReturns
-	fake.recordInvocation("Create", []interface{}{arg1, arg2})
+	fake.recordInvocation("Create", []interface{}{arg1, arg2, arg3})
 	fake.createMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -84,17 +89,17 @@ func (fake *FakeEventsClient) CreateCallCount() int {
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakeEventsClient) CreateCalls(stub func(string, *v1.Event) (*v1.Event, error)) {
+func (fake *FakeEventsClient) CreateCalls(stub func(context.Context, string, *v1.Event) (*v1.Event, error)) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = stub
 }
 
-func (fake *FakeEventsClient) CreateArgsForCall(i int) (string, *v1.Event) {
+func (fake *FakeEventsClient) CreateArgsForCall(i int) (context.Context, string, *v1.Event) {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	argsForCall := fake.createArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeEventsClient) CreateReturns(result1 *v1.Event, result2 error) {
@@ -123,21 +128,22 @@ func (fake *FakeEventsClient) CreateReturnsOnCall(i int, result1 *v1.Event, resu
 	}{result1, result2}
 }
 
-func (fake *FakeEventsClient) GetByInstanceAndReason(arg1 string, arg2 v1a.OwnerReference, arg3 int, arg4 string) (*v1.Event, error) {
+func (fake *FakeEventsClient) GetByInstanceAndReason(arg1 context.Context, arg2 string, arg3 v1a.OwnerReference, arg4 int, arg5 string) (*v1.Event, error) {
 	fake.getByInstanceAndReasonMutex.Lock()
 	ret, specificReturn := fake.getByInstanceAndReasonReturnsOnCall[len(fake.getByInstanceAndReasonArgsForCall)]
 	fake.getByInstanceAndReasonArgsForCall = append(fake.getByInstanceAndReasonArgsForCall, struct {
-		arg1 string
-		arg2 v1a.OwnerReference
-		arg3 int
-		arg4 string
-	}{arg1, arg2, arg3, arg4})
+		arg1 context.Context
+		arg2 string
+		arg3 v1a.OwnerReference
+		arg4 int
+		arg5 string
+	}{arg1, arg2, arg3, arg4, arg5})
 	stub := fake.GetByInstanceAndReasonStub
 	fakeReturns := fake.getByInstanceAndReasonReturns
-	fake.recordInvocation("GetByInstanceAndReason", []interface{}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("GetByInstanceAndReason", []interface{}{arg1, arg2, arg3, arg4, arg5})
 	fake.getByInstanceAndReasonMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3, arg4)
+		return stub(arg1, arg2, arg3, arg4, arg5)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -151,17 +157,17 @@ func (fake *FakeEventsClient) GetByInstanceAndReasonCallCount() int {
 	return len(fake.getByInstanceAndReasonArgsForCall)
 }
 
-func (fake *FakeEventsClient) GetByInstanceAndReasonCalls(stub func(string, v1a.OwnerReference, int, string) (*v1.Event, error)) {
+func (fake *FakeEventsClient) GetByInstanceAndReasonCalls(stub func(context.Context, string, v1a.OwnerReference, int, string) (*v1.Event, error)) {
 	fake.getByInstanceAndReasonMutex.Lock()
 	defer fake.getByInstanceAndReasonMutex.Unlock()
 	fake.GetByInstanceAndReasonStub = stub
 }
 
-func (fake *FakeEventsClient) GetByInstanceAndReasonArgsForCall(i int) (string, v1a.OwnerReference, int, string) {
+func (fake *FakeEventsClient) GetByInstanceAndReasonArgsForCall(i int) (context.Context, string, v1a.OwnerReference, int, string) {
 	fake.getByInstanceAndReasonMutex.RLock()
 	defer fake.getByInstanceAndReasonMutex.RUnlock()
 	argsForCall := fake.getByInstanceAndReasonArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
 }
 
 func (fake *FakeEventsClient) GetByInstanceAndReasonReturns(result1 *v1.Event, result2 error) {
@@ -190,19 +196,20 @@ func (fake *FakeEventsClient) GetByInstanceAndReasonReturnsOnCall(i int, result1
 	}{result1, result2}
 }
 
-func (fake *FakeEventsClient) Update(arg1 string, arg2 *v1.Event) (*v1.Event, error) {
+func (fake *FakeEventsClient) Update(arg1 context.Context, arg2 string, arg3 *v1.Event) (*v1.Event, error) {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
-		arg1 string
-		arg2 *v1.Event
-	}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 *v1.Event
+	}{arg1, arg2, arg3})
 	stub := fake.UpdateStub
 	fakeReturns := fake.updateReturns
-	fake.recordInvocation("Update", []interface{}{arg1, arg2})
+	fake.recordInvocation("Update", []interface{}{arg1, arg2, arg3})
 	fake.updateMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -216,17 +223,17 @@ func (fake *FakeEventsClient) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeEventsClient) UpdateCalls(stub func(string, *v1.Event) (*v1.Event, error)) {
+func (fake *FakeEventsClient) UpdateCalls(stub func(context.Context, string, *v1.Event) (*v1.Event, error)) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakeEventsClient) UpdateArgsForCall(i int) (string, *v1.Event) {
+func (fake *FakeEventsClient) UpdateArgsForCall(i int) (context.Context, string, *v1.Event) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeEventsClient) UpdateReturns(result1 *v1.Event, result2 error) {

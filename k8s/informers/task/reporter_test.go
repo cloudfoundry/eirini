@@ -82,7 +82,7 @@ var _ = Describe("Reporter", func() {
 			ghttp.CombineHandlers(handlers...),
 		)
 
-		err = reporter.Report(pod)
+		err = reporter.Report(ctx, pod)
 	})
 
 	AfterEach(func() {

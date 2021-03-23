@@ -2,6 +2,7 @@
 package k8sfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s"
@@ -9,9 +10,10 @@ import (
 )
 
 type FakeMetricsCollector struct {
-	CollectStub        func() ([]metrics.Message, error)
+	CollectStub        func(context.Context) ([]metrics.Message, error)
 	collectMutex       sync.RWMutex
 	collectArgsForCall []struct {
+		arg1 context.Context
 	}
 	collectReturns struct {
 		result1 []metrics.Message
@@ -25,17 +27,18 @@ type FakeMetricsCollector struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMetricsCollector) Collect() ([]metrics.Message, error) {
+func (fake *FakeMetricsCollector) Collect(arg1 context.Context) ([]metrics.Message, error) {
 	fake.collectMutex.Lock()
 	ret, specificReturn := fake.collectReturnsOnCall[len(fake.collectArgsForCall)]
 	fake.collectArgsForCall = append(fake.collectArgsForCall, struct {
-	}{})
+		arg1 context.Context
+	}{arg1})
 	stub := fake.CollectStub
 	fakeReturns := fake.collectReturns
-	fake.recordInvocation("Collect", []interface{}{})
+	fake.recordInvocation("Collect", []interface{}{arg1})
 	fake.collectMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -49,10 +52,17 @@ func (fake *FakeMetricsCollector) CollectCallCount() int {
 	return len(fake.collectArgsForCall)
 }
 
-func (fake *FakeMetricsCollector) CollectCalls(stub func() ([]metrics.Message, error)) {
+func (fake *FakeMetricsCollector) CollectCalls(stub func(context.Context) ([]metrics.Message, error)) {
 	fake.collectMutex.Lock()
 	defer fake.collectMutex.Unlock()
 	fake.CollectStub = stub
+}
+
+func (fake *FakeMetricsCollector) CollectArgsForCall(i int) context.Context {
+	fake.collectMutex.RLock()
+	defer fake.collectMutex.RUnlock()
+	argsForCall := fake.collectArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeMetricsCollector) CollectReturns(result1 []metrics.Message, result2 error) {

@@ -1,6 +1,8 @@
 package stset
 
 import (
+	"context"
+
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
@@ -15,7 +17,7 @@ type StatefulSetToLRPConverter interface {
 }
 
 type StatefulSetsBySourceTypeGetter interface {
-	GetBySourceType(sourceType string) ([]appsv1.StatefulSet, error)
+	GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.StatefulSet, error)
 }
 
 type Lister struct {
@@ -36,10 +38,10 @@ func NewLister(
 	}
 }
 
-func (l *Lister) List() ([]*opi.LRP, error) {
+func (l *Lister) List(ctx context.Context) ([]*opi.LRP, error) {
 	logger := l.logger.Session("list")
 
-	statefulsets, err := l.statefulSetGetter.GetBySourceType(AppSourceType)
+	statefulsets, err := l.statefulSetGetter.GetBySourceType(ctx, AppSourceType)
 	if err != nil {
 		logger.Error("failed-to-list-statefulsets", err)
 

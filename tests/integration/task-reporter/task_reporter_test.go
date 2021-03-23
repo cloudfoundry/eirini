@@ -37,10 +37,13 @@ var _ = Describe("TaskReporter", func() {
 		config                *eirini.TaskReporterConfig
 		ttlSeconds            int
 		taskSubmittedAt       time.Time
+		ctx                   context.Context
 	)
 
 	BeforeEach(func() {
 		var err error
+		ctx = context.Background()
+
 		cloudControllerServer, err = integration.CreateTestServer(
 			integration.PathToTestFixture("tls.crt"),
 			integration.PathToTestFixture("tls.key"),
@@ -99,7 +102,7 @@ var _ = Describe("TaskReporter", func() {
 
 		session, configFile = eiriniBins.TaskReporter.Run(config, envVarOverrides...)
 		Eventually(session).Should(gbytes.Say("Starting workers"))
-		Expect(taskDesirer.Desire(fixture.Namespace, task)).To(Succeed())
+		Expect(taskDesirer.Desire(ctx, fixture.Namespace, task)).To(Succeed())
 		taskSubmittedAt = time.Now()
 	})
 

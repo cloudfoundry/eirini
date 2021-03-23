@@ -2,6 +2,7 @@
 package reconcilerfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
@@ -9,11 +10,12 @@ import (
 )
 
 type FakeStatefulSetGetter struct {
-	GetStub        func(string, string) (*v1.StatefulSet, error)
+	GetStub        func(context.Context, string, string) (*v1.StatefulSet, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
 		arg2 string
+		arg3 string
 	}
 	getReturns struct {
 		result1 *v1.StatefulSet
@@ -27,19 +29,20 @@ type FakeStatefulSetGetter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetGetter) Get(arg1 string, arg2 string) (*v1.StatefulSet, error) {
+func (fake *FakeStatefulSetGetter) Get(arg1 context.Context, arg2 string, arg3 string) (*v1.StatefulSet, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		arg1 string
+		arg1 context.Context
 		arg2 string
-	}{arg1, arg2})
+		arg3 string
+	}{arg1, arg2, arg3})
 	stub := fake.GetStub
 	fakeReturns := fake.getReturns
-	fake.recordInvocation("Get", []interface{}{arg1, arg2})
+	fake.recordInvocation("Get", []interface{}{arg1, arg2, arg3})
 	fake.getMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -53,17 +56,17 @@ func (fake *FakeStatefulSetGetter) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
-func (fake *FakeStatefulSetGetter) GetCalls(stub func(string, string) (*v1.StatefulSet, error)) {
+func (fake *FakeStatefulSetGetter) GetCalls(stub func(context.Context, string, string) (*v1.StatefulSet, error)) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = stub
 }
 
-func (fake *FakeStatefulSetGetter) GetArgsForCall(i int) (string, string) {
+func (fake *FakeStatefulSetGetter) GetArgsForCall(i int) (context.Context, string, string) {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	argsForCall := fake.getArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStatefulSetGetter) GetReturns(result1 *v1.StatefulSet, result2 error) {

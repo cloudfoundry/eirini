@@ -79,7 +79,7 @@ var _ = Describe("Update", func() {
 
 	JustBeforeEach(func() {
 		updater := stset.NewUpdater(logger, statefulSetGetter, statefulSetUpdater, pdbUpdater)
-		err = updater.Update(updatedLRP)
+		err = updater.Update(ctx, updatedLRP)
 	})
 
 	It("succeeds", func() {
@@ -89,7 +89,7 @@ var _ = Describe("Update", func() {
 	It("updates the statefulset", func() {
 		Expect(statefulSetUpdater.UpdateCallCount()).To(Equal(1))
 
-		namespace, st := statefulSetUpdater.UpdateArgsForCall(0)
+		_, namespace, st := statefulSetUpdater.UpdateArgsForCall(0)
 		Expect(namespace).To(Equal("the-namespace"))
 		Expect(st.GetAnnotations()).To(HaveKeyWithValue(stset.AnnotationLastUpdated, "now"))
 		Expect(st.GetAnnotations()).To(HaveKeyWithValue(stset.AnnotationRegisteredRoutes, `[{"hostname":"new-route.io","port":6666}]`))
@@ -101,7 +101,7 @@ var _ = Describe("Update", func() {
 
 	It("updates the pod disruption budget", func() {
 		Expect(pdbUpdater.UpdateCallCount()).To(Equal(1))
-		actualNamespace, actualName, actualLRP := pdbUpdater.UpdateArgsForCall(0)
+		_, actualNamespace, actualName, actualLRP := pdbUpdater.UpdateArgsForCall(0)
 		Expect(actualNamespace).To(Equal("the-namespace"))
 		Expect(actualName).To(Equal("baldur"))
 		Expect(actualLRP).To(Equal(updatedLRP))
@@ -129,7 +129,7 @@ var _ = Describe("Update", func() {
 		It("doesn't reset the image", func() {
 			Expect(statefulSetUpdater.UpdateCallCount()).To(Equal(1))
 
-			_, st := statefulSetUpdater.UpdateArgsForCall(0)
+			_, _, st := statefulSetUpdater.UpdateArgsForCall(0)
 			Expect(st.Spec.Template.Spec.Containers[1].Image).To(Equal("old/image"))
 		})
 	})

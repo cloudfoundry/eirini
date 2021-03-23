@@ -79,7 +79,7 @@ var _ = Describe("reconciler.LRP", func() {
 		Expect(desirer.UpdateCallCount()).To(Equal(0))
 		Expect(desirer.DesireCallCount()).To(Equal(1))
 
-		ns, lrp, _ := desirer.DesireArgsForCall(0)
+		_, ns, lrp, _ := desirer.DesireArgsForCall(0)
 		Expect(ns).To(Equal("some-ns"))
 		Expect(lrp.GUID).To(Equal("the-lrp-guid"))
 		Expect(lrp.Version).To(Equal("the-lrp-version"))
@@ -96,7 +96,7 @@ var _ = Describe("reconciler.LRP", func() {
 		Expect(resultErr).NotTo(HaveOccurred())
 
 		Expect(desirer.DesireCallCount()).To(Equal(1))
-		_, _, setOwnerFns := desirer.DesireArgsForCall(0)
+		_, _, _, setOwnerFns := desirer.DesireArgsForCall(0)
 		Expect(setOwnerFns).To(HaveLen(1))
 		setOwnerFn := setOwnerFns[0]
 
@@ -124,7 +124,7 @@ var _ = Describe("reconciler.LRP", func() {
 		})
 
 		It("configures a private registry", func() {
-			_, lrp, _ := desirer.DesireArgsForCall(0)
+			_, _, lrp, _ := desirer.DesireArgsForCall(0)
 			privateRegistry := lrp.PrivateRegistry
 			Expect(privateRegistry).NotTo(BeNil())
 			Expect(privateRegistry.Username).To(Equal("docker-user"))
@@ -149,7 +149,7 @@ var _ = Describe("reconciler.LRP", func() {
 			})
 
 			It("configures the private registry server with the dockerhub host", func() {
-				_, lrp, _ := desirer.DesireArgsForCall(0)
+				_, _, lrp, _ := desirer.DesireArgsForCall(0)
 				Expect(lrp.PrivateRegistry.Server).To(Equal("index.docker.io/v1/"))
 			})
 		})
@@ -164,7 +164,7 @@ var _ = Describe("reconciler.LRP", func() {
 			Expect(resultErr).NotTo(HaveOccurred())
 
 			Expect(desirer.UpdateCallCount()).To(Equal(1))
-			lrp := desirer.UpdateArgsForCall(0)
+			_, lrp := desirer.UpdateArgsForCall(0)
 			Expect(lrp.TargetInstances).To(Equal(10))
 			Expect(lrp.AppURIs).To(ConsistOf(
 				opi.Route{Hostname: "foo.io", Port: 8080},

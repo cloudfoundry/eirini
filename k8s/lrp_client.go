@@ -1,6 +1,8 @@
 package k8s
 
 import (
+	"context"
+
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
@@ -9,31 +11,31 @@ import (
 )
 
 type PodClient interface {
-	GetAll() ([]corev1.Pod, error)
-	GetByLRPIdentifier(opi.LRPIdentifier) ([]corev1.Pod, error)
-	Delete(namespace, name string) error
+	GetAll(ctx context.Context) ([]corev1.Pod, error)
+	GetByLRPIdentifier(ctx context.Context, id opi.LRPIdentifier) ([]corev1.Pod, error)
+	Delete(ctx context.Context, namespace, name string) error
 }
 
 type PodDisruptionBudgetClient interface {
-	Update(namespace, name string, lrp *opi.LRP) error
-	Delete(namespace string, name string) error
+	Update(ctx context.Context, namespace, name string, lrp *opi.LRP) error
+	Delete(ctx context.Context, namespace string, name string) error
 }
 
 type StatefulSetClient interface {
-	Create(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
-	Update(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
-	Delete(namespace string, name string) error
-	GetBySourceType(sourceType string) ([]appsv1.StatefulSet, error)
-	GetByLRPIdentifier(id opi.LRPIdentifier) ([]appsv1.StatefulSet, error)
+	Create(ctx context.Context, namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
+	Update(ctx context.Context, namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
+	Delete(ctx context.Context, namespace string, name string) error
+	GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.StatefulSet, error)
+	GetByLRPIdentifier(ctx context.Context, id opi.LRPIdentifier) ([]appsv1.StatefulSet, error)
 }
 
 type SecretsClient interface {
-	Create(namespace string, secret *corev1.Secret) (*corev1.Secret, error)
-	Delete(namespace string, name string) error
+	Create(ctx context.Context, namespace string, secret *corev1.Secret) (*corev1.Secret, error)
+	Delete(ctx context.Context, namespace string, name string) error
 }
 
 type EventsClient interface {
-	GetByPod(pod corev1.Pod) ([]corev1.Event, error)
+	GetByPod(ctx context.Context, pod corev1.Pod) ([]corev1.Event, error)
 }
 
 type LRPClient struct {

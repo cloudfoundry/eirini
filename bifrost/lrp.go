@@ -19,13 +19,13 @@ type LRPConverter interface {
 }
 
 type LRPClient interface {
-	Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) error
-	List() ([]*opi.LRP, error)
-	Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
-	GetInstances(identifier opi.LRPIdentifier) ([]*opi.Instance, error)
-	Update(lrp *opi.LRP) error
-	Stop(identifier opi.LRPIdentifier) error
-	StopInstance(identifier opi.LRPIdentifier, index uint) error
+	Desire(ctx context.Context, namespace string, lrp *opi.LRP, opts ...shared.Option) error
+	List(ctx context.Context) ([]*opi.LRP, error)
+	Get(ctx context.Context, identifier opi.LRPIdentifier) (*opi.LRP, error)
+	GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*opi.Instance, error)
+	Update(ctx context.Context, lrp *opi.LRP) error
+	Stop(ctx context.Context, identifier opi.LRPIdentifier) error
+	StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error
 }
 
 type LRPNamespacer interface {
@@ -46,11 +46,11 @@ func (l *LRP) Transfer(ctx context.Context, request cf.DesireLRPRequest) error {
 
 	namespace := l.Namespacer.GetNamespace(request.Namespace)
 
-	return errors.Wrap(l.LRPClient.Desire(namespace, &desiredLRP), "failed to desire")
+	return errors.Wrap(l.LRPClient.Desire(ctx, namespace, &desiredLRP), "failed to desire")
 }
 
 func (l *LRP) List(ctx context.Context) ([]cf.DesiredLRPSchedulingInfo, error) {
-	lrps, err := l.LRPClient.List()
+	lrps, err := l.LRPClient.List(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list desired LRPs")
 	}
@@ -79,7 +79,7 @@ func (l *LRP) Update(ctx context.Context, request cf.UpdateDesiredLRPRequest) er
 		Version: request.Version,
 	}
 
-	lrp, err := l.LRPClient.Get(identifier)
+	lrp, err := l.LRPClient.Get(ctx, identifier)
 	if err != nil {
 		return errors.Wrap(err, "failed to get app")
 	}
@@ -94,11 +94,11 @@ func (l *LRP) Update(ctx context.Context, request cf.UpdateDesiredLRPRequest) er
 
 	lrp.Image = request.Update.Image
 
-	return errors.Wrap(l.LRPClient.Update(lrp), "failed to update")
+	return errors.Wrap(l.LRPClient.Update(ctx, lrp), "failed to update")
 }
 
 func (l *LRP) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (cf.DesiredLRP, error) {
-	lrp, err := l.LRPClient.Get(identifier)
+	lrp, err := l.LRPClient.Get(ctx, identifier)
 	if err != nil {
 		return cf.DesiredLRP{}, errors.Wrap(err, "failed to get app")
 	}
@@ -124,11 +124,11 @@ func (l *LRP) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (cf.Desi
 }
 
 func (l *LRP) Stop(ctx context.Context, identifier opi.LRPIdentifier) error {
-	return errors.Wrap(l.LRPClient.Stop(identifier), "failed to stop app")
+	return errors.Wrap(l.LRPClient.Stop(ctx, identifier), "failed to stop app")
 }
 
 func (l *LRP) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error {
-	if err := l.LRPClient.StopInstance(identifier, index); err != nil {
+	if err := l.LRPClient.StopInstance(ctx, identifier, index); err != nil {
 		return errors.Wrap(err, "failed to stop instance")
 	}
 
@@ -136,7 +136,7 @@ func (l *LRP) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, in
 }
 
 func (l *LRP) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error) {
-	opiInstances, err := l.LRPClient.GetInstances(identifier)
+	opiInstances, err := l.LRPClient.GetInstances(ctx, identifier)
 	if err != nil {
 		return []*cf.Instance{}, errors.Wrap(err, "failed to get instances for app")
 	}

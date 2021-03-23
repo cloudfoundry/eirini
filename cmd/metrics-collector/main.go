@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"os"
@@ -95,7 +96,7 @@ func launchMetricsEmitter(
 	emitter := metrics.NewLoggregatorEmitter(loggregatorClient)
 
 	collectorScheduler.Schedule(func() error {
-		return k8s.ForwardMetricsToEmitter(collector, emitter)
+		return k8s.ForwardMetricsToEmitter(context.Background(), collector, emitter)
 	})
 }
 

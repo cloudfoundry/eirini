@@ -1,6 +1,7 @@
 package event
 
 import (
+	"context"
 	"encoding/json"
 
 	"code.cloudfoundry.org/eirini/k8s/informers/route"
@@ -16,7 +17,7 @@ import (
 //counterfeiter:generate . StatefulSetGetter
 
 type StatefulSetGetter interface {
-	Get(namespace, name string) (*appsv1.StatefulSet, error)
+	Get(ctx context.Context, namespace, name string) (*appsv1.StatefulSet, error)
 }
 
 type PodUpdateHandler struct {
@@ -25,10 +26,10 @@ type PodUpdateHandler struct {
 	RouteEmitter      eiriniroute.Emitter
 }
 
-func (h PodUpdateHandler) Handle(oldPod, updatedPod *corev1.Pod) {
+func (h PodUpdateHandler) Handle(ctx context.Context, oldPod, updatedPod *corev1.Pod) {
 	loggerSession := h.Logger.Session("pod-update", lager.Data{"pod-name": updatedPod.Name, "guid": updatedPod.Annotations[stset.AnnotationProcessGUID]})
 
-	userDefinedRoutes, err := h.getUserDefinedRoutes(updatedPod)
+	userDefinedRoutes, err := h.getUserDefinedRoutes(ctx, updatedPod)
 	if err != nil {
 		loggerSession.Debug("failed-to-get-user-defined-routes", lager.Data{"error": err.Error()})
 
@@ -37,7 +38,7 @@ func (h PodUpdateHandler) Handle(oldPod, updatedPod *corev1.Pod) {
 
 	if markedForDeletion(*updatedPod) || (!isReady(updatedPod.Status.Conditions) && isReady(oldPod.Status.Conditions)) {
 		loggerSession.Debug("pod-not-ready", lager.Data{"statuses": updatedPod.Status.Conditions, "deletion-timestamp": updatedPod.DeletionTimestamp})
-		h.unregisterPodRoutes(oldPod, userDefinedRoutes)
+		h.unregisterPodRoutes(ctx, oldPod, userDefinedRoutes)
 
 		return
 	}
@@ -54,11 +55,11 @@ func (h PodUpdateHandler) Handle(oldPod, updatedPod *corev1.Pod) {
 			continue
 		}
 
-		h.RouteEmitter.Emit(*routes)
+		h.RouteEmitter.Emit(ctx, *routes)
 	}
 }
 
-func (h PodUpdateHandler) unregisterPodRoutes(pod *corev1.Pod, userDefinedRoutes []cf.Route) {
+func (h PodUpdateHandler) unregisterPodRoutes(ctx context.Context, pod *corev1.Pod, userDefinedRoutes []cf.Route) {
 	loggerSession := h.Logger.Session("pod-delete", lager.Data{"pod-name": pod.Name, "guid": pod.Annotations[stset.AnnotationProcessGUID]})
 
 	for _, r := range userDefinedRoutes {
@@ -73,12 +74,12 @@ func (h PodUpdateHandler) unregisterPodRoutes(pod *corev1.Pod, userDefinedRoutes
 			continue
 		}
 
-		h.RouteEmitter.Emit(*routes)
+		h.RouteEmitter.Emit(ctx, *routes)
 	}
 }
 
-func (h PodUpdateHandler) getUserDefinedRoutes(pod *corev1.Pod) ([]cf.Route, error) {
-	owner, err := h.getOwner(pod)
+func (h PodUpdateHandler) getUserDefinedRoutes(ctx context.Context, pod *corev1.Pod) ([]cf.Route, error) {
+	owner, err := h.getOwner(ctx, pod)
 	if err != nil {
 		return []cf.Route{}, errors.Wrap(err, "failed to get owner")
 	}
@@ -86,7 +87,7 @@ func (h PodUpdateHandler) getUserDefinedRoutes(pod *corev1.Pod) ([]cf.Route, err
 	return decodeRoutes(owner.Annotations[stset.AnnotationRegisteredRoutes])
 }
 
-func (h PodUpdateHandler) getOwner(pod *corev1.Pod) (*appsv1.StatefulSet, error) {
+func (h PodUpdateHandler) getOwner(ctx context.Context, pod *corev1.Pod) (*appsv1.StatefulSet, error) {
 	ownerReferences := pod.OwnerReferences
 
 	if len(ownerReferences) == 0 {
@@ -95,7 +96,7 @@ func (h PodUpdateHandler) getOwner(pod *corev1.Pod) (*appsv1.StatefulSet, error)
 
 	for _, owner := range ownerReferences {
 		if owner.Kind == "StatefulSet" {
-			return h.StatefulSetGetter.Get(pod.Namespace, owner.Name)
+			return h.StatefulSetGetter.Get(ctx, pod.Namespace, owner.Name)
 		}
 	}
 

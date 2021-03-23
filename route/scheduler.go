@@ -1,6 +1,8 @@
 package route
 
 import (
+	"context"
+
 	"code.cloudfoundry.org/eirini/util"
 	"github.com/pkg/errors"
 )
@@ -8,7 +10,7 @@ import (
 //counterfeiter:generate . Emitter
 
 type Emitter interface {
-	Emit(Message)
+	Emit(ctx context.Context, msg Message)
 }
 
 type CollectorScheduler struct {
@@ -19,12 +21,13 @@ type CollectorScheduler struct {
 
 func (c CollectorScheduler) Start() {
 	c.Scheduler.Schedule(func() error {
-		routes, err := c.Collector.Collect()
+		ctx := context.Background()
+		routes, err := c.Collector.Collect(ctx)
 		if err != nil {
 			return errors.Wrap(err, "failed to collect routes")
 		}
 		for _, r := range routes {
-			c.Emitter.Emit(r)
+			c.Emitter.Emit(ctx, r)
 		}
 
 		return nil

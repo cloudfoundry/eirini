@@ -2,6 +2,7 @@
 package stsetfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
@@ -10,10 +11,11 @@ import (
 )
 
 type FakeStatefulSetByLRPIdentifierGetter struct {
-	GetByLRPIdentifierStub        func(opi.LRPIdentifier) ([]v1.StatefulSet, error)
+	GetByLRPIdentifierStub        func(context.Context, opi.LRPIdentifier) ([]v1.StatefulSet, error)
 	getByLRPIdentifierMutex       sync.RWMutex
 	getByLRPIdentifierArgsForCall []struct {
-		arg1 opi.LRPIdentifier
+		arg1 context.Context
+		arg2 opi.LRPIdentifier
 	}
 	getByLRPIdentifierReturns struct {
 		result1 []v1.StatefulSet
@@ -27,18 +29,19 @@ type FakeStatefulSetByLRPIdentifierGetter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifier(arg1 opi.LRPIdentifier) ([]v1.StatefulSet, error) {
+func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifier(arg1 context.Context, arg2 opi.LRPIdentifier) ([]v1.StatefulSet, error) {
 	fake.getByLRPIdentifierMutex.Lock()
 	ret, specificReturn := fake.getByLRPIdentifierReturnsOnCall[len(fake.getByLRPIdentifierArgsForCall)]
 	fake.getByLRPIdentifierArgsForCall = append(fake.getByLRPIdentifierArgsForCall, struct {
-		arg1 opi.LRPIdentifier
-	}{arg1})
+		arg1 context.Context
+		arg2 opi.LRPIdentifier
+	}{arg1, arg2})
 	stub := fake.GetByLRPIdentifierStub
 	fakeReturns := fake.getByLRPIdentifierReturns
-	fake.recordInvocation("GetByLRPIdentifier", []interface{}{arg1})
+	fake.recordInvocation("GetByLRPIdentifier", []interface{}{arg1, arg2})
 	fake.getByLRPIdentifierMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -52,17 +55,17 @@ func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierCallCount() 
 	return len(fake.getByLRPIdentifierArgsForCall)
 }
 
-func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierCalls(stub func(opi.LRPIdentifier) ([]v1.StatefulSet, error)) {
+func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierCalls(stub func(context.Context, opi.LRPIdentifier) ([]v1.StatefulSet, error)) {
 	fake.getByLRPIdentifierMutex.Lock()
 	defer fake.getByLRPIdentifierMutex.Unlock()
 	fake.GetByLRPIdentifierStub = stub
 }
 
-func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierArgsForCall(i int) opi.LRPIdentifier {
+func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierArgsForCall(i int) (context.Context, opi.LRPIdentifier) {
 	fake.getByLRPIdentifierMutex.RLock()
 	defer fake.getByLRPIdentifierMutex.RUnlock()
 	argsForCall := fake.getByLRPIdentifierArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierReturns(result1 []v1.StatefulSet, result2 error) {

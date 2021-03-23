@@ -2,16 +2,18 @@
 package taskfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
 )
 
 type FakeDeleter struct {
-	DeleteStub        func(string) (string, error)
+	DeleteStub        func(context.Context, string) (string, error)
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
+		arg2 string
 	}
 	deleteReturns struct {
 		result1 string
@@ -25,18 +27,19 @@ type FakeDeleter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeDeleter) Delete(arg1 string) (string, error) {
+func (fake *FakeDeleter) Delete(arg1 context.Context, arg2 string) (string, error) {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
-		arg1 string
-	}{arg1})
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
 	stub := fake.DeleteStub
 	fakeReturns := fake.deleteReturns
-	fake.recordInvocation("Delete", []interface{}{arg1})
+	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
 	fake.deleteMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -50,17 +53,17 @@ func (fake *FakeDeleter) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeDeleter) DeleteCalls(stub func(string) (string, error)) {
+func (fake *FakeDeleter) DeleteCalls(stub func(context.Context, string) (string, error)) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakeDeleter) DeleteArgsForCall(i int) string {
+func (fake *FakeDeleter) DeleteArgsForCall(i int) (context.Context, string) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeDeleter) DeleteReturns(result1 string, result2 error) {

@@ -61,12 +61,12 @@ var _ = Describe("MessageEmitter", func() {
 
 	Context("When MessageEmitter is started", func() {
 		It("should publish the registered routes", func() {
-			messageEmitter.Emit(routes)
+			messageEmitter.Emit(ctx, routes)
 			assertPublishedRoutes("router.register", "route1.my.app.com", 0)
 		})
 
 		It("should publish the unregistered routes", func() {
-			messageEmitter.Emit(routes)
+			messageEmitter.Emit(ctx, routes)
 			assertPublishedRoutes("router.unregister", "removed.route1.my.app.com", 1)
 		})
 
@@ -77,7 +77,7 @@ var _ = Describe("MessageEmitter", func() {
 			})
 
 			It("should only publish the registered routes", func() {
-				messageEmitter.Emit(routes)
+				messageEmitter.Emit(ctx, routes)
 				assertPublishedRoutes("router.register", "route1.my.app.com", 0)
 			})
 		})
@@ -89,7 +89,7 @@ var _ = Describe("MessageEmitter", func() {
 			})
 
 			It("should only publish the unregistered routes", func() {
-				messageEmitter.Emit(routes)
+				messageEmitter.Emit(ctx, routes)
 				assertPublishedRoutes("router.unregister", "removed.route1.my.app.com", 0)
 			})
 		})
@@ -100,23 +100,23 @@ var _ = Describe("MessageEmitter", func() {
 			})
 
 			It("should publish the registered routes", func() {
-				messageEmitter.Emit(routes)
+				messageEmitter.Emit(ctx, routes)
 				assertPublishedRoutes("router.register", "route1.my.app.com", 0)
 			})
 
 			It("prints an informative message that registration failed", func() {
-				messageEmitter.Emit(routes)
+				messageEmitter.Emit(ctx, routes)
 				Expect(logger.Buffer()).To(gbytes.Say(`"message":"test-logger.failed-to-publish-registered-route"`))
 				Expect(logger.Buffer()).To(gbytes.Say(`"error":".*Failed to publish message"`))
 			})
 
 			It("should publish the unregistered routes", func() {
-				messageEmitter.Emit(routes)
+				messageEmitter.Emit(ctx, routes)
 				assertPublishedRoutes("router.unregister", "removed.route1.my.app.com", 1)
 			})
 
 			It("prints an informative message that unregistration failed", func() {
-				messageEmitter.Emit(routes)
+				messageEmitter.Emit(ctx, routes)
 				Expect(logger.Buffer()).To(gbytes.Say(`"message":"test-logger.failed-to-publish-unregistered-route"`))
 				Expect(logger.Buffer()).To(gbytes.Say(`"error":".*Failed to publish message"`))
 			})
@@ -129,12 +129,12 @@ var _ = Describe("MessageEmitter", func() {
 		})
 
 		It("should not publish a route", func() {
-			messageEmitter.Emit(routes)
+			messageEmitter.Emit(ctx, routes)
 			Expect(publisher.PublishCallCount()).To(Equal(0))
 		})
 
 		It("should log the error", func() {
-			messageEmitter.Emit(routes)
+			messageEmitter.Emit(ctx, routes)
 
 			logs := logger.Logs()
 			Expect(logs).To(HaveLen(1))

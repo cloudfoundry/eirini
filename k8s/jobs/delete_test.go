@@ -63,7 +63,7 @@ var _ = Describe("Delete", func() {
 	})
 
 	JustBeforeEach(func() {
-		completionCallback, deleteErr = deleter.Delete(taskGUID)
+		completionCallback, deleteErr = deleter.Delete(ctx, taskGUID)
 	})
 
 	It("succeeds", func() {
@@ -72,7 +72,7 @@ var _ = Describe("Delete", func() {
 
 	It("deletes the job", func() {
 		Expect(jobDeleter.DeleteCallCount()).To(Equal(1))
-		actualJobNs, actualJobName := jobDeleter.DeleteArgsForCall(0)
+		_, actualJobNs, actualJobName := jobDeleter.DeleteArgsForCall(0)
 		Expect(actualJobNs).To(Equal(job.Namespace))
 		Expect(actualJobName).To(Equal(job.Name))
 	})
@@ -83,7 +83,7 @@ var _ = Describe("Delete", func() {
 
 	It("selects the job using the task label guid and the eirini label", func() {
 		Expect(jobGetter.GetByGUIDCallCount()).To(Equal(1))
-		guid, includeCompleted := jobGetter.GetByGUIDArgsForCall(0)
+		_, guid, includeCompleted := jobGetter.GetByGUIDArgsForCall(0)
 		Expect(guid).To(Equal(taskGUID))
 		Expect(includeCompleted).To(Equal(true))
 	})
@@ -148,7 +148,7 @@ var _ = Describe("Delete", func() {
 
 		It("deletes the docker registry image pull secret only", func() {
 			Expect(secretDeleter.DeleteCallCount()).To(Equal(1))
-			actualNamespace, actualSecretName := secretDeleter.DeleteArgsForCall(0)
+			_, actualNamespace, actualSecretName := secretDeleter.DeleteArgsForCall(0)
 			Expect(actualNamespace).To(Equal("my-namespace"))
 			Expect(actualSecretName).To(Equal(dockerRegistrySecretName))
 		})

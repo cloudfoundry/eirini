@@ -67,9 +67,9 @@ var _ = Describe("LRPClient", func() {
 
 	Describe("Desire", func() {
 		JustBeforeEach(func() {
-			err := lrpClient.Desire(fixture.Namespace, odinLRP)
+			err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
 			Expect(err).ToNot(HaveOccurred())
-			err = lrpClient.Desire(fixture.Namespace, thorLRP)
+			err = lrpClient.Desire(ctx, fixture.Namespace, thorLRP)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -211,7 +211,7 @@ var _ = Describe("LRPClient", func() {
 
 		Context("when we create the same StatefulSet again", func() {
 			It("should not error", func() {
-				err := lrpClient.Desire(fixture.Namespace, odinLRP)
+				err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -267,7 +267,7 @@ var _ = Describe("LRPClient", func() {
 		var statefulsetName string
 
 		JustBeforeEach(func() {
-			err := lrpClient.Desire(fixture.Namespace, odinLRP)
+			err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func() []corev1.Pod {
@@ -276,7 +276,7 @@ var _ = Describe("LRPClient", func() {
 
 			statefulsetName = getStatefulSetForLRP(odinLRP).Name
 
-			err = lrpClient.Stop(odinLRP.LRPIdentifier)
+			err = lrpClient.Stop(ctx, odinLRP.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -345,10 +345,10 @@ var _ = Describe("LRPClient", func() {
 
 		JustBeforeEach(func() {
 			odinLRP.TargetInstances = instancesBefore
-			Expect(lrpClient.Desire(fixture.Namespace, odinLRP)).To(Succeed())
+			Expect(lrpClient.Desire(ctx, fixture.Namespace, odinLRP)).To(Succeed())
 
 			odinLRP.TargetInstances = instancesAfter
-			Expect(lrpClient.Update(odinLRP)).To(Succeed())
+			Expect(lrpClient.Update(ctx, odinLRP)).To(Succeed())
 		})
 
 		Context("when scaling up from 1 to 2 instances", func() {
@@ -408,14 +408,14 @@ var _ = Describe("LRPClient", func() {
 
 	Describe("Get", func() {
 		numberOfInstancesFn := func() int {
-			lrp, err := lrpClient.Get(odinLRP.LRPIdentifier)
+			lrp, err := lrpClient.Get(ctx, odinLRP.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
 
 			return lrp.RunningInstances
 		}
 
 		JustBeforeEach(func() {
-			err := lrpClient.Desire(fixture.Namespace, odinLRP)
+			err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -456,7 +456,7 @@ fi;`,
 			})
 
 			It("can still get the LRP", func() {
-				lrp, err := lrpClient.Get(odinLRP.LRPIdentifier)
+				lrp, err := lrpClient.Get(ctx, odinLRP.LRPIdentifier)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(lrp.GUID).To(Equal(odinLRP.GUID))
 			})
@@ -465,14 +465,14 @@ fi;`,
 
 	Describe("GetInstances", func() {
 		instancesFn := func() []*opi.Instance {
-			instances, err := lrpClient.GetInstances(odinLRP.LRPIdentifier)
+			instances, err := lrpClient.GetInstances(ctx, odinLRP.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
 
 			return instances
 		}
 
 		JustBeforeEach(func() {
-			err := lrpClient.Desire(fixture.Namespace, odinLRP)
+			err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
 			Expect(err).ToNot(HaveOccurred())
 		})
 

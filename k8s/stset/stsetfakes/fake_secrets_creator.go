@@ -2,6 +2,7 @@
 package stsetfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
@@ -9,11 +10,12 @@ import (
 )
 
 type FakeSecretsCreator struct {
-	CreateStub        func(string, *v1.Secret) (*v1.Secret, error)
+	CreateStub        func(context.Context, string, *v1.Secret) (*v1.Secret, error)
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
-		arg1 string
-		arg2 *v1.Secret
+		arg1 context.Context
+		arg2 string
+		arg3 *v1.Secret
 	}
 	createReturns struct {
 		result1 *v1.Secret
@@ -27,19 +29,20 @@ type FakeSecretsCreator struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeSecretsCreator) Create(arg1 string, arg2 *v1.Secret) (*v1.Secret, error) {
+func (fake *FakeSecretsCreator) Create(arg1 context.Context, arg2 string, arg3 *v1.Secret) (*v1.Secret, error) {
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
-		arg1 string
-		arg2 *v1.Secret
-	}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 *v1.Secret
+	}{arg1, arg2, arg3})
 	stub := fake.CreateStub
 	fakeReturns := fake.createReturns
-	fake.recordInvocation("Create", []interface{}{arg1, arg2})
+	fake.recordInvocation("Create", []interface{}{arg1, arg2, arg3})
 	fake.createMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -53,17 +56,17 @@ func (fake *FakeSecretsCreator) CreateCallCount() int {
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakeSecretsCreator) CreateCalls(stub func(string, *v1.Secret) (*v1.Secret, error)) {
+func (fake *FakeSecretsCreator) CreateCalls(stub func(context.Context, string, *v1.Secret) (*v1.Secret, error)) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = stub
 }
 
-func (fake *FakeSecretsCreator) CreateArgsForCall(i int) (string, *v1.Secret) {
+func (fake *FakeSecretsCreator) CreateArgsForCall(i int) (context.Context, string, *v1.Secret) {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	argsForCall := fake.createArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeSecretsCreator) CreateReturns(result1 *v1.Secret, result2 error) {

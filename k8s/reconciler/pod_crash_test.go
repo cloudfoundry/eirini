@@ -110,7 +110,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 		Expect(nsName).To(Equal(types.NamespacedName{Namespace: "some-ns", Name: "app-instance"}))
 
 		Expect(crashEventGenerator.GenerateCallCount()).To(Equal(1))
-		pod, _ := crashEventGenerator.GenerateArgsForCall(0)
+		_, pod, _ := crashEventGenerator.GenerateArgsForCall(0)
 		Expect(pod.Namespace).To(Equal("some-ns"))
 		Expect(pod.Name).To(Equal("app-instance"))
 	})
@@ -149,7 +149,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 
 		It("creates a k8s event", func() {
 			Expect(eventsClient.CreateCallCount()).To(Equal(1))
-			namespace, event := eventsClient.CreateArgsForCall(0)
+			_, namespace, event := eventsClient.CreateArgsForCall(0)
 			Expect(namespace).To(Equal("some-ns"))
 			Expect(event.GenerateName).To(Equal("instance-name-"))
 			Expect(event.Labels).To(HaveKeyWithValue("cloudfoundry.org/instance_index", "3"))
@@ -323,7 +323,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 			})
 
 			Expect(eventsClient.GetByInstanceAndReasonCallCount()).To(Equal(2))
-			namespace, ownerRef, instanceIndex, reason := eventsClient.GetByInstanceAndReasonArgsForCall(0)
+			_, namespace, ownerRef, instanceIndex, reason := eventsClient.GetByInstanceAndReasonArgsForCall(0)
 			Expect(namespace).To(Equal("some-ns"))
 			Expect(ownerRef.Kind).To(Equal("LRP"))
 			Expect(ownerRef.Name).To(Equal("parent-lrp"))
@@ -331,7 +331,7 @@ var _ = Describe("K8s/Reconciler/AppCrash", func() {
 			Expect(reason).To(Equal("Container: Error"))
 
 			Expect(eventsClient.UpdateCallCount()).To(Equal(1))
-			ns, event := eventsClient.UpdateArgsForCall(0)
+			_, ns, event := eventsClient.UpdateArgsForCall(0)
 
 			Expect(ns).To(Equal("some-ns"))
 			Expect(event.Reason).To(Equal("Container: Error"))

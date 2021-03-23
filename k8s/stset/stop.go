@@ -1,6 +1,7 @@
 package stset
 
 import (
+	"context"
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
@@ -18,19 +19,19 @@ import (
 //counterfeiter:generate . PodDeleter
 
 type PodDisruptionBudgetDeleter interface {
-	Delete(namespace string, name string) error
+	Delete(ctx context.Context, namespace string, name string) error
 }
 
 type StatefulSetDeleter interface {
-	Delete(namespace string, name string) error
+	Delete(ctx context.Context, namespace string, name string) error
 }
 
 type SecretsDeleter interface {
-	Delete(namespace string, name string) error
+	Delete(ctx context.Context, namespace string, name string) error
 }
 
 type PodDeleter interface {
-	Delete(namespace, name string) error
+	Delete(ctx context.Context, namespace, name string) error
 }
 
 type Stopper struct {
@@ -60,17 +61,17 @@ func NewStopper(
 	}
 }
 
-func (s *Stopper) Stop(identifier opi.LRPIdentifier) error {
+func (s *Stopper) Stop(ctx context.Context, identifier opi.LRPIdentifier) error {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		return s.stop(identifier)
+		return s.stop(ctx, identifier)
 	})
 
 	return errors.Wrap(err, "failed to delete statefulset")
 }
 
-func (s *Stopper) stop(identifier opi.LRPIdentifier) error {
+func (s *Stopper) stop(ctx context.Context, identifier opi.LRPIdentifier) error {
 	logger := s.logger.Session("stop", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
-	statefulSet, err := s.getStatefulSet(identifier)
+	statefulSet, err := s.getStatefulSet(ctx, identifier)
 
 	if errors.Is(err, eirini.ErrNotFound) {
 		logger.Debug("statefulset-does-not-exist")
@@ -84,21 +85,21 @@ func (s *Stopper) stop(identifier opi.LRPIdentifier) error {
 		return err
 	}
 
-	err = s.podDisruptionBudget.Delete(statefulSet.Namespace, statefulSet.Name)
+	err = s.podDisruptionBudget.Delete(ctx, statefulSet.Namespace, statefulSet.Name)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		logger.Error("failed-to-delete-disruption-budget", err)
 
 		return errors.Wrap(err, "failed to delete pod disruption budget")
 	}
 
-	err = s.deletePrivateRegistrySecret(statefulSet)
+	err = s.deletePrivateRegistrySecret(ctx, statefulSet)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		logger.Error("failed-to-delete-private-registry-secret", err)
 
 		return err
 	}
 
-	if err := s.statefulSetDeleter.Delete(statefulSet.Namespace, statefulSet.Name); err != nil {
+	if err := s.statefulSetDeleter.Delete(ctx, statefulSet.Namespace, statefulSet.Name); err != nil {
 		logger.Error("failed-to-delete-statefulset", err)
 
 		return errors.Wrap(err, "failed to delete statefulset")
@@ -107,19 +108,19 @@ func (s *Stopper) stop(identifier opi.LRPIdentifier) error {
 	return nil
 }
 
-func (s *Stopper) deletePrivateRegistrySecret(statefulSet *appsv1.StatefulSet) error {
+func (s *Stopper) deletePrivateRegistrySecret(ctx context.Context, statefulSet *appsv1.StatefulSet) error {
 	for _, secret := range statefulSet.Spec.Template.Spec.ImagePullSecrets {
 		if secret.Name == privateRegistrySecretName(statefulSet.Name) {
-			return s.secretsDeleter.Delete(statefulSet.Namespace, secret.Name)
+			return s.secretsDeleter.Delete(ctx, statefulSet.Namespace, secret.Name)
 		}
 	}
 
 	return nil
 }
 
-func (s *Stopper) StopInstance(identifier opi.LRPIdentifier, index uint) error {
+func (s *Stopper) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error {
 	logger := s.logger.Session("stopInstance", lager.Data{"guid": identifier.GUID, "version": identifier.Version, "index": index})
-	statefulset, err := s.getStatefulSet(identifier)
+	statefulset, err := s.getStatefulSet(ctx, identifier)
 
 	if errors.Is(err, eirini.ErrNotFound) {
 		logger.Debug("statefulset-does-not-exist")
@@ -137,7 +138,7 @@ func (s *Stopper) StopInstance(identifier opi.LRPIdentifier, index uint) error {
 		return eirini.ErrInvalidInstanceIndex
 	}
 
-	err = s.podDeleter.Delete(statefulset.Namespace, fmt.Sprintf("%s-%d", statefulset.Name, index))
+	err = s.podDeleter.Delete(ctx, statefulset.Namespace, fmt.Sprintf("%s-%d", statefulset.Name, index))
 	if k8serrors.IsNotFound(err) {
 		logger.Debug("pod-does-not-exist")
 

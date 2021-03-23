@@ -102,12 +102,12 @@ var _ = Describe("UpdateEventHandler", func() {
 		})
 
 		It("should not send a route for the pod", func() {
-			handler.Handle(pod, updatedPod)
+			handler.Handle(ctx, pod, updatedPod)
 			Expect(routeEmitter.EmitCallCount()).To(Equal(0))
 		})
 
 		It("should provide a helpful error message", func() {
-			handler.Handle(pod, updatedPod)
+			handler.Handle(ctx, pod, updatedPod)
 
 			Expect(logger.Logs()).ToNot(BeEmpty())
 
@@ -122,10 +122,11 @@ var _ = Describe("UpdateEventHandler", func() {
 
 	Context("When an ip is assigned to a pod", func() {
 		It("should send all routes", func() {
-			handler.Handle(pod, updatedPod)
+			handler.Handle(ctx, pod, updatedPod)
 
 			Expect(routeEmitter.EmitCallCount()).To(Equal(2))
-			Expect(routeEmitter.EmitArgsForCall(0)).To(Equal(eiriniroute.Message{
+			_, msg0 := routeEmitter.EmitArgsForCall(0)
+			Expect(msg0).To(Equal(eiriniroute.Message{
 				Routes: eiriniroute.Routes{
 					RegisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
 				},
@@ -136,7 +137,8 @@ var _ = Describe("UpdateEventHandler", func() {
 				Port:       8080,
 				TLSPort:    0,
 			}))
-			Expect(routeEmitter.EmitArgsForCall(1)).To(Equal(eiriniroute.Message{
+			_, msg1 := routeEmitter.EmitArgsForCall(1)
+			Expect(msg1).To(Equal(eiriniroute.Message{
 				Routes: eiriniroute.Routes{
 					RegisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
 				},
@@ -154,14 +156,14 @@ var _ = Describe("UpdateEventHandler", func() {
 		It("should not send routes for the pod", func() {
 			updatedPod.OwnerReferences = []metav1.OwnerReference{}
 
-			handler.Handle(pod, updatedPod)
+			handler.Handle(ctx, pod, updatedPod)
 			Expect(routeEmitter.EmitCallCount()).To(Equal(0))
 		})
 
 		It("should provide a helpful error message", func() {
 			updatedPod.OwnerReferences = []metav1.OwnerReference{}
 
-			handler.Handle(pod, updatedPod)
+			handler.Handle(ctx, pod, updatedPod)
 
 			Expect(logger.Logs()).ToNot(BeEmpty())
 			log := logger.Logs()[0]
@@ -179,9 +181,10 @@ var _ = Describe("UpdateEventHandler", func() {
 				Kind: "extraterrestrial",
 				Name: "E.T.",
 			})
-			handler.Handle(pod, updatedPod)
+			handler.Handle(ctx, pod, updatedPod)
 
-			Expect(routeEmitter.EmitArgsForCall(0)).To(Equal(eiriniroute.Message{
+			_, msg0 := routeEmitter.EmitArgsForCall(0)
+			Expect(msg0).To(Equal(eiriniroute.Message{
 				Routes: eiriniroute.Routes{
 					RegisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
 				},
@@ -201,7 +204,7 @@ var _ = Describe("UpdateEventHandler", func() {
 					Name: "E.T.",
 				},
 			}
-			handler.Handle(pod, updatedPod)
+			handler.Handle(ctx, pod, updatedPod)
 
 			Expect(routeEmitter.EmitCallCount()).To(Equal(0))
 
@@ -226,13 +229,12 @@ var _ = Describe("UpdateEventHandler", func() {
 		})
 
 		It("sends unregister route messages for the pod", func() {
-			handler.Handle(pod, updatedPod)
+			handler.Handle(ctx, pod, updatedPod)
 
 			Expect(routeEmitter.EmitCallCount()).To(Equal(2))
-			emittedRoutes := []eiriniroute.Message{
-				routeEmitter.EmitArgsForCall(0),
-				routeEmitter.EmitArgsForCall(1),
-			}
+			_, r1 := routeEmitter.EmitArgsForCall(0)
+			_, r2 := routeEmitter.EmitArgsForCall(1)
+			emittedRoutes := []eiriniroute.Message{r1, r2}
 
 			Expect(emittedRoutes).To(ConsistOf(eiriniroute.Message{
 				Routes: eiriniroute.Routes{
@@ -260,7 +262,7 @@ var _ = Describe("UpdateEventHandler", func() {
 		})
 
 		It("should provide a helpful error message", func() {
-			handler.Handle(pod, updatedPod)
+			handler.Handle(ctx, pod, updatedPod)
 
 			Expect(logger.Logs()).ToNot(BeEmpty())
 
@@ -289,13 +291,13 @@ var _ = Describe("UpdateEventHandler", func() {
 			})
 
 			It("sends unregister route message for the pod", func() {
-				handler.Handle(pod, updatedPod)
+				handler.Handle(ctx, pod, updatedPod)
 
 				Expect(routeEmitter.EmitCallCount()).To(Equal(2))
-				emittedRoutes := []eiriniroute.Message{
-					routeEmitter.EmitArgsForCall(0),
-					routeEmitter.EmitArgsForCall(1),
-				}
+
+				_, r1 := routeEmitter.EmitArgsForCall(0)
+				_, r2 := routeEmitter.EmitArgsForCall(1)
+				emittedRoutes := []eiriniroute.Message{r1, r2}
 
 				Expect(emittedRoutes).To(ConsistOf(eiriniroute.Message{
 					Routes: eiriniroute.Routes{
@@ -323,7 +325,7 @@ var _ = Describe("UpdateEventHandler", func() {
 			})
 
 			It("should provide a helpful error message", func() {
-				handler.Handle(pod, updatedPod)
+				handler.Handle(ctx, pod, updatedPod)
 
 				Expect(logger.Logs()).ToNot(BeEmpty())
 
@@ -349,7 +351,7 @@ var _ = Describe("UpdateEventHandler", func() {
 			It("should not send routes for the pod", func() {
 				pod.Status.Conditions[0].Type = corev1.PodScheduled
 				updatedPod.Status.Conditions[0].Type = corev1.PodInitialized
-				handler.Handle(pod, updatedPod)
+				handler.Handle(ctx, pod, updatedPod)
 
 				Expect(routeEmitter.EmitCallCount()).To(Equal(0))
 			})
@@ -359,7 +361,7 @@ var _ = Describe("UpdateEventHandler", func() {
 			It("should not send routes for the pod", func() {
 				pod.Status.Conditions[0].Type = corev1.PodScheduled
 				updatedPod.Status.Conditions[0].Status = corev1.ConditionFalse
-				handler.Handle(pod, updatedPod)
+				handler.Handle(ctx, pod, updatedPod)
 
 				Expect(routeEmitter.EmitCallCount()).To(Equal(0))
 			})

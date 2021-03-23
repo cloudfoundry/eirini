@@ -2,6 +2,7 @@
 package migrationsfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/migrations"
@@ -10,11 +11,12 @@ import (
 )
 
 type FakeCPURequestSetter struct {
-	SetCPURequestStub        func(*v1.StatefulSet, *resource.Quantity) (*v1.StatefulSet, error)
+	SetCPURequestStub        func(context.Context, *v1.StatefulSet, *resource.Quantity) (*v1.StatefulSet, error)
 	setCPURequestMutex       sync.RWMutex
 	setCPURequestArgsForCall []struct {
-		arg1 *v1.StatefulSet
-		arg2 *resource.Quantity
+		arg1 context.Context
+		arg2 *v1.StatefulSet
+		arg3 *resource.Quantity
 	}
 	setCPURequestReturns struct {
 		result1 *v1.StatefulSet
@@ -28,19 +30,20 @@ type FakeCPURequestSetter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCPURequestSetter) SetCPURequest(arg1 *v1.StatefulSet, arg2 *resource.Quantity) (*v1.StatefulSet, error) {
+func (fake *FakeCPURequestSetter) SetCPURequest(arg1 context.Context, arg2 *v1.StatefulSet, arg3 *resource.Quantity) (*v1.StatefulSet, error) {
 	fake.setCPURequestMutex.Lock()
 	ret, specificReturn := fake.setCPURequestReturnsOnCall[len(fake.setCPURequestArgsForCall)]
 	fake.setCPURequestArgsForCall = append(fake.setCPURequestArgsForCall, struct {
-		arg1 *v1.StatefulSet
-		arg2 *resource.Quantity
-	}{arg1, arg2})
+		arg1 context.Context
+		arg2 *v1.StatefulSet
+		arg3 *resource.Quantity
+	}{arg1, arg2, arg3})
 	stub := fake.SetCPURequestStub
 	fakeReturns := fake.setCPURequestReturns
-	fake.recordInvocation("SetCPURequest", []interface{}{arg1, arg2})
+	fake.recordInvocation("SetCPURequest", []interface{}{arg1, arg2, arg3})
 	fake.setCPURequestMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -54,17 +57,17 @@ func (fake *FakeCPURequestSetter) SetCPURequestCallCount() int {
 	return len(fake.setCPURequestArgsForCall)
 }
 
-func (fake *FakeCPURequestSetter) SetCPURequestCalls(stub func(*v1.StatefulSet, *resource.Quantity) (*v1.StatefulSet, error)) {
+func (fake *FakeCPURequestSetter) SetCPURequestCalls(stub func(context.Context, *v1.StatefulSet, *resource.Quantity) (*v1.StatefulSet, error)) {
 	fake.setCPURequestMutex.Lock()
 	defer fake.setCPURequestMutex.Unlock()
 	fake.SetCPURequestStub = stub
 }
 
-func (fake *FakeCPURequestSetter) SetCPURequestArgsForCall(i int) (*v1.StatefulSet, *resource.Quantity) {
+func (fake *FakeCPURequestSetter) SetCPURequestArgsForCall(i int) (context.Context, *v1.StatefulSet, *resource.Quantity) {
 	fake.setCPURequestMutex.RLock()
 	defer fake.setCPURequestMutex.RUnlock()
 	argsForCall := fake.setCPURequestArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeCPURequestSetter) SetCPURequestReturns(result1 *v1.StatefulSet, result2 error) {

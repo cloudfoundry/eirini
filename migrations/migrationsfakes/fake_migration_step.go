@@ -2,6 +2,7 @@
 package migrationsfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/migrations"
@@ -9,10 +10,11 @@ import (
 )
 
 type FakeMigrationStep struct {
-	ApplyStub        func(runtime.Object) error
+	ApplyStub        func(context.Context, runtime.Object) error
 	applyMutex       sync.RWMutex
 	applyArgsForCall []struct {
-		arg1 runtime.Object
+		arg1 context.Context
+		arg2 runtime.Object
 	}
 	applyReturns struct {
 		result1 error
@@ -34,18 +36,19 @@ type FakeMigrationStep struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeMigrationStep) Apply(arg1 runtime.Object) error {
+func (fake *FakeMigrationStep) Apply(arg1 context.Context, arg2 runtime.Object) error {
 	fake.applyMutex.Lock()
 	ret, specificReturn := fake.applyReturnsOnCall[len(fake.applyArgsForCall)]
 	fake.applyArgsForCall = append(fake.applyArgsForCall, struct {
-		arg1 runtime.Object
-	}{arg1})
+		arg1 context.Context
+		arg2 runtime.Object
+	}{arg1, arg2})
 	stub := fake.ApplyStub
 	fakeReturns := fake.applyReturns
-	fake.recordInvocation("Apply", []interface{}{arg1})
+	fake.recordInvocation("Apply", []interface{}{arg1, arg2})
 	fake.applyMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -59,17 +62,17 @@ func (fake *FakeMigrationStep) ApplyCallCount() int {
 	return len(fake.applyArgsForCall)
 }
 
-func (fake *FakeMigrationStep) ApplyCalls(stub func(runtime.Object) error) {
+func (fake *FakeMigrationStep) ApplyCalls(stub func(context.Context, runtime.Object) error) {
 	fake.applyMutex.Lock()
 	defer fake.applyMutex.Unlock()
 	fake.ApplyStub = stub
 }
 
-func (fake *FakeMigrationStep) ApplyArgsForCall(i int) runtime.Object {
+func (fake *FakeMigrationStep) ApplyArgsForCall(i int) (context.Context, runtime.Object) {
 	fake.applyMutex.RLock()
 	defer fake.applyMutex.RUnlock()
 	argsForCall := fake.applyArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeMigrationStep) ApplyReturns(result1 error) {

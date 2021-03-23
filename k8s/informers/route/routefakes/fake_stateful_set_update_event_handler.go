@@ -2,6 +2,7 @@
 package routefakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/informers/route"
@@ -9,27 +10,29 @@ import (
 )
 
 type FakeStatefulSetUpdateEventHandler struct {
-	HandleStub        func(*v1.StatefulSet, *v1.StatefulSet)
+	HandleStub        func(context.Context, *v1.StatefulSet, *v1.StatefulSet)
 	handleMutex       sync.RWMutex
 	handleArgsForCall []struct {
-		arg1 *v1.StatefulSet
+		arg1 context.Context
 		arg2 *v1.StatefulSet
+		arg3 *v1.StatefulSet
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetUpdateEventHandler) Handle(arg1 *v1.StatefulSet, arg2 *v1.StatefulSet) {
+func (fake *FakeStatefulSetUpdateEventHandler) Handle(arg1 context.Context, arg2 *v1.StatefulSet, arg3 *v1.StatefulSet) {
 	fake.handleMutex.Lock()
 	fake.handleArgsForCall = append(fake.handleArgsForCall, struct {
-		arg1 *v1.StatefulSet
+		arg1 context.Context
 		arg2 *v1.StatefulSet
-	}{arg1, arg2})
+		arg3 *v1.StatefulSet
+	}{arg1, arg2, arg3})
 	stub := fake.HandleStub
-	fake.recordInvocation("Handle", []interface{}{arg1, arg2})
+	fake.recordInvocation("Handle", []interface{}{arg1, arg2, arg3})
 	fake.handleMutex.Unlock()
 	if stub != nil {
-		fake.HandleStub(arg1, arg2)
+		fake.HandleStub(arg1, arg2, arg3)
 	}
 }
 
@@ -39,17 +42,17 @@ func (fake *FakeStatefulSetUpdateEventHandler) HandleCallCount() int {
 	return len(fake.handleArgsForCall)
 }
 
-func (fake *FakeStatefulSetUpdateEventHandler) HandleCalls(stub func(*v1.StatefulSet, *v1.StatefulSet)) {
+func (fake *FakeStatefulSetUpdateEventHandler) HandleCalls(stub func(context.Context, *v1.StatefulSet, *v1.StatefulSet)) {
 	fake.handleMutex.Lock()
 	defer fake.handleMutex.Unlock()
 	fake.HandleStub = stub
 }
 
-func (fake *FakeStatefulSetUpdateEventHandler) HandleArgsForCall(i int) (*v1.StatefulSet, *v1.StatefulSet) {
+func (fake *FakeStatefulSetUpdateEventHandler) HandleArgsForCall(i int) (context.Context, *v1.StatefulSet, *v1.StatefulSet) {
 	fake.handleMutex.RLock()
 	defer fake.handleMutex.RUnlock()
 	argsForCall := fake.handleArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStatefulSetUpdateEventHandler) Invocations() map[string][][]interface{} {

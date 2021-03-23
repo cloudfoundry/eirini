@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -31,16 +32,25 @@ func NewRetryableJSONClient(httpClient *http.Client) *RetryableJSONClient {
 	}
 }
 
-func (c *RetryableJSONClient) Post(url string, data interface{}) error {
+func (c *RetryableJSONClient) Post(ctx context.Context, url string, data interface{}) error {
 	jsonBody, err := json.Marshal(data)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal json body")
 	}
 
-	resp, err := c.httpClient.Post(url, "application/json", jsonBody)
+	req, err := retryablehttp.NewRequest(http.MethodPost, url, jsonBody)
+	if err != nil {
+		return fmt.Errorf("creating request failed: %w", err)
+	}
+
+	req = req.WithContext(ctx)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= http.StatusBadRequest {

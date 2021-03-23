@@ -2,6 +2,7 @@
 package migrationsfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/migrations"
@@ -9,10 +10,11 @@ import (
 )
 
 type FakeStatefulsetsClient struct {
-	GetBySourceTypeStub        func(string) ([]v1.StatefulSet, error)
+	GetBySourceTypeStub        func(context.Context, string) ([]v1.StatefulSet, error)
 	getBySourceTypeMutex       sync.RWMutex
 	getBySourceTypeArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
+		arg2 string
 	}
 	getBySourceTypeReturns struct {
 		result1 []v1.StatefulSet
@@ -22,12 +24,13 @@ type FakeStatefulsetsClient struct {
 		result1 []v1.StatefulSet
 		result2 error
 	}
-	SetAnnotationStub        func(*v1.StatefulSet, string, string) (*v1.StatefulSet, error)
+	SetAnnotationStub        func(context.Context, *v1.StatefulSet, string, string) (*v1.StatefulSet, error)
 	setAnnotationMutex       sync.RWMutex
 	setAnnotationArgsForCall []struct {
-		arg1 *v1.StatefulSet
-		arg2 string
+		arg1 context.Context
+		arg2 *v1.StatefulSet
 		arg3 string
+		arg4 string
 	}
 	setAnnotationReturns struct {
 		result1 *v1.StatefulSet
@@ -41,18 +44,19 @@ type FakeStatefulsetsClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulsetsClient) GetBySourceType(arg1 string) ([]v1.StatefulSet, error) {
+func (fake *FakeStatefulsetsClient) GetBySourceType(arg1 context.Context, arg2 string) ([]v1.StatefulSet, error) {
 	fake.getBySourceTypeMutex.Lock()
 	ret, specificReturn := fake.getBySourceTypeReturnsOnCall[len(fake.getBySourceTypeArgsForCall)]
 	fake.getBySourceTypeArgsForCall = append(fake.getBySourceTypeArgsForCall, struct {
-		arg1 string
-	}{arg1})
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
 	stub := fake.GetBySourceTypeStub
 	fakeReturns := fake.getBySourceTypeReturns
-	fake.recordInvocation("GetBySourceType", []interface{}{arg1})
+	fake.recordInvocation("GetBySourceType", []interface{}{arg1, arg2})
 	fake.getBySourceTypeMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -66,17 +70,17 @@ func (fake *FakeStatefulsetsClient) GetBySourceTypeCallCount() int {
 	return len(fake.getBySourceTypeArgsForCall)
 }
 
-func (fake *FakeStatefulsetsClient) GetBySourceTypeCalls(stub func(string) ([]v1.StatefulSet, error)) {
+func (fake *FakeStatefulsetsClient) GetBySourceTypeCalls(stub func(context.Context, string) ([]v1.StatefulSet, error)) {
 	fake.getBySourceTypeMutex.Lock()
 	defer fake.getBySourceTypeMutex.Unlock()
 	fake.GetBySourceTypeStub = stub
 }
 
-func (fake *FakeStatefulsetsClient) GetBySourceTypeArgsForCall(i int) string {
+func (fake *FakeStatefulsetsClient) GetBySourceTypeArgsForCall(i int) (context.Context, string) {
 	fake.getBySourceTypeMutex.RLock()
 	defer fake.getBySourceTypeMutex.RUnlock()
 	argsForCall := fake.getBySourceTypeArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeStatefulsetsClient) GetBySourceTypeReturns(result1 []v1.StatefulSet, result2 error) {
@@ -105,20 +109,21 @@ func (fake *FakeStatefulsetsClient) GetBySourceTypeReturnsOnCall(i int, result1 
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulsetsClient) SetAnnotation(arg1 *v1.StatefulSet, arg2 string, arg3 string) (*v1.StatefulSet, error) {
+func (fake *FakeStatefulsetsClient) SetAnnotation(arg1 context.Context, arg2 *v1.StatefulSet, arg3 string, arg4 string) (*v1.StatefulSet, error) {
 	fake.setAnnotationMutex.Lock()
 	ret, specificReturn := fake.setAnnotationReturnsOnCall[len(fake.setAnnotationArgsForCall)]
 	fake.setAnnotationArgsForCall = append(fake.setAnnotationArgsForCall, struct {
-		arg1 *v1.StatefulSet
-		arg2 string
+		arg1 context.Context
+		arg2 *v1.StatefulSet
 		arg3 string
-	}{arg1, arg2, arg3})
+		arg4 string
+	}{arg1, arg2, arg3, arg4})
 	stub := fake.SetAnnotationStub
 	fakeReturns := fake.setAnnotationReturns
-	fake.recordInvocation("SetAnnotation", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("SetAnnotation", []interface{}{arg1, arg2, arg3, arg4})
 	fake.setAnnotationMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -132,17 +137,17 @@ func (fake *FakeStatefulsetsClient) SetAnnotationCallCount() int {
 	return len(fake.setAnnotationArgsForCall)
 }
 
-func (fake *FakeStatefulsetsClient) SetAnnotationCalls(stub func(*v1.StatefulSet, string, string) (*v1.StatefulSet, error)) {
+func (fake *FakeStatefulsetsClient) SetAnnotationCalls(stub func(context.Context, *v1.StatefulSet, string, string) (*v1.StatefulSet, error)) {
 	fake.setAnnotationMutex.Lock()
 	defer fake.setAnnotationMutex.Unlock()
 	fake.SetAnnotationStub = stub
 }
 
-func (fake *FakeStatefulsetsClient) SetAnnotationArgsForCall(i int) (*v1.StatefulSet, string, string) {
+func (fake *FakeStatefulsetsClient) SetAnnotationArgsForCall(i int) (context.Context, *v1.StatefulSet, string, string) {
 	fake.setAnnotationMutex.RLock()
 	defer fake.setAnnotationMutex.RUnlock()
 	argsForCall := fake.setAnnotationArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeStatefulsetsClient) SetAnnotationReturns(result1 *v1.StatefulSet, result2 error) {

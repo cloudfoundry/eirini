@@ -1,6 +1,7 @@
 package stager
 
 import (
+	"context"
 	"encoding/json"
 	"net/url"
 
@@ -13,7 +14,7 @@ import (
 //counterfeiter:generate . CallbackClient
 
 type CallbackClient interface {
-	Post(url string, data interface{}) error
+	Post(ctx context.Context, url string, data interface{}) error
 }
 
 type CallbackStagingCompleter struct {
@@ -28,7 +29,7 @@ func NewCallbackStagingCompleter(logger lager.Logger, callbackClient CallbackCli
 	}
 }
 
-func (s *CallbackStagingCompleter) CompleteStaging(taskCompletedRequest cf.StagingCompletedRequest) error {
+func (s *CallbackStagingCompleter) CompleteStaging(ctx context.Context, taskCompletedRequest cf.StagingCompletedRequest) error {
 	l := s.logger.Session("complete-staging", lager.Data{"task-guid": taskCompletedRequest.TaskGUID})
 
 	callbackURI, err := s.getCallbackURI(taskCompletedRequest)
@@ -45,7 +46,7 @@ func (s *CallbackStagingCompleter) CompleteStaging(taskCompletedRequest cf.Stagi
 
 	response := s.constructStagingResponse(taskCompletedRequest)
 
-	return errors.Wrap(s.callbackClient.Post(callbackURI, response), "callback-response-unsuccessful")
+	return errors.Wrap(s.callbackClient.Post(ctx, callbackURI, response), "callback-response-unsuccessful")
 }
 
 func (s *CallbackStagingCompleter) constructStagingResponse(taskCompletedRequest cf.StagingCompletedRequest) cc_messages.StagingResponseForCC {

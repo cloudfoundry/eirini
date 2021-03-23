@@ -1,6 +1,7 @@
 package prometheus
 
 import (
+	"context"
 	"errors"
 
 	"code.cloudfoundry.org/eirini/k8s/shared"
@@ -20,9 +21,9 @@ const (
 //counterfeiter:generate . LRPClient
 
 type LRPClient interface {
-	Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) error
-	Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
-	Update(lrp *opi.LRP) error
+	Desire(ctx context.Context, namespace string, lrp *opi.LRP, opts ...shared.Option) error
+	Get(ctx context.Context, identifier opi.LRPIdentifier) (*opi.LRP, error)
+	Update(ctx context.Context, lrp *opi.LRP) error
 }
 
 type LRPClientDecorator struct {
@@ -58,10 +59,10 @@ func NewLRPClientDecorator(
 	}, nil
 }
 
-func (d *LRPClientDecorator) Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) error {
+func (d *LRPClientDecorator) Desire(ctx context.Context, namespace string, lrp *opi.LRP, opts ...shared.Option) error {
 	start := d.clock.Now()
 
-	err := d.LRPClient.Desire(namespace, lrp, opts...)
+	err := d.LRPClient.Desire(ctx, namespace, lrp, opts...)
 	if err == nil {
 		d.creations.Inc()
 		d.creationDurations.Observe(float64(d.clock.Since(start).Milliseconds()))

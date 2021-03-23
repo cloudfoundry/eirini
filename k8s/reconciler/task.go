@@ -37,7 +37,7 @@ func NewTask(logger lager.Logger, client client.Client, taskDesirer TaskDesirer,
 }
 
 type TaskDesirer interface {
-	Desire(namespace string, task *opi.Task, opts ...shared.Option) error
+	Desire(ctx context.Context, namespace string, task *opi.Task, opts ...shared.Option) error
 }
 
 func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
@@ -58,7 +58,7 @@ func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconc
 		return reconcile.Result{}, fmt.Errorf("could not fetch task: %w", err)
 	}
 
-	err = t.taskDesirer.Desire(task.Namespace, toOpiTask(task), t.setOwnerFn(task))
+	err = t.taskDesirer.Desire(ctx, task.Namespace, toOpiTask(task), t.setOwnerFn(task))
 	if errors.IsAlreadyExists(err) {
 		logger.Info("task-already-exists")
 

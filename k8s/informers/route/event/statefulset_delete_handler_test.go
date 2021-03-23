@@ -52,7 +52,8 @@ var _ = Describe("StatefulsetDeleteHandler", func() {
 	assertUnregisteredRoutesForAllPods := func() {
 		allArgs := []eiriniroute.Message{}
 		for i := 0; i < routeEmitter.EmitCallCount(); i++ {
-			allArgs = append(allArgs, routeEmitter.EmitArgsForCall(i))
+			_, r := routeEmitter.EmitArgsForCall(i)
+			allArgs = append(allArgs, r)
 		}
 		Expect(routeEmitter.EmitCallCount()).To(Equal(4))
 
@@ -115,7 +116,7 @@ var _ = Describe("StatefulsetDeleteHandler", func() {
 		})
 
 		It("should unregister all routes for all pods", func() {
-			handler.Handle(deletedStatefulSet)
+			handler.Handle(ctx, deletedStatefulSet)
 			assertUnregisteredRoutesForAllPods()
 		})
 
@@ -131,7 +132,7 @@ var _ = Describe("StatefulsetDeleteHandler", func() {
 			})
 
 			It("should unregister all routes for all pods", func() {
-				handler.Handle(deletedStatefulSet)
+				handler.Handle(ctx, deletedStatefulSet)
 				assertUnregisteredRoutesForAllPods()
 			})
 		})
@@ -148,14 +149,14 @@ var _ = Describe("StatefulsetDeleteHandler", func() {
 			})
 
 			It("should unregister all routes for all pods", func() {
-				handler.Handle(deletedStatefulSet)
+				handler.Handle(ctx, deletedStatefulSet)
 				assertUnregisteredRoutesForAllPods()
 			})
 		})
 
 		Context("and decoding routes fails", func() {
 			BeforeEach(func() {
-				handler.Handle(createStatefulSetWithRoutes(`[`))
+				handler.Handle(ctx, createStatefulSetWithRoutes(`[`))
 			})
 
 			It("shouldn't send any messages", func() {

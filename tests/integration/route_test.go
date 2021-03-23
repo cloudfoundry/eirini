@@ -71,7 +71,7 @@ var _ = Describe("Routes", func() {
 
 		When("an LRP is desired", func() {
 			It("sends register routes message", func() {
-				Expect(lrpClient.Desire(fixture.Namespace, odinLRP)).To(Succeed())
+				Expect(lrpClient.Desire(ctx, fixture.Namespace, odinLRP)).To(Succeed())
 				Eventually(func() bool {
 					pods := listPods(odinLRP.LRPIdentifier)
 					if len(pods) < 1 {
@@ -81,7 +81,7 @@ var _ = Describe("Routes", func() {
 					return podReady(pods[0])
 				}).Should(BeTrue())
 
-				routes, err := collector.Collect()
+				routes, err := collector.Collect(ctx)
 				Expect(err).ToNot(HaveOccurred())
 				pods := listPods(odinLRP.LRPIdentifier)
 				Expect(routes).To(ContainElement(route.Message{
@@ -114,7 +114,7 @@ else
 	done;
 fi;`,
 					}
-					err := lrpClient.Desire(fixture.Namespace, odinLRP)
+					err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
 					Expect(err).ToNot(HaveOccurred())
 					Eventually(func() bool {
 						pods := listPods(odinLRP.LRPIdentifier)
@@ -127,7 +127,7 @@ fi;`,
 				})
 
 				It("should only return a register message for the working instance", func() {
-					routes, err := collector.Collect()
+					routes, err := collector.Collect(ctx)
 					Expect(err).ToNot(HaveOccurred())
 					pods := listPods(odinLRP.LRPIdentifier)
 					Expect(routes).To(ContainElement(route.Message{
@@ -153,7 +153,7 @@ fi;`,
 		)
 
 		BeforeEach(func() {
-			err := lrpClient.Desire(fixture.Namespace, odinLRP)
+			err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(func() bool {
 				pods := listPods(odinLRP.LRPIdentifier)
@@ -200,15 +200,15 @@ fi;`,
 
 		When("an app is stopped", func() {
 			It("sends unregister routes message", func() {
-				Expect(lrpClient.Stop(odinLRP.LRPIdentifier)).To(Succeed())
+				Expect(lrpClient.Stop(ctx, odinLRP.LRPIdentifier)).To(Succeed())
 				pods := listPods(odinLRP.LRPIdentifier)
 
 				Eventually(fakeRouteEmitter.EmitCallCount).Should(Equal(2))
 
-				allArgs := []route.Message{
-					fakeRouteEmitter.EmitArgsForCall(0),
-					fakeRouteEmitter.EmitArgsForCall(1),
-				}
+				_, r1 := fakeRouteEmitter.EmitArgsForCall(0)
+				_, r2 := fakeRouteEmitter.EmitArgsForCall(1)
+				allArgs := []route.Message{r1, r2}
+
 				Expect(allArgs).To(ContainElement(route.Message{
 					Routes: route.Routes{
 						UnregisteredRoutes: []string{"foo.example.com"},
@@ -238,16 +238,17 @@ fi;`,
 					{Hostname: "foo.example.com", Port: 8080},
 					{Hostname: "bar.example.com", Port: 9090},
 				}
-				Expect(lrpClient.Update(odinLRP)).To(Succeed())
+				Expect(lrpClient.Update(ctx, odinLRP)).To(Succeed())
 				pods := listPods(odinLRP.LRPIdentifier)
 
 				Eventually(fakeRouteEmitter.EmitCallCount).Should(Equal(4))
-				allArgs := []route.Message{
-					fakeRouteEmitter.EmitArgsForCall(0),
-					fakeRouteEmitter.EmitArgsForCall(1),
-					fakeRouteEmitter.EmitArgsForCall(2),
-					fakeRouteEmitter.EmitArgsForCall(3),
-				}
+
+				_, r1 := fakeRouteEmitter.EmitArgsForCall(0)
+				_, r2 := fakeRouteEmitter.EmitArgsForCall(1)
+				_, r3 := fakeRouteEmitter.EmitArgsForCall(2)
+				_, r4 := fakeRouteEmitter.EmitArgsForCall(3)
+				allArgs := []route.Message{r1, r2, r3, r4}
+
 				Expect(allArgs).To(ContainElement(route.Message{
 					Routes: route.Routes{
 						RegisteredRoutes: []string{"bar.example.com"},
@@ -271,7 +272,7 @@ fi;`,
 
 		BeforeEach(func() {
 			odinLRP.TargetInstances = 2
-			Expect(lrpClient.Desire(fixture.Namespace, odinLRP)).To(Succeed())
+			Expect(lrpClient.Desire(ctx, fixture.Namespace, odinLRP)).To(Succeed())
 			Eventually(func() bool {
 				pods := listPods(odinLRP.LRPIdentifier)
 				if len(pods) < 2 {
@@ -313,10 +314,11 @@ fi;`,
 			It("sends unregister routes message", func() {
 				pods := listPods(odinLRP.LRPIdentifier)
 				odinLRP.TargetInstances = 1
-				Expect(lrpClient.Update(odinLRP)).To(Succeed())
+				Expect(lrpClient.Update(ctx, odinLRP)).To(Succeed())
 
 				Eventually(fakeRouteEmitter.EmitCallCount).Should(Equal(1))
-				Expect(fakeRouteEmitter.EmitArgsForCall(0)).To(Equal(route.Message{
+				_, msg := fakeRouteEmitter.EmitArgsForCall(0)
+				Expect(msg).To(Equal(route.Message{
 					Routes: route.Routes{
 						UnregisteredRoutes: []string{"foo.example.com"},
 					},
@@ -332,10 +334,11 @@ fi;`,
 		When("an app instance is stopped", func() {
 			It("sends unregister routes message", func() {
 				pods := listPods(odinLRP.LRPIdentifier)
-				Expect(lrpClient.StopInstance(odinLRP.LRPIdentifier, 0)).To(Succeed())
+				Expect(lrpClient.StopInstance(ctx, odinLRP.LRPIdentifier, 0)).To(Succeed())
 
 				Eventually(fakeRouteEmitter.EmitCallCount).Should(Equal(1))
-				Expect(fakeRouteEmitter.EmitArgsForCall(0)).To(Equal(route.Message{
+				_, msg := fakeRouteEmitter.EmitArgsForCall(0)
+				Expect(msg).To(Equal(route.Message{
 					Routes: route.Routes{
 						UnregisteredRoutes: []string{"foo.example.com"},
 					},

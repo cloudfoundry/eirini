@@ -1,6 +1,7 @@
 package migrations
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -13,7 +14,7 @@ import (
 //counterfeiter:generate . CPURequestSetter
 
 type CPURequestSetter interface {
-	SetCPURequest(stSet *appsv1.StatefulSet, cpuRequest *resource.Quantity) (*appsv1.StatefulSet, error)
+	SetCPURequest(ctx context.Context, stSet *appsv1.StatefulSet, cpuRequest *resource.Quantity) (*appsv1.StatefulSet, error)
 }
 
 func NewAdjustCPURequest(cpuRequestSetter CPURequestSetter) AdjustCPURequest {
@@ -34,7 +35,7 @@ type originalRequest struct {
 	CPUWeight int64 `json:"cpu_weight"`
 }
 
-func (m AdjustCPURequest) Apply(o runtime.Object) error {
+func (m AdjustCPURequest) Apply(ctx context.Context, o runtime.Object) error {
 	stSet, ok := o.(*appsv1.StatefulSet)
 	if !ok {
 		return fmt.Errorf("expected *v1.StatefulSet, got: %T", o)
@@ -49,7 +50,7 @@ func (m AdjustCPURequest) Apply(o runtime.Object) error {
 		return fmt.Errorf("%q is not valid json: %w", reqJSON, err)
 	}
 
-	_, err = m.cpuRequestSetter.SetCPURequest(stSet, resource.NewMilliQuantity(req.CPUWeight, resource.DecimalSI))
+	_, err = m.cpuRequestSetter.SetCPURequest(ctx, stSet, resource.NewMilliQuantity(req.CPUWeight, resource.DecimalSI))
 	if err != nil {
 		return fmt.Errorf("failed to set cpu request: %w", err)
 	}

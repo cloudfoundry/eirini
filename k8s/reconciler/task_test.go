@@ -96,7 +96,7 @@ var _ = Describe("Task", func() {
 
 			By("invoking the task desirer", func() {
 				Expect(taskDesirer.DesireCallCount()).To(Equal(1))
-				namespace, opiTask, _ := taskDesirer.DesireArgsForCall(0)
+				_, namespace, opiTask, _ := taskDesirer.DesireArgsForCall(0)
 				Expect(namespace).To(Equal("my-namespace"))
 				Expect(opiTask.GUID).To(Equal("my-task-guid"))
 				Expect(opiTask.Name).To(Equal("my-task-name"))
@@ -122,7 +122,7 @@ var _ = Describe("Task", func() {
 
 			By("sets an owner reference in the statefulset", func() {
 				Expect(taskDesirer.DesireCallCount()).To(Equal(1))
-				_, _, setOwnerFns := taskDesirer.DesireArgsForCall(0)
+				_, _, _, setOwnerFns := taskDesirer.DesireArgsForCall(0)
 				Expect(setOwnerFns).To(HaveLen(1))
 				setOwnerFn := setOwnerFns[0]
 

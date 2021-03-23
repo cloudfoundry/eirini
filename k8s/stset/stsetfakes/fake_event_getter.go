@@ -2,6 +2,7 @@
 package stsetfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
@@ -9,10 +10,11 @@ import (
 )
 
 type FakeEventGetter struct {
-	GetByPodStub        func(v1.Pod) ([]v1.Event, error)
+	GetByPodStub        func(context.Context, v1.Pod) ([]v1.Event, error)
 	getByPodMutex       sync.RWMutex
 	getByPodArgsForCall []struct {
-		arg1 v1.Pod
+		arg1 context.Context
+		arg2 v1.Pod
 	}
 	getByPodReturns struct {
 		result1 []v1.Event
@@ -26,18 +28,19 @@ type FakeEventGetter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeEventGetter) GetByPod(arg1 v1.Pod) ([]v1.Event, error) {
+func (fake *FakeEventGetter) GetByPod(arg1 context.Context, arg2 v1.Pod) ([]v1.Event, error) {
 	fake.getByPodMutex.Lock()
 	ret, specificReturn := fake.getByPodReturnsOnCall[len(fake.getByPodArgsForCall)]
 	fake.getByPodArgsForCall = append(fake.getByPodArgsForCall, struct {
-		arg1 v1.Pod
-	}{arg1})
+		arg1 context.Context
+		arg2 v1.Pod
+	}{arg1, arg2})
 	stub := fake.GetByPodStub
 	fakeReturns := fake.getByPodReturns
-	fake.recordInvocation("GetByPod", []interface{}{arg1})
+	fake.recordInvocation("GetByPod", []interface{}{arg1, arg2})
 	fake.getByPodMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -51,17 +54,17 @@ func (fake *FakeEventGetter) GetByPodCallCount() int {
 	return len(fake.getByPodArgsForCall)
 }
 
-func (fake *FakeEventGetter) GetByPodCalls(stub func(v1.Pod) ([]v1.Event, error)) {
+func (fake *FakeEventGetter) GetByPodCalls(stub func(context.Context, v1.Pod) ([]v1.Event, error)) {
 	fake.getByPodMutex.Lock()
 	defer fake.getByPodMutex.Unlock()
 	fake.GetByPodStub = stub
 }
 
-func (fake *FakeEventGetter) GetByPodArgsForCall(i int) v1.Pod {
+func (fake *FakeEventGetter) GetByPodArgsForCall(i int) (context.Context, v1.Pod) {
 	fake.getByPodMutex.RLock()
 	defer fake.getByPodMutex.RUnlock()
 	argsForCall := fake.getByPodArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeEventGetter) GetByPodReturns(result1 []v1.Event, result2 error) {

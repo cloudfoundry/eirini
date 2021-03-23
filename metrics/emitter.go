@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"context"
+
 	loggregator "code.cloudfoundry.org/go-loggregator"
 )
 
@@ -36,7 +38,7 @@ func NewLoggregatorEmitter(client LoggregatorClient) *LoggregatorEmitter {
 	}
 }
 
-func (e *LoggregatorEmitter) Emit(m Message) {
+func (e *LoggregatorEmitter) Emit(ctx context.Context, m Message) {
 	e.client.EmitGauge(
 		loggregator.WithGaugeSourceInfo(m.AppID, m.IndexID),
 		loggregator.WithGaugeValue("cpu", m.CPU, CPUUnit),

@@ -1,6 +1,7 @@
 package metrics_test
 
 import (
+	"context"
 	"time"
 
 	"code.cloudfoundry.org/eirini/metrics"
@@ -11,6 +12,12 @@ import (
 )
 
 var _ = Describe("emitter", func() {
+	var ctx context.Context
+
+	BeforeEach(func() {
+		ctx = context.Background()
+	})
+
 	It("should forward source info to loggregator", func() {
 		fakeClient := new(metricsfakes.FakeLoggregatorClient)
 		emitter := metrics.NewLoggregatorEmitter(fakeClient)
@@ -26,7 +33,7 @@ var _ = Describe("emitter", func() {
 			Disk:        645,
 			DiskQuota:   1001,
 		}
-		emitter.Emit(msg)
+		emitter.Emit(ctx, msg)
 		Expect(fakeClient.EmitGaugeCallCount()).To(Equal(1))
 
 		emitGaugeOpts := fakeClient.EmitGaugeArgsForCall(0)

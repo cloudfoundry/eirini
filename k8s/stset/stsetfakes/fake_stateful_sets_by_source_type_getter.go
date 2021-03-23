@@ -2,6 +2,7 @@
 package stsetfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
@@ -9,10 +10,11 @@ import (
 )
 
 type FakeStatefulSetsBySourceTypeGetter struct {
-	GetBySourceTypeStub        func(string) ([]v1.StatefulSet, error)
+	GetBySourceTypeStub        func(context.Context, string) ([]v1.StatefulSet, error)
 	getBySourceTypeMutex       sync.RWMutex
 	getBySourceTypeArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
+		arg2 string
 	}
 	getBySourceTypeReturns struct {
 		result1 []v1.StatefulSet
@@ -26,18 +28,19 @@ type FakeStatefulSetsBySourceTypeGetter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetsBySourceTypeGetter) GetBySourceType(arg1 string) ([]v1.StatefulSet, error) {
+func (fake *FakeStatefulSetsBySourceTypeGetter) GetBySourceType(arg1 context.Context, arg2 string) ([]v1.StatefulSet, error) {
 	fake.getBySourceTypeMutex.Lock()
 	ret, specificReturn := fake.getBySourceTypeReturnsOnCall[len(fake.getBySourceTypeArgsForCall)]
 	fake.getBySourceTypeArgsForCall = append(fake.getBySourceTypeArgsForCall, struct {
-		arg1 string
-	}{arg1})
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
 	stub := fake.GetBySourceTypeStub
 	fakeReturns := fake.getBySourceTypeReturns
-	fake.recordInvocation("GetBySourceType", []interface{}{arg1})
+	fake.recordInvocation("GetBySourceType", []interface{}{arg1, arg2})
 	fake.getBySourceTypeMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -51,17 +54,17 @@ func (fake *FakeStatefulSetsBySourceTypeGetter) GetBySourceTypeCallCount() int {
 	return len(fake.getBySourceTypeArgsForCall)
 }
 
-func (fake *FakeStatefulSetsBySourceTypeGetter) GetBySourceTypeCalls(stub func(string) ([]v1.StatefulSet, error)) {
+func (fake *FakeStatefulSetsBySourceTypeGetter) GetBySourceTypeCalls(stub func(context.Context, string) ([]v1.StatefulSet, error)) {
 	fake.getBySourceTypeMutex.Lock()
 	defer fake.getBySourceTypeMutex.Unlock()
 	fake.GetBySourceTypeStub = stub
 }
 
-func (fake *FakeStatefulSetsBySourceTypeGetter) GetBySourceTypeArgsForCall(i int) string {
+func (fake *FakeStatefulSetsBySourceTypeGetter) GetBySourceTypeArgsForCall(i int) (context.Context, string) {
 	fake.getBySourceTypeMutex.RLock()
 	defer fake.getBySourceTypeMutex.RUnlock()
 	argsForCall := fake.getBySourceTypeArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeStatefulSetsBySourceTypeGetter) GetBySourceTypeReturns(result1 []v1.StatefulSet, result2 error) {

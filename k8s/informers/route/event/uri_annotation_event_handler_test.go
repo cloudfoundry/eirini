@@ -78,7 +78,7 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 				createPod("mr-stateful-1", "50.60.70.80"),
 			}}, nil)
 
-			handler.Handle(oldStatefulSet, updatedStatefulSet)
+			handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 
 			Expect(podClient.ListCallCount()).To(Equal(1))
 			_, listOptions := podClient.ListArgsForCall(0)
@@ -91,13 +91,14 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 				createPod("mr-stateful-1", "50.60.70.80"),
 			}}, nil)
 
-			handler.Handle(oldStatefulSet, updatedStatefulSet)
+			handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 
 			Expect(routeEmitter.EmitCallCount()).To(Equal(6))
 
 			allArgs := []eiriniroute.Message{}
 			for i := 0; i < routeEmitter.EmitCallCount(); i++ {
-				allArgs = append(allArgs, routeEmitter.EmitArgsForCall(i))
+				_, r := routeEmitter.EmitArgsForCall(i)
+				allArgs = append(allArgs, r)
 			}
 
 			Expect(allArgs).To(ConsistOf(eiriniroute.Message{
@@ -180,13 +181,14 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 					createPod("mr-stateful-1", "50.60.70.80"),
 				}}, nil)
 
-				handler.Handle(oldStatefulSet, updatedStatefulSet)
+				handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 
 				Expect(routeEmitter.EmitCallCount()).To(Equal(3))
 
 				allArgs := []eiriniroute.Message{}
 				for i := 0; i < routeEmitter.EmitCallCount(); i++ {
-					allArgs = append(allArgs, routeEmitter.EmitArgsForCall(i))
+					_, r := routeEmitter.EmitArgsForCall(i)
+					allArgs = append(allArgs, r)
 				}
 
 				Expect(allArgs).NotTo(ContainElement(MatchFields(IgnoreExtras, Fields{
@@ -205,13 +207,14 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 					pod1,
 				}}, nil)
 
-				handler.Handle(oldStatefulSet, updatedStatefulSet)
+				handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 
 				Expect(routeEmitter.EmitCallCount()).To(Equal(3))
 
 				allArgs := []eiriniroute.Message{}
 				for i := 0; i < routeEmitter.EmitCallCount(); i++ {
-					allArgs = append(allArgs, routeEmitter.EmitArgsForCall(i))
+					_, r := routeEmitter.EmitArgsForCall(i)
+					allArgs = append(allArgs, r)
 				}
 
 				Expect(allArgs).NotTo(ContainElement(MatchFields(IgnoreExtras, Fields{
@@ -230,13 +233,14 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 					pod1,
 				}}, nil)
 
-				handler.Handle(oldStatefulSet, updatedStatefulSet)
+				handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 
 				Expect(routeEmitter.EmitCallCount()).To(Equal(3))
 
 				allArgs := []eiriniroute.Message{}
 				for i := 0; i < routeEmitter.EmitCallCount(); i++ {
-					allArgs = append(allArgs, routeEmitter.EmitArgsForCall(i))
+					_, r := routeEmitter.EmitArgsForCall(i)
+					allArgs = append(allArgs, r)
 				}
 
 				Expect(allArgs).NotTo(ContainElement(MatchFields(IgnoreExtras, Fields{
@@ -253,12 +257,13 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 					pod1,
 				}}, nil)
 
-				handler.Handle(oldStatefulSet, updatedStatefulSet)
+				handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 
 				Expect(routeEmitter.EmitCallCount()).To(Equal(3))
 				allArgs := []eiriniroute.Message{}
 				for i := 0; i < routeEmitter.EmitCallCount(); i++ {
-					allArgs = append(allArgs, routeEmitter.EmitArgsForCall(i))
+					_, r := routeEmitter.EmitArgsForCall(i)
+					allArgs = append(allArgs, r)
 				}
 
 				Expect(allArgs).To(ConsistOf(eiriniroute.Message{
@@ -306,7 +311,7 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 					pod1,
 				}}, nil)
 
-				handler.Handle(oldStatefulSet, updatedStatefulSet)
+				handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 
 				Expect(logger.Logs()).NotTo(BeEmpty())
 
@@ -342,10 +347,11 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 				createPod("mr-stateful-1", "50.60.70.80"),
 			}}, nil)
 
-			handler.Handle(oldStatefulSet, updatedStatefulSet)
+			handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 
 			for i := 0; i < routeEmitter.EmitCallCount(); i++ {
-				allEmitArgs = append(allEmitArgs, routeEmitter.EmitArgsForCall(i))
+				_, r := routeEmitter.EmitArgsForCall(i)
+				allEmitArgs = append(allEmitArgs, r)
 			}
 		})
 
@@ -410,10 +416,11 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 				createPod("mr-stateful-1", "50.60.70.80"),
 			}}, nil)
 
-			handler.Handle(oldStatefulSet, updatedStatefulSet)
+			handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 
 			for i := 0; i < routeEmitter.EmitCallCount(); i++ {
-				allEmitArgs = append(allEmitArgs, routeEmitter.EmitArgsForCall(i))
+				_, r := routeEmitter.EmitArgsForCall(i)
+				allEmitArgs = append(allEmitArgs, r)
 			}
 		})
 
@@ -502,10 +509,11 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 				createPod("mr-stateful-1", "50.60.70.80"),
 			}}, nil)
 
-			handler.Handle(oldStatefulSet, updatedStatefulSet)
+			handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 
 			for i := 0; i < routeEmitter.EmitCallCount(); i++ {
-				allEmitArgs = append(allEmitArgs, routeEmitter.EmitArgsForCall(i))
+				_, r := routeEmitter.EmitArgsForCall(i)
+				allEmitArgs = append(allEmitArgs, r)
 			}
 		})
 
@@ -542,7 +550,7 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 			oldStatefulSet = createStatefulSetWithRoutes(`[]`)
 			updatedStatefulSet = createStatefulSetWithRoutes(`[`)
 
-			handler.Handle(oldStatefulSet, updatedStatefulSet)
+			handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 		})
 
 		It("should not register a new route", func() {
@@ -575,10 +583,11 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 				createPod("mr-stateful-1", "50.60.70.80"),
 			}}, nil)
 
-			handler.Handle(oldStatefulSet, updatedStatefulSet)
+			handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 
 			for i := 0; i < routeEmitter.EmitCallCount(); i++ {
-				allEmitArgs = append(allEmitArgs, routeEmitter.EmitArgsForCall(i))
+				_, r := routeEmitter.EmitArgsForCall(i)
+				allEmitArgs = append(allEmitArgs, r)
 			}
 		})
 
@@ -641,7 +650,7 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 
 			podClient.ListReturns(nil, errors.New("listing pods went boom"))
 
-			handler.Handle(oldStatefulSet, updatedStatefulSet)
+			handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 		})
 
 		It("should not send any routes", func() {
@@ -688,10 +697,11 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 				createPod("mr-stateful-1", "50.60.70.80"),
 			}}, nil)
 
-			handler.Handle(oldStatefulSet, updatedStatefulSet)
+			handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 
 			for i := 0; i < routeEmitter.EmitCallCount(); i++ {
-				allEmitArgs = append(allEmitArgs, routeEmitter.EmitArgsForCall(i))
+				_, r := routeEmitter.EmitArgsForCall(i)
+				allEmitArgs = append(allEmitArgs, r)
 			}
 		})
 
@@ -773,7 +783,7 @@ var _ = Describe("StatefulsetAnnotationEventHandler", func() {
 
 			updatedStatefulSet.Labels = map[string]string{"new": "label"}
 
-			handler.Handle(oldStatefulSet, updatedStatefulSet)
+			handler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 		})
 
 		It("should do nothing", func() {

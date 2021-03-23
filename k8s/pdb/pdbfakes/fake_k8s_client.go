@@ -2,6 +2,7 @@
 package pdbfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/pdb"
@@ -9,11 +10,12 @@ import (
 )
 
 type FakeK8sClient struct {
-	CreateStub        func(string, *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)
+	CreateStub        func(context.Context, string, *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
-		arg1 string
-		arg2 *v1beta1.PodDisruptionBudget
+		arg1 context.Context
+		arg2 string
+		arg3 *v1beta1.PodDisruptionBudget
 	}
 	createReturns struct {
 		result1 *v1beta1.PodDisruptionBudget
@@ -23,11 +25,12 @@ type FakeK8sClient struct {
 		result1 *v1beta1.PodDisruptionBudget
 		result2 error
 	}
-	DeleteStub        func(string, string) error
+	DeleteStub        func(context.Context, string, string) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
 		arg2 string
+		arg3 string
 	}
 	deleteReturns struct {
 		result1 error
@@ -39,19 +42,20 @@ type FakeK8sClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeK8sClient) Create(arg1 string, arg2 *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error) {
+func (fake *FakeK8sClient) Create(arg1 context.Context, arg2 string, arg3 *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error) {
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
-		arg1 string
-		arg2 *v1beta1.PodDisruptionBudget
-	}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 *v1beta1.PodDisruptionBudget
+	}{arg1, arg2, arg3})
 	stub := fake.CreateStub
 	fakeReturns := fake.createReturns
-	fake.recordInvocation("Create", []interface{}{arg1, arg2})
+	fake.recordInvocation("Create", []interface{}{arg1, arg2, arg3})
 	fake.createMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -65,17 +69,17 @@ func (fake *FakeK8sClient) CreateCallCount() int {
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakeK8sClient) CreateCalls(stub func(string, *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)) {
+func (fake *FakeK8sClient) CreateCalls(stub func(context.Context, string, *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = stub
 }
 
-func (fake *FakeK8sClient) CreateArgsForCall(i int) (string, *v1beta1.PodDisruptionBudget) {
+func (fake *FakeK8sClient) CreateArgsForCall(i int) (context.Context, string, *v1beta1.PodDisruptionBudget) {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	argsForCall := fake.createArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeK8sClient) CreateReturns(result1 *v1beta1.PodDisruptionBudget, result2 error) {
@@ -104,19 +108,20 @@ func (fake *FakeK8sClient) CreateReturnsOnCall(i int, result1 *v1beta1.PodDisrup
 	}{result1, result2}
 }
 
-func (fake *FakeK8sClient) Delete(arg1 string, arg2 string) error {
+func (fake *FakeK8sClient) Delete(arg1 context.Context, arg2 string, arg3 string) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
-		arg1 string
+		arg1 context.Context
 		arg2 string
-	}{arg1, arg2})
+		arg3 string
+	}{arg1, arg2, arg3})
 	stub := fake.DeleteStub
 	fakeReturns := fake.deleteReturns
-	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
+	fake.recordInvocation("Delete", []interface{}{arg1, arg2, arg3})
 	fake.deleteMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -130,17 +135,17 @@ func (fake *FakeK8sClient) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeK8sClient) DeleteCalls(stub func(string, string) error) {
+func (fake *FakeK8sClient) DeleteCalls(stub func(context.Context, string, string) error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakeK8sClient) DeleteArgsForCall(i int) (string, string) {
+func (fake *FakeK8sClient) DeleteArgsForCall(i int) (context.Context, string, string) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeK8sClient) DeleteReturns(result1 error) {

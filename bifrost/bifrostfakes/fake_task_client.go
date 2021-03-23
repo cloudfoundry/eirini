@@ -2,6 +2,7 @@
 package bifrostfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/bifrost"
@@ -10,10 +11,11 @@ import (
 )
 
 type FakeTaskClient struct {
-	DeleteStub        func(string) (string, error)
+	DeleteStub        func(context.Context, string) (string, error)
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
+		arg2 string
 	}
 	deleteReturns struct {
 		result1 string
@@ -23,12 +25,13 @@ type FakeTaskClient struct {
 		result1 string
 		result2 error
 	}
-	DesireStub        func(string, *opi.Task, ...shared.Option) error
+	DesireStub        func(context.Context, string, *opi.Task, ...shared.Option) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
-		arg1 string
-		arg2 *opi.Task
-		arg3 []shared.Option
+		arg1 context.Context
+		arg2 string
+		arg3 *opi.Task
+		arg4 []shared.Option
 	}
 	desireReturns struct {
 		result1 error
@@ -36,10 +39,11 @@ type FakeTaskClient struct {
 	desireReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetStub        func(string) (*opi.Task, error)
+	GetStub        func(context.Context, string) (*opi.Task, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
+		arg2 string
 	}
 	getReturns struct {
 		result1 *opi.Task
@@ -49,9 +53,10 @@ type FakeTaskClient struct {
 		result1 *opi.Task
 		result2 error
 	}
-	ListStub        func() ([]*opi.Task, error)
+	ListStub        func(context.Context) ([]*opi.Task, error)
 	listMutex       sync.RWMutex
 	listArgsForCall []struct {
+		arg1 context.Context
 	}
 	listReturns struct {
 		result1 []*opi.Task
@@ -65,18 +70,19 @@ type FakeTaskClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskClient) Delete(arg1 string) (string, error) {
+func (fake *FakeTaskClient) Delete(arg1 context.Context, arg2 string) (string, error) {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
-		arg1 string
-	}{arg1})
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
 	stub := fake.DeleteStub
 	fakeReturns := fake.deleteReturns
-	fake.recordInvocation("Delete", []interface{}{arg1})
+	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
 	fake.deleteMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -90,17 +96,17 @@ func (fake *FakeTaskClient) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeTaskClient) DeleteCalls(stub func(string) (string, error)) {
+func (fake *FakeTaskClient) DeleteCalls(stub func(context.Context, string) (string, error)) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakeTaskClient) DeleteArgsForCall(i int) string {
+func (fake *FakeTaskClient) DeleteArgsForCall(i int) (context.Context, string) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeTaskClient) DeleteReturns(result1 string, result2 error) {
@@ -129,20 +135,21 @@ func (fake *FakeTaskClient) DeleteReturnsOnCall(i int, result1 string, result2 e
 	}{result1, result2}
 }
 
-func (fake *FakeTaskClient) Desire(arg1 string, arg2 *opi.Task, arg3 ...shared.Option) error {
+func (fake *FakeTaskClient) Desire(arg1 context.Context, arg2 string, arg3 *opi.Task, arg4 ...shared.Option) error {
 	fake.desireMutex.Lock()
 	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
 	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
-		arg1 string
-		arg2 *opi.Task
-		arg3 []shared.Option
-	}{arg1, arg2, arg3})
+		arg1 context.Context
+		arg2 string
+		arg3 *opi.Task
+		arg4 []shared.Option
+	}{arg1, arg2, arg3, arg4})
 	stub := fake.DesireStub
 	fakeReturns := fake.desireReturns
-	fake.recordInvocation("Desire", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("Desire", []interface{}{arg1, arg2, arg3, arg4})
 	fake.desireMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3...)
+		return stub(arg1, arg2, arg3, arg4...)
 	}
 	if specificReturn {
 		return ret.result1
@@ -156,17 +163,17 @@ func (fake *FakeTaskClient) DesireCallCount() int {
 	return len(fake.desireArgsForCall)
 }
 
-func (fake *FakeTaskClient) DesireCalls(stub func(string, *opi.Task, ...shared.Option) error) {
+func (fake *FakeTaskClient) DesireCalls(stub func(context.Context, string, *opi.Task, ...shared.Option) error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = stub
 }
 
-func (fake *FakeTaskClient) DesireArgsForCall(i int) (string, *opi.Task, []shared.Option) {
+func (fake *FakeTaskClient) DesireArgsForCall(i int) (context.Context, string, *opi.Task, []shared.Option) {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	argsForCall := fake.desireArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeTaskClient) DesireReturns(result1 error) {
@@ -192,18 +199,19 @@ func (fake *FakeTaskClient) DesireReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeTaskClient) Get(arg1 string) (*opi.Task, error) {
+func (fake *FakeTaskClient) Get(arg1 context.Context, arg2 string) (*opi.Task, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
-		arg1 string
-	}{arg1})
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
 	stub := fake.GetStub
 	fakeReturns := fake.getReturns
-	fake.recordInvocation("Get", []interface{}{arg1})
+	fake.recordInvocation("Get", []interface{}{arg1, arg2})
 	fake.getMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -217,17 +225,17 @@ func (fake *FakeTaskClient) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
-func (fake *FakeTaskClient) GetCalls(stub func(string) (*opi.Task, error)) {
+func (fake *FakeTaskClient) GetCalls(stub func(context.Context, string) (*opi.Task, error)) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = stub
 }
 
-func (fake *FakeTaskClient) GetArgsForCall(i int) string {
+func (fake *FakeTaskClient) GetArgsForCall(i int) (context.Context, string) {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	argsForCall := fake.getArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeTaskClient) GetReturns(result1 *opi.Task, result2 error) {
@@ -256,17 +264,18 @@ func (fake *FakeTaskClient) GetReturnsOnCall(i int, result1 *opi.Task, result2 e
 	}{result1, result2}
 }
 
-func (fake *FakeTaskClient) List() ([]*opi.Task, error) {
+func (fake *FakeTaskClient) List(arg1 context.Context) ([]*opi.Task, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-	}{})
+		arg1 context.Context
+	}{arg1})
 	stub := fake.ListStub
 	fakeReturns := fake.listReturns
-	fake.recordInvocation("List", []interface{}{})
+	fake.recordInvocation("List", []interface{}{arg1})
 	fake.listMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -280,10 +289,17 @@ func (fake *FakeTaskClient) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakeTaskClient) ListCalls(stub func() ([]*opi.Task, error)) {
+func (fake *FakeTaskClient) ListCalls(stub func(context.Context) ([]*opi.Task, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
+}
+
+func (fake *FakeTaskClient) ListArgsForCall(i int) context.Context {
+	fake.listMutex.RLock()
+	defer fake.listMutex.RUnlock()
+	argsForCall := fake.listArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeTaskClient) ListReturns(result1 []*opi.Task, result2 error) {

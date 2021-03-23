@@ -65,7 +65,7 @@ var _ = Describe("Stats", func() {
 		kubeletClient.StatsSummaryReturnsOnCall(0, createStatsSummary("pod-1", "ns-1", 300, 700), nil)
 		kubeletClient.StatsSummaryReturnsOnCall(1, createStatsSummary("pod-2", "ns-2", 200, 256), nil)
 
-		metrics, err := diskMetricsClient.GetPodMetrics()
+		metrics, err := diskMetricsClient.GetPodMetrics(ctx)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(nodeClient.ListCallCount()).To(Equal(1))
 		Expect(kubeletClient.StatsSummaryCallCount()).To(Equal(2))
@@ -78,7 +78,7 @@ var _ = Describe("Stats", func() {
 	When("the node client return an error", func() {
 		It("should return an error", func() {
 			nodeClient.ListReturns(&corev1.NodeList{}, errors.New("oopsie"))
-			_, err := diskMetricsClient.GetPodMetrics()
+			_, err := diskMetricsClient.GetPodMetrics(ctx)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("oopsie")))
 		})
@@ -101,7 +101,7 @@ var _ = Describe("Stats", func() {
 			kubeletClient.StatsSummaryReturnsOnCall(0, stats, nil)
 			kubeletClient.StatsSummaryReturnsOnCall(1, createStatsSummary("pod-2", "ns-1", 200, 256), nil)
 
-			metrics, _ := diskMetricsClient.GetPodMetrics()
+			metrics, _ := diskMetricsClient.GetPodMetrics(ctx)
 			Expect(metrics).To(HaveLen(1))
 			Expect(metrics).To(HaveKeyWithValue("pod-2", float64(456)))
 		})
@@ -118,7 +118,7 @@ var _ = Describe("Stats", func() {
 			}, nil)
 			kubeletClient.StatsSummaryReturnsOnCall(0, kubelet.StatsSummary{}, errors.New("oopsie"))
 
-			metrics, _ := diskMetricsClient.GetPodMetrics()
+			metrics, _ := diskMetricsClient.GetPodMetrics(ctx)
 			Expect(metrics).To(BeEmpty())
 			logs := logger.Logs()
 			Expect(logs).To(HaveLen(1))
@@ -142,7 +142,7 @@ var _ = Describe("Stats", func() {
 			stats.Pods[0].Containers[0].Logs.UsedBytes = nil
 			kubeletClient.StatsSummaryReturnsOnCall(0, stats, nil)
 
-			metrics, _ := diskMetricsClient.GetPodMetrics()
+			metrics, _ := diskMetricsClient.GetPodMetrics(ctx)
 			Expect(metrics).To(HaveLen(1))
 			Expect(metrics).To(HaveKeyWithValue("pod-1", float64(0)))
 		})

@@ -1,6 +1,8 @@
 package route
 
 import (
+	"context"
+
 	"code.cloudfoundry.org/eirini/route"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
@@ -13,7 +15,7 @@ const NoResync = 0
 //counterfeiter:generate . PodUpdateEventHandler
 
 type PodUpdateEventHandler interface {
-	Handle(oldObj, updatedObj *v1.Pod)
+	Handle(ctx context.Context, oldObj, updatedObj *v1.Pod)
 }
 
 type InstanceChangeInformer struct {
@@ -42,7 +44,7 @@ func (c *InstanceChangeInformer) Start() {
 		UpdateFunc: func(oldObj, updatedObj interface{}) {
 			oldPod := oldObj.(*v1.Pod)         //nolint:forcetypeassert
 			updatedPod := updatedObj.(*v1.Pod) //nolint:forcetypeassert
-			c.UpdateHandler.Handle(oldPod, updatedPod)
+			c.UpdateHandler.Handle(context.Background(), oldPod, updatedPod)
 		},
 	})
 

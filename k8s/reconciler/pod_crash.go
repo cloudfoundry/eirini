@@ -29,15 +29,15 @@ const (
 //counterfeiter:generate . CrashEventGenerator
 
 type CrashEventGenerator interface {
-	Generate(*corev1.Pod, lager.Logger) (events.CrashEvent, bool)
+	Generate(context.Context, *corev1.Pod, lager.Logger) (events.CrashEvent, bool)
 }
 
 //counterfeiter:generate . EventsClient
 
 type EventsClient interface {
-	Create(namespace string, event *corev1.Event) (*corev1.Event, error)
-	Update(namespace string, event *corev1.Event) (*corev1.Event, error)
-	GetByInstanceAndReason(namespace string, ownerRef metav1.OwnerReference, instanceIndex int, reason string) (*corev1.Event, error)
+	Create(ctx context.Context, namespace string, event *corev1.Event) (*corev1.Event, error)
+	Update(ctx context.Context, namespace string, event *corev1.Event) (*corev1.Event, error)
+	GetByInstanceAndReason(ctx context.Context, namespace string, ownerRef metav1.OwnerReference, instanceIndex int, reason string) (*corev1.Event, error)
 }
 
 type PodCrash struct {
@@ -76,7 +76,7 @@ func (r PodCrash) Reconcile(ctx context.Context, request reconcile.Request) (rec
 		return reconcile.Result{}, errors.Wrap(err, "failed to get pod")
 	}
 
-	crashEvent, shouldCreate := r.crashEventGenerator.Generate(pod, logger)
+	crashEvent, shouldCreate := r.crashEventGenerator.Generate(ctx, pod, logger)
 	if !shouldCreate {
 		return reconcile.Result{}, nil
 	}
@@ -92,7 +92,7 @@ func (r PodCrash) Reconcile(ctx context.Context, request reconcile.Request) (rec
 		return reconcile.Result{}, nil //nolint:nilerr
 	}
 
-	statefulSet, err := r.statefulSetGetter.Get(pod.Namespace, statefulSetRef.Name)
+	statefulSet, err := r.statefulSetGetter.Get(ctx, pod.Namespace, statefulSetRef.Name)
 	if err != nil {
 		logger.Error("failed-to-get-stateful-set", err)
 
@@ -106,14 +106,14 @@ func (r PodCrash) Reconcile(ctx context.Context, request reconcile.Request) (rec
 		return reconcile.Result{}, nil //nolint:nilerr
 	}
 
-	kubeEvent, err := r.eventsClient.GetByInstanceAndReason(request.Namespace, lrpRef, crashEvent.Index, failureReason(crashEvent))
+	kubeEvent, err := r.eventsClient.GetByInstanceAndReason(ctx, request.Namespace, lrpRef, crashEvent.Index, failureReason(crashEvent))
 	if err != nil {
 		logger.Error("failed-to-get-existing-event", err)
 
 		return reconcile.Result{}, errors.Wrap(err, "failed to get existing event")
 	}
 
-	err = r.setEvent(logger, kubeEvent, lrpRef, crashEvent, request.Namespace)
+	err = r.setEvent(ctx, logger, kubeEvent, lrpRef, crashEvent, request.Namespace)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -123,13 +123,13 @@ func (r PodCrash) Reconcile(ctx context.Context, request reconcile.Request) (rec
 	return reconcile.Result{}, nil
 }
 
-func (r PodCrash) setEvent(logger lager.Logger, kubeEvent *corev1.Event, lrpRef metav1.OwnerReference,
+func (r PodCrash) setEvent(ctx context.Context, logger lager.Logger, kubeEvent *corev1.Event, lrpRef metav1.OwnerReference,
 	crashEvent events.CrashEvent, namespace string) error {
 	if kubeEvent != nil {
-		return r.updateEvent(logger, kubeEvent, crashEvent, namespace)
+		return r.updateEvent(ctx, logger, kubeEvent, crashEvent, namespace)
 	}
 
-	return r.createEvent(logger, lrpRef, crashEvent, namespace)
+	return r.createEvent(ctx, logger, lrpRef, crashEvent, namespace)
 }
 
 func (r PodCrash) eventAlreadyEmitted(crashEvent events.CrashEvent, pod *corev1.Pod) bool {
@@ -149,11 +149,11 @@ func (r PodCrash) setCrashTimestampOnPod(ctx context.Context, logger lager.Logge
 	}
 }
 
-func (r PodCrash) createEvent(logger lager.Logger, ownerRef metav1.OwnerReference, crashEvent events.CrashEvent, namespace string) error {
+func (r PodCrash) createEvent(ctx context.Context, logger lager.Logger, ownerRef metav1.OwnerReference, crashEvent events.CrashEvent, namespace string) error {
 	var err error
 
 	event := r.makeEvent(crashEvent, namespace, ownerRef)
-	if event, err = r.eventsClient.Create(namespace, event); err != nil {
+	if event, err = r.eventsClient.Create(ctx, namespace, event); err != nil {
 		logger.Error("failed-to-create-event", err)
 
 		return errors.Wrap(err, "failed to create event")
@@ -164,11 +164,11 @@ func (r PodCrash) createEvent(logger lager.Logger, ownerRef metav1.OwnerReferenc
 	return nil
 }
 
-func (r PodCrash) updateEvent(logger lager.Logger, kubeEvent *corev1.Event, crashEvent events.CrashEvent, namespace string) error {
+func (r PodCrash) updateEvent(ctx context.Context, logger lager.Logger, kubeEvent *corev1.Event, crashEvent events.CrashEvent, namespace string) error {
 	kubeEvent.Count++
 	kubeEvent.LastTimestamp = metav1.NewTime(time.Unix(crashEvent.CrashTimestamp, 0))
 
-	if _, err := r.eventsClient.Update(namespace, kubeEvent); err != nil {
+	if _, err := r.eventsClient.Update(ctx, namespace, kubeEvent); err != nil {
 		logger.Error("failed-to-update-event", err)
 
 		return errors.Wrap(err, "failed to update event")

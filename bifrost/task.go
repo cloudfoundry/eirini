@@ -19,14 +19,14 @@ type TaskConverter interface {
 }
 
 type TaskClient interface {
-	Desire(namespace string, task *opi.Task, opts ...shared.Option) error
-	Get(guid string) (*opi.Task, error)
-	List() ([]*opi.Task, error)
-	Delete(guid string) (string, error)
+	Desire(ctx context.Context, namespace string, task *opi.Task, opts ...shared.Option) error
+	Get(ctx context.Context, guid string) (*opi.Task, error)
+	List(ctx context.Context) ([]*opi.Task, error)
+	Delete(ctx context.Context, guid string) (string, error)
 }
 
 type JSONClient interface {
-	Post(url string, data interface{}) error
+	Post(ctx context.Context, url string, data interface{}) error
 }
 
 type TaskNamespacer interface {
@@ -40,8 +40,8 @@ type Task struct {
 	JSONClient JSONClient
 }
 
-func (t *Task) GetTask(taskGUID string) (cf.TaskResponse, error) {
-	task, err := t.TaskClient.Get(taskGUID)
+func (t *Task) GetTask(ctx context.Context, taskGUID string) (cf.TaskResponse, error) {
+	task, err := t.TaskClient.Get(ctx, taskGUID)
 	if err != nil {
 		return cf.TaskResponse{}, errors.Wrap(err, "failed to get task")
 	}
@@ -49,8 +49,8 @@ func (t *Task) GetTask(taskGUID string) (cf.TaskResponse, error) {
 	return cf.TaskResponse{GUID: task.GUID}, nil
 }
 
-func (t *Task) ListTasks() (cf.TasksResponse, error) {
-	tasks, err := t.TaskClient.List()
+func (t *Task) ListTasks(ctx context.Context) (cf.TasksResponse, error) {
+	tasks, err := t.TaskClient.List(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list tasks")
 	}
@@ -71,11 +71,11 @@ func (t *Task) TransferTask(ctx context.Context, taskGUID string, taskRequest cf
 
 	namespace := t.Namespacer.GetNamespace(taskRequest.Namespace)
 
-	return errors.Wrap(t.TaskClient.Desire(namespace, &desiredTask), "failed to desire")
+	return errors.Wrap(t.TaskClient.Desire(ctx, namespace, &desiredTask), "failed to desire")
 }
 
-func (t *Task) CancelTask(taskGUID string) error {
-	callbackURL, err := t.TaskClient.Delete(taskGUID)
+func (t *Task) CancelTask(ctx context.Context, taskGUID string) error {
+	callbackURL, err := t.TaskClient.Delete(ctx, taskGUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete task %s", taskGUID)
 	}
@@ -85,7 +85,7 @@ func (t *Task) CancelTask(taskGUID string) error {
 	}
 
 	go func() {
-		_ = t.JSONClient.Post(callbackURL, cf.TaskCompletedRequest{
+		_ = t.JSONClient.Post(ctx, callbackURL, cf.TaskCompletedRequest{
 			TaskGUID:      taskGUID,
 			Failed:        true,
 			FailureReason: "task was cancelled",

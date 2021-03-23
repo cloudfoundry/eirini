@@ -38,7 +38,7 @@ var _ = Describe("Get", func() {
 	})
 
 	JustBeforeEach(func() {
-		task, err = getter.Get(taskGUID)
+		task, err = getter.Get(ctx, taskGUID)
 	})
 
 	It("succeeds", func() {
@@ -47,7 +47,7 @@ var _ = Describe("Get", func() {
 
 	It("requests incompleted jobs from the jobs client", func() {
 		Expect(jobGetter.GetByGUIDCallCount()).To(Equal(1))
-		actualGUID, actualIncludeCompleted := jobGetter.GetByGUIDArgsForCall(0)
+		_, actualGUID, actualIncludeCompleted := jobGetter.GetByGUIDArgsForCall(0)
 		Expect(actualGUID).To(Equal(task.GUID))
 		Expect(actualIncludeCompleted).To(BeFalse())
 	})

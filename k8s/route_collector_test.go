@@ -98,7 +98,7 @@ var _ = Describe("RouteCollector", func() {
 	JustBeforeEach(func() {
 		podsGetter.GetAllReturns(pods, getPodsErr)
 		statefulSetGetter.GetBySourceTypeReturns(statefulsets, getStatefulSetsErr)
-		routeMessages, err = collector.Collect()
+		routeMessages, err = collector.Collect(ctx)
 	})
 
 	It("should not return anything if there are no pods or statefulsets", func() {

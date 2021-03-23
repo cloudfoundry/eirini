@@ -79,7 +79,7 @@ var _ = Describe("DockerStager", func() {
 
 		It("should complete staging with correct parameters", func() {
 			Expect(stagingCompleter.CompleteStagingCallCount()).To(Equal(1))
-			taskCompletedRequest := stagingCompleter.CompleteStagingArgsForCall(0)
+			_, taskCompletedRequest := stagingCompleter.CompleteStagingArgsForCall(0)
 
 			Expect(taskCompletedRequest.TaskGUID).To(Equal("stg-guid"))
 			Expect(taskCompletedRequest.Failed).To(BeFalse())
@@ -132,7 +132,7 @@ var _ = Describe("DockerStager", func() {
 				Expect(stagingErr).ToNot(HaveOccurred())
 				Expect(stagingCompleter.CompleteStagingCallCount()).To(Equal(1))
 
-				taskCallbackResponse := stagingCompleter.CompleteStagingArgsForCall(0)
+				_, taskCallbackResponse := stagingCompleter.CompleteStagingArgsForCall(0)
 				Expect(taskCallbackResponse.Failed).To(BeTrue())
 				Expect(taskCallbackResponse.FailureReason).To(ContainSubstring("failed to create an image ref because of reasons"))
 			})
@@ -157,7 +157,7 @@ var _ = Describe("DockerStager", func() {
 				Expect(stagingErr).ToNot(HaveOccurred())
 				Expect(stagingCompleter.CompleteStagingCallCount()).To(Equal(1))
 
-				taskCallbackResponse := stagingCompleter.CompleteStagingArgsForCall(0)
+				_, taskCallbackResponse := stagingCompleter.CompleteStagingArgsForCall(0)
 				Expect(taskCallbackResponse.Failed).To(BeTrue())
 				Expect(taskCallbackResponse.FailureReason).To(ContainSubstring("failed to fetch image metadata"))
 			})
@@ -186,7 +186,7 @@ var _ = Describe("DockerStager", func() {
 				Expect(stagingErr).ToNot(HaveOccurred())
 				Expect(stagingCompleter.CompleteStagingCallCount()).To(Equal(1))
 
-				taskCallbackResponse := stagingCompleter.CompleteStagingArgsForCall(0)
+				_, taskCallbackResponse := stagingCompleter.CompleteStagingArgsForCall(0)
 				Expect(taskCallbackResponse.Failed).To(BeTrue())
 				Expect(taskCallbackResponse.FailureReason).To(ContainSubstring("failed to parse exposed ports"))
 			})

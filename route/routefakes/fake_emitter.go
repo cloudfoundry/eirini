@@ -2,31 +2,34 @@
 package routefakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/route"
 )
 
 type FakeEmitter struct {
-	EmitStub        func(route.Message)
+	EmitStub        func(context.Context, route.Message)
 	emitMutex       sync.RWMutex
 	emitArgsForCall []struct {
-		arg1 route.Message
+		arg1 context.Context
+		arg2 route.Message
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeEmitter) Emit(arg1 route.Message) {
+func (fake *FakeEmitter) Emit(arg1 context.Context, arg2 route.Message) {
 	fake.emitMutex.Lock()
 	fake.emitArgsForCall = append(fake.emitArgsForCall, struct {
-		arg1 route.Message
-	}{arg1})
+		arg1 context.Context
+		arg2 route.Message
+	}{arg1, arg2})
 	stub := fake.EmitStub
-	fake.recordInvocation("Emit", []interface{}{arg1})
+	fake.recordInvocation("Emit", []interface{}{arg1, arg2})
 	fake.emitMutex.Unlock()
 	if stub != nil {
-		fake.EmitStub(arg1)
+		fake.EmitStub(arg1, arg2)
 	}
 }
 
@@ -36,17 +39,17 @@ func (fake *FakeEmitter) EmitCallCount() int {
 	return len(fake.emitArgsForCall)
 }
 
-func (fake *FakeEmitter) EmitCalls(stub func(route.Message)) {
+func (fake *FakeEmitter) EmitCalls(stub func(context.Context, route.Message)) {
 	fake.emitMutex.Lock()
 	defer fake.emitMutex.Unlock()
 	fake.EmitStub = stub
 }
 
-func (fake *FakeEmitter) EmitArgsForCall(i int) route.Message {
+func (fake *FakeEmitter) EmitArgsForCall(i int) (context.Context, route.Message) {
 	fake.emitMutex.RLock()
 	defer fake.emitMutex.RUnlock()
 	argsForCall := fake.emitArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeEmitter) Invocations() map[string][][]interface{} {

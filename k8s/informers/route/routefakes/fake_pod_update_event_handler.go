@@ -2,6 +2,7 @@
 package routefakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/informers/route"
@@ -9,27 +10,29 @@ import (
 )
 
 type FakePodUpdateEventHandler struct {
-	HandleStub        func(*v1.Pod, *v1.Pod)
+	HandleStub        func(context.Context, *v1.Pod, *v1.Pod)
 	handleMutex       sync.RWMutex
 	handleArgsForCall []struct {
-		arg1 *v1.Pod
+		arg1 context.Context
 		arg2 *v1.Pod
+		arg3 *v1.Pod
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePodUpdateEventHandler) Handle(arg1 *v1.Pod, arg2 *v1.Pod) {
+func (fake *FakePodUpdateEventHandler) Handle(arg1 context.Context, arg2 *v1.Pod, arg3 *v1.Pod) {
 	fake.handleMutex.Lock()
 	fake.handleArgsForCall = append(fake.handleArgsForCall, struct {
-		arg1 *v1.Pod
+		arg1 context.Context
 		arg2 *v1.Pod
-	}{arg1, arg2})
+		arg3 *v1.Pod
+	}{arg1, arg2, arg3})
 	stub := fake.HandleStub
-	fake.recordInvocation("Handle", []interface{}{arg1, arg2})
+	fake.recordInvocation("Handle", []interface{}{arg1, arg2, arg3})
 	fake.handleMutex.Unlock()
 	if stub != nil {
-		fake.HandleStub(arg1, arg2)
+		fake.HandleStub(arg1, arg2, arg3)
 	}
 }
 
@@ -39,17 +42,17 @@ func (fake *FakePodUpdateEventHandler) HandleCallCount() int {
 	return len(fake.handleArgsForCall)
 }
 
-func (fake *FakePodUpdateEventHandler) HandleCalls(stub func(*v1.Pod, *v1.Pod)) {
+func (fake *FakePodUpdateEventHandler) HandleCalls(stub func(context.Context, *v1.Pod, *v1.Pod)) {
 	fake.handleMutex.Lock()
 	defer fake.handleMutex.Unlock()
 	fake.HandleStub = stub
 }
 
-func (fake *FakePodUpdateEventHandler) HandleArgsForCall(i int) (*v1.Pod, *v1.Pod) {
+func (fake *FakePodUpdateEventHandler) HandleArgsForCall(i int) (context.Context, *v1.Pod, *v1.Pod) {
 	fake.handleMutex.RLock()
 	defer fake.handleMutex.RUnlock()
 	argsForCall := fake.handleArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakePodUpdateEventHandler) Invocations() map[string][][]interface{} {

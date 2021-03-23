@@ -36,7 +36,7 @@ var _ = Describe("List", func() {
 	})
 
 	JustBeforeEach(func() {
-		tasks, err = lister.List()
+		tasks, err = lister.List(ctx)
 	})
 
 	It("succeeds", func() {
@@ -45,7 +45,8 @@ var _ = Describe("List", func() {
 
 	It("excludes completed tasks", func() {
 		Expect(jobLister.ListCallCount()).To(Equal(1))
-		Expect(jobLister.ListArgsForCall(0)).To(BeFalse())
+		_, actualIncludeCompleted := jobLister.ListArgsForCall(0)
+		Expect(actualIncludeCompleted).To(BeFalse())
 	})
 
 	It("returns all tasks", func() {

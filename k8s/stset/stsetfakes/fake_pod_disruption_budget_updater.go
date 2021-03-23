@@ -2,6 +2,7 @@
 package stsetfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
@@ -9,12 +10,13 @@ import (
 )
 
 type FakePodDisruptionBudgetUpdater struct {
-	UpdateStub        func(string, string, *opi.LRP) error
+	UpdateStub        func(context.Context, string, string, *opi.LRP) error
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
 		arg2 string
-		arg3 *opi.LRP
+		arg3 string
+		arg4 *opi.LRP
 	}
 	updateReturns struct {
 		result1 error
@@ -26,20 +28,21 @@ type FakePodDisruptionBudgetUpdater struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePodDisruptionBudgetUpdater) Update(arg1 string, arg2 string, arg3 *opi.LRP) error {
+func (fake *FakePodDisruptionBudgetUpdater) Update(arg1 context.Context, arg2 string, arg3 string, arg4 *opi.LRP) error {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
-		arg1 string
+		arg1 context.Context
 		arg2 string
-		arg3 *opi.LRP
-	}{arg1, arg2, arg3})
+		arg3 string
+		arg4 *opi.LRP
+	}{arg1, arg2, arg3, arg4})
 	stub := fake.UpdateStub
 	fakeReturns := fake.updateReturns
-	fake.recordInvocation("Update", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("Update", []interface{}{arg1, arg2, arg3, arg4})
 	fake.updateMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1
@@ -53,17 +56,17 @@ func (fake *FakePodDisruptionBudgetUpdater) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakePodDisruptionBudgetUpdater) UpdateCalls(stub func(string, string, *opi.LRP) error) {
+func (fake *FakePodDisruptionBudgetUpdater) UpdateCalls(stub func(context.Context, string, string, *opi.LRP) error) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakePodDisruptionBudgetUpdater) UpdateArgsForCall(i int) (string, string, *opi.LRP) {
+func (fake *FakePodDisruptionBudgetUpdater) UpdateArgsForCall(i int) (context.Context, string, string, *opi.LRP) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakePodDisruptionBudgetUpdater) UpdateReturns(result1 error) {

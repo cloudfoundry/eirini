@@ -2,15 +2,17 @@
 package k8sfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s"
 )
 
 type FakeDiskAPI struct {
-	GetPodMetricsStub        func() (map[string]float64, error)
+	GetPodMetricsStub        func(context.Context) (map[string]float64, error)
 	getPodMetricsMutex       sync.RWMutex
 	getPodMetricsArgsForCall []struct {
+		arg1 context.Context
 	}
 	getPodMetricsReturns struct {
 		result1 map[string]float64
@@ -24,17 +26,18 @@ type FakeDiskAPI struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeDiskAPI) GetPodMetrics() (map[string]float64, error) {
+func (fake *FakeDiskAPI) GetPodMetrics(arg1 context.Context) (map[string]float64, error) {
 	fake.getPodMetricsMutex.Lock()
 	ret, specificReturn := fake.getPodMetricsReturnsOnCall[len(fake.getPodMetricsArgsForCall)]
 	fake.getPodMetricsArgsForCall = append(fake.getPodMetricsArgsForCall, struct {
-	}{})
+		arg1 context.Context
+	}{arg1})
 	stub := fake.GetPodMetricsStub
 	fakeReturns := fake.getPodMetricsReturns
-	fake.recordInvocation("GetPodMetrics", []interface{}{})
+	fake.recordInvocation("GetPodMetrics", []interface{}{arg1})
 	fake.getPodMetricsMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -48,10 +51,17 @@ func (fake *FakeDiskAPI) GetPodMetricsCallCount() int {
 	return len(fake.getPodMetricsArgsForCall)
 }
 
-func (fake *FakeDiskAPI) GetPodMetricsCalls(stub func() (map[string]float64, error)) {
+func (fake *FakeDiskAPI) GetPodMetricsCalls(stub func(context.Context) (map[string]float64, error)) {
 	fake.getPodMetricsMutex.Lock()
 	defer fake.getPodMetricsMutex.Unlock()
 	fake.GetPodMetricsStub = stub
+}
+
+func (fake *FakeDiskAPI) GetPodMetricsArgsForCall(i int) context.Context {
+	fake.getPodMetricsMutex.RLock()
+	defer fake.getPodMetricsMutex.RUnlock()
+	argsForCall := fake.getPodMetricsArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeDiskAPI) GetPodMetricsReturns(result1 map[string]float64, result2 error) {

@@ -1,6 +1,8 @@
 package stager_test
 
 import (
+	"context"
+
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/eirini/stager/stagerfakes"
@@ -17,9 +19,11 @@ var _ = Describe("StagingCompleter", func() {
 		callbackClient       *stagerfakes.FakeCallbackClient
 		stagingCompleter     *stager.CallbackStagingCompleter
 		err                  error
+		ctx                  context.Context
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		annotation := `{"completion_callback": "call/me/maybe"}`
 		taskCompletedRequest = cf.StagingCompletedRequest{
 			TaskGUID:      "our-task-guid",
@@ -35,7 +39,7 @@ var _ = Describe("StagingCompleter", func() {
 	})
 
 	JustBeforeEach(func() {
-		err = stagingCompleter.CompleteStaging(taskCompletedRequest)
+		err = stagingCompleter.CompleteStaging(ctx, taskCompletedRequest)
 	})
 
 	It("should not return an error", func() {
@@ -44,7 +48,7 @@ var _ = Describe("StagingCompleter", func() {
 
 	It("should post the response", func() {
 		Expect(callbackClient.PostCallCount()).To(Equal(1))
-		url, data := callbackClient.PostArgsForCall(0)
+		_, url, data := callbackClient.PostArgsForCall(0)
 		Expect(url).To(Equal("call/me/maybe"))
 
 		response, ok := data.(cc_messages.StagingResponseForCC)
@@ -68,7 +72,7 @@ var _ = Describe("StagingCompleter", func() {
 
 		It("should post the response", func() {
 			Expect(callbackClient.PostCallCount()).To(Equal(1))
-			url, data := callbackClient.PostArgsForCall(0)
+			_, url, data := callbackClient.PostArgsForCall(0)
 			Expect(url).To(Equal("call/me/maybe"))
 
 			response, ok := data.(cc_messages.StagingResponseForCC)

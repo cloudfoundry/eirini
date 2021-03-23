@@ -2,6 +2,7 @@
 package k8sfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s"
@@ -9,25 +10,27 @@ import (
 )
 
 type FakeEmitter struct {
-	EmitStub        func(metrics.Message)
+	EmitStub        func(context.Context, metrics.Message)
 	emitMutex       sync.RWMutex
 	emitArgsForCall []struct {
-		arg1 metrics.Message
+		arg1 context.Context
+		arg2 metrics.Message
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeEmitter) Emit(arg1 metrics.Message) {
+func (fake *FakeEmitter) Emit(arg1 context.Context, arg2 metrics.Message) {
 	fake.emitMutex.Lock()
 	fake.emitArgsForCall = append(fake.emitArgsForCall, struct {
-		arg1 metrics.Message
-	}{arg1})
+		arg1 context.Context
+		arg2 metrics.Message
+	}{arg1, arg2})
 	stub := fake.EmitStub
-	fake.recordInvocation("Emit", []interface{}{arg1})
+	fake.recordInvocation("Emit", []interface{}{arg1, arg2})
 	fake.emitMutex.Unlock()
 	if stub != nil {
-		fake.EmitStub(arg1)
+		fake.EmitStub(arg1, arg2)
 	}
 }
 
@@ -37,17 +40,17 @@ func (fake *FakeEmitter) EmitCallCount() int {
 	return len(fake.emitArgsForCall)
 }
 
-func (fake *FakeEmitter) EmitCalls(stub func(metrics.Message)) {
+func (fake *FakeEmitter) EmitCalls(stub func(context.Context, metrics.Message)) {
 	fake.emitMutex.Lock()
 	defer fake.emitMutex.Unlock()
 	fake.EmitStub = stub
 }
 
-func (fake *FakeEmitter) EmitArgsForCall(i int) metrics.Message {
+func (fake *FakeEmitter) EmitArgsForCall(i int) (context.Context, metrics.Message) {
 	fake.emitMutex.RLock()
 	defer fake.emitMutex.RUnlock()
 	argsForCall := fake.emitArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeEmitter) Invocations() map[string][][]interface{} {

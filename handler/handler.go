@@ -25,15 +25,15 @@ type LRPBifrost interface {
 }
 
 type TaskBifrost interface {
-	GetTask(taskGUID string) (cf.TaskResponse, error)
-	ListTasks() (cf.TasksResponse, error)
+	GetTask(ctx context.Context, taskGUID string) (cf.TaskResponse, error)
+	ListTasks(ctx context.Context) (cf.TasksResponse, error)
 	TransferTask(ctx context.Context, taskGUID string, request cf.TaskRequest) error
-	CancelTask(taskGUID string) error
+	CancelTask(ctx context.Context, taskGUID string) error
 }
 
 type StagingBifrost interface {
 	TransferStaging(ctx context.Context, stagingGUID string, request cf.StagingRequest) error
-	CompleteStaging(cf.StagingCompletedRequest) error
+	CompleteStaging(ctx context.Context, request cf.StagingCompletedRequest) error
 }
 
 func New(lrpBifrost LRPBifrost,

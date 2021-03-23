@@ -2,17 +2,19 @@
 package bifrostfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/bifrost"
 )
 
 type FakeJSONClient struct {
-	PostStub        func(string, interface{}) error
+	PostStub        func(context.Context, string, interface{}) error
 	postMutex       sync.RWMutex
 	postArgsForCall []struct {
-		arg1 string
-		arg2 interface{}
+		arg1 context.Context
+		arg2 string
+		arg3 interface{}
 	}
 	postReturns struct {
 		result1 error
@@ -24,19 +26,20 @@ type FakeJSONClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeJSONClient) Post(arg1 string, arg2 interface{}) error {
+func (fake *FakeJSONClient) Post(arg1 context.Context, arg2 string, arg3 interface{}) error {
 	fake.postMutex.Lock()
 	ret, specificReturn := fake.postReturnsOnCall[len(fake.postArgsForCall)]
 	fake.postArgsForCall = append(fake.postArgsForCall, struct {
-		arg1 string
-		arg2 interface{}
-	}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 interface{}
+	}{arg1, arg2, arg3})
 	stub := fake.PostStub
 	fakeReturns := fake.postReturns
-	fake.recordInvocation("Post", []interface{}{arg1, arg2})
+	fake.recordInvocation("Post", []interface{}{arg1, arg2, arg3})
 	fake.postMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -50,17 +53,17 @@ func (fake *FakeJSONClient) PostCallCount() int {
 	return len(fake.postArgsForCall)
 }
 
-func (fake *FakeJSONClient) PostCalls(stub func(string, interface{}) error) {
+func (fake *FakeJSONClient) PostCalls(stub func(context.Context, string, interface{}) error) {
 	fake.postMutex.Lock()
 	defer fake.postMutex.Unlock()
 	fake.PostStub = stub
 }
 
-func (fake *FakeJSONClient) PostArgsForCall(i int) (string, interface{}) {
+func (fake *FakeJSONClient) PostArgsForCall(i int) (context.Context, string, interface{}) {
 	fake.postMutex.RLock()
 	defer fake.postMutex.RUnlock()
 	argsForCall := fake.postArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeJSONClient) PostReturns(result1 error) {

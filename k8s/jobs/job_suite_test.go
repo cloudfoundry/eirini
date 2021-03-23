@@ -1,6 +1,7 @@
 package jobs_test
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -21,3 +22,9 @@ func expectedValFrom(fieldPath string) *v1.EnvVarSource {
 		},
 	}
 }
+
+var ctx context.Context
+
+var _ = BeforeEach(func() {
+	ctx = context.Background()
+})

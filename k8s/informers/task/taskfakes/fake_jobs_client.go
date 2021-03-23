@@ -2,6 +2,7 @@
 package taskfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
@@ -9,11 +10,12 @@ import (
 )
 
 type FakeJobsClient struct {
-	GetByGUIDStub        func(string, bool) ([]v1.Job, error)
+	GetByGUIDStub        func(context.Context, string, bool) ([]v1.Job, error)
 	getByGUIDMutex       sync.RWMutex
 	getByGUIDArgsForCall []struct {
-		arg1 string
-		arg2 bool
+		arg1 context.Context
+		arg2 string
+		arg3 bool
 	}
 	getByGUIDReturns struct {
 		result1 []v1.Job
@@ -23,12 +25,13 @@ type FakeJobsClient struct {
 		result1 []v1.Job
 		result2 error
 	}
-	SetLabelStub        func(*v1.Job, string, string) (*v1.Job, error)
+	SetLabelStub        func(context.Context, *v1.Job, string, string) (*v1.Job, error)
 	setLabelMutex       sync.RWMutex
 	setLabelArgsForCall []struct {
-		arg1 *v1.Job
-		arg2 string
+		arg1 context.Context
+		arg2 *v1.Job
 		arg3 string
+		arg4 string
 	}
 	setLabelReturns struct {
 		result1 *v1.Job
@@ -42,19 +45,20 @@ type FakeJobsClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeJobsClient) GetByGUID(arg1 string, arg2 bool) ([]v1.Job, error) {
+func (fake *FakeJobsClient) GetByGUID(arg1 context.Context, arg2 string, arg3 bool) ([]v1.Job, error) {
 	fake.getByGUIDMutex.Lock()
 	ret, specificReturn := fake.getByGUIDReturnsOnCall[len(fake.getByGUIDArgsForCall)]
 	fake.getByGUIDArgsForCall = append(fake.getByGUIDArgsForCall, struct {
-		arg1 string
-		arg2 bool
-	}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 bool
+	}{arg1, arg2, arg3})
 	stub := fake.GetByGUIDStub
 	fakeReturns := fake.getByGUIDReturns
-	fake.recordInvocation("GetByGUID", []interface{}{arg1, arg2})
+	fake.recordInvocation("GetByGUID", []interface{}{arg1, arg2, arg3})
 	fake.getByGUIDMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -68,17 +72,17 @@ func (fake *FakeJobsClient) GetByGUIDCallCount() int {
 	return len(fake.getByGUIDArgsForCall)
 }
 
-func (fake *FakeJobsClient) GetByGUIDCalls(stub func(string, bool) ([]v1.Job, error)) {
+func (fake *FakeJobsClient) GetByGUIDCalls(stub func(context.Context, string, bool) ([]v1.Job, error)) {
 	fake.getByGUIDMutex.Lock()
 	defer fake.getByGUIDMutex.Unlock()
 	fake.GetByGUIDStub = stub
 }
 
-func (fake *FakeJobsClient) GetByGUIDArgsForCall(i int) (string, bool) {
+func (fake *FakeJobsClient) GetByGUIDArgsForCall(i int) (context.Context, string, bool) {
 	fake.getByGUIDMutex.RLock()
 	defer fake.getByGUIDMutex.RUnlock()
 	argsForCall := fake.getByGUIDArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeJobsClient) GetByGUIDReturns(result1 []v1.Job, result2 error) {
@@ -107,20 +111,21 @@ func (fake *FakeJobsClient) GetByGUIDReturnsOnCall(i int, result1 []v1.Job, resu
 	}{result1, result2}
 }
 
-func (fake *FakeJobsClient) SetLabel(arg1 *v1.Job, arg2 string, arg3 string) (*v1.Job, error) {
+func (fake *FakeJobsClient) SetLabel(arg1 context.Context, arg2 *v1.Job, arg3 string, arg4 string) (*v1.Job, error) {
 	fake.setLabelMutex.Lock()
 	ret, specificReturn := fake.setLabelReturnsOnCall[len(fake.setLabelArgsForCall)]
 	fake.setLabelArgsForCall = append(fake.setLabelArgsForCall, struct {
-		arg1 *v1.Job
-		arg2 string
+		arg1 context.Context
+		arg2 *v1.Job
 		arg3 string
-	}{arg1, arg2, arg3})
+		arg4 string
+	}{arg1, arg2, arg3, arg4})
 	stub := fake.SetLabelStub
 	fakeReturns := fake.setLabelReturns
-	fake.recordInvocation("SetLabel", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("SetLabel", []interface{}{arg1, arg2, arg3, arg4})
 	fake.setLabelMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -134,17 +139,17 @@ func (fake *FakeJobsClient) SetLabelCallCount() int {
 	return len(fake.setLabelArgsForCall)
 }
 
-func (fake *FakeJobsClient) SetLabelCalls(stub func(*v1.Job, string, string) (*v1.Job, error)) {
+func (fake *FakeJobsClient) SetLabelCalls(stub func(context.Context, *v1.Job, string, string) (*v1.Job, error)) {
 	fake.setLabelMutex.Lock()
 	defer fake.setLabelMutex.Unlock()
 	fake.SetLabelStub = stub
 }
 
-func (fake *FakeJobsClient) SetLabelArgsForCall(i int) (*v1.Job, string, string) {
+func (fake *FakeJobsClient) SetLabelArgsForCall(i int) (context.Context, *v1.Job, string, string) {
 	fake.setLabelMutex.RLock()
 	defer fake.setLabelMutex.RUnlock()
 	argsForCall := fake.setLabelArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeJobsClient) SetLabelReturns(result1 *v1.Job, result2 error) {

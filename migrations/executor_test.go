@@ -1,6 +1,7 @@
 package migrations_test
 
 import (
+	"context"
 	"errors"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
@@ -78,7 +79,7 @@ var _ = Describe("Migration Executor", func() {
 
 	It("lists LRP statefulsets", func() {
 		Expect(stSetClient.GetBySourceTypeCallCount()).To(Equal(1))
-		actualSourceType := stSetClient.GetBySourceTypeArgsForCall(0)
+		_, actualSourceType := stSetClient.GetBySourceTypeArgsForCall(0)
 		Expect(actualSourceType).To(Equal(stset.AppSourceType))
 	})
 
@@ -88,7 +89,8 @@ var _ = Describe("Migration Executor", func() {
 		Expect(migrationStep6.ApplyCallCount()).To(Equal(1))
 		Expect(migrationStep7.ApplyCallCount()).To(Equal(1))
 
-		Expect(migrationStep6.ApplyArgsForCall(0)).To(Equal(stSetv5))
+		_, stSet := migrationStep6.ApplyArgsForCall(0)
+		Expect(stSet).To(Equal(stSetv5))
 	})
 
 	When("there is more than one stateful set listed", func() {
@@ -107,7 +109,7 @@ var _ = Describe("Migration Executor", func() {
 
 	It("bumps the latest migration annotation on the stateful set", func() {
 		Expect(stSetClient.SetAnnotationCallCount()).To(Equal(2))
-		actualStSet, actualAnnotationName, actualAnnotationValue := stSetClient.SetAnnotationArgsForCall(0)
+		_, actualStSet, actualAnnotationName, actualAnnotationValue := stSetClient.SetAnnotationArgsForCall(0)
 		Expect(actualStSet).To(Equal(stSetv5))
 		Expect(actualAnnotationName).To(Equal(stset.AnnotationLatestMigration))
 		Expect(actualAnnotationValue).To(Equal("6"))
@@ -132,8 +134,8 @@ var _ = Describe("Migration Executor", func() {
 		BeforeEach(func() {
 			mingrationHistory = []migrations.MigrationStep{}
 
-			addToMigrationHistory := func(step migrations.MigrationStep) func(o runtime.Object) error {
-				return func(_ runtime.Object) error {
+			addToMigrationHistory := func(step migrations.MigrationStep) func(ctx context.Context, o runtime.Object) error {
+				return func(ctx context.Context, _ runtime.Object) error {
 					mingrationHistory = append(mingrationHistory, step)
 
 					return nil

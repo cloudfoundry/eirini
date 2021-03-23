@@ -1,6 +1,7 @@
 package stset
 
 import (
+	"context"
 	"fmt"
 
 	"code.cloudfoundry.org/eirini/k8s/shared"
@@ -25,15 +26,15 @@ type LRPToStatefulSetConverter interface {
 }
 
 type SecretsCreator interface {
-	Create(namespace string, secret *corev1.Secret) (*corev1.Secret, error)
+	Create(ctx context.Context, namespace string, secret *corev1.Secret) (*corev1.Secret, error)
 }
 
 type StatefulSetCreator interface {
-	Create(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
+	Create(ctx context.Context, namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
 }
 
 type PodDisruptionBudgetUpdater interface {
-	Update(namespace, name string, lrp *opi.LRP) error
+	Update(ctx context.Context, namespace, name string, lrp *opi.LRP) error
 }
 
 type Desirer struct {
@@ -60,7 +61,7 @@ func NewDesirer(
 	}
 }
 
-func (d *Desirer) Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) error {
+func (d *Desirer) Desire(ctx context.Context, namespace string, lrp *opi.LRP, opts ...shared.Option) error {
 	logger := d.logger.Session("desire", lager.Data{"guid": lrp.GUID, "version": lrp.Version, "namespace": namespace})
 
 	statefulSetName, err := utils.GetStatefulsetName(lrp)
@@ -69,7 +70,7 @@ func (d *Desirer) Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) 
 	}
 
 	if lrp.PrivateRegistry != nil {
-		err = d.createRegistryCredsSecret(namespace, statefulSetName, lrp)
+		err = d.createRegistryCredsSecret(ctx, namespace, statefulSetName, lrp)
 		if err != nil {
 			return err
 		}
@@ -87,7 +88,7 @@ func (d *Desirer) Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) 
 		return err
 	}
 
-	if _, err := d.statefulSets.Create(namespace, st); err != nil {
+	if _, err := d.statefulSets.Create(ctx, namespace, st); err != nil {
 		var statusErr *k8serrors.StatusError
 		if errors.As(err, &statusErr) && statusErr.Status().Reason == metav1.StatusReasonAlreadyExists {
 			logger.Debug("statefulset-already-exists", lager.Data{"error": err.Error()})
@@ -98,7 +99,7 @@ func (d *Desirer) Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) 
 		return errors.Wrap(err, "failed to create statefulset")
 	}
 
-	if err := d.podDisruptionBudgetCreator.Update(namespace, statefulSetName, lrp); err != nil {
+	if err := d.podDisruptionBudgetCreator.Update(ctx, namespace, statefulSetName, lrp); err != nil {
 		logger.Error("failed-to-create-pod-disruption-budget", err)
 
 		return errors.Wrap(err, "failed to create pod disruption budget")
@@ -107,13 +108,13 @@ func (d *Desirer) Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) 
 	return nil
 }
 
-func (d *Desirer) createRegistryCredsSecret(namespace, statefulSetName string, lrp *opi.LRP) error {
+func (d *Desirer) createRegistryCredsSecret(ctx context.Context, namespace, statefulSetName string, lrp *opi.LRP) error {
 	secret, err := generateRegistryCredsSecret(statefulSetName, lrp)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate private registry secret for statefulset")
 	}
 
-	_, err = d.secrets.Create(namespace, secret)
+	_, err = d.secrets.Create(ctx, namespace, secret)
 
 	return errors.Wrap(err, "failed to create private registry secret for statefulset")
 }

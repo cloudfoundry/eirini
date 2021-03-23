@@ -1,6 +1,8 @@
 package event
 
 import (
+	"context"
+
 	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/stset"
@@ -22,7 +24,7 @@ func NewDefaultCrashEventGenerator(eventsClient k8s.EventsClient) DefaultCrashEv
 	}
 }
 
-func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (events.CrashEvent, bool) {
+func (g DefaultCrashEventGenerator) Generate(ctx context.Context, pod *v1.Pod, logger lager.Logger) (events.CrashEvent, bool) {
 	logger = logger.Session("generate-crash-event",
 		lager.Data{
 			"pod-name": pod.Name,
@@ -51,7 +53,7 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 	}
 
 	if appStatus.State.Terminated != nil {
-		return g.generateReportForTerminatedPod(pod, appStatus, logger)
+		return g.generateReportForTerminatedPod(ctx, pod, appStatus, logger)
 	}
 
 	if appStatus.LastTerminationState.Terminated != nil {
@@ -67,8 +69,8 @@ func (g DefaultCrashEventGenerator) Generate(pod *v1.Pod, logger lager.Logger) (
 	return events.CrashEvent{}, false
 }
 
-func (g DefaultCrashEventGenerator) generateReportForTerminatedPod(pod *v1.Pod, status *v1.ContainerStatus, logger lager.Logger) (events.CrashEvent, bool) {
-	podEvents, err := g.eventsClient.GetByPod(*pod)
+func (g DefaultCrashEventGenerator) generateReportForTerminatedPod(ctx context.Context, pod *v1.Pod, status *v1.ContainerStatus, logger lager.Logger) (events.CrashEvent, bool) {
+	podEvents, err := g.eventsClient.GetByPod(ctx, *pod)
 	if err != nil {
 		logger.Error("skipping-failed-to-get-k8s-events", err)
 

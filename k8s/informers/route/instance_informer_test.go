@@ -67,7 +67,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 			podWatcher.Modify(pod1)
 
 			Eventually(updateHandler.HandleCallCount).Should(Equal(1))
-			oldPod, newPod := updateHandler.HandleArgsForCall(0)
+			_, oldPod, newPod := updateHandler.HandleArgsForCall(0)
 
 			Expect(oldPod.Name).To(Equal(newPod.Name))
 			Expect(oldPod.Status.PodIP).To(Equal(""))

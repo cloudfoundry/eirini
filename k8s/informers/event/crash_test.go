@@ -114,7 +114,7 @@ var _ = Describe("Event", func() {
 	It("sends the correct args to the event generator", func() {
 		Expect(eventGenerator.GenerateCallCount()).To(Equal(1))
 
-		inputPod, inputLogger := eventGenerator.GenerateArgsForCall(0)
+		_, inputPod, inputLogger := eventGenerator.GenerateArgsForCall(0)
 		Expect(inputPod).To(Equal(pod))
 		Expect(inputLogger).To(Equal(logger))
 	})

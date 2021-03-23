@@ -1,6 +1,8 @@
 package pdb
 
 import (
+	"context"
+
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/opi"
 	"github.com/pkg/errors"
@@ -13,8 +15,8 @@ import (
 //counterfeiter:generate . K8sClient
 
 type K8sClient interface {
-	Create(namespace string, podDisruptionBudget *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)
-	Delete(namespace string, name string) error
+	Create(ctx context.Context, namespace string, podDisruptionBudget *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)
+	Delete(ctx context.Context, namespace string, name string) error
 }
 
 const PdbMinAvailableInstances = 1
@@ -29,11 +31,11 @@ func NewCreatorDeleter(pdbClient K8sClient) *CreatorDeleter {
 	}
 }
 
-func (c *CreatorDeleter) Update(namespace, name string, lrp *opi.LRP) error {
+func (c *CreatorDeleter) Update(ctx context.Context, namespace, name string, lrp *opi.LRP) error {
 	minAvailable := intstr.FromInt(PdbMinAvailableInstances)
 
 	if lrp.TargetInstances > 1 {
-		_, err := c.pdbClient.Create(namespace, &v1beta1.PodDisruptionBudget{
+		_, err := c.pdbClient.Create(ctx, namespace, &v1beta1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 				Labels: map[string]string{
@@ -54,7 +56,7 @@ func (c *CreatorDeleter) Update(namespace, name string, lrp *opi.LRP) error {
 		return errors.Wrap(err, "failed to create pod distruption budget")
 	}
 
-	err := c.Delete(namespace, name)
+	err := c.Delete(ctx, namespace, name)
 
 	if k8serrors.IsNotFound(err) {
 		return nil
@@ -63,6 +65,6 @@ func (c *CreatorDeleter) Update(namespace, name string, lrp *opi.LRP) error {
 	return errors.Wrap(err, "failed to delete pod distruption budget")
 }
 
-func (c *CreatorDeleter) Delete(namespace, name string) error {
-	return c.pdbClient.Delete(namespace, name)
+func (c *CreatorDeleter) Delete(ctx context.Context, namespace, name string) error {
+	return c.pdbClient.Delete(ctx, namespace, name)
 }

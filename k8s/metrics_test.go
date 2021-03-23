@@ -58,7 +58,7 @@ var _ = Describe("Metrics", func() {
 					podName2: 88,
 				}, nil)
 
-				collected, err := collector.Collect()
+				collected, err := collector.Collect(ctx)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(collected).To(ConsistOf(
 					metrics.Message{
@@ -92,7 +92,7 @@ var _ = Describe("Metrics", func() {
 				}
 				podMetricsClient.ListReturns(&podMetrics, nil)
 
-				collected, err := collector.Collect()
+				collected, err := collector.Collect(ctx)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(collected).To(BeEmpty())
 			})
@@ -114,13 +114,13 @@ var _ = Describe("Metrics", func() {
 			})
 
 			It("should log the error", func() {
-				_, err := collector.Collect()
+				_, err := collector.Collect(ctx)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(logger).To(gbytes.Say("oopsie"))
 			})
 
 			It("should emmit 0 disk usage", func() {
-				collected, err := collector.Collect()
+				collected, err := collector.Collect(ctx)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(collected).To(ConsistOf(
 					metrics.Message{
@@ -138,7 +138,7 @@ var _ = Describe("Metrics", func() {
 			It("should return an error", func() {
 				podsGetter.GetAllReturns([]v1.Pod{}, errors.New("something done broke"))
 
-				collected, err := collector.Collect()
+				collected, err := collector.Collect(ctx)
 				Expect(err).To(HaveOccurred())
 				Expect(collected).To(BeEmpty())
 			})
@@ -157,7 +157,7 @@ var _ = Describe("Metrics", func() {
 				}
 				podMetricsClient.ListReturns(&podMetrics, nil)
 
-				collected, err := collector.Collect()
+				collected, err := collector.Collect(ctx)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(collected).To(ConsistOf(
 					metrics.Message{
@@ -185,7 +185,7 @@ var _ = Describe("Metrics", func() {
 				podList := []v1.Pod{*createPod(podName1)}
 				podsGetter.GetAllReturns(podList, nil)
 
-				collected, err := collector.Collect()
+				collected, err := collector.Collect(ctx)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(collected).To(ConsistOf(
 					metrics.Message{
@@ -217,7 +217,7 @@ var _ = Describe("Metrics", func() {
 					podName2:       88,
 				}, nil)
 
-				collected, err := collector.Collect()
+				collected, err := collector.Collect(ctx)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(collected).To(ConsistOf(metrics.Message{
 					AppID:       podName2,
@@ -242,13 +242,13 @@ var _ = Describe("Metrics", func() {
 			})
 
 			It("should log the error in log", func() {
-				_, err := collector.Collect()
+				_, err := collector.Collect(ctx)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(logger).To(gbytes.Say("oopsie"))
 			})
 
 			It("should return disk metrics", func() {
-				Expect(collector.Collect()).To(ConsistOf(
+				Expect(collector.Collect(ctx)).To(ConsistOf(
 					metrics.Message{
 						AppID:       podName1,
 						IndexID:     "9000",
@@ -269,7 +269,7 @@ var _ = Describe("ForwardMetricsToEmitter", func() {
 		collector := new(k8sfakes.FakeMetricsCollector)
 		collector.CollectReturns([]metrics.Message{{AppID: "metric"}}, nil)
 
-		Expect(k8s.ForwardMetricsToEmitter(collector, emitter)).To(Succeed())
+		Expect(k8s.ForwardMetricsToEmitter(ctx, collector, emitter)).To(Succeed())
 	})
 
 	It("should return error if collector returns error", func() {
@@ -277,7 +277,7 @@ var _ = Describe("ForwardMetricsToEmitter", func() {
 		collector := new(k8sfakes.FakeMetricsCollector)
 		collector.CollectReturns(nil, errors.New("oopsie"))
 
-		Expect(k8s.ForwardMetricsToEmitter(collector, emitter)).To(MatchError(ContainSubstring("oopsie")))
+		Expect(k8s.ForwardMetricsToEmitter(ctx, collector, emitter)).To(MatchError(ContainSubstring("oopsie")))
 	})
 })
 

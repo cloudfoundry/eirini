@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,21 +11,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-func Put(client *http.Client, uri string, body interface{}) error {
-	return do("PUT", client, uri, body)
+func Put(ctx context.Context, client *http.Client, uri string, body interface{}) error {
+	return do(ctx, client, "PUT", uri, body)
 }
 
-func Post(client *http.Client, uri string, body interface{}) error {
-	return do("POST", client, uri, body)
+func Post(ctx context.Context, client *http.Client, uri string, body interface{}) error {
+	return do(ctx, client, "POST", uri, body)
 }
 
-func do(method string, client *http.Client, uri string, body interface{}) error {
+func do(ctx context.Context, client *http.Client, method string, uri string, body interface{}) error {
 	bodyJSON, err := json.Marshal(body)
 	if err != nil {
 		return errors.Wrap(err, "cannot marshal body")
 	}
 
-	req, err := http.NewRequest(method, uri, bytes.NewBuffer(bodyJSON))
+	req, err := http.NewRequestWithContext(ctx, method, uri, bytes.NewBuffer(bodyJSON))
 	if err != nil {
 		return errors.Wrap(err, "failed to create request")
 	}

@@ -86,7 +86,7 @@ var _ = Describe("Desire", func() {
 	})
 
 	JustBeforeEach(func() {
-		desireErr = desirer.Desire("app-namespace", task, desireOpt.Spy)
+		desireErr = desirer.Desire(ctx, "app-namespace", task, desireOpt.Spy)
 	})
 
 	It("succeeds", func() {
@@ -95,7 +95,7 @@ var _ = Describe("Desire", func() {
 
 	It("creates a job", func() {
 		Expect(jobCreator.CreateCallCount()).To(Equal(1))
-		actualNs, actualJob := jobCreator.CreateArgsForCall(0)
+		_, actualNs, actualJob := jobCreator.CreateArgsForCall(0)
 		Expect(actualNs).To(Equal("app-namespace"))
 		Expect(actualJob).To(Equal(job))
 	})
@@ -146,7 +146,7 @@ var _ = Describe("Desire", func() {
 
 		It("creates a secret with the registry credentials", func() {
 			Expect(secretCreator.CreateCallCount()).To(Equal(1))
-			namespace, actualSecret := secretCreator.CreateArgsForCall(0)
+			_, namespace, actualSecret := secretCreator.CreateArgsForCall(0)
 			Expect(namespace).To(Equal("app-namespace"))
 			Expect(actualSecret.GenerateName).To(Equal("my-app-my-space-registry-secret-"))
 			Expect(actualSecret.Type).To(Equal(corev1.SecretTypeDockerConfigJson))
@@ -161,7 +161,7 @@ var _ = Describe("Desire", func() {
 			)
 
 			Expect(jobCreator.CreateCallCount()).To(Equal(1))
-			_, job = jobCreator.CreateArgsForCall(0)
+			_, _, job = jobCreator.CreateArgsForCall(0)
 
 			Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(
 				corev1.LocalObjectReference{Name: "the-generated-secret-name"},

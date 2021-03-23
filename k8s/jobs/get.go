@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"context"
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
@@ -12,7 +13,7 @@ import (
 //counterfeiter:generate . JobGetter
 
 type JobGetter interface {
-	GetByGUID(guid string, includeCompleted bool) ([]batch.Job, error)
+	GetByGUID(ctx context.Context, guid string, includeCompleted bool) ([]batch.Job, error)
 }
 
 type Getter struct {
@@ -27,8 +28,8 @@ func NewGetter(
 	}
 }
 
-func (g *Getter) Get(taskGUID string) (*opi.Task, error) {
-	jobs, err := g.jobGetter.GetByGUID(taskGUID, false)
+func (g *Getter) Get(ctx context.Context, taskGUID string) (*opi.Task, error) {
+	jobs, err := g.jobGetter.GetByGUID(ctx, taskGUID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get job")
 	}

@@ -1,6 +1,7 @@
 package route
 
 import (
+	"context"
 	"errors"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
@@ -16,11 +17,11 @@ import (
 //counterfeiter:generate . StatefulSetDeleteEventHandler
 
 type StatefulSetUpdateEventHandler interface {
-	Handle(oldObj, updatedObj *appsv1.StatefulSet)
+	Handle(ctx context.Context, oldObj, updatedObj *appsv1.StatefulSet)
 }
 
 type StatefulSetDeleteEventHandler interface {
-	Handle(obj *appsv1.StatefulSet)
+	Handle(ctx context.Context, obj *appsv1.StatefulSet)
 }
 
 type URIChangeInformer struct {
@@ -46,16 +47,18 @@ func (i *URIChangeInformer) Start() {
 		NoResync,
 		informers.WithNamespace(i.Namespace))
 
+	ctx := context.Background()
+
 	informer := factory.Apps().V1().StatefulSets().Informer()
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(oldObj, updatedObj interface{}) {
 			oldStatefulSet := oldObj.(*appsv1.StatefulSet)         //nolint:forcetypeassert
 			updatedStatefulSet := updatedObj.(*appsv1.StatefulSet) //nolint:forcetypeassert
-			i.UpdateHandler.Handle(oldStatefulSet, updatedStatefulSet)
+			i.UpdateHandler.Handle(ctx, oldStatefulSet, updatedStatefulSet)
 		},
 		DeleteFunc: func(obj interface{}) {
 			statefulSet := obj.(*appsv1.StatefulSet) //nolint:forcetypeassert
-			i.DeleteHandler.Handle(statefulSet)
+			i.DeleteHandler.Handle(ctx, statefulSet)
 		},
 	})
 

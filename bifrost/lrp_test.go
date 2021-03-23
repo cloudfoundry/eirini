@@ -68,13 +68,13 @@ var _ = Describe("Bifrost LRP", func() {
 
 			It("should use LRPClient with the converted LRP", func() {
 				Expect(lrpClient.DesireCallCount()).To(Equal(1))
-				_, desired, _ := lrpClient.DesireArgsForCall(0)
+				_, _, desired, _ := lrpClient.DesireArgsForCall(0)
 				Expect(desired).To(Equal(&lrp))
 			})
 
 			It("should desire the LRP in the requested namespace", func() {
 				Expect(lrpClient.DesireCallCount()).To(Equal(1))
-				namespace, _, _ := lrpClient.DesireArgsForCall(0)
+				_, namespace, _, _ := lrpClient.DesireArgsForCall(0)
 				Expect(namespace).To(Equal("my-namespace"))
 			})
 		})
@@ -228,14 +228,14 @@ var _ = Describe("Bifrost LRP", func() {
 
 		It("should get the existing LRP", func() {
 			Expect(lrpClient.GetCallCount()).To(Equal(1))
-			identifier := lrpClient.GetArgsForCall(0)
+			_, identifier := lrpClient.GetArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("guid_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 		})
 
 		It("should submit the updated LRP", func() {
 			Expect(lrpClient.UpdateCallCount()).To(Equal(1))
-			lrp := lrpClient.UpdateArgsForCall(0)
+			_, lrp := lrpClient.UpdateArgsForCall(0)
 			Expect(lrp.TargetInstances).To(Equal(int(5)))
 			Expect(lrp.LastUpdated).To(Equal("21421321.3"))
 			Expect(lrp.AppURIs).To(Equal([]opi.Route{
@@ -262,7 +262,7 @@ var _ = Describe("Bifrost LRP", func() {
 
 			It("should update it to an empty array", func() {
 				Expect(lrpClient.UpdateCallCount()).To(Equal(1))
-				lrp := lrpClient.UpdateArgsForCall(0)
+				_, lrp := lrpClient.UpdateArgsForCall(0)
 				Expect(lrp.AppURIs).To(BeEmpty())
 			})
 		})
@@ -314,7 +314,8 @@ var _ = Describe("Bifrost LRP", func() {
 				_, err = lrpBifrost.GetApp(context.Background(), identifier)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(lrpClient.GetCallCount()).To(Equal(1))
-				Expect(lrpClient.GetArgsForCall(0)).To(Equal(identifier))
+				_, actualID := lrpClient.GetArgsForCall(0)
+				Expect(actualID).To(Equal(identifier))
 			})
 
 			It("should return a DesiredLRP", func() {
@@ -350,7 +351,7 @@ var _ = Describe("Bifrost LRP", func() {
 		})
 
 		It("should call the lrpClient with the expected guid", func() {
-			identifier := lrpClient.StopArgsForCall(0)
+			_, identifier := lrpClient.StopArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("guid_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 		})
@@ -376,7 +377,7 @@ var _ = Describe("Bifrost LRP", func() {
 		})
 
 		It("should call the LRPClient with the expected guid and index", func() {
-			identifier, index := lrpClient.StopInstanceArgsForCall(0)
+			_, identifier, index := lrpClient.StopInstanceArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("guid_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 			Expect(index).To(Equal(uint(1)))
@@ -415,7 +416,7 @@ var _ = Describe("Bifrost LRP", func() {
 
 		It("should get the app instances from lrpClient", func() {
 			Expect(lrpClient.GetInstancesCallCount()).To(Equal(1))
-			identifier := lrpClient.GetInstancesArgsForCall(0)
+			_, identifier := lrpClient.GetInstancesArgsForCall(0)
 			Expect(identifier.GUID).To(Equal("guid_1234"))
 			Expect(identifier.Version).To(Equal("version_1234"))
 		})

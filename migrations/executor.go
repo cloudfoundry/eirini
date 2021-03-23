@@ -3,6 +3,7 @@
 package migrations
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -15,14 +16,14 @@ import (
 //counterfeiter:generate . StatefulsetsClient
 
 type StatefulsetsClient interface {
-	GetBySourceType(sourceType string) ([]appsv1.StatefulSet, error)
-	SetAnnotation(statefulSet *appsv1.StatefulSet, key, value string) (*appsv1.StatefulSet, error)
+	GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.StatefulSet, error)
+	SetAnnotation(ctx context.Context, statefulSet *appsv1.StatefulSet, key, value string) (*appsv1.StatefulSet, error)
 }
 
 //counterfeiter:generate . MigrationStep
 
 type MigrationStep interface {
-	Apply(runtime.Object) error
+	Apply(ctx context.Context, obj runtime.Object) error
 	SequenceID() int
 }
 
@@ -49,13 +50,15 @@ func (e *Executor) MigrateStatefulSets(logger lager.Logger) error {
 	logger.Info("migration-start")
 	defer logger.Info("migration-end")
 
+	ctx := context.Background()
+
 	if err := e.verifySequenceIDs(); err != nil {
 		logger.Error("migration-sequence-ids-error", err)
 
 		return fmt.Errorf("problem with sequence IDs: %w", err)
 	}
 
-	stSets, err := e.stSetClient.GetBySourceType(stset.AppSourceType)
+	stSets, err := e.stSetClient.GetBySourceType(ctx, stset.AppSourceType)
 	if err != nil {
 		logger.Error("get-stateful-sets-error", err)
 
@@ -82,13 +85,13 @@ func (e *Executor) MigrateStatefulSets(logger lager.Logger) error {
 			logger = logger.WithData(lager.Data{"sequence-id": seq})
 			logger.Debug("applying-migration")
 
-			if err := step.Apply(&stSet); err != nil {
+			if err := step.Apply(ctx, &stSet); err != nil {
 				logger.Error("migration-failed", err)
 
 				return fmt.Errorf("failed to apply migration: %w", err)
 			}
 
-			if _, err := e.stSetClient.SetAnnotation(&stSet, stset.AnnotationLatestMigration, strconv.Itoa(seq)); err != nil {
+			if _, err := e.stSetClient.SetAnnotation(ctx, &stSet, stset.AnnotationLatestMigration, strconv.Itoa(seq)); err != nil {
 				logger.Error("patch-migration-annotation-failed", err)
 
 				return fmt.Errorf("failed patching stateful set to set migration annotation: %w", err)

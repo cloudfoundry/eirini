@@ -1,6 +1,7 @@
 package stset
 
 import (
+	"context"
 	"encoding/json"
 
 	"code.cloudfoundry.org/eirini/opi"
@@ -13,7 +14,7 @@ import (
 //counterfeiter:generate . StatefulSetUpdater
 
 type StatefulSetUpdater interface {
-	Update(namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
+	Update(ctx context.Context, namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
 }
 
 type Updater struct {
@@ -37,18 +38,18 @@ func NewUpdater(
 	}
 }
 
-func (u *Updater) Update(lrp *opi.LRP) error {
+func (u *Updater) Update(ctx context.Context, lrp *opi.LRP) error {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		return u.update(lrp)
+		return u.update(ctx, lrp)
 	})
 
 	return errors.Wrap(err, "failed to update statefulset")
 }
 
-func (u *Updater) update(lrp *opi.LRP) error {
+func (u *Updater) update(ctx context.Context, lrp *opi.LRP) error {
 	logger := u.logger.Session("update", lager.Data{"guid": lrp.GUID, "version": lrp.Version})
 
-	statefulSet, err := u.getStatefulSet(opi.LRPIdentifier{GUID: lrp.GUID, Version: lrp.Version})
+	statefulSet, err := u.getStatefulSet(ctx, opi.LRPIdentifier{GUID: lrp.GUID, Version: lrp.Version})
 	if err != nil {
 		logger.Error("failed-to-get-statefulset", err)
 
@@ -67,13 +68,13 @@ func (u *Updater) update(lrp *opi.LRP) error {
 		return err
 	}
 
-	if _, err = u.statefulSetUpdater.Update(updatedStatefulSet.Namespace, updatedStatefulSet); err != nil {
+	if _, err = u.statefulSetUpdater.Update(ctx, updatedStatefulSet.Namespace, updatedStatefulSet); err != nil {
 		logger.Error("failed-to-update-statefulset", err, lager.Data{"namespace": statefulSet.Namespace})
 
 		return errors.Wrap(err, "failed to update statefulset")
 	}
 
-	if err = u.pdbUpdater.Update(statefulSet.Namespace, statefulSet.Name, lrp); err != nil {
+	if err = u.pdbUpdater.Update(ctx, statefulSet.Namespace, statefulSet.Name, lrp); err != nil {
 		logger.Error("failed-to-update-disruption-budget", err, lager.Data{"namespace": statefulSet.Namespace})
 
 		return errors.Wrap(err, "failed to delete pod disruption budget")

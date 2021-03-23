@@ -2,6 +2,7 @@
 package taskfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
@@ -9,13 +10,14 @@ import (
 )
 
 type FakePodsClient struct {
-	SetAndTestAnnotationStub        func(*v1.Pod, string, string, *string) (*v1.Pod, error)
+	SetAndTestAnnotationStub        func(context.Context, *v1.Pod, string, string, *string) (*v1.Pod, error)
 	setAndTestAnnotationMutex       sync.RWMutex
 	setAndTestAnnotationArgsForCall []struct {
-		arg1 *v1.Pod
-		arg2 string
+		arg1 context.Context
+		arg2 *v1.Pod
 		arg3 string
-		arg4 *string
+		arg4 string
+		arg5 *string
 	}
 	setAndTestAnnotationReturns struct {
 		result1 *v1.Pod
@@ -25,12 +27,13 @@ type FakePodsClient struct {
 		result1 *v1.Pod
 		result2 error
 	}
-	SetAnnotationStub        func(*v1.Pod, string, string) (*v1.Pod, error)
+	SetAnnotationStub        func(context.Context, *v1.Pod, string, string) (*v1.Pod, error)
 	setAnnotationMutex       sync.RWMutex
 	setAnnotationArgsForCall []struct {
-		arg1 *v1.Pod
-		arg2 string
+		arg1 context.Context
+		arg2 *v1.Pod
 		arg3 string
+		arg4 string
 	}
 	setAnnotationReturns struct {
 		result1 *v1.Pod
@@ -44,21 +47,22 @@ type FakePodsClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePodsClient) SetAndTestAnnotation(arg1 *v1.Pod, arg2 string, arg3 string, arg4 *string) (*v1.Pod, error) {
+func (fake *FakePodsClient) SetAndTestAnnotation(arg1 context.Context, arg2 *v1.Pod, arg3 string, arg4 string, arg5 *string) (*v1.Pod, error) {
 	fake.setAndTestAnnotationMutex.Lock()
 	ret, specificReturn := fake.setAndTestAnnotationReturnsOnCall[len(fake.setAndTestAnnotationArgsForCall)]
 	fake.setAndTestAnnotationArgsForCall = append(fake.setAndTestAnnotationArgsForCall, struct {
-		arg1 *v1.Pod
-		arg2 string
+		arg1 context.Context
+		arg2 *v1.Pod
 		arg3 string
-		arg4 *string
-	}{arg1, arg2, arg3, arg4})
+		arg4 string
+		arg5 *string
+	}{arg1, arg2, arg3, arg4, arg5})
 	stub := fake.SetAndTestAnnotationStub
 	fakeReturns := fake.setAndTestAnnotationReturns
-	fake.recordInvocation("SetAndTestAnnotation", []interface{}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("SetAndTestAnnotation", []interface{}{arg1, arg2, arg3, arg4, arg5})
 	fake.setAndTestAnnotationMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3, arg4)
+		return stub(arg1, arg2, arg3, arg4, arg5)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -72,17 +76,17 @@ func (fake *FakePodsClient) SetAndTestAnnotationCallCount() int {
 	return len(fake.setAndTestAnnotationArgsForCall)
 }
 
-func (fake *FakePodsClient) SetAndTestAnnotationCalls(stub func(*v1.Pod, string, string, *string) (*v1.Pod, error)) {
+func (fake *FakePodsClient) SetAndTestAnnotationCalls(stub func(context.Context, *v1.Pod, string, string, *string) (*v1.Pod, error)) {
 	fake.setAndTestAnnotationMutex.Lock()
 	defer fake.setAndTestAnnotationMutex.Unlock()
 	fake.SetAndTestAnnotationStub = stub
 }
 
-func (fake *FakePodsClient) SetAndTestAnnotationArgsForCall(i int) (*v1.Pod, string, string, *string) {
+func (fake *FakePodsClient) SetAndTestAnnotationArgsForCall(i int) (context.Context, *v1.Pod, string, string, *string) {
 	fake.setAndTestAnnotationMutex.RLock()
 	defer fake.setAndTestAnnotationMutex.RUnlock()
 	argsForCall := fake.setAndTestAnnotationArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
 }
 
 func (fake *FakePodsClient) SetAndTestAnnotationReturns(result1 *v1.Pod, result2 error) {
@@ -111,20 +115,21 @@ func (fake *FakePodsClient) SetAndTestAnnotationReturnsOnCall(i int, result1 *v1
 	}{result1, result2}
 }
 
-func (fake *FakePodsClient) SetAnnotation(arg1 *v1.Pod, arg2 string, arg3 string) (*v1.Pod, error) {
+func (fake *FakePodsClient) SetAnnotation(arg1 context.Context, arg2 *v1.Pod, arg3 string, arg4 string) (*v1.Pod, error) {
 	fake.setAnnotationMutex.Lock()
 	ret, specificReturn := fake.setAnnotationReturnsOnCall[len(fake.setAnnotationArgsForCall)]
 	fake.setAnnotationArgsForCall = append(fake.setAnnotationArgsForCall, struct {
-		arg1 *v1.Pod
-		arg2 string
+		arg1 context.Context
+		arg2 *v1.Pod
 		arg3 string
-	}{arg1, arg2, arg3})
+		arg4 string
+	}{arg1, arg2, arg3, arg4})
 	stub := fake.SetAnnotationStub
 	fakeReturns := fake.setAnnotationReturns
-	fake.recordInvocation("SetAnnotation", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("SetAnnotation", []interface{}{arg1, arg2, arg3, arg4})
 	fake.setAnnotationMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -138,17 +143,17 @@ func (fake *FakePodsClient) SetAnnotationCallCount() int {
 	return len(fake.setAnnotationArgsForCall)
 }
 
-func (fake *FakePodsClient) SetAnnotationCalls(stub func(*v1.Pod, string, string) (*v1.Pod, error)) {
+func (fake *FakePodsClient) SetAnnotationCalls(stub func(context.Context, *v1.Pod, string, string) (*v1.Pod, error)) {
 	fake.setAnnotationMutex.Lock()
 	defer fake.setAnnotationMutex.Unlock()
 	fake.SetAnnotationStub = stub
 }
 
-func (fake *FakePodsClient) SetAnnotationArgsForCall(i int) (*v1.Pod, string, string) {
+func (fake *FakePodsClient) SetAnnotationArgsForCall(i int) (context.Context, *v1.Pod, string, string) {
 	fake.setAnnotationMutex.RLock()
 	defer fake.setAnnotationMutex.RUnlock()
 	argsForCall := fake.setAnnotationArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakePodsClient) SetAnnotationReturns(result1 *v1.Pod, result2 error) {

@@ -43,8 +43,10 @@ var _ = Describe("Scheduler", func() {
 
 		Expect(task()).To(Succeed())
 		Expect(emitter.EmitCallCount()).To(Equal(2))
-		Expect(emitter.EmitArgsForCall(0)).To(Equal(Message{Name: "ama"}))
-		Expect(emitter.EmitArgsForCall(1)).To(Equal(Message{Name: "zashto"}))
+		_, actualMsg0 := emitter.EmitArgsForCall(0)
+		_, actualMsg1 := emitter.EmitArgsForCall(1)
+		Expect(actualMsg0).To(Equal(Message{Name: "ama"}))
+		Expect(actualMsg1).To(Equal(Message{Name: "zashto"}))
 	})
 
 	It("should propagate errors to the Scheduler", func() {

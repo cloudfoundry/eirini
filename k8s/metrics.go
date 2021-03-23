@@ -22,29 +22,29 @@ import (
 //counterfeiter:generate -o k8sfakes/fake_pod_metrics_interface.go k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1.PodMetricsInterface
 
 type PodsGetter interface {
-	GetAll() ([]corev1.Pod, error)
+	GetAll(ctx context.Context) ([]corev1.Pod, error)
 }
 
 type MetricsCollector interface {
-	Collect() ([]metrics.Message, error)
+	Collect(ctx context.Context) ([]metrics.Message, error)
 }
 
 type DiskAPI interface {
-	GetPodMetrics() (map[string]float64, error)
+	GetPodMetrics(ctx context.Context) (map[string]float64, error)
 }
 
 type Emitter interface {
-	Emit(metrics.Message)
+	Emit(context.Context, metrics.Message)
 }
 
-func ForwardMetricsToEmitter(collector MetricsCollector, emitter Emitter) error {
-	messages, err := collector.Collect()
+func ForwardMetricsToEmitter(ctx context.Context, collector MetricsCollector, emitter Emitter) error {
+	messages, err := collector.Collect(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to collect metrics")
 	}
 
 	for _, m := range messages {
-		emitter.Emit(m)
+		emitter.Emit(ctx, m)
 	}
 
 	return nil
@@ -69,19 +69,19 @@ func NewMetricsCollector(metricsClient metricsv1beta1.PodMetricsInterface,
 	}
 }
 
-func (c *metricsCollector) Collect() ([]metrics.Message, error) {
-	pods, err := c.podsGetter.GetAll()
+func (c *metricsCollector) Collect(ctx context.Context) ([]metrics.Message, error) {
+	pods, err := c.podsGetter.GetAll(ctx)
 	if err != nil {
 		return []metrics.Message{}, errors.Wrap(err, "failed to list pods")
 	}
 
-	return c.collectMetrics(pods), nil
+	return c.collectMetrics(ctx, pods), nil
 }
 
-func (c *metricsCollector) collectMetrics(pods []corev1.Pod) []metrics.Message {
+func (c *metricsCollector) collectMetrics(ctx context.Context, pods []corev1.Pod) []metrics.Message {
 	logger := c.logger.Session("collect")
 
-	diskMetrics, err := c.diskClient.GetPodMetrics()
+	diskMetrics, err := c.diskClient.GetPodMetrics(ctx)
 	if err != nil {
 		logger.Error("failed-to-get-disk-metrics", err, lager.Data{})
 	}

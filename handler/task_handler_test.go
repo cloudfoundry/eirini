@@ -149,7 +149,8 @@ var _ = Describe("TaskHandler", func() {
 
 		It("cancels the task", func() {
 			Expect(taskBifrost.CancelTaskCallCount()).To(Equal(1))
-			Expect(taskBifrost.CancelTaskArgsForCall(0)).To(Equal("guid_1234"))
+			_, actualGUID := taskBifrost.CancelTaskArgsForCall(0)
+			Expect(actualGUID).To(Equal("guid_1234"))
 		})
 
 		When("cancelling the task fails", func() {
@@ -176,7 +177,7 @@ var _ = Describe("TaskHandler", func() {
 
 		It("retrives a task", func() {
 			Expect(taskBifrost.GetTaskCallCount()).To(Equal(1))
-			actualGUID := taskBifrost.GetTaskArgsForCall(0)
+			_, actualGUID := taskBifrost.GetTaskArgsForCall(0)
 			Expect(actualGUID).To(Equal("guid_1234"))
 
 			var taskResponse cf.TaskResponse

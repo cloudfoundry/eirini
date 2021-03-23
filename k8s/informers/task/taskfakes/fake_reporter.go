@@ -2,6 +2,7 @@
 package taskfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
@@ -9,10 +10,11 @@ import (
 )
 
 type FakeReporter struct {
-	ReportStub        func(*v1.Pod) error
+	ReportStub        func(context.Context, *v1.Pod) error
 	reportMutex       sync.RWMutex
 	reportArgsForCall []struct {
-		arg1 *v1.Pod
+		arg1 context.Context
+		arg2 *v1.Pod
 	}
 	reportReturns struct {
 		result1 error
@@ -24,18 +26,19 @@ type FakeReporter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeReporter) Report(arg1 *v1.Pod) error {
+func (fake *FakeReporter) Report(arg1 context.Context, arg2 *v1.Pod) error {
 	fake.reportMutex.Lock()
 	ret, specificReturn := fake.reportReturnsOnCall[len(fake.reportArgsForCall)]
 	fake.reportArgsForCall = append(fake.reportArgsForCall, struct {
-		arg1 *v1.Pod
-	}{arg1})
+		arg1 context.Context
+		arg2 *v1.Pod
+	}{arg1, arg2})
 	stub := fake.ReportStub
 	fakeReturns := fake.reportReturns
-	fake.recordInvocation("Report", []interface{}{arg1})
+	fake.recordInvocation("Report", []interface{}{arg1, arg2})
 	fake.reportMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -49,17 +52,17 @@ func (fake *FakeReporter) ReportCallCount() int {
 	return len(fake.reportArgsForCall)
 }
 
-func (fake *FakeReporter) ReportCalls(stub func(*v1.Pod) error) {
+func (fake *FakeReporter) ReportCalls(stub func(context.Context, *v1.Pod) error) {
 	fake.reportMutex.Lock()
 	defer fake.reportMutex.Unlock()
 	fake.ReportStub = stub
 }
 
-func (fake *FakeReporter) ReportArgsForCall(i int) *v1.Pod {
+func (fake *FakeReporter) ReportArgsForCall(i int) (context.Context, *v1.Pod) {
 	fake.reportMutex.RLock()
 	defer fake.reportMutex.RUnlock()
 	argsForCall := fake.reportArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeReporter) ReportReturns(result1 error) {

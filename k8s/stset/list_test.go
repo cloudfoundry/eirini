@@ -50,25 +50,25 @@ var _ = Describe("List", func() {
 
 		statefulSetGetter.GetBySourceTypeReturns(st, nil)
 
-		Expect(lister.List()).To(HaveLen(3))
+		Expect(lister.List(ctx)).To(HaveLen(3))
 		Expect(statefulsetToLRPConverter.ConvertCallCount()).To(Equal(3))
 	})
 
 	It("lists all statefulSets with APP source_type", func() {
 		statefulSetGetter.GetBySourceTypeReturns([]appsv1.StatefulSet{}, nil)
-		_, err := lister.List()
+		_, err := lister.List(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(statefulSetGetter.GetBySourceTypeCallCount()).To(Equal(1))
 
-		sourceType := statefulSetGetter.GetBySourceTypeArgsForCall(0)
+		_, sourceType := statefulSetGetter.GetBySourceTypeArgsForCall(0)
 		Expect(sourceType).To(Equal("APP"))
 	})
 
 	When("no statefulSets exist", func() {
 		It("returns an empy list of LRPs", func() {
 			statefulSetGetter.GetBySourceTypeReturns([]appsv1.StatefulSet{}, nil)
-			Expect(lister.List()).To(BeEmpty())
+			Expect(lister.List(ctx)).To(BeEmpty())
 			Expect(statefulsetToLRPConverter.ConvertCallCount()).To(Equal(0))
 		})
 	})
@@ -76,7 +76,7 @@ var _ = Describe("List", func() {
 	When("listing statefulsets fails", func() {
 		It("should return a meaningful error", func() {
 			statefulSetGetter.GetBySourceTypeReturns(nil, errors.New("who is this?"))
-			_, err := lister.List()
+			_, err := lister.List(ctx)
 			Expect(err).To(MatchError(ContainSubstring("failed to list statefulsets")))
 		})
 	})

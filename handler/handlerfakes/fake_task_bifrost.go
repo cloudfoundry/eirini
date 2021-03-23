@@ -10,10 +10,11 @@ import (
 )
 
 type FakeTaskBifrost struct {
-	CancelTaskStub        func(string) error
+	CancelTaskStub        func(context.Context, string) error
 	cancelTaskMutex       sync.RWMutex
 	cancelTaskArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
+		arg2 string
 	}
 	cancelTaskReturns struct {
 		result1 error
@@ -21,10 +22,11 @@ type FakeTaskBifrost struct {
 	cancelTaskReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetTaskStub        func(string) (cf.TaskResponse, error)
+	GetTaskStub        func(context.Context, string) (cf.TaskResponse, error)
 	getTaskMutex       sync.RWMutex
 	getTaskArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
+		arg2 string
 	}
 	getTaskReturns struct {
 		result1 cf.TaskResponse
@@ -34,9 +36,10 @@ type FakeTaskBifrost struct {
 		result1 cf.TaskResponse
 		result2 error
 	}
-	ListTasksStub        func() (cf.TasksResponse, error)
+	ListTasksStub        func(context.Context) (cf.TasksResponse, error)
 	listTasksMutex       sync.RWMutex
 	listTasksArgsForCall []struct {
+		arg1 context.Context
 	}
 	listTasksReturns struct {
 		result1 cf.TasksResponse
@@ -63,18 +66,19 @@ type FakeTaskBifrost struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskBifrost) CancelTask(arg1 string) error {
+func (fake *FakeTaskBifrost) CancelTask(arg1 context.Context, arg2 string) error {
 	fake.cancelTaskMutex.Lock()
 	ret, specificReturn := fake.cancelTaskReturnsOnCall[len(fake.cancelTaskArgsForCall)]
 	fake.cancelTaskArgsForCall = append(fake.cancelTaskArgsForCall, struct {
-		arg1 string
-	}{arg1})
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
 	stub := fake.CancelTaskStub
 	fakeReturns := fake.cancelTaskReturns
-	fake.recordInvocation("CancelTask", []interface{}{arg1})
+	fake.recordInvocation("CancelTask", []interface{}{arg1, arg2})
 	fake.cancelTaskMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -88,17 +92,17 @@ func (fake *FakeTaskBifrost) CancelTaskCallCount() int {
 	return len(fake.cancelTaskArgsForCall)
 }
 
-func (fake *FakeTaskBifrost) CancelTaskCalls(stub func(string) error) {
+func (fake *FakeTaskBifrost) CancelTaskCalls(stub func(context.Context, string) error) {
 	fake.cancelTaskMutex.Lock()
 	defer fake.cancelTaskMutex.Unlock()
 	fake.CancelTaskStub = stub
 }
 
-func (fake *FakeTaskBifrost) CancelTaskArgsForCall(i int) string {
+func (fake *FakeTaskBifrost) CancelTaskArgsForCall(i int) (context.Context, string) {
 	fake.cancelTaskMutex.RLock()
 	defer fake.cancelTaskMutex.RUnlock()
 	argsForCall := fake.cancelTaskArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeTaskBifrost) CancelTaskReturns(result1 error) {
@@ -124,18 +128,19 @@ func (fake *FakeTaskBifrost) CancelTaskReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeTaskBifrost) GetTask(arg1 string) (cf.TaskResponse, error) {
+func (fake *FakeTaskBifrost) GetTask(arg1 context.Context, arg2 string) (cf.TaskResponse, error) {
 	fake.getTaskMutex.Lock()
 	ret, specificReturn := fake.getTaskReturnsOnCall[len(fake.getTaskArgsForCall)]
 	fake.getTaskArgsForCall = append(fake.getTaskArgsForCall, struct {
-		arg1 string
-	}{arg1})
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
 	stub := fake.GetTaskStub
 	fakeReturns := fake.getTaskReturns
-	fake.recordInvocation("GetTask", []interface{}{arg1})
+	fake.recordInvocation("GetTask", []interface{}{arg1, arg2})
 	fake.getTaskMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -149,17 +154,17 @@ func (fake *FakeTaskBifrost) GetTaskCallCount() int {
 	return len(fake.getTaskArgsForCall)
 }
 
-func (fake *FakeTaskBifrost) GetTaskCalls(stub func(string) (cf.TaskResponse, error)) {
+func (fake *FakeTaskBifrost) GetTaskCalls(stub func(context.Context, string) (cf.TaskResponse, error)) {
 	fake.getTaskMutex.Lock()
 	defer fake.getTaskMutex.Unlock()
 	fake.GetTaskStub = stub
 }
 
-func (fake *FakeTaskBifrost) GetTaskArgsForCall(i int) string {
+func (fake *FakeTaskBifrost) GetTaskArgsForCall(i int) (context.Context, string) {
 	fake.getTaskMutex.RLock()
 	defer fake.getTaskMutex.RUnlock()
 	argsForCall := fake.getTaskArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeTaskBifrost) GetTaskReturns(result1 cf.TaskResponse, result2 error) {
@@ -188,17 +193,18 @@ func (fake *FakeTaskBifrost) GetTaskReturnsOnCall(i int, result1 cf.TaskResponse
 	}{result1, result2}
 }
 
-func (fake *FakeTaskBifrost) ListTasks() (cf.TasksResponse, error) {
+func (fake *FakeTaskBifrost) ListTasks(arg1 context.Context) (cf.TasksResponse, error) {
 	fake.listTasksMutex.Lock()
 	ret, specificReturn := fake.listTasksReturnsOnCall[len(fake.listTasksArgsForCall)]
 	fake.listTasksArgsForCall = append(fake.listTasksArgsForCall, struct {
-	}{})
+		arg1 context.Context
+	}{arg1})
 	stub := fake.ListTasksStub
 	fakeReturns := fake.listTasksReturns
-	fake.recordInvocation("ListTasks", []interface{}{})
+	fake.recordInvocation("ListTasks", []interface{}{arg1})
 	fake.listTasksMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -212,10 +218,17 @@ func (fake *FakeTaskBifrost) ListTasksCallCount() int {
 	return len(fake.listTasksArgsForCall)
 }
 
-func (fake *FakeTaskBifrost) ListTasksCalls(stub func() (cf.TasksResponse, error)) {
+func (fake *FakeTaskBifrost) ListTasksCalls(stub func(context.Context) (cf.TasksResponse, error)) {
 	fake.listTasksMutex.Lock()
 	defer fake.listTasksMutex.Unlock()
 	fake.ListTasksStub = stub
+}
+
+func (fake *FakeTaskBifrost) ListTasksArgsForCall(i int) context.Context {
+	fake.listTasksMutex.RLock()
+	defer fake.listTasksMutex.RUnlock()
+	argsForCall := fake.listTasksArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeTaskBifrost) ListTasksReturns(result1 cf.TasksResponse, result2 error) {

@@ -2,6 +2,7 @@
 package k8sfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s"
@@ -9,9 +10,10 @@ import (
 )
 
 type FakePodsGetter struct {
-	GetAllStub        func() ([]v1.Pod, error)
+	GetAllStub        func(context.Context) ([]v1.Pod, error)
 	getAllMutex       sync.RWMutex
 	getAllArgsForCall []struct {
+		arg1 context.Context
 	}
 	getAllReturns struct {
 		result1 []v1.Pod
@@ -25,17 +27,18 @@ type FakePodsGetter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePodsGetter) GetAll() ([]v1.Pod, error) {
+func (fake *FakePodsGetter) GetAll(arg1 context.Context) ([]v1.Pod, error) {
 	fake.getAllMutex.Lock()
 	ret, specificReturn := fake.getAllReturnsOnCall[len(fake.getAllArgsForCall)]
 	fake.getAllArgsForCall = append(fake.getAllArgsForCall, struct {
-	}{})
+		arg1 context.Context
+	}{arg1})
 	stub := fake.GetAllStub
 	fakeReturns := fake.getAllReturns
-	fake.recordInvocation("GetAll", []interface{}{})
+	fake.recordInvocation("GetAll", []interface{}{arg1})
 	fake.getAllMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -49,10 +52,17 @@ func (fake *FakePodsGetter) GetAllCallCount() int {
 	return len(fake.getAllArgsForCall)
 }
 
-func (fake *FakePodsGetter) GetAllCalls(stub func() ([]v1.Pod, error)) {
+func (fake *FakePodsGetter) GetAllCalls(stub func(context.Context) ([]v1.Pod, error)) {
 	fake.getAllMutex.Lock()
 	defer fake.getAllMutex.Unlock()
 	fake.GetAllStub = stub
+}
+
+func (fake *FakePodsGetter) GetAllArgsForCall(i int) context.Context {
+	fake.getAllMutex.RLock()
+	defer fake.getAllMutex.RUnlock()
+	argsForCall := fake.getAllArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakePodsGetter) GetAllReturns(result1 []v1.Pod, result2 error) {

@@ -1,6 +1,7 @@
 package event
 
 import (
+	"context"
 	"reflect"
 
 	"code.cloudfoundry.org/eirini/k8s/informers/route"
@@ -24,15 +25,15 @@ type URIAnnotationUpdateHandler struct {
 	RouteEmitter eiriniroute.Emitter
 }
 
-func (h URIAnnotationUpdateHandler) Handle(oldStatefulSet, updatedStatefulSet *appsv1.StatefulSet) {
+func (h URIAnnotationUpdateHandler) Handle(ctx context.Context, oldStatefulSet, updatedStatefulSet *appsv1.StatefulSet) {
 	if reflect.DeepEqual(oldStatefulSet.Annotations, updatedStatefulSet.Annotations) {
 		return
 	}
 
-	h.onUpdate(oldStatefulSet, updatedStatefulSet)
+	h.onUpdate(ctx, oldStatefulSet, updatedStatefulSet)
 }
 
-func (h URIAnnotationUpdateHandler) onUpdate(oldStatefulSet, updatedStatefulSet *appsv1.StatefulSet) {
+func (h URIAnnotationUpdateHandler) onUpdate(ctx context.Context, oldStatefulSet, updatedStatefulSet *appsv1.StatefulSet) {
 	loggerSession := h.Logger.Session("statefulset-update", lager.Data{"guid": updatedStatefulSet.Annotations[stset.AnnotationProcessGUID]})
 
 	updatedSet, err := decodeRoutesAsSet(updatedStatefulSet)
@@ -56,7 +57,7 @@ func (h URIAnnotationUpdateHandler) onUpdate(oldStatefulSet, updatedStatefulSet 
 		grouped,
 	)
 	for _, route := range routes {
-		h.RouteEmitter.Emit(*route)
+		h.RouteEmitter.Emit(ctx, *route)
 	}
 }
 

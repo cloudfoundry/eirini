@@ -1,6 +1,7 @@
 package route
 
 import (
+	"context"
 	"encoding/json"
 
 	"code.cloudfoundry.org/eirini/util"
@@ -51,7 +52,7 @@ func NewEmitterFromConfig(natsIP string, natsPort int, natsPassword string, logg
 	return NewMessageEmitter(&NATSPublisher{NatsClient: nc}, emitterLogger), nil
 }
 
-func (e MessageEmitter) Emit(route Message) {
+func (e MessageEmitter) Emit(ctx context.Context, route Message) {
 	if len(route.Address) == 0 {
 		e.logger.Debug("route-address-missing", lager.Data{"app-name": route.Name, "instance-id": route.InstanceID})
 

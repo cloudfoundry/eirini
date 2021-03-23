@@ -2,6 +2,7 @@
 package stsetfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
@@ -9,11 +10,12 @@ import (
 )
 
 type FakeStatefulSetUpdater struct {
-	UpdateStub        func(string, *v1.StatefulSet) (*v1.StatefulSet, error)
+	UpdateStub        func(context.Context, string, *v1.StatefulSet) (*v1.StatefulSet, error)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
-		arg1 string
-		arg2 *v1.StatefulSet
+		arg1 context.Context
+		arg2 string
+		arg3 *v1.StatefulSet
 	}
 	updateReturns struct {
 		result1 *v1.StatefulSet
@@ -27,19 +29,20 @@ type FakeStatefulSetUpdater struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetUpdater) Update(arg1 string, arg2 *v1.StatefulSet) (*v1.StatefulSet, error) {
+func (fake *FakeStatefulSetUpdater) Update(arg1 context.Context, arg2 string, arg3 *v1.StatefulSet) (*v1.StatefulSet, error) {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
-		arg1 string
-		arg2 *v1.StatefulSet
-	}{arg1, arg2})
+		arg1 context.Context
+		arg2 string
+		arg3 *v1.StatefulSet
+	}{arg1, arg2, arg3})
 	stub := fake.UpdateStub
 	fakeReturns := fake.updateReturns
-	fake.recordInvocation("Update", []interface{}{arg1, arg2})
+	fake.recordInvocation("Update", []interface{}{arg1, arg2, arg3})
 	fake.updateMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -53,17 +56,17 @@ func (fake *FakeStatefulSetUpdater) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeStatefulSetUpdater) UpdateCalls(stub func(string, *v1.StatefulSet) (*v1.StatefulSet, error)) {
+func (fake *FakeStatefulSetUpdater) UpdateCalls(stub func(context.Context, string, *v1.StatefulSet) (*v1.StatefulSet, error)) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakeStatefulSetUpdater) UpdateArgsForCall(i int) (string, *v1.StatefulSet) {
+func (fake *FakeStatefulSetUpdater) UpdateArgsForCall(i int) (context.Context, string, *v1.StatefulSet) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeStatefulSetUpdater) UpdateReturns(result1 *v1.StatefulSet, result2 error) {

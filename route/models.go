@@ -1,5 +1,7 @@
 package route
 
+import "context"
+
 //counterfeiter:generate . Collector
 
 type Routes struct {
@@ -21,5 +23,5 @@ type Informer interface {
 }
 
 type Collector interface {
-	Collect() ([]Message, error)
+	Collect(ctx context.Context) ([]Message, error)
 }

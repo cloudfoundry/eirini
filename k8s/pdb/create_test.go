@@ -1,6 +1,7 @@
 package pdb_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -21,6 +22,7 @@ var _ = Describe("Pdb", func() {
 		creator   *pdb.CreatorDeleter
 		k8sClient *pdbfakes.FakeK8sClient
 		lrp       *opi.LRP
+		ctx       context.Context
 	)
 
 	BeforeEach(func() {
@@ -36,12 +38,14 @@ var _ = Describe("Pdb", func() {
 			SpaceName:       "spaceName",
 			TargetInstances: 2,
 		}
+
+		ctx = context.Background()
 	})
 
 	Describe("Update", func() {
 		var updateErr error
 		JustBeforeEach(func() {
-			updateErr = creator.Update("namespace", "name", lrp)
+			updateErr = creator.Update(ctx, "namespace", "name", lrp)
 		})
 
 		It("succeeds", func() {
@@ -51,7 +55,7 @@ var _ = Describe("Pdb", func() {
 		It("creates a pod disruption budget", func() {
 			Expect(k8sClient.CreateCallCount()).To(Equal(1))
 
-			pdbNamespace, pdb := k8sClient.CreateArgsForCall(0)
+			_, pdbNamespace, pdb := k8sClient.CreateArgsForCall(0)
 			Expect(pdbNamespace).To(Equal("namespace"))
 
 			Expect(pdb.Name).To(Equal("name"))

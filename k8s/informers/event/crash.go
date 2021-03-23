@@ -23,7 +23,7 @@ const (
 //counterfeiter:generate . CrashEmitter
 
 type CrashEventGenerator interface {
-	Generate(*corev1.Pod, lager.Logger) (events.CrashEvent, bool)
+	Generate(context.Context, *corev1.Pod, lager.Logger) (events.CrashEvent, bool)
 }
 
 type CrashEmitter interface {
@@ -73,7 +73,7 @@ func (c *CrashReconciler) Reconcile(ctx context.Context, request reconcile.Reque
 		return reconcile.Result{}, errors.Wrap(err, "failed to get pod")
 	}
 
-	event, send := c.eventGenerator.Generate(pod, c.logger)
+	event, send := c.eventGenerator.Generate(ctx, pod, c.logger)
 	if !send {
 		logger.Debug("not-sending-event")
 

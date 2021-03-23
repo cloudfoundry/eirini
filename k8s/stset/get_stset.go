@@ -1,6 +1,7 @@
 package stset
 
 import (
+	"context"
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
@@ -12,14 +13,14 @@ import (
 //counterfeiter:generate . StatefulSetByLRPIdentifierGetter
 
 type StatefulSetByLRPIdentifierGetter interface {
-	GetByLRPIdentifier(id opi.LRPIdentifier) ([]appsv1.StatefulSet, error)
+	GetByLRPIdentifier(ctx context.Context, id opi.LRPIdentifier) ([]appsv1.StatefulSet, error)
 }
 
-type getStatefulSetFunc func(identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error)
+type getStatefulSetFunc func(ctx context.Context, identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error)
 
 func newGetStatefulSetFunc(stSetGetter StatefulSetByLRPIdentifierGetter) getStatefulSetFunc {
-	return func(identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error) {
-		statefulSets, err := stSetGetter.GetByLRPIdentifier(identifier)
+	return func(ctx context.Context, identifier opi.LRPIdentifier) (*appsv1.StatefulSet, error) {
+		statefulSets, err := stSetGetter.GetByLRPIdentifier(ctx, identifier)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to list statefulsets")
 		}

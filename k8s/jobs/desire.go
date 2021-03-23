@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"context"
 	"fmt"
 
 	"code.cloudfoundry.org/eirini/k8s/shared"
@@ -22,11 +23,11 @@ type TaskToJobConverter interface {
 }
 
 type JobCreator interface {
-	Create(namespace string, job *batch.Job) (*batch.Job, error)
+	Create(ctx context.Context, namespace string, job *batch.Job) (*batch.Job, error)
 }
 
 type SecretCreator interface {
-	Create(namespace string, secret *corev1.Secret) (*corev1.Secret, error)
+	Create(ctx context.Context, namespace string, secret *corev1.Secret) (*corev1.Secret, error)
 }
 
 type Desirer struct {
@@ -50,13 +51,13 @@ func NewDesirer(
 	}
 }
 
-func (d *Desirer) Desire(namespace string, task *opi.Task, opts ...shared.Option) error {
+func (d *Desirer) Desire(ctx context.Context, namespace string, task *opi.Task, opts ...shared.Option) error {
 	logger := d.logger.Session("desire-task", lager.Data{"guid": task.GUID, "name": task.Name, "namespace": namespace})
 
 	job := d.taskToJobConverter.Convert(task)
 
 	if imageInPrivateRegistry(task) {
-		if err := d.addImagePullSecret(namespace, task, job); err != nil {
+		if err := d.addImagePullSecret(ctx, namespace, task, job); err != nil {
 			logger.Error("failed-to-add-image-pull-secret", err)
 
 			return err
@@ -71,7 +72,7 @@ func (d *Desirer) Desire(namespace string, task *opi.Task, opts ...shared.Option
 		return err
 	}
 
-	_, err := d.jobCreator.Create(namespace, job)
+	_, err := d.jobCreator.Create(ctx, namespace, job)
 	if err != nil {
 		logger.Error("failed-to-create-job", err)
 
@@ -85,8 +86,8 @@ func imageInPrivateRegistry(task *opi.Task) bool {
 	return task.PrivateRegistry != nil && task.PrivateRegistry.Username != "" && task.PrivateRegistry.Password != ""
 }
 
-func (d *Desirer) addImagePullSecret(namespace string, task *opi.Task, job *batch.Job) error {
-	createdSecret, err := d.createTaskSecret(namespace, task)
+func (d *Desirer) addImagePullSecret(ctx context.Context, namespace string, task *opi.Task, job *batch.Job) error {
+	createdSecret, err := d.createTaskSecret(ctx, namespace, task)
 	if err != nil {
 		return errors.Wrap(err, "failed to create task secret")
 	}
@@ -99,7 +100,7 @@ func (d *Desirer) addImagePullSecret(namespace string, task *opi.Task, job *batc
 	return nil
 }
 
-func (d *Desirer) createTaskSecret(namespace string, task *opi.Task) (*corev1.Secret, error) {
+func (d *Desirer) createTaskSecret(ctx context.Context, namespace string, task *opi.Task) (*corev1.Secret, error) {
 	secret := &corev1.Secret{}
 
 	secret.GenerateName = dockerImagePullSecretNamePrefix(task.AppName, task.SpaceName, task.GUID)
@@ -120,7 +121,7 @@ func (d *Desirer) createTaskSecret(namespace string, task *opi.Task) (*corev1.Se
 		dockerutils.DockerConfigKey: dockerConfigJSON,
 	}
 
-	return d.secretCreator.Create(namespace, secret)
+	return d.secretCreator.Create(ctx, namespace, secret)
 }
 
 func dockerImagePullSecretNamePrefix(appName, spaceName, taskGUID string) string {

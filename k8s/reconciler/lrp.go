@@ -29,13 +29,13 @@ import (
 //counterfeiter:generate . StatefulSetGetter
 
 type LRPDesirer interface {
-	Desire(namespace string, lrp *opi.LRP, opts ...shared.Option) error
-	Get(identifier opi.LRPIdentifier) (*opi.LRP, error)
-	Update(lrp *opi.LRP) error
+	Desire(ctx context.Context, namespace string, lrp *opi.LRP, opts ...shared.Option) error
+	Get(ctx context.Context, identifier opi.LRPIdentifier) (*opi.LRP, error)
+	Update(ctx context.Context, lrp *opi.LRP) error
 }
 
 type StatefulSetGetter interface {
-	Get(namespace, name string) (*appsv1.StatefulSet, error)
+	Get(ctx context.Context, namespace, name string) (*appsv1.StatefulSet, error)
 }
 
 func NewLRP(logger lager.Logger, lrps client.Client, desirer LRPDesirer, statefulsetGetter StatefulSetGetter, scheme *runtime.Scheme) *LRP {
@@ -85,7 +85,7 @@ func (r *LRP) Reconcile(ctx context.Context, request reconcile.Request) (reconci
 }
 
 func (r *LRP) do(ctx context.Context, lrp *eiriniv1.LRP) error {
-	_, err := r.desirer.Get(opi.LRPIdentifier{
+	_, err := r.desirer.Get(ctx, opi.LRPIdentifier{
 		GUID:    lrp.Spec.GUID,
 		Version: lrp.Spec.Version,
 	})
@@ -95,7 +95,7 @@ func (r *LRP) do(ctx context.Context, lrp *eiriniv1.LRP) error {
 			return errors.Wrap(parseErr, "failed to parse the crd spec to the lrp model")
 		}
 
-		return errors.Wrap(r.desirer.Desire(lrp.Namespace, appLRP, r.setOwnerFn(lrp)), "failed to desire lrp")
+		return errors.Wrap(r.desirer.Desire(ctx, lrp.Namespace, appLRP, r.setOwnerFn(lrp)), "failed to desire lrp")
 	}
 
 	if err != nil {
@@ -112,7 +112,7 @@ func (r *LRP) do(ctx context.Context, lrp *eiriniv1.LRP) error {
 	err = r.updateStatus(ctx, lrp, appLRP)
 	errs = multierror.Append(errs, errors.Wrap(err, "failed to update lrp status"))
 
-	err = r.desirer.Update(appLRP)
+	err = r.desirer.Update(ctx, appLRP)
 	errs = multierror.Append(errs, errors.Wrap(err, "failed to update app"))
 
 	return errs.ErrorOrNil()
@@ -124,7 +124,7 @@ func (r *LRP) updateStatus(ctx context.Context, lrp *eiriniv1.LRP, appLRP *opi.L
 		return err
 	}
 
-	st, err := r.statefulsetGetter.Get(lrp.Namespace, statefulSetName)
+	st, err := r.statefulsetGetter.Get(ctx, lrp.Namespace, statefulSetName)
 	if err != nil {
 		return errors.Wrap(err, "failed to get stateful set")
 	}

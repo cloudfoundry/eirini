@@ -44,18 +44,18 @@ var _ = Describe("Utils/Http", func() {
 			body := struct {
 				Foo string `json:"foo"`
 			}{Foo: "bar"}
-			Expect(utils.Put(client, url, body)).NotTo(HaveOccurred())
+			Expect(utils.Put(ctx, client, url, body)).NotTo(HaveOccurred())
 		})
 
 		When("creating the request fails", func() {
 			It("errors", func() {
-				Expect(utils.Put(client, "\t", nil)).To(MatchError(ContainSubstring("failed to create request")))
+				Expect(utils.Put(ctx, client, "\t", nil)).To(MatchError(ContainSubstring("failed to create request")))
 			})
 		})
 
 		When("performing the request fails", func() {
 			It("erorrs", func() {
-				Expect(utils.Put(client, "foo-url", nil)).To(MatchError(ContainSubstring("request failed")))
+				Expect(utils.Put(ctx, client, "foo-url", nil)).To(MatchError(ContainSubstring("request failed")))
 			})
 		})
 
@@ -65,7 +65,7 @@ var _ = Describe("Utils/Http", func() {
 			})
 
 			It("erorrs", func() {
-				Expect(utils.Put(client, server.URL(), nil)).To(MatchError(ContainSubstring("request not successful: status=500")))
+				Expect(utils.Put(ctx, client, server.URL(), nil)).To(MatchError(ContainSubstring("request not successful: status=500")))
 			})
 		})
 	})
@@ -84,18 +84,18 @@ var _ = Describe("Utils/Http", func() {
 			body := struct {
 				Foo string `json:"foo"`
 			}{Foo: "bar"}
-			Expect(utils.Post(client, url, body)).NotTo(HaveOccurred())
+			Expect(utils.Post(ctx, client, url, body)).NotTo(HaveOccurred())
 		})
 
 		When("creating the request fails", func() {
 			It("errors", func() {
-				Expect(utils.Post(client, "\t", nil)).To(MatchError(ContainSubstring("failed to create request")))
+				Expect(utils.Post(ctx, client, "\t", nil)).To(MatchError(ContainSubstring("failed to create request")))
 			})
 		})
 
 		When("performing the request fails", func() {
 			It("erorrs", func() {
-				Expect(utils.Post(client, "foo-url", nil)).To(MatchError(ContainSubstring("request failed")))
+				Expect(utils.Post(ctx, client, "foo-url", nil)).To(MatchError(ContainSubstring("request failed")))
 			})
 		})
 
@@ -105,7 +105,7 @@ var _ = Describe("Utils/Http", func() {
 			})
 
 			It("erorrs", func() {
-				Expect(utils.Post(client, server.URL(), nil)).To(MatchError(ContainSubstring("request not successful: status=500")))
+				Expect(utils.Post(ctx, client, server.URL(), nil)).To(MatchError(ContainSubstring("request not successful: status=500")))
 			})
 		})
 	})

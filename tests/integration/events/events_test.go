@@ -38,10 +38,12 @@ var _ = Describe("Events", func() {
 		certDir    string
 		logger     *lagertest.TestLogger
 		config     *eirini.EventReporterConfig
+		ctx        context.Context
 	)
 
 	BeforeEach(func() {
 		var err error
+		ctx = context.Background()
 		logger = lagertest.NewTestLogger("events")
 
 		certDir, _ = tests.GenerateKeyPairDir("tls", "localhost")
@@ -116,7 +118,7 @@ var _ = Describe("Events", func() {
 				Image:           "eirini/busybox",
 				LRPIdentifier:   opi.LRPIdentifier{GUID: tests.GenerateGUID(), Version: tests.GenerateGUID()},
 			}
-			Expect(lrpClient.Desire(fixture.Namespace, &lrp)).To(Succeed())
+			Expect(lrpClient.Desire(ctx, fixture.Namespace, &lrp)).To(Succeed())
 		})
 
 		When("the LRP does not terminate", func() {
@@ -254,7 +256,7 @@ var _ = Describe("Events", func() {
 				Image:   "eirini/busybox",
 				GUID:    tests.GenerateGUID(),
 			}
-			Expect(taskDesirer.Desire(fixture.Namespace, &task)).To(Succeed())
+			Expect(taskDesirer.Desire(ctx, fixture.Namespace, &task)).To(Succeed())
 		})
 
 		It("should not send crash events", func() {

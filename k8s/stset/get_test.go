@@ -52,7 +52,7 @@ var _ = Describe("Get StatefulSet", func() {
 			}
 
 			statefulSetGetter.GetByLRPIdentifierReturns([]appsv1.StatefulSet{st}, nil)
-			lrp, _ := getter.Get(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+			lrp, _ := getter.Get(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 			Expect(statefulsetToLRPConverter.ConvertCallCount()).To(Equal(1))
 			Expect(lrp.AppName).To(Equal("baldur-app"))
 		})
@@ -63,7 +63,7 @@ var _ = Describe("Get StatefulSet", func() {
 			})
 
 			It("should return an error", func() {
-				_, err := getter.Get(opi.LRPIdentifier{GUID: "idontknow", Version: "42"})
+				_, err := getter.Get(ctx, opi.LRPIdentifier{GUID: "idontknow", Version: "42"})
 				Expect(err).To(MatchError(ContainSubstring("not found")))
 			})
 		})
@@ -74,7 +74,7 @@ var _ = Describe("Get StatefulSet", func() {
 			})
 
 			It("should return an error", func() {
-				_, err := getter.Get(opi.LRPIdentifier{GUID: "idontknow", Version: "42"})
+				_, err := getter.Get(ctx, opi.LRPIdentifier{GUID: "idontknow", Version: "42"})
 				Expect(err).To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
 		})
@@ -85,7 +85,7 @@ var _ = Describe("Get StatefulSet", func() {
 			})
 
 			It("should return an error", func() {
-				_, err := getter.Get(opi.LRPIdentifier{GUID: "idontknow", Version: "42"})
+				_, err := getter.Get(ctx, opi.LRPIdentifier{GUID: "idontknow", Version: "42"})
 				Expect(err).To(MatchError(ContainSubstring("multiple statefulsets found for LRP identifier")))
 			})
 		})
@@ -105,11 +105,12 @@ var _ = Describe("Get StatefulSet", func() {
 			podGetter.GetByLRPIdentifierReturns(pods, nil)
 			eventGetter.GetByPodReturns([]corev1.Event{}, nil)
 
-			_, err := getter.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+			_, err := getter.GetInstances(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(podGetter.GetByLRPIdentifierCallCount()).To(Equal(1))
-			Expect(podGetter.GetByLRPIdentifierArgsForCall(0)).To(Equal(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}))
+			_, lrpID := podGetter.GetByLRPIdentifierArgsForCall(0)
+			Expect(lrpID).To(Equal(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}))
 		})
 
 		It("should return the correct number of instances", func() {
@@ -120,7 +121,7 @@ var _ = Describe("Get StatefulSet", func() {
 			}
 			podGetter.GetByLRPIdentifierReturns(pods, nil)
 			eventGetter.GetByPodReturns([]corev1.Event{}, nil)
-			instances, err := getter.GetInstances(opi.LRPIdentifier{})
+			instances, err := getter.GetInstances(ctx, opi.LRPIdentifier{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(instances).To(HaveLen(3))
 		})
@@ -147,7 +148,7 @@ var _ = Describe("Get StatefulSet", func() {
 
 			podGetter.GetByLRPIdentifierReturns(pods, nil)
 			eventGetter.GetByPodReturns([]corev1.Event{}, nil)
-			instances, err := getter.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+			instances, err := getter.GetInstances(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(instances).To(HaveLen(1))
@@ -161,7 +162,7 @@ var _ = Describe("Get StatefulSet", func() {
 			It("should return a meaningful error", func() {
 				podGetter.GetByLRPIdentifierReturns(nil, errors.New("boom"))
 
-				_, err := getter.GetInstances(opi.LRPIdentifier{})
+				_, err := getter.GetInstances(ctx, opi.LRPIdentifier{})
 				Expect(err).To(MatchError(ContainSubstring("failed to list pods")))
 			})
 		})
@@ -170,7 +171,7 @@ var _ = Describe("Get StatefulSet", func() {
 			It("should return an error", func() {
 				statefulSetGetter.GetByLRPIdentifierReturns([]appsv1.StatefulSet{}, nil)
 
-				_, err := getter.GetInstances(opi.LRPIdentifier{GUID: "does-not", Version: "exist"})
+				_, err := getter.GetInstances(ctx, opi.LRPIdentifier{GUID: "does-not", Version: "exist"})
 				Expect(err).To(Equal(eirini.ErrNotFound))
 			})
 		})
@@ -184,7 +185,7 @@ var _ = Describe("Get StatefulSet", func() {
 
 				eventGetter.GetByPodReturns(nil, errors.New("I am error"))
 
-				_, err := getter.GetInstances(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+				_, err := getter.GetInstances(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("failed to get events for pod %s", "odin-0"))))
 			})
 		})
@@ -197,7 +198,7 @@ var _ = Describe("Get StatefulSet", func() {
 				podGetter.GetByLRPIdentifierReturns(pods, nil)
 				eventGetter.GetByPodReturns([]corev1.Event{}, nil)
 
-				instances, err := getter.GetInstances(opi.LRPIdentifier{})
+				instances, err := getter.GetInstances(ctx, opi.LRPIdentifier{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(instances).To(HaveLen(1))
 				Expect(instances[0].Since).To(Equal(int64(0)))
@@ -223,7 +224,7 @@ var _ = Describe("Get StatefulSet", func() {
 				})
 
 				It("returns insufficient memory response", func() {
-					instances, err := getter.GetInstances(opi.LRPIdentifier{})
+					instances, err := getter.GetInstances(ctx, opi.LRPIdentifier{})
 					Expect(err).ToNot(HaveOccurred())
 					Expect(instances).To(HaveLen(1))
 					Expect(instances[0].PlacementError).To(Equal(opi.InsufficientMemoryError))
@@ -241,7 +242,7 @@ var _ = Describe("Get StatefulSet", func() {
 				})
 
 				It("returns insufficient memory response", func() {
-					instances, err := getter.GetInstances(opi.LRPIdentifier{})
+					instances, err := getter.GetInstances(ctx, opi.LRPIdentifier{})
 					Expect(err).ToNot(HaveOccurred())
 					Expect(instances).To(HaveLen(1))
 					Expect(instances[0].PlacementError).To(Equal(opi.InsufficientMemoryError))
@@ -277,7 +278,7 @@ var _ = Describe("Get StatefulSet", func() {
 				}
 				podGetter.GetByLRPIdentifierReturns(pods, nil)
 
-				instances, err := getter.GetInstances(opi.LRPIdentifier{})
+				instances, err := getter.GetInstances(ctx, opi.LRPIdentifier{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(instances).To(HaveLen(0))
 			})

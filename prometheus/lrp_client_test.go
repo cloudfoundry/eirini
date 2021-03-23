@@ -1,6 +1,7 @@
 package prometheus_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -31,9 +32,11 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 		registry   metrics.RegistererGatherer
 		fakeClock  *clock.FakePassiveClock
 		t0         time.Time
+		ctx        context.Context
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		lrpClient = new(prometheusfakes.FakeLRPClient)
 		desireOption := func(resource interface{}) error {
 			return nil
@@ -51,7 +54,7 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 	})
 
 	JustBeforeEach(func() {
-		desireErr = decorator.Desire("the-namespace", lrp, desireOpts...)
+		desireErr = decorator.Desire(ctx, "the-namespace", lrp, desireOpts...)
 	})
 
 	It("succeeds", func() {
@@ -60,7 +63,7 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 
 	It("delegates to the LRP client on Desire", func() {
 		Expect(lrpClient.DesireCallCount()).To(Equal(1))
-		actualNamespace, actualLrp, actualOption := lrpClient.DesireArgsForCall(0)
+		_, actualNamespace, actualLrp, actualOption := lrpClient.DesireArgsForCall(0)
 		Expect(actualNamespace).To(Equal("the-namespace"))
 		Expect(actualLrp).To(Equal(lrp))
 		Expect(actualOption).To(Equal(desireOpts))
@@ -72,7 +75,7 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 
 	Describe("observing durations", func() {
 		BeforeEach(func() {
-			lrpClient.DesireStub = func(s string, l *opi.LRP, o ...shared.Option) error {
+			lrpClient.DesireStub = func(ctx context.Context, s string, l *opi.LRP, o ...shared.Option) error {
 				fakeClock.SetTime(t0.Add(time.Second))
 
 				return nil
@@ -112,7 +115,7 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 		})
 
 		JustBeforeEach(func() {
-			Expect(otherDecorator.Desire("the-namespace", lrp, desireOpts...)).To(Succeed())
+			Expect(otherDecorator.Desire(ctx, "the-namespace", lrp, desireOpts...)).To(Succeed())
 		})
 
 		It("adopts the existing counters", func() {

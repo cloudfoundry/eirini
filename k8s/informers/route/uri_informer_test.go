@@ -77,7 +77,7 @@ var _ = Describe("URIChangeInformer", func() {
 		It("should be handled by the update handler", func() {
 			Eventually(updateHandler.HandleCallCount).Should(Equal(1))
 
-			oldStatefulSet, updatedStatefulSet := updateHandler.HandleArgsForCall(0)
+			_, oldStatefulSet, updatedStatefulSet := updateHandler.HandleArgsForCall(0)
 
 			Expect(oldStatefulSet.Name).To(Equal(updatedStatefulSet.Name))
 			Expect(oldStatefulSet.Annotations).To(HaveKeyWithValue("somewhere", "over"))
@@ -102,7 +102,7 @@ var _ = Describe("URIChangeInformer", func() {
 		It("should be handled by the update handler", func() {
 			Eventually(deleteHandler.HandleCallCount).Should(Equal(1))
 
-			deletedStatefulSet := deleteHandler.HandleArgsForCall(0)
+			_, deletedStatefulSet := deleteHandler.HandleArgsForCall(0)
 
 			Expect(deletedStatefulSet.Name).To(Equal("mr-stateful"))
 			Expect(deletedStatefulSet.Annotations).To(HaveKeyWithValue("somewhere", "over"))

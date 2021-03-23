@@ -17,7 +17,7 @@ import (
 //counterfeiter:generate . StagingCompleter
 
 type StagingCompleter interface {
-	CompleteStaging(cf.StagingCompletedRequest) error
+	CompleteStaging(ctx context.Context, req cf.StagingCompletedRequest) error
 }
 
 type ImageMetadataFetcher func(string, types.SystemContext) (*v1.ImageConfig, error)
@@ -76,37 +76,37 @@ func (s DockerStaging) TransferStaging(ctx context.Context, stagingGUID string, 
 	if err != nil {
 		logger.Error("failed-to-get-image-config", err)
 
-		return s.respondWithFailure(taskCallbackResponse, errors.Wrap(err, "failed to get image config"))
+		return s.respondWithFailure(ctx, taskCallbackResponse, errors.Wrap(err, "failed to get image config"))
 	}
 
 	ports, err := parseExposedPorts(imageConfig)
 	if err != nil {
 		logger.Error("failed-to-parse-exposed-ports", err)
 
-		return s.respondWithFailure(taskCallbackResponse, errors.Wrap(err, "failed to parse exposed ports"))
+		return s.respondWithFailure(ctx, taskCallbackResponse, errors.Wrap(err, "failed to parse exposed ports"))
 	}
 
 	stagingResult, err := buildStagingResult(request.Lifecycle.DockerLifecycle.Image, ports)
 	if err != nil {
 		logger.Error("failed-to-build-staging-result", err)
 
-		return s.respondWithFailure(taskCallbackResponse, errors.Wrap(err, "failed to build staging result"))
+		return s.respondWithFailure(ctx, taskCallbackResponse, errors.Wrap(err, "failed to build staging result"))
 	}
 
 	taskCallbackResponse.Result = stagingResult
 
-	return s.CompleteStaging(taskCallbackResponse)
+	return s.CompleteStaging(ctx, taskCallbackResponse)
 }
 
-func (s DockerStaging) respondWithFailure(taskCompletedRequest cf.StagingCompletedRequest, err error) error {
+func (s DockerStaging) respondWithFailure(ctx context.Context, taskCompletedRequest cf.StagingCompletedRequest, err error) error {
 	taskCompletedRequest.Failed = true
 	taskCompletedRequest.FailureReason = err.Error()
 
-	return s.CompleteStaging(taskCompletedRequest)
+	return s.CompleteStaging(ctx, taskCompletedRequest)
 }
 
-func (s DockerStaging) CompleteStaging(taskCompletedRequest cf.StagingCompletedRequest) error {
-	return s.StagingCompleter.CompleteStaging(taskCompletedRequest)
+func (s DockerStaging) CompleteStaging(ctx context.Context, taskCompletedRequest cf.StagingCompletedRequest) error {
+	return s.StagingCompleter.CompleteStaging(ctx, taskCompletedRequest)
 }
 
 func (s DockerStaging) getImageConfig(lifecycle *cf.StagingDockerLifecycle) (*v1.ImageConfig, error) {

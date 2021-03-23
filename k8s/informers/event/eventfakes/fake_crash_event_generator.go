@@ -2,6 +2,7 @@
 package eventfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/events"
@@ -11,11 +12,12 @@ import (
 )
 
 type FakeCrashEventGenerator struct {
-	GenerateStub        func(*v1.Pod, lager.Logger) (events.CrashEvent, bool)
+	GenerateStub        func(context.Context, *v1.Pod, lager.Logger) (events.CrashEvent, bool)
 	generateMutex       sync.RWMutex
 	generateArgsForCall []struct {
-		arg1 *v1.Pod
-		arg2 lager.Logger
+		arg1 context.Context
+		arg2 *v1.Pod
+		arg3 lager.Logger
 	}
 	generateReturns struct {
 		result1 events.CrashEvent
@@ -29,19 +31,20 @@ type FakeCrashEventGenerator struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCrashEventGenerator) Generate(arg1 *v1.Pod, arg2 lager.Logger) (events.CrashEvent, bool) {
+func (fake *FakeCrashEventGenerator) Generate(arg1 context.Context, arg2 *v1.Pod, arg3 lager.Logger) (events.CrashEvent, bool) {
 	fake.generateMutex.Lock()
 	ret, specificReturn := fake.generateReturnsOnCall[len(fake.generateArgsForCall)]
 	fake.generateArgsForCall = append(fake.generateArgsForCall, struct {
-		arg1 *v1.Pod
-		arg2 lager.Logger
-	}{arg1, arg2})
+		arg1 context.Context
+		arg2 *v1.Pod
+		arg3 lager.Logger
+	}{arg1, arg2, arg3})
 	stub := fake.GenerateStub
 	fakeReturns := fake.generateReturns
-	fake.recordInvocation("Generate", []interface{}{arg1, arg2})
+	fake.recordInvocation("Generate", []interface{}{arg1, arg2, arg3})
 	fake.generateMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -55,17 +58,17 @@ func (fake *FakeCrashEventGenerator) GenerateCallCount() int {
 	return len(fake.generateArgsForCall)
 }
 
-func (fake *FakeCrashEventGenerator) GenerateCalls(stub func(*v1.Pod, lager.Logger) (events.CrashEvent, bool)) {
+func (fake *FakeCrashEventGenerator) GenerateCalls(stub func(context.Context, *v1.Pod, lager.Logger) (events.CrashEvent, bool)) {
 	fake.generateMutex.Lock()
 	defer fake.generateMutex.Unlock()
 	fake.GenerateStub = stub
 }
 
-func (fake *FakeCrashEventGenerator) GenerateArgsForCall(i int) (*v1.Pod, lager.Logger) {
+func (fake *FakeCrashEventGenerator) GenerateArgsForCall(i int) (context.Context, *v1.Pod, lager.Logger) {
 	fake.generateMutex.RLock()
 	defer fake.generateMutex.RUnlock()
 	argsForCall := fake.generateArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeCrashEventGenerator) GenerateReturns(result1 events.CrashEvent, result2 bool) {

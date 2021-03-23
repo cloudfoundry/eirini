@@ -2,6 +2,7 @@
 package reconcilerfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
@@ -10,12 +11,13 @@ import (
 )
 
 type FakeTaskDesirer struct {
-	DesireStub        func(string, *opi.Task, ...shared.Option) error
+	DesireStub        func(context.Context, string, *opi.Task, ...shared.Option) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
-		arg1 string
-		arg2 *opi.Task
-		arg3 []shared.Option
+		arg1 context.Context
+		arg2 string
+		arg3 *opi.Task
+		arg4 []shared.Option
 	}
 	desireReturns struct {
 		result1 error
@@ -27,20 +29,21 @@ type FakeTaskDesirer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskDesirer) Desire(arg1 string, arg2 *opi.Task, arg3 ...shared.Option) error {
+func (fake *FakeTaskDesirer) Desire(arg1 context.Context, arg2 string, arg3 *opi.Task, arg4 ...shared.Option) error {
 	fake.desireMutex.Lock()
 	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
 	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
-		arg1 string
-		arg2 *opi.Task
-		arg3 []shared.Option
-	}{arg1, arg2, arg3})
+		arg1 context.Context
+		arg2 string
+		arg3 *opi.Task
+		arg4 []shared.Option
+	}{arg1, arg2, arg3, arg4})
 	stub := fake.DesireStub
 	fakeReturns := fake.desireReturns
-	fake.recordInvocation("Desire", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("Desire", []interface{}{arg1, arg2, arg3, arg4})
 	fake.desireMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3...)
+		return stub(arg1, arg2, arg3, arg4...)
 	}
 	if specificReturn {
 		return ret.result1
@@ -54,17 +57,17 @@ func (fake *FakeTaskDesirer) DesireCallCount() int {
 	return len(fake.desireArgsForCall)
 }
 
-func (fake *FakeTaskDesirer) DesireCalls(stub func(string, *opi.Task, ...shared.Option) error) {
+func (fake *FakeTaskDesirer) DesireCalls(stub func(context.Context, string, *opi.Task, ...shared.Option) error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = stub
 }
 
-func (fake *FakeTaskDesirer) DesireArgsForCall(i int) (string, *opi.Task, []shared.Option) {
+func (fake *FakeTaskDesirer) DesireArgsForCall(i int) (context.Context, string, *opi.Task, []shared.Option) {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	argsForCall := fake.desireArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeTaskDesirer) DesireReturns(result1 error) {

@@ -27,7 +27,9 @@ func (t *Task) Get(resp http.ResponseWriter, req *http.Request, ps httprouter.Pa
 	taskGUID := ps.ByName("task_guid")
 	logger := t.logger.Session("get-task-request", lager.Data{"task-guid": taskGUID})
 
-	response, err := t.taskBifrost.GetTask(taskGUID)
+	ctx := req.Context()
+
+	response, err := t.taskBifrost.GetTask(ctx, taskGUID)
 	if err != nil {
 		if errors.Is(err, eirini.ErrNotFound) {
 			logger.Info("task-not-found")
@@ -74,7 +76,9 @@ func (t *Task) Cancel(resp http.ResponseWriter, req *http.Request, ps httprouter
 	taskGUID := ps.ByName("task_guid")
 	logger := t.logger.Session("task-cancel", lager.Data{"task-guid": taskGUID})
 
-	if err := t.taskBifrost.CancelTask(taskGUID); err != nil {
+	ctx := req.Context()
+
+	if err := t.taskBifrost.CancelTask(ctx, taskGUID); err != nil {
 		logger.Error("task-request-task-delete-failed", err)
 		writeErrorResponse(logger, resp, http.StatusInternalServerError, err)
 
@@ -86,8 +90,9 @@ func (t *Task) Cancel(resp http.ResponseWriter, req *http.Request, ps httprouter
 
 func (t *Task) List(resp http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	logger := t.logger.Session("list-tasks")
+	ctx := req.Context()
 
-	tasks, err := t.taskBifrost.ListTasks()
+	tasks, err := t.taskBifrost.ListTasks(ctx)
 	if err != nil {
 		logger.Error("list-tasks-request-failed", err)
 		resp.WriteHeader(http.StatusInternalServerError)

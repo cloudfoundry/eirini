@@ -1,6 +1,7 @@
 package task
 
 import (
+	"context"
 	"net/http"
 
 	"code.cloudfoundry.org/eirini/k8s/jobs"
@@ -16,7 +17,7 @@ type StateReporter struct {
 	Logger lager.Logger
 }
 
-func (r StateReporter) Report(pod *corev1.Pod) error {
+func (r StateReporter) Report(ctx context.Context, pod *corev1.Pod) error {
 	taskGUID := pod.Annotations[jobs.AnnotationGUID]
 	uri := pod.Annotations[jobs.AnnotationCompletionCallback]
 
@@ -25,7 +26,7 @@ func (r StateReporter) Report(pod *corev1.Pod) error {
 	logger.Debug("sending completion notification")
 	req := r.generateTaskCompletedRequest(logger, taskGUID, pod)
 
-	if err := utils.Post(r.Client, uri, req); err != nil {
+	if err := utils.Post(ctx, r.Client, uri, req); err != nil {
 		logger.Error("cannot-send-task-status-response", err)
 
 		return errors.Wrap(err, "failed to complete task")

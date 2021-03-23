@@ -2,6 +2,7 @@
 package bifrostfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/bifrost"
@@ -9,10 +10,11 @@ import (
 )
 
 type FakeStagingCompleter struct {
-	CompleteStagingStub        func(cf.StagingCompletedRequest) error
+	CompleteStagingStub        func(context.Context, cf.StagingCompletedRequest) error
 	completeStagingMutex       sync.RWMutex
 	completeStagingArgsForCall []struct {
-		arg1 cf.StagingCompletedRequest
+		arg1 context.Context
+		arg2 cf.StagingCompletedRequest
 	}
 	completeStagingReturns struct {
 		result1 error
@@ -24,18 +26,19 @@ type FakeStagingCompleter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStagingCompleter) CompleteStaging(arg1 cf.StagingCompletedRequest) error {
+func (fake *FakeStagingCompleter) CompleteStaging(arg1 context.Context, arg2 cf.StagingCompletedRequest) error {
 	fake.completeStagingMutex.Lock()
 	ret, specificReturn := fake.completeStagingReturnsOnCall[len(fake.completeStagingArgsForCall)]
 	fake.completeStagingArgsForCall = append(fake.completeStagingArgsForCall, struct {
-		arg1 cf.StagingCompletedRequest
-	}{arg1})
+		arg1 context.Context
+		arg2 cf.StagingCompletedRequest
+	}{arg1, arg2})
 	stub := fake.CompleteStagingStub
 	fakeReturns := fake.completeStagingReturns
-	fake.recordInvocation("CompleteStaging", []interface{}{arg1})
+	fake.recordInvocation("CompleteStaging", []interface{}{arg1, arg2})
 	fake.completeStagingMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -49,17 +52,17 @@ func (fake *FakeStagingCompleter) CompleteStagingCallCount() int {
 	return len(fake.completeStagingArgsForCall)
 }
 
-func (fake *FakeStagingCompleter) CompleteStagingCalls(stub func(cf.StagingCompletedRequest) error) {
+func (fake *FakeStagingCompleter) CompleteStagingCalls(stub func(context.Context, cf.StagingCompletedRequest) error) {
 	fake.completeStagingMutex.Lock()
 	defer fake.completeStagingMutex.Unlock()
 	fake.CompleteStagingStub = stub
 }
 
-func (fake *FakeStagingCompleter) CompleteStagingArgsForCall(i int) cf.StagingCompletedRequest {
+func (fake *FakeStagingCompleter) CompleteStagingArgsForCall(i int) (context.Context, cf.StagingCompletedRequest) {
 	fake.completeStagingMutex.RLock()
 	defer fake.completeStagingMutex.RUnlock()
 	argsForCall := fake.completeStagingArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeStagingCompleter) CompleteStagingReturns(result1 error) {

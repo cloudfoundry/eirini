@@ -2,6 +2,7 @@
 package jobsfakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/jobs"
@@ -9,10 +10,11 @@ import (
 )
 
 type FakeJobLister struct {
-	ListStub        func(bool) ([]v1.Job, error)
+	ListStub        func(context.Context, bool) ([]v1.Job, error)
 	listMutex       sync.RWMutex
 	listArgsForCall []struct {
-		arg1 bool
+		arg1 context.Context
+		arg2 bool
 	}
 	listReturns struct {
 		result1 []v1.Job
@@ -26,18 +28,19 @@ type FakeJobLister struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeJobLister) List(arg1 bool) ([]v1.Job, error) {
+func (fake *FakeJobLister) List(arg1 context.Context, arg2 bool) ([]v1.Job, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		arg1 bool
-	}{arg1})
+		arg1 context.Context
+		arg2 bool
+	}{arg1, arg2})
 	stub := fake.ListStub
 	fakeReturns := fake.listReturns
-	fake.recordInvocation("List", []interface{}{arg1})
+	fake.recordInvocation("List", []interface{}{arg1, arg2})
 	fake.listMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -51,17 +54,17 @@ func (fake *FakeJobLister) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakeJobLister) ListCalls(stub func(bool) ([]v1.Job, error)) {
+func (fake *FakeJobLister) ListCalls(stub func(context.Context, bool) ([]v1.Job, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
 }
 
-func (fake *FakeJobLister) ListArgsForCall(i int) bool {
+func (fake *FakeJobLister) ListArgsForCall(i int) (context.Context, bool) {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	argsForCall := fake.listArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeJobLister) ListReturns(result1 []v1.Job, result2 error) {

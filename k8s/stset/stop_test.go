@@ -62,17 +62,17 @@ var _ = Describe("Stop", func() {
 		})
 
 		It("deletes the statefulSet", func() {
-			Expect(stopper.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+			Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 			Expect(statefulSetDeleter.DeleteCallCount()).To(Equal(1))
-			namespace, name := statefulSetDeleter.DeleteArgsForCall(0)
+			_, namespace, name := statefulSetDeleter.DeleteArgsForCall(0)
 			Expect(namespace).To(Equal("the-namespace"))
 			Expect(name).To(Equal("baldur"))
 		})
 
 		It("should delete any corresponding pod disruption budgets", func() {
-			Expect(stopper.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+			Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 			Expect(pdbDeleter.DeleteCallCount()).To(Equal(1))
-			namespace, pdbName := pdbDeleter.DeleteArgsForCall(0)
+			_, namespace, pdbName := pdbDeleter.DeleteArgsForCall(0)
 			Expect(namespace).To(Equal("the-namespace"))
 			Expect(pdbName).To(Equal("baldur"))
 		})
@@ -91,9 +91,9 @@ var _ = Describe("Stop", func() {
 			})
 
 			It("deletes the secret holding the creds of the private registry", func() {
-				Expect(stopper.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+				Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 				Expect(secretsDeleter.DeleteCallCount()).To(Equal(1))
-				secretNs, secretName := secretsDeleter.DeleteArgsForCall(0)
+				_, secretNs, secretName := secretsDeleter.DeleteArgsForCall(0)
 				Expect(secretName).To(Equal("baldur-registry-credentials"))
 				Expect(secretNs).To(Equal("the-namespace"))
 			})
@@ -104,7 +104,7 @@ var _ = Describe("Stop", func() {
 				})
 
 				It("returns the error", func() {
-					Expect(stopper.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(MatchError(ContainSubstring("boom")))
+					Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(MatchError(ContainSubstring("boom")))
 				})
 			})
 
@@ -117,7 +117,7 @@ var _ = Describe("Stop", func() {
 				})
 
 				It("succeeds", func() {
-					Expect(stopper.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+					Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 				})
 			})
 		})
@@ -128,7 +128,7 @@ var _ = Describe("Stop", func() {
 			})
 
 			It("should return a meaningful error", func() {
-				Expect(stopper.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
+				Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).
 					To(MatchError(ContainSubstring("failed to delete statefulset")))
 			})
 		})
@@ -138,7 +138,7 @@ var _ = Describe("Stop", func() {
 				statefulSetGetter.GetByLRPIdentifierReturns([]appsv1.StatefulSet{{}}, nil)
 				statefulSetDeleter.DeleteReturnsOnCall(0, k8serrors.NewConflict(schema.GroupResource{}, "foo", errors.New("boom")))
 				statefulSetDeleter.DeleteReturnsOnCall(1, nil)
-				Expect(stopper.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
+				Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 				Expect(statefulSetDeleter.DeleteCallCount()).To(Equal(2))
 			})
 		})
@@ -147,7 +147,7 @@ var _ = Describe("Stop", func() {
 			It("returns an error", func() {
 				pdbDeleter.DeleteReturns(errors.New("boom"))
 
-				Expect(stopper.Stop(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(MatchError(ContainSubstring("boom")))
+				Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(MatchError(ContainSubstring("boom")))
 			})
 		})
 
@@ -157,7 +157,7 @@ var _ = Describe("Stop", func() {
 			})
 
 			It("should return a meaningful error", func() {
-				Expect(stopper.Stop(opi.LRPIdentifier{})).
+				Expect(stopper.Stop(ctx, opi.LRPIdentifier{})).
 					To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
 		})
@@ -168,11 +168,11 @@ var _ = Describe("Stop", func() {
 			})
 
 			It("succeeds", func() {
-				Expect(stopper.Stop(opi.LRPIdentifier{})).To(Succeed())
+				Expect(stopper.Stop(ctx, opi.LRPIdentifier{})).To(Succeed())
 			})
 
 			It("logs useful information", func() {
-				_ = stopper.Stop(opi.LRPIdentifier{GUID: "missing_guid", Version: "some_version"})
+				_ = stopper.Stop(ctx, opi.LRPIdentifier{GUID: "missing_guid", Version: "some_version"})
 				Expect(logger).To(gbytes.Say("statefulset-does-not-exist.*missing_guid.*some_version"))
 			})
 		})
@@ -196,12 +196,12 @@ var _ = Describe("Stop", func() {
 		})
 
 		It("deletes a pod instance", func() {
-			Expect(stopper.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 0)).
+			Expect(stopper.StopInstance(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 0)).
 				To(Succeed())
 
 			Expect(podDeleter.DeleteCallCount()).To(Equal(1))
 
-			namespace, name := podDeleter.DeleteArgsForCall(0)
+			_, namespace, name := podDeleter.DeleteArgsForCall(0)
 			Expect(namespace).To(Equal("the-namespace"))
 			Expect(name).To(Equal("baldur-space-foo-34f869d015-0"))
 		})
@@ -209,7 +209,7 @@ var _ = Describe("Stop", func() {
 		When("there's an internal K8s error", func() {
 			It("should return an error", func() {
 				statefulSetGetter.GetByLRPIdentifierReturns(nil, errors.New("boom"))
-				Expect(stopper.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)).
+				Expect(stopper.StopInstance(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)).
 					To(MatchError(ContainSubstring("failed to list statefulsets")))
 			})
 		})
@@ -217,14 +217,14 @@ var _ = Describe("Stop", func() {
 		When("the statefulset does not exist", func() {
 			It("succeeds", func() {
 				statefulSetGetter.GetByLRPIdentifierReturns([]appsv1.StatefulSet{}, nil)
-				Expect(stopper.StopInstance(opi.LRPIdentifier{GUID: "some", Version: "thing"}, 1)).To(Succeed())
+				Expect(stopper.StopInstance(ctx, opi.LRPIdentifier{GUID: "some", Version: "thing"}, 1)).To(Succeed())
 			})
 		})
 
 		When("the instance index is invalid", func() {
 			It("returns an error", func() {
 				podDeleter.DeleteReturns(errors.New("boom"))
-				Expect(stopper.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 42)).
+				Expect(stopper.StopInstance(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 42)).
 					To(MatchError(eirini.ErrInvalidInstanceIndex))
 			})
 		})
@@ -235,7 +235,7 @@ var _ = Describe("Stop", func() {
 			})
 
 			It("succeeds", func() {
-				Expect(stopper.StopInstance(opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)).
+				Expect(stopper.StopInstance(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)).
 					To(Succeed())
 			})
 		})

@@ -21,7 +21,7 @@ type StatefulSetDeleteHandler struct {
 	RouteEmitter eiriniroute.Emitter
 }
 
-func (h StatefulSetDeleteHandler) Handle(deletedStatefulSet *appsv1.StatefulSet) {
+func (h StatefulSetDeleteHandler) Handle(ctx context.Context, deletedStatefulSet *appsv1.StatefulSet) {
 	loggerSession := h.Logger.Session("statefulset-delete", lager.Data{"guid": deletedStatefulSet.Annotations[stset.AnnotationProcessGUID]})
 
 	routeSet, err := decodeRoutesAsSet(deletedStatefulSet)
@@ -39,7 +39,7 @@ func (h StatefulSetDeleteHandler) Handle(deletedStatefulSet *appsv1.StatefulSet)
 	)
 
 	for _, route := range routes {
-		h.RouteEmitter.Emit(*route)
+		h.RouteEmitter.Emit(ctx, *route)
 	}
 }
 

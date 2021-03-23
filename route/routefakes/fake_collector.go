@@ -2,15 +2,17 @@
 package routefakes
 
 import (
+	"context"
 	"sync"
 
 	"code.cloudfoundry.org/eirini/route"
 )
 
 type FakeCollector struct {
-	CollectStub        func() ([]route.Message, error)
+	CollectStub        func(context.Context) ([]route.Message, error)
 	collectMutex       sync.RWMutex
 	collectArgsForCall []struct {
+		arg1 context.Context
 	}
 	collectReturns struct {
 		result1 []route.Message
@@ -24,17 +26,18 @@ type FakeCollector struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCollector) Collect() ([]route.Message, error) {
+func (fake *FakeCollector) Collect(arg1 context.Context) ([]route.Message, error) {
 	fake.collectMutex.Lock()
 	ret, specificReturn := fake.collectReturnsOnCall[len(fake.collectArgsForCall)]
 	fake.collectArgsForCall = append(fake.collectArgsForCall, struct {
-	}{})
+		arg1 context.Context
+	}{arg1})
 	stub := fake.CollectStub
 	fakeReturns := fake.collectReturns
-	fake.recordInvocation("Collect", []interface{}{})
+	fake.recordInvocation("Collect", []interface{}{arg1})
 	fake.collectMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -48,10 +51,17 @@ func (fake *FakeCollector) CollectCallCount() int {
 	return len(fake.collectArgsForCall)
 }
 
-func (fake *FakeCollector) CollectCalls(stub func() ([]route.Message, error)) {
+func (fake *FakeCollector) CollectCalls(stub func(context.Context) ([]route.Message, error)) {
 	fake.collectMutex.Lock()
 	defer fake.collectMutex.Unlock()
 	fake.CollectStub = stub
+}
+
+func (fake *FakeCollector) CollectArgsForCall(i int) context.Context {
+	fake.collectMutex.RLock()
+	defer fake.collectMutex.RUnlock()
+	argsForCall := fake.collectArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeCollector) CollectReturns(result1 []route.Message, result2 error) {

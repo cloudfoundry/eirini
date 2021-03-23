@@ -35,13 +35,13 @@ var _ = Describe("AdjustCpuResource", func() {
 	})
 
 	JustBeforeEach(func() {
-		migrationErr = migrator.Apply(stSet)
+		migrationErr = migrator.Apply(ctx, stSet)
 	})
 
 	It("updates the cpu resource request to match that in the stateful set original request annotation", func() {
 		Expect(migrationErr).NotTo(HaveOccurred())
 		Expect(cpuRequestSetter.SetCPURequestCallCount()).To(Equal(1))
-		actualStset, actualRequestValue := cpuRequestSetter.SetCPURequestArgsForCall(0)
+		_, actualStset, actualRequestValue := cpuRequestSetter.SetCPURequestArgsForCall(0)
 		Expect(actualStset).To(Equal(stSet))
 		Expect(actualRequestValue.MilliValue()).To(Equal(int64(123)))
 	})
