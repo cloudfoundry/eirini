@@ -10,9 +10,34 @@ EIRINI_RELEASE_BASEDIR=${EIRINI_RELEASE_BASEDIR:-$HOME/workspace/eirini-release}
 EIRINI_CI_BASEDIR=${EIRINI_CI_BASEDIR:-$HOME/workspace/eirini-ci}
 EIRINI_RENDER_DIR=$(mktemp -d)
 
+source "$SCRIPT_DIR/assets/cf4k8s/cc-commons.sh"
+
 trap "rm -rf $EIRINI_RENDER_DIR" EXIT
 
+use_local_cc="false"
+use_local_eirini="false"
+delete_kind_cluster="false"
+while getopts "cde" opt; do
+  case ${opt} in
+    c)
+      use_local_cc="true"
+      ;;
+    d)
+      delete_kind_cluster="true"
+      ;;
+    e)
+      use_local_eirini="true"
+      ;;
+  esac
+done
+shift $((OPTIND - 1))
+
 values_file="$SCRIPT_DIR/values/$CLUSTER_NAME.cf-values.yml"
+
+if [[ "$delete_kind_cluster" == "true" ]]; then
+  kind delete cluster --name cf-for-k8s
+  rm -rf "$SCRIPT_DIR/values/cf-for-k8s.cf-values.yml"
+fi
 
 if [[ ! -f "$values_file" ]]; then
   # ask early for pass passphrase if required
@@ -63,19 +88,30 @@ EOF
   # generate eirini yamls
   "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$EIRINI_RENDER_DIR"
 
-  # patch generated eirini yamls into cf-for-k8s
-  rm -rf "./build/eirini/_vendir/eirini"
-  mv "$EIRINI_RENDER_DIR/templates" "./build/eirini/_vendir/eirini"
+  if [[ "$use_local_eirini" == "true" ]]; then
+    # patch generated eirini yamls into cf-for-k8s
+    rm -rf "./build/eirini/_vendir/eirini"
+    mv "$EIRINI_RENDER_DIR/templates" "./build/eirini/_vendir/eirini"
+  fi
 
   # generate config/eirini/_ytt_lib/eirini/rendered.yml
   ./build/eirini/build.sh
 
-  # deploy everything
-  # install Calico to get NetworkPolicy support
-  kapp deploy -y -a calico -f https://docs.projectcalico.org/manifests/calico.yaml
-  kapp deploy -y -a cf -f <(ytt -f config -f "$EIRINI_CI_BASEDIR/cf-for-k8s/add-eirini-app-migration-net-policy.yml" -f "$values_file")
+  if [[ "$use_local_cc" == "true" ]]; then
+    # build & bump cc
+    build_ccng_image
+    push-to-docker
+    sed -i "s|ccng: .*$|ccng: $CCNG_IMAGE:$TAG|" "$HOME/workspace/capi-k8s-release/values/images.yml"
+    "$HOME/workspace/capi-k8s-release/scripts/bump-cf-for-k8s.sh"
+  fi
+
 }
 popd
+
+# deploy everything
+# install Calico to get NetworkPolicy support
+kapp deploy -y -a calico -f https://docs.projectcalico.org/manifests/calico.yaml
+kapp deploy -y -a cf -f <(ytt -f "$HOME/workspace/cf-for-k8s/config" -f "$values_file" $@)
 
 cf api https://api.${CF_DOMAIN} --skip-ssl-validation
 cf auth admin $(yq eval '.cf_admin_password' $values_file)
