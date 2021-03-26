@@ -11,10 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-func Put(ctx context.Context, client *http.Client, uri string, body interface{}) error {
-	return do(ctx, client, "PUT", uri, body)
-}
-
 func Post(ctx context.Context, client *http.Client, uri string, body interface{}) error {
 	return do(ctx, client, "POST", uri, body)
 }
