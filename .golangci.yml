@@ -64,6 +64,8 @@ linters:
     - interfacer
     # maligned is deprecated
     - maligned
+    # scopelint is deprecated
+    - scopelint
 
 issues:
   exclude-use-default: true
