@@ -85,7 +85,9 @@ func (t *Task) CancelTask(ctx context.Context, taskGUID string) error {
 	}
 
 	go func() {
-		_ = t.JSONClient.Post(ctx, callbackURL, cf.TaskCompletedRequest{
+		// We need to pass context.Background() here as the request context
+		// will be cancelled as soon as the HTTP response is returned.
+		_ = t.JSONClient.Post(context.Background(), callbackURL, cf.TaskCompletedRequest{
 			TaskGUID:      taskGUID,
 			Failed:        true,
 			FailureReason: "task was cancelled",
