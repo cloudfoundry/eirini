@@ -20,6 +20,10 @@ linters-settings:
 linters:
   enable-all: true
   disable:
+    # gomoddirectives allows only some or outright bans all replace directives
+    # in the go.mod files. Since importing kubernetes packages is a nighmare
+    # we actually need the replace directive.
+    - gomoddirectives
     # funlen is annoying
     - funlen
     # goerr113 requires to not use errors.New, instead it wants us to define

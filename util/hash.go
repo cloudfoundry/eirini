@@ -14,8 +14,7 @@ const MaxHashLength = 10
 func Hash(s string) (string, error) {
 	sha := sha256.New()
 
-	_, err := sha.Write([]byte(s))
-	if err != nil {
+	if _, err := sha.Write([]byte(s)); err != nil {
 		return "", errors.Wrap(err, "failed to calculate sha")
 	}
 
