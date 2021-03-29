@@ -59,7 +59,7 @@ var _ = Describe("Pdb", func() {
 			Expect(pdbNamespace).To(Equal("namespace"))
 
 			Expect(pdb.Name).To(Equal("name"))
-			Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromInt(1))))
+			Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromString("50%"))))
 			Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(stset.LabelGUID, lrp.GUID))
 			Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(stset.LabelVersion, lrp.Version))
 			Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(stset.LabelSourceType, "APP"))

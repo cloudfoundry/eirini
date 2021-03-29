@@ -91,7 +91,7 @@ var _ = Describe("PodDisruptionBudgets", func() {
 
 	It("creates a default PDB", func() {
 		pdb := getPDB()
-		Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromInt(1))))
+		Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromString("50%"))))
 		Expect(pdb.Spec.MaxUnavailable).To(BeNil())
 	})
 

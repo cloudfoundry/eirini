@@ -19,7 +19,7 @@ type K8sClient interface {
 	Delete(ctx context.Context, namespace string, name string) error
 }
 
-const PdbMinAvailableInstances = 1
+const PdbMinAvailableInstances = "50%"
 
 type CreatorDeleter struct {
 	pdbClient K8sClient
@@ -32,7 +32,7 @@ func NewCreatorDeleter(pdbClient K8sClient) *CreatorDeleter {
 }
 
 func (c *CreatorDeleter) Update(ctx context.Context, namespace, name string, lrp *opi.LRP) error {
-	minAvailable := intstr.FromInt(PdbMinAvailableInstances)
+	minAvailable := intstr.FromString(PdbMinAvailableInstances)
 
 	if lrp.TargetInstances > 1 {
 		_, err := c.pdbClient.Create(ctx, namespace, &v1beta1.PodDisruptionBudget{

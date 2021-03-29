@@ -168,7 +168,7 @@ var _ = Describe("Desire App", func() {
 
 		It("creates a default PDB", func() {
 			pdb := integration.GetPDB(fixture.Clientset, fixture.Namespace, appGUID, "0.0.0")
-			Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromInt(1))))
+			Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromString("50%"))))
 			Expect(pdb.Spec.MaxUnavailable).To(BeNil())
 		})
 	})
