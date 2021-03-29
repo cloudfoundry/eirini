@@ -13,10 +13,7 @@ RUN if [ -z "$GIT_SHA" ]; then echo "GIT_SHA not set"; exit 1; else : ; fi
 FROM ${baseimage}
 COPY --from=builder /eirini/route-statefulset-informer /usr/local/bin/route-statefulset-informer
 USER 1001
-ENTRYPOINT [ "/usr/local/bin/route-statefulset-informer", \
-	"--config", \
-	"/etc/eirini/routing.yml" \
-]
+ENTRYPOINT [ "/usr/local/bin/route-statefulset-informer" ]
 ARG GIT_SHA
 LABEL org.opencontainers.image.revision=$GIT_SHA \
       org.opencontainers.image.source=https://code.cloudfoundry.org/eirini

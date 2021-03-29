@@ -13,11 +13,7 @@ RUN if [ -z "$GIT_SHA" ]; then echo "GIT_SHA not set"; exit 1; else : ; fi
 FROM ${baseimage}
 COPY --from=builder /eirini/eirini /usr/local/bin/opi
 USER 1001
-ENTRYPOINT [ "/usr/local/bin/opi", \
-	"connect", \
-	"--config", \
-	"/etc/eirini/config/api.yml" \
-]
+ENTRYPOINT [ "/usr/local/bin/opi" ]
 ARG GIT_SHA
 LABEL org.opencontainers.image.revision=$GIT_SHA \
       org.opencontainers.image.source=https://code.cloudfoundry.org/eirini
