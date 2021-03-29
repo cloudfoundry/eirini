@@ -108,9 +108,10 @@ EOF
 }
 popd
 
-# deploy everything
 # install Calico to get NetworkPolicy support
 kapp deploy -y -a calico -f https://docs.projectcalico.org/manifests/calico.yaml
+
+# deploy everything
 kapp deploy -y -a cf -f <(ytt -f "$HOME/workspace/cf-for-k8s/config" -f "$values_file" $@)
 
 cf api https://api.${CF_DOMAIN} --skip-ssl-validation
