@@ -50,7 +50,7 @@ func NewLRPToStatefulSetConverter(
 	}
 }
 
-func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *opi.LRP) (*appsv1.StatefulSet, error) {
+func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *opi.LRP, privateRegistrySecret *corev1.Secret) (*appsv1.StatefulSet, error) {
 	envs := shared.MapToEnvVar(lrp.Env)
 	fieldEnvs := []corev1.EnvVar{
 		{
@@ -99,7 +99,7 @@ func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *opi.LRP) (*appsv
 
 	volumes, volumeMounts := getVolumeSpecs(lrp.VolumeMounts)
 	allowPrivilegeEscalation := false
-	imagePullSecrets := c.calculateImagePullSecrets(statefulSetName, lrp)
+	imagePullSecrets := c.calculateImagePullSecrets(privateRegistrySecret)
 
 	containers := []corev1.Container{
 		{
@@ -209,14 +209,14 @@ func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *opi.LRP) (*appsv
 	return statefulSet, nil
 }
 
-func (c *LRPToStatefulSet) calculateImagePullSecrets(statefulSetName string, lrp *opi.LRP) []corev1.LocalObjectReference {
+func (c *LRPToStatefulSet) calculateImagePullSecrets(privateRegistrySecret *corev1.Secret) []corev1.LocalObjectReference {
 	imagePullSecrets := []corev1.LocalObjectReference{
 		{Name: c.registrySecretName},
 	}
 
-	if lrp.PrivateRegistry != nil {
+	if privateRegistrySecret != nil {
 		imagePullSecrets = append(imagePullSecrets, corev1.LocalObjectReference{
-			Name: privateRegistrySecretName(statefulSetName),
+			Name: privateRegistrySecret.Name,
 		})
 	}
 

@@ -6,6 +6,7 @@ import (
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -93,6 +94,30 @@ var _ = Describe("Secrets", func() {
 			Eventually(func() []string {
 				return secretNames(listSecrets(fixture.Namespace))
 			}).ShouldNot(ContainElement("open-secret"))
+		})
+	})
+
+	Describe("set owner", func() {
+		var (
+			secret *corev1.Secret
+			stSet  *appsv1.StatefulSet
+		)
+
+		BeforeEach(func() {
+			secret = createSecret(fixture.Namespace, "open-secret", nil)
+			stSet = createStatefulSetSpec(fixture.Namespace, "foo", nil, nil)
+			stSet.UID = "my-uid"
+			stSet.OwnerReferences = []metav1.OwnerReference{}
+		})
+
+		It("updates owner info", func() {
+			updatedSecret, err := secretClient.SetOwner(ctx, secret, stSet)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(updatedSecret.OwnerReferences).To(HaveLen(1))
+			Expect(updatedSecret.OwnerReferences[0].Name).To(Equal("foo"))
+			Expect(updatedSecret.OwnerReferences[0].Kind).To(Equal("StatefulSet"))
+			Expect(string(updatedSecret.OwnerReferences[0].UID)).To(Equal("my-uid"))
 		})
 	})
 })

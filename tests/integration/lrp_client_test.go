@@ -190,7 +190,9 @@ var _ = Describe("LRPClient", func() {
 
 			It("creates a private registry secret", func() {
 				statefulset := getStatefulSetForLRP(odinLRP)
-				secret, err := getSecret(fixture.Namespace, privateRegistrySecretName(statefulset.Name))
+				Expect(statefulset.Spec.Template.Spec.ImagePullSecrets).To(HaveLen(2))
+				privateRegistrySecretName := statefulset.Spec.Template.Spec.ImagePullSecrets[1].Name
+				secret, err := getSecret(fixture.Namespace, privateRegistrySecretName)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(secret).NotTo(BeNil())
 			})
@@ -264,7 +266,10 @@ var _ = Describe("LRPClient", func() {
 	})
 
 	Describe("Stop", func() {
-		var statefulsetName string
+		var (
+			statefulsetName  string
+			imagePullSecrets []corev1.LocalObjectReference
+		)
 
 		JustBeforeEach(func() {
 			err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
@@ -274,7 +279,9 @@ var _ = Describe("LRPClient", func() {
 				return listPods(odinLRP.LRPIdentifier)
 			}).Should(HaveLen(odinLRP.TargetInstances))
 
-			statefulsetName = getStatefulSetForLRP(odinLRP).Name
+			stSet := getStatefulSetForLRP(odinLRP)
+			statefulsetName = stSet.Name
+			imagePullSecrets = stSet.Spec.Template.Spec.ImagePullSecrets
 
 			err = lrpClient.Stop(ctx, odinLRP.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
@@ -331,8 +338,14 @@ var _ = Describe("LRPClient", func() {
 			})
 
 			It("should delete the private registry secret", func() {
-				_, err := getSecret(fixture.Namespace, privateRegistrySecretName(statefulsetName))
-				Expect(err).To(MatchError(ContainSubstring("not found")))
+				Expect(imagePullSecrets).To(HaveLen(2))
+				privateRegistrySecretName := imagePullSecrets[1].Name
+
+				Eventually(func() error {
+					_, err := getSecret(fixture.Namespace, privateRegistrySecretName)
+
+					return err
+				}).Should(MatchError(ContainSubstring("not found")))
 			})
 		})
 	})
@@ -532,8 +545,4 @@ func getPodPhase(index int, id opi.LRPIdentifier) string {
 	}
 
 	return "Ready"
-}
-
-func privateRegistrySecretName(statefulsetName string) string {
-	return fmt.Sprintf("%s-registry-credentials", statefulsetName)
 }

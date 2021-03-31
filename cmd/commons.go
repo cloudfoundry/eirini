@@ -105,5 +105,5 @@ func GetCertPaths(envVar, defaultPath, name string) (string, string, string) {
 }
 
 func GetLatestMigrationIndex() int {
-	return migrations.CreateMigrationStepsProvider(nil, nil, "").GetLatestMigrationIndex()
+	return migrations.CreateMigrationStepsProvider(nil, nil, nil, "").GetLatestMigrationIndex()
 }

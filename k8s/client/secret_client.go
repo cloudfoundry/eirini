@@ -3,9 +3,14 @@ package client
 import (
 	"context"
 
+	"code.cloudfoundry.org/eirini/k8s/patching"
+	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 type Secret struct {
@@ -42,4 +47,17 @@ func (c *Secret) Delete(ctx context.Context, namespace string, name string) erro
 	defer cancel()
 
 	return c.clientSet.CoreV1().Secrets(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+}
+
+func (c *Secret) SetOwner(ctx context.Context, secret *corev1.Secret, owner *appsv1.StatefulSet) (*corev1.Secret, error) {
+	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
+	defer cancel()
+
+	if err := controllerutil.SetOwnerReference(owner, secret, scheme.Scheme); err != nil {
+		return nil, errors.Wrap(err, "secret-client-set-owner-ref-failed")
+	}
+
+	patch := patching.NewSetOwner(secret.OwnerReferences[0])
+
+	return c.clientSet.CoreV1().Secrets(secret.Namespace).Patch(ctx, secret.Name, patch.Type(), patch.GetPatchBytes(), metav1.PatchOptions{})
 }

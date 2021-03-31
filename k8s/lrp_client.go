@@ -31,6 +31,7 @@ type StatefulSetClient interface {
 type SecretsClient interface {
 	Create(ctx context.Context, namespace string, secret *corev1.Secret) (*corev1.Secret, error)
 	Delete(ctx context.Context, namespace string, name string) error
+	SetOwner(ctx context.Context, secret *corev1.Secret, owner *appsv1.StatefulSet) (*corev1.Secret, error)
 }
 
 type EventsClient interface {
@@ -59,7 +60,7 @@ func NewLRPClient(
 	return &LRPClient{
 		Desirer: stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSetConverter, pdbClient),
 		Lister:  stset.NewLister(logger, statefulSets, statefulSetToLRPConverter),
-		Stopper: stset.NewStopper(logger, statefulSets, statefulSets, pods, secrets),
+		Stopper: stset.NewStopper(logger, statefulSets, statefulSets, pods),
 		Updater: stset.NewUpdater(logger, statefulSets, statefulSets, pdbClient),
 		Getter:  stset.NewGetter(logger, statefulSets, pods, events, statefulSetToLRPConverter),
 	}

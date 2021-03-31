@@ -26,7 +26,7 @@ import (
 var _ = Describe("Desirer", func() {
 	var (
 		logger                     lager.Logger
-		secrets                    *stsetfakes.FakeSecretsCreator
+		secrets                    *stsetfakes.FakeSecretsClient
 		statefulSets               *stsetfakes.FakeStatefulSetCreator
 		lrpToStatefulSetConverter  *stsetfakes.FakeLRPToStatefulSetConverter
 		podDisruptionBudgetUpdater *stsetfakes.FakePodDisruptionBudgetUpdater
@@ -40,10 +40,10 @@ var _ = Describe("Desirer", func() {
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("statefulset-desirer")
-		secrets = new(stsetfakes.FakeSecretsCreator)
+		secrets = new(stsetfakes.FakeSecretsClient)
 		statefulSets = new(stsetfakes.FakeStatefulSetCreator)
 		lrpToStatefulSetConverter = new(stsetfakes.FakeLRPToStatefulSetConverter)
-		lrpToStatefulSetConverter.ConvertStub = func(statefulSetName string, lrp *opi.LRP) (*v1.StatefulSet, error) {
+		lrpToStatefulSetConverter.ConvertStub = func(statefulSetName string, lrp *opi.LRP, _ *corev1.Secret) (*v1.StatefulSet, error) {
 			return &v1.StatefulSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: statefulSetName,
@@ -142,7 +142,17 @@ var _ = Describe("Desirer", func() {
 	})
 
 	When("the app references a private docker image", func() {
+		var registrySecret *corev1.Secret
+
 		BeforeEach(func() {
+			registrySecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "baldur-secret",
+					Namespace: "the-namespace",
+				},
+			}
+			secrets.CreateReturns(registrySecret, nil)
+
 			lrp.PrivateRegistry = &opi.PrivateRegistry{
 				Server:   "host",
 				Username: "user",
@@ -154,7 +164,7 @@ var _ = Describe("Desirer", func() {
 			Expect(secrets.CreateCallCount()).To(Equal(1))
 			_, secretNamespace, actualSecret := secrets.CreateArgsForCall(0)
 			Expect(secretNamespace).To(Equal("the-namespace"))
-			Expect(actualSecret.Name).To(Equal("baldur-space-foo-34f869d015-registry-credentials"))
+			Expect(actualSecret.GenerateName).To(Equal("private-registry-"))
 			Expect(actualSecret.Type).To(Equal(corev1.SecretTypeDockerConfigJson))
 			Expect(actualSecret.StringData).To(
 				HaveKeyWithValue(
@@ -165,6 +175,52 @@ var _ = Describe("Desirer", func() {
 					),
 				),
 			)
+		})
+
+		It("uses that secret when converting to statefulset", func() {
+			Expect(lrpToStatefulSetConverter.ConvertCallCount()).To(Equal(1))
+			_, _, actualRegistrySecret := lrpToStatefulSetConverter.ConvertArgsForCall(0)
+			Expect(actualRegistrySecret).To(Equal(registrySecret))
+		})
+
+		It("sets the statefulset as the secret owner", func() {
+			Expect(secrets.SetOwnerCallCount()).To(Equal(1))
+			_, actualSecret, actualStatefulSet := secrets.SetOwnerArgsForCall(0)
+			Expect(actualSecret.Name).To(Equal("baldur-secret"))
+			Expect(actualStatefulSet.Name).To(Equal("baldur-space-foo-34f869d015"))
+		})
+
+		When("creating the statefulset fails", func() {
+			BeforeEach(func() {
+				statefulSets.CreateReturns(nil, errors.New("potato"))
+			})
+
+			It("deletes the secret", func() {
+				Expect(secrets.DeleteCallCount()).To(Equal(1))
+				_, actualNamespace, actualName := secrets.DeleteArgsForCall(0)
+				Expect(actualNamespace).To(Equal("the-namespace"))
+				Expect(actualName).To(Equal("baldur-secret"))
+			})
+
+			When("deleting the secret fails", func() {
+				BeforeEach(func() {
+					secrets.DeleteReturns(errors.New("delete-secret-failed"))
+				})
+
+				It("returns a statefulset creation error and a note that the secret is not cleaned up", func() {
+					Expect(desireErr).To(MatchError(And(ContainSubstring("potato"), ContainSubstring("delete-secret-failed"))))
+				})
+			})
+		})
+
+		When("setting the statefulset as a secret owner fails", func() {
+			BeforeEach(func() {
+				secrets.SetOwnerReturns(nil, errors.New("set-owner-failed"))
+			})
+
+			It("returns an error", func() {
+				Expect(desireErr).To(MatchError(ContainSubstring("set-owner-failed")))
+			})
 		})
 	})
 })

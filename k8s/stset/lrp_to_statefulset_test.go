@@ -23,6 +23,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		readinessProbeCreator             *stsetfakes.FakeProbeCreator
 		lrp                               *opi.LRP
 		statefulSet                       *appsv1.StatefulSet
+		privateRegistrySecret             *corev1.Secret
 	)
 
 	BeforeEach(func() {
@@ -31,13 +32,14 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		livenessProbeCreator = new(stsetfakes.FakeProbeCreator)
 		readinessProbeCreator = new(stsetfakes.FakeProbeCreator)
 		lrp = createLRP("Baldur", []opi.Route{{Hostname: "my.example.route", Port: 1000}})
+		privateRegistrySecret = nil
 	})
 
 	JustBeforeEach(func() {
 		converter := stset.NewLRPToStatefulSetConverter("eirini", "secret-name", allowAutomountServiceAccountToken, allowRunImageAsRoot, 999, livenessProbeCreator.Spy, readinessProbeCreator.Spy)
 
 		var err error
-		statefulSet, err = converter.Convert("Baldur", lrp)
+		statefulSet, err = converter.Convert("Baldur", lrp, privateRegistrySecret)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -325,12 +327,18 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 				Username: "user",
 				Password: "password",
 			}
+
+			privateRegistrySecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "private-registry-secret",
+				},
+			}
 		})
 
 		It("should add the private repo secret to podImagePullSecret", func() {
 			Expect(statefulSet.Spec.Template.Spec.ImagePullSecrets).To(HaveLen(2))
 			secret := statefulSet.Spec.Template.Spec.ImagePullSecrets[1]
-			Expect(secret.Name).To(Equal("Baldur-registry-credentials"))
+			Expect(secret.Name).To(Equal("private-registry-secret"))
 		})
 	})
 })

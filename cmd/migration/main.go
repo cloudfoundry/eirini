@@ -31,7 +31,8 @@ func main() {
 
 	stSetClient := client.NewStatefulSet(clientset, cfg.WorkloadsNamespace)
 	pdbClient := client.NewPodDisruptionBudget(clientset)
-	provider := migrations.CreateMigrationStepsProvider(stSetClient, pdbClient, cfg.WorkloadsNamespace)
+	secretsClient := client.NewSecret(clientset)
+	provider := migrations.CreateMigrationStepsProvider(stSetClient, pdbClient, secretsClient, cfg.WorkloadsNamespace)
 	executor := migrations.NewExecutor(stSetClient, provider)
 
 	logger := lager.NewLogger("migration")

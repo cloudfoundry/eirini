@@ -12,7 +12,6 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -24,7 +23,6 @@ var _ = Describe("Stop", func() {
 		statefulSetGetter  *stsetfakes.FakeStatefulSetByLRPIdentifierGetter
 		statefulSetDeleter *stsetfakes.FakeStatefulSetDeleter
 		podDeleter         *stsetfakes.FakePodDeleter
-		secretsDeleter     *stsetfakes.FakeSecretsDeleter
 
 		stopper stset.Stopper
 	)
@@ -34,9 +32,8 @@ var _ = Describe("Stop", func() {
 		statefulSetGetter = new(stsetfakes.FakeStatefulSetByLRPIdentifierGetter)
 		statefulSetDeleter = new(stsetfakes.FakeStatefulSetDeleter)
 		podDeleter = new(stsetfakes.FakePodDeleter)
-		secretsDeleter = new(stsetfakes.FakeSecretsDeleter)
 
-		stopper = stset.NewStopper(logger, statefulSetGetter, statefulSetDeleter, podDeleter, secretsDeleter)
+		stopper = stset.NewStopper(logger, statefulSetGetter, statefulSetDeleter, podDeleter)
 	})
 
 	Describe("Stop StatefulSet", func() {
@@ -60,51 +57,6 @@ var _ = Describe("Stop", func() {
 			_, namespace, name := statefulSetDeleter.DeleteArgsForCall(0)
 			Expect(namespace).To(Equal("the-namespace"))
 			Expect(name).To(Equal("baldur"))
-		})
-
-		When("the stateful set runs an image from a private registry", func() {
-			BeforeEach(func() {
-				statefulSets[0].Spec = appsv1.StatefulSetSpec{
-					Template: corev1.PodTemplateSpec{
-						Spec: corev1.PodSpec{
-							ImagePullSecrets: []corev1.LocalObjectReference{
-								{Name: "baldur-registry-credentials"},
-							},
-						},
-					},
-				}
-			})
-
-			It("deletes the secret holding the creds of the private registry", func() {
-				Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
-				Expect(secretsDeleter.DeleteCallCount()).To(Equal(1))
-				_, secretNs, secretName := secretsDeleter.DeleteArgsForCall(0)
-				Expect(secretName).To(Equal("baldur-registry-credentials"))
-				Expect(secretNs).To(Equal("the-namespace"))
-			})
-
-			When("deleting the private registry secret fails", func() {
-				BeforeEach(func() {
-					secretsDeleter.DeleteReturns(errors.New("boom"))
-				})
-
-				It("returns the error", func() {
-					Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(MatchError(ContainSubstring("boom")))
-				})
-			})
-
-			When("the private registry secret does not exist", func() {
-				BeforeEach(func() {
-					secretsDeleter.DeleteReturns(k8serrors.NewNotFound(schema.GroupResource{
-						Group:    "core/v1",
-						Resource: "Secret",
-					}, "foo"))
-				})
-
-				It("succeeds", func() {
-					Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
-				})
-			})
 		})
 
 		When("deletion of stateful set fails", func() {

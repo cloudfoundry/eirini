@@ -8,20 +8,14 @@ import (
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 )
 
 //counterfeiter:generate . StatefulSetDeleter
-//counterfeiter:generate . SecretsDeleter
 //counterfeiter:generate . PodDeleter
 
 type StatefulSetDeleter interface {
-	Delete(ctx context.Context, namespace string, name string) error
-}
-
-type SecretsDeleter interface {
 	Delete(ctx context.Context, namespace string, name string) error
 }
 
@@ -33,7 +27,6 @@ type Stopper struct {
 	logger             lager.Logger
 	statefulSetDeleter StatefulSetDeleter
 	podDeleter         PodDeleter
-	secretsDeleter     SecretsDeleter
 	getStatefulSet     getStatefulSetFunc
 }
 
@@ -42,13 +35,11 @@ func NewStopper(
 	statefulSetGetter StatefulSetByLRPIdentifierGetter,
 	statefulSetDeleter StatefulSetDeleter,
 	podDeleter PodDeleter,
-	secretsDeleter SecretsDeleter,
 ) Stopper {
 	return Stopper{
 		logger:             logger,
 		statefulSetDeleter: statefulSetDeleter,
 		podDeleter:         podDeleter,
-		secretsDeleter:     secretsDeleter,
 		getStatefulSet:     newGetStatefulSetFunc(statefulSetGetter),
 	}
 }
@@ -77,27 +68,10 @@ func (s *Stopper) stop(ctx context.Context, identifier opi.LRPIdentifier) error 
 		return err
 	}
 
-	err = s.deletePrivateRegistrySecret(ctx, statefulSet)
-	if err != nil && !k8serrors.IsNotFound(err) {
-		logger.Error("failed-to-delete-private-registry-secret", err)
-
-		return err
-	}
-
 	if err := s.statefulSetDeleter.Delete(ctx, statefulSet.Namespace, statefulSet.Name); err != nil {
 		logger.Error("failed-to-delete-statefulset", err)
 
 		return errors.Wrap(err, "failed to delete statefulset")
-	}
-
-	return nil
-}
-
-func (s *Stopper) deletePrivateRegistrySecret(ctx context.Context, statefulSet *appsv1.StatefulSet) error {
-	for _, secret := range statefulSet.Spec.Template.Spec.ImagePullSecrets {
-		if secret.Name == privateRegistrySecretName(statefulSet.Name) {
-			return s.secretsDeleter.Delete(ctx, statefulSet.Namespace, secret.Name)
-		}
 	}
 
 	return nil

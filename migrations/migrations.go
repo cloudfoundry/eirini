@@ -6,10 +6,11 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/client"
 )
 
-func CreateMigrationStepsProvider(stSetClient *client.StatefulSet, pdbClient *client.PodDisruptionBudget, workloadsNamespace string) MigrationProvider {
+func CreateMigrationStepsProvider(stSetClient *client.StatefulSet, pdbClient *client.PodDisruptionBudget, secretsClient *client.Secret, workloadsNamespace string) MigrationProvider {
 	migrationSteps := []MigrationStep{
 		NewAdjustCPURequest(stSetClient),
 		NewAdoptPDB(pdbClient),
+		NewAdoptStatefulsetRegistrySecret(secretsClient),
 	}
 
 	return NewMigrationStepsProvider(migrationSteps)
