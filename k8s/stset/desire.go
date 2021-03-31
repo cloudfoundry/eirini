@@ -34,7 +34,7 @@ type StatefulSetCreator interface {
 }
 
 type PodDisruptionBudgetUpdater interface {
-	Update(ctx context.Context, namespace, name string, lrp *opi.LRP) error
+	Update(ctx context.Context, stset *appsv1.StatefulSet, lrp *opi.LRP) error
 }
 
 type Desirer struct {
@@ -88,7 +88,8 @@ func (d *Desirer) Desire(ctx context.Context, namespace string, lrp *opi.LRP, op
 		return err
 	}
 
-	if _, err := d.statefulSets.Create(ctx, namespace, st); err != nil {
+	stset, err := d.statefulSets.Create(ctx, namespace, st)
+	if err != nil {
 		var statusErr *k8serrors.StatusError
 		if errors.As(err, &statusErr) && statusErr.Status().Reason == metav1.StatusReasonAlreadyExists {
 			logger.Debug("statefulset-already-exists", lager.Data{"error": err.Error()})
@@ -99,7 +100,7 @@ func (d *Desirer) Desire(ctx context.Context, namespace string, lrp *opi.LRP, op
 		return errors.Wrap(err, "failed to create statefulset")
 	}
 
-	if err := d.podDisruptionBudgetCreator.Update(ctx, namespace, statefulSetName, lrp); err != nil {
+	if err := d.podDisruptionBudgetCreator.Update(ctx, stset, lrp); err != nil {
 		logger.Error("failed-to-create-pod-disruption-budget", err)
 
 		return errors.Wrap(err, "failed to create pod disruption budget")

@@ -30,7 +30,8 @@ func main() {
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
 	stSetClient := client.NewStatefulSet(clientset, cfg.WorkloadsNamespace)
-	provider := cmdcommons.CreateMigrationStepsProvider(stSetClient, cfg.WorkloadsNamespace)
+	pdbClient := client.NewPodDisruptionBudget(clientset)
+	provider := migrations.CreateMigrationStepsProvider(stSetClient, pdbClient, cfg.WorkloadsNamespace)
 	executor := migrations.NewExecutor(stSetClient, provider)
 
 	logger := lager.NewLogger("migration")

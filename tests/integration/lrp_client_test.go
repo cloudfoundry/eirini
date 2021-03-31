@@ -58,7 +58,7 @@ var _ = Describe("LRPClient", func() {
 			client.NewSecret(fixture.Clientset),
 			client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
 			client.NewPod(fixture.Clientset, fixture.Namespace),
-			pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(fixture.Clientset)),
+			pdb.NewUpdater(client.NewPodDisruptionBudget(fixture.Clientset)),
 			client.NewEvent(fixture.Clientset),
 			lrpToStatefulSetConverter,
 			stset.NewStatefulSetToLRPConverter(),

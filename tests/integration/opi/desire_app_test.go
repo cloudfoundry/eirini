@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
+	"code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	"code.cloudfoundry.org/eirini/tests"
@@ -67,7 +69,8 @@ var _ = Describe("Desire App", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(statefulsets.Items).To(HaveLen(1))
-		Expect(statefulsets.Items[0].Annotations[stset.AnnotationLatestMigration]).To(Equal("1"))
+		latestMigrationIndex := cmd.GetLatestMigrationIndex()
+		Expect(statefulsets.Items[0].Annotations[stset.AnnotationLatestMigration]).To(Equal(strconv.Itoa(latestMigrationIndex)))
 	})
 
 	Context("when the app has user defined annotations", func() {

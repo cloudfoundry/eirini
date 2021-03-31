@@ -13,14 +13,9 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-//counterfeiter:generate . PodDisruptionBudgetDeleter
 //counterfeiter:generate . StatefulSetDeleter
 //counterfeiter:generate . SecretsDeleter
 //counterfeiter:generate . PodDeleter
-
-type PodDisruptionBudgetDeleter interface {
-	Delete(ctx context.Context, namespace string, name string) error
-}
 
 type StatefulSetDeleter interface {
 	Delete(ctx context.Context, namespace string, name string) error
@@ -35,12 +30,11 @@ type PodDeleter interface {
 }
 
 type Stopper struct {
-	logger              lager.Logger
-	statefulSetDeleter  StatefulSetDeleter
-	podDeleter          PodDeleter
-	podDisruptionBudget PodDisruptionBudgetDeleter
-	secretsDeleter      SecretsDeleter
-	getStatefulSet      getStatefulSetFunc
+	logger             lager.Logger
+	statefulSetDeleter StatefulSetDeleter
+	podDeleter         PodDeleter
+	secretsDeleter     SecretsDeleter
+	getStatefulSet     getStatefulSetFunc
 }
 
 func NewStopper(
@@ -48,16 +42,14 @@ func NewStopper(
 	statefulSetGetter StatefulSetByLRPIdentifierGetter,
 	statefulSetDeleter StatefulSetDeleter,
 	podDeleter PodDeleter,
-	podDisruptionBudget PodDisruptionBudgetDeleter,
 	secretsDeleter SecretsDeleter,
 ) Stopper {
 	return Stopper{
-		logger:              logger,
-		statefulSetDeleter:  statefulSetDeleter,
-		podDeleter:          podDeleter,
-		podDisruptionBudget: podDisruptionBudget,
-		secretsDeleter:      secretsDeleter,
-		getStatefulSet:      newGetStatefulSetFunc(statefulSetGetter),
+		logger:             logger,
+		statefulSetDeleter: statefulSetDeleter,
+		podDeleter:         podDeleter,
+		secretsDeleter:     secretsDeleter,
+		getStatefulSet:     newGetStatefulSetFunc(statefulSetGetter),
 	}
 }
 
@@ -83,13 +75,6 @@ func (s *Stopper) stop(ctx context.Context, identifier opi.LRPIdentifier) error 
 		logger.Error("failed-to-get-statefulset", err)
 
 		return err
-	}
-
-	err = s.podDisruptionBudget.Delete(ctx, statefulSet.Namespace, statefulSet.Name)
-	if err != nil && !k8serrors.IsNotFound(err) {
-		logger.Error("failed-to-delete-disruption-budget", err)
-
-		return errors.Wrap(err, "failed to delete pod disruption budget")
 	}
 
 	err = s.deletePrivateRegistrySecret(ctx, statefulSet)

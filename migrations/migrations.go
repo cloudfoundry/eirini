@@ -1,6 +1,19 @@
 package migrations
 
-import "sort"
+import (
+	"sort"
+
+	"code.cloudfoundry.org/eirini/k8s/client"
+)
+
+func CreateMigrationStepsProvider(stSetClient *client.StatefulSet, pdbClient *client.PodDisruptionBudget, workloadsNamespace string) MigrationProvider {
+	migrationSteps := []MigrationStep{
+		NewAdjustCPURequest(stSetClient),
+		NewAdoptPDB(pdbClient),
+	}
+
+	return NewMigrationStepsProvider(migrationSteps)
+}
 
 type MigrationStepsProvider struct {
 	migrationSteps []MigrationStep

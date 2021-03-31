@@ -4,6 +4,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/client"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -13,6 +14,20 @@ var _ = Describe("PodDisruptionBudgets", func() {
 
 	BeforeEach(func() {
 		pdbClient = client.NewPodDisruptionBudget(fixture.Clientset)
+	})
+
+	Describe("Get", func() {
+		BeforeEach(func() {
+			createPDB(fixture.Namespace, "foo")
+			Eventually(func() []policyv1beta1.PodDisruptionBudget { return listPDBs(fixture.Namespace) }).ShouldNot(BeEmpty())
+		})
+
+		It("can get a PDB by namespace and name", func() {
+			foundPDB, err := pdbClient.Get(ctx, fixture.Namespace, "foo")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(foundPDB.Name).To(Equal("foo"))
+			Expect(foundPDB.Namespace).To(Equal(fixture.Namespace))
+		})
 	})
 
 	Describe("Create", func() {
@@ -43,6 +58,31 @@ var _ = Describe("PodDisruptionBudgets", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() []policyv1beta1.PodDisruptionBudget { return listPDBs(fixture.Namespace) }).Should(BeEmpty())
+		})
+	})
+
+	Describe("set owner", func() {
+		var (
+			pdb   *policyv1beta1.PodDisruptionBudget
+			stSet *appsv1.StatefulSet
+		)
+
+		BeforeEach(func() {
+			stSet = createStatefulSetSpec(fixture.Namespace, "foo", nil, nil)
+			stSet.UID = "my-uid"
+			stSet.OwnerReferences = []metav1.OwnerReference{}
+			pdb = createPDB(fixture.Namespace, "foo")
+			Eventually(func() []policyv1beta1.PodDisruptionBudget { return listPDBs(fixture.Namespace) }).ShouldNot(BeEmpty())
+		})
+
+		It("updates owner info", func() {
+			updatedPDB, err := pdbClient.SetOwner(ctx, pdb, stSet)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(updatedPDB.OwnerReferences).To(HaveLen(1))
+			Expect(updatedPDB.OwnerReferences[0].Name).To(Equal("foo"))
+			Expect(updatedPDB.OwnerReferences[0].Kind).To(Equal("StatefulSet"))
+			Expect(string(updatedPDB.OwnerReferences[0].UID)).To(Equal("my-uid"))
 		})
 	})
 })

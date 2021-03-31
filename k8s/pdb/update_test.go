@@ -12,22 +12,33 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	appsv1 "k8s.io/api/apps/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-var _ = Describe("Pdb", func() {
+var _ = Describe("PDB", func() {
 	var (
-		creator   *pdb.CreatorDeleter
+		creator   *pdb.Updater
 		k8sClient *pdbfakes.FakeK8sClient
+		stSet     *appsv1.StatefulSet
 		lrp       *opi.LRP
 		ctx       context.Context
 	)
 
 	BeforeEach(func() {
 		k8sClient = new(pdbfakes.FakeK8sClient)
-		creator = pdb.NewCreatorDeleter(k8sClient)
+		creator = pdb.NewUpdater(k8sClient)
+
+		stSet = &appsv1.StatefulSet{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "name",
+				Namespace: "namespace",
+				UID:       "uid",
+			},
+		}
 
 		lrp = &opi.LRP{
 			LRPIdentifier: opi.LRPIdentifier{
@@ -45,7 +56,7 @@ var _ = Describe("Pdb", func() {
 	Describe("Update", func() {
 		var updateErr error
 		JustBeforeEach(func() {
-			updateErr = creator.Update(ctx, "namespace", "name", lrp)
+			updateErr = creator.Update(ctx, stSet, lrp)
 		})
 
 		It("succeeds", func() {
@@ -63,6 +74,9 @@ var _ = Describe("Pdb", func() {
 			Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(stset.LabelGUID, lrp.GUID))
 			Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(stset.LabelVersion, lrp.Version))
 			Expect(pdb.Spec.Selector.MatchLabels).To(HaveKeyWithValue(stset.LabelSourceType, "APP"))
+			Expect(pdb.OwnerReferences).To(HaveLen(1))
+			Expect(pdb.OwnerReferences[0].Name).To(Equal(stSet.Name))
+			Expect(pdb.OwnerReferences[0].UID).To(Equal(stSet.UID))
 		})
 
 		When("pod disruption budget creation fails", func() {

@@ -40,12 +40,11 @@ func connect(cmd *cobra.Command, args []string) {
 	cfg := setConfigFromFile(path)
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
-	stSetClient := client.NewStatefulSet(clientset, cfg.WorkloadsNamespace)
-	provider := cmdcommons.CreateMigrationStepsProvider(stSetClient, cfg.WorkloadsNamespace)
+	latestMigrationIndex := cmdcommons.GetLatestMigrationIndex()
 
 	dockerStagingBifrost := initDockerStagingBifrost(cfg)
 	taskBifrost := initTaskBifrost(cfg, clientset)
-	bifrost := initLRPBifrost(clientset, cfg, provider.GetLatestMigrationIndex())
+	bifrost := initLRPBifrost(clientset, cfg, latestMigrationIndex)
 
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
@@ -193,7 +192,7 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.APIConfig, lates
 		client.NewSecret(clientset),
 		client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
 		client.NewPod(clientset, cfg.WorkloadsNamespace),
-		pdb.NewCreatorDeleter(client.NewPodDisruptionBudget(clientset)),
+		pdb.NewUpdater(client.NewPodDisruptionBudget(clientset)),
 		client.NewEvent(clientset),
 		lrpToStatefulSetConverter,
 		stset.NewStatefulSetToLRPConverter(),

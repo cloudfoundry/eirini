@@ -127,8 +127,8 @@ func listPDBs(ns string) []policyv1beta1.PodDisruptionBudget {
 	return pdbs.Items
 }
 
-func createPDB(ns, name string) {
-	_, err := fixture.Clientset.PolicyV1beta1().PodDisruptionBudgets(ns).Create(
+func createPDB(ns, name string) *policyv1beta1.PodDisruptionBudget {
+	pdb, err := fixture.Clientset.PolicyV1beta1().PodDisruptionBudgets(ns).Create(
 		context.Background(),
 		&policyv1beta1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
@@ -138,6 +138,8 @@ func createPDB(ns, name string) {
 		metav1.CreateOptions{},
 	)
 	Expect(err).NotTo(HaveOccurred())
+
+	return pdb
 }
 
 func createStatefulSetSpec(ns, name string, labels map[string]string, containers []corev1.Container) *appsv1.StatefulSet {

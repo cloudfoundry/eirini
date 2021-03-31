@@ -24,7 +24,6 @@ var _ = Describe("Stop", func() {
 		statefulSetGetter  *stsetfakes.FakeStatefulSetByLRPIdentifierGetter
 		statefulSetDeleter *stsetfakes.FakeStatefulSetDeleter
 		podDeleter         *stsetfakes.FakePodDeleter
-		pdbDeleter         *stsetfakes.FakePodDisruptionBudgetDeleter
 		secretsDeleter     *stsetfakes.FakeSecretsDeleter
 
 		stopper stset.Stopper
@@ -35,10 +34,9 @@ var _ = Describe("Stop", func() {
 		statefulSetGetter = new(stsetfakes.FakeStatefulSetByLRPIdentifierGetter)
 		statefulSetDeleter = new(stsetfakes.FakeStatefulSetDeleter)
 		podDeleter = new(stsetfakes.FakePodDeleter)
-		pdbDeleter = new(stsetfakes.FakePodDisruptionBudgetDeleter)
 		secretsDeleter = new(stsetfakes.FakeSecretsDeleter)
 
-		stopper = stset.NewStopper(logger, statefulSetGetter, statefulSetDeleter, podDeleter, pdbDeleter, secretsDeleter)
+		stopper = stset.NewStopper(logger, statefulSetGetter, statefulSetDeleter, podDeleter, secretsDeleter)
 	})
 
 	Describe("Stop StatefulSet", func() {
@@ -54,11 +52,6 @@ var _ = Describe("Stop", func() {
 				},
 			}
 			statefulSetGetter.GetByLRPIdentifierReturns(statefulSets, nil)
-			pdbDeleter.DeleteReturns(k8serrors.NewNotFound(schema.GroupResource{
-				Group:    "policy/v1beta1",
-				Resource: "PodDisruptionBudet",
-			},
-				"foo"))
 		})
 
 		It("deletes the statefulSet", func() {
@@ -67,14 +60,6 @@ var _ = Describe("Stop", func() {
 			_, namespace, name := statefulSetDeleter.DeleteArgsForCall(0)
 			Expect(namespace).To(Equal("the-namespace"))
 			Expect(name).To(Equal("baldur"))
-		})
-
-		It("should delete any corresponding pod disruption budgets", func() {
-			Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
-			Expect(pdbDeleter.DeleteCallCount()).To(Equal(1))
-			_, namespace, pdbName := pdbDeleter.DeleteArgsForCall(0)
-			Expect(namespace).To(Equal("the-namespace"))
-			Expect(pdbName).To(Equal("baldur"))
 		})
 
 		When("the stateful set runs an image from a private registry", func() {
@@ -140,14 +125,6 @@ var _ = Describe("Stop", func() {
 				statefulSetDeleter.DeleteReturnsOnCall(1, nil)
 				Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(Succeed())
 				Expect(statefulSetDeleter.DeleteCallCount()).To(Equal(2))
-			})
-		})
-
-		When("pdb deletion fails", func() {
-			It("returns an error", func() {
-				pdbDeleter.DeleteReturns(errors.New("boom"))
-
-				Expect(stopper.Stop(ctx, opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})).To(MatchError(ContainSubstring("boom")))
 			})
 		})
 

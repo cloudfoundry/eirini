@@ -17,8 +17,7 @@ type PodClient interface {
 }
 
 type PodDisruptionBudgetClient interface {
-	Update(ctx context.Context, namespace, name string, lrp *opi.LRP) error
-	Delete(ctx context.Context, namespace string, name string) error
+	Update(ctx context.Context, stset *appsv1.StatefulSet, lrp *opi.LRP) error
 }
 
 type StatefulSetClient interface {
@@ -60,7 +59,7 @@ func NewLRPClient(
 	return &LRPClient{
 		Desirer: stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSetConverter, pdbClient),
 		Lister:  stset.NewLister(logger, statefulSets, statefulSetToLRPConverter),
-		Stopper: stset.NewStopper(logger, statefulSets, statefulSets, pods, pdbClient, secrets),
+		Stopper: stset.NewStopper(logger, statefulSets, statefulSets, pods, secrets),
 		Updater: stset.NewUpdater(logger, statefulSets, statefulSets, pdbClient),
 		Getter:  stset.NewGetter(logger, statefulSets, pods, events, statefulSetToLRPConverter),
 	}

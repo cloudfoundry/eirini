@@ -2,7 +2,9 @@ package eirini_controller_test
 
 import (
 	"context"
+	"strconv"
 
+	"code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
@@ -81,7 +83,10 @@ var _ = Describe("App", func() {
 				HaveKeyWithValue(stset.LabelSourceType, "APP"),
 				HaveKeyWithValue(stset.LabelAppGUID, "the-app-guid"),
 			))
-			Expect(st.Annotations).To(HaveKeyWithValue(stset.AnnotationLatestMigration, "1"))
+
+			latestMigrationIndex := cmd.GetLatestMigrationIndex()
+			Expect(st.Annotations).To(HaveKeyWithValue(stset.AnnotationLatestMigration, strconv.Itoa(latestMigrationIndex)))
+
 			Expect(st.Spec.Replicas).To(PointTo(Equal(int32(1))))
 			Expect(st.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(BeTrue()))
 			Expect(st.Spec.Template.Spec.Containers[0].Image).To(Equal("eirini/dorini"))

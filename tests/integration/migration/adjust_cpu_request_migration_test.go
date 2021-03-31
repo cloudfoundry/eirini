@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
+	"code.cloudfoundry.org/eirini/migrations"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -66,7 +67,7 @@ var _ = Describe("Adjust CPU request migration", func() {
 
 		version, err := strconv.Atoi(stSet.Annotations[stset.AnnotationLatestMigration])
 		Expect(err).NotTo(HaveOccurred())
-		Expect(version).To(BeNumerically(">", 0))
+		Expect(version).To(BeNumerically(">=", migrations.AdjustCPUResourceSequenceID))
 	})
 
 	It("sets the cpu resource limit of the opi container to the value of the original request annotation", func() {

@@ -74,7 +74,7 @@ func (u *Updater) update(ctx context.Context, lrp *opi.LRP) error {
 		return errors.Wrap(err, "failed to update statefulset")
 	}
 
-	if err = u.pdbUpdater.Update(ctx, statefulSet.Namespace, statefulSet.Name, lrp); err != nil {
+	if err = u.pdbUpdater.Update(ctx, statefulSet, lrp); err != nil {
 		logger.Error("failed-to-update-disruption-budget", err, lager.Data{"namespace": statefulSet.Namespace})
 
 		return errors.Wrap(err, "failed to delete pod disruption budget")

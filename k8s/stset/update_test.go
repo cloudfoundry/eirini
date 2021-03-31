@@ -101,9 +101,9 @@ var _ = Describe("Update", func() {
 
 	It("updates the pod disruption budget", func() {
 		Expect(pdbUpdater.UpdateCallCount()).To(Equal(1))
-		_, actualNamespace, actualName, actualLRP := pdbUpdater.UpdateArgsForCall(0)
-		Expect(actualNamespace).To(Equal("the-namespace"))
-		Expect(actualName).To(Equal("baldur"))
+		_, actualStatefulSet, actualLRP := pdbUpdater.UpdateArgsForCall(0)
+		Expect(actualStatefulSet.Namespace).To(Equal("the-namespace"))
+		Expect(actualStatefulSet.Name).To(Equal("baldur"))
 		Expect(actualLRP).To(Equal(updatedLRP))
 	})
 

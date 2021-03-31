@@ -1,6 +1,7 @@
 package stset_test
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
@@ -49,6 +50,9 @@ var _ = Describe("Desirer", func() {
 				},
 			}, nil
 		}
+		statefulSets.CreateStub = func(_ context.Context, _ string, stSet *v1.StatefulSet) (*v1.StatefulSet, error) {
+			return stSet, nil
+		}
 
 		podDisruptionBudgetUpdater = new(stsetfakes.FakePodDisruptionBudgetUpdater)
 		lrp = createLRP("Baldur", []opi.Route{{Hostname: "my.example.route", Port: 1000}})
@@ -76,9 +80,9 @@ var _ = Describe("Desirer", func() {
 
 	It("updates the pod disruption budget", func() {
 		Expect(podDisruptionBudgetUpdater.UpdateCallCount()).To(Equal(1))
-		_, actualNamespace, actualName, actualLRP := podDisruptionBudgetUpdater.UpdateArgsForCall(0)
-		Expect(actualNamespace).To(Equal("the-namespace"))
-		Expect(actualName).To(Equal("baldur-space-foo-34f869d015"))
+		_, actualStatefulSet, actualLRP := podDisruptionBudgetUpdater.UpdateArgsForCall(0)
+		Expect(actualStatefulSet.Namespace).To(Equal("the-namespace"))
+		Expect(actualStatefulSet.Name).To(Equal("baldur-space-foo-34f869d015"))
 		Expect(actualLRP).To(Equal(lrp))
 	})
 

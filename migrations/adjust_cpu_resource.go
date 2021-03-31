@@ -28,7 +28,7 @@ type AdjustCPURequest struct {
 }
 
 func (m AdjustCPURequest) SequenceID() int {
-	return 1
+	return AdjustCPUResourceSequenceID
 }
 
 type originalRequest struct {
