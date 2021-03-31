@@ -9,6 +9,7 @@ import (
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
+	"github.com/jinzhu/copier"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -177,6 +178,12 @@ var _ = Describe("App", func() {
 
 	Describe("Update an app", func() {
 		var clientErr error
+		var updatedLRP *eiriniv1.LRP
+
+		BeforeEach(func() {
+			updatedLRP = &eiriniv1.LRP{}
+			Expect(copier.Copy(updatedLRP, lrp)).To(Succeed())
+		})
 
 		JustBeforeEach(func() {
 			_, err := fixture.EiriniClientset.
@@ -190,16 +197,17 @@ var _ = Describe("App", func() {
 
 				return lrp.Status.Replicas
 			}).Should(Equal(int32(1)))
+			updatedLRP.ResourceVersion = integration.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName).ResourceVersion
 
 			_, clientErr = fixture.EiriniClientset.
 				EiriniV1().
 				LRPs(fixture.Namespace).
-				Update(context.Background(), lrp, metav1.UpdateOptions{})
+				Update(context.Background(), updatedLRP, metav1.UpdateOptions{})
 		})
 
 		When("routes are updated", func() {
 			BeforeEach(func() {
-				lrp.Spec.AppRoutes = []eiriniv1.Route{{Hostname: "another-hostname-1", Port: 8080}}
+				updatedLRP.Spec.AppRoutes = []eiriniv1.Route{{Hostname: "another-hostname-1", Port: 8080}}
 			})
 
 			It("succeeds", func() {
@@ -215,7 +223,7 @@ var _ = Describe("App", func() {
 
 		When("the image is updated", func() {
 			BeforeEach(func() {
-				lrp.Spec.Image = "eirini/custom-port"
+				updatedLRP.Spec.Image = "eirini/custom-port"
 			})
 
 			It("updates the underlying statefulset", func() {
@@ -227,7 +235,7 @@ var _ = Describe("App", func() {
 
 		When("instance count is updated", func() {
 			BeforeEach(func() {
-				lrp.Spec.Instances = 3
+				updatedLRP.Spec.Instances = 3
 			})
 
 			It("updates the underlying statefulset", func() {
