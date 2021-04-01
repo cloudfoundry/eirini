@@ -259,3 +259,12 @@ var _ = Describe("StatefulSets", func() {
 		})
 	})
 })
+
+func statefulSetNames(statefulSets []appsv1.StatefulSet) []string {
+	names := make([]string, 0, len(statefulSets))
+	for _, statefulSet := range statefulSets {
+		names = append(names, statefulSet.Name)
+	}
+
+	return names
+}

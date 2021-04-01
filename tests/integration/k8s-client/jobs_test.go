@@ -1,6 +1,9 @@
 package integration_test
 
 import (
+	"context"
+	"fmt"
+
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/tests"
@@ -234,3 +237,36 @@ var _ = Describe("Jobs", func() {
 		})
 	})
 })
+
+func jobNames(jobs []batchv1.Job) []string {
+	names := make([]string, 0, len(jobs))
+	for _, job := range jobs {
+		names = append(names, job.Name)
+	}
+
+	return names
+}
+
+func jobGUIDs(allJobs []batchv1.Job) []string {
+	guids := make([]string, 0, len(allJobs))
+	for _, job := range allJobs {
+		guids = append(guids, job.Labels[jobs.LabelGUID])
+	}
+
+	return guids
+}
+
+func getJob(taskGUID string) (*batchv1.Job, error) {
+	jobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", jobs.LabelGUID, taskGUID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(jobs.Items) != 1 {
+		return nil, fmt.Errorf("expected 1 job with guid %s, got %d", taskGUID, len(jobs.Items))
+	}
+
+	return &jobs.Items[0], nil
+}
