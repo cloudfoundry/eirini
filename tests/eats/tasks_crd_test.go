@@ -2,7 +2,6 @@ package eats_test
 
 import (
 	"context"
-	"fmt"
 
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
@@ -86,14 +85,7 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 			})
 
 			It("runs the task", func() {
-				Eventually(func() (string, error) {
-					val, err := pingLRPFn(fixture.Namespace, taskServiceName, port, "/")()
-					if err != nil {
-						fmt.Printf("err = %+v\n", err)
-					}
-
-					return val, err
-				}).Should(ContainSubstring("Dora!"))
+				Eventually(pingLRPFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
 			})
 		})
 	})
