@@ -3,7 +3,6 @@ package jobs
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
@@ -11,34 +10,26 @@ import (
 )
 
 //counterfeiter:generate . JobDeleter
-//counterfeiter:generate . SecretDeleter
 
 type JobDeleter interface {
 	Delete(ctx context.Context, namespace string, name string) error
 }
 
-type SecretDeleter interface {
-	Delete(ctx context.Context, namespace, name string) error
-}
-
 type Deleter struct {
-	logger        lager.Logger
-	jobGetter     JobGetter
-	jobDeleter    JobDeleter
-	secretDeleter SecretDeleter
+	logger     lager.Logger
+	jobGetter  JobGetter
+	jobDeleter JobDeleter
 }
 
 func NewDeleter(
 	logger lager.Logger,
 	jobGetter JobGetter,
 	jobDeleter JobDeleter,
-	secretDeleter SecretDeleter,
 ) Deleter {
 	return Deleter{
-		logger:        logger,
-		jobGetter:     jobGetter,
-		jobDeleter:    jobDeleter,
-		secretDeleter: secretDeleter,
+		logger:     logger,
+		jobGetter:  jobGetter,
+		jobDeleter: jobDeleter,
 	}
 }
 
@@ -71,10 +62,6 @@ func (d *Deleter) getJobByGUID(ctx context.Context, logger lager.Logger, guid st
 }
 
 func (d *Deleter) delete(ctx context.Context, logger lager.Logger, job batchv1.Job) (string, error) {
-	if err := d.deleteDockerRegistrySecret(ctx, logger, job); err != nil {
-		return "", err
-	}
-
 	callbackURL := job.Annotations[AnnotationCompletionCallback]
 
 	if len(job.OwnerReferences) != 0 {
@@ -88,26 +75,4 @@ func (d *Deleter) delete(ctx context.Context, logger lager.Logger, job batchv1.J
 	}
 
 	return callbackURL, nil
-}
-
-func (d *Deleter) deleteDockerRegistrySecret(ctx context.Context, logger lager.Logger, job batchv1.Job) error {
-	dockerSecretNamePrefix := dockerImagePullSecretNamePrefix(
-		job.Annotations[AnnotationAppName],
-		job.Annotations[AnnotationSpaceName],
-		job.Labels[LabelGUID],
-	)
-
-	for _, secret := range job.Spec.Template.Spec.ImagePullSecrets {
-		if !strings.HasPrefix(secret.Name, dockerSecretNamePrefix) {
-			continue
-		}
-
-		if err := d.secretDeleter.Delete(ctx, job.Namespace, secret.Name); err != nil {
-			logger.Error("failed-to-delete-secret", err, lager.Data{"name": secret.Name, "namespace": job.Namespace})
-
-			return errors.Wrap(err, "failed to delete secret")
-		}
-	}
-
-	return nil
 }

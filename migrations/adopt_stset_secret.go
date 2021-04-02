@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -14,7 +15,7 @@ import (
 
 type SecretsClient interface {
 	Get(ctx context.Context, namespace, name string) (*corev1.Secret, error)
-	SetOwner(ctx context.Context, secret *corev1.Secret, owner *appsv1.StatefulSet) (*corev1.Secret, error)
+	SetOwner(ctx context.Context, secret *corev1.Secret, owner metav1.Object) (*corev1.Secret, error)
 }
 
 type AdoptStatefulsetRegistrySecret struct {
@@ -39,14 +40,14 @@ func (m AdoptStatefulsetRegistrySecret) Apply(ctx context.Context, obj runtime.O
 			continue
 		}
 
-		privateRegistrySecret, err := m.secretsClient.Get(ctx, stSet.Namespace, imagePullSecrets[1].Name)
+		privateRegistrySecret, err := m.secretsClient.Get(ctx, stSet.Namespace, secret.Name)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get secret %s", imagePullSecrets[1].Name)
+			return errors.Wrapf(err, "failed to get secret %s", secret.Name)
 		}
 
 		_, err = m.secretsClient.SetOwner(ctx, privateRegistrySecret, stSet)
 		if err != nil {
-			return errors.Wrapf(err, "failed to set ownership on secret %s", imagePullSecrets[1].Name)
+			return errors.Wrapf(err, "failed to set ownership on secret %s", secret.Name)
 		}
 	}
 
@@ -59,4 +60,8 @@ func (m AdoptStatefulsetRegistrySecret) SequenceID() int {
 
 func registryCredentialsSecretName(statefulSetName string) string {
 	return fmt.Sprintf("%s-registry-credentials", statefulSetName)
+}
+
+func (m AdoptStatefulsetRegistrySecret) AppliesTo() ObjectType {
+	return StatefulSetObjectType
 }

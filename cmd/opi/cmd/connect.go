@@ -43,7 +43,7 @@ func connect(cmd *cobra.Command, args []string) {
 	latestMigrationIndex := cmdcommons.GetLatestMigrationIndex()
 
 	dockerStagingBifrost := initDockerStagingBifrost(cfg)
-	taskBifrost := initTaskBifrost(cfg, clientset)
+	taskBifrost := initTaskBifrost(cfg, clientset, latestMigrationIndex)
 	bifrost := initLRPBifrost(clientset, cfg, latestMigrationIndex)
 
 	handlerLogger := lager.NewLogger("handler")
@@ -118,7 +118,7 @@ func initStagingCompleter(cfg *eirini.APIConfig, logger lager.Logger) *stager.Ca
 	return stager.NewCallbackStagingCompleter(logger, retryableJSONClient)
 }
 
-func initTaskClient(cfg *eirini.APIConfig, clientset kubernetes.Interface) *k8s.TaskClient {
+func initTaskClient(cfg *eirini.APIConfig, clientset kubernetes.Interface, latestMigrationIndex int) *k8s.TaskClient {
 	logger := lager.NewLogger("task-desirer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
@@ -126,6 +126,7 @@ func initTaskClient(cfg *eirini.APIConfig, clientset kubernetes.Interface) *k8s.
 		cfg.ApplicationServiceAccount,
 		cfg.RegistrySecretName,
 		cfg.UnsafeAllowAutomountServiceAccountToken,
+		latestMigrationIndex,
 	)
 
 	return k8s.NewTaskClient(
@@ -149,9 +150,9 @@ func initDockerStagingBifrost(cfg *eirini.APIConfig) *bifrost.DockerStaging {
 	}
 }
 
-func initTaskBifrost(cfg *eirini.APIConfig, clientset kubernetes.Interface) *bifrost.Task {
+func initTaskBifrost(cfg *eirini.APIConfig, clientset kubernetes.Interface, latestMigrationIndex int) *bifrost.Task {
 	converter := initConverter(cfg)
-	taskClient := initTaskClient(cfg, clientset)
+	taskClient := initTaskClient(cfg, clientset, latestMigrationIndex)
 	retryableJSONClient := initRetryableJSONClient(cfg)
 	namespacer := bifrost.NewNamespacer(cfg.DefaultWorkloadsNamespace)
 

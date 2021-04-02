@@ -79,6 +79,21 @@ func (c *Job) List(ctx context.Context, includeCompleted bool) ([]batchv1.Job, e
 	return jobs.Items, errors.Wrap(err, "failed to list jobs")
 }
 
+func (c *Job) SetAnnotation(ctx context.Context, job *batchv1.Job, key, value string) (*batchv1.Job, error) {
+	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
+	defer cancel()
+
+	annotation := patching.NewAnnotation(key, value)
+
+	return c.clientSet.BatchV1().Jobs(job.Namespace).Patch(
+		ctx,
+		job.Name,
+		annotation.Type(),
+		annotation.GetPatchBytes(),
+		metav1.PatchOptions{},
+	)
+}
+
 func (c *Job) SetLabel(ctx context.Context, job *batchv1.Job, label, value string) (*batchv1.Job, error) {
 	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
 	defer cancel()

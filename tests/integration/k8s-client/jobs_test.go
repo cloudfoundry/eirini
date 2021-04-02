@@ -174,6 +174,31 @@ var _ = Describe("Jobs", func() {
 		})
 	})
 
+	Describe("SetAnnotation", func() {
+		BeforeEach(func() {
+			createJob(fixture.Namespace, "foo", map[string]string{
+				jobs.LabelGUID:       "the-task-guid",
+				jobs.LabelSourceType: "TASK",
+			})
+		})
+
+		It("sets the annotation", func() {
+			Eventually(func() []batchv1.Job { return listJobs(fixture.Namespace) }).ShouldNot(BeEmpty())
+
+			job, err := getJob("the-task-guid")
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = jobsClient.SetAnnotation(ctx, job, "foo", "bar")
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() string {
+				job, err := getJob("the-task-guid")
+				Expect(err).NotTo(HaveOccurred())
+
+				return job.Annotations["foo"]
+			}).Should(Equal("bar"))
+		})
+	})
 	Describe("SetLabel", func() {
 		var (
 			taskGUID       string
@@ -201,7 +226,7 @@ var _ = Describe("Jobs", func() {
 			newJob, err = jobsClient.SetLabel(ctx, oldJob, label, value)
 		})
 
-		It("adds the foo label", func() {
+		It("adds the label", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(newJob.Labels).To(HaveKeyWithValue("foo", "bar"))
 		})

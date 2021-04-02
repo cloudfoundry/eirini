@@ -52,3 +52,7 @@ func (m AdoptPDB) Apply(ctx context.Context, obj runtime.Object) error {
 func (m AdoptPDB) SequenceID() int {
 	return AdoptPDBSequenceID
 }
+
+func (m AdoptPDB) AppliesTo() ObjectType {
+	return StatefulSetObjectType
+}

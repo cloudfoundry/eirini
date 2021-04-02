@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"fmt"
+	"strconv"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/shared"
@@ -22,21 +23,24 @@ type Converter struct {
 	serviceAccountName                string
 	registrySecretName                string
 	allowAutomountServiceAccountToken bool
+	latestMigration                   int
 }
 
 func NewTaskToJobConverter(
 	serviceAccountName string,
 	registrySecretName string,
 	allowAutomountServiceAccountToken bool,
+	latestMigration int,
 ) *Converter {
 	return &Converter{
 		serviceAccountName:                serviceAccountName,
 		registrySecretName:                registrySecretName,
 		allowAutomountServiceAccountToken: allowAutomountServiceAccountToken,
+		latestMigration:                   latestMigration,
 	}
 }
 
-func (m *Converter) Convert(task *opi.Task) *batch.Job {
+func (m *Converter) Convert(task *opi.Task, privateRegistrySecret *corev1.Secret) *batch.Job {
 	job := m.toJob(task)
 	job.Spec.Template.Spec.ServiceAccountName = m.serviceAccountName
 	job.Labels[LabelSourceType] = taskSourceType
@@ -61,6 +65,11 @@ func (m *Converter) Convert(task *opi.Task) *batch.Job {
 		{
 			Name: m.registrySecretName,
 		},
+	}
+
+	if privateRegistrySecret != nil {
+		job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets,
+			corev1.LocalObjectReference{Name: privateRegistrySecret.Name})
 	}
 
 	job.Spec.Template.Spec.Containers = containers
@@ -107,13 +116,14 @@ func (m *Converter) toJob(task *opi.Task) *batch.Job {
 	}
 
 	job.Annotations = map[string]string{
-		AnnotationAppName:              task.AppName,
-		AnnotationAppID:                task.AppGUID,
-		AnnotationOrgName:              task.OrgName,
-		AnnotationOrgGUID:              task.OrgGUID,
-		AnnotationSpaceName:            task.SpaceName,
-		AnnotationSpaceGUID:            task.SpaceGUID,
-		corev1.SeccompPodAnnotationKey: corev1.SeccompProfileRuntimeDefault,
+		AnnotationAppName:                task.AppName,
+		AnnotationAppID:                  task.AppGUID,
+		AnnotationOrgName:                task.OrgName,
+		AnnotationOrgGUID:                task.OrgGUID,
+		AnnotationSpaceName:              task.SpaceName,
+		AnnotationSpaceGUID:              task.SpaceGUID,
+		corev1.SeccompPodAnnotationKey:   corev1.SeccompProfileRuntimeDefault,
+		shared.AnnotationLatestMigration: strconv.Itoa(m.latestMigration),
 	}
 
 	job.Spec.Template.Labels = job.Labels

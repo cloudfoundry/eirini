@@ -10,6 +10,16 @@ import (
 )
 
 type FakeMigrationStep struct {
+	AppliesToStub        func() migrations.ObjectType
+	appliesToMutex       sync.RWMutex
+	appliesToArgsForCall []struct {
+	}
+	appliesToReturns struct {
+		result1 migrations.ObjectType
+	}
+	appliesToReturnsOnCall map[int]struct {
+		result1 migrations.ObjectType
+	}
 	ApplyStub        func(context.Context, runtime.Object) error
 	applyMutex       sync.RWMutex
 	applyArgsForCall []struct {
@@ -34,6 +44,59 @@ type FakeMigrationStep struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeMigrationStep) AppliesTo() migrations.ObjectType {
+	fake.appliesToMutex.Lock()
+	ret, specificReturn := fake.appliesToReturnsOnCall[len(fake.appliesToArgsForCall)]
+	fake.appliesToArgsForCall = append(fake.appliesToArgsForCall, struct {
+	}{})
+	stub := fake.AppliesToStub
+	fakeReturns := fake.appliesToReturns
+	fake.recordInvocation("AppliesTo", []interface{}{})
+	fake.appliesToMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeMigrationStep) AppliesToCallCount() int {
+	fake.appliesToMutex.RLock()
+	defer fake.appliesToMutex.RUnlock()
+	return len(fake.appliesToArgsForCall)
+}
+
+func (fake *FakeMigrationStep) AppliesToCalls(stub func() migrations.ObjectType) {
+	fake.appliesToMutex.Lock()
+	defer fake.appliesToMutex.Unlock()
+	fake.AppliesToStub = stub
+}
+
+func (fake *FakeMigrationStep) AppliesToReturns(result1 migrations.ObjectType) {
+	fake.appliesToMutex.Lock()
+	defer fake.appliesToMutex.Unlock()
+	fake.AppliesToStub = nil
+	fake.appliesToReturns = struct {
+		result1 migrations.ObjectType
+	}{result1}
+}
+
+func (fake *FakeMigrationStep) AppliesToReturnsOnCall(i int, result1 migrations.ObjectType) {
+	fake.appliesToMutex.Lock()
+	defer fake.appliesToMutex.Unlock()
+	fake.AppliesToStub = nil
+	if fake.appliesToReturnsOnCall == nil {
+		fake.appliesToReturnsOnCall = make(map[int]struct {
+			result1 migrations.ObjectType
+		})
+	}
+	fake.appliesToReturnsOnCall[i] = struct {
+		result1 migrations.ObjectType
+	}{result1}
 }
 
 func (fake *FakeMigrationStep) Apply(arg1 context.Context, arg2 runtime.Object) error {
@@ -154,6 +217,8 @@ func (fake *FakeMigrationStep) SequenceIDReturnsOnCall(i int, result1 int) {
 func (fake *FakeMigrationStep) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.appliesToMutex.RLock()
+	defer fake.appliesToMutex.RUnlock()
 	fake.applyMutex.RLock()
 	defer fake.applyMutex.RUnlock()
 	fake.sequenceIDMutex.RLock()

@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type PodClient interface {
@@ -31,7 +32,7 @@ type StatefulSetClient interface {
 type SecretsClient interface {
 	Create(ctx context.Context, namespace string, secret *corev1.Secret) (*corev1.Secret, error)
 	Delete(ctx context.Context, namespace string, name string) error
-	SetOwner(ctx context.Context, secret *corev1.Secret, owner *appsv1.StatefulSet) (*corev1.Secret, error)
+	SetOwner(ctx context.Context, secret *corev1.Secret, owner metav1.Object) (*corev1.Secret, error)
 }
 
 type EventsClient interface {

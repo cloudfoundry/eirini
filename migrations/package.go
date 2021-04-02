@@ -6,4 +6,5 @@ const (
 	AdjustCPUResourceSequenceID = 1
 	AdoptPDBSequenceID          = 2
 	AdoptStSetSecretSequenceID  = 3
+	AdoptJobSecretSequenceID    = 4
 )

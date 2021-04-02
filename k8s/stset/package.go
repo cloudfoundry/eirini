@@ -16,7 +16,6 @@ const (
 	AnnotationOriginalRequest      = "cloudfoundry.org/original_request"
 	AnnotationLastReportedAppCrash = "cloudfoundry.org/last_reported_app_crash"
 	AnnotationLastReportedLRPCrash = "cloudfoundry.org/last_reported_lrp_crash"
-	AnnotationLatestMigration      = "eirini.cloudfoundry.org/latestMigration"
 
 	AppSourceType = "APP"
 
@@ -32,5 +31,6 @@ const (
 
 	OPIContainerName = "opi"
 
-	PdbMinAvailableInstances = 1
+	PdbMinAvailableInstances          = 1
+	PrivateRegistrySecretGenerateName = "private-registry-"
 )

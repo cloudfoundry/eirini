@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -30,15 +31,16 @@ func main() {
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
 	stSetClient := client.NewStatefulSet(clientset, cfg.WorkloadsNamespace)
+	jobClient := client.NewJob(clientset, cfg.WorkloadsNamespace)
 	pdbClient := client.NewPodDisruptionBudget(clientset)
 	secretsClient := client.NewSecret(clientset)
-	provider := migrations.CreateMigrationStepsProvider(stSetClient, pdbClient, secretsClient, cfg.WorkloadsNamespace)
-	executor := migrations.NewExecutor(stSetClient, provider)
+	migrationStepsProvider := migrations.CreateMigrationStepsProvider(stSetClient, pdbClient, secretsClient, cfg.WorkloadsNamespace)
+	executor := migrations.NewExecutor(stSetClient, jobClient, migrationStepsProvider)
 
 	logger := lager.NewLogger("migration")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	err = executor.MigrateStatefulSets(logger)
+	err = executor.Migrate(context.Background(), logger)
 	cmdcommons.ExitfIfError(err, "Migration failed")
 }
 

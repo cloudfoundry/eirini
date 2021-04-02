@@ -258,6 +258,24 @@ var _ = Describe("StatefulSets", func() {
 			Eventually(func() []appsv1.StatefulSet { return listStatefulSets(fixture.Namespace) }).Should(BeEmpty())
 		})
 	})
+
+	Describe("SetAnnotation", func() {
+		BeforeEach(func() {
+			createStatefulSet(fixture.Namespace, "foo", nil)
+		})
+
+		It("sets the annotation", func() {
+			Eventually(func() []appsv1.StatefulSet { return listStatefulSets(fixture.Namespace) }).ShouldNot(BeEmpty())
+
+			stSet := getStatefulSet(fixture.Namespace, "foo")
+			_, err := statefulSetClient.SetAnnotation(ctx, stSet, "bar", "baz")
+
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() string {
+				return getStatefulSet(fixture.Namespace, "foo").Annotations["bar"]
+			}).Should(Equal("baz"))
+		})
+	})
 })
 
 func statefulSetNames(statefulSets []appsv1.StatefulSet) []string {

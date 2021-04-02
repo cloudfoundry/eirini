@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/migrations"
-	v1a "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	v1a "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type FakeSecretsClient struct {
@@ -26,12 +26,12 @@ type FakeSecretsClient struct {
 		result1 *v1.Secret
 		result2 error
 	}
-	SetOwnerStub        func(context.Context, *v1.Secret, *v1a.StatefulSet) (*v1.Secret, error)
+	SetOwnerStub        func(context.Context, *v1.Secret, v1a.Object) (*v1.Secret, error)
 	setOwnerMutex       sync.RWMutex
 	setOwnerArgsForCall []struct {
 		arg1 context.Context
 		arg2 *v1.Secret
-		arg3 *v1a.StatefulSet
+		arg3 v1a.Object
 	}
 	setOwnerReturns struct {
 		result1 *v1.Secret
@@ -111,13 +111,13 @@ func (fake *FakeSecretsClient) GetReturnsOnCall(i int, result1 *v1.Secret, resul
 	}{result1, result2}
 }
 
-func (fake *FakeSecretsClient) SetOwner(arg1 context.Context, arg2 *v1.Secret, arg3 *v1a.StatefulSet) (*v1.Secret, error) {
+func (fake *FakeSecretsClient) SetOwner(arg1 context.Context, arg2 *v1.Secret, arg3 v1a.Object) (*v1.Secret, error) {
 	fake.setOwnerMutex.Lock()
 	ret, specificReturn := fake.setOwnerReturnsOnCall[len(fake.setOwnerArgsForCall)]
 	fake.setOwnerArgsForCall = append(fake.setOwnerArgsForCall, struct {
 		arg1 context.Context
 		arg2 *v1.Secret
-		arg3 *v1a.StatefulSet
+		arg3 v1a.Object
 	}{arg1, arg2, arg3})
 	stub := fake.SetOwnerStub
 	fakeReturns := fake.setOwnerReturns
@@ -138,13 +138,13 @@ func (fake *FakeSecretsClient) SetOwnerCallCount() int {
 	return len(fake.setOwnerArgsForCall)
 }
 
-func (fake *FakeSecretsClient) SetOwnerCalls(stub func(context.Context, *v1.Secret, *v1a.StatefulSet) (*v1.Secret, error)) {
+func (fake *FakeSecretsClient) SetOwnerCalls(stub func(context.Context, *v1.Secret, v1a.Object) (*v1.Secret, error)) {
 	fake.setOwnerMutex.Lock()
 	defer fake.setOwnerMutex.Unlock()
 	fake.SetOwnerStub = stub
 }
 
-func (fake *FakeSecretsClient) SetOwnerArgsForCall(i int) (context.Context, *v1.Secret, *v1a.StatefulSet) {
+func (fake *FakeSecretsClient) SetOwnerArgsForCall(i int) (context.Context, *v1.Secret, v1a.Object) {
 	fake.setOwnerMutex.RLock()
 	defer fake.setOwnerMutex.RUnlock()
 	argsForCall := fake.setOwnerArgsForCall[i]

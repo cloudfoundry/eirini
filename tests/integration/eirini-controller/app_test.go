@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/eirini/cmd"
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
@@ -86,7 +87,7 @@ var _ = Describe("App", func() {
 			))
 
 			latestMigrationIndex := cmd.GetLatestMigrationIndex()
-			Expect(st.Annotations).To(HaveKeyWithValue(stset.AnnotationLatestMigration, strconv.Itoa(latestMigrationIndex)))
+			Expect(st.Annotations).To(HaveKeyWithValue(shared.AnnotationLatestMigration, strconv.Itoa(latestMigrationIndex)))
 
 			Expect(st.Spec.Replicas).To(PointTo(Equal(int32(1))))
 			Expect(st.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(BeTrue()))

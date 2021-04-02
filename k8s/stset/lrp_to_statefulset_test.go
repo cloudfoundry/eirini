@@ -2,6 +2,7 @@ package stset_test
 
 import (
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/k8s/stset/stsetfakes"
 	"code.cloudfoundry.org/eirini/opi"
@@ -65,7 +66,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		Entry("SpaceGUID", stset.AnnotationSpaceGUID, "space-guid"),
 		Entry("OrgName", stset.AnnotationOrgName, "org-foo"),
 		Entry("OrgGUID", stset.AnnotationOrgGUID, "org-guid"),
-		Entry("LatestMigration", stset.AnnotationLatestMigration, "999"),
+		Entry("LatestMigration", shared.AnnotationLatestMigration, "999"),
 	)
 
 	DescribeTable("Statefulset Template Annotations",
@@ -82,7 +83,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		Entry("SpaceGUID", stset.AnnotationSpaceGUID, "space-guid"),
 		Entry("OrgName", stset.AnnotationOrgName, "org-foo"),
 		Entry("OrgGUID", stset.AnnotationOrgGUID, "org-guid"),
-		Entry("LatestMigration", stset.AnnotationLatestMigration, "999"),
+		Entry("LatestMigration", shared.AnnotationLatestMigration, "999"),
 	)
 
 	It("should provide last updated to the statefulset annotation", func() {

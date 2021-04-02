@@ -26,7 +26,7 @@ var _ = Describe("Desire", func() {
 
 	var (
 		jobCreator         *jobsfakes.FakeJobCreator
-		secretCreator      *jobsfakes.FakeSecretCreator
+		secretsClient      *jobsfakes.FakeSecretsClient
 		taskToJobConverter *jobsfakes.FakeTaskToJobConverter
 		desireOpt          *sharedfakes.FakeOption
 
@@ -38,7 +38,12 @@ var _ = Describe("Desire", func() {
 	)
 
 	BeforeEach(func() {
-		job = &batch.Job{}
+		job = &batch.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "the-job-name",
+				UID:  "the-job-uid",
+			},
+		}
 
 		desireOpt = new(sharedfakes.FakeOption)
 		desireOpt.Stub = func(resource interface{}) error {
@@ -51,9 +56,10 @@ var _ = Describe("Desire", func() {
 		}
 
 		jobCreator = new(jobsfakes.FakeJobCreator)
-		secretCreator = new(jobsfakes.FakeSecretCreator)
+		secretsClient = new(jobsfakes.FakeSecretsClient)
 		taskToJobConverter = new(jobsfakes.FakeTaskToJobConverter)
 		taskToJobConverter.ConvertReturns(job)
+		jobCreator.CreateReturns(job, nil)
 
 		task = &opi.Task{
 			Image:              image,
@@ -81,7 +87,7 @@ var _ = Describe("Desire", func() {
 			lagertest.NewTestLogger("desiretask"),
 			taskToJobConverter,
 			jobCreator,
-			secretCreator,
+			secretsClient,
 		)
 	})
 
@@ -135,20 +141,28 @@ var _ = Describe("Desire", func() {
 	})
 
 	When("the task uses a private registry", func() {
+		var privateRegistrySecret *corev1.Secret
+
 		BeforeEach(func() {
 			task.PrivateRegistry = &opi.PrivateRegistry{
 				Server:   "some-server",
 				Username: "username",
 				Password: "password",
 			}
-			secretCreator.CreateReturns(&corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "the-generated-secret-name"}}, nil)
+			privateRegistrySecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "the-generated-secret-name",
+					Namespace: "app-namespace",
+				},
+			}
+			secretsClient.CreateReturns(privateRegistrySecret, nil)
 		})
 
 		It("creates a secret with the registry credentials", func() {
-			Expect(secretCreator.CreateCallCount()).To(Equal(1))
-			_, namespace, actualSecret := secretCreator.CreateArgsForCall(0)
+			Expect(secretsClient.CreateCallCount()).To(Equal(1))
+			_, namespace, actualSecret := secretsClient.CreateArgsForCall(0)
 			Expect(namespace).To(Equal("app-namespace"))
-			Expect(actualSecret.GenerateName).To(Equal("my-app-my-space-registry-secret-"))
+			Expect(actualSecret.GenerateName).To(Equal("private-registry-"))
 			Expect(actualSecret.Type).To(Equal(corev1.SecretTypeDockerConfigJson))
 			Expect(actualSecret.StringData).To(
 				HaveKeyWithValue(
@@ -159,22 +173,64 @@ var _ = Describe("Desire", func() {
 					),
 				),
 			)
+		})
 
-			Expect(jobCreator.CreateCallCount()).To(Equal(1))
-			_, _, job = jobCreator.CreateArgsForCall(0)
+		It("converts the task using the priave registry secret", func() {
+			_, actualSecret := taskToJobConverter.ConvertArgsForCall(0)
+			Expect(actualSecret).To(Equal(privateRegistrySecret))
+		})
 
-			Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(
-				corev1.LocalObjectReference{Name: "the-generated-secret-name"},
-			))
+		It("sets the ownership of the secret to the job", func() {
+			Expect(secretsClient.SetOwnerCallCount()).To(Equal(1))
+			_, actualSecret, actualOwner := secretsClient.SetOwnerArgsForCall(0)
+			Expect(actualOwner).To(Equal(job))
+			Expect(actualSecret).To(Equal(privateRegistrySecret))
 		})
 
 		When("creating the secret fails", func() {
 			BeforeEach(func() {
-				secretCreator.CreateReturns(nil, errors.New("create-secret-err"))
+				secretsClient.CreateReturns(nil, errors.New("create-secret-err"))
 			})
 
 			It("returns an error", func() {
 				Expect(desireErr).To(MatchError(ContainSubstring("create-secret-err")))
+			})
+		})
+
+		When("creating the job fails", func() {
+			BeforeEach(func() {
+				jobCreator.CreateReturns(nil, errors.New("create-failed"))
+			})
+
+			It("returns an error", func() {
+				Expect(desireErr).To(MatchError(ContainSubstring("create-failed")))
+			})
+
+			It("deletes the secret", func() {
+				Expect(secretsClient.DeleteCallCount()).To(Equal(1))
+				_, actualNamespace, actualName := secretsClient.DeleteArgsForCall(0)
+				Expect(actualNamespace).To(Equal("app-namespace"))
+				Expect(actualName).To(Equal("the-generated-secret-name"))
+			})
+
+			When("deleting the secret fails", func() {
+				BeforeEach(func() {
+					secretsClient.DeleteReturns(errors.New("delete-secret-failed"))
+				})
+
+				It("returns a job creation error and a note that the secret is not cleaned up", func() {
+					Expect(desireErr).To(MatchError(And(ContainSubstring("create-failed"), ContainSubstring("delete-secret-failed"))))
+				})
+			})
+		})
+
+		When("setting the ownership of the secret fails", func() {
+			BeforeEach(func() {
+				secretsClient.SetOwnerReturns(nil, errors.New("potato"))
+			})
+
+			It("returns an error", func() {
+				Expect(desireErr).To(MatchError(ContainSubstring("potato")))
 			})
 		})
 	})

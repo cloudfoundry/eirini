@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -24,7 +23,6 @@ var _ = Describe("Delete", func() {
 	var (
 		jobGetter          *jobsfakes.FakeJobGetter
 		jobDeleter         *jobsfakes.FakeJobDeleter
-		secretDeleter      *jobsfakes.FakeSecretDeleter
 		job                batchv1.Job
 		deleteErr          error
 		completionCallback string
@@ -35,13 +33,11 @@ var _ = Describe("Delete", func() {
 	BeforeEach(func() {
 		jobGetter = new(jobsfakes.FakeJobGetter)
 		jobDeleter = new(jobsfakes.FakeJobDeleter)
-		secretDeleter = new(jobsfakes.FakeSecretDeleter)
 
 		deleter = jobs.NewDeleter(
 			lagertest.NewTestLogger("deletetask"),
 			jobGetter,
 			jobDeleter,
-			secretDeleter,
 		)
 
 		job = batchv1.Job{
@@ -130,41 +126,6 @@ var _ = Describe("Delete", func() {
 
 		It("does not call the deleter", func() {
 			Expect(jobDeleter.DeleteCallCount()).To(BeZero())
-		})
-	})
-
-	When("the job references image pull secrets", func() {
-		var dockerRegistrySecretName string
-
-		BeforeEach(func() {
-			dockerRegistrySecretName = fmt.Sprintf("%s-%s-registry-secret-%s", "my-app", "my-space", taskGUID)
-
-			job.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{
-				{Name: dockerRegistrySecretName},
-				{Name: "another-random-secret"},
-			}
-			jobGetter.GetByGUIDReturns([]batchv1.Job{job}, nil)
-		})
-
-		It("deletes the docker registry image pull secret only", func() {
-			Expect(secretDeleter.DeleteCallCount()).To(Equal(1))
-			_, actualNamespace, actualSecretName := secretDeleter.DeleteArgsForCall(0)
-			Expect(actualNamespace).To(Equal("my-namespace"))
-			Expect(actualSecretName).To(Equal(dockerRegistrySecretName))
-		})
-
-		When("deleting the docker registry image pull secret fails", func() {
-			BeforeEach(func() {
-				secretDeleter.DeleteReturns(errors.New("docker-secret-delete-failure"))
-			})
-
-			It("returns the error", func() {
-				Expect(deleteErr).To(MatchError(ContainSubstring("docker-secret-delete-failure")))
-			})
-
-			It("does not call the deleter", func() {
-				Expect(jobDeleter.DeleteCallCount()).To(BeZero())
-			})
 		})
 	})
 

@@ -111,16 +111,28 @@ var _ = Describe("Tasks", func() {
 			})
 
 			It("creates a ImagePullSecret with the credentials", func() {
-				registrySecretName := integration.GetRegistrySecretName(fixture.Clientset, fixture.Namespace, taskGUID, "wavey-the-space-registry-secret")
+				registrySecretName := integration.GetRegistrySecretName(fixture.Clientset, fixture.Namespace, taskGUID, jobs.PrivateRegistrySecretGenerateName)
 				secret, err := fixture.Clientset.
 					CoreV1().
 					Secrets(fixture.Namespace).
 					Get(context.Background(), registrySecretName, metav1.GetOptions{})
 
 				Expect(err).NotTo(HaveOccurred())
-				Expect(secret.Name).To(ContainSubstring("registry-secret"))
-				Expect(secret.Type).To(Equal(corev1.SecretTypeDockerConfigJson))
-				Expect(secret.Data).To(HaveKey(".dockerconfigjson"))
+
+				By("creating the secret", func() {
+					Expect(secret.Name).To(ContainSubstring(jobs.PrivateRegistrySecretGenerateName))
+					Expect(secret.Type).To(Equal(corev1.SecretTypeDockerConfigJson))
+					Expect(secret.Data).To(HaveKey(".dockerconfigjson"))
+				})
+
+				By("setting the owner reference on the secret", func() {
+					allJobs := integration.ListJobs(fixture.Clientset, fixture.Namespace, taskGUID)()
+					job := allJobs[0]
+
+					Expect(secret.OwnerReferences).To(HaveLen(1))
+					Expect(secret.OwnerReferences[0].Name).To(Equal(job.Name))
+					Expect(secret.OwnerReferences[0].UID).To(Equal(job.UID))
+				})
 			})
 		})
 	})

@@ -93,7 +93,7 @@ func main() {
 	lrpReconciler, err := createLRPReconciler(logger, controllerClient, clientset, cfg, mgr.GetScheme(), latestMigrationIndex)
 	cmdcommons.ExitfIfError(err, "Failed to create LRP reconciler")
 
-	taskReconciler := createTaskReconciler(logger, controllerClient, clientset, cfg, mgr.GetScheme())
+	taskReconciler := createTaskReconciler(logger, controllerClient, clientset, cfg, mgr.GetScheme(), latestMigrationIndex)
 	podCrashReconciler := createPodCrashReconciler(logger, cfg.WorkloadsNamespace, controllerClient, clientset)
 
 	err = builder.
@@ -182,11 +182,13 @@ func createTaskReconciler(
 	clientset kubernetes.Interface,
 	cfg *eirini.ControllerConfig,
 	scheme *runtime.Scheme,
+	latestMigrationIndex int,
 ) *reconciler.Task {
 	taskToJobConverter := jobs.NewTaskToJobConverter(
 		cfg.ApplicationServiceAccount,
 		cfg.RegistrySecretName,
 		cfg.UnsafeAllowAutomountServiceAccountToken,
+		latestMigrationIndex,
 	)
 	taskDesirer := jobs.NewDesirer(
 		logger,

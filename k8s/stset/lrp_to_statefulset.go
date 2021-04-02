@@ -184,18 +184,18 @@ func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *opi.LRP, private
 	}
 
 	annotations := map[string]string{
-		AnnotationSpaceName:        lrp.SpaceName,
-		AnnotationSpaceGUID:        lrp.SpaceGUID,
-		AnnotationOriginalRequest:  lrp.LRP,
-		AnnotationRegisteredRoutes: string(uris),
-		AnnotationAppID:            lrp.AppGUID,
-		AnnotationVersion:          lrp.Version,
-		AnnotationLastUpdated:      lrp.LastUpdated,
-		AnnotationProcessGUID:      lrp.ProcessGUID(),
-		AnnotationAppName:          lrp.AppName,
-		AnnotationOrgName:          lrp.OrgName,
-		AnnotationOrgGUID:          lrp.OrgGUID,
-		AnnotationLatestMigration:  strconv.Itoa(c.latestMigration),
+		AnnotationSpaceName:              lrp.SpaceName,
+		AnnotationSpaceGUID:              lrp.SpaceGUID,
+		AnnotationOriginalRequest:        lrp.LRP,
+		AnnotationRegisteredRoutes:       string(uris),
+		AnnotationAppID:                  lrp.AppGUID,
+		AnnotationVersion:                lrp.Version,
+		AnnotationLastUpdated:            lrp.LastUpdated,
+		AnnotationProcessGUID:            lrp.ProcessGUID(),
+		AnnotationAppName:                lrp.AppName,
+		AnnotationOrgName:                lrp.OrgName,
+		AnnotationOrgGUID:                lrp.OrgGUID,
+		shared.AnnotationLatestMigration: strconv.Itoa(c.latestMigration),
 	}
 
 	for k, v := range lrp.UserDefinedAnnotations {

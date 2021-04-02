@@ -2,27 +2,32 @@ package jobs_test
 
 import (
 	"fmt"
+	"strconv"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("TaskToJob", func() {
 	const (
-		image          = "docker.png"
-		taskGUID       = "task-123"
-		serviceAccount = "service-account"
-		registrySecret = "registry-secret"
+		image           = "docker.png"
+		taskGUID        = "task-123"
+		serviceAccount  = "service-account"
+		registrySecret  = "registry-secret"
+		latestMigration = 1234
 	)
 
 	var (
 		job                               *batch.Job
+		privateRegistrySecret             *corev1.Secret
 		task                              *opi.Task
 		allowAutomountServiceAccountToken bool
 	)
@@ -55,6 +60,7 @@ var _ = Describe("TaskToJob", func() {
 
 	BeforeEach(func() {
 		allowAutomountServiceAccountToken = false
+		privateRegistrySecret = nil
 
 		task = &opi.Task{
 			Image:              image,
@@ -80,7 +86,7 @@ var _ = Describe("TaskToJob", func() {
 	})
 
 	JustBeforeEach(func() {
-		job = jobs.NewTaskToJobConverter(serviceAccount, registrySecret, allowAutomountServiceAccountToken).Convert(task)
+		job = jobs.NewTaskToJobConverter(serviceAccount, registrySecret, allowAutomountServiceAccountToken, latestMigration).Convert(task, privateRegistrySecret)
 	})
 
 	It("returns a job for the task with the correct attributes", func() {
@@ -139,6 +145,16 @@ var _ = Describe("TaskToJob", func() {
 				HaveKeyWithValue(jobs.LabelSourceType, "TASK"),
 			))
 		})
+
+		By("setting the latest migration annotation", func() {
+			Expect(job.Annotations[shared.AnnotationLatestMigration]).To(Equal(strconv.Itoa(latestMigration)))
+		})
+
+		By("creating a secret reference with the registry credentials", func() {
+			Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(
+				corev1.LocalObjectReference{Name: "registry-secret"},
+			))
+		})
 	})
 
 	When("allowAutomountServiceAccountToken is true", func() {
@@ -175,16 +191,17 @@ var _ = Describe("TaskToJob", func() {
 
 	When("the task uses a private registry", func() {
 		BeforeEach(func() {
-			task.PrivateRegistry = &opi.PrivateRegistry{
-				Server:   "some-server",
-				Username: "username",
-				Password: "password",
+			privateRegistrySecret = &corev1.Secret{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "the-private-registry-secret",
+				},
 			}
 		})
 
-		It("creates a secret reference with the registry credentials", func() {
+		It("creates a secret reference with the private registry credentials", func() {
 			Expect(job.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(
 				corev1.LocalObjectReference{Name: "registry-secret"},
+				corev1.LocalObjectReference{Name: "the-private-registry-secret"},
 			))
 		})
 	})

@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/migrations"
 	. "github.com/onsi/ginkgo"
@@ -25,7 +26,7 @@ var _ = Describe("Adopt StatefulSet Secret Migration", func() {
 					stset.LabelVersion:    "stset-version",
 				},
 				Annotations: map[string]string{
-					stset.AnnotationLatestMigration: strconv.Itoa(migrations.AdoptPDBSequenceID),
+					shared.AnnotationLatestMigration: strconv.Itoa(migrations.AdoptPDBSequenceID),
 				},
 			},
 			Spec: appsv1.StatefulSetSpec{
@@ -95,7 +96,7 @@ var _ = Describe("Adopt StatefulSet Secret Migration", func() {
 		stSet, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).Get(context.Background(), "my-stset", metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		version, err := strconv.Atoi(stSet.Annotations[stset.AnnotationLatestMigration])
+		version, err := strconv.Atoi(stSet.Annotations[shared.AnnotationLatestMigration])
 		Expect(err).NotTo(HaveOccurred())
 		Expect(version).To(BeNumerically(">=", migrations.AdoptStSetSecretSequenceID))
 	})

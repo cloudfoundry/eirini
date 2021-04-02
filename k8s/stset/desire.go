@@ -27,7 +27,7 @@ type LRPToStatefulSetConverter interface {
 
 type SecretsClient interface {
 	Create(ctx context.Context, namespace string, secret *corev1.Secret) (*corev1.Secret, error)
-	SetOwner(ctx context.Context, secret *corev1.Secret, owner *appsv1.StatefulSet) (*corev1.Secret, error)
+	SetOwner(ctx context.Context, secret *corev1.Secret, owner metav1.Object) (*corev1.Secret, error)
 	Delete(ctx context.Context, namespace string, name string) error
 }
 
@@ -167,7 +167,7 @@ func generateRegistryCredsSecret(lrp *opi.LRP) (*corev1.Secret, error) {
 
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "private-registry-",
+			GenerateName: PrivateRegistrySecretGenerateName,
 		},
 		Type: corev1.SecretTypeDockerConfigJson,
 		StringData: map[string]string{

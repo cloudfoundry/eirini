@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/eirini/cmd"
-	"code.cloudfoundry.org/eirini/k8s/stset"
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
@@ -70,7 +70,7 @@ var _ = Describe("Desire App", func() {
 
 		Expect(statefulsets.Items).To(HaveLen(1))
 		latestMigrationIndex := cmd.GetLatestMigrationIndex()
-		Expect(statefulsets.Items[0].Annotations[stset.AnnotationLatestMigration]).To(Equal(strconv.Itoa(latestMigrationIndex)))
+		Expect(statefulsets.Items[0].Annotations[shared.AnnotationLatestMigration]).To(Equal(strconv.Itoa(latestMigrationIndex)))
 	})
 
 	Context("when the app has user defined annotations", func() {

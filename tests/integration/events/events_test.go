@@ -241,7 +241,7 @@ var _ = Describe("Events", func() {
 		var taskDesirer jobs.Desirer
 
 		BeforeEach(func() {
-			taskToJobConverter := jobs.NewTaskToJobConverter(tests.GetApplicationServiceAccount(), "", false)
+			taskToJobConverter := jobs.NewTaskToJobConverter(tests.GetApplicationServiceAccount(), "", false, 1234)
 			taskDesirer = jobs.NewDesirer(
 				logger,
 				taskToJobConverter,

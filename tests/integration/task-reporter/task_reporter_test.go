@@ -64,7 +64,7 @@ var _ = Describe("TaskReporter", func() {
 			LeaderElectionNamespace:      fixture.Namespace,
 		}
 
-		taskToJobConverter := jobs.NewTaskToJobConverter("", "", false)
+		taskToJobConverter := jobs.NewTaskToJobConverter("", "", false, 1234)
 		taskDesirer = jobs.NewDesirer(
 			lagertest.NewTestLogger("test-task-desirer"),
 			taskToJobConverter,
@@ -219,15 +219,14 @@ var _ = Describe("TaskReporter", func() {
 		})
 
 		It("deletes the docker registry secret", func() {
-			registrySecretPrefix := fmt.Sprintf("%s-%s-registry-secret-", task.AppName, task.SpaceName)
-			jobs, err := getTaskJobsFn(task.GUID)()
+			actualJobs, err := getTaskJobsFn(task.GUID)()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(jobs).To(HaveLen(1))
+			Expect(actualJobs).To(HaveLen(1))
 
-			imagePullSecrets := jobs[0].Spec.Template.Spec.ImagePullSecrets
+			imagePullSecrets := actualJobs[0].Spec.Template.Spec.ImagePullSecrets
 			var registrySecretName string
 			for _, imagePullSecret := range imagePullSecrets {
-				if strings.HasPrefix(imagePullSecret.Name, registrySecretPrefix) {
+				if strings.HasPrefix(imagePullSecret.Name, jobs.PrivateRegistrySecretGenerateName) {
 					registrySecretName = imagePullSecret.Name
 
 					break

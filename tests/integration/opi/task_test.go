@@ -7,11 +7,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"code.cloudfoundry.org/eirini"
+	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/patching"
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
@@ -116,6 +119,12 @@ var _ = Describe("Tasks", func() {
 					"Status": Equal(corev1.ConditionTrue),
 				})))
 			})
+
+			By("setting the latest migration index", func() {
+				Expect(jobsList.Items[0].Annotations).To(
+					HaveKeyWithValue(shared.AnnotationLatestMigration, strconv.Itoa(cmdcommons.GetLatestMigrationIndex())),
+				)
+			})
 		})
 
 		When("the task uses a private Docker registry", func() {
@@ -136,7 +145,7 @@ var _ = Describe("Tasks", func() {
 				imagePullSecrets := jobsList.Items[0].Spec.Template.Spec.ImagePullSecrets
 				var registrySecretName string
 				for _, imagePullSecret := range imagePullSecrets {
-					if strings.HasPrefix(imagePullSecret.Name, "my-app-my-space-registry-secret-") {
+					if strings.HasPrefix(imagePullSecret.Name, jobs.PrivateRegistrySecretGenerateName) {
 						registrySecretName = imagePullSecret.Name
 					}
 				}

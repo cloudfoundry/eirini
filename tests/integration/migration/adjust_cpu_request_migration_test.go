@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/migrations"
 	. "github.com/onsi/ginkgo"
@@ -65,7 +66,7 @@ var _ = Describe("Adjust CPU request migration", func() {
 		stSet, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).Get(context.Background(), "my-stset", metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		version, err := strconv.Atoi(stSet.Annotations[stset.AnnotationLatestMigration])
+		version, err := strconv.Atoi(stSet.Annotations[shared.AnnotationLatestMigration])
 		Expect(err).NotTo(HaveOccurred())
 		Expect(version).To(BeNumerically(">=", migrations.AdjustCPUResourceSequenceID))
 	})

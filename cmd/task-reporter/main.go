@@ -109,12 +109,10 @@ func initTaskDeleter(clientset kubernetes.Interface, workloadsNamespace string) 
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
 	jobClient := client.NewJob(clientset, workloadsNamespace)
-	secretClient := client.NewSecret(clientset)
 	deleter := jobs.NewDeleter(
 		logger,
 		jobClient,
 		jobClient,
-		secretClient,
 	)
 
 	return &deleter

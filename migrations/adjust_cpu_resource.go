@@ -57,3 +57,7 @@ func (m AdjustCPURequest) Apply(ctx context.Context, o runtime.Object) error {
 
 	return nil
 }
+
+func (m AdjustCPURequest) AppliesTo() ObjectType {
+	return StatefulSetObjectType
+}

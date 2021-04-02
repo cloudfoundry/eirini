@@ -1,6 +1,8 @@
 package jobs
 
-import "code.cloudfoundry.org/eirini/k8s/stset"
+import (
+	"code.cloudfoundry.org/eirini/k8s/stset"
+)
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
@@ -24,4 +26,6 @@ const (
 
 	LabelTaskCompleted = "cloudfoundry.org/task_completed"
 	TaskCompletedTrue  = "true"
+
+	PrivateRegistrySecretGenerateName = stset.PrivateRegistrySecretGenerateName
 )

@@ -187,7 +187,7 @@ var _ = Describe("Desirer", func() {
 			Expect(secrets.SetOwnerCallCount()).To(Equal(1))
 			_, actualSecret, actualStatefulSet := secrets.SetOwnerArgsForCall(0)
 			Expect(actualSecret.Name).To(Equal("baldur-secret"))
-			Expect(actualStatefulSet.Name).To(Equal("baldur-space-foo-34f869d015"))
+			Expect(actualStatefulSet.GetName()).To(Equal("baldur-space-foo-34f869d015"))
 		})
 
 		When("creating the statefulset fails", func() {
