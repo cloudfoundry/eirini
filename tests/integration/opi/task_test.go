@@ -45,27 +45,87 @@ var _ = Describe("Tasks", func() {
 	Describe("desiring", func() {
 		const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
 
-		Describe("docker tasks", func() {
-			BeforeEach(func() {
-				request = cf.TaskRequest{
-					GUID:        tests.GenerateGUID(),
-					AppName:     "my_app",
-					Name:        "my_task",
-					SpaceName:   "my_space",
-					Namespace:   fixture.Namespace,
-					Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
-					Lifecycle: cf.Lifecycle{
-						DockerLifecycle: &cf.DockerLifecycle{
-							Image:   "eirini/busybox",
-							Command: []string{"/bin/echo", "hello"},
-						},
+		BeforeEach(func() {
+			request = cf.TaskRequest{
+				GUID:        tests.GenerateGUID(),
+				AppName:     "my_app",
+				Name:        "my_task",
+				SpaceName:   "my_space",
+				Namespace:   fixture.Namespace,
+				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
+				Lifecycle: cf.Lifecycle{
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image:   "eirini/busybox",
+						Command: []string{"/bin/echo", "hello"},
 					},
-				}
+				},
+			}
+		})
+
+		It("creates the job successfully", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+
+			Eventually(func() ([]batchv1.Job, error) {
+				var err error
+				jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+
+				return jobsList.Items, err
+			}).Should(HaveLen(1))
+
+			By("creating a job for the task", func() {
+				Expect(jobsList.Items).To(HaveLen(1))
+				Expect(jobsList.Items[0].Name).To(HavePrefix("my-app-my-space-my-task"))
 			})
 
-			It("creates the job successfully", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+			By("specifying the right containers", func() {
+				jobContainers := jobsList.Items[0].Spec.Template.Spec.Containers
+				Expect(jobContainers).To(HaveLen(1))
+				Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
+				Expect(jobContainers[0].Image).To(Equal("eirini/busybox"))
+				Expect(jobContainers[0].Command).To(ConsistOf("/bin/echo", "hello"))
+			})
 
+			By("not mounting the service account token", func() {
+				Eventually(func() ([]corev1.Pod, error) {
+					pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+					if err != nil {
+						return nil, err
+					}
+
+					return pods.Items, nil
+				}).ShouldNot(BeEmpty())
+
+				pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(pods.Items).To(HaveLen(1))
+
+				podMountPaths := []string{}
+				for _, podMount := range pods.Items[0].Spec.Containers[0].VolumeMounts {
+					podMountPaths = append(podMountPaths, podMount.MountPath)
+				}
+				Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
+			})
+
+			By("completing the task", func() {
+				Eventually(func() []batchv1.JobCondition {
+					jobsList, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+
+					return jobsList.Items[0].Status.Conditions
+				}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(batchv1.JobComplete),
+					"Status": Equal(corev1.ConditionTrue),
+				})))
+			})
+		})
+
+		When("the task uses a private Docker registry", func() {
+			BeforeEach(func() {
+				request.Lifecycle.DockerLifecycle.Image = "eiriniuser/notdora"
+				request.Lifecycle.DockerLifecycle.RegistryUsername = "eiriniuser"
+				request.Lifecycle.DockerLifecycle.RegistryPassword = tests.GetEiriniDockerHubPassword()
+			})
+
+			It("creates a new secret and points the job to it", func() {
 				Eventually(func() ([]batchv1.Job, error) {
 					var err error
 					jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
@@ -73,41 +133,30 @@ var _ = Describe("Tasks", func() {
 					return jobsList.Items, err
 				}).Should(HaveLen(1))
 
-				By("creating a job for the task", func() {
-					Expect(jobsList.Items).To(HaveLen(1))
-					Expect(jobsList.Items[0].Name).To(HavePrefix("my-app-my-space-my-task"))
-				})
-
-				By("specifying the right containers", func() {
-					jobContainers := jobsList.Items[0].Spec.Template.Spec.Containers
-					Expect(jobContainers).To(HaveLen(1))
-					Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
-					Expect(jobContainers[0].Image).To(Equal("eirini/busybox"))
-					Expect(jobContainers[0].Command).To(ConsistOf("/bin/echo", "hello"))
-				})
-
-				By("not mounting the service account token", func() {
-					Eventually(func() ([]corev1.Pod, error) {
-						pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-						if err != nil {
-							return nil, err
-						}
-
-						return pods.Items, nil
-					}).ShouldNot(BeEmpty())
-
-					pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(pods.Items).To(HaveLen(1))
-
-					podMountPaths := []string{}
-					for _, podMount := range pods.Items[0].Spec.Containers[0].VolumeMounts {
-						podMountPaths = append(podMountPaths, podMount.MountPath)
+				imagePullSecrets := jobsList.Items[0].Spec.Template.Spec.ImagePullSecrets
+				var registrySecretName string
+				for _, imagePullSecret := range imagePullSecrets {
+					if strings.HasPrefix(imagePullSecret.Name, "my-app-my-space-registry-secret-") {
+						registrySecretName = imagePullSecret.Name
 					}
-					Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
-				})
+				}
+				Expect(registrySecretName).NotTo(BeEmpty())
 
-				By("completing the task", func() {
+				secret, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Get(context.Background(), registrySecretName, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(secret).NotTo(BeNil())
+				Expect(secret.Data).To(
+					HaveKeyWithValue(
+						".dockerconfigjson",
+						[]byte(fmt.Sprintf(
+							`{"auths":{"index.docker.io/v1/":{"username":"eiriniuser","password":"%s","auth":"%s"}}}`,
+							tests.GetEiriniDockerHubPassword(),
+							base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("eiriniuser:%s", tests.GetEiriniDockerHubPassword()))),
+						)),
+					),
+				)
+
+				By("allowing the task to complete", func() {
 					Eventually(func() []batchv1.JobCondition {
 						jobsList, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 
@@ -118,81 +167,60 @@ var _ = Describe("Tasks", func() {
 					})))
 				})
 			})
+		})
 
-			When("the task uses a private Docker registry", func() {
-				BeforeEach(func() {
-					request.Lifecycle.DockerLifecycle.Image = "eiriniuser/notdora"
-					request.Lifecycle.DockerLifecycle.RegistryUsername = "eiriniuser"
-					request.Lifecycle.DockerLifecycle.RegistryPassword = tests.GetEiriniDockerHubPassword()
-				})
-
-				It("creates a new secret and points the job to it", func() {
-					Eventually(func() ([]batchv1.Job, error) {
-						var err error
-						jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-
-						return jobsList.Items, err
-					}).Should(HaveLen(1))
-
-					imagePullSecrets := jobsList.Items[0].Spec.Template.Spec.ImagePullSecrets
-					var registrySecretName string
-					for _, imagePullSecret := range imagePullSecrets {
-						if strings.HasPrefix(imagePullSecret.Name, "my-app-my-space-registry-secret-") {
-							registrySecretName = imagePullSecret.Name
-						}
-					}
-					Expect(registrySecretName).NotTo(BeEmpty())
-
-					secret, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Get(context.Background(), registrySecretName, metav1.GetOptions{})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(secret).NotTo(BeNil())
-					Expect(secret.Data).To(
-						HaveKeyWithValue(
-							".dockerconfigjson",
-							[]byte(fmt.Sprintf(
-								`{"auths":{"index.docker.io/v1/":{"username":"eiriniuser","password":"%s","auth":"%s"}}}`,
-								tests.GetEiriniDockerHubPassword(),
-								base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("eiriniuser:%s", tests.GetEiriniDockerHubPassword()))),
-							)),
-						),
-					)
-
-					By("allowing the task to complete", func() {
-						Eventually(func() []batchv1.JobCondition {
-							jobsList, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-
-							return jobsList.Items[0].Status.Conditions
-						}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
-							"Type":   Equal(batchv1.JobComplete),
-							"Status": Equal(corev1.ConditionTrue),
-						})))
-					})
-				})
+		When("unsafe_allow_automount_service_account_token is set", func() {
+			BeforeEach(func() {
+				apiConfig.UnsafeAllowAutomountServiceAccountToken = true
 			})
 
-			When("unsafe_allow_automount_service_account_token is set", func() {
-				BeforeEach(func() {
-					apiConfig.UnsafeAllowAutomountServiceAccountToken = true
-				})
+			getPods := func() []corev1.Pod {
+				var podItems []corev1.Pod
+				Eventually(func() ([]corev1.Pod, error) {
+					var err error
+					pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+					if err != nil {
+						return nil, err
+					}
 
-				getPods := func() []corev1.Pod {
-					var podItems []corev1.Pod
-					Eventually(func() ([]corev1.Pod, error) {
-						var err error
-						pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+					podItems = pods.Items
+
+					return podItems, nil
+				}).ShouldNot(BeEmpty())
+
+				return podItems
+			}
+
+			It("mounts the service account token (because this is how K8S works by default)", func() {
+				pods := getPods()
+				Expect(pods).To(HaveLen(1))
+
+				podMountPaths := []string{}
+				for _, podMount := range pods[0].Spec.Containers[0].VolumeMounts {
+					podMountPaths = append(podMountPaths, podMount.MountPath)
+				}
+				Expect(podMountPaths).To(ContainElement(serviceAccountTokenMountPath))
+			})
+
+			When("the app/task service account has its automountServiceAccountToken set to false", func() {
+				BeforeEach(func() {
+					Eventually(func() error {
+						appServiceAccount, err := fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Get(context.Background(), tests.GetApplicationServiceAccount(), metav1.GetOptions{})
 						if err != nil {
-							return nil, err
+							return err
+						}
+						automountServiceAccountToken := false
+						appServiceAccount.AutomountServiceAccountToken = &automountServiceAccountToken
+						_, err = fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Update(context.Background(), appServiceAccount, metav1.UpdateOptions{})
+						if err != nil {
+							return err
 						}
 
-						podItems = pods.Items
+						return nil
+					}).Should(Succeed())
+				})
 
-						return podItems, nil
-					}).ShouldNot(BeEmpty())
-
-					return podItems
-				}
-
-				It("mounts the service account token (because this is how K8S works by default)", func() {
+				It("does not mount the service account token", func() {
 					pods := getPods()
 					Expect(pods).To(HaveLen(1))
 
@@ -200,37 +228,7 @@ var _ = Describe("Tasks", func() {
 					for _, podMount := range pods[0].Spec.Containers[0].VolumeMounts {
 						podMountPaths = append(podMountPaths, podMount.MountPath)
 					}
-					Expect(podMountPaths).To(ContainElement(serviceAccountTokenMountPath))
-				})
-
-				When("the app/task service account has its automountServiceAccountToken set to false", func() {
-					BeforeEach(func() {
-						Eventually(func() error {
-							appServiceAccount, err := fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Get(context.Background(), tests.GetApplicationServiceAccount(), metav1.GetOptions{})
-							if err != nil {
-								return err
-							}
-							automountServiceAccountToken := false
-							appServiceAccount.AutomountServiceAccountToken = &automountServiceAccountToken
-							_, err = fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Update(context.Background(), appServiceAccount, metav1.UpdateOptions{})
-							if err != nil {
-								return err
-							}
-
-							return nil
-						}).Should(Succeed())
-					})
-
-					It("does not mount the service account token", func() {
-						pods := getPods()
-						Expect(pods).To(HaveLen(1))
-
-						podMountPaths := []string{}
-						for _, podMount := range pods[0].Spec.Containers[0].VolumeMounts {
-							podMountPaths = append(podMountPaths, podMount.MountPath)
-						}
-						Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
-					})
+					Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
 				})
 			})
 		})
