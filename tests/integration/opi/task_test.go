@@ -43,7 +43,7 @@ var _ = Describe("Tasks", func() {
 	})
 
 	Describe("desiring", func() {
-		const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
+		const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 
 		BeforeEach(func() {
 			request = cf.TaskRequest{

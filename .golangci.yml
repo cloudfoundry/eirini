@@ -76,6 +76,7 @@ issues:
       - dupl
       - gomnd
       - gochecknoglobals
+      - gosec
     - path: _suite_test\.go
       linters:
       - gochecknoglobals

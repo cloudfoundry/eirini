@@ -82,7 +82,7 @@ var _ = Describe("InstanceIndexInjector", func() {
 		hookSession, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config, env)
 
 		tr := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		client := &http.Client{Transport: tr}
 		Eventually(func() (int, error) {

@@ -223,7 +223,7 @@ var _ = Describe("Desire App", func() {
 	})
 
 	Describe("automounting serviceacccount token", func() {
-		const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount" //nolint:gosec
+		const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 		var podMountPaths []string
 
 		JustBeforeEach(func() {
