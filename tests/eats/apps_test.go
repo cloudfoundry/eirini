@@ -71,6 +71,43 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 				Expect(respStatusCode).To(Equal(http.StatusAccepted))
 			})
 		})
+
+		When("the app has private docker image", func() {
+			var (
+				privateImageAppGUID    string
+				privateImageAppVersion string
+				appServiceName         string
+			)
+
+			BeforeEach(func() {
+				privateImageAppGUID = tests.GenerateGUID()
+				privateImageAppVersion = tests.GenerateGUID()
+			})
+
+			AfterEach(func() {
+				unexposeLRP(fixture.Namespace, appServiceName)
+
+				_, err := stopLRP(lrpGUID, lrpVersion)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("creates a secret for the private registry credentials", func() {
+				lrp := createLrpRequest(privateImageAppGUID, privateImageAppVersion)
+				lrp.Namespace = namespace
+				lrp.Lifecycle = cf.Lifecycle{
+					DockerLifecycle: &cf.DockerLifecycle{
+						Image:            "eirini/dorini",
+						RegistryUsername: "eiriniuser",
+						RegistryPassword: tests.GetEiriniDockerHubPassword(),
+					},
+				}
+
+				Expect(desireLRP(lrp)).To(Equal(http.StatusAccepted))
+				appServiceName = exposeLRP(fixture.Namespace, privateImageAppGUID, 8080)
+
+				Eventually(pingLRPFn(fixture.Namespace, appServiceName, 8080, "/")).Should(ContainSubstring("Hi, I'm not Dora!"))
+			})
+		})
 	})
 
 	Describe("Update an app", func() {
