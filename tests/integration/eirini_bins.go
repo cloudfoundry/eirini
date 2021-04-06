@@ -30,6 +30,7 @@ type EiriniBinaries struct {
 	EiriniController         Binary `json:"eirini_controller"`
 	InstanceIndexEnvInjector Binary `json:"instance_index_env_injector"`
 	Migration                Binary `json:"migration"`
+	ResourceValidator        Binary `json:"resource_validator"`
 	ExternalBinsPath         bool
 	BinsPath                 string
 }
@@ -47,6 +48,7 @@ func NewEiriniBinaries() EiriniBinaries {
 	bins.EiriniController = NewBinary("code.cloudfoundry.org/eirini/cmd/eirini-controller", bins.BinsPath, []string{})
 	bins.InstanceIndexEnvInjector = NewBinary("code.cloudfoundry.org/eirini/cmd/instance-index-env-injector", bins.BinsPath, []string{})
 	bins.Migration = NewBinary("code.cloudfoundry.org/eirini/cmd/migration", bins.BinsPath, []string{})
+	bins.ResourceValidator = NewBinary("code.cloudfoundry.org/eirini/cmd/resource-validator", bins.BinsPath, []string{})
 
 	return bins
 }

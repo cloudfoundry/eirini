@@ -11,6 +11,7 @@ const (
 	EnvCompletionCallback         = "COMPLETION_CALLBACK"
 	EnvEiriniAddress              = "EIRINI_ADDRESS"
 	EnvInstanceEnvInjectorCertDir = "INSTANCE_ENV_INJECTOR_CERTS_DIR"
+	EnvResourceValidatorCertDir   = "RESOURCE_VALIDATOR_CERTS_DIR"
 	EnvLoggregatorCertDir         = "LOGGREGATOR_CERTS_DIR"
 	EnvCCCertDir                  = "CC_CERTS_DIR"
 	EnvServerCertDir              = "SERVER_CERTS_DIR"
@@ -41,6 +42,7 @@ const (
 	EiriniClientSecretName = "eirini-client-certs" //#nosec G101
 
 	InstanceEnvInjectorCertDir = "/etc/eirini/certs"
+	ResourceValidatorCertDir   = "/etc/eirini/certs"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -130,6 +132,11 @@ type MigrationConfig struct {
 }
 
 type InstanceIndexEnvInjectorConfig struct {
+	Port       int32 `yaml:"service_port"`
+	KubeConfig `yaml:",inline"`
+}
+
+type ResourceValidatorConfig struct {
 	Port       int32 `yaml:"service_port"`
 	KubeConfig `yaml:",inline"`
 }
