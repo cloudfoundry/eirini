@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"os"
 
 	ginkgoconfig "github.com/onsi/ginkgo/config"
@@ -17,15 +16,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const (
-	randUpperBound                   = 100000000
-	DefaultApplicationServiceAccount = "eirini"
-)
+const DefaultApplicationServiceAccount = "eirini"
 
 func CreateRandomNamespace(clientset kubernetes.Interface) string {
-	namespace := fmt.Sprintf("opi-integration-test-%d-%d", rand.Intn(randUpperBound), ginkgoconfig.GinkgoConfig.ParallelNode)
+	namespace := fmt.Sprintf("opi-integration-test-%s-%d", GenerateGUID(), ginkgoconfig.GinkgoConfig.ParallelNode)
 	for namespaceExists(namespace, clientset) {
-		namespace = fmt.Sprintf("opi-integration-test-%d-%d", rand.Intn(randUpperBound), ginkgoconfig.GinkgoConfig.ParallelNode)
+		namespace = fmt.Sprintf("opi-integration-test-%s-%d", GenerateGUID(), ginkgoconfig.GinkgoConfig.ParallelNode)
 	}
 	createNamespace(namespace, clientset)
 
