@@ -326,11 +326,20 @@ func (s *Server) isClientAuthorized(c *client) bool {
 	// Check custom auth first, then jwts, then nkeys, then
 	// multiple users with TLS map if enabled, then token,
 	// then single user/pass.
-	if opts.CustomClientAuthentication != nil {
-		return opts.CustomClientAuthentication.Check(c)
+	if opts.CustomClientAuthentication != nil && !opts.CustomClientAuthentication.Check(c) {
+		return false
 	}
 
-	return s.processClientOrLeafAuthentication(c, opts)
+	if opts.CustomClientAuthentication == nil && !s.processClientOrLeafAuthentication(c, opts) {
+		return false
+	}
+
+	if c.kind == CLIENT || c.kind == LEAF {
+		// Generate an event if we have a system account.
+		s.accountConnectEvent(c)
+	}
+
+	return true
 }
 
 func (s *Server) processClientOrLeafAuthentication(c *client, opts *Options) bool {
@@ -632,9 +641,6 @@ func (s *Server) processClientOrLeafAuthentication(c *client, opts *Options) boo
 		c.nameTag = juc.Name
 		c.mu.Unlock()
 
-		// Generate an event if we have a system account.
-		s.accountConnectEvent(c)
-
 		// Check if we need to set an auth timer if the user jwt expires.
 		c.setExpiration(juc.Claims(), validFor)
 
@@ -680,8 +686,6 @@ func (s *Server) processClientOrLeafAuthentication(c *client, opts *Options) boo
 		// for pub/sub authorizations.
 		if ok {
 			c.RegisterUser(user)
-			// Generate an event if we have a system account and this is not the $G account.
-			s.accountConnectEvent(c)
 		}
 		return ok
 	}
@@ -988,9 +992,14 @@ func (s *Server) isLeafNodeAuthorized(c *client) bool {
 				s.Warnf("User %q found in connect proto, but user required from cert", c.opts.Username)
 			}
 			c.opts.Username = user.Username
+			// EMPTY will result in $G
+			accName := _EMPTY_
+			if user.Account != nil {
+				accName = user.Account.GetName()
+			}
 			// This will authorize since are using an existing user,
 			// but it will also register with proper account.
-			return isAuthorized(user.Username, user.Password, user.Account.GetName())
+			return isAuthorized(user.Username, user.Password, accName)
 		}
 
 		// This is expected to be a very small array.
@@ -1011,7 +1020,7 @@ func (s *Server) isLeafNodeAuthorized(c *client) bool {
 	// Still, if the CONNECT has some user info, we will bind to the
 	// user's account or to the specified default account (if provided)
 	// or to the global account.
-	return s.processClientOrLeafAuthentication(c, opts)
+	return s.isClientAuthorized(c)
 }
 
 // Support for bcrypt stored passwords and tokens.

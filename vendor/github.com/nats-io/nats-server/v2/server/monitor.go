@@ -1052,8 +1052,8 @@ type Varz struct {
 
 // JetStreamVarz contains basic runtime information about jetstream
 type JetStreamVarz struct {
-	Config JetStreamConfig `json:"config"`
-	Stats  *JetStreamStats `json:"stats"`
+	Config *JetStreamConfig `json:"config,omitempty"`
+	Stats  *JetStreamStats  `json:"stats,omitempty"`
 }
 
 // ClusterOptsVarz contains monitoring cluster information
@@ -1288,8 +1288,9 @@ func (s *Server) createVarz(pcpu float64, rss int64) *Varz {
 	}
 	if s.js != nil {
 		s.js.mu.RLock()
+		cfg := s.js.config
 		varz.JetStream = JetStreamVarz{
-			Config: s.js.config,
+			Config: &cfg,
 		}
 		s.js.mu.RUnlock()
 	}
@@ -2340,7 +2341,7 @@ func (s *Server) JszAccount(opts *JSzOptions) (*AccountDetail, error) {
 		return nil, fmt.Errorf("account %q not found", acc)
 	}
 	s.js.mu.RLock()
-	jsa, ok := s.js.accounts[account.(*Account)]
+	jsa, ok := s.js.accounts[account.(*Account).Name]
 	s.js.mu.RUnlock()
 	if !ok {
 		return nil, fmt.Errorf("account %q not jetstream enabled", acc)
@@ -2348,7 +2349,7 @@ func (s *Server) JszAccount(opts *JSzOptions) (*AccountDetail, error) {
 	return s.accountDetail(jsa, opts.Streams, opts.Consumer, opts.Config), nil
 }
 
-// Leafz returns a Leafz structure containing information about leafnodes.
+// Jsz returns a Jsz structure containing information about JetStream.
 func (s *Server) Jsz(opts *JSzOptions) (*JSInfo, error) {
 	// set option defaults
 	if opts == nil {

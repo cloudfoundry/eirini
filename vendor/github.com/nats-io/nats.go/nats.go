@@ -75,6 +75,12 @@ const (
 
 	// AUTHENTICATION_EXPIRED_ERR is for when nats server user authorization has expired.
 	AUTHENTICATION_EXPIRED_ERR = "user authentication expired"
+
+	// AUTHENTICATION_REVOKED_ERR is for when user authorization has been revoked.
+	AUTHENTICATION_REVOKED_ERR = "user authentication revoked"
+
+	// ACCOUNT_AUTHENTICATION_EXPIRED_ERR is for when nats server account authorization has expired.
+	ACCOUNT_AUTHENTICATION_EXPIRED_ERR = "account authentication expired"
 )
 
 // Errors
@@ -94,6 +100,8 @@ var (
 	ErrBadTimeout                   = errors.New("nats: timeout invalid")
 	ErrAuthorization                = errors.New("nats: authorization violation")
 	ErrAuthExpired                  = errors.New("nats: authentication expired")
+	ErrAuthRevoked                  = errors.New("nats: authentication revoked")
+	ErrAccountAuthExpired           = errors.New("nats: account authentication expired")
 	ErrNoServers                    = errors.New("nats: no servers available for connection")
 	ErrJsonParse                    = errors.New("nats: connect message, json parse error")
 	ErrChanArg                      = errors.New("nats: argument needs to be a channel type")
@@ -125,7 +133,6 @@ var (
 	ErrBadHeaderMsg                 = errors.New("nats: message could not decode headers")
 	ErrNoResponders                 = errors.New("nats: no responders available for request")
 	ErrNoContextOrTimeout           = errors.New("nats: no context or timeout given")
-	ErrDirectModeRequired           = errors.New("nats: direct access requires direct pull or push")
 	ErrPullModeNotAllowed           = errors.New("nats: pull based not supported")
 	ErrJetStreamNotEnabled          = errors.New("nats: jetstream not enabled")
 	ErrJetStreamBadPre              = errors.New("nats: jetstream api prefix not valid")
@@ -484,6 +491,9 @@ type Conn struct {
 	respMux   *Subscription        // A single response subscription
 	respMap   map[string]chan *Msg // Request map for the response msg channels
 	respRand  *rand.Rand           // Used for generating suffix
+
+	// JetStream Contexts last account check.
+	jsLastCheck time.Time
 }
 
 // Subscription represents interest in a given subject.
@@ -2757,6 +2767,12 @@ func checkAuthError(e string) error {
 	if strings.HasPrefix(e, AUTHENTICATION_EXPIRED_ERR) {
 		return ErrAuthExpired
 	}
+	if strings.HasPrefix(e, AUTHENTICATION_REVOKED_ERR) {
+		return ErrAuthRevoked
+	}
+	if strings.HasPrefix(e, ACCOUNT_AUTHENTICATION_EXPIRED_ERR) {
+		return ErrAccountAuthExpired
+	}
 	return nil
 }
 
@@ -2823,6 +2839,7 @@ const (
 	statusHdr    = "Status"
 	descrHdr     = "Description"
 	noResponders = "503"
+	noMessages   = "404"
 	statusLen    = 3 // e.g. 20x, 40x, 50x
 )
 
@@ -3284,8 +3301,7 @@ func (nc *Conn) SubscribeSync(subj string) (*Subscription, error) {
 		return nil, ErrInvalidConnection
 	}
 	mch := make(chan *Msg, nc.Opts.SubChanLen)
-	s, e := nc.subscribe(subj, _EMPTY_, nil, mch, true, nil)
-	return s, e
+	return nc.subscribe(subj, _EMPTY_, nil, mch, true, nil)
 }
 
 // QueueSubscribe creates an asynchronous queue subscriber on the given subject.
@@ -3302,8 +3318,7 @@ func (nc *Conn) QueueSubscribe(subj, queue string, cb MsgHandler) (*Subscription
 // given message synchronously using Subscription.NextMsg().
 func (nc *Conn) QueueSubscribeSync(subj, queue string) (*Subscription, error) {
 	mch := make(chan *Msg, nc.Opts.SubChanLen)
-	s, e := nc.subscribe(subj, queue, nil, mch, true, nil)
-	return s, e
+	return nc.subscribe(subj, queue, nil, mch, true, nil)
 }
 
 // QueueSubscribeSyncWithChan will express interest in the given subject.
@@ -3447,6 +3462,7 @@ const (
 	SyncSubscription
 	ChanSubscription
 	NilSubscription
+	PullSubscription
 )
 
 // Type returns the type of Subscription.
@@ -3715,7 +3731,6 @@ func (s *Subscription) processNextMsgDelivered(msg *Msg) error {
 	s.mu.Lock()
 	nc := s.conn
 	max := s.max
-	jsi := s.jsi
 
 	// Update some stats.
 	s.delivered++
@@ -3736,12 +3751,6 @@ func (s *Subscription) processNextMsgDelivered(msg *Msg) error {
 			nc.removeSub(s)
 			nc.mu.Unlock()
 		}
-	}
-
-	// In case this is a JetStream message and in pull mode
-	// then check whether it is an JS API error.
-	if jsi != nil && jsi.pull > 0 && len(msg.Data) == 0 && msg.Header.Get(statusHdr) == noResponders {
-		return ErrNoResponders
 	}
 
 	return nil

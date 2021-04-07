@@ -965,15 +965,15 @@ func (s *Server) startWebsocketServer() {
 		s.Fatalf("Unable to listen for websocket connections: %v", err)
 		return
 	}
-	s.Noticef("Listening for websocket clients on %s://%s:%d", proto, o.Host, port)
+	if port == 0 {
+		o.Port = hl.Addr().(*net.TCPAddr).Port
+	}
+	s.Noticef("Listening for websocket clients on %s://%s:%d", proto, o.Host, o.Port)
 	if proto == wsSchemePrefix {
 		s.Warnf("Websocket not configured with TLS. DO NOT USE IN PRODUCTION!")
 	}
 
 	s.websocket.tls = proto == "wss"
-	if port == 0 {
-		s.opts.Websocket.Port = hl.Addr().(*net.TCPAddr).Port
-	}
 	s.websocket.connectURLs, err = s.getConnectURLs(o.Advertise, o.Host, o.Port)
 	if err != nil {
 		s.Fatalf("Unable to get websocket connect URLs: %v", err)
@@ -1235,12 +1235,17 @@ func (c *client) wsCollapsePtoNB() (net.Buffers, int64) {
 					continue
 				}
 				for len(b) > 0 {
-					endFrame(fhIdx, total)
+					endStart := total != 0
+					if endStart {
+						endFrame(fhIdx, total)
+					}
 					total = len(b)
 					if total >= mfs {
 						total = mfs
 					}
-					fhIdx = startFrame()
+					if endStart {
+						fhIdx = startFrame()
+					}
 					bufs = append(bufs, b[:total])
 					b = b[total:]
 				}

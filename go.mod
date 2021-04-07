@@ -5,9 +5,8 @@ go 1.16
 replace k8s.io/client-go => k8s.io/client-go v0.20.3
 
 require (
-	cloud.google.com/go v0.80.0 // indirect
+	cloud.google.com/go v0.81.0 // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
-	code.cloudfoundry.org/garden v0.0.0-20210208153517-580cadd489d2 // indirect
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
@@ -15,7 +14,6 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/cloudfoundry/tps v0.0.0-20210303221408-6295d5712990
-	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/containers/image v3.0.2+incompatible
 	github.com/containers/storage v1.25.0 // indirect
 	github.com/deckarep/golang-set v1.7.1
@@ -27,8 +25,7 @@ require (
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/go-logr/logr v0.4.0
 	github.com/gofrs/flock v0.8.0
-	github.com/gofrs/uuid v4.0.0+incompatible // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/go-cmp v0.5.5
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
@@ -40,33 +37,33 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/jinzhu/copier v0.2.8
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.11.13 // indirect
-	github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0
+	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
 	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
-	github.com/nats-io/nats-server/v2 v2.2.0
-	github.com/nats-io/nats.go v1.10.1-0.20210228004050-ed743748acac
-	github.com/onsi/ginkgo v1.15.2
+	github.com/nats-io/nats-server/v2 v2.2.1
+	github.com/nats-io/nats.go v1.10.1-0.20210330225420-a0b1f60162f8
+	github.com/onsi/ginkgo v1.16.0
 	github.com/onsi/gomega v1.11.0
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/common v0.20.0
-	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cobra v1.1.3
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
 	golang.org/x/mod v0.4.2 // indirect
-	golang.org/x/net v0.0.0-20210330230544-e57232859fb2 // indirect
-	golang.org/x/oauth2 v0.0.0-20210323180902-22b0adad7558 // indirect
-	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6 // indirect
+	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
+	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602 // indirect
+	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57 // indirect
+	golang.org/x/term v0.0.0-20210406210042-72f3dc4e9b72 // indirect
+	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
-	google.golang.org/genproto v0.0.0-20210330181207-2295ebbda0c6 // indirect
+	google.golang.org/genproto v0.0.0-20210406143921-e86de6bf7a46 // indirect
 	google.golang.org/grpc v1.36.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
@@ -81,5 +78,5 @@ require (
 	k8s.io/metrics v0.20.5
 	k8s.io/utils v0.0.0-20210305010621-2afb4311ab10 // indirect
 	sigs.k8s.io/controller-runtime v0.8.3
-	sigs.k8s.io/structured-merge-diff/v4 v4.1.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.1.1 // indirect
 )

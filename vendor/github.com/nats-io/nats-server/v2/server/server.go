@@ -240,6 +240,10 @@ type Server struct {
 
 	// For mapping from a raft node name back to a server name and cluster.
 	nodeToInfo sync.Map
+
+	// For out of resources to not log errors too fast.
+	rerrMu   sync.Mutex
+	rerrLast time.Time
 }
 
 type nodeInfo struct {
@@ -808,10 +812,10 @@ func (s *Server) globalAccountOnly() bool {
 	return !hasOthers
 }
 
-// Determines if this server is in standalone mode, meaning no routes or gateways or leafnodes.
+// Determines if this server is in standalone mode, meaning no routes or gateways.
 func (s *Server) standAloneMode() bool {
 	opts := s.getOpts()
-	return opts.Cluster.Port == 0 && opts.LeafNode.Port == 0 && opts.Gateway.Port == 0
+	return opts.Cluster.Port == 0 && opts.Gateway.Port == 0
 }
 
 func (s *Server) configuredRoutes() int {
@@ -1232,6 +1236,7 @@ func (s *Server) registerAccountNoLock(acc *Account) *Account {
 	// Finish account setup and store.
 	s.setAccountSublist(acc)
 
+	acc.mu.Lock()
 	if acc.clients == nil {
 		acc.clients = make(map[*client]struct{})
 	}
@@ -1241,7 +1246,6 @@ func (s *Server) registerAccountNoLock(acc *Account) *Account {
 	// During config reload, it is possible that account was
 	// already created (global account), so use locking and
 	// make sure we create only if needed.
-	acc.mu.Lock()
 	// TODO(dlc)- Double check that we need this for GWs.
 	if acc.rm == nil && s.opts != nil && s.shouldTrackSubscriptions() {
 		acc.rm = make(map[string]int32)
@@ -1442,10 +1446,10 @@ func (s *Server) Start() {
 	s.Noticef("  Git:      [%s]", gc)
 	s.Debugf("  Go build: %s", s.info.GoVersion)
 	s.Noticef("  Name:     %s", s.info.Name)
-	s.Noticef("  ID:       %s", s.info.ID)
 	if opts.JetStream {
 		s.Noticef("  Node:     %s", getHash(s.info.Name))
 	}
+	s.Noticef("  ID:       %s", s.info.ID)
 
 	defer s.Noticef("Server is ready")
 

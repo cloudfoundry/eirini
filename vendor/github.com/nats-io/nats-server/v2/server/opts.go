@@ -924,6 +924,7 @@ func (o *Options) processConfigFileLine(k string, v interface{}, errors *[]error
 			limit := int64(0)
 			ttl := time.Duration(0)
 			sync := time.Duration(0)
+			opts := []DirResOption{}
 			var err error
 			if v, ok := v["dir"]; ok {
 				_, v := unwrapValue(v, &lt)
@@ -949,6 +950,13 @@ func (o *Options) processConfigFileLine(k string, v interface{}, errors *[]error
 				_, v := unwrapValue(v, &lt)
 				sync, err = time.ParseDuration(v.(string))
 			}
+			if v, ok := v["timeout"]; err == nil && ok {
+				_, v := unwrapValue(v, &lt)
+				var to time.Duration
+				if to, err = time.ParseDuration(v.(string)); err == nil {
+					opts = append(opts, FetchTimeout(to))
+				}
+			}
 			if err != nil {
 				*errors = append(*errors, &configErr{tk, err.Error()})
 				return
@@ -970,12 +978,12 @@ func (o *Options) processConfigFileLine(k string, v interface{}, errors *[]error
 				if del {
 					*errors = append(*errors, &configErr{tk, "CACHE does not accept allow_delete"})
 				}
-				res, err = NewCacheDirAccResolver(dir, limit, ttl)
+				res, err = NewCacheDirAccResolver(dir, limit, ttl, opts...)
 			case "FULL":
 				if ttl != 0 {
 					*errors = append(*errors, &configErr{tk, "FULL does not accept ttl"})
 				}
-				res, err = NewDirAccResolver(dir, limit, sync, del)
+				res, err = NewDirAccResolver(dir, limit, sync, del, opts...)
 			}
 			if err != nil {
 				*errors = append(*errors, &configErr{tk, err.Error()})
@@ -1596,6 +1604,7 @@ func parseLeafNodes(v interface{}, opts *Options, errors *[]error, warnings *[]e
 				continue
 			}
 			opts.LeafNode.TLSTimeout = tc.Timeout
+			opts.LeafNode.TLSMap = tc.Map
 		case "leafnode_advertise", "advertise":
 			opts.LeafNode.Advertise = mv.(string)
 		case "no_advertise":
@@ -1992,9 +2001,7 @@ func parseAccountMapDest(v interface{}, tk token, errors *[]error, warnings *[]e
 			switch vv := dmv.(type) {
 			case string:
 				ws := vv
-				if strings.HasSuffix(ws, "%") {
-					ws = ws[:len(ws)-1]
-				}
+				ws = strings.TrimSuffix(ws, "%")
 				weight, err := strconv.Atoi(ws)
 				if err != nil {
 					err := &configErr{tk, fmt.Sprintf("Invalid weight %q for mapping destination", ws)}

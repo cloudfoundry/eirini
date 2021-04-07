@@ -180,10 +180,10 @@ const (
 	jsAckT   = "$JS.ACK.%s.%s"
 	jsAckPre = "$JS.ACK."
 
-	// jsFlowControlT is the template for flow control messages.
-	jsFlowControlT = "$JS.FC.%s.%s.%d"
+	// jsFlowControl is for flow control subjects.
+	jsFlowControlPre = "$JS.FC."
 	// jsFlowControl is for FC responses.
-	jsFlowControl = "$JS.FC.*.*.*"
+	jsFlowControl = "$JS.FC.%s.%s.*"
 
 	// JSAdvisoryPrefix is a prefix for all JetStream advisories.
 	JSAdvisoryPrefix = "$JS.EVENT.ADVISORY"
@@ -599,6 +599,7 @@ var (
 	jsClusterTagsErr       = &ApiError{Code: 400, Description: "tags placement not supported for operation"}
 	jsClusterNoPeersErr    = &ApiError{Code: 400, Description: "no suitable peers for placement"}
 	jsServerNotMemberErr   = &ApiError{Code: 400, Description: "server is not a member of the cluster"}
+	jsNoMessageFoundErr    = &ApiError{Code: 404, Description: "no message found"}
 )
 
 // For easier handling of exports and imports.
@@ -1142,6 +1143,32 @@ func (s *Server) jsStreamCreateRequest(sub *subscription, c *client, subject, re
 		return
 	}
 
+	hasStream := func(streamName string) (bool, int32, []string) {
+		var exists bool
+		var maxMsgSize int32
+		var subs []string
+		if s.JetStreamIsClustered() {
+			if js, _ := s.getJetStreamCluster(); js != nil {
+				js.mu.RLock()
+				if sa := js.streamAssignment(acc.Name, streamName); sa != nil {
+					maxMsgSize = sa.Config.MaxMsgSize
+					subs = sa.Config.Subjects
+					exists = true
+				}
+				js.mu.RUnlock()
+			}
+		} else if mset, err := acc.lookupStream(streamName); err == nil {
+			maxMsgSize = mset.cfg.MaxMsgSize
+			subs = mset.cfg.Subjects
+			exists = true
+		}
+		return exists, maxMsgSize, subs
+	}
+
+	var streamSubs []string
+	var deliveryPrefixes []string
+	var apiPrefixes []string
+
 	// Do some pre-checking for mirror config to avoid cycles in clustered mode.
 	if cfg.Mirror != nil {
 		if len(cfg.Subjects) > 0 {
@@ -1166,21 +1193,65 @@ func (s *Server) jsStreamCreateRequest(sub *subscription, c *client, subject, re
 		}
 
 		// We do not require other stream to exist anymore, but if we can see it check payloads.
-		var exists bool
-		var maxMsgSize int32
-
-		if s.JetStreamIsClustered() {
-			js, _ := s.getJetStreamCluster()
-			if sa := js.streamAssignment(acc.Name, cfg.Mirror.Name); sa != nil {
-				maxMsgSize = sa.Config.MaxMsgSize
-				exists = true
-			}
-		} else if mset, err := acc.lookupStream(cfg.Mirror.Name); err == nil {
-			maxMsgSize = mset.cfg.MaxMsgSize
-			exists = true
+		exists, maxMsgSize, subs := hasStream(cfg.Mirror.Name)
+		if len(subs) > 0 {
+			streamSubs = append(streamSubs, subs...)
 		}
 		if exists && cfg.MaxMsgSize > 0 && maxMsgSize > 0 && cfg.MaxMsgSize < maxMsgSize {
 			resp.Error = &ApiError{Code: 400, Description: "stream mirror must have max message size >= source"}
+			s.sendAPIErrResponse(ci, acc, subject, reply, string(msg), s.jsonResponse(&resp))
+			return
+		}
+		if cfg.Mirror.External != nil {
+			if cfg.Mirror.External.DeliverPrefix != _EMPTY_ {
+				deliveryPrefixes = append(deliveryPrefixes, cfg.Mirror.External.DeliverPrefix)
+			}
+			if cfg.Mirror.External.ApiPrefix != _EMPTY_ {
+				apiPrefixes = append(apiPrefixes, cfg.Mirror.External.ApiPrefix)
+			}
+		}
+	}
+	if len(cfg.Sources) > 0 {
+		for _, src := range cfg.Sources {
+			if src.External == nil {
+				continue
+			}
+			exists, maxMsgSize, subs := hasStream(src.Name)
+			if len(subs) > 0 {
+				streamSubs = append(streamSubs, subs...)
+			}
+			if src.External.DeliverPrefix != _EMPTY_ {
+				deliveryPrefixes = append(deliveryPrefixes, src.External.DeliverPrefix)
+			}
+			if src.External.ApiPrefix != _EMPTY_ {
+				apiPrefixes = append(apiPrefixes, src.External.ApiPrefix)
+			}
+			if exists && cfg.MaxMsgSize > 0 && maxMsgSize > 0 && cfg.MaxMsgSize < maxMsgSize {
+				resp.Error = &ApiError{Code: 400, Description: "stream source must have max message size >= target"}
+				s.sendAPIErrResponse(ci, acc, subject, reply, string(msg), s.jsonResponse(&resp))
+				return
+			}
+		}
+	}
+	// check prefix overlap with subjects
+	for _, pfx := range deliveryPrefixes {
+		if !IsValidPublishSubject(pfx) {
+			resp.Error = &ApiError{Code: 400, Description: fmt.Sprintf("stream external delivery prefix %q must not contain wildcards", pfx)}
+			s.sendAPIErrResponse(ci, acc, subject, reply, string(msg), s.jsonResponse(&resp))
+			return
+		}
+		for _, sub := range streamSubs {
+			if SubjectsCollide(sub, fmt.Sprintf("%s.%s", pfx, sub)) {
+				resp.Error = &ApiError{Code: 400, Description: fmt.Sprintf("stream external delivery prefix %q overlaps with stream subject %q", pfx, sub)}
+				s.sendAPIErrResponse(ci, acc, subject, reply, string(msg), s.jsonResponse(&resp))
+				return
+			}
+		}
+	}
+	// check if api prefixes overlap
+	for _, apiPfx := range apiPrefixes {
+		if SubjectsCollide(apiPfx, JSApiPrefix) {
+			resp.Error = &ApiError{Code: 400, Description: fmt.Sprintf("stream external api prefix %q must not overlap with %s", apiPfx, JSApiPrefix)}
 			s.sendAPIErrResponse(ci, acc, subject, reply, string(msg), s.jsonResponse(&resp))
 			return
 		}
@@ -2281,7 +2352,7 @@ func (s *Server) jsMsgGetRequest(sub *subscription, c *client, subject, reply st
 
 	subj, hdr, msg, ts, err := mset.store.LoadMsg(req.Seq)
 	if err != nil {
-		resp.Error = jsError(err)
+		resp.Error = jsNoMessageFoundErr
 		s.sendAPIErrResponse(ci, acc, subject, reply, string(msg), s.jsonResponse(&resp))
 		return
 	}
@@ -2441,6 +2512,8 @@ func (s *Server) jsStreamRestoreRequest(sub *subscription, c *client, subject, r
 }
 
 func (s *Server) processStreamRestore(ci *ClientInfo, acc *Account, cfg *StreamConfig, subject, reply, msg string) <-chan error {
+	js := s.getJetStream()
+
 	var resp = JSApiStreamRestoreResponse{ApiResponse: ApiResponse{Type: JSApiStreamRestoreResponseType}}
 
 	// FIXME(dlc) - Need to close these up if we fail for some reason.
@@ -2479,6 +2552,8 @@ func (s *Server) processStreamRestore(ci *ClientInfo, acc *Account, cfg *StreamC
 	resultCh := make(chan result, 1)
 	activeCh := make(chan int, 32)
 
+	var total int
+
 	// FIXM(dlc) - Probably take out of network path eventually do to disk I/O?
 	processChunk := func(sub *subscription, c *client, subject, reply string, msg []byte) {
 		// We require reply subjects to communicate back failures, flow etc. If they do not have one log and cancel.
@@ -2506,6 +2581,15 @@ func (s *Server) processStreamRestore(ci *ClientInfo, acc *Account, cfg *StreamC
 		if len(msg) == 0 {
 			s.Debugf("Finished staging restore for stream '%s > %s'", acc.Name, streamName)
 			resultCh <- result{err, reply}
+			return
+		}
+
+		// We track total and check on server limits.
+		// TODO(dlc) - We could check apriori and cancel initial request if we know it won't fit.
+		total += len(msg)
+		if js.wouldExceedLimits(FileStorage, total) {
+			s.resourcesExeededError()
+			resultCh <- result{ErrJetStreamResourcesExceeded, reply}
 			return
 		}
 
