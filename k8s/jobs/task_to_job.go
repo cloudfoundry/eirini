@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	taskSourceType       = "TASK"
 	opiTaskContainerName = "opi-task"
 	parallelism          = 1
 	completions          = 1
@@ -43,7 +42,7 @@ func NewTaskToJobConverter(
 func (m *Converter) Convert(task *opi.Task, privateRegistrySecret *corev1.Secret) *batch.Job {
 	job := m.toJob(task)
 	job.Spec.Template.Spec.ServiceAccountName = m.serviceAccountName
-	job.Labels[LabelSourceType] = taskSourceType
+	job.Labels[LabelSourceType] = TaskSourceType
 	job.Labels[LabelName] = task.Name
 	job.Annotations[AnnotationCompletionCallback] = task.CompletionCallback
 	job.Spec.Template.Annotations[AnnotationGUID] = task.GUID

@@ -110,7 +110,7 @@ func main() {
 		Complete(taskReconciler)
 	cmdcommons.ExitfIfError(err, "Failed to build Task reconciler")
 
-	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate("APP")}
+	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate(stset.AppSourceType)}
 	err = builder.
 		ControllerManagedBy(mgr).
 		For(&corev1.Pod{}, builder.WithPredicates(predicates...)).

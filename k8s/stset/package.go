@@ -3,6 +3,8 @@ package stset
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
 const (
+	AppSourceType = "APP"
+
 	AnnotationAppName              = "cloudfoundry.org/application_name"
 	AnnotationVersion              = "cloudfoundry.org/version"
 	AnnotationAppID                = "cloudfoundry.org/application_id"
@@ -16,8 +18,6 @@ const (
 	AnnotationOriginalRequest      = "cloudfoundry.org/original_request"
 	AnnotationLastReportedAppCrash = "cloudfoundry.org/last_reported_app_crash"
 	AnnotationLastReportedLRPCrash = "cloudfoundry.org/last_reported_lrp_crash"
-
-	AppSourceType = "APP"
 
 	LabelGUID        = "cloudfoundry.org/guid"
 	LabelOrgGUID     = AnnotationOrgGUID

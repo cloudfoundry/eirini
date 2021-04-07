@@ -93,7 +93,7 @@ func main() {
 		cfg.TTLSeconds,
 	)
 
-	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate("TASK")}
+	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate(jobs.TaskSourceType)}
 	err = builder.
 		ControllerManagedBy(mgr).
 		For(&corev1.Pod{}, builder.WithPredicates(predicates...)).

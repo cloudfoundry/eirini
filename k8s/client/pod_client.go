@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/patching"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/opi"
@@ -32,7 +33,7 @@ func (c *Pod) GetAll(ctx context.Context) ([]corev1.Pod, error) {
 	podList, err := c.clientSet.CoreV1().Pods(c.workloadsNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf(
 			"%s in (%s,%s)",
-			stset.LabelSourceType, "APP", "TASK",
+			stset.LabelSourceType, stset.AppSourceType, jobs.TaskSourceType,
 		),
 	})
 	if err != nil {

@@ -7,6 +7,8 @@ import (
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
 const (
+	TaskSourceType = "TASK"
+
 	AnnotationGUID                           = "cloudfoundry.org/guid"
 	AnnotationAppName                        = stset.AnnotationAppName
 	AnnotationAppID                          = stset.AnnotationAppID
@@ -19,13 +21,12 @@ const (
 	AnnotationOpiTaskCompletionReportCounter = "cloudfoundry.org/task_completion_report_counter"
 	AnnotationCCAckedTaskCompletion          = "cloudfoundry.org/cc_acked_task_completion"
 
-	LabelGUID       = stset.LabelGUID
-	LabelName       = "cloudfoundry.org/name"
-	LabelAppGUID    = stset.LabelAppGUID
-	LabelSourceType = stset.LabelSourceType
-
+	LabelGUID          = stset.LabelGUID
+	LabelName          = "cloudfoundry.org/name"
+	LabelAppGUID       = stset.LabelAppGUID
+	LabelSourceType    = stset.LabelSourceType
 	LabelTaskCompleted = "cloudfoundry.org/task_completed"
-	TaskCompletedTrue  = "true"
 
+	TaskCompletedTrue                 = "true"
 	PrivateRegistrySecretGenerateName = stset.PrivateRegistrySecretGenerateName
 )

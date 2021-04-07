@@ -23,7 +23,7 @@ func NewJob(clientSet kubernetes.Interface, workloadsNamespace string) *Job {
 	return &Job{
 		clientSet:          clientSet,
 		workloadsNamespace: workloadsNamespace,
-		jobType:            "TASK",
+		jobType:            jobs.TaskSourceType,
 		guidLabel:          jobs.LabelGUID,
 	}
 }

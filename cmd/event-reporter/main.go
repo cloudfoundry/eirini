@@ -12,6 +12,7 @@ import (
 	k8sclient "code.cloudfoundry.org/eirini/k8s/client"
 	k8sevent "code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
+	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/tlsconfig"
@@ -91,7 +92,7 @@ func main() {
 
 	cmdcommons.ExitfIfError(err, "Failed to create k8s controller runtime manager")
 
-	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate("APP")}
+	predicates := []predicate.Predicate{reconciler.NewSourceTypeUpdatePredicate(stset.AppSourceType)}
 	err = builder.
 		ControllerManagedBy(mgr).
 		For(&corev1.Pod{}, builder.WithPredicates(predicates...)).
