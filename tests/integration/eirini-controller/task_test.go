@@ -112,10 +112,15 @@ var _ = Describe("Tasks", func() {
 
 			It("creates a ImagePullSecret with the credentials", func() {
 				registrySecretName := integration.GetRegistrySecretName(fixture.Clientset, fixture.Namespace, taskGUID, jobs.PrivateRegistrySecretGenerateName)
-				secret, err := fixture.Clientset.
-					CoreV1().
-					Secrets(fixture.Namespace).
-					Get(context.Background(), registrySecretName, metav1.GetOptions{})
+
+				getSecret := func() (*corev1.Secret, error) {
+					return fixture.Clientset.
+						CoreV1().
+						Secrets(fixture.Namespace).
+						Get(context.Background(), registrySecretName, metav1.GetOptions{})
+				}
+
+				secret, err := getSecret()
 
 				Expect(err).NotTo(HaveOccurred())
 
@@ -129,9 +134,20 @@ var _ = Describe("Tasks", func() {
 					allJobs := integration.ListJobs(fixture.Clientset, fixture.Namespace, taskGUID)()
 					job := allJobs[0]
 
-					Expect(secret.OwnerReferences).To(HaveLen(1))
-					Expect(secret.OwnerReferences[0].Name).To(Equal(job.Name))
-					Expect(secret.OwnerReferences[0].UID).To(Equal(job.UID))
+					var ownerRefs []metav1.OwnerReference
+					Eventually(func() []metav1.OwnerReference {
+						s, err := getSecret()
+						if err != nil {
+							return nil
+						}
+
+						ownerRefs = s.OwnerReferences
+
+						return ownerRefs
+					}).Should(HaveLen(1))
+
+					Expect(ownerRefs[0].Name).To(Equal(job.Name))
+					Expect(ownerRefs[0].UID).To(Equal(job.UID))
 				})
 			})
 		})
