@@ -1,6 +1,17 @@
 #!/bin/bash
 
-set -euxo pipefail
+set -euo pipefail
+
+USAGE=$(
+  cat <<EOF
+Usage: cf4k8s-on-kind.sh [options]
+Options:
+  -c  use local cloud_controller_ng
+  -e  use local eirini
+  -d  recreate cluster with new values file
+  -h  this help
+EOF
+)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -9,47 +20,60 @@ CF_DOMAIN=${CF_DOMAIN:-vcap.me}
 EIRINI_RELEASE_BASEDIR=${EIRINI_RELEASE_BASEDIR:-$HOME/workspace/eirini-release}
 EIRINI_CI_BASEDIR=${EIRINI_CI_BASEDIR:-$HOME/workspace/eirini-ci}
 EIRINI_RENDER_DIR=$(mktemp -d)
+CF4K8S_DIR="$HOME/workspace/cf-for-k8s"
+VALUES_FILE="$SCRIPT_DIR/values/$CLUSTER_NAME.cf-values.yml"
 
 source "$SCRIPT_DIR/assets/cf4k8s/cc-commons.sh"
 
 trap "rm -rf $EIRINI_RENDER_DIR" EXIT
 
-use_local_cc="false"
-use_local_eirini="false"
-delete_kind_cluster="false"
-while getopts "cde" opt; do
-  case ${opt} in
-    c)
-      use_local_cc="true"
-      ;;
-    d)
-      delete_kind_cluster="true"
-      ;;
-    e)
-      use_local_eirini="true"
-      ;;
-  esac
-done
-shift $((OPTIND - 1))
+main() {
+  use_local_cc="false"
+  use_local_eirini="false"
+  delete_environment="false"
+  while getopts "cdeh" opt; do
+    case ${opt} in
+      h)
+        echo "$USAGE"
+        exit 0
+        ;;
+      c)
+        use_local_cc="true"
+        ;;
+      d)
+        delete_environment="true"
+        ;;
+      e)
+        use_local_eirini="true"
+        ;;
+    esac
+  done
+  shift $((OPTIND - 1))
 
-values_file="$SCRIPT_DIR/values/$CLUSTER_NAME.cf-values.yml"
+  if [[ ! -f "$VALUES_FILE" ]] || [[ "$delete_environment" == "true" ]]; then
+    rm -f "$VALUES_FILE"
+    # ask early for pass passphrase if required
+    docker_username=eiriniuser
+    docker_password=$(pass eirini/docker-hub)
+    docker_repo_prefix=eirini
+  else
+    echo " ⚠️  WARNING: Using existing values file: $VALUES_FILE! If you want a clean deployment consider deleting this file!"
+  fi
 
-if [[ "$delete_kind_cluster" == "true" ]]; then
-  kind delete cluster --name cf-for-k8s
-  rm -rf "$SCRIPT_DIR/values/cf-for-k8s.cf-values.yml"
-fi
+  ensure-kind-cluster
+  generate-values-file
+  build-eirini
+  build-cc
+  deploy
+}
 
-if [[ ! -f "$values_file" ]]; then
-  # ask early for pass passphrase if required
-  docker_username=eiriniuser
-  docker_password=$(pass eirini/docker-hub)
-  docker_repo_prefix=eirini
-else
-  echo " ⚠️  WARNING: Using existing values file: $values_file! If you want a clean deployment consider deleting this file!"
-fi
+ensure-kind-cluster() {
+  if [[ "$delete_environment" == "true" ]]; then
+    echo "🗑  Deleting kind cluster"
 
-pushd $HOME/workspace/cf-for-k8s
-{
+    kind delete cluster --name cf-for-k8s
+  fi
+
   if ! kind get clusters | grep -q "$CLUSTER_NAME"; then
     # don't install the default CNI as it doesn't support NetworkPolicies
     # use the cluster config in assets until cf-for-k8s release > 2.1.1
@@ -59,15 +83,22 @@ pushd $HOME/workspace/cf-for-k8s
       --image kindest/node:v1.19.1 \
       --name "$CLUSTER_NAME"
   else
+    echo "⚠️  Using existing kind cluster"
     kind export kubeconfig --name $CLUSTER_NAME
   fi
+}
 
-  if [[ ! -f "$values_file" ]]; then
-    mkdir -p "$(dirname $values_file)"
+generate-values-file() {
+  if [[ ! -f "$VALUES_FILE" ]]; then
+    echo "🌱 Generating new values file"
 
-    ./hack/generate-values.sh -d "$CF_DOMAIN" >"$values_file"
+    mkdir -p "$(dirname $VALUES_FILE)"
 
-    cat <<EOF >>"$values_file"
+    pushd "$CF4K8S_DIR"
+    {
+      ./hack/generate-values.sh -d "$CF_DOMAIN" >"$VALUES_FILE"
+
+      cat <<EOF >>"$VALUES_FILE"
 app_registry:
   hostname: https://index.docker.io/v1/
   repository_prefix: "$docker_repo_prefix"
@@ -82,37 +113,50 @@ metrics_server_prefer_internal_kubelet_address: true
 remove_resource_requirements: true
 use_first_party_jwt_tokens: true
 EOF
+    }
+    popd
 
   fi
+}
 
-  # generate eirini yamls
-  "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$EIRINI_RENDER_DIR"
+build-eirini() {
+  pushd "$CF4K8S_DIR"
+  {
+    if [[ "$use_local_eirini" == "true" ]]; then
+      echo "🔨 Building local eirini yamls"
+      # generate eirini yamls
+      "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$EIRINI_RENDER_DIR"
+      # patch generated eirini yamls into cf-for-k8s
+      rm -rf "./build/eirini/_vendir/eirini"
+      mv "$EIRINI_RENDER_DIR/templates" "./build/eirini/_vendir/eirini"
+    fi
 
-  if [[ "$use_local_eirini" == "true" ]]; then
-    # patch generated eirini yamls into cf-for-k8s
-    rm -rf "./build/eirini/_vendir/eirini"
-    mv "$EIRINI_RENDER_DIR/templates" "./build/eirini/_vendir/eirini"
-  fi
+    echo "🏞  Rendering eirini with ytt"
+    # generate config/eirini/_ytt_lib/eirini/rendered.yml
+    ./build/eirini/build.sh
+  }
+  popd
+}
 
-  # generate config/eirini/_ytt_lib/eirini/rendered.yml
-  ./build/eirini/build.sh
-
+build-cc() {
   if [[ "$use_local_cc" == "true" ]]; then
+    echo "🔨 Building local cloud_controller_ng"
     # build & bump cc
     build_ccng_image
     push-to-docker
     sed -i "s|ccng: .*$|ccng: $CCNG_IMAGE:$TAG|" "$HOME/workspace/capi-k8s-release/values/images.yml"
     "$HOME/workspace/capi-k8s-release/scripts/bump-cf-for-k8s.sh"
   fi
-
 }
-popd
 
-# install Calico to get NetworkPolicy support
-kapp deploy -y -a calico -f https://docs.projectcalico.org/manifests/calico.yaml
+deploy() {
+  echo "⚙️  Deploying Calico"
+  # install Calico to get NetworkPolicy support
+  kapp deploy -y -a calico -f https://docs.projectcalico.org/manifests/calico.yaml
 
-# deploy everything
-kapp deploy -y -a cf -f <(ytt -f "$HOME/workspace/cf-for-k8s/config" -f "$values_file" $@)
+  echo "⚙️  Deploying cf-for-k8s"
+  # deploy everything
+  kapp deploy -y -a cf -f <(ytt -f "$HOME/workspace/cf-for-k8s/config" -f "$VALUES_FILE" $@)
+}
 
-cf api https://api.${CF_DOMAIN} --skip-ssl-validation
-cf auth admin $(yq eval '.cf_admin_password' $values_file)
+main "$@"
