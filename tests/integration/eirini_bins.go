@@ -39,6 +39,9 @@ type EiriniBinaries struct {
 
 func NewEiriniBinaries() EiriniBinaries {
 	bins := EiriniBinaries{}
+
+	bins.CertsPath, _ = tests.GenerateKeyPairDir("tls", "localhost")
+
 	bins.setBinsPath()
 	bins.OPI = NewBinary("code.cloudfoundry.org/eirini/cmd/opi", bins.BinsPath, []string{"connect"}, bins.CertsPath)
 	bins.RouteCollector = NewBinary("code.cloudfoundry.org/eirini/cmd/route-collector", bins.BinsPath, []string{}, bins.CertsPath)
@@ -50,8 +53,6 @@ func NewEiriniBinaries() EiriniBinaries {
 	bins.InstanceIndexEnvInjector = NewBinary("code.cloudfoundry.org/eirini/cmd/instance-index-env-injector", bins.BinsPath, []string{}, bins.CertsPath)
 	bins.Migration = NewBinary("code.cloudfoundry.org/eirini/cmd/migration", bins.BinsPath, []string{}, bins.CertsPath)
 	bins.ResourceValidator = NewBinary("code.cloudfoundry.org/eirini/cmd/resource-validator", bins.BinsPath, []string{}, bins.CertsPath)
-
-	bins.CertsPath, _ = tests.GenerateKeyPairDir("tls", "localhost")
 
 	return bins
 }
