@@ -80,6 +80,7 @@ deploy:
       - ../eirini-release/scripts/assets/value-overrides.yml
       setValueTemplates:
         webhook_ca_bundle: "{{.CA_BUNDLE}}"
+        resource_validator_ca_bundle: "{{.CA_BUNDLE}}"
       artifactOverrides:
         images.api: eirini/opi
         images.route_collector: eirini/route-collector

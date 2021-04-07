@@ -291,6 +291,16 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 					return len(guids)
 				}).Should(Equal(3))
 			})
+
+			When("immutable property is updated", func() {
+				BeforeEach(func() {
+					lrp.Spec.Command = []string{"you", "shall", "not", "pass"}
+				})
+
+				It("fails", func() {
+					Expect(clientErr).To(MatchError(ContainSubstring("Changing immutable fields not allowed: Command")))
+				})
+			})
 		})
 	})
 
