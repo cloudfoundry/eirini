@@ -1,12 +1,14 @@
 package integration
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests"
 	"github.com/gofrs/flock"
 
@@ -32,21 +34,24 @@ type EiriniBinaries struct {
 	ResourceValidator        Binary `json:"resource_validator"`
 	ExternalBinsPath         bool
 	BinsPath                 string
+	CertsPath                string
 }
 
 func NewEiriniBinaries() EiriniBinaries {
 	bins := EiriniBinaries{}
 	bins.setBinsPath()
-	bins.OPI = NewBinary("code.cloudfoundry.org/eirini/cmd/opi", bins.BinsPath, []string{"connect"})
-	bins.RouteCollector = NewBinary("code.cloudfoundry.org/eirini/cmd/route-collector", bins.BinsPath, []string{})
-	bins.RouteStatefulsetInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-statefulset-informer", bins.BinsPath, []string{})
-	bins.RoutePodInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-pod-informer", bins.BinsPath, []string{})
-	bins.EventsReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/event-reporter", bins.BinsPath, []string{})
-	bins.TaskReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/task-reporter", bins.BinsPath, []string{})
-	bins.EiriniController = NewBinary("code.cloudfoundry.org/eirini/cmd/eirini-controller", bins.BinsPath, []string{})
-	bins.InstanceIndexEnvInjector = NewBinary("code.cloudfoundry.org/eirini/cmd/instance-index-env-injector", bins.BinsPath, []string{})
-	bins.Migration = NewBinary("code.cloudfoundry.org/eirini/cmd/migration", bins.BinsPath, []string{})
-	bins.ResourceValidator = NewBinary("code.cloudfoundry.org/eirini/cmd/resource-validator", bins.BinsPath, []string{})
+	bins.OPI = NewBinary("code.cloudfoundry.org/eirini/cmd/opi", bins.BinsPath, []string{"connect"}, bins.CertsPath)
+	bins.RouteCollector = NewBinary("code.cloudfoundry.org/eirini/cmd/route-collector", bins.BinsPath, []string{}, bins.CertsPath)
+	bins.RouteStatefulsetInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-statefulset-informer", bins.BinsPath, []string{}, bins.CertsPath)
+	bins.RoutePodInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-pod-informer", bins.BinsPath, []string{}, bins.CertsPath)
+	bins.EventsReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/event-reporter", bins.BinsPath, []string{}, bins.CertsPath)
+	bins.TaskReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/task-reporter", bins.BinsPath, []string{}, bins.CertsPath)
+	bins.EiriniController = NewBinary("code.cloudfoundry.org/eirini/cmd/eirini-controller", bins.BinsPath, []string{}, bins.CertsPath)
+	bins.InstanceIndexEnvInjector = NewBinary("code.cloudfoundry.org/eirini/cmd/instance-index-env-injector", bins.BinsPath, []string{}, bins.CertsPath)
+	bins.Migration = NewBinary("code.cloudfoundry.org/eirini/cmd/migration", bins.BinsPath, []string{}, bins.CertsPath)
+	bins.ResourceValidator = NewBinary("code.cloudfoundry.org/eirini/cmd/resource-validator", bins.BinsPath, []string{}, bins.CertsPath)
+
+	bins.CertsPath, _ = tests.GenerateKeyPairDir("tls", "localhost")
 
 	return bins
 }
@@ -57,6 +62,8 @@ func (b *EiriniBinaries) TearDown() {
 	if !b.ExternalBinsPath {
 		os.RemoveAll(b.BinsPath)
 	}
+
+	os.RemoveAll(b.CertsPath)
 }
 
 func (b *EiriniBinaries) setBinsPath() {
@@ -79,9 +86,10 @@ type Binary struct {
 	BinPath     string   `json:"bin_path"`
 	LocksDir    string   `json:"locks_dir"`
 	ExtraArgs   []string `json:"extra_args"`
+	CertsPath   string   `json:"cert_path"`
 }
 
-func NewBinary(packagePath, binsPath string, extraArgs []string) Binary {
+func NewBinary(packagePath, binsPath string, extraArgs []string, certsPath string) Binary {
 	paths := strings.Split(packagePath, "/")
 	binName := paths[len(paths)-1]
 
@@ -90,6 +98,7 @@ func NewBinary(packagePath, binsPath string, extraArgs []string) Binary {
 		BinPath:     filepath.Join(binsPath, binName),
 		ExtraArgs:   extraArgs,
 		LocksDir:    filepath.Join(binsPath, ".locks"),
+		CertsPath:   certsPath,
 	}
 }
 
@@ -102,7 +111,10 @@ func (b *Binary) Run(config interface{}, envVars ...string) (*gexec.Session, str
 		configFile = tests.WriteTempFile(configBytes, filepath.Base(b.BinPath)+"-config.yaml")
 	}
 
-	defaultEnv := GetEiriniCertEnvVars()
+	defaultEnv := []string{
+		fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, b.CertsPath),
+		fmt.Sprintf("%s=%s", eirini.EnvServerCertDir, b.CertsPath),
+	}
 	env := append(defaultEnv, envVars...)
 
 	return b.RunWithConfig(configFile, env...), configFile

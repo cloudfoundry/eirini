@@ -2,7 +2,6 @@ package cmd_test
 
 import (
 	"encoding/json"
-	"os"
 	"testing"
 	"time"
 
@@ -50,11 +49,4 @@ var _ = AfterEach(func() {
 func TestIntegration(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "cmd Suite")
-}
-
-func pathToTestFixture(relativePath string) string {
-	cwd, err := os.Getwd()
-	Expect(err).ToNot(HaveOccurred())
-
-	return cwd + "/../fixtures/" + relativePath
 }

@@ -66,7 +66,7 @@ var _ = BeforeEach(func() {
 	Expect(integration.CreateEmptySecret(fixture.Namespace, secretName, fixture.Clientset)).To(Succeed())
 
 	var err error
-	httpClient, err = integration.MakeTestHTTPClient()
+	httpClient, err = integration.MakeTestHTTPClient(eiriniBins.CertsPath)
 	Expect(err).ToNot(HaveOccurred())
 
 	apiConfig = integration.DefaultAPIConfig(fixture.Namespace, fixture.NextAvailablePort())

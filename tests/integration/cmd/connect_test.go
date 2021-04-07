@@ -43,7 +43,7 @@ var _ = Describe("connect command", func() {
 	BeforeEach(func() {
 		envVarOverrides = []string{}
 		var err error
-		httpClient, err = integration.MakeTestHTTPClient()
+		httpClient, err = integration.MakeTestHTTPClient(eiriniBins.CertsPath)
 		Expect(err).ToNot(HaveOccurred())
 
 		configFilePath = ""
@@ -88,12 +88,20 @@ var _ = Describe("connect command", func() {
 		})
 
 		Context("send a request with an invalid client certificate", func() {
-			var clientCert tls.Certificate
+			var (
+				invalidCertDir string
+				clientCert     tls.Certificate
+			)
 
 			BeforeEach(func() {
 				var err error
-				clientCert, err = tls.LoadX509KeyPair(pathToTestFixture("untrusted-cert"), pathToTestFixture("untrusted-key"))
+				invalidCertDir, _ = tests.GenerateKeyPairDir("tls", "invalid_domain.com")
+				clientCert, err = tls.LoadX509KeyPair(filepath.Join(invalidCertDir, "tls.crt"), filepath.Join(invalidCertDir, "tls.key"))
 				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				Expect(os.RemoveAll(invalidCertDir)).To(Succeed())
 			})
 
 			It("returns a mTLS-related connection failure", func() {

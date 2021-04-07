@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"code.cloudfoundry.org/cfhttp/v2"
@@ -90,13 +91,13 @@ func CreateSecretWithStringData(namespace, secretName string, clientset kubernet
 	return err
 }
 
-func MakeTestHTTPClient() (*http.Client, error) {
-	bs, err := ioutil.ReadFile(PathToTestFixture("tls.ca"))
+func MakeTestHTTPClient(certsPath string) (*http.Client, error) {
+	bs, err := ioutil.ReadFile(filepath.Join(certsPath, "tls.ca"))
 	if err != nil {
 		return nil, err
 	}
 
-	clientCert, err := tls.LoadX509KeyPair(PathToTestFixture("tls.crt"), PathToTestFixture("tls.key"))
+	clientCert, err := tls.LoadX509KeyPair(filepath.Join(certsPath, "tls.crt"), filepath.Join(certsPath, "tls.key"))
 	if err != nil {
 		return nil, err
 	}
@@ -114,20 +115,6 @@ func MakeTestHTTPClient() (*http.Client, error) {
 	httpClient := cfhttp.NewClient(cfhttp.WithTLSConfig(tlsConfig))
 
 	return httpClient, nil
-}
-
-func PathToTestFixture(relativePath string) string {
-	cwd, err := os.Getwd()
-	Expect(err).NotTo(HaveOccurred())
-
-	return fmt.Sprintf("%s/../fixtures/%s", cwd, relativePath)
-}
-
-func GetEiriniCertEnvVars() []string {
-	return []string{
-		fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, PathToTestFixture("")),
-		fmt.Sprintf("%s=%s", eirini.EnvServerCertDir, PathToTestFixture("")),
-	}
 }
 
 func DefaultAPIConfig(namespace string, tlsPort int) *eirini.APIConfig {

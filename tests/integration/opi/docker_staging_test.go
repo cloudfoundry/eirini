@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/models/cf"
@@ -24,9 +25,9 @@ var _ = Describe("Docker Staging", func() {
 	BeforeEach(func() {
 		var err error
 		capiServer, err = integration.CreateTestServer(
-			integration.PathToTestFixture("tls.crt"),
-			integration.PathToTestFixture("tls.key"),
-			integration.PathToTestFixture("tls.ca"),
+			filepath.Join(eiriniBins.CertsPath, "tls.crt"),
+			filepath.Join(eiriniBins.CertsPath, "tls.key"),
+			filepath.Join(eiriniBins.CertsPath, "tls.ca"),
 		)
 		Expect(err).NotTo(HaveOccurred())
 		capiServer.HTTPTestServer.StartTLS()

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -278,9 +279,9 @@ var _ = Describe("Tasks", func() {
 		BeforeEach(func() {
 			var err error
 			cloudControllerServer, err = integration.CreateTestServer(
-				integration.PathToTestFixture("tls.crt"),
-				integration.PathToTestFixture("tls.key"),
-				integration.PathToTestFixture("tls.ca"),
+				filepath.Join(eiriniBins.CertsPath, "tls.crt"),
+				filepath.Join(eiriniBins.CertsPath, "tls.key"),
+				filepath.Join(eiriniBins.CertsPath, "tls.ca"),
 			)
 			Expect(err).ToNot(HaveOccurred())
 			cloudControllerServer.HTTPTestServer.StartTLS()
