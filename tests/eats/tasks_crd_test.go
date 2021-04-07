@@ -71,7 +71,7 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 		})
 
 		It("runs the task", func() {
-			Eventually(pingLRPFn(fixture.Namespace, taskServiceName, port, "/"), "20s").Should(ContainSubstring("Dora!"))
+			Eventually(pingLRPFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
 		})
 
 		When("the task image lives in a private registry", func() {
@@ -99,7 +99,7 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			taskServiceName = exposeLRP(fixture.Namespace, taskGUID, port)
-			Eventually(pingLRPFn(fixture.Namespace, taskServiceName, port, "/"), "20s").Should(ContainSubstring("Dora!"))
+			Eventually(pingLRPFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
 		})
 
 		JustBeforeEach(func() {

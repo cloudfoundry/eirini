@@ -261,7 +261,13 @@ func pingLRPFn(namespace, serviceName string, appPort int32, pingPath string) fu
 		},
 	}
 
-	return func() (string, error) {
+	return func() (_ string, err error) {
+		defer func() {
+			if err != nil {
+				fmt.Fprintf(GinkgoWriter, "pingLRPFn error: %v", err)
+			}
+		}()
+
 		pingURL := &url.URL{
 			Scheme: "http",
 			Host:   fmt.Sprintf("%s.%s:%d", serviceName, namespace, appPort),
