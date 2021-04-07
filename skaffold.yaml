@@ -31,11 +31,6 @@ build:
       buildCommand: ./scripts/build instance-index-env-injector
       dependencies:
         command: ./scripts/deps instance-index-env-injector
-  - image: eirini/metrics-collector
-    custom:
-      buildCommand: ./scripts/build metrics-collector
-      dependencies:
-        command: ./scripts/deps metrics-collector
   - image: eirini/route-pod-informer
     custom:
       buildCommand: ./scripts/build route-pod-informer
@@ -86,7 +81,6 @@ deploy:
         images.route_collector: eirini/route-collector
         images.eirini_controller: eirini/eirini-controller
         images.event_reporter: eirini/event-reporter
-        images.metrics_collector: eirini/metrics-collector
         images.route_statefulset_informer: eirini/route-statefulset-informer
         images.route_pod_informer: eirini/route-pod-informer
         images.task_reporter: eirini/task-reporter

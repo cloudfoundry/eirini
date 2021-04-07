@@ -13,21 +13,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
-	metricsclientset "k8s.io/metrics/pkg/client/clientset/versioned"
 )
-
-func CreateMetricsClient(kubeConfigPath string) metricsclientset.Interface {
-	klog.SetOutput(os.Stdout)
-	klog.SetOutputBySeverity("Fatal", os.Stderr)
-
-	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-	ExitfIfError(err, "Failed to get kubeconfig")
-
-	metricsClient, err := metricsclientset.NewForConfig(config)
-	ExitfIfError(err, "Failed to build metrics client")
-
-	return metricsClient
-}
 
 func CreateKubeClient(kubeConfigPath string) kubernetes.Interface {
 	klog.SetOutput(os.Stdout)

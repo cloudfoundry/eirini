@@ -22,7 +22,6 @@ import (
 type EiriniBinaries struct {
 	OPI                      Binary `json:"opi"`
 	RouteCollector           Binary `json:"route_collector"`
-	MetricsCollector         Binary `json:"metrics_collector"`
 	RouteStatefulsetInformer Binary `json:"route_stateful_set_informer"`
 	RoutePodInformer         Binary `json:"route_pod_informer"`
 	EventsReporter           Binary `json:"events_reporter"`
@@ -40,7 +39,6 @@ func NewEiriniBinaries() EiriniBinaries {
 	bins.setBinsPath()
 	bins.OPI = NewBinary("code.cloudfoundry.org/eirini/cmd/opi", bins.BinsPath, []string{"connect"})
 	bins.RouteCollector = NewBinary("code.cloudfoundry.org/eirini/cmd/route-collector", bins.BinsPath, []string{})
-	bins.MetricsCollector = NewBinary("code.cloudfoundry.org/eirini/cmd/metrics-collector", bins.BinsPath, []string{})
 	bins.RouteStatefulsetInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-statefulset-informer", bins.BinsPath, []string{})
 	bins.RoutePodInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-pod-informer", bins.BinsPath, []string{})
 	bins.EventsReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/event-reporter", bins.BinsPath, []string{})

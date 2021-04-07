@@ -12,7 +12,6 @@ const (
 	EnvEiriniAddress              = "EIRINI_ADDRESS"
 	EnvInstanceEnvInjectorCertDir = "INSTANCE_ENV_INJECTOR_CERTS_DIR"
 	EnvResourceValidatorCertDir   = "RESOURCE_VALIDATOR_CERTS_DIR"
-	EnvLoggregatorCertDir         = "LOGGREGATOR_CERTS_DIR"
 	EnvCCCertDir                  = "CC_CERTS_DIR"
 	EnvServerCertDir              = "SERVER_CERTS_DIR"
 
@@ -25,8 +24,6 @@ const (
 	EnvCFInstancePort       = "CF_INSTANCE_PORT"
 	EnvCFInstancePorts      = "CF_INSTANCE_PORTS"
 
-	AppMetricsEmissionIntervalInSecs = 15
-
 	RegistrySecretName = "default-image-pull-secret"
 
 	// Certs
@@ -34,9 +31,8 @@ const (
 	TLSSecretCert = "tls.crt"
 	TLSSecretCA   = "tls.ca"
 
-	EiriniCrtDir       = "/etc/eirini/certs/"
-	CCCrtDir           = "/etc/cf-api/certs/"
-	LoggregatorCertDir = "/etc/loggregator/certs/"
+	EiriniCrtDir = "/etc/eirini/certs/"
+	CCCrtDir     = "/etc/cf-api/certs/"
 
 	CCUploaderSecretName   = "cc-uploader-certs"   //#nosec G101
 	EiriniClientSecretName = "eirini-client-certs" //#nosec G101
@@ -100,16 +96,6 @@ type RouteEmitterConfig struct {
 	NatsPort            int    `yaml:"nats_port"`
 	EmitPeriodInSeconds uint   `yaml:"emit_period_in_seconds"`
 	WorkloadsNamespace  string
-
-	KubeConfig `yaml:",inline"`
-}
-
-type MetricsCollectorConfig struct {
-	LoggregatorAddress string `yaml:"loggregator_address"`
-
-	WorkloadsNamespace string
-
-	AppMetricsEmissionIntervalInSecs int `yaml:"app_metrics_emission_interval_in_secs"`
 
 	KubeConfig `yaml:",inline"`
 }

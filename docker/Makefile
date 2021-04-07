@@ -1,4 +1,4 @@
-IMAGES = opi event-reporter eirini-controller metrics-collector route-collector route-pod-informer route-statefulset-informer task-reporter instance-index-env-injector migration resource-validator
+IMAGES = opi event-reporter eirini-controller route-collector route-pod-informer route-statefulset-informer task-reporter instance-index-env-injector migration resource-validator
 
 TAG ?= latest
 DOCKER_DIR := ${CURDIR}

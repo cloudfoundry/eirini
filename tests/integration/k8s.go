@@ -127,7 +127,6 @@ func GetEiriniCertEnvVars() []string {
 	return []string{
 		fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, PathToTestFixture("")),
 		fmt.Sprintf("%s=%s", eirini.EnvServerCertDir, PathToTestFixture("")),
-		fmt.Sprintf("%s=%s", eirini.EnvLoggregatorCertDir, PathToTestFixture("")),
 	}
 }
 

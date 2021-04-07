@@ -62,10 +62,6 @@ Eirini is composed of:
   [`CF_INSTANCE_INDEX`](https://docs.cloudfoundry.org/devguide/deploy-apps/environment-variable.html#CF-INSTANCE-INDEX)
   environment variable into every LRP instance (pod).
 
-- `metrics-collector`: A component that collects metric usage for all LRPs and
-  reports it to the
-  [Loggregator](https://github.com/cloudfoundry/loggregator-release) component.
-
 - `route-collector`: A component that continuously collects routes and
   registers them in [Gorouter](https://github.com/cloudfoundry/gorouter) using
   [NATS](https://nats.io/). Usually deployed in combination with
