@@ -6,10 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
-	natsserver "github.com/nats-io/nats-server/v2/server"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -59,17 +57,4 @@ func pathToTestFixture(relativePath string) string {
 	Expect(err).ToNot(HaveOccurred())
 
 	return cwd + "/../fixtures/" + relativePath
-}
-
-func defaultRouteEmitterConfig(natsServerOpts natsserver.Options) *eirini.RouteEmitterConfig {
-	config := &eirini.RouteEmitterConfig{
-		KubeConfig: eirini.KubeConfig{
-			ConfigPath: pathToTestFixture("kube.conf"),
-		},
-		NatsIP:       natsServerOpts.Host,
-		NatsPort:     natsServerOpts.Port,
-		NatsPassword: natsServerOpts.Password,
-	}
-
-	return config
 }

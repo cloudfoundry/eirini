@@ -11,11 +11,6 @@ build:
       buildCommand: ./scripts/build opi
       dependencies:
         command: ./scripts/deps opi
-  - image: eirini/route-collector
-    custom:
-      buildCommand: ./scripts/build route-collector
-      dependencies:
-        command: ./scripts/deps route-collector
   - image: eirini/eirini-controller
     custom:
       buildCommand: ./scripts/build eirini-controller
@@ -31,16 +26,6 @@ build:
       buildCommand: ./scripts/build instance-index-env-injector
       dependencies:
         command: ./scripts/deps instance-index-env-injector
-  - image: eirini/route-pod-informer
-    custom:
-      buildCommand: ./scripts/build route-pod-informer
-      dependencies:
-        command: ./scripts/deps route-pod-informer
-  - image: eirini/route-statefulset-informer
-    custom:
-      buildCommand: ./scripts/build route-statefulset-informer
-      dependencies:
-        command: ./scripts/deps route-statefulset-informer
   - image: eirini/task-reporter
     custom:
       buildCommand: ./scripts/build task-reporter
@@ -57,13 +42,6 @@ deploy:
     - ../eirini-release/scripts/assets/wiremock.yml
   helm:
     releases:
-    - name: nats
-      remote: true
-      chartPath: bitnami/nats
-      namespace: eirini-core
-      setValueTemplates:
-        auth.user: nats
-        auth.password: "{{.NATS_PASSWORD}}"
     - name: prometheus
       remote: true
       chartPath: prometheus-community/prometheus
@@ -78,11 +56,8 @@ deploy:
         resource_validator_ca_bundle: "{{.CA_BUNDLE}}"
       artifactOverrides:
         images.api: eirini/opi
-        images.route_collector: eirini/route-collector
         images.eirini_controller: eirini/eirini-controller
         images.event_reporter: eirini/event-reporter
-        images.route_statefulset_informer: eirini/route-statefulset-informer
-        images.route_pod_informer: eirini/route-pod-informer
         images.task_reporter: eirini/task-reporter
         images.instance_index_env_injector: eirini/instance-index-env-injector
         images.migration: eirini/migration

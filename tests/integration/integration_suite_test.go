@@ -137,27 +137,6 @@ func getNodeCount() int {
 	return len(nodeList.Items)
 }
 
-func podCrashed(pod corev1.Pod) bool {
-	if len(pod.Status.ContainerStatuses) == 0 {
-		return false
-	}
-
-	terminated := pod.Status.ContainerStatuses[0].State.Terminated
-	waiting := pod.Status.ContainerStatuses[0].State.Waiting
-
-	return terminated != nil || waiting != nil && waiting.Reason == "CrashLoopBackOff"
-}
-
-func podReady(pod corev1.Pod) bool {
-	for _, c := range pod.Status.Conditions {
-		if c.Type == corev1.PodReady {
-			return c.Status == corev1.ConditionTrue
-		}
-	}
-
-	return false
-}
-
 func createLRP(name string) *opi.LRP {
 	return &opi.LRP{
 		Command: []string{
