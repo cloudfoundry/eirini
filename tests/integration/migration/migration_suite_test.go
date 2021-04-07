@@ -57,7 +57,7 @@ var _ = JustBeforeEach(func() {
 		},
 	}
 	session, configFilePath := eiriniBins.Migration.Run(migrationConfig)
-	Eventually(session).Should(gexec.Exit(0))
+	Eventually(session, "5s").Should(gexec.Exit(0))
 	Expect(os.Remove(configFilePath)).To(Succeed())
 })
 
