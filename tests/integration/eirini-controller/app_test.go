@@ -2,10 +2,7 @@ package eirini_controller_test
 
 import (
 	"context"
-	"strconv"
 
-	"code.cloudfoundry.org/eirini/cmd"
-	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
@@ -15,8 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -60,6 +55,8 @@ var _ = Describe("App", func() {
 	})
 
 	Describe("desiring an app", func() {
+		var st *appsv1.StatefulSet
+
 		JustBeforeEach(func() {
 			var err error
 			lrp, err = fixture.EiriniClientset.
@@ -67,9 +64,7 @@ var _ = Describe("App", func() {
 				LRPs(fixture.Namespace).
 				Create(context.Background(), lrp, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-		})
 
-		It("deploys the app as a stateful set with correct properties", func() {
 			Eventually(func() *appsv1.StatefulSet {
 				return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 			}).ShouldNot(BeNil())
@@ -78,21 +73,11 @@ var _ = Describe("App", func() {
 				return getPodReadiness(lrpGUID, lrpVersion)
 			}).Should(BeTrue(), "LRP Pod not ready")
 
-			st := integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
-			Expect(st.Labels).To(SatisfyAll(
-				HaveKeyWithValue(stset.LabelGUID, lrpGUID),
-				HaveKeyWithValue(stset.LabelVersion, lrpVersion),
-				HaveKeyWithValue(stset.LabelSourceType, "APP"),
-				HaveKeyWithValue(stset.LabelAppGUID, "the-app-guid"),
-			))
+			st = integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+		})
 
-			latestMigrationIndex := cmd.GetLatestMigrationIndex()
-			Expect(st.Annotations).To(HaveKeyWithValue(shared.AnnotationLatestMigration, strconv.Itoa(latestMigrationIndex)))
-
-			Expect(st.Spec.Replicas).To(PointTo(Equal(int32(1))))
+		It("sets the runAsNonRoot in the PodSecurityContext", func() {
 			Expect(st.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(BeTrue()))
-			Expect(st.Spec.Template.Spec.Containers[0].Image).To(Equal("eirini/dorini"))
-			Expect(st.Spec.Template.Spec.Containers[0].Env).To(ContainElement(corev1.EnvVar{Name: "FOO", Value: "BAR"}))
 		})
 
 		When("AllowRunImageAsRoot is true", func() {
@@ -101,84 +86,12 @@ var _ = Describe("App", func() {
 			})
 
 			It("doesn't set `runAsNonRoot` in the PodSecurityContext", func() {
-				Eventually(func() *appsv1.StatefulSet {
-					return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
-				}).ShouldNot(BeNil())
-
-				Eventually(func() bool {
-					return getPodReadiness(lrpGUID, lrpVersion)
-				}).Should(BeTrue(), "LRP Pod not ready")
-
-				st := integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
-
 				Expect(st.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(BeNil())
-			})
-		})
-
-		When("the the app has sidecars", func() {
-			assertEqualValues := func(actual, expected *resource.Quantity) {
-				Expect(actual.Value()).To(Equal(expected.Value()))
-			}
-
-			BeforeEach(func() {
-				lrp.Spec.Image = "eirini/busybox"
-				lrp.Spec.Command = []string{"/bin/sh", "-c", "echo Hello from app; sleep 3600"}
-				lrp.Spec.Sidecars = []eiriniv1.Sidecar{
-					{
-						Name:     "the-sidecar",
-						Command:  []string{"/bin/sh", "-c", "echo Hello from sidecar; sleep 3600"},
-						MemoryMB: 101,
-					},
-				}
-			})
-
-			It("deploys the app with the sidcar container", func() {
-				Eventually(func() *appsv1.StatefulSet {
-					return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
-				}).ShouldNot(BeNil())
-
-				Eventually(func() bool {
-					return getPodReadiness(lrpGUID, lrpVersion)
-				}).Should(BeTrue(), "LRP Pod not ready")
-
-				st := integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
-
-				Expect(st.Spec.Template.Spec.Containers).To(HaveLen(2))
-			})
-
-			It("sets resource limits on the sidecar container", func() {
-				Eventually(func() *appsv1.StatefulSet {
-					return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
-				}).ShouldNot(BeNil())
-
-				Eventually(func() bool {
-					return getPodReadiness(lrpGUID, lrpVersion)
-				}).Should(BeTrue(), "LRP Pod not ready")
-
-				st := integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
-
-				containers := st.Spec.Template.Spec.Containers
-				for _, container := range containers {
-					if container.Name == "the-sidecar" {
-						limits := container.Resources.Limits
-						requests := container.Resources.Requests
-
-						expectedMemory := resource.NewScaledQuantity(101, resource.Mega)
-						expectedDisk := resource.NewScaledQuantity(lrp.Spec.DiskMB, resource.Mega)
-						expectedCPU := resource.NewScaledQuantity(int64(lrp.Spec.CPUWeight*10), resource.Milli)
-
-						assertEqualValues(limits.Memory(), expectedMemory)
-						assertEqualValues(limits.StorageEphemeral(), expectedDisk)
-						assertEqualValues(requests.Memory(), expectedMemory)
-						assertEqualValues(requests.Cpu(), expectedCPU)
-					}
-				}
 			})
 		})
 	})
 
 	Describe("Update an app", func() {
-		var clientErr error
 		var updatedLRP *eiriniv1.LRP
 
 		BeforeEach(func() {
@@ -200,19 +113,16 @@ var _ = Describe("App", func() {
 			}).Should(Equal(int32(1)))
 			updatedLRP.ResourceVersion = integration.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName).ResourceVersion
 
-			_, clientErr = fixture.EiriniClientset.
+			_, err = fixture.EiriniClientset.
 				EiriniV1().
 				LRPs(fixture.Namespace).
 				Update(context.Background(), updatedLRP, metav1.UpdateOptions{})
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		When("routes are updated", func() {
 			BeforeEach(func() {
 				updatedLRP.Spec.AppRoutes = []eiriniv1.Route{{Hostname: "another-hostname-1", Port: 8080}}
-			})
-
-			It("succeeds", func() {
-				Expect(clientErr).NotTo(HaveOccurred())
 			})
 
 			It("updates the underlying statefulset", func() {

@@ -23,7 +23,7 @@ var _ = Describe("ListAppTest", func() {
 		desireLRPWithGUID(configuredNamespaceAppGUID, fixture.Namespace)
 	})
 
-	It("will list apps only in the configured namespace", func() {
+	It("will list apps", func() {
 		apps := listLRPs(httpClient, url)
 
 		Expect(apps).To(HaveLen(1))

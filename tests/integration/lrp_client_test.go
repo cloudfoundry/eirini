@@ -3,10 +3,12 @@ package integration_test
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/pdb"
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
@@ -14,129 +16,121 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 var _ = Describe("LRPClient", func() {
 	var (
 		allowRunImageAsRoot bool
 		lrpClient           *k8s.LRPClient
-		odinLRP             *opi.LRP
-		thorLRP             *opi.LRP
+		lrp                 *opi.LRP
 	)
 
 	BeforeEach(func() {
 		allowRunImageAsRoot = false
-		odinLRP = createLRP("ödin")
-		thorLRP = createLRP("thor")
+		lrp = createLRP("ödin")
 	})
 
 	AfterEach(func() {
-		cleanupStatefulSet(odinLRP)
-		cleanupStatefulSet(thorLRP)
+		cleanupStatefulSet(lrp)
 		Eventually(func() []appsv1.StatefulSet {
-			return listAllStatefulSets(odinLRP, thorLRP)
+			return listStatefulSets(lrp)
 		}).Should(BeEmpty())
 	})
 
 	JustBeforeEach(func() {
-		logger := lagertest.NewTestLogger("test")
-
-		lrpToStatefulSetConverter := stset.NewLRPToStatefulSetConverter(
-			tests.GetApplicationServiceAccount(),
-			"registry-secret",
-			false,
-			allowRunImageAsRoot,
-			1,
-			k8s.CreateLivenessProbe,
-			k8s.CreateReadinessProbe,
-		)
-		lrpClient = k8s.NewLRPClient(
-			logger,
-			client.NewSecret(fixture.Clientset),
-			client.NewStatefulSet(fixture.Clientset, fixture.Namespace),
-			client.NewPod(fixture.Clientset, fixture.Namespace),
-			pdb.NewUpdater(client.NewPodDisruptionBudget(fixture.Clientset)),
-			client.NewEvent(fixture.Clientset),
-			lrpToStatefulSetConverter,
-			stset.NewStatefulSetToLRPConverter(),
-		)
+		lrpClient = createLrpClient(fixture.Namespace, allowRunImageAsRoot)
 	})
 
 	Describe("Desire", func() {
+		var statefulset *appsv1.StatefulSet
+
 		JustBeforeEach(func() {
-			err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
+			err := lrpClient.Desire(ctx, fixture.Namespace, lrp)
 			Expect(err).ToNot(HaveOccurred())
-			err = lrpClient.Desire(ctx, fixture.Namespace, thorLRP)
-			Expect(err).ToNot(HaveOccurred())
+			statefulset = getStatefulSetForLRP(lrp)
 		})
 
 		// join all tests in a single with By()
 		It("should create a StatefulSet object", func() {
-			statefulset := getStatefulSetForLRP(odinLRP)
-			Expect(statefulset.Name).To(ContainSubstring(odinLRP.GUID))
+			Expect(statefulset.Name).To(ContainSubstring(lrp.GUID))
 			Expect(statefulset.Namespace).To(Equal(fixture.Namespace))
-			Expect(statefulset.Spec.Template.Spec.Containers[0].Command).To(Equal(odinLRP.Command))
-			Expect(statefulset.Spec.Template.Spec.Containers[0].Image).To(Equal(odinLRP.Image))
-			Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(odinLRP.TargetInstances)))
-			Expect(statefulset.Annotations[stset.AnnotationOriginalRequest]).To(Equal(odinLRP.LRP))
+			Expect(statefulset.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
+			Expect(statefulset.Annotations[stset.AnnotationOriginalRequest]).To(Equal(lrp.LRP))
+			Expect(statefulset.Labels).To(SatisfyAll(
+				HaveKeyWithValue(stset.LabelGUID, lrp.GUID),
+				HaveKeyWithValue(stset.LabelVersion, lrp.Version),
+				HaveKeyWithValue(stset.LabelSourceType, "APP"),
+				HaveKeyWithValue(stset.LabelAppGUID, "the-app-guid"),
+			))
+
+			Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(lrp.TargetInstances)))
+			Expect(statefulset.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(BeTrue()))
+			Expect(statefulset.Spec.Template.Spec.Containers[0].Command).To(Equal(lrp.Command))
+			Expect(statefulset.Spec.Template.Spec.Containers[0].Image).To(Equal(lrp.Image))
+			Expect(statefulset.Spec.Template.Spec.Containers[0].Env).To(ContainElement(corev1.EnvVar{Name: "FOO", Value: "BAR"}))
+		})
+
+		It("sets the latest migration index annotation", func() {
+			Expect(statefulset.Annotations).To(HaveKeyWithValue(shared.AnnotationLatestMigration, strconv.Itoa(123)))
 		})
 
 		It("should create all associated pods", func() {
 			var podNames []string
 
 			Eventually(func() []string {
-				podNames = podNamesFromPods(listPods(odinLRP.LRPIdentifier))
+				podNames = podNamesFromPods(listPods(lrp.LRPIdentifier))
 
 				return podNames
-			}).Should(HaveLen(odinLRP.TargetInstances))
+			}).Should(HaveLen(lrp.TargetInstances))
 
-			for i := 0; i < odinLRP.TargetInstances; i++ {
+			for i := 0; i < lrp.TargetInstances; i++ {
 				podIndex := i
-				Expect(podNames[podIndex]).To(ContainSubstring(odinLRP.GUID))
+				Expect(podNames[podIndex]).To(ContainSubstring(lrp.GUID))
 
 				Eventually(func() string {
-					return getPodPhase(podIndex, odinLRP.LRPIdentifier)
+					return getPodPhase(podIndex, lrp.LRPIdentifier)
 				}).Should(Equal("Ready"))
 			}
 
-			statefulset := getStatefulSetForLRP(odinLRP)
 			Eventually(func() int32 {
-				return getStatefulSetForLRP(odinLRP).Status.ReadyReplicas
-			}).Should(Equal(*statefulset.Spec.Replicas))
+				return getStatefulSetForLRP(lrp).Status.ReadyReplicas
+			}).Should(Equal(int32(2)))
 		})
 
 		It("should create a pod disruption budget for the lrp", func() {
-			statefulset := getStatefulSetForLRP(odinLRP)
-			pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
+			pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pdb).NotTo(BeNil())
+			Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromString("50%"))))
+			Expect(pdb.Spec.MaxUnavailable).To(BeNil())
 		})
 
-		Context("when the lrp has 1 instance", func() {
+		When("the lrp has 1 instance", func() {
 			BeforeEach(func() {
-				odinLRP.TargetInstances = 1
+				lrp.TargetInstances = 1
 			})
 
 			It("should not create a pod disruption budget for the lrp", func() {
-				statefulset := getStatefulSetForLRP(odinLRP)
-				_, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
+				_, err := podDisruptionBudgets().Get(context.Background(), "ödin", metav1.GetOptions{})
 				Expect(err).To(MatchError(ContainSubstring("not found")))
 			})
 		})
 
-		Context("when additional app info is provided", func() {
+		When("additional app info is provided", func() {
 			BeforeEach(func() {
-				odinLRP.OrgName = "odin-org"
-				odinLRP.OrgGUID = "odin-org-guid"
-				odinLRP.SpaceName = "odin-space"
-				odinLRP.SpaceGUID = "odin-space-guid"
+				lrp.OrgName = "odin-org"
+				lrp.OrgGUID = "odin-org-guid"
+				lrp.SpaceName = "odin-space"
+				lrp.SpaceGUID = "odin-space-guid"
 			})
 
 			DescribeTable("sets appropriate annotations to statefulset", func(key, value string) {
-				statefulset := getStatefulSetForLRP(odinLRP)
 				Expect(statefulset.Annotations).To(HaveKeyWithValue(key, value))
 			},
 				Entry("SpaceName", stset.AnnotationSpaceName, "odin-space"),
@@ -146,16 +140,15 @@ var _ = Describe("LRPClient", func() {
 			)
 
 			It("sets appropriate labels to statefulset", func() {
-				statefulset := getStatefulSetForLRP(odinLRP)
-				Expect(statefulset.Labels).To(HaveKeyWithValue(stset.LabelGUID, odinLRP.LRPIdentifier.GUID))
-				Expect(statefulset.Labels).To(HaveKeyWithValue(stset.LabelVersion, odinLRP.LRPIdentifier.Version))
+				Expect(statefulset.Labels).To(HaveKeyWithValue(stset.LabelGUID, lrp.LRPIdentifier.GUID))
+				Expect(statefulset.Labels).To(HaveKeyWithValue(stset.LabelVersion, lrp.LRPIdentifier.Version))
 				Expect(statefulset.Labels).To(HaveKeyWithValue(stset.LabelSourceType, "APP"))
 			})
 		})
 
-		Context("when the app has more than one instances", func() {
+		When("the app has more than one instances", func() {
 			BeforeEach(func() {
-				odinLRP.TargetInstances = 2
+				lrp.TargetInstances = 2
 			})
 
 			It("should schedule app pods on different nodes", func() {
@@ -164,12 +157,12 @@ var _ = Describe("LRPClient", func() {
 				}
 
 				Eventually(func() []corev1.Pod {
-					return listPods(odinLRP.LRPIdentifier)
+					return listPods(lrp.LRPIdentifier)
 				}).Should(HaveLen(2))
 
 				var nodeNames []string
 				Eventually(func() []string {
-					nodeNames = nodeNamesFromPods(listPods(odinLRP.LRPIdentifier))
+					nodeNames = nodeNamesFromPods(listPods(lrp.LRPIdentifier))
 
 					return nodeNames
 				}).Should(HaveLen(2))
@@ -177,11 +170,11 @@ var _ = Describe("LRPClient", func() {
 			})
 		})
 
-		Context("When private docker registry credentials are provided", func() {
+		When("private docker registry credentials are provided", func() {
 			BeforeEach(func() {
-				odinLRP.Image = "eiriniuser/notdora:latest"
-				odinLRP.Command = nil
-				odinLRP.PrivateRegistry = &opi.PrivateRegistry{
+				lrp.Image = "eiriniuser/notdora:latest"
+				lrp.Command = nil
+				lrp.PrivateRegistry = &opi.PrivateRegistry{
 					Server:   "index.docker.io/v1/",
 					Username: "eiriniuser",
 					Password: tests.GetEiriniDockerHubPassword(),
@@ -189,7 +182,6 @@ var _ = Describe("LRPClient", func() {
 			})
 
 			It("creates a private registry secret", func() {
-				statefulset := getStatefulSetForLRP(odinLRP)
 				Expect(statefulset.Spec.Template.Spec.ImagePullSecrets).To(HaveLen(2))
 				privateRegistrySecretName := statefulset.Spec.Template.Spec.ImagePullSecrets[1].Name
 				secret, err := getSecret(fixture.Namespace, privateRegistrySecretName)
@@ -199,68 +191,118 @@ var _ = Describe("LRPClient", func() {
 
 			It("sets the ImagePullSecret correctly in the pod template", func() {
 				Eventually(func() []corev1.Pod {
-					return listPods(odinLRP.LRPIdentifier)
-				}).Should(HaveLen(odinLRP.TargetInstances))
+					return listPods(lrp.LRPIdentifier)
+				}).Should(HaveLen(lrp.TargetInstances))
 
-				for i := 0; i < odinLRP.TargetInstances; i++ {
+				for i := 0; i < lrp.TargetInstances; i++ {
 					podIndex := i
 					Eventually(func() string {
-						return getPodPhase(podIndex, odinLRP.LRPIdentifier)
+						return getPodPhase(podIndex, lrp.LRPIdentifier)
 					}).Should(Equal("Ready"))
 				}
 			})
 		})
 
-		Context("when we create the same StatefulSet again", func() {
+		When("we create the same StatefulSet again", func() {
 			It("should not error", func() {
-				err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
+				err := lrpClient.Desire(ctx, fixture.Namespace, lrp)
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 
-		Context("When using a docker image that needs root access", func() {
+		When("using a docker image that needs root access", func() {
 			BeforeEach(func() {
 				allowRunImageAsRoot = true
 
-				odinLRP.Image = "eirini/nginx-integration"
-				odinLRP.Command = nil
-				odinLRP.Health.Type = "http"
-				odinLRP.Health.Port = 8080
+				lrp.Image = "eirini/nginx-integration"
+				lrp.Command = nil
+				lrp.Health.Type = "http"
+				lrp.Health.Port = 8080
 			})
 
 			It("should start all the pods", func() {
 				var podNames []string
 
 				Eventually(func() []string {
-					podNames = podNamesFromPods(listPods(odinLRP.LRPIdentifier))
+					podNames = podNamesFromPods(listPods(lrp.LRPIdentifier))
 
 					return podNames
-				}).Should(HaveLen(odinLRP.TargetInstances))
+				}).Should(HaveLen(lrp.TargetInstances))
 
-				for i := 0; i < odinLRP.TargetInstances; i++ {
+				for i := 0; i < lrp.TargetInstances; i++ {
 					podIndex := i
 					Eventually(func() string {
-						return getPodPhase(podIndex, odinLRP.LRPIdentifier)
+						return getPodPhase(podIndex, lrp.LRPIdentifier)
 					}).Should(Equal("Ready"))
 				}
 
 				Eventually(func() int32 {
-					statefulset := getStatefulSetForLRP(odinLRP)
-
-					return statefulset.Status.ReadyReplicas
-				}).Should(BeNumerically("==", odinLRP.TargetInstances))
+					return getStatefulSetForLRP(lrp).Status.ReadyReplicas
+				}).Should(BeNumerically("==", lrp.TargetInstances))
 			})
 		})
 
-		Context("when the LRP has 0 target instances", func() {
+		When("the LRP has 0 target instances", func() {
 			BeforeEach(func() {
-				odinLRP.TargetInstances = 0
+				lrp.TargetInstances = 0
 			})
 
 			It("still creates a statefulset, with 0 replicas", func() {
-				statefulset := getStatefulSetForLRP(odinLRP)
-				Expect(statefulset.Name).To(ContainSubstring(odinLRP.GUID))
+				Expect(statefulset.Name).To(ContainSubstring(lrp.GUID))
 				Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(0)))
+			})
+		})
+
+		When("the the app has sidecars", func() {
+			assertEqualValues := func(actual, expected *resource.Quantity) {
+				Expect(actual.Value()).To(Equal(expected.Value()))
+			}
+
+			BeforeEach(func() {
+				lrp.Image = "eirini/busybox"
+				lrp.Command = []string{"/bin/sh", "-c", "echo Hello from app; sleep 3600"}
+				lrp.Sidecars = []opi.Sidecar{
+					{
+						Name:     "the-sidecar",
+						Command:  []string{"/bin/sh", "-c", "echo Hello from sidecar; sleep 3600"},
+						MemoryMB: 101,
+					},
+				}
+			})
+
+			It("deploys the app with the sidcar container", func() {
+				Expect(statefulset.Spec.Template.Spec.Containers).To(HaveLen(2))
+			})
+
+			It("sets resource limits on the sidecar container", func() {
+				containers := statefulset.Spec.Template.Spec.Containers
+				for _, container := range containers {
+					if container.Name == "the-sidecar" {
+						limits := container.Resources.Limits
+						requests := container.Resources.Requests
+
+						expectedMemory := resource.NewScaledQuantity(101, resource.Mega)
+						expectedDisk := resource.NewScaledQuantity(lrp.DiskMB, resource.Mega)
+						expectedCPU := resource.NewScaledQuantity(int64(lrp.CPUWeight*10), resource.Milli)
+
+						assertEqualValues(limits.Memory(), expectedMemory)
+						assertEqualValues(limits.StorageEphemeral(), expectedDisk)
+						assertEqualValues(requests.Memory(), expectedMemory)
+						assertEqualValues(requests.Cpu(), expectedCPU)
+					}
+				}
+			})
+		})
+
+		When("the app has user defined annotations", func() {
+			BeforeEach(func() {
+				lrp.UserDefinedAnnotations = map[string]string{
+					"prometheus.io/scrape": "yes, please",
+				}
+			})
+
+			It("sets them on the pod template", func() {
+				Expect(statefulset.Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "yes, please"))
 			})
 		})
 	})
@@ -272,18 +314,18 @@ var _ = Describe("LRPClient", func() {
 		)
 
 		JustBeforeEach(func() {
-			err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
+			err := lrpClient.Desire(ctx, fixture.Namespace, lrp)
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func() []corev1.Pod {
-				return listPods(odinLRP.LRPIdentifier)
-			}).Should(HaveLen(odinLRP.TargetInstances))
+				return listPods(lrp.LRPIdentifier)
+			}).Should(HaveLen(lrp.TargetInstances))
 
-			stSet := getStatefulSetForLRP(odinLRP)
+			stSet := getStatefulSetForLRP(lrp)
 			statefulsetName = stSet.Name
 			imagePullSecrets = stSet.Spec.Template.Spec.ImagePullSecrets
 
-			err = lrpClient.Stop(ctx, odinLRP.LRPIdentifier)
+			err = lrpClient.Stop(ctx, lrp.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -295,36 +337,36 @@ var _ = Describe("LRPClient", func() {
 
 		It("should delete the associated pods", func() {
 			Eventually(func() []corev1.Pod {
-				return listPods(odinLRP.LRPIdentifier)
+				return listPods(lrp.LRPIdentifier)
 			}).Should(BeEmpty())
 		})
 
 		It("should delete the pod disruption budget for the lrp", func() {
 			Eventually(func() error {
-				_, err := podDisruptionBudgets().Get(context.Background(), statefulsetName, v1.GetOptions{})
+				_, err := podDisruptionBudgets().Get(context.Background(), statefulsetName, metav1.GetOptions{})
 
 				return err
 			}).Should(MatchError(ContainSubstring("not found")))
 		})
 
-		Context("when the lrp has only 1 instance", func() {
+		When("the lrp has only 1 instance", func() {
 			BeforeEach(func() {
-				odinLRP.TargetInstances = 1
+				lrp.TargetInstances = 1
 			})
 
 			It("keep the lrp without a pod disruption budget", func() {
 				Eventually(func() error {
-					_, err := podDisruptionBudgets().Get(context.Background(), statefulsetName, v1.GetOptions{})
+					_, err := podDisruptionBudgets().Get(context.Background(), statefulsetName, metav1.GetOptions{})
 
 					return err
 				}).Should(MatchError(ContainSubstring("not found")))
 			})
 		})
 
-		Context("When private docker registry credentials are provided", func() {
+		When("private docker registry credentials are provided", func() {
 			BeforeEach(func() {
-				odinLRP.Image = "eiriniuser/notdora:latest"
-				odinLRP.PrivateRegistry = &opi.PrivateRegistry{
+				lrp.Image = "eiriniuser/notdora:latest"
+				lrp.PrivateRegistry = &opi.PrivateRegistry{
 					Server:   "index.docker.io/v1/",
 					Username: "eiriniuser",
 					Password: tests.GetEiriniDockerHubPassword(),
@@ -351,100 +393,156 @@ var _ = Describe("LRPClient", func() {
 	})
 
 	Describe("Update", func() {
-		var (
-			instancesBefore int
-			instancesAfter  int
-		)
+		Describe("scaling", func() {
+			var (
+				instancesBefore int
+				instancesAfter  int
+				statefulset     *appsv1.StatefulSet
+			)
 
-		JustBeforeEach(func() {
-			odinLRP.TargetInstances = instancesBefore
-			Expect(lrpClient.Desire(ctx, fixture.Namespace, odinLRP)).To(Succeed())
-
-			odinLRP.TargetInstances = instancesAfter
-			Expect(lrpClient.Update(ctx, odinLRP)).To(Succeed())
-		})
-
-		Context("when scaling up from 1 to 2 instances", func() {
 			BeforeEach(func() {
 				instancesBefore = 1
 				instancesAfter = 2
 			})
 
-			It("should create a pod disruption budget for the lrp", func() {
-				statefulset := getStatefulSetForLRP(odinLRP)
-				pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(pdb).NotTo(BeNil())
+			JustBeforeEach(func() {
+				lrp.TargetInstances = instancesBefore
+				Expect(lrpClient.Desire(ctx, fixture.Namespace, lrp)).To(Succeed())
+
+				lrp.TargetInstances = instancesAfter
+				Expect(lrpClient.Update(ctx, lrp)).To(Succeed())
+				statefulset = getStatefulSetForLRP(lrp)
+			})
+
+			It("updates instance count", func() {
+				Expect(statefulset.Spec.Replicas).To(PointTo(Equal(int32(2))))
+			})
+
+			When("scaling up from 1 to 2 instances", func() {
+				It("should create a pod disruption budget for the lrp", func() {
+					pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(pdb).NotTo(BeNil())
+				})
+			})
+
+			When("scaling up from 2 to 3 instances", func() {
+				BeforeEach(func() {
+					instancesBefore = 2
+					instancesAfter = 3
+				})
+
+				It("should keep the existing pod disruption budget for the lrp", func() {
+					pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(pdb).NotTo(BeNil())
+				})
+			})
+
+			When("scaling down from 2 to 1 instances", func() {
+				BeforeEach(func() {
+					instancesBefore = 2
+					instancesAfter = 1
+				})
+
+				It("should delete the pod disruption budget for the lrp", func() {
+					_, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, metav1.GetOptions{})
+					Expect(err).To(MatchError(ContainSubstring("not found")))
+				})
+			})
+
+			When("scaling down from 1 to 0 instances", func() {
+				BeforeEach(func() {
+					instancesBefore = 1
+					instancesAfter = 0
+				})
+
+				It("should keep the lrp without a pod disruption budget", func() {
+					_, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, metav1.GetOptions{})
+					Expect(err).To(MatchError(ContainSubstring("not found")))
+				})
 			})
 		})
 
-		Context("when scaling up from 2 to 3 instances", func() {
+		Describe("updating routes", func() {
+			var (
+				routesBefore []opi.Route
+				routesAfter  []opi.Route
+				statefulset  *appsv1.StatefulSet
+			)
+
 			BeforeEach(func() {
-				instancesBefore = 2
-				instancesAfter = 3
+				routesBefore = []opi.Route{{Hostname: "host1", Port: 123}}
+				routesAfter = []opi.Route{{Hostname: "host2", Port: 456}}
 			})
 
-			It("should keep the existing pod disruption budget for the lrp", func() {
-				statefulset := getStatefulSetForLRP(odinLRP)
-				pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(pdb).NotTo(BeNil())
+			JustBeforeEach(func() {
+				lrp.AppURIs = routesBefore
+				Expect(lrpClient.Desire(ctx, fixture.Namespace, lrp)).To(Succeed())
+
+				lrp.AppURIs = routesAfter
+				Expect(lrpClient.Update(ctx, lrp)).To(Succeed())
+				statefulset = getStatefulSetForLRP(lrp)
+			})
+
+			It("updates the routes", func() {
+				Expect(statefulset.Annotations[stset.AnnotationRegisteredRoutes]).To(MatchJSON(`[{"hostname": "host2", "port": 456}]`))
 			})
 		})
 
-		Context("when scaling down from 2 to 1 instances", func() {
+		Describe("updating image", func() {
+			var (
+				imageBefore string
+				imageAfter  string
+				statefulset *appsv1.StatefulSet
+			)
+
 			BeforeEach(func() {
-				instancesBefore = 2
-				instancesAfter = 1
+				imageBefore = "eirini/dorini"
+				imageAfter = "eirini/notdora"
 			})
 
-			It("should delete the pod disruption budget for the lrp", func() {
-				statefulset := getStatefulSetForLRP(odinLRP)
-				_, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
-				Expect(err).To(MatchError(ContainSubstring("not found")))
-			})
-		})
+			JustBeforeEach(func() {
+				lrp.Image = imageBefore
+				Expect(lrpClient.Desire(ctx, fixture.Namespace, lrp)).To(Succeed())
 
-		Context("when scaling down from 1 to 0 instances", func() {
-			BeforeEach(func() {
-				instancesBefore = 1
-				instancesAfter = 0
+				lrp.Image = imageAfter
+				Expect(lrpClient.Update(ctx, lrp)).To(Succeed())
+				statefulset = getStatefulSetForLRP(lrp)
 			})
 
-			It("should keep the lrp without a pod disruption budget", func() {
-				statefulset := getStatefulSetForLRP(odinLRP)
-				_, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, v1.GetOptions{})
-				Expect(err).To(MatchError(ContainSubstring("not found")))
+			It("updates the image", func() {
+				Expect(statefulset.Spec.Template.Spec.Containers[0].Image).To(Equal(imageAfter))
 			})
 		})
 	})
 
 	Describe("Get", func() {
 		numberOfInstancesFn := func() int {
-			lrp, err := lrpClient.Get(ctx, odinLRP.LRPIdentifier)
+			actualLRP, err := lrpClient.Get(ctx, lrp.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
 
-			return lrp.RunningInstances
+			return actualLRP.RunningInstances
 		}
 
 		JustBeforeEach(func() {
-			err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
+			err := lrpClient.Desire(ctx, fixture.Namespace, lrp)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("correctly reports the running instances", func() {
-			Eventually(numberOfInstancesFn).Should(Equal(odinLRP.TargetInstances))
-			Consistently(numberOfInstancesFn, "10s").Should(Equal(odinLRP.TargetInstances))
+			Eventually(numberOfInstancesFn).Should(Equal(lrp.TargetInstances))
+			Consistently(numberOfInstancesFn, "10s").Should(Equal(lrp.TargetInstances))
 		})
 
-		Context("When one of the instances if failing", func() {
+		When("one of the instances if failing", func() {
 			BeforeEach(func() {
-				odinLRP = createLRP("odin")
-				odinLRP.Health = opi.Healtcheck{
+				lrp = createLRP("odin")
+				lrp.Health = opi.Healtcheck{
 					Type: "port",
 					Port: 3000,
 				}
-				odinLRP.Command = []string{
+				lrp.Command = []string{
 					"/bin/sh",
 					"-c",
 					`if [ $(echo $HOSTNAME | sed 's|.*-\(.*\)|\1|') -eq 1 ]; then
@@ -458,40 +556,40 @@ fi;`,
 			})
 
 			It("correctly reports the running instances", func() {
-				Eventually(numberOfInstancesFn).Should(Equal(1), fmt.Sprintf("pod %#v did not start", odinLRP.LRPIdentifier))
-				Consistently(numberOfInstancesFn, "10s").Should(Equal(1), fmt.Sprintf("pod %#v did not keep running", odinLRP.LRPIdentifier))
+				Eventually(numberOfInstancesFn).Should(Equal(1), fmt.Sprintf("pod %#v did not start", lrp.LRPIdentifier))
+				Consistently(numberOfInstancesFn, "10s").Should(Equal(1), fmt.Sprintf("pod %#v did not keep running", lrp.LRPIdentifier))
 			})
 		})
 
-		Context("when the LRP has 0 target instances", func() {
+		When("the LRP has 0 target instances", func() {
 			BeforeEach(func() {
-				odinLRP.TargetInstances = 0
+				lrp.TargetInstances = 0
 			})
 
 			It("can still get the LRP", func() {
-				lrp, err := lrpClient.Get(ctx, odinLRP.LRPIdentifier)
+				actualLRP, err := lrpClient.Get(ctx, lrp.LRPIdentifier)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(lrp.GUID).To(Equal(odinLRP.GUID))
+				Expect(actualLRP.GUID).To(Equal(lrp.GUID))
 			})
 		})
 	})
 
 	Describe("GetInstances", func() {
 		instancesFn := func() []*opi.Instance {
-			instances, err := lrpClient.GetInstances(ctx, odinLRP.LRPIdentifier)
+			instances, err := lrpClient.GetInstances(ctx, lrp.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
 
 			return instances
 		}
 
 		JustBeforeEach(func() {
-			err := lrpClient.Desire(ctx, fixture.Namespace, odinLRP)
+			err := lrpClient.Desire(ctx, fixture.Namespace, lrp)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("correctly reports the running instances", func() {
-			Eventually(instancesFn).Should(HaveLen(odinLRP.TargetInstances))
-			Consistently(instancesFn, "10s").Should(HaveLen(odinLRP.TargetInstances))
+			Eventually(instancesFn).Should(HaveLen(lrp.TargetInstances))
+			Consistently(instancesFn, "10s").Should(HaveLen(lrp.TargetInstances))
 			Eventually(func() bool {
 				instances := instancesFn()
 				for _, instance := range instances {
@@ -504,9 +602,9 @@ fi;`,
 			}).Should(BeTrue())
 		})
 
-		Context("when the LRP has 0 target instances", func() {
+		When("the LRP has 0 target instances", func() {
 			BeforeEach(func() {
-				odinLRP.TargetInstances = 0
+				lrp.TargetInstances = 0
 			})
 
 			It("returns an empty list", func() {
@@ -514,7 +612,84 @@ fi;`,
 			})
 		})
 	})
+
+	Describe("List", func() {
+		var listedLRPs []*opi.LRP
+
+		JustBeforeEach(func() {
+			err := lrpClient.Desire(ctx, fixture.Namespace, lrp)
+			Expect(err).ToNot(HaveOccurred())
+			listedLRPs, err = lrpClient.List(context.Background())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("lists the lrps", func() {
+			Expect(listedLRPs).To(HaveLen(1))
+			Expect(listedLRPs[0].AppName).To(Equal("ödin"))
+		})
+
+		When("there are LRPs in foreign namespaces", func() {
+			var extraNSClient *k8s.LRPClient
+
+			BeforeEach(func() {
+				extraNSClient = createLrpClient(fixture.CreateExtraNamespace(), false)
+			})
+
+			It("does not list LRPs in foreign namespaces", func() {
+				listedLRPs, err := extraNSClient.List(context.Background())
+				Expect(err).NotTo(HaveOccurred())
+				Expect(listedLRPs).To(BeEmpty())
+			})
+		})
+	})
 })
+
+func createLRP(name string) *opi.LRP {
+	return &opi.LRP{
+		Command: []string{
+			"/bin/sh",
+			"-c",
+			"while true; do echo hello; sleep 10;done",
+		},
+		AppName:         name,
+		AppGUID:         "the-app-guid",
+		SpaceName:       "space-foo",
+		TargetInstances: 2,
+		Image:           "eirini/busybox",
+		AppURIs:         []opi.Route{{Hostname: "foo.example.com", Port: 8080}},
+		LRPIdentifier:   opi.LRPIdentifier{GUID: tests.GenerateGUID(), Version: tests.GenerateGUID()},
+		LRP:             "metadata",
+		DiskMB:          2047,
+		Env: map[string]string{
+			"FOO": "BAR",
+		},
+	}
+}
+
+func createLrpClient(workloadsNamespace string, allowRunImageAsRoot bool) *k8s.LRPClient {
+	logger := lagertest.NewTestLogger("test-" + workloadsNamespace)
+
+	lrpToStatefulSetConverter := stset.NewLRPToStatefulSetConverter(
+		tests.GetApplicationServiceAccount(),
+		"registry-secret",
+		false,
+		allowRunImageAsRoot,
+		123,
+		k8s.CreateLivenessProbe,
+		k8s.CreateReadinessProbe,
+	)
+
+	return k8s.NewLRPClient(
+		logger,
+		client.NewSecret(fixture.Clientset),
+		client.NewStatefulSet(fixture.Clientset, workloadsNamespace),
+		client.NewPod(fixture.Clientset, workloadsNamespace),
+		pdb.NewUpdater(client.NewPodDisruptionBudget(fixture.Clientset)),
+		client.NewEvent(fixture.Clientset),
+		lrpToStatefulSetConverter,
+		stset.NewStatefulSetToLRPConverter(),
+	)
+}
 
 func int32ptr(i int) *int32 {
 	i32 := int32(i)
@@ -545,4 +720,14 @@ func getPodPhase(index int, id opi.LRPIdentifier) string {
 	}
 
 	return "Ready"
+}
+
+func getStatefulSetForLRP(lrp *opi.LRP) *appsv1.StatefulSet {
+	ss, getErr := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: labelSelector(lrp.LRPIdentifier),
+	})
+	Expect(getErr).NotTo(HaveOccurred())
+	Expect(ss.Items).To(HaveLen(1))
+
+	return &ss.Items[0]
 }

@@ -46,15 +46,6 @@ func TestIntegration(t *testing.T) {
 	RunSpecs(t, "Integration Suite")
 }
 
-func getStatefulSetForLRP(lrp *opi.LRP) *appsv1.StatefulSet {
-	ss, getErr := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: labelSelector(lrp.LRPIdentifier),
-	})
-	Expect(getErr).NotTo(HaveOccurred())
-
-	return &ss.Items[0]
-}
-
 func labelSelector(identifier opi.LRPIdentifier) string {
 	return fmt.Sprintf(
 		"%s=%s,%s=%s",
@@ -75,12 +66,12 @@ func cleanupStatefulSet(lrp *opi.LRP) {
 	Expect(err).ToNot(HaveOccurred())
 }
 
-func listAllStatefulSets(lrp1, lrp2 *opi.LRP) []appsv1.StatefulSet {
+func listStatefulSets(lrp1 *opi.LRP) []appsv1.StatefulSet {
 	list, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf(
-			"%s in (%s, %s),%s in (%s, %s)",
-			stset.LabelGUID, lrp1.LRPIdentifier.GUID, lrp2.LRPIdentifier.GUID,
-			stset.LabelVersion, lrp1.LRPIdentifier.Version, lrp2.LRPIdentifier.Version,
+			"%s=%s,%s=%s",
+			stset.LabelGUID, lrp1.LRPIdentifier.GUID,
+			stset.LabelVersion, lrp1.LRPIdentifier.Version,
 		),
 	})
 	Expect(err).NotTo(HaveOccurred())
@@ -135,24 +126,6 @@ func getNodeCount() int {
 	Expect(err).ToNot(HaveOccurred())
 
 	return len(nodeList.Items)
-}
-
-func createLRP(name string) *opi.LRP {
-	return &opi.LRP{
-		Command: []string{
-			"/bin/sh",
-			"-c",
-			"while true; do echo hello; sleep 10;done",
-		},
-		AppName:         name,
-		SpaceName:       "space-foo",
-		TargetInstances: 2,
-		Image:           "eirini/busybox",
-		AppURIs:         []opi.Route{{Hostname: "foo.example.com", Port: 8080}},
-		LRPIdentifier:   opi.LRPIdentifier{GUID: tests.GenerateGUID(), Version: tests.GenerateGUID()},
-		LRP:             "metadata",
-		DiskMB:          2047,
-	}
 }
 
 func getSecret(ns, name string) (*corev1.Secret, error) {

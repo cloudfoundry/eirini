@@ -5,19 +5,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 
-	"code.cloudfoundry.org/eirini/cmd"
-	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
 	"code.cloudfoundry.org/eirini/tests"
-	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 var _ = Describe("Desire App", func() {
@@ -52,51 +46,6 @@ var _ = Describe("Desire App", func() {
 
 	It("should return a 202 Accepted HTTP code", func() {
 		Expect(response.StatusCode).To(Equal(http.StatusAccepted))
-	})
-
-	It("should create a stateful set for the app", func() {
-		statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-		Expect(err).ToNot(HaveOccurred())
-
-		Expect(statefulsets.Items).To(HaveLen(1))
-		Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
-		Expect(statefulsets.Items[0].Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
-		Expect(statefulsets.Items[0].Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(BeTrue()))
-	})
-
-	It("should set the latest migration index annotation", func() {
-		statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-		Expect(err).ToNot(HaveOccurred())
-
-		Expect(statefulsets.Items).To(HaveLen(1))
-		latestMigrationIndex := cmd.GetLatestMigrationIndex()
-		Expect(statefulsets.Items[0].Annotations[shared.AnnotationLatestMigration]).To(Equal(strconv.Itoa(latestMigrationIndex)))
-	})
-
-	Context("when the app has user defined annotations", func() {
-		BeforeEach(func() {
-			body = `{
-			"guid": "the-app-guid",
-			"version": "0.0.0",
-			"ports" : [8080],
-			"disk_mb": 400,
-		  "lifecycle": {
-				"docker_lifecycle": {
-				  "image": "foo",
-					"command": ["bar", "baz"]
-				}
-			},
-			"user_defined_annotations": {
-			  "prometheus.io/scrape": "yes, please"
-			}
-		}`
-		})
-
-		It("should set the annotations to the pod template", func() {
-			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-			Expect(err).ToNot(HaveOccurred())
-			Expect(statefulsets.Items[0].Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "yes, please"))
-		})
 	})
 
 	When("disk_mb isn't specified", func() {
@@ -145,34 +94,6 @@ var _ = Describe("Desire App", func() {
 
 			Expect(statefulsets.Items).To(HaveLen(1))
 			Expect(statefulsets.Items[0].Name).To(ContainSubstring("the-app-guid"))
-		})
-	})
-
-	When("the desired app has more than 1 instance", func() {
-		var appGUID string
-
-		BeforeEach(func() {
-			appGUID = tests.GenerateGUID()
-			body = fmt.Sprintf(`{
-			"guid": "%s",
-			"version": "0.0.0",
-			"namespace": "%s",
-			"ports" : [8080],
-			"disk_mb": 512,
-			"lifecycle": {
-				"docker_lifecycle": {
-				"image": "eirini/busybox",
-				"command": ["/bin/sleep", "100"]
-				}
-			},
-			"instances": 2
-		}`, appGUID, fixture.Namespace)
-		})
-
-		It("creates a default PDB", func() {
-			pdb := integration.GetPDB(fixture.Clientset, fixture.Namespace, appGUID, "0.0.0")
-			Expect(pdb.Spec.MinAvailable).To(PointTo(Equal(intstr.FromString("50%"))))
-			Expect(pdb.Spec.MaxUnavailable).To(BeNil())
 		})
 	})
 
@@ -269,6 +190,7 @@ var _ = Describe("Desire App", func() {
 
 					return err
 				}
+
 				BeforeEach(func() {
 					Eventually(updateServiceaccount, "5s").Should(Succeed())
 				})
