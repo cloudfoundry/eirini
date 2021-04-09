@@ -18,54 +18,147 @@ linters-settings:
     line-length: 512
 
 linters:
-  enable-all: true
-  disable:
-    # gomoddirectives allows only some or outright bans all replace directives
-    # in the go.mod files. Since importing kubernetes packages is a nighmare
-    # we actually need the replace directive.
-    - gomoddirectives
-    # funlen is annoying
-    - funlen
-    # goerr113 requires to not use errors.New, instead it wants us to define
-    # package-level errors and wrap them. This feels to be an overkill so we
-    # are skipping it for now.
-    - goerr113
-    # noctx requires using a context when constructing an http.Request.
-    # However, as for the time being we are not passing contexts to our
-    # functions, so just using `context.Background` to make the linter happy
-    # does not really make sense
-    - noctx
-    # godot requires that top-level comments end with a dot. This is useful for
-    # documentation purposes when documentation is generated automatically.
-    # However, we do not document our code and therefore this linter has no
-    # value for us.
-    - godot
-    # gofumpt also includes gofumports. These are a stricter version of gofmt
-    # and goimports respectively. By enabling them we also wanted to include
-    # them in our vim configurations to be run on save. Unfortunately this
-    # makes vim.coc report errors very slowly, or not at all. If we decide to
-    # enable them back we should also make sure that they work in our vim configs.
-    - gofumpt
-    # exhaustivestruct is meant for special checking only. It verifies that
-    # all fields are set in struct construction, and so is not useful for us
-    - exhaustivestruct
-    # we don't believe in wrapping all errors, especially from our interfaces
-    - wrapcheck
-    # paralleltest seems to think all tests should be parallel. We'll let ginkgo
-    # decide that.
-    - paralleltest
-    # durationcheck complains about *any* multiplication of time.Durations, as
-    # *some* might be incorrect. Unfortunately we do need to perform some of
-    # those multiplications.
-    - durationcheck
-    # Didn't like it complaining about always using port 8080 in a function
-    - unparam
-    # interfacer is deprecated
-    - interfacer
-    # maligned is deprecated
-    - maligned
-    # scopelint is deprecated
-    - scopelint
+  disable-all: true
+
+  intentionally-disabled:
+  # Here is a list of linters we explicitly don't want to enable
+  # Used for doc and ci purposes. Ignored by golangci-lint
+  - name: durationcheck
+    desc: |
+      durationcheck complains about *any* multiplication of time.Durations, as
+      *some* might be incorrect. Unfortunately we do need to perform some of
+      those multiplications.
+
+  - name: exhaustivestruct
+    desc: |
+      exhaustivestruct is meant for special checking only. It verifies that all
+      fields are set in struct construction, and so is not useful for us
+
+  - name: funlen
+    desc: |
+      funlen is annoying
+
+  - name: godot
+    desc: |
+      godot requires that top-level comments end with a dot. This is useful for
+      documentation purposes when documentation is generated automatically.
+      However, we do not document our code and therefore this linter has no
+      value for us.
+
+  - name: goerr113
+    desc: |
+      goerr113 requires to not use errors.New, instead it wants us to define
+      package-level errors and wrap them. This feels to be an overkill so we
+      are skipping it for now.
+
+  - name: gofumpt
+    desc: |
+      gofumpt also includes gofumports. These are a stricter version of gofmt
+      and goimports respectively. By enabling them we also wanted to include
+      them in our vim configurations to be run on save. Unfortunately this
+      makes vim.coc report errors very slowly, or not at all. If we decide to
+      enable them back we should also make sure that they work in our vim
+      configs.
+
+  - name: gomoddirectives
+    desc: |
+      gomoddirectives allows only some or outright bans all replace directives
+      in the go.mod files. Since importing kubernetes packages is a nighmare we
+      actually need the replace directive.
+
+  - name: interfacer
+    desc: |
+      interfacer is deprecated
+
+  - name: maligned
+    desc: |
+      maligned is deprecated
+
+  - name: noctx
+    desc: |
+      noctx requires using a context when constructing an http.Request.
+      However, as for the time being we are not passing contexts to our
+      functions, so just using `context.Background` to make the linter happy
+      does not really make sense
+
+  - name: paralleltest
+    desc: |
+      paralleltest seems to think all tests should be parallel. We'll let
+      ginkgo decide that.
+
+  - name: scopelint
+    desc: |
+      scopelint is deprecated
+
+  - name: unparam
+    desc: |
+      Didn't like it complaining about always using port 8080 in a function
+
+  - name: wrapcheck
+    desc: |
+      we don't believe in wrapping all errors, especially from our interfaces
+
+  enable:
+    - asciicheck
+    - bodyclose
+    - cyclop
+    - deadcode
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - errorlint
+    - exhaustive
+    - exportloopref
+    - forbidigo
+    - forcetypeassert
+    - gci
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godox
+    - gofmt
+    - goheader
+    - goimports
+    - golint
+    - gomnd
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ifshort
+    - importas
+    - ineffassign
+    - lll
+    - makezero
+    - misspell
+    - nakedret
+    - nestif
+    - nilerr
+    - nlreturn
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - testpackage
+    - thelper
+    - tparallel
+    - typecheck
+    - unconvert
+    - unused
+    - varcheck
+    - wastedassign
+    - whitespace
+    - wsl
 
 issues:
   exclude-use-default: true
