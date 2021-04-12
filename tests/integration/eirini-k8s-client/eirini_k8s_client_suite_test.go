@@ -15,6 +15,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	policy_v1beta1_types "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 func TestEiriniK8sClient(t *testing.T) {
