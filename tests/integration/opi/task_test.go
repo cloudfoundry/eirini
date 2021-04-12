@@ -3,13 +3,11 @@ package opi_test
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
@@ -48,11 +46,14 @@ var _ = Describe("Tasks", func() {
 
 	Describe("desiring", func() {
 		const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
+		var taskGUID string
 
 		BeforeEach(func() {
+			taskGUID = tests.GenerateGUID()
 			request = cf.TaskRequest{
-				GUID:        tests.GenerateGUID(),
+				GUID:        taskGUID,
 				AppName:     "my_app",
+				AppGUID:     "guid-1234",
 				Name:        "my_task",
 				SpaceName:   "my_space",
 				Namespace:   fixture.Namespace,
@@ -79,14 +80,6 @@ var _ = Describe("Tasks", func() {
 			By("creating a job for the task", func() {
 				Expect(jobsList.Items).To(HaveLen(1))
 				Expect(jobsList.Items[0].Name).To(HavePrefix("my-app-my-space-my-task"))
-			})
-
-			By("specifying the right containers", func() {
-				jobContainers := jobsList.Items[0].Spec.Template.Spec.Containers
-				Expect(jobContainers).To(HaveLen(1))
-				Expect(jobContainers[0].Env).To(ContainElement(corev1.EnvVar{Name: "my-env", Value: "my-value"}))
-				Expect(jobContainers[0].Image).To(Equal("eirini/busybox"))
-				Expect(jobContainers[0].Command).To(ConsistOf("/bin/echo", "hello"))
 			})
 
 			By("not mounting the service account token", func() {
@@ -135,47 +128,23 @@ var _ = Describe("Tasks", func() {
 				request.Lifecycle.DockerLifecycle.RegistryPassword = tests.GetEiriniDockerHubPassword()
 			})
 
-			It("creates a new secret and points the job to it", func() {
+			It("creates a job that completes", func() {
 				Eventually(func() ([]batchv1.Job, error) {
 					var err error
 					jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 
 					return jobsList.Items, err
 				}).Should(HaveLen(1))
+				Expect(jobsList.Items[0].Labels).To(HaveKeyWithValue(jobs.LabelAppGUID, "guid-1234"))
 
-				imagePullSecrets := jobsList.Items[0].Spec.Template.Spec.ImagePullSecrets
-				var registrySecretName string
-				for _, imagePullSecret := range imagePullSecrets {
-					if strings.HasPrefix(imagePullSecret.Name, jobs.PrivateRegistrySecretGenerateName) {
-						registrySecretName = imagePullSecret.Name
-					}
-				}
-				Expect(registrySecretName).NotTo(BeEmpty())
+				Eventually(func() []batchv1.JobCondition {
+					jobsList, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
 
-				secret, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).Get(context.Background(), registrySecretName, metav1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(secret).NotTo(BeNil())
-				Expect(secret.Data).To(
-					HaveKeyWithValue(
-						".dockerconfigjson",
-						[]byte(fmt.Sprintf(
-							`{"auths":{"index.docker.io/v1/":{"username":"eiriniuser","password":"%s","auth":"%s"}}}`,
-							tests.GetEiriniDockerHubPassword(),
-							base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("eiriniuser:%s", tests.GetEiriniDockerHubPassword()))),
-						)),
-					),
-				)
-
-				By("allowing the task to complete", func() {
-					Eventually(func() []batchv1.JobCondition {
-						jobsList, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-
-						return jobsList.Items[0].Status.Conditions
-					}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
-						"Type":   Equal(batchv1.JobComplete),
-						"Status": Equal(corev1.ConditionTrue),
-					})))
-				})
+					return jobsList.Items[0].Status.Conditions
+				}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(batchv1.JobComplete),
+					"Status": Equal(corev1.ConditionTrue),
+				})))
 			})
 		})
 

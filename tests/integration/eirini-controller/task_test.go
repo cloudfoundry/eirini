@@ -2,7 +2,6 @@ package eirini_controller_test
 
 import (
 	"context"
-	"fmt"
 
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
@@ -10,9 +9,6 @@ import (
 	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
-	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -63,93 +59,8 @@ var _ = Describe("Tasks", func() {
 		It("creates a corresponding job in the same namespace", func() {
 			allJobs := integration.ListJobs(fixture.Clientset, fixture.Namespace, taskGUID)()
 			job := allJobs[0]
-			Expect(job.Name).To(Equal(fmt.Sprintf("wavey-the-space-%s", taskName)))
-			Expect(job.Labels).To(SatisfyAll(
-				HaveKeyWithValue(jobs.LabelGUID, task.Spec.GUID),
-				HaveKeyWithValue(jobs.LabelAppGUID, task.Spec.AppGUID),
-				HaveKeyWithValue(jobs.LabelSourceType, "TASK"),
-				HaveKeyWithValue(jobs.LabelName, task.Spec.Name),
-			))
 			Expect(job.Spec.Template.Spec.Containers).To(HaveLen(1))
-
-			taskContainer := job.Spec.Template.Spec.Containers[0]
-			Expect(taskContainer.Image).To(Equal("eirini/busybox"))
-			Expect(taskContainer.Env).To(ContainElement(corev1.EnvVar{Name: "FOO", Value: "BAR"}))
-			Expect(taskContainer.Command).To(Equal([]string{"sh", "-c", "sleep 1"}))
-
-			Eventually(integration.GetTaskJobConditions(fixture.Clientset, fixture.Namespace, taskGUID)).Should(
-				ConsistOf(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(batchv1.JobComplete),
-					"Status": Equal(corev1.ConditionTrue),
-				})),
-			)
-		})
-
-		When("the task image lives in a private registry", func() {
-			BeforeEach(func() {
-				task.Spec.Image = "eiriniuser/notdora:latest"
-				task.Spec.Command = []string{"/bin/echo", "hello"}
-				task.Spec.PrivateRegistry = &eiriniv1.PrivateRegistry{
-					Username: "eiriniuser",
-					Password: tests.GetEiriniDockerHubPassword(),
-				}
-			})
-
-			It("runs and completes the job", func() {
-				allJobs := integration.ListJobs(fixture.Clientset, fixture.Namespace, taskGUID)()
-				job := allJobs[0]
-				Expect(job.Spec.Template.Spec.Containers).To(HaveLen(1))
-				taskContainer := job.Spec.Template.Spec.Containers[0]
-				Expect(taskContainer.Image).To(Equal("eiriniuser/notdora:latest"))
-
-				Eventually(integration.GetTaskJobConditions(fixture.Clientset, fixture.Namespace, taskGUID)).Should(
-					ConsistOf(MatchFields(IgnoreExtras, Fields{
-						"Type":   Equal(batchv1.JobComplete),
-						"Status": Equal(corev1.ConditionTrue),
-					})),
-				)
-			})
-
-			It("creates a ImagePullSecret with the credentials", func() {
-				registrySecretName := integration.GetRegistrySecretName(fixture.Clientset, fixture.Namespace, taskGUID, jobs.PrivateRegistrySecretGenerateName)
-
-				getSecret := func() (*corev1.Secret, error) {
-					return fixture.Clientset.
-						CoreV1().
-						Secrets(fixture.Namespace).
-						Get(context.Background(), registrySecretName, metav1.GetOptions{})
-				}
-
-				secret, err := getSecret()
-
-				Expect(err).NotTo(HaveOccurred())
-
-				By("creating the secret", func() {
-					Expect(secret.Name).To(ContainSubstring(jobs.PrivateRegistrySecretGenerateName))
-					Expect(secret.Type).To(Equal(corev1.SecretTypeDockerConfigJson))
-					Expect(secret.Data).To(HaveKey(".dockerconfigjson"))
-				})
-
-				By("setting the owner reference on the secret", func() {
-					allJobs := integration.ListJobs(fixture.Clientset, fixture.Namespace, taskGUID)()
-					job := allJobs[0]
-
-					var ownerRefs []metav1.OwnerReference
-					Eventually(func() []metav1.OwnerReference {
-						s, err := getSecret()
-						if err != nil {
-							return nil
-						}
-
-						ownerRefs = s.OwnerReferences
-
-						return ownerRefs
-					}).Should(HaveLen(1))
-
-					Expect(ownerRefs[0].Name).To(Equal(job.Name))
-					Expect(ownerRefs[0].UID).To(Equal(job.UID))
-				})
-			})
+			Expect(allJobs[0].Labels).To(HaveKeyWithValue(jobs.LabelGUID, taskGUID))
 		})
 	})
 
