@@ -29,7 +29,7 @@ var _ = Describe("List", func() {
 		lister = stset.NewLister(logger, statefulSetGetter, statefulsetToLRPConverter)
 	})
 
-	It("translates all existing statefulSets to opi.LRPs", func() {
+	It("translates all existing statefulSets to api.LRPs", func() {
 		st := []appsv1.StatefulSet{
 			{
 				ObjectMeta: metav1.ObjectMeta{

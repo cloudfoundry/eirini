@@ -57,7 +57,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 					jobs.LabelGUID: "the-task-pod-guid",
 				},
 				Annotations: map[string]string{
-					jobs.AnnotationOpiTaskContainerName: "opi-task",
+					jobs.AnnotationTaskContainerName: "opi-task",
 				},
 			},
 			Status: corev1.PodStatus{
@@ -136,7 +136,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 		_, actualPod, key, value, prevValue := podsClient.SetAndTestAnnotationArgsForCall(0)
 		Expect(actualPod).To(Equal(pod))
-		Expect(key).To(Equal(jobs.AnnotationOpiTaskCompletionReportCounter))
+		Expect(key).To(Equal(jobs.AnnotationTaskCompletionReportCounter))
 		Expect(value).To(Equal("1"))
 		Expect(prevValue).To(BeNil())
 
@@ -311,7 +311,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 			Expect(podsClient.SetAndTestAnnotationCallCount()).To(Equal(1))
 			_, actualPod, key, value, prevValue := podsClient.SetAndTestAnnotationArgsForCall(0)
 			Expect(actualPod).To(Equal(pod))
-			Expect(key).To(Equal(jobs.AnnotationOpiTaskCompletionReportCounter))
+			Expect(key).To(Equal(jobs.AnnotationTaskCompletionReportCounter))
 			Expect(value).To(Equal("1"))
 			Expect(prevValue).To(BeNil())
 		})
@@ -325,7 +325,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 				Expect(podsClient.SetAndTestAnnotationCallCount()).To(Equal(1))
 				_, actualPod, key, value, prevValue := podsClient.SetAndTestAnnotationArgsForCall(0)
 				Expect(actualPod).To(Equal(pod))
-				Expect(key).To(Equal(jobs.AnnotationOpiTaskCompletionReportCounter))
+				Expect(key).To(Equal(jobs.AnnotationTaskCompletionReportCounter))
 				Expect(value).To(Equal("1"))
 				Expect(prevValue).To(BeNil())
 			})
@@ -337,14 +337,14 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 		When("it's a subsequent time within the retry limit", func() {
 			BeforeEach(func() {
-				pod.ObjectMeta.Annotations[jobs.AnnotationOpiTaskCompletionReportCounter] = "1"
+				pod.ObjectMeta.Annotations[jobs.AnnotationTaskCompletionReportCounter] = "1"
 			})
 
 			It("increments the reporting count", func() {
 				Expect(podsClient.SetAndTestAnnotationCallCount()).To(Equal(1))
 				_, actualPod, key, value, prevValue := podsClient.SetAndTestAnnotationArgsForCall(0)
 				Expect(actualPod).To(Equal(pod))
-				Expect(key).To(Equal(jobs.AnnotationOpiTaskCompletionReportCounter))
+				Expect(key).To(Equal(jobs.AnnotationTaskCompletionReportCounter))
 				Expect(value).To(Equal("2"))
 				Expect(prevValue).To(PointTo(Equal("1")))
 			})
@@ -356,7 +356,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 		When("it hits the retry limit", func() {
 			BeforeEach(func() {
-				pod.ObjectMeta.Annotations[jobs.AnnotationOpiTaskCompletionReportCounter] = "2"
+				pod.ObjectMeta.Annotations[jobs.AnnotationTaskCompletionReportCounter] = "2"
 			})
 
 			It("does not retry any more", func() {

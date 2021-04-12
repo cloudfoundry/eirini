@@ -71,7 +71,7 @@ var _ = Describe("Adjust CPU request migration", func() {
 		Expect(version).To(BeNumerically(">=", migrations.AdjustCPUResourceSequenceID))
 	})
 
-	It("sets the cpu resource limit of the opi container to the value of the original request annotation", func() {
+	It("sets the cpu resource limit of the application container to the value of the original request annotation", func() {
 		stSet, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).Get(context.Background(), "my-stset", metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		cpuRequest := stSet.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu()

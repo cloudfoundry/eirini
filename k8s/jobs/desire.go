@@ -3,9 +3,9 @@ package jobs
 import (
 	"context"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
@@ -19,7 +19,7 @@ import (
 //counterfeiter:generate . SecretsClient
 
 type TaskToJobConverter interface {
-	Convert(*opi.Task, *corev1.Secret) *batch.Job
+	Convert(*api.Task, *corev1.Secret) *batch.Job
 }
 
 type JobCreator interface {
@@ -53,7 +53,7 @@ func NewDesirer(
 	}
 }
 
-func (d *Desirer) Desire(ctx context.Context, namespace string, task *opi.Task, opts ...shared.Option) error {
+func (d *Desirer) Desire(ctx context.Context, namespace string, task *api.Task, opts ...shared.Option) error {
 	logger := d.logger.Session("desire-task", lager.Data{"guid": task.GUID, "name": task.Name, "namespace": namespace})
 
 	var (
@@ -95,11 +95,11 @@ func (d *Desirer) Desire(ctx context.Context, namespace string, task *opi.Task, 
 	return nil
 }
 
-func imageInPrivateRegistry(task *opi.Task) bool {
+func imageInPrivateRegistry(task *api.Task) bool {
 	return task.PrivateRegistry != nil && task.PrivateRegistry.Username != "" && task.PrivateRegistry.Password != ""
 }
 
-func (d *Desirer) createPrivateRegistrySecret(ctx context.Context, namespace string, task *opi.Task) (*corev1.Secret, error) {
+func (d *Desirer) createPrivateRegistrySecret(ctx context.Context, namespace string, task *api.Task) (*corev1.Secret, error) {
 	secret := &corev1.Secret{}
 
 	secret.GenerateName = PrivateRegistrySecretGenerateName

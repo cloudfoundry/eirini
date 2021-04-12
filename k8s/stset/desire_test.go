@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"math/big"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared/sharedfakes"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/k8s/stset/stsetfakes"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
@@ -32,7 +32,7 @@ var _ = Describe("Desirer", func() {
 		podDisruptionBudgetUpdater *stsetfakes.FakePodDisruptionBudgetUpdater
 		desireOptOne, desireOptTwo *sharedfakes.FakeOption
 
-		lrp       *opi.LRP
+		lrp       *api.LRP
 		desireErr error
 
 		desirer stset.Desirer
@@ -43,7 +43,7 @@ var _ = Describe("Desirer", func() {
 		secrets = new(stsetfakes.FakeSecretsClient)
 		statefulSets = new(stsetfakes.FakeStatefulSetCreator)
 		lrpToStatefulSetConverter = new(stsetfakes.FakeLRPToStatefulSetConverter)
-		lrpToStatefulSetConverter.ConvertStub = func(statefulSetName string, lrp *opi.LRP, _ *corev1.Secret) (*v1.StatefulSet, error) {
+		lrpToStatefulSetConverter.ConvertStub = func(statefulSetName string, lrp *api.LRP, _ *corev1.Secret) (*v1.StatefulSet, error) {
 			return &v1.StatefulSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: statefulSetName,
@@ -55,7 +55,7 @@ var _ = Describe("Desirer", func() {
 		}
 
 		podDisruptionBudgetUpdater = new(stsetfakes.FakePodDisruptionBudgetUpdater)
-		lrp = createLRP("Baldur", []opi.Route{{Hostname: "my.example.route", Port: 1000}})
+		lrp = createLRP("Baldur", []api.Route{{Hostname: "my.example.route", Port: 1000}})
 		desireOptOne = new(sharedfakes.FakeOption)
 		desireOptTwo = new(sharedfakes.FakeOption)
 		desirer = stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSetConverter, podDisruptionBudgetUpdater)
@@ -112,7 +112,7 @@ var _ = Describe("Desirer", func() {
 
 	When("the app name contains unsupported characters", func() {
 		BeforeEach(func() {
-			lrp = createLRP("Балдър", []opi.Route{{Hostname: "my.example.route", Port: 10000}})
+			lrp = createLRP("Балдър", []api.Route{{Hostname: "my.example.route", Port: 10000}})
 		})
 
 		It("should use the guid as a name", func() {
@@ -153,7 +153,7 @@ var _ = Describe("Desirer", func() {
 			}
 			secrets.CreateReturns(registrySecret, nil)
 
-			lrp.PrivateRegistry = &opi.PrivateRegistry{
+			lrp.PrivateRegistry = &api.PrivateRegistry{
 				Server:   "host",
 				Username: "user",
 				Password: "password",
@@ -239,11 +239,11 @@ func randStringBytes() string {
 	return string(b)
 }
 
-func createLRP(name string, routes []opi.Route) *opi.LRP {
+func createLRP(name string, routes []api.Route) *api.LRP {
 	lastUpdated := randStringBytes()
 
-	return &opi.LRP{
-		LRPIdentifier: opi.LRPIdentifier{
+	return &api.LRP{
+		LRPIdentifier: api.LRPIdentifier{
 			GUID:    "guid_1234",
 			Version: "version_1234",
 		},
@@ -268,7 +268,7 @@ func createLRP(name string, routes []opi.Route) *opi.LRP {
 		Ports:            []int32{8888, 9999},
 		LastUpdated:      lastUpdated,
 		AppURIs:          routes,
-		VolumeMounts: []opi.VolumeMount{
+		VolumeMounts: []api.VolumeMount{
 			{
 				ClaimName: "some-claim",
 				MountPath: "/some/path",

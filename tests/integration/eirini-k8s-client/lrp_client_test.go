@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/pdb"
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
@@ -28,7 +28,7 @@ var _ = Describe("LRPClient", func() {
 	var (
 		allowRunImageAsRoot bool
 		lrpClient           *k8s.LRPClient
-		lrp                 *opi.LRP
+		lrp                 *api.LRP
 	)
 
 	BeforeEach(func() {
@@ -174,7 +174,7 @@ var _ = Describe("LRPClient", func() {
 			BeforeEach(func() {
 				lrp.Image = "eiriniuser/notdora:latest"
 				lrp.Command = nil
-				lrp.PrivateRegistry = &opi.PrivateRegistry{
+				lrp.PrivateRegistry = &api.PrivateRegistry{
 					Server:   "index.docker.io/v1/",
 					Username: "eiriniuser",
 					Password: tests.GetEiriniDockerHubPassword(),
@@ -261,7 +261,7 @@ var _ = Describe("LRPClient", func() {
 			BeforeEach(func() {
 				lrp.Image = "eirini/busybox"
 				lrp.Command = []string{"/bin/sh", "-c", "echo Hello from app; sleep 3600"}
-				lrp.Sidecars = []opi.Sidecar{
+				lrp.Sidecars = []api.Sidecar{
 					{
 						Name:     "the-sidecar",
 						Command:  []string{"/bin/sh", "-c", "echo Hello from sidecar; sleep 3600"},
@@ -366,7 +366,7 @@ var _ = Describe("LRPClient", func() {
 		When("private docker registry credentials are provided", func() {
 			BeforeEach(func() {
 				lrp.Image = "eiriniuser/notdora:latest"
-				lrp.PrivateRegistry = &opi.PrivateRegistry{
+				lrp.PrivateRegistry = &api.PrivateRegistry{
 					Server:   "index.docker.io/v1/",
 					Username: "eiriniuser",
 					Password: tests.GetEiriniDockerHubPassword(),
@@ -466,14 +466,14 @@ var _ = Describe("LRPClient", func() {
 
 		Describe("updating routes", func() {
 			var (
-				routesBefore []opi.Route
-				routesAfter  []opi.Route
+				routesBefore []api.Route
+				routesAfter  []api.Route
 				statefulset  *appsv1.StatefulSet
 			)
 
 			BeforeEach(func() {
-				routesBefore = []opi.Route{{Hostname: "host1", Port: 123}}
-				routesAfter = []opi.Route{{Hostname: "host2", Port: 456}}
+				routesBefore = []api.Route{{Hostname: "host1", Port: 123}}
+				routesAfter = []api.Route{{Hostname: "host2", Port: 456}}
 			})
 
 			JustBeforeEach(func() {
@@ -538,7 +538,7 @@ var _ = Describe("LRPClient", func() {
 		When("one of the instances if failing", func() {
 			BeforeEach(func() {
 				lrp = createLRP("odin")
-				lrp.Health = opi.Healtcheck{
+				lrp.Health = api.Healtcheck{
 					Type: "port",
 					Port: 3000,
 				}
@@ -575,7 +575,7 @@ fi;`,
 	})
 
 	Describe("GetInstances", func() {
-		instancesFn := func() []*opi.Instance {
+		instancesFn := func() []*api.Instance {
 			instances, err := lrpClient.GetInstances(ctx, lrp.LRPIdentifier)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -593,7 +593,7 @@ fi;`,
 			Eventually(func() bool {
 				instances := instancesFn()
 				for _, instance := range instances {
-					if instance.State != opi.RunningState {
+					if instance.State != api.RunningState {
 						return false
 					}
 				}
@@ -614,7 +614,7 @@ fi;`,
 	})
 
 	Describe("List", func() {
-		var listedLRPs []*opi.LRP
+		var listedLRPs []*api.LRP
 
 		JustBeforeEach(func() {
 			err := lrpClient.Desire(ctx, fixture.Namespace, lrp)
@@ -644,8 +644,8 @@ fi;`,
 	})
 })
 
-func createLRP(name string) *opi.LRP {
-	return &opi.LRP{
+func createLRP(name string) *api.LRP {
+	return &api.LRP{
 		Command: []string{
 			"/bin/sh",
 			"-c",
@@ -656,8 +656,8 @@ func createLRP(name string) *opi.LRP {
 		SpaceName:       "space-foo",
 		TargetInstances: 2,
 		Image:           "eirini/busybox",
-		AppURIs:         []opi.Route{{Hostname: "foo.example.com", Port: 8080}},
-		LRPIdentifier:   opi.LRPIdentifier{GUID: tests.GenerateGUID(), Version: tests.GenerateGUID()},
+		AppURIs:         []api.Route{{Hostname: "foo.example.com", Port: 8080}},
+		LRPIdentifier:   api.LRPIdentifier{GUID: tests.GenerateGUID(), Version: tests.GenerateGUID()},
 		LRP:             "metadata",
 		DiskMB:          2047,
 		Env: map[string]string{
@@ -697,7 +697,7 @@ func int32ptr(i int) *int32 {
 	return &i32
 }
 
-func getPodPhase(index int, id opi.LRPIdentifier) string {
+func getPodPhase(index int, id api.LRPIdentifier) string {
 	pod := listPods(id)[index]
 	status := pod.Status
 
@@ -722,7 +722,7 @@ func getPodPhase(index int, id opi.LRPIdentifier) string {
 	return "Ready"
 }
 
-func getStatefulSetForLRP(lrp *opi.LRP) *appsv1.StatefulSet {
+func getStatefulSetForLRP(lrp *api.LRP) *appsv1.StatefulSet {
 	ss, getErr := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: labelSelector(lrp.LRPIdentifier),
 	})

@@ -56,7 +56,7 @@ func (r StateReporter) generateTaskCompletedRequest(logger lager.Logger, guid st
 }
 
 func getTaskContainerStatus(pod *corev1.Pod) (corev1.ContainerStatus, bool) {
-	taskContainerName := pod.Annotations[jobs.AnnotationOpiTaskContainerName]
+	taskContainerName := pod.Annotations[jobs.AnnotationTaskContainerName]
 	for _, status := range pod.Status.ContainerStatuses {
 		if status.Name == taskContainerName {
 			return status, true

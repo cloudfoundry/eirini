@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"github.com/julienschmidt/httprouter"
 )
@@ -18,10 +18,10 @@ type LRPBifrost interface {
 	Transfer(ctx context.Context, request cf.DesireLRPRequest) error
 	List(ctx context.Context) ([]cf.DesiredLRPSchedulingInfo, error)
 	Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error
-	Stop(ctx context.Context, identifier opi.LRPIdentifier) error
-	StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error
-	GetApp(ctx context.Context, identifier opi.LRPIdentifier) (cf.DesiredLRP, error)
-	GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error)
+	Stop(ctx context.Context, identifier api.LRPIdentifier) error
+	StopInstance(ctx context.Context, identifier api.LRPIdentifier, index uint) error
+	GetApp(ctx context.Context, identifier api.LRPIdentifier) (cf.DesiredLRP, error)
+	GetInstances(ctx context.Context, identifier api.LRPIdentifier) ([]*cf.Instance, error)
 }
 
 type TaskBifrost interface {

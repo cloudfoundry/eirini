@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
 	"code.cloudfoundry.org/eirini/util"
@@ -24,13 +24,13 @@ import (
 var _ = Describe("LRPClient", func() {
 	var (
 		taskClient *k8s.TaskClient
-		task       *opi.Task
+		task       *api.Task
 		taskGUID   string
 	)
 
 	BeforeEach(func() {
 		taskGUID = tests.GenerateGUID()
-		task = &opi.Task{
+		task = &api.Task{
 			GUID:    taskGUID,
 			Name:    tests.GenerateGUID(),
 			Image:   "eirini/busybox",
@@ -93,7 +93,7 @@ var _ = Describe("LRPClient", func() {
 			BeforeEach(func() {
 				task.Image = "eiriniuser/notdora:latest"
 				task.Command = []string{"/bin/echo", "hello"}
-				task.PrivateRegistry = &opi.PrivateRegistry{
+				task.PrivateRegistry = &api.PrivateRegistry{
 					Username: "eiriniuser",
 					Password: tests.GetEiriniDockerHubPassword(),
 					Server:   util.DockerHubHost,

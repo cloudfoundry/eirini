@@ -22,7 +22,7 @@ import (
 )
 
 type EiriniBinaries struct {
-	OPI                      Binary `json:"opi"`
+	API                      Binary `json:"api"`
 	RouteCollector           Binary `json:"route_collector"`
 	RouteStatefulsetInformer Binary `json:"route_stateful_set_informer"`
 	RoutePodInformer         Binary `json:"route_pod_informer"`
@@ -43,16 +43,16 @@ func NewEiriniBinaries() EiriniBinaries {
 	bins.CertsPath, _ = tests.GenerateKeyPairDir("tls", "localhost")
 
 	bins.setBinsPath()
-	bins.OPI = NewBinary("code.cloudfoundry.org/eirini/cmd/opi", bins.BinsPath, []string{"connect"}, bins.CertsPath)
-	bins.RouteCollector = NewBinary("code.cloudfoundry.org/eirini/cmd/route-collector", bins.BinsPath, []string{}, bins.CertsPath)
-	bins.RouteStatefulsetInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-statefulset-informer", bins.BinsPath, []string{}, bins.CertsPath)
-	bins.RoutePodInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-pod-informer", bins.BinsPath, []string{}, bins.CertsPath)
-	bins.EventsReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/event-reporter", bins.BinsPath, []string{}, bins.CertsPath)
-	bins.TaskReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/task-reporter", bins.BinsPath, []string{}, bins.CertsPath)
-	bins.EiriniController = NewBinary("code.cloudfoundry.org/eirini/cmd/eirini-controller", bins.BinsPath, []string{}, bins.CertsPath)
-	bins.InstanceIndexEnvInjector = NewBinary("code.cloudfoundry.org/eirini/cmd/instance-index-env-injector", bins.BinsPath, []string{}, bins.CertsPath)
-	bins.Migration = NewBinary("code.cloudfoundry.org/eirini/cmd/migration", bins.BinsPath, []string{}, bins.CertsPath)
-	bins.ResourceValidator = NewBinary("code.cloudfoundry.org/eirini/cmd/resource-validator", bins.BinsPath, []string{}, bins.CertsPath)
+	bins.API = NewBinary("code.cloudfoundry.org/eirini/cmd/api", bins.BinsPath, bins.CertsPath)
+	bins.RouteCollector = NewBinary("code.cloudfoundry.org/eirini/cmd/route-collector", bins.BinsPath, bins.CertsPath)
+	bins.RouteStatefulsetInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-statefulset-informer", bins.BinsPath, bins.CertsPath)
+	bins.RoutePodInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-pod-informer", bins.BinsPath, bins.CertsPath)
+	bins.EventsReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/event-reporter", bins.BinsPath, bins.CertsPath)
+	bins.TaskReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/task-reporter", bins.BinsPath, bins.CertsPath)
+	bins.EiriniController = NewBinary("code.cloudfoundry.org/eirini/cmd/eirini-controller", bins.BinsPath, bins.CertsPath)
+	bins.InstanceIndexEnvInjector = NewBinary("code.cloudfoundry.org/eirini/cmd/instance-index-env-injector", bins.BinsPath, bins.CertsPath)
+	bins.Migration = NewBinary("code.cloudfoundry.org/eirini/cmd/migration", bins.BinsPath, bins.CertsPath)
+	bins.ResourceValidator = NewBinary("code.cloudfoundry.org/eirini/cmd/resource-validator", bins.BinsPath, bins.CertsPath)
 
 	return bins
 }
@@ -83,21 +83,19 @@ func (b *EiriniBinaries) setBinsPath() {
 }
 
 type Binary struct {
-	PackagePath string   `json:"src_path"`
-	BinPath     string   `json:"bin_path"`
-	LocksDir    string   `json:"locks_dir"`
-	ExtraArgs   []string `json:"extra_args"`
-	CertsPath   string   `json:"cert_path"`
+	PackagePath string `json:"src_path"`
+	BinPath     string `json:"bin_path"`
+	LocksDir    string `json:"locks_dir"`
+	CertsPath   string `json:"cert_path"`
 }
 
-func NewBinary(packagePath, binsPath string, extraArgs []string, certsPath string) Binary {
+func NewBinary(packagePath, binsPath string, certsPath string) Binary {
 	paths := strings.Split(packagePath, "/")
 	binName := paths[len(paths)-1]
 
 	return Binary{
 		PackagePath: packagePath,
 		BinPath:     filepath.Join(binsPath, binName),
-		ExtraArgs:   extraArgs,
 		LocksDir:    filepath.Join(binsPath, ".locks"),
 		CertsPath:   certsPath,
 	}
@@ -124,7 +122,7 @@ func (b *Binary) Run(config interface{}, envVars ...string) (*gexec.Session, str
 func (b *Binary) RunWithConfig(configFilePath string, envVars ...string) *gexec.Session {
 	b.buildIfNecessary()
 
-	args := b.ExtraArgs
+	var args []string
 	if configFilePath != "" {
 		args = append(args, "-c", configFilePath)
 	}
@@ -149,7 +147,7 @@ func (b *Binary) Restart(configFilePath string, runningSession *gexec.Session) *
 // to explicitly build a common binary that is used across all the tests
 // in SynchronizedBeforeSuite thus preventing running the build on concurrent nodes.
 //
-// For example, EATs tests will always run OPI, therefore it is a good idea to
+// For example, EATs tests will always run API, therefore it is a good idea to
 // build it in advance.
 func (b *Binary) Build() {
 	b.buildIfNecessary()

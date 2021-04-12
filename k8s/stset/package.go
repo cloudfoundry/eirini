@@ -29,7 +29,7 @@ const (
 	LabelProcessType = "cloudfoundry.org/process_type"
 	LabelSourceType  = "cloudfoundry.org/source_type"
 
-	OPIContainerName = "opi"
+	ApplicationContainerName = "opi"
 
 	PdbMinAvailableInstances          = 1
 	PrivateRegistrySecretGenerateName = "private-registry-"

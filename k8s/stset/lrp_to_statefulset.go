@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
-	"code.cloudfoundry.org/eirini/opi"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -18,7 +18,7 @@ import (
 
 const PodAffinityTermWeight = 100
 
-type ProbeCreator func(lrp *opi.LRP) *corev1.Probe
+type ProbeCreator func(lrp *api.LRP) *corev1.Probe
 
 type LRPToStatefulSet struct {
 	applicationServiceAccount         string
@@ -50,7 +50,7 @@ func NewLRPToStatefulSetConverter(
 	}
 }
 
-func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *opi.LRP, privateRegistrySecret *corev1.Secret) (*appsv1.StatefulSet, error) {
+func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *api.LRP, privateRegistrySecret *corev1.Secret) (*appsv1.StatefulSet, error) {
 	envs := shared.MapToEnvVar(lrp.Env)
 	fieldEnvs := []corev1.EnvVar{
 		{
@@ -103,7 +103,7 @@ func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *opi.LRP, private
 
 	containers := []corev1.Container{
 		{
-			Name:            OPIContainerName,
+			Name:            ApplicationContainerName,
 			Image:           lrp.Image,
 			ImagePullPolicy: corev1.PullAlways,
 			Command:         lrp.Command,
@@ -223,7 +223,7 @@ func (c *LRPToStatefulSet) calculateImagePullSecrets(privateRegistrySecret *core
 	return imagePullSecrets
 }
 
-func (c *LRPToStatefulSet) getGetSecurityContext(lrp *opi.LRP) *corev1.PodSecurityContext {
+func (c *LRPToStatefulSet) getGetSecurityContext(lrp *api.LRP) *corev1.PodSecurityContext {
 	if c.allowRunImageAsRoot {
 		return nil
 	}
@@ -235,7 +235,7 @@ func (c *LRPToStatefulSet) getGetSecurityContext(lrp *opi.LRP) *corev1.PodSecuri
 	}
 }
 
-func getVolumeSpecs(lrpVolumeMounts []opi.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount) {
+func getVolumeSpecs(lrpVolumeMounts []api.VolumeMount) ([]corev1.Volume, []corev1.VolumeMount) {
 	volumes := []corev1.Volume{}
 	volumeMounts := []corev1.VolumeMount{}
 
@@ -279,7 +279,7 @@ func toCPUMillicores(cpuPercentage uint8) resource.Quantity {
 	return *resource.NewScaledQuantity(int64(cpuPercentage), resource.Milli)
 }
 
-func getSidecarContainers(lrp *opi.LRP) []corev1.Container {
+func getSidecarContainers(lrp *api.LRP) []corev1.Container {
 	containers := []corev1.Container{}
 
 	for _, s := range lrp.Sidecars {
@@ -317,7 +317,7 @@ func toLabelSelectorRequirements(selector *metav1.LabelSelector) []metav1.LabelS
 	return reqs
 }
 
-func StatefulSetLabelSelector(lrp *opi.LRP) *metav1.LabelSelector {
+func StatefulSetLabelSelector(lrp *api.LRP) *metav1.LabelSelector {
 	return &metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			LabelGUID:       lrp.GUID,

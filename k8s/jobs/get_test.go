@@ -2,9 +2,9 @@ package jobs_test
 
 import (
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/jobs/jobsfakes"
-	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -18,7 +18,7 @@ var _ = Describe("Get", func() {
 		job       *batch.Job
 		err       error
 		jobGetter *jobsfakes.FakeJobGetter
-		task      *opi.Task
+		task      *api.Task
 		getter    jobs.Getter
 	)
 

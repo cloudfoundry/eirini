@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/utils"
-	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
@@ -29,9 +29,9 @@ import (
 //counterfeiter:generate . StatefulSetGetter
 
 type LRPDesirer interface {
-	Desire(ctx context.Context, namespace string, lrp *opi.LRP, opts ...shared.Option) error
-	Get(ctx context.Context, identifier opi.LRPIdentifier) (*opi.LRP, error)
-	Update(ctx context.Context, lrp *opi.LRP) error
+	Desire(ctx context.Context, namespace string, lrp *api.LRP, opts ...shared.Option) error
+	Get(ctx context.Context, identifier api.LRPIdentifier) (*api.LRP, error)
+	Update(ctx context.Context, lrp *api.LRP) error
 }
 
 type StatefulSetGetter interface {
@@ -85,12 +85,12 @@ func (r *LRP) Reconcile(ctx context.Context, request reconcile.Request) (reconci
 }
 
 func (r *LRP) do(ctx context.Context, lrp *eiriniv1.LRP) error {
-	_, err := r.desirer.Get(ctx, opi.LRPIdentifier{
+	_, err := r.desirer.Get(ctx, api.LRPIdentifier{
 		GUID:    lrp.Spec.GUID,
 		Version: lrp.Spec.Version,
 	})
 	if errors.Is(err, eirini.ErrNotFound) {
-		appLRP, parseErr := toOpiLrp(lrp)
+		appLRP, parseErr := toAPILrp(lrp)
 		if parseErr != nil {
 			return errors.Wrap(parseErr, "failed to parse the crd spec to the lrp model")
 		}
@@ -102,7 +102,7 @@ func (r *LRP) do(ctx context.Context, lrp *eiriniv1.LRP) error {
 		return errors.Wrap(err, "failed to get lrp")
 	}
 
-	appLRP, err := toOpiLrp(lrp)
+	appLRP, err := toAPILrp(lrp)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse the crd spec to the lrp model")
 	}
@@ -118,7 +118,7 @@ func (r *LRP) do(ctx context.Context, lrp *eiriniv1.LRP) error {
 	return errs.ErrorOrNil()
 }
 
-func (r *LRP) updateStatus(ctx context.Context, lrp *eiriniv1.LRP, appLRP *opi.LRP) error {
+func (r *LRP) updateStatus(ctx context.Context, lrp *eiriniv1.LRP, appLRP *api.LRP) error {
 	statefulSetName, err := utils.GetStatefulsetName(appLRP)
 	if err != nil {
 		return err
@@ -149,21 +149,21 @@ func (r *LRP) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {
 	}
 }
 
-func toOpiLrp(lrp *eiriniv1.LRP) (*opi.LRP, error) {
-	opiLrp := &opi.LRP{}
-	if err := copier.Copy(opiLrp, lrp.Spec); err != nil {
+func toAPILrp(lrp *eiriniv1.LRP) (*api.LRP, error) {
+	apiLrp := &api.LRP{}
+	if err := copier.Copy(apiLrp, lrp.Spec); err != nil {
 		return nil, errors.Wrap(err, "failed to copy lrp spec")
 	}
 
-	opiLrp.TargetInstances = lrp.Spec.Instances
+	apiLrp.TargetInstances = lrp.Spec.Instances
 
-	if err := copier.Copy(&opiLrp.AppURIs, lrp.Spec.AppRoutes); err != nil {
+	if err := copier.Copy(&apiLrp.AppURIs, lrp.Spec.AppRoutes); err != nil {
 		return nil, errors.Wrap(err, "failed to copy app routes")
 	}
 
 	if lrp.Spec.PrivateRegistry != nil {
-		opiLrp.PrivateRegistry.Server = util.ParseImageRegistryHost(lrp.Spec.Image)
+		apiLrp.PrivateRegistry.Server = util.ParseImageRegistryHost(lrp.Spec.Image)
 	}
 
-	return opiLrp, nil
+	return apiLrp, nil
 }

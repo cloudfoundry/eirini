@@ -5,17 +5,17 @@ import (
 	"context"
 	"sync"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	v1 "k8s.io/api/core/v1"
 )
 
 type FakePodGetter struct {
-	GetByLRPIdentifierStub        func(context.Context, opi.LRPIdentifier) ([]v1.Pod, error)
+	GetByLRPIdentifierStub        func(context.Context, api.LRPIdentifier) ([]v1.Pod, error)
 	getByLRPIdentifierMutex       sync.RWMutex
 	getByLRPIdentifierArgsForCall []struct {
 		arg1 context.Context
-		arg2 opi.LRPIdentifier
+		arg2 api.LRPIdentifier
 	}
 	getByLRPIdentifierReturns struct {
 		result1 []v1.Pod
@@ -29,12 +29,12 @@ type FakePodGetter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePodGetter) GetByLRPIdentifier(arg1 context.Context, arg2 opi.LRPIdentifier) ([]v1.Pod, error) {
+func (fake *FakePodGetter) GetByLRPIdentifier(arg1 context.Context, arg2 api.LRPIdentifier) ([]v1.Pod, error) {
 	fake.getByLRPIdentifierMutex.Lock()
 	ret, specificReturn := fake.getByLRPIdentifierReturnsOnCall[len(fake.getByLRPIdentifierArgsForCall)]
 	fake.getByLRPIdentifierArgsForCall = append(fake.getByLRPIdentifierArgsForCall, struct {
 		arg1 context.Context
-		arg2 opi.LRPIdentifier
+		arg2 api.LRPIdentifier
 	}{arg1, arg2})
 	stub := fake.GetByLRPIdentifierStub
 	fakeReturns := fake.getByLRPIdentifierReturns
@@ -55,13 +55,13 @@ func (fake *FakePodGetter) GetByLRPIdentifierCallCount() int {
 	return len(fake.getByLRPIdentifierArgsForCall)
 }
 
-func (fake *FakePodGetter) GetByLRPIdentifierCalls(stub func(context.Context, opi.LRPIdentifier) ([]v1.Pod, error)) {
+func (fake *FakePodGetter) GetByLRPIdentifierCalls(stub func(context.Context, api.LRPIdentifier) ([]v1.Pod, error)) {
 	fake.getByLRPIdentifierMutex.Lock()
 	defer fake.getByLRPIdentifierMutex.Unlock()
 	fake.GetByLRPIdentifierStub = stub
 }
 
-func (fake *FakePodGetter) GetByLRPIdentifierArgsForCall(i int) (context.Context, opi.LRPIdentifier) {
+func (fake *FakePodGetter) GetByLRPIdentifierArgsForCall(i int) (context.Context, api.LRPIdentifier) {
 	fake.getByLRPIdentifierMutex.RLock()
 	defer fake.getByLRPIdentifierMutex.RUnlock()
 	argsForCall := fake.getByLRPIdentifierArgsForCall[i]

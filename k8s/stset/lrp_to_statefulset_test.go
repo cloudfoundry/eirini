@@ -2,10 +2,10 @@ package stset_test
 
 import (
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/k8s/stset/stsetfakes"
-	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -22,7 +22,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		allowRunImageAsRoot               bool
 		livenessProbeCreator              *stsetfakes.FakeProbeCreator
 		readinessProbeCreator             *stsetfakes.FakeProbeCreator
-		lrp                               *opi.LRP
+		lrp                               *api.LRP
 		statefulSet                       *appsv1.StatefulSet
 		privateRegistrySecret             *corev1.Secret
 	)
@@ -32,7 +32,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		allowRunImageAsRoot = false
 		livenessProbeCreator = new(stsetfakes.FakeProbeCreator)
 		readinessProbeCreator = new(stsetfakes.FakeProbeCreator)
-		lrp = createLRP("Baldur", []opi.Route{{Hostname: "my.example.route", Port: 1000}})
+		lrp = createLRP("Baldur", []api.Route{{Hostname: "my.example.route", Port: 1000}})
 		privateRegistrySecret = nil
 	})
 
@@ -241,7 +241,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 
 	When("the app has sidecars", func() {
 		BeforeEach(func() {
-			lrp.Sidecars = []opi.Sidecar{
+			lrp.Sidecars = []api.Sidecar{
 				{
 					Name:    "first-sidecar",
 					Command: []string{"echo", "the first sidecar"},
@@ -323,7 +323,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 
 	When("the app references a private docker image", func() {
 		BeforeEach(func() {
-			lrp.PrivateRegistry = &opi.PrivateRegistry{
+			lrp.PrivateRegistry = &api.PrivateRegistry{
 				Server:   "host",
 				Username: "user",
 				Password: "password",

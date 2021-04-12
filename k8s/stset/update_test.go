@@ -1,9 +1,9 @@
 package stset_test
 
 import (
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/k8s/stset/stsetfakes"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
@@ -23,7 +23,7 @@ var _ = Describe("Update", func() {
 		statefulSetUpdater *stsetfakes.FakeStatefulSetUpdater
 		pdbUpdater         *stsetfakes.FakePodDisruptionBudgetUpdater
 
-		updatedLRP *opi.LRP
+		updatedLRP *api.LRP
 		err        error
 	)
 
@@ -34,8 +34,8 @@ var _ = Describe("Update", func() {
 		statefulSetUpdater = new(stsetfakes.FakeStatefulSetUpdater)
 		pdbUpdater = new(stsetfakes.FakePodDisruptionBudgetUpdater)
 
-		updatedLRP = &opi.LRP{
-			LRPIdentifier: opi.LRPIdentifier{
+		updatedLRP = &api.LRP{
+			LRPIdentifier: api.LRPIdentifier{
 				GUID:    "guid_1234",
 				Version: "version_1234",
 			},
@@ -43,7 +43,7 @@ var _ = Describe("Update", func() {
 			SpaceName:       "space-foo",
 			TargetInstances: 5,
 			LastUpdated:     "now",
-			AppURIs:         []opi.Route{{Hostname: "new-route.io", Port: 6666}},
+			AppURIs:         []api.Route{{Hostname: "new-route.io", Port: 6666}},
 			Image:           "new/image",
 		}
 
@@ -66,7 +66,7 @@ var _ = Describe("Update", func() {
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{Name: "another-container", Image: "another/image"},
-								{Name: stset.OPIContainerName, Image: "old/image"},
+								{Name: stset.ApplicationContainerName, Image: "old/image"},
 							},
 						},
 					},

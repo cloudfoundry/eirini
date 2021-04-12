@@ -1,4 +1,4 @@
-package opi_test
+package api_test
 
 import (
 	"bytes"
@@ -356,7 +356,7 @@ var _ = Describe("Tasks", func() {
 				)
 
 				apiConfig.CCTLSDisabled = true
-				opiEnvOverride = []string{fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, "/does/not/exits")}
+				apiEnvOverride = []string{fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, "/does/not/exits")}
 
 				request.CompletionCallback = cloudControllerServer.URL()
 			})

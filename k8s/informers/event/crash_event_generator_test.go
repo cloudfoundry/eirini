@@ -86,7 +86,7 @@ var _ = Describe("CrashEventGenerator", func() {
 				BeforeEach(func() {
 					pod = newPod([]v1.ContainerStatus{
 						{
-							Name:         stset.OPIContainerName,
+							Name:         stset.ApplicationContainerName,
 							RestartCount: 0,
 							State: v1.ContainerState{
 								Waiting: &v1.ContainerStateWaiting{
@@ -174,7 +174,7 @@ var _ = Describe("CrashEventGenerator", func() {
 			BeforeEach(func() {
 				pod = newPod([]v1.ContainerStatus{
 					{
-						Name:         stset.OPIContainerName,
+						Name:         stset.ApplicationContainerName,
 						RestartCount: 1,
 						State: v1.ContainerState{
 							Running: &v1.ContainerStateRunning{},
@@ -211,7 +211,7 @@ var _ = Describe("CrashEventGenerator", func() {
 		BeforeEach(func() {
 			pod = newPod([]v1.ContainerStatus{
 				{
-					Name:         stset.OPIContainerName,
+					Name:         stset.ApplicationContainerName,
 					RestartCount: 1,
 					State: v1.ContainerState{
 						Waiting: &v1.ContainerStateWaiting{
@@ -275,7 +275,7 @@ var _ = Describe("CrashEventGenerator", func() {
 		})
 	})
 
-	Context("When a pod has no opi container statuses", func() {
+	Context("When a pod has no application container statuses", func() {
 		BeforeEach(func() {
 			pod = newPod([]v1.ContainerStatus{
 				{
@@ -320,7 +320,7 @@ func newTerminatedPod() *v1.Pod {
 			},
 		},
 		{
-			Name:         stset.OPIContainerName,
+			Name:         stset.ApplicationContainerName,
 			RestartCount: 8,
 			State: v1.ContainerState{
 				Terminated: &v1.ContainerStateTerminated{
@@ -343,7 +343,7 @@ func newRunningLastTerminatedPod() *v1.Pod {
 			},
 		},
 		{
-			Name:         stset.OPIContainerName,
+			Name:         stset.ApplicationContainerName,
 			RestartCount: 8,
 			State: v1.ContainerState{
 				Running: &v1.ContainerStateRunning{},
@@ -362,7 +362,7 @@ func newRunningLastTerminatedPod() *v1.Pod {
 func newTerminatedSidecarPod() *v1.Pod {
 	return newPod([]v1.ContainerStatus{
 		{
-			Name:         stset.OPIContainerName,
+			Name:         stset.ApplicationContainerName,
 			RestartCount: 1,
 			State: v1.ContainerState{
 				Running: &v1.ContainerStateRunning{},

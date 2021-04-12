@@ -72,7 +72,7 @@ func injectInstanceIndex(logger lager.Logger, pod *corev1.Pod) error {
 
 	for c := range pod.Spec.Containers {
 		container := &pod.Spec.Containers[c]
-		if container.Name == stset.OPIContainerName {
+		if container.Name == stset.ApplicationContainerName {
 			cfInstanceVar := corev1.EnvVar{Name: eirini.EnvCFInstanceIndex, Value: strconv.Itoa(index)}
 			container.Env = append(container.Env, cfInstanceVar)
 
@@ -82,7 +82,7 @@ func injectInstanceIndex(logger lager.Logger, pod *corev1.Pod) error {
 		}
 	}
 
-	logger.Info("no-opi-container-found")
+	logger.Info("no-app-container-found")
 
-	return errors.New("no opi container found in pod")
+	return errors.New("no application container found in pod")
 }

@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
 	"code.cloudfoundry.org/eirini/util"
@@ -34,7 +34,7 @@ var _ = Describe("TaskReporter", func() {
 		configFile            string
 		session               *gexec.Session
 		taskDesirer           jobs.Desirer
-		task                  *opi.Task
+		task                  *api.Task
 		config                *eirini.TaskReporterConfig
 		ttlSeconds            int
 		taskSubmittedAt       time.Time
@@ -74,7 +74,7 @@ var _ = Describe("TaskReporter", func() {
 		)
 
 		taskGUID := tests.GenerateGUID()
-		task = &opi.Task{
+		task = &api.Task{
 			Image:              "eirini/busybox",
 			Command:            []string{"echo", "hi"},
 			GUID:               taskGUID,
@@ -211,7 +211,7 @@ var _ = Describe("TaskReporter", func() {
 	When("a private docker registry is used", func() {
 		BeforeEach(func() {
 			task.Image = "eiriniuser/notdora"
-			task.PrivateRegistry = &opi.PrivateRegistry{
+			task.PrivateRegistry = &api.PrivateRegistry{
 				Server:   util.DockerHubHost,
 				Username: "eiriniuser",
 				Password: tests.GetEiriniDockerHubPassword(),

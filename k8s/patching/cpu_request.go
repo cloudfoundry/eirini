@@ -29,7 +29,7 @@ func (p CPURequestPatch) GetPatchBytes() []byte {
 	containerIdx := -1
 
 	for i, c := range p.stSet.Spec.Template.Spec.Containers {
-		if c.Name == stset.OPIContainerName {
+		if c.Name == stset.ApplicationContainerName {
 			containerIdx = i
 
 			break

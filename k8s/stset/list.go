@@ -3,7 +3,7 @@ package stset
 import (
 	"context"
 
-	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -13,7 +13,7 @@ import (
 //counterfeiter:generate . StatefulSetsBySourceTypeGetter
 
 type StatefulSetToLRPConverter interface {
-	Convert(s appsv1.StatefulSet) (*opi.LRP, error)
+	Convert(s appsv1.StatefulSet) (*api.LRP, error)
 }
 
 type StatefulSetsBySourceTypeGetter interface {
@@ -38,7 +38,7 @@ func NewLister(
 	}
 }
 
-func (l *Lister) List(ctx context.Context) ([]*opi.LRP, error) {
+func (l *Lister) List(ctx context.Context) ([]*api.LRP, error) {
 	logger := l.logger.Session("list")
 
 	statefulsets, err := l.statefulSetGetter.GetBySourceType(ctx, AppSourceType)
@@ -58,8 +58,8 @@ func (l *Lister) List(ctx context.Context) ([]*opi.LRP, error) {
 	return lrps, nil
 }
 
-func (l *Lister) statefulSetsToLRPs(statefulSets []appsv1.StatefulSet) ([]*opi.LRP, error) {
-	lrps := []*opi.LRP{}
+func (l *Lister) statefulSetsToLRPs(statefulSets []appsv1.StatefulSet) ([]*api.LRP, error) {
+	lrps := []*api.LRP{}
 
 	for _, s := range statefulSets {
 		lrp, err := l.statefulsetToLrpConverter.Convert(s)

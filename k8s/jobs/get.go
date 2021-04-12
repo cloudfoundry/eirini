@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/api"
 	"github.com/pkg/errors"
 	batch "k8s.io/api/batch/v1"
 )
@@ -28,7 +28,7 @@ func NewGetter(
 	}
 }
 
-func (g *Getter) Get(ctx context.Context, taskGUID string) (*opi.Task, error) {
+func (g *Getter) Get(ctx context.Context, taskGUID string) (*api.Task, error) {
 	jobs, err := g.jobGetter.GetByGUID(ctx, taskGUID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get job")

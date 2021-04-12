@@ -139,10 +139,10 @@ func (f *EATSFixture) GetEiriniWorkloadsNamespace() string {
 	cm, err := f.Clientset.CoreV1().ConfigMaps(GetEiriniSystemNamespace()).Get(context.Background(), "api", metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
-	opiYml := cm.Data["api.yml"]
+	apiYml := cm.Data["api.yml"]
 	config := eirini.APIConfig{}
 
-	Expect(yaml.Unmarshal([]byte(opiYml), &config)).To(Succeed())
+	Expect(yaml.Unmarshal([]byte(apiYml), &config)).To(Succeed())
 
 	return config.DefaultWorkloadsNamespace
 }

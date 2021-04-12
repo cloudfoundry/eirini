@@ -3,8 +3,8 @@ package k8s
 import (
 	"context"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -13,12 +13,12 @@ import (
 
 type PodClient interface {
 	GetAll(ctx context.Context) ([]corev1.Pod, error)
-	GetByLRPIdentifier(ctx context.Context, id opi.LRPIdentifier) ([]corev1.Pod, error)
+	GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifier) ([]corev1.Pod, error)
 	Delete(ctx context.Context, namespace, name string) error
 }
 
 type PodDisruptionBudgetClient interface {
-	Update(ctx context.Context, stset *appsv1.StatefulSet, lrp *opi.LRP) error
+	Update(ctx context.Context, stset *appsv1.StatefulSet, lrp *api.LRP) error
 }
 
 type StatefulSetClient interface {
@@ -26,7 +26,7 @@ type StatefulSetClient interface {
 	Update(ctx context.Context, namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
 	Delete(ctx context.Context, namespace string, name string) error
 	GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.StatefulSet, error)
-	GetByLRPIdentifier(ctx context.Context, id opi.LRPIdentifier) ([]appsv1.StatefulSet, error)
+	GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifier) ([]appsv1.StatefulSet, error)
 }
 
 type SecretsClient interface {

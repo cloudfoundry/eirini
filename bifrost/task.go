@@ -3,9 +3,9 @@ package bifrost
 import (
 	"context"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 	"github.com/pkg/errors"
 )
 
@@ -15,13 +15,13 @@ import (
 //counterfeiter:generate . TaskNamespacer
 
 type TaskConverter interface {
-	ConvertTask(taskGUID string, request cf.TaskRequest) (opi.Task, error)
+	ConvertTask(taskGUID string, request cf.TaskRequest) (api.Task, error)
 }
 
 type TaskClient interface {
-	Desire(ctx context.Context, namespace string, task *opi.Task, opts ...shared.Option) error
-	Get(ctx context.Context, guid string) (*opi.Task, error)
-	List(ctx context.Context) ([]*opi.Task, error)
+	Desire(ctx context.Context, namespace string, task *api.Task, opts ...shared.Option) error
+	Get(ctx context.Context, guid string) (*api.Task, error)
+	List(ctx context.Context) ([]*api.Task, error)
 	Delete(ctx context.Context, guid string) (string, error)
 }
 

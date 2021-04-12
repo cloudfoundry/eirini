@@ -4,19 +4,19 @@ import (
 	"encoding/json"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("OPI Converter", func() {
+var _ = Describe("API Converter", func() {
 	var (
 		logger    *lagertest.TestLogger
 		err       error
-		converter *bifrost.OPIConverter
+		converter *bifrost.APIConverter
 	)
 
 	BeforeEach(func() {
@@ -24,14 +24,14 @@ var _ = Describe("OPI Converter", func() {
 	})
 
 	JustBeforeEach(func() {
-		converter = bifrost.NewOPIConverter(
+		converter = bifrost.NewAPIConverter(
 			logger,
 		)
 	})
 
-	Describe("Convert CC DesiredApp into an opi LRP", func() {
+	Describe("Convert CC DesiredApp into an LRP", func() {
 		var (
-			lrp              opi.LRP
+			lrp              api.LRP
 			desireLRPRequest cf.DesireLRPRequest
 		)
 
@@ -173,8 +173,8 @@ var _ = Describe("OPI Converter", func() {
 
 		It("sets the app routes", func() {
 			Expect(lrp.AppURIs).To(ConsistOf(
-				opi.Route{Hostname: "bumblebee.example.com", Port: 8000},
-				opi.Route{Hostname: "transformers.example.com", Port: 7070},
+				api.Route{Hostname: "bumblebee.example.com", Port: 8000},
+				api.Route{Hostname: "transformers.example.com", Port: 7070},
 			))
 		})
 
@@ -185,11 +185,11 @@ var _ = Describe("OPI Converter", func() {
 		It("should set the volume mounts", func() {
 			volumes := lrp.VolumeMounts
 			Expect(len(volumes)).To(Equal(2))
-			Expect(volumes).To(ContainElement(opi.VolumeMount{
+			Expect(volumes).To(ContainElement(api.VolumeMount{
 				ClaimName: "claim-one",
 				MountPath: "/path/one",
 			}))
-			Expect(volumes).To(ContainElement(opi.VolumeMount{
+			Expect(volumes).To(ContainElement(api.VolumeMount{
 				ClaimName: "claim-two",
 				MountPath: "/path/two",
 			}))
@@ -309,7 +309,7 @@ var _ = Describe("OPI Converter", func() {
 	Describe("Convert Task", func() {
 		var (
 			taskRequest cf.TaskRequest
-			task        opi.Task
+			task        api.Task
 		)
 
 		JustBeforeEach(func() {
@@ -334,7 +334,7 @@ var _ = Describe("OPI Converter", func() {
 
 			It("should convert the task request", func() {
 				Expect(err).NotTo(HaveOccurred())
-				Expect(task).To(Equal(opi.Task{
+				Expect(task).To(Equal(api.Task{
 					GUID:               "guid_1234",
 					AppGUID:            "our-app-id",
 					Name:               "task-name",

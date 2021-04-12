@@ -7,15 +7,15 @@ import (
 	"strings"
 	"time"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/prometheus"
 	"code.cloudfoundry.org/eirini/prometheus/prometheusfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	api "github.com/prometheus/client_golang/prometheus"
+	prometheus_api "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"k8s.io/apimachinery/pkg/util/clock"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
@@ -26,7 +26,7 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 		lrpClient  *prometheusfakes.FakeLRPClient
 		decorator  prometheus.LRPClient
 		desireOpts []shared.Option
-		lrp        *opi.LRP
+		lrp        *api.LRP
 		desireErr  error
 		logger     *lagertest.TestLogger
 		registry   metrics.RegistererGatherer
@@ -42,8 +42,8 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 			return nil
 		}
 		desireOpts = []shared.Option{desireOption}
-		lrp = &opi.LRP{}
-		registry = api.NewRegistry()
+		lrp = &api.LRP{}
+		registry = prometheus_api.NewRegistry()
 
 		t0 = time.Now()
 		fakeClock = clock.NewFakePassiveClock(t0)
@@ -75,7 +75,7 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 
 	Describe("observing durations", func() {
 		BeforeEach(func() {
-			lrpClient.DesireStub = func(ctx context.Context, s string, l *opi.LRP, o ...shared.Option) error {
+			lrpClient.DesireStub = func(ctx context.Context, s string, l *api.LRP, o ...shared.Option) error {
 				fakeClock.SetTime(t0.Add(time.Second))
 
 				return nil
@@ -125,7 +125,7 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 })
 
 func HaveMetric(name string, promText string) types.GomegaMatcher {
-	return WithTransform(func(registry api.Gatherer) error {
+	return WithTransform(func(registry prometheus_api.Gatherer) error {
 		return testutil.GatherAndCompare(registry, strings.NewReader(promText), name)
 	}, Succeed())
 }

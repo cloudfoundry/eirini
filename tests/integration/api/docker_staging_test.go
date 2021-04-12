@@ -1,4 +1,4 @@
-package opi_test
+package api_test
 
 import (
 	"bytes"

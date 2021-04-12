@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 	"github.com/pkg/errors"
 )
 
@@ -15,17 +15,17 @@ import (
 //counterfeiter:generate . LRPNamespacer
 
 type LRPConverter interface {
-	ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error)
+	ConvertLRP(request cf.DesireLRPRequest) (api.LRP, error)
 }
 
 type LRPClient interface {
-	Desire(ctx context.Context, namespace string, lrp *opi.LRP, opts ...shared.Option) error
-	List(ctx context.Context) ([]*opi.LRP, error)
-	Get(ctx context.Context, identifier opi.LRPIdentifier) (*opi.LRP, error)
-	GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*opi.Instance, error)
-	Update(ctx context.Context, lrp *opi.LRP) error
-	Stop(ctx context.Context, identifier opi.LRPIdentifier) error
-	StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error
+	Desire(ctx context.Context, namespace string, lrp *api.LRP, opts ...shared.Option) error
+	List(ctx context.Context) ([]*api.LRP, error)
+	Get(ctx context.Context, identifier api.LRPIdentifier) (*api.LRP, error)
+	GetInstances(ctx context.Context, identifier api.LRPIdentifier) ([]*api.Instance, error)
+	Update(ctx context.Context, lrp *api.LRP) error
+	Stop(ctx context.Context, identifier api.LRPIdentifier) error
+	StopInstance(ctx context.Context, identifier api.LRPIdentifier, index uint) error
 }
 
 type LRPNamespacer interface {
@@ -58,7 +58,7 @@ func (l *LRP) List(ctx context.Context) ([]cf.DesiredLRPSchedulingInfo, error) {
 	return toDesiredLRPSchedulingInfo(lrps), nil
 }
 
-func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []cf.DesiredLRPSchedulingInfo {
+func toDesiredLRPSchedulingInfo(lrps []*api.LRP) []cf.DesiredLRPSchedulingInfo {
 	infos := []cf.DesiredLRPSchedulingInfo{}
 
 	for _, l := range lrps {
@@ -74,7 +74,7 @@ func toDesiredLRPSchedulingInfo(lrps []*opi.LRP) []cf.DesiredLRPSchedulingInfo {
 }
 
 func (l *LRP) Update(ctx context.Context, request cf.UpdateDesiredLRPRequest) error {
-	identifier := opi.LRPIdentifier{
+	identifier := api.LRPIdentifier{
 		GUID:    request.GUID,
 		Version: request.Version,
 	}
@@ -97,7 +97,7 @@ func (l *LRP) Update(ctx context.Context, request cf.UpdateDesiredLRPRequest) er
 	return errors.Wrap(l.LRPClient.Update(ctx, lrp), "failed to update")
 }
 
-func (l *LRP) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (cf.DesiredLRP, error) {
+func (l *LRP) GetApp(ctx context.Context, identifier api.LRPIdentifier) (cf.DesiredLRP, error) {
 	lrp, err := l.LRPClient.Get(ctx, identifier)
 	if err != nil {
 		return cf.DesiredLRP{}, errors.Wrap(err, "failed to get app")
@@ -123,11 +123,11 @@ func (l *LRP) GetApp(ctx context.Context, identifier opi.LRPIdentifier) (cf.Desi
 	return desiredLRP, nil
 }
 
-func (l *LRP) Stop(ctx context.Context, identifier opi.LRPIdentifier) error {
+func (l *LRP) Stop(ctx context.Context, identifier api.LRPIdentifier) error {
 	return errors.Wrap(l.LRPClient.Stop(ctx, identifier), "failed to stop app")
 }
 
-func (l *LRP) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error {
+func (l *LRP) StopInstance(ctx context.Context, identifier api.LRPIdentifier, index uint) error {
 	if err := l.LRPClient.StopInstance(ctx, identifier, index); err != nil {
 		return errors.Wrap(err, "failed to stop instance")
 	}
@@ -135,14 +135,14 @@ func (l *LRP) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, in
 	return nil
 }
 
-func (l *LRP) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*cf.Instance, error) {
-	opiInstances, err := l.LRPClient.GetInstances(ctx, identifier)
+func (l *LRP) GetInstances(ctx context.Context, identifier api.LRPIdentifier) ([]*cf.Instance, error) {
+	instances, err := l.LRPClient.GetInstances(ctx, identifier)
 	if err != nil {
 		return []*cf.Instance{}, errors.Wrap(err, "failed to get instances for app")
 	}
 
-	cfInstances := make([]*cf.Instance, 0, len(opiInstances))
-	for _, i := range opiInstances {
+	cfInstances := make([]*cf.Instance, 0, len(instances))
+	for _, i := range instances {
 		cfInstances = append(cfInstances, &cf.Instance{
 			Since:          i.Since,
 			Index:          i.Index,
@@ -154,13 +154,13 @@ func (l *LRP) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([
 	return cfInstances, nil
 }
 
-func getURIs(update cf.DesiredLRPUpdate) ([]opi.Route, error) {
+func getURIs(update cf.DesiredLRPUpdate) ([]api.Route, error) {
 	cfRouterRoutes, hasRoutes := update.Routes["cf-router"]
 	if !hasRoutes {
-		return []opi.Route{}, nil
+		return []api.Route{}, nil
 	}
 
-	var routes []opi.Route
+	var routes []api.Route
 
 	err := json.Unmarshal(cfRouterRoutes, &routes)
 	if err != nil {

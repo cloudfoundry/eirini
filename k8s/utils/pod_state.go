@@ -1,42 +1,42 @@
 package utils
 
 import (
-	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/api"
 	corev1 "k8s.io/api/core/v1"
 )
 
 func GetPodState(pod corev1.Pod) string {
 	if len(pod.Status.ContainerStatuses) == 0 || pod.Status.Phase == corev1.PodUnknown {
-		return opi.UnknownState
+		return api.UnknownState
 	}
 
 	if podPending(&pod) {
 		if containersHaveBrokenImage(pod.Status.ContainerStatuses) {
-			return opi.CrashedState
+			return api.CrashedState
 		}
 
-		return opi.PendingState
+		return api.PendingState
 	}
 
 	if podFailed(&pod) {
-		return opi.CrashedState
+		return api.CrashedState
 	}
 
 	if podRunning(&pod) {
 		if containersReady(pod.Status.ContainerStatuses) {
-			return opi.RunningState
+			return api.RunningState
 		}
 
 		if containersRunning(pod.Status.ContainerStatuses) {
-			return opi.PendingState
+			return api.PendingState
 		}
 	}
 
 	if containersFailed(pod.Status.ContainerStatuses) {
-		return opi.CrashedState
+		return api.CrashedState
 	}
 
-	return opi.UnknownState
+	return api.UnknownState
 }
 
 func podPending(pod *corev1.Pod) bool {

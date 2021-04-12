@@ -32,9 +32,9 @@ var _ = Describe("Reporter", func() {
 					jobs.LabelSourceType: "TASK",
 				},
 				Annotations: map[string]string{
-					jobs.AnnotationOpiTaskContainerName: "opi-task",
-					jobs.AnnotationGUID:                 "the-task-guid",
-					jobs.AnnotationCompletionCallback:   fmt.Sprintf("%s/the-callback-url", server.URL()),
+					jobs.AnnotationTaskContainerName:  "opi-task",
+					jobs.AnnotationGUID:               "the-task-guid",
+					jobs.AnnotationCompletionCallback: fmt.Sprintf("%s/the-callback-url", server.URL()),
 				},
 			},
 			Status: corev1.PodStatus{

@@ -5,17 +5,17 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/utils"
-	"code.cloudfoundry.org/eirini/opi"
 	batch "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	opiTaskContainerName = "opi-task"
-	parallelism          = 1
-	completions          = 1
+	taskContainerName = "opi-task"
+	parallelism       = 1
+	completions       = 1
 )
 
 type Converter struct {
@@ -39,20 +39,20 @@ func NewTaskToJobConverter(
 	}
 }
 
-func (m *Converter) Convert(task *opi.Task, privateRegistrySecret *corev1.Secret) *batch.Job {
+func (m *Converter) Convert(task *api.Task, privateRegistrySecret *corev1.Secret) *batch.Job {
 	job := m.toJob(task)
 	job.Spec.Template.Spec.ServiceAccountName = m.serviceAccountName
 	job.Labels[LabelSourceType] = TaskSourceType
 	job.Labels[LabelName] = task.Name
 	job.Annotations[AnnotationCompletionCallback] = task.CompletionCallback
 	job.Spec.Template.Annotations[AnnotationGUID] = task.GUID
-	job.Spec.Template.Annotations[AnnotationOpiTaskContainerName] = opiTaskContainerName
+	job.Spec.Template.Annotations[AnnotationTaskContainerName] = taskContainerName
 	job.Spec.Template.Annotations[AnnotationCompletionCallback] = task.CompletionCallback
 
 	envs := getEnvs(task)
 	containers := []corev1.Container{
 		{
-			Name:            opiTaskContainerName,
+			Name:            taskContainerName,
 			Image:           task.Image,
 			ImagePullPolicy: corev1.PullAlways,
 			Env:             envs,
@@ -76,7 +76,7 @@ func (m *Converter) Convert(task *opi.Task, privateRegistrySecret *corev1.Secret
 	return job
 }
 
-func (m *Converter) toJob(task *opi.Task) *batch.Job {
+func (m *Converter) toJob(task *api.Task) *batch.Job {
 	runAsNonRoot := true
 
 	job := &batch.Job{
@@ -131,7 +131,7 @@ func (m *Converter) toJob(task *opi.Task) *batch.Job {
 	return job
 }
 
-func getEnvs(task *opi.Task) []corev1.EnvVar {
+func getEnvs(task *api.Task) []corev1.EnvVar {
 	envs := shared.MapToEnvVar(task.Env)
 	fieldEnvs := []corev1.EnvVar{
 		{

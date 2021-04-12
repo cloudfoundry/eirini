@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/patching"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -54,7 +54,7 @@ func (c *StatefulSet) GetBySourceType(ctx context.Context, sourceType string) ([
 	return statefulSetList.Items, nil
 }
 
-func (c *StatefulSet) GetByLRPIdentifier(ctx context.Context, id opi.LRPIdentifier) ([]appsv1.StatefulSet, error) {
+func (c *StatefulSet) GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifier) ([]appsv1.StatefulSet, error) {
 	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
 	defer cancel()
 

@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/patching"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +43,7 @@ func (c *Pod) GetAll(ctx context.Context) ([]corev1.Pod, error) {
 	return podList.Items, nil
 }
 
-func (c *Pod) GetByLRPIdentifier(ctx context.Context, id opi.LRPIdentifier) ([]corev1.Pod, error) {
+func (c *Pod) GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifier) ([]corev1.Pod, error) {
 	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
 	defer cancel()
 

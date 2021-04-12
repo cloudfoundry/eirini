@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	"code.cloudfoundry.org/eirini/k8s/reconciler/reconcilerfakes"
-	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	eiriniv1scheme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -96,28 +96,28 @@ var _ = Describe("Task", func() {
 
 			By("invoking the task desirer", func() {
 				Expect(taskDesirer.DesireCallCount()).To(Equal(1))
-				_, namespace, opiTask, _ := taskDesirer.DesireArgsForCall(0)
+				_, namespace, task, _ := taskDesirer.DesireArgsForCall(0)
 				Expect(namespace).To(Equal("my-namespace"))
-				Expect(opiTask.GUID).To(Equal("my-task-guid"))
-				Expect(opiTask.Name).To(Equal("my-task-name"))
-				Expect(opiTask.Image).To(Equal("my-task-image"))
-				Expect(opiTask.CompletionCallback).To(Equal("my-task-completion-callback"))
-				Expect(opiTask.PrivateRegistry).To(Equal(&opi.PrivateRegistry{
+				Expect(task.GUID).To(Equal("my-task-guid"))
+				Expect(task.Name).To(Equal("my-task-name"))
+				Expect(task.Image).To(Equal("my-task-image"))
+				Expect(task.CompletionCallback).To(Equal("my-task-completion-callback"))
+				Expect(task.PrivateRegistry).To(Equal(&api.PrivateRegistry{
 					Server:   "index.docker.io/v1/",
 					Username: "pr-username",
 					Password: "pr-password",
 				}))
-				Expect(opiTask.Env).To(Equal(map[string]string{"foo": "2", "bar": "coffee"}))
-				Expect(opiTask.Command).To(Equal([]string{"beam", "me", "up"}))
-				Expect(opiTask.AppName).To(Equal("arthur"))
-				Expect(opiTask.AppGUID).To(Equal("arthur-guid"))
-				Expect(opiTask.OrgName).To(Equal("my-org"))
-				Expect(opiTask.OrgGUID).To(Equal("org-guid"))
-				Expect(opiTask.SpaceName).To(Equal("my-space"))
-				Expect(opiTask.SpaceGUID).To(Equal("space-guid"))
-				Expect(opiTask.MemoryMB).To(BeNumerically("==", 1234))
-				Expect(opiTask.DiskMB).To(BeNumerically("==", 4312))
-				Expect(opiTask.CPUWeight).To(BeNumerically("==", 14))
+				Expect(task.Env).To(Equal(map[string]string{"foo": "2", "bar": "coffee"}))
+				Expect(task.Command).To(Equal([]string{"beam", "me", "up"}))
+				Expect(task.AppName).To(Equal("arthur"))
+				Expect(task.AppGUID).To(Equal("arthur-guid"))
+				Expect(task.OrgName).To(Equal("my-org"))
+				Expect(task.OrgGUID).To(Equal("org-guid"))
+				Expect(task.SpaceName).To(Equal("my-space"))
+				Expect(task.SpaceGUID).To(Equal("space-guid"))
+				Expect(task.MemoryMB).To(BeNumerically("==", 1234))
+				Expect(task.DiskMB).To(BeNumerically("==", 4312))
+				Expect(task.CPUWeight).To(BeNumerically("==", 14))
 			})
 
 			By("sets an owner reference in the statefulset", func() {

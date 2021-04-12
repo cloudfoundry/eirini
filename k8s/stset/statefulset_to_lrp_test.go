@@ -1,8 +1,8 @@
 package stset_test
 
 import (
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -12,7 +12,7 @@ import (
 )
 
 var _ = Describe("Statefulset to LRP Converter", func() {
-	var lrp *opi.LRP
+	var lrp *api.LRP
 
 	BeforeEach(func() {
 		statefulset := appsv1.StatefulSet{
@@ -117,7 +117,7 @@ var _ = Describe("Statefulset to LRP Converter", func() {
 	})
 
 	It("should set the correct LRP AppURIs", func() {
-		Expect(lrp.AppURIs).To(ConsistOf(opi.Route{Hostname: "my.example.route", Port: 8080}))
+		Expect(lrp.AppURIs).To(ConsistOf(api.Route{Hostname: "my.example.route", Port: 8080}))
 	})
 
 	It("should set the correct LRP AppGUID", func() {
@@ -130,7 +130,7 @@ var _ = Describe("Statefulset to LRP Converter", func() {
 	})
 
 	It("should set the correct LRP volume mounts", func() {
-		Expect(lrp.VolumeMounts).To(Equal([]opi.VolumeMount{
+		Expect(lrp.VolumeMounts).To(Equal([]api.VolumeMount{
 			{
 				ClaimName: "some-claim",
 				MountPath: "/some/path",

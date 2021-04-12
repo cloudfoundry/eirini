@@ -1,15 +1,12 @@
-package cmd
+package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/bifrost"
-	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
@@ -21,23 +18,19 @@ import (
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/tlsconfig"
-	"github.com/spf13/cobra"
-	yaml "gopkg.in/yaml.v2"
+	"github.com/jessevdk/go-flags"
 	"k8s.io/client-go/kubernetes"
-
-	// For gcp and oidc authentication
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-func connect(cmd *cobra.Command, args []string) {
-	path, err := cmd.Flags().GetString("config")
-	cmdcommons.ExitfIfError(err, "Failed to get config flag")
+func main() {
+	var opts options
+	_, err := flags.ParseArgs(&opts, os.Args)
+	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
-	if path == "" {
-		cmdcommons.Exitf("--config is missing")
-	}
+	var cfg eirini.APIConfig
+	err = cmdcommons.ReadConfigFile(opts.ConfigFile, &cfg)
+	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
-	cfg := setConfigFromFile(path)
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
 
 	latestMigrationIndex := cmdcommons.GetLatestMigrationIndex()
@@ -49,7 +42,7 @@ func connect(cmd *cobra.Command, args []string) {
 	handlerLogger := lager.NewLogger("handler")
 	handlerLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	handler := handler.New(bifrost, dockerStagingBifrost, taskBifrost, handlerLogger)
-	handlerLogger.Info("opi-connected")
+	handlerLogger.Info("api-connected")
 
 	if cfg.ServePlaintext {
 		servePlaintext(cfg, handler, handlerLogger)
@@ -58,7 +51,7 @@ func connect(cmd *cobra.Command, args []string) {
 	serveTLS(cfg, handler, handlerLogger)
 }
 
-func serveTLS(cfg *eirini.APIConfig, handler http.Handler, logger lager.Logger) {
+func serveTLS(cfg eirini.APIConfig, handler http.Handler, logger lager.Logger) {
 	var server *http.Server
 
 	crtPath, keyPath, caPath := cmdcommons.GetCertPaths(eirini.EnvServerCertDir, eirini.EiriniCrtDir, "Eirini Server")
@@ -75,19 +68,19 @@ func serveTLS(cfg *eirini.APIConfig, handler http.Handler, logger lager.Logger) 
 		Handler:   handler,
 		TLSConfig: tlsConfig,
 	}
-	logger.Fatal("opi-crashed",
+	logger.Fatal("api-crashed",
 		server.ListenAndServeTLS(crtPath, keyPath))
 }
 
-func servePlaintext(cfg *eirini.APIConfig, handler http.Handler, logger lager.Logger) {
+func servePlaintext(cfg eirini.APIConfig, handler http.Handler, logger lager.Logger) {
 	server := &http.Server{
 		Addr:    fmt.Sprintf("0.0.0.0:%d", cfg.PlaintextPort),
 		Handler: handler,
 	}
-	logger.Fatal("opi-crashed", server.ListenAndServe())
+	logger.Fatal("api-crashed", server.ListenAndServe())
 }
 
-func initRetryableJSONClient(cfg *eirini.APIConfig) *util.RetryableJSONClient {
+func initRetryableJSONClient(cfg eirini.APIConfig) *util.RetryableJSONClient {
 	httpClient := http.DefaultClient
 
 	if !cfg.CCTLSDisabled {
@@ -112,13 +105,13 @@ func initRetryableJSONClient(cfg *eirini.APIConfig) *util.RetryableJSONClient {
 	return util.NewRetryableJSONClient(httpClient)
 }
 
-func initStagingCompleter(cfg *eirini.APIConfig, logger lager.Logger) *stager.CallbackStagingCompleter {
+func initStagingCompleter(cfg eirini.APIConfig, logger lager.Logger) *stager.CallbackStagingCompleter {
 	retryableJSONClient := initRetryableJSONClient(cfg)
 
 	return stager.NewCallbackStagingCompleter(logger, retryableJSONClient)
 }
 
-func initTaskClient(cfg *eirini.APIConfig, clientset kubernetes.Interface, latestMigrationIndex int) *k8s.TaskClient {
+func initTaskClient(cfg eirini.APIConfig, clientset kubernetes.Interface, latestMigrationIndex int) *k8s.TaskClient {
 	logger := lager.NewLogger("task-desirer")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
@@ -137,7 +130,7 @@ func initTaskClient(cfg *eirini.APIConfig, clientset kubernetes.Interface, lates
 	)
 }
 
-func initDockerStagingBifrost(cfg *eirini.APIConfig) *bifrost.DockerStaging {
+func initDockerStagingBifrost(cfg eirini.APIConfig) *bifrost.DockerStaging {
 	logger := lager.NewLogger("docker-staging-bifrost")
 	logger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 	stagingCompleter := initStagingCompleter(cfg, logger)
@@ -150,7 +143,7 @@ func initDockerStagingBifrost(cfg *eirini.APIConfig) *bifrost.DockerStaging {
 	}
 }
 
-func initTaskBifrost(cfg *eirini.APIConfig, clientset kubernetes.Interface, latestMigrationIndex int) *bifrost.Task {
+func initTaskBifrost(cfg eirini.APIConfig, clientset kubernetes.Interface, latestMigrationIndex int) *bifrost.Task {
 	converter := initConverter(cfg)
 	taskClient := initTaskClient(cfg, clientset, latestMigrationIndex)
 	retryableJSONClient := initRetryableJSONClient(cfg)
@@ -164,18 +157,7 @@ func initTaskBifrost(cfg *eirini.APIConfig, clientset kubernetes.Interface, late
 	}
 }
 
-func setConfigFromFile(path string) *eirini.APIConfig {
-	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
-	cmdcommons.ExitfIfError(err, "Failed to read config file")
-
-	var conf eirini.APIConfig
-	err = yaml.Unmarshal(fileBytes, &conf)
-	cmdcommons.ExitfIfError(err, "Failed to unmarshal config file")
-
-	return &conf
-}
-
-func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.APIConfig, latestMigration int) *bifrost.LRP {
+func initLRPBifrost(clientset kubernetes.Interface, cfg eirini.APIConfig, latestMigration int) *bifrost.LRP {
 	desireLogger := lager.NewLogger("desirer")
 	desireLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
@@ -209,11 +191,11 @@ func initLRPBifrost(clientset kubernetes.Interface, cfg *eirini.APIConfig, lates
 	}
 }
 
-func initConverter(cfg *eirini.APIConfig) *bifrost.OPIConverter {
+func initConverter(cfg eirini.APIConfig) *bifrost.APIConverter {
 	convertLogger := lager.NewLogger("convert")
 	convertLogger.RegisterSink(lager.NewPrettySink(os.Stdout, lager.DEBUG))
 
-	return bifrost.NewOPIConverter(
+	return bifrost.NewAPIConverter(
 		convertLogger,
 	)
 }

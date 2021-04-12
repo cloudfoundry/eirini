@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/pdb"
 	"code.cloudfoundry.org/eirini/k8s/pdb/pdbfakes"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -24,7 +24,7 @@ var _ = Describe("PDB", func() {
 		creator   *pdb.Updater
 		k8sClient *pdbfakes.FakeK8sClient
 		stSet     *appsv1.StatefulSet
-		lrp       *opi.LRP
+		lrp       *api.LRP
 		ctx       context.Context
 	)
 
@@ -40,8 +40,8 @@ var _ = Describe("PDB", func() {
 			},
 		}
 
-		lrp = &opi.LRP{
-			LRPIdentifier: opi.LRPIdentifier{
+		lrp = &api.LRP{
+			LRPIdentifier: api.LRPIdentifier{
 				GUID:    "guid",
 				Version: "version",
 			},

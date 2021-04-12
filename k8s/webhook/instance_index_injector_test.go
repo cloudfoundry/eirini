@@ -159,14 +159,14 @@ var _ = Describe("InstanceIndexInjector", func() {
 		})
 	})
 
-	When("the pod has no OPI container", func() {
+	When("the pod has no app container", func() {
 		BeforeEach(func() {
 			pod.Spec.Containers[0].Name = "ipo"
 			req.Object = rawExt(pod)
 		})
 
 		It("returns an error response", func() {
-			ExpectBadRequestErrorResponse(resp, "no opi container found in pod")
+			ExpectBadRequestErrorResponse(resp, "no application container found in pod")
 		})
 	})
 })

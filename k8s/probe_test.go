@@ -1,8 +1,8 @@
 package k8s_test
 
 import (
+	"code.cloudfoundry.org/eirini/api"
 	. "code.cloudfoundry.org/eirini/k8s"
-	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
@@ -13,12 +13,12 @@ import (
 var _ = Describe("PrrobeCreator", func() {
 	var (
 		probe *v1.Probe
-		lrp   *opi.LRP
+		lrp   *api.LRP
 	)
 
 	BeforeEach(func() {
-		lrp = &opi.LRP{
-			Health: opi.Healtcheck{
+		lrp = &api.LRP{
+			Health: api.Healtcheck{
 				Endpoint:  "/healthz",
 				Port:      8080,
 				TimeoutMs: 3000,
@@ -81,7 +81,7 @@ var _ = Describe("PrrobeCreator", func() {
 
 		Context("When healthcheck information is missing", func() {
 			BeforeEach(func() {
-				lrp = &opi.LRP{}
+				lrp = &api.LRP{}
 			})
 
 			It("returns nil", func() {
@@ -134,7 +134,7 @@ var _ = Describe("PrrobeCreator", func() {
 
 		Context("When healthcheck information is missing", func() {
 			BeforeEach(func() {
-				lrp = &opi.LRP{}
+				lrp = &api.LRP{}
 			})
 
 			It("returns nil", func() {

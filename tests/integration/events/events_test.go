@@ -10,12 +10,12 @@ import (
 	"path/filepath"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/pdb"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -85,7 +85,7 @@ var _ = Describe("Events", func() {
 	Describe("LRP events", func() {
 		var (
 			lrpClient  *k8s.LRPClient
-			lrp        opi.LRP
+			lrp        api.LRP
 			lrpCommand []string
 		)
 
@@ -112,11 +112,11 @@ var _ = Describe("Events", func() {
 		})
 
 		JustBeforeEach(func() {
-			lrp = opi.LRP{
+			lrp = api.LRP{
 				Command:         lrpCommand,
 				TargetInstances: 1,
 				Image:           "eirini/busybox",
-				LRPIdentifier:   opi.LRPIdentifier{GUID: tests.GenerateGUID(), Version: tests.GenerateGUID()},
+				LRPIdentifier:   api.LRPIdentifier{GUID: tests.GenerateGUID(), Version: tests.GenerateGUID()},
 			}
 			Expect(lrpClient.Desire(ctx, fixture.Namespace, &lrp)).To(Succeed())
 		})
@@ -251,7 +251,7 @@ var _ = Describe("Events", func() {
 		})
 
 		JustBeforeEach(func() {
-			task := opi.Task{
+			task := api.Task{
 				Command: []string{"exit", "1"},
 				Image:   "eirini/busybox",
 				GUID:    tests.GenerateGUID(),

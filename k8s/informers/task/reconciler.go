@@ -108,7 +108,7 @@ func (r Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (r
 	}
 
 	if err = r.reportIfRequired(ctx, pod); err != nil {
-		logger.Error("completion-callback-failed", err, lager.Data{"tries": pod.Annotations[jobs.AnnotationOpiTaskCompletionReportCounter]})
+		logger.Error("completion-callback-failed", err, lager.Data{"tries": pod.Annotations[jobs.AnnotationTaskCompletionReportCounter]})
 
 		return reconcile.Result{}, err
 	}
@@ -137,7 +137,7 @@ func (r *Reconciler) reportIfRequired(ctx context.Context, pod *corev1.Pod) erro
 		return nil
 	}
 
-	completionCounterStr := pod.Annotations[jobs.AnnotationOpiTaskCompletionReportCounter]
+	completionCounterStr := pod.Annotations[jobs.AnnotationTaskCompletionReportCounter]
 
 	completionCounter := parseIntOrZero(completionCounterStr)
 	if completionCounter >= r.callbackRetryLimit {
@@ -152,7 +152,7 @@ func (r *Reconciler) reportIfRequired(ctx context.Context, pod *corev1.Pod) erro
 	_, err := r.pods.SetAndTestAnnotation(
 		ctx,
 		pod,
-		jobs.AnnotationOpiTaskCompletionReportCounter,
+		jobs.AnnotationTaskCompletionReportCounter,
 		strconv.Itoa(completionCounter+1),
 		counterPointer,
 	)

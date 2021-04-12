@@ -1,9 +1,9 @@
 package jobs_test
 
 import (
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/jobs/jobsfakes"
-	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -15,7 +15,7 @@ var _ = Describe("List", func() {
 	const taskGUID = "task-123"
 	var (
 		job       *batch.Job
-		tasks     []*opi.Task
+		tasks     []*api.Task
 		jobLister *jobsfakes.FakeJobLister
 		lister    jobs.Lister
 		err       error

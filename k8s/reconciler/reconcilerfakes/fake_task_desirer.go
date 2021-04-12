@@ -5,18 +5,18 @@ import (
 	"context"
 	"sync"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	"code.cloudfoundry.org/eirini/k8s/shared"
-	"code.cloudfoundry.org/eirini/opi"
 )
 
 type FakeTaskDesirer struct {
-	DesireStub        func(context.Context, string, *opi.Task, ...shared.Option) error
+	DesireStub        func(context.Context, string, *api.Task, ...shared.Option) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
 		arg1 context.Context
 		arg2 string
-		arg3 *opi.Task
+		arg3 *api.Task
 		arg4 []shared.Option
 	}
 	desireReturns struct {
@@ -29,13 +29,13 @@ type FakeTaskDesirer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskDesirer) Desire(arg1 context.Context, arg2 string, arg3 *opi.Task, arg4 ...shared.Option) error {
+func (fake *FakeTaskDesirer) Desire(arg1 context.Context, arg2 string, arg3 *api.Task, arg4 ...shared.Option) error {
 	fake.desireMutex.Lock()
 	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
 	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
 		arg1 context.Context
 		arg2 string
-		arg3 *opi.Task
+		arg3 *api.Task
 		arg4 []shared.Option
 	}{arg1, arg2, arg3, arg4})
 	stub := fake.DesireStub
@@ -57,13 +57,13 @@ func (fake *FakeTaskDesirer) DesireCallCount() int {
 	return len(fake.desireArgsForCall)
 }
 
-func (fake *FakeTaskDesirer) DesireCalls(stub func(context.Context, string, *opi.Task, ...shared.Option) error) {
+func (fake *FakeTaskDesirer) DesireCalls(stub func(context.Context, string, *api.Task, ...shared.Option) error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = stub
 }
 
-func (fake *FakeTaskDesirer) DesireArgsForCall(i int) (context.Context, string, *opi.Task, []shared.Option) {
+func (fake *FakeTaskDesirer) DesireArgsForCall(i int) (context.Context, string, *api.Task, []shared.Option) {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	argsForCall := fake.desireArgsForCall[i]

@@ -4,31 +4,31 @@ package bifrostfakes
 import (
 	"sync"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 )
 
 type FakeTaskConverter struct {
-	ConvertTaskStub        func(string, cf.TaskRequest) (opi.Task, error)
+	ConvertTaskStub        func(string, cf.TaskRequest) (api.Task, error)
 	convertTaskMutex       sync.RWMutex
 	convertTaskArgsForCall []struct {
 		arg1 string
 		arg2 cf.TaskRequest
 	}
 	convertTaskReturns struct {
-		result1 opi.Task
+		result1 api.Task
 		result2 error
 	}
 	convertTaskReturnsOnCall map[int]struct {
-		result1 opi.Task
+		result1 api.Task
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTaskConverter) ConvertTask(arg1 string, arg2 cf.TaskRequest) (opi.Task, error) {
+func (fake *FakeTaskConverter) ConvertTask(arg1 string, arg2 cf.TaskRequest) (api.Task, error) {
 	fake.convertTaskMutex.Lock()
 	ret, specificReturn := fake.convertTaskReturnsOnCall[len(fake.convertTaskArgsForCall)]
 	fake.convertTaskArgsForCall = append(fake.convertTaskArgsForCall, struct {
@@ -54,7 +54,7 @@ func (fake *FakeTaskConverter) ConvertTaskCallCount() int {
 	return len(fake.convertTaskArgsForCall)
 }
 
-func (fake *FakeTaskConverter) ConvertTaskCalls(stub func(string, cf.TaskRequest) (opi.Task, error)) {
+func (fake *FakeTaskConverter) ConvertTaskCalls(stub func(string, cf.TaskRequest) (api.Task, error)) {
 	fake.convertTaskMutex.Lock()
 	defer fake.convertTaskMutex.Unlock()
 	fake.ConvertTaskStub = stub
@@ -67,28 +67,28 @@ func (fake *FakeTaskConverter) ConvertTaskArgsForCall(i int) (string, cf.TaskReq
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeTaskConverter) ConvertTaskReturns(result1 opi.Task, result2 error) {
+func (fake *FakeTaskConverter) ConvertTaskReturns(result1 api.Task, result2 error) {
 	fake.convertTaskMutex.Lock()
 	defer fake.convertTaskMutex.Unlock()
 	fake.ConvertTaskStub = nil
 	fake.convertTaskReturns = struct {
-		result1 opi.Task
+		result1 api.Task
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeTaskConverter) ConvertTaskReturnsOnCall(i int, result1 opi.Task, result2 error) {
+func (fake *FakeTaskConverter) ConvertTaskReturnsOnCall(i int, result1 api.Task, result2 error) {
 	fake.convertTaskMutex.Lock()
 	defer fake.convertTaskMutex.Unlock()
 	fake.ConvertTaskStub = nil
 	if fake.convertTaskReturnsOnCall == nil {
 		fake.convertTaskReturnsOnCall = make(map[int]struct {
-			result1 opi.Task
+			result1 api.Task
 			result2 error
 		})
 	}
 	fake.convertTaskReturnsOnCall[i] = struct {
-		result1 opi.Task
+		result1 api.Task
 		result2 error
 	}{result1, result2}
 }

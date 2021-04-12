@@ -4,16 +4,16 @@ package stsetfakes
 import (
 	"sync"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	v1 "k8s.io/api/core/v1"
 )
 
 type FakeProbeCreator struct {
-	Stub        func(*opi.LRP) *v1.Probe
+	Stub        func(*api.LRP) *v1.Probe
 	mutex       sync.RWMutex
 	argsForCall []struct {
-		arg1 *opi.LRP
+		arg1 *api.LRP
 	}
 	returns struct {
 		result1 *v1.Probe
@@ -25,11 +25,11 @@ type FakeProbeCreator struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeProbeCreator) Spy(arg1 *opi.LRP) *v1.Probe {
+func (fake *FakeProbeCreator) Spy(arg1 *api.LRP) *v1.Probe {
 	fake.mutex.Lock()
 	ret, specificReturn := fake.returnsOnCall[len(fake.argsForCall)]
 	fake.argsForCall = append(fake.argsForCall, struct {
-		arg1 *opi.LRP
+		arg1 *api.LRP
 	}{arg1})
 	stub := fake.Stub
 	returns := fake.returns
@@ -50,13 +50,13 @@ func (fake *FakeProbeCreator) CallCount() int {
 	return len(fake.argsForCall)
 }
 
-func (fake *FakeProbeCreator) Calls(stub func(*opi.LRP) *v1.Probe) {
+func (fake *FakeProbeCreator) Calls(stub func(*api.LRP) *v1.Probe) {
 	fake.mutex.Lock()
 	defer fake.mutex.Unlock()
 	fake.Stub = stub
 }
 
-func (fake *FakeProbeCreator) ArgsForCall(i int) *opi.LRP {
+func (fake *FakeProbeCreator) ArgsForCall(i int) *api.LRP {
 	fake.mutex.RLock()
 	defer fake.mutex.RUnlock()
 	return fake.argsForCall[i].arg1

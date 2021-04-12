@@ -17,7 +17,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 )
 
-var _ = Describe("connect command", func() {
+var _ = Describe("API", func() {
 	var (
 		httpClient *http.Client
 
@@ -52,7 +52,7 @@ var _ = Describe("connect command", func() {
 	})
 
 	JustBeforeEach(func() {
-		session, configFilePath = eiriniBins.OPI.Run(config, envVarOverrides...)
+		session, configFilePath = eiriniBins.API.Run(config, envVarOverrides...)
 	})
 
 	AfterEach(func() {
@@ -140,7 +140,7 @@ var _ = Describe("connect command", func() {
 
 	When("the config file doesn't exist", func() {
 		It("exits reporting missing config file", func() {
-			session = eiriniBins.OPI.Restart("/does/not/exist", session)
+			session = eiriniBins.API.Restart("/does/not/exist", session)
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode).ToNot(BeZero())
 			Expect(session.Err).To(gbytes.Say("Failed to read config file"))
@@ -163,7 +163,7 @@ var _ = Describe("connect command", func() {
 		var failingSession *gexec.Session
 
 		BeforeEach(func() {
-			failingSession = eiriniBins.OPI.RunWithConfig("foo")
+			failingSession = eiriniBins.API.RunWithConfig("foo")
 		})
 
 		It("fails", func() {

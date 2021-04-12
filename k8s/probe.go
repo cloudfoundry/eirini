@@ -1,12 +1,12 @@
 package k8s
 
 import (
-	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/api"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func CreateLivenessProbe(lrp *opi.LRP) *v1.Probe {
+func CreateLivenessProbe(lrp *api.LRP) *v1.Probe {
 	initialDelay := toSeconds(lrp.Health.TimeoutMs)
 
 	if lrp.Health.Type == "http" {
@@ -18,7 +18,7 @@ func CreateLivenessProbe(lrp *opi.LRP) *v1.Probe {
 	return nil
 }
 
-func CreateReadinessProbe(lrp *opi.LRP) *v1.Probe {
+func CreateReadinessProbe(lrp *api.LRP) *v1.Probe {
 	if lrp.Health.Type == "http" {
 		return createHTTPProbe(lrp, 0, 1)
 	} else if lrp.Health.Type == "port" {
@@ -28,7 +28,7 @@ func CreateReadinessProbe(lrp *opi.LRP) *v1.Probe {
 	return nil
 }
 
-func createPortProbe(lrp *opi.LRP, initialDelay, failureThreshold int32) *v1.Probe {
+func createPortProbe(lrp *api.LRP, initialDelay, failureThreshold int32) *v1.Probe {
 	return &v1.Probe{
 		Handler: v1.Handler{
 			TCPSocket: tcpSocketAction(lrp),
@@ -38,7 +38,7 @@ func createPortProbe(lrp *opi.LRP, initialDelay, failureThreshold int32) *v1.Pro
 	}
 }
 
-func createHTTPProbe(lrp *opi.LRP, initialDelay, failureThreshold int32) *v1.Probe {
+func createHTTPProbe(lrp *api.LRP, initialDelay, failureThreshold int32) *v1.Probe {
 	return &v1.Probe{
 		Handler: v1.Handler{
 			HTTPGet: httpGetAction(lrp),
@@ -48,14 +48,14 @@ func createHTTPProbe(lrp *opi.LRP, initialDelay, failureThreshold int32) *v1.Pro
 	}
 }
 
-func httpGetAction(lrp *opi.LRP) *v1.HTTPGetAction {
+func httpGetAction(lrp *api.LRP) *v1.HTTPGetAction {
 	return &v1.HTTPGetAction{
 		Path: lrp.Health.Endpoint,
 		Port: intstr.IntOrString{Type: intstr.Int, IntVal: lrp.Health.Port},
 	}
 }
 
-func tcpSocketAction(lrp *opi.LRP) *v1.TCPSocketAction {
+func tcpSocketAction(lrp *api.LRP) *v1.TCPSocketAction {
 	return &v1.TCPSocketAction{
 		Port: intstr.IntOrString{Type: intstr.Int, IntVal: lrp.Health.Port},
 	}

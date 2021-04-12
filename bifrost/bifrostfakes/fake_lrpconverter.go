@@ -4,30 +4,30 @@ package bifrostfakes
 import (
 	"sync"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 )
 
 type FakeLRPConverter struct {
-	ConvertLRPStub        func(cf.DesireLRPRequest) (opi.LRP, error)
+	ConvertLRPStub        func(cf.DesireLRPRequest) (api.LRP, error)
 	convertLRPMutex       sync.RWMutex
 	convertLRPArgsForCall []struct {
 		arg1 cf.DesireLRPRequest
 	}
 	convertLRPReturns struct {
-		result1 opi.LRP
+		result1 api.LRP
 		result2 error
 	}
 	convertLRPReturnsOnCall map[int]struct {
-		result1 opi.LRP
+		result1 api.LRP
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeLRPConverter) ConvertLRP(arg1 cf.DesireLRPRequest) (opi.LRP, error) {
+func (fake *FakeLRPConverter) ConvertLRP(arg1 cf.DesireLRPRequest) (api.LRP, error) {
 	fake.convertLRPMutex.Lock()
 	ret, specificReturn := fake.convertLRPReturnsOnCall[len(fake.convertLRPArgsForCall)]
 	fake.convertLRPArgsForCall = append(fake.convertLRPArgsForCall, struct {
@@ -52,7 +52,7 @@ func (fake *FakeLRPConverter) ConvertLRPCallCount() int {
 	return len(fake.convertLRPArgsForCall)
 }
 
-func (fake *FakeLRPConverter) ConvertLRPCalls(stub func(cf.DesireLRPRequest) (opi.LRP, error)) {
+func (fake *FakeLRPConverter) ConvertLRPCalls(stub func(cf.DesireLRPRequest) (api.LRP, error)) {
 	fake.convertLRPMutex.Lock()
 	defer fake.convertLRPMutex.Unlock()
 	fake.ConvertLRPStub = stub
@@ -65,28 +65,28 @@ func (fake *FakeLRPConverter) ConvertLRPArgsForCall(i int) cf.DesireLRPRequest {
 	return argsForCall.arg1
 }
 
-func (fake *FakeLRPConverter) ConvertLRPReturns(result1 opi.LRP, result2 error) {
+func (fake *FakeLRPConverter) ConvertLRPReturns(result1 api.LRP, result2 error) {
 	fake.convertLRPMutex.Lock()
 	defer fake.convertLRPMutex.Unlock()
 	fake.ConvertLRPStub = nil
 	fake.convertLRPReturns = struct {
-		result1 opi.LRP
+		result1 api.LRP
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeLRPConverter) ConvertLRPReturnsOnCall(i int, result1 opi.LRP, result2 error) {
+func (fake *FakeLRPConverter) ConvertLRPReturnsOnCall(i int, result1 api.LRP, result2 error) {
 	fake.convertLRPMutex.Lock()
 	defer fake.convertLRPMutex.Unlock()
 	fake.ConvertLRPStub = nil
 	if fake.convertLRPReturnsOnCall == nil {
 		fake.convertLRPReturnsOnCall = make(map[int]struct {
-			result1 opi.LRP
+			result1 api.LRP
 			result2 error
 		})
 	}
 	fake.convertLRPReturnsOnCall[i] = struct {
-		result1 opi.LRP
+		result1 api.LRP
 		result2 error
 	}{result1, result2}
 }

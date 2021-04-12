@@ -5,9 +5,9 @@ import (
 	"context"
 	"sync"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/k8s/shared"
-	"code.cloudfoundry.org/eirini/opi"
 )
 
 type FakeTaskClient struct {
@@ -25,12 +25,12 @@ type FakeTaskClient struct {
 		result1 string
 		result2 error
 	}
-	DesireStub        func(context.Context, string, *opi.Task, ...shared.Option) error
+	DesireStub        func(context.Context, string, *api.Task, ...shared.Option) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
 		arg1 context.Context
 		arg2 string
-		arg3 *opi.Task
+		arg3 *api.Task
 		arg4 []shared.Option
 	}
 	desireReturns struct {
@@ -39,31 +39,31 @@ type FakeTaskClient struct {
 	desireReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetStub        func(context.Context, string) (*opi.Task, error)
+	GetStub        func(context.Context, string) (*api.Task, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
 		arg1 context.Context
 		arg2 string
 	}
 	getReturns struct {
-		result1 *opi.Task
+		result1 *api.Task
 		result2 error
 	}
 	getReturnsOnCall map[int]struct {
-		result1 *opi.Task
+		result1 *api.Task
 		result2 error
 	}
-	ListStub        func(context.Context) ([]*opi.Task, error)
+	ListStub        func(context.Context) ([]*api.Task, error)
 	listMutex       sync.RWMutex
 	listArgsForCall []struct {
 		arg1 context.Context
 	}
 	listReturns struct {
-		result1 []*opi.Task
+		result1 []*api.Task
 		result2 error
 	}
 	listReturnsOnCall map[int]struct {
-		result1 []*opi.Task
+		result1 []*api.Task
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -135,13 +135,13 @@ func (fake *FakeTaskClient) DeleteReturnsOnCall(i int, result1 string, result2 e
 	}{result1, result2}
 }
 
-func (fake *FakeTaskClient) Desire(arg1 context.Context, arg2 string, arg3 *opi.Task, arg4 ...shared.Option) error {
+func (fake *FakeTaskClient) Desire(arg1 context.Context, arg2 string, arg3 *api.Task, arg4 ...shared.Option) error {
 	fake.desireMutex.Lock()
 	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
 	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
 		arg1 context.Context
 		arg2 string
-		arg3 *opi.Task
+		arg3 *api.Task
 		arg4 []shared.Option
 	}{arg1, arg2, arg3, arg4})
 	stub := fake.DesireStub
@@ -163,13 +163,13 @@ func (fake *FakeTaskClient) DesireCallCount() int {
 	return len(fake.desireArgsForCall)
 }
 
-func (fake *FakeTaskClient) DesireCalls(stub func(context.Context, string, *opi.Task, ...shared.Option) error) {
+func (fake *FakeTaskClient) DesireCalls(stub func(context.Context, string, *api.Task, ...shared.Option) error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = stub
 }
 
-func (fake *FakeTaskClient) DesireArgsForCall(i int) (context.Context, string, *opi.Task, []shared.Option) {
+func (fake *FakeTaskClient) DesireArgsForCall(i int) (context.Context, string, *api.Task, []shared.Option) {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	argsForCall := fake.desireArgsForCall[i]
@@ -199,7 +199,7 @@ func (fake *FakeTaskClient) DesireReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeTaskClient) Get(arg1 context.Context, arg2 string) (*opi.Task, error) {
+func (fake *FakeTaskClient) Get(arg1 context.Context, arg2 string) (*api.Task, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
@@ -225,7 +225,7 @@ func (fake *FakeTaskClient) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
-func (fake *FakeTaskClient) GetCalls(stub func(context.Context, string) (*opi.Task, error)) {
+func (fake *FakeTaskClient) GetCalls(stub func(context.Context, string) (*api.Task, error)) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = stub
@@ -238,33 +238,33 @@ func (fake *FakeTaskClient) GetArgsForCall(i int) (context.Context, string) {
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeTaskClient) GetReturns(result1 *opi.Task, result2 error) {
+func (fake *FakeTaskClient) GetReturns(result1 *api.Task, result2 error) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
 	fake.getReturns = struct {
-		result1 *opi.Task
+		result1 *api.Task
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeTaskClient) GetReturnsOnCall(i int, result1 *opi.Task, result2 error) {
+func (fake *FakeTaskClient) GetReturnsOnCall(i int, result1 *api.Task, result2 error) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
 	if fake.getReturnsOnCall == nil {
 		fake.getReturnsOnCall = make(map[int]struct {
-			result1 *opi.Task
+			result1 *api.Task
 			result2 error
 		})
 	}
 	fake.getReturnsOnCall[i] = struct {
-		result1 *opi.Task
+		result1 *api.Task
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeTaskClient) List(arg1 context.Context) ([]*opi.Task, error) {
+func (fake *FakeTaskClient) List(arg1 context.Context) ([]*api.Task, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
 	fake.listArgsForCall = append(fake.listArgsForCall, struct {
@@ -289,7 +289,7 @@ func (fake *FakeTaskClient) ListCallCount() int {
 	return len(fake.listArgsForCall)
 }
 
-func (fake *FakeTaskClient) ListCalls(stub func(context.Context) ([]*opi.Task, error)) {
+func (fake *FakeTaskClient) ListCalls(stub func(context.Context) ([]*api.Task, error)) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = stub
@@ -302,28 +302,28 @@ func (fake *FakeTaskClient) ListArgsForCall(i int) context.Context {
 	return argsForCall.arg1
 }
 
-func (fake *FakeTaskClient) ListReturns(result1 []*opi.Task, result2 error) {
+func (fake *FakeTaskClient) ListReturns(result1 []*api.Task, result2 error) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	fake.listReturns = struct {
-		result1 []*opi.Task
+		result1 []*api.Task
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeTaskClient) ListReturnsOnCall(i int, result1 []*opi.Task, result2 error) {
+func (fake *FakeTaskClient) ListReturnsOnCall(i int, result1 []*api.Task, result2 error) {
 	fake.listMutex.Lock()
 	defer fake.listMutex.Unlock()
 	fake.ListStub = nil
 	if fake.listReturnsOnCall == nil {
 		fake.listReturnsOnCall = make(map[int]struct {
-			result1 []*opi.Task
+			result1 []*api.Task
 			result2 error
 		})
 	}
 	fake.listReturnsOnCall[i] = struct {
-		result1 []*opi.Task
+		result1 []*api.Task
 		result2 error
 	}{result1, result2}
 }

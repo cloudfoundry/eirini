@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
@@ -16,20 +16,20 @@ type lifecycleOptions struct {
 	command         []string
 	env             map[string]string
 	image           string
-	privateRegistry *opi.PrivateRegistry
+	privateRegistry *api.PrivateRegistry
 }
 
-type OPIConverter struct {
+type APIConverter struct {
 	logger lager.Logger
 }
 
-func NewOPIConverter(logger lager.Logger) *OPIConverter {
-	return &OPIConverter{
+func NewAPIConverter(logger lager.Logger) *APIConverter {
+	return &APIConverter{
 		logger: logger,
 	}
 }
 
-func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) {
+func (c *APIConverter) ConvertLRP(request cf.DesireLRPRequest) (api.LRP, error) {
 	env := map[string]string{
 		"LANG": "en_US.UTF-8",
 	}
@@ -42,7 +42,7 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 		env[eirini.EnvCFInstancePorts] = fmt.Sprintf(`[{"external":%d,"internal":%d}]`, port, port)
 	}
 
-	healthcheck := opi.Healtcheck{
+	healthcheck := api.Healtcheck{
 		Type:      request.HealthCheckType,
 		Endpoint:  request.HealthCheckHTTPEndpoint,
 		TimeoutMs: request.HealthCheckTimeoutMs,
@@ -51,25 +51,25 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 
 	lrpLifecycleOptions, err := c.getLifecycleOptions(request)
 	if err != nil {
-		return opi.LRP{}, err
+		return api.LRP{}, err
 	}
 
-	identifier := opi.LRPIdentifier{
+	identifier := api.LRPIdentifier{
 		GUID:    request.GUID,
 		Version: request.Version,
 	}
 
 	err = c.validateRequest(request)
 	if err != nil {
-		return opi.LRP{}, err
+		return api.LRP{}, err
 	}
 
 	routes, err := getRequestedRoutes(request)
 	if err != nil {
-		return opi.LRP{}, err
+		return api.LRP{}, err
 	}
 
-	return opi.LRP{
+	return api.LRP{
 		AppName:                request.AppName,
 		AppGUID:                request.AppGUID,
 		AppURIs:                routes,
@@ -96,7 +96,7 @@ func (c *OPIConverter) ConvertLRP(request cf.DesireLRPRequest) (opi.LRP, error) 
 	}, nil
 }
 
-func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi.Task, error) {
+func (c *APIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (api.Task, error) {
 	c.logger.Debug("convert-task", lager.Data{"app-id": request.AppGUID, "task-guid": taskGUID})
 
 	env := map[string]string{
@@ -106,7 +106,7 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 		"TMPDIR": "/home/vcap/tmp",
 	}
 
-	task := opi.Task{
+	task := api.Task{
 		GUID:               taskGUID,
 		Name:               request.Name,
 		CompletionCallback: request.CompletionCallback,
@@ -119,7 +119,7 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 	}
 
 	if request.Lifecycle.DockerLifecycle == nil {
-		return opi.Task{}, errors.New("docker is the only supported lifecycle")
+		return api.Task{}, errors.New("docker is the only supported lifecycle")
 	}
 
 	lifecycle := request.Lifecycle.DockerLifecycle
@@ -127,7 +127,7 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 	task.Image = lifecycle.Image
 
 	if lifecycle.RegistryUsername != "" || lifecycle.RegistryPassword != "" {
-		task.PrivateRegistry = &opi.PrivateRegistry{
+		task.PrivateRegistry = &api.PrivateRegistry{
 			Server:   util.ParseImageRegistryHost(lifecycle.Image),
 			Username: lifecycle.RegistryUsername,
 			Password: lifecycle.RegistryPassword,
@@ -139,19 +139,19 @@ func (c *OPIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (opi
 	return task, nil
 }
 
-func getRequestedRoutes(request cf.DesireLRPRequest) ([]opi.Route, error) {
+func getRequestedRoutes(request cf.DesireLRPRequest) ([]api.Route, error) {
 	jsonRoutes := request.Routes
 	if jsonRoutes == nil {
-		return []opi.Route{}, nil
+		return []api.Route{}, nil
 	}
 
 	if _, ok := jsonRoutes["cf-router"]; !ok {
-		return []opi.Route{}, nil
+		return []api.Route{}, nil
 	}
 
 	cfRouterRoutes := jsonRoutes["cf-router"]
 
-	var routes []opi.Route
+	var routes []api.Route
 
 	err := json.Unmarshal(cfRouterRoutes, &routes)
 	if err != nil {
@@ -186,7 +186,7 @@ func mergeEnvs(requestEnv []cf.EnvironmentVariable, appliedEnv map[string]string
 	return result
 }
 
-func (c *OPIConverter) getLifecycleOptions(request cf.DesireLRPRequest) (*lifecycleOptions, error) {
+func (c *APIConverter) getLifecycleOptions(request cf.DesireLRPRequest) (*lifecycleOptions, error) {
 	options := &lifecycleOptions{}
 
 	if request.Lifecycle.DockerLifecycle == nil {
@@ -207,7 +207,7 @@ func (c *OPIConverter) getLifecycleOptions(request cf.DesireLRPRequest) (*lifecy
 	registryPassword := lifecycle.RegistryPassword
 
 	if registryUsername != "" || registryPassword != "" {
-		options.privateRegistry = &opi.PrivateRegistry{
+		options.privateRegistry = &api.PrivateRegistry{
 			Server:   util.ParseImageRegistryHost(options.image),
 			Username: registryUsername,
 			Password: registryPassword,
@@ -217,10 +217,10 @@ func (c *OPIConverter) getLifecycleOptions(request cf.DesireLRPRequest) (*lifecy
 	return options, nil
 }
 
-func convertVolumeMounts(request cf.DesireLRPRequest) []opi.VolumeMount {
-	volumeMounts := []opi.VolumeMount{}
+func convertVolumeMounts(request cf.DesireLRPRequest) []api.VolumeMount {
+	volumeMounts := []api.VolumeMount{}
 	for _, vm := range request.VolumeMounts {
-		volumeMounts = append(volumeMounts, opi.VolumeMount{
+		volumeMounts = append(volumeMounts, api.VolumeMount{
 			MountPath: vm.MountDir,
 			ClaimName: vm.VolumeID,
 		})
@@ -229,7 +229,7 @@ func convertVolumeMounts(request cf.DesireLRPRequest) []opi.VolumeMount {
 	return volumeMounts
 }
 
-func (c *OPIConverter) validateRequest(request cf.DesireLRPRequest) error {
+func (c *APIConverter) validateRequest(request cf.DesireLRPRequest) error {
 	if request.DiskMB == 0 {
 		return errors.New("DiskMB cannot be 0")
 	}

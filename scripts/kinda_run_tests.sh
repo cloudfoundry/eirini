@@ -26,7 +26,7 @@ main() {
 cleanup() {
   kubectl --namespace eirini-test delete job,configmap,secret --all --wait=true
 
-  for ns in $(kubectl get namespaces | grep "opi-integration-test" | awk '{ print $1 }'); do
+  for ns in $(kubectl get namespaces | grep "integration-test" | awk '{ print $1 }'); do
     echo Deleting leftover namespace $ns
     kubectl delete namespace --wait=false "$ns" || true
   done

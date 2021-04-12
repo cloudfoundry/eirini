@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/bifrost/bifrostfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -45,13 +45,13 @@ var _ = Describe("Bifrost LRP", func() {
 
 	Describe("Transfer LRP", func() {
 		Context("When lrp is transferred successfully", func() {
-			var lrp opi.LRP
+			var lrp api.LRP
 			JustBeforeEach(func() {
 				err = lrpBifrost.Transfer(context.Background(), request)
 			})
 
 			BeforeEach(func() {
-				lrp = opi.LRP{
+				lrp = api.LRP{
 					Image: "docker.png",
 				}
 				lrpConverter.ConvertLRPReturns(lrp, nil)
@@ -83,7 +83,7 @@ var _ = Describe("Bifrost LRP", func() {
 			Context("when Converter fails", func() {
 				BeforeEach(func() {
 					request = cf.DesireLRPRequest{GUID: "my-guid"}
-					lrpConverter.ConvertLRPReturns(opi.LRP{}, errors.New("failed-to-convert"))
+					lrpConverter.ConvertLRPReturns(api.LRP{}, errors.New("failed-to-convert"))
 				})
 
 				It("should return an error", func() {
@@ -115,9 +115,9 @@ var _ = Describe("Bifrost LRP", func() {
 	})
 
 	Describe("List LRP", func() {
-		createLRP := func(processGUID, version, lastUpdated string) *opi.LRP {
-			return &opi.LRP{
-				LRPIdentifier: opi.LRPIdentifier{GUID: processGUID, Version: version},
+		createLRP := func(processGUID, version, lastUpdated string) *api.LRP {
+			return &api.LRP{
+				LRPIdentifier: api.LRPIdentifier{GUID: processGUID, Version: version},
 				LastUpdated:   lastUpdated,
 			}
 		}
@@ -130,7 +130,7 @@ var _ = Describe("Bifrost LRP", func() {
 
 		Context("When listing running LRPs", func() {
 			BeforeEach(func() {
-				lrps := []*opi.LRP{
+				lrps := []*api.LRP{
 					createLRP("abcd", "123", "3464634.2"),
 					createLRP("efgh", "234", "235.26535"),
 					createLRP("ijkl", "123", "2342342.2"),
@@ -206,10 +206,10 @@ var _ = Describe("Bifrost LRP", func() {
 				},
 			}
 
-			lrpClient.GetReturns(&opi.LRP{
+			lrpClient.GetReturns(&api.LRP{
 				TargetInstances: 2,
 				LastUpdated:     "whenever",
-				AppURIs: []opi.Route{
+				AppURIs: []api.Route{
 					{Hostname: "my.route", Port: 8080},
 					{Hostname: "your.route", Port: 5555},
 				},
@@ -238,7 +238,7 @@ var _ = Describe("Bifrost LRP", func() {
 			_, lrp := lrpClient.UpdateArgsForCall(0)
 			Expect(lrp.TargetInstances).To(Equal(int(5)))
 			Expect(lrp.LastUpdated).To(Equal("21421321.3"))
-			Expect(lrp.AppURIs).To(Equal([]opi.Route{
+			Expect(lrp.AppURIs).To(Equal([]api.Route{
 				{Hostname: "my.route", Port: 8080},
 				{Hostname: "my.other.route", Port: 7777},
 			}))
@@ -284,12 +284,12 @@ var _ = Describe("Bifrost LRP", func() {
 
 	Describe("Get an App", func() {
 		var (
-			lrp        *opi.LRP
-			identifier opi.LRPIdentifier
+			lrp        *api.LRP
+			identifier api.LRPIdentifier
 		)
 
 		JustBeforeEach(func() {
-			identifier = opi.LRPIdentifier{
+			identifier = api.LRPIdentifier{
 				GUID:    "guid_1234",
 				Version: "version_1234",
 			}
@@ -297,10 +297,10 @@ var _ = Describe("Bifrost LRP", func() {
 
 		Context("when the app exists", func() {
 			BeforeEach(func() {
-				lrp = &opi.LRP{
+				lrp = &api.LRP{
 					TargetInstances: 5,
 					LastUpdated:     "1234.5",
-					AppURIs: []opi.Route{
+					AppURIs: []api.Route{
 						{Hostname: "route1.io", Port: 6666},
 						{Hostname: "route2.io", Port: 9999},
 					},
@@ -343,7 +343,7 @@ var _ = Describe("Bifrost LRP", func() {
 
 	Describe("Stop an app", func() {
 		JustBeforeEach(func() {
-			err = lrpBifrost.Stop(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+			err = lrpBifrost.Stop(context.Background(), api.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 		})
 
 		It("should not return an error", func() {
@@ -369,7 +369,7 @@ var _ = Describe("Bifrost LRP", func() {
 
 	Describe("Stop an app instance", func() {
 		JustBeforeEach(func() {
-			err = lrpBifrost.StopInstance(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
+			err = lrpBifrost.StopInstance(context.Background(), api.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
 		})
 
 		It("should not return an error", func() {
@@ -397,21 +397,21 @@ var _ = Describe("Bifrost LRP", func() {
 	Describe("Get all instances of an app", func() {
 		var (
 			instances    []*cf.Instance
-			opiInstances []*opi.Instance
+			apiInstances []*api.Instance
 		)
 
 		BeforeEach(func() {
-			opiInstances = []*opi.Instance{
-				{Index: 0, Since: 123, State: opi.RunningState},
-				{Index: 1, Since: 345, State: opi.CrashedState},
-				{Index: 2, Since: 678, State: opi.ErrorState, PlacementError: "this is not the place"},
+			apiInstances = []*api.Instance{
+				{Index: 0, Since: 123, State: api.RunningState},
+				{Index: 1, Since: 345, State: api.CrashedState},
+				{Index: 2, Since: 678, State: api.ErrorState, PlacementError: "this is not the place"},
 			}
 
-			lrpClient.GetInstancesReturns(opiInstances, nil)
+			lrpClient.GetInstancesReturns(apiInstances, nil)
 		})
 
 		JustBeforeEach(func() {
-			instances, err = lrpBifrost.GetInstances(context.Background(), opi.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
+			instances, err = lrpBifrost.GetInstances(context.Background(), api.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"})
 		})
 
 		It("should get the app instances from lrpClient", func() {
@@ -427,15 +427,15 @@ var _ = Describe("Bifrost LRP", func() {
 
 		It("should return all running instances", func() {
 			Expect(instances).To(Equal([]*cf.Instance{
-				{Index: 0, Since: 123, State: opi.RunningState},
-				{Index: 1, Since: 345, State: opi.CrashedState},
-				{Index: 2, Since: 678, State: opi.ErrorState, PlacementError: "this is not the place"},
+				{Index: 0, Since: 123, State: api.RunningState},
+				{Index: 1, Since: 345, State: api.CrashedState},
+				{Index: 2, Since: 678, State: api.ErrorState, PlacementError: "this is not the place"},
 			}))
 		})
 
 		Context("when the app does not exist", func() {
 			BeforeEach(func() {
-				lrpClient.GetInstancesReturns([]*opi.Instance{}, errors.New("not found"))
+				lrpClient.GetInstancesReturns([]*api.Instance{}, errors.New("not found"))
 			})
 
 			It("returns an error", func() {

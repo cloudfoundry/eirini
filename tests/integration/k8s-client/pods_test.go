@@ -1,9 +1,9 @@
 package integration_test
 
 import (
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -85,7 +85,7 @@ var _ = Describe("Pod", func() {
 		})
 
 		It("lists all pods matching the specified LRP identifier", func() {
-			pods, err := podClient.GetByLRPIdentifier(ctx, opi.LRPIdentifier{GUID: guid, Version: "42"})
+			pods, err := podClient.GetByLRPIdentifier(ctx, api.LRPIdentifier{GUID: guid, Version: "42"})
 
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() []string { return podNames(pods) }).Should(ConsistOf("four", "five", "six"))

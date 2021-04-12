@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
-	api "github.com/prometheus/client_golang/prometheus"
+	prometheus_api "github.com/prometheus/client_golang/prometheus"
 	"k8s.io/apimachinery/pkg/util/clock"
 )
 
@@ -21,23 +21,23 @@ const (
 //counterfeiter:generate . LRPClient
 
 type LRPClient interface {
-	Desire(ctx context.Context, namespace string, lrp *opi.LRP, opts ...shared.Option) error
-	Get(ctx context.Context, identifier opi.LRPIdentifier) (*opi.LRP, error)
-	Update(ctx context.Context, lrp *opi.LRP) error
+	Desire(ctx context.Context, namespace string, lrp *api.LRP, opts ...shared.Option) error
+	Get(ctx context.Context, identifier api.LRPIdentifier) (*api.LRP, error)
+	Update(ctx context.Context, lrp *api.LRP) error
 }
 
 type LRPClientDecorator struct {
 	LRPClient
 	logger            lager.Logger
-	creations         api.Counter
-	creationDurations api.Histogram
+	creations         prometheus_api.Counter
+	creationDurations prometheus_api.Histogram
 	clock             clock.PassiveClock
 }
 
 func NewLRPClientDecorator(
 	logger lager.Logger,
 	lrpClient LRPClient,
-	registry api.Registerer,
+	registry prometheus_api.Registerer,
 	clck clock.PassiveClock,
 ) (*LRPClientDecorator, error) {
 	creations, err := registerCounter(registry, LRPCreations, "The total number of created lrps")
@@ -59,7 +59,7 @@ func NewLRPClientDecorator(
 	}, nil
 }
 
-func (d *LRPClientDecorator) Desire(ctx context.Context, namespace string, lrp *opi.LRP, opts ...shared.Option) error {
+func (d *LRPClientDecorator) Desire(ctx context.Context, namespace string, lrp *api.LRP, opts ...shared.Option) error {
 	start := d.clock.Now()
 
 	err := d.LRPClient.Desire(ctx, namespace, lrp, opts...)
@@ -71,8 +71,8 @@ func (d *LRPClientDecorator) Desire(ctx context.Context, namespace string, lrp *
 	return err
 }
 
-func registerCounter(registry api.Registerer, name, help string) (api.Counter, error) {
-	c := api.NewCounter(api.CounterOpts{
+func registerCounter(registry prometheus_api.Registerer, name, help string) (prometheus_api.Counter, error) {
+	c := prometheus_api.NewCounter(prometheus_api.CounterOpts{
 		Name: name,
 		Help: help,
 	})
@@ -82,16 +82,16 @@ func registerCounter(registry api.Registerer, name, help string) (api.Counter, e
 		return c, nil
 	}
 
-	var are api.AlreadyRegisteredError
+	var are prometheus_api.AlreadyRegisteredError
 	if errors.As(err, &are) {
-		return are.ExistingCollector.(api.Counter), nil
+		return are.ExistingCollector.(prometheus_api.Counter), nil
 	}
 
 	return nil, err
 }
 
-func registerHistogram(registry api.Registerer, name, help string) (api.Histogram, error) {
-	h := api.NewHistogram(api.HistogramOpts{
+func registerHistogram(registry prometheus_api.Registerer, name, help string) (prometheus_api.Histogram, error) {
+	h := prometheus_api.NewHistogram(prometheus_api.HistogramOpts{
 		Name: name,
 		Help: help,
 	})
@@ -101,9 +101,9 @@ func registerHistogram(registry api.Registerer, name, help string) (api.Histogra
 		return h, nil
 	}
 
-	var are api.AlreadyRegisteredError
+	var are prometheus_api.AlreadyRegisteredError
 	if errors.As(err, &are) {
-		return are.ExistingCollector.(api.Histogram), nil
+		return are.ExistingCollector.(prometheus_api.Histogram), nil
 	}
 
 	return nil, err

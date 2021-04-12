@@ -39,7 +39,7 @@ var _ = Describe("InstanceIndexEnvInjector [needs-logs-for: eirini-api, instance
 
 	getCFInstanceIndex := func(pod corev1.Pod) string {
 		for _, container := range pod.Spec.Containers {
-			if container.Name != stset.OPIContainerName {
+			if container.Name != stset.ApplicationContainerName {
 				continue
 			}
 

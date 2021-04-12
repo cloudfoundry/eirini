@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -46,7 +46,7 @@ var _ = AfterSuite(func() {
 	fixture.Destroy()
 })
 
-func labelSelector(identifier opi.LRPIdentifier) string {
+func labelSelector(identifier api.LRPIdentifier) string {
 	return fmt.Sprintf(
 		"%s=%s,%s=%s",
 		stset.LabelGUID, identifier.GUID,
@@ -54,7 +54,7 @@ func labelSelector(identifier opi.LRPIdentifier) string {
 	)
 }
 
-func listStatefulSets(lrp1 *opi.LRP) []appsv1.StatefulSet {
+func listStatefulSets(lrp1 *api.LRP) []appsv1.StatefulSet {
 	list, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf(
 			"%s=%s,%s=%s",
@@ -76,7 +76,7 @@ func listStatefulSetsForApp(appName string) []appsv1.StatefulSet {
 	return list.Items
 }
 
-func cleanupStatefulSet(lrp *opi.LRP) {
+func cleanupStatefulSet(lrp *api.LRP) {
 	backgroundPropagation := metav1.DeletePropagationBackground
 	deleteOptions := metav1.DeleteOptions{PropagationPolicy: &backgroundPropagation}
 	listOptions := metav1.ListOptions{LabelSelector: labelSelector(lrp.LRPIdentifier)}
@@ -91,7 +91,7 @@ func listPodsByLabel(labelSelector string) []corev1.Pod {
 	return pods.Items
 }
 
-func listPods(lrpIdentifier opi.LRPIdentifier) []corev1.Pod {
+func listPods(lrpIdentifier api.LRPIdentifier) []corev1.Pod {
 	return listPodsByLabel(labelSelector(lrpIdentifier))
 }
 

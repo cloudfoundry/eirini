@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/shared"
-	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -28,7 +28,7 @@ var _ = Describe("TaskToJob", func() {
 	var (
 		job                               *batch.Job
 		privateRegistrySecret             *corev1.Secret
-		task                              *opi.Task
+		task                              *api.Task
 		allowAutomountServiceAccountToken bool
 	)
 
@@ -62,7 +62,7 @@ var _ = Describe("TaskToJob", func() {
 		allowAutomountServiceAccountToken = false
 		privateRegistrySecret = nil
 
-		task = &opi.Task{
+		task = &api.Task{
 			Image:              image,
 			CompletionCallback: "cloud-countroller.io/task/completed",
 			Command:            []string{"/lifecycle/launch"},
@@ -131,7 +131,7 @@ var _ = Describe("TaskToJob", func() {
 				HaveKeyWithValue(jobs.AnnotationOrgGUID, "org-id"),
 				HaveKeyWithValue(jobs.AnnotationSpaceName, "my-space"),
 				HaveKeyWithValue(jobs.AnnotationSpaceGUID, "space-id"),
-				HaveKeyWithValue(jobs.AnnotationOpiTaskContainerName, "opi-task"),
+				HaveKeyWithValue(jobs.AnnotationTaskContainerName, "opi-task"),
 				HaveKeyWithValue(jobs.AnnotationGUID, "task-123"),
 				HaveKeyWithValue(jobs.AnnotationCompletionCallback, "cloud-countroller.io/task/completed"),
 				HaveKeyWithValue(corev1.SeccompPodAnnotationKey, corev1.SeccompProfileRuntimeDefault),

@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/jobs/jobsfakes"
 	"code.cloudfoundry.org/eirini/k8s/shared/sharedfakes"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -31,7 +31,7 @@ var _ = Describe("Desire", func() {
 		desireOpt          *sharedfakes.FakeOption
 
 		job       *batch.Job
-		task      *opi.Task
+		task      *api.Task
 		desireErr error
 
 		desirer jobs.Desirer
@@ -61,7 +61,7 @@ var _ = Describe("Desire", func() {
 		taskToJobConverter.ConvertReturns(job)
 		jobCreator.CreateReturns(job, nil)
 
-		task = &opi.Task{
+		task = &api.Task{
 			Image:              image,
 			CompletionCallback: "cloud-countroller.io/task/completed",
 			Command:            []string{"/lifecycle/launch"},
@@ -144,7 +144,7 @@ var _ = Describe("Desire", func() {
 		var privateRegistrySecret *corev1.Secret
 
 		BeforeEach(func() {
-			task.PrivateRegistry = &opi.PrivateRegistry{
+			task.PrivateRegistry = &api.PrivateRegistry{
 				Server:   "some-server",
 				Username: "username",
 				Password: "password",

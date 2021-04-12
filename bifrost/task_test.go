@@ -3,10 +3,10 @@ package bifrost_test
 import (
 	"context"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/bifrost/bifrostfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -21,7 +21,7 @@ var _ = Describe("Task", func() {
 		jsonClient    *bifrostfakes.FakeJSONClient
 		namespacer    *bifrostfakes.FakeTaskNamespacer
 		taskGUID      string
-		task          opi.Task
+		task          api.Task
 	)
 
 	BeforeEach(func() {
@@ -31,7 +31,7 @@ var _ = Describe("Task", func() {
 		namespacer = new(bifrostfakes.FakeTaskNamespacer)
 
 		taskGUID = "task-guid"
-		task = opi.Task{GUID: "my-guid"}
+		task = api.Task{GUID: "my-guid"}
 		taskConverter.ConvertTaskReturns(task, nil)
 		namespacer.GetNamespaceReturns("our-namespace")
 
@@ -62,7 +62,7 @@ var _ = Describe("Task", func() {
 					DockerLifecycle: &cf.DockerLifecycle{},
 				},
 			}
-			task := opi.Task{GUID: "my-guid"}
+			task := api.Task{GUID: "my-guid"}
 			taskConverter.ConvertTaskReturns(task, nil)
 		})
 
@@ -86,7 +86,7 @@ var _ = Describe("Task", func() {
 
 		When("converting the task fails", func() {
 			BeforeEach(func() {
-				taskConverter.ConvertTaskReturns(opi.Task{}, errors.New("task-conv-err"))
+				taskConverter.ConvertTaskReturns(api.Task{}, errors.New("task-conv-err"))
 			})
 
 			It("returns the error", func() {
@@ -113,7 +113,7 @@ var _ = Describe("Task", func() {
 		var taskResponse cf.TaskResponse
 
 		BeforeEach(func() {
-			taskClient.GetReturns(&opi.Task{GUID: taskGUID}, nil)
+			taskClient.GetReturns(&api.Task{GUID: taskGUID}, nil)
 		})
 
 		JustBeforeEach(func() {
@@ -146,7 +146,7 @@ var _ = Describe("Task", func() {
 		var tasksResponse cf.TasksResponse
 
 		BeforeEach(func() {
-			taskClient.ListReturns([]*opi.Task{{GUID: taskGUID}}, nil)
+			taskClient.ListReturns([]*api.Task{{GUID: taskGUID}}, nil)
 		})
 
 		JustBeforeEach(func() {
@@ -175,7 +175,7 @@ var _ = Describe("Task", func() {
 
 		When("there are no tasks", func() {
 			BeforeEach(func() {
-				taskClient.ListReturns([]*opi.Task{}, nil)
+				taskClient.ListReturns([]*api.Task{}, nil)
 			})
 
 			It("fails", func() {

@@ -5,18 +5,18 @@ import (
 	"context"
 	"sync"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/prometheus"
 )
 
 type FakeLRPClient struct {
-	DesireStub        func(context.Context, string, *opi.LRP, ...shared.Option) error
+	DesireStub        func(context.Context, string, *api.LRP, ...shared.Option) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
 		arg1 context.Context
 		arg2 string
-		arg3 *opi.LRP
+		arg3 *api.LRP
 		arg4 []shared.Option
 	}
 	desireReturns struct {
@@ -25,25 +25,25 @@ type FakeLRPClient struct {
 	desireReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetStub        func(context.Context, opi.LRPIdentifier) (*opi.LRP, error)
+	GetStub        func(context.Context, api.LRPIdentifier) (*api.LRP, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
 		arg1 context.Context
-		arg2 opi.LRPIdentifier
+		arg2 api.LRPIdentifier
 	}
 	getReturns struct {
-		result1 *opi.LRP
+		result1 *api.LRP
 		result2 error
 	}
 	getReturnsOnCall map[int]struct {
-		result1 *opi.LRP
+		result1 *api.LRP
 		result2 error
 	}
-	UpdateStub        func(context.Context, *opi.LRP) error
+	UpdateStub        func(context.Context, *api.LRP) error
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
 		arg1 context.Context
-		arg2 *opi.LRP
+		arg2 *api.LRP
 	}
 	updateReturns struct {
 		result1 error
@@ -55,13 +55,13 @@ type FakeLRPClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeLRPClient) Desire(arg1 context.Context, arg2 string, arg3 *opi.LRP, arg4 ...shared.Option) error {
+func (fake *FakeLRPClient) Desire(arg1 context.Context, arg2 string, arg3 *api.LRP, arg4 ...shared.Option) error {
 	fake.desireMutex.Lock()
 	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
 	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
 		arg1 context.Context
 		arg2 string
-		arg3 *opi.LRP
+		arg3 *api.LRP
 		arg4 []shared.Option
 	}{arg1, arg2, arg3, arg4})
 	stub := fake.DesireStub
@@ -83,13 +83,13 @@ func (fake *FakeLRPClient) DesireCallCount() int {
 	return len(fake.desireArgsForCall)
 }
 
-func (fake *FakeLRPClient) DesireCalls(stub func(context.Context, string, *opi.LRP, ...shared.Option) error) {
+func (fake *FakeLRPClient) DesireCalls(stub func(context.Context, string, *api.LRP, ...shared.Option) error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = stub
 }
 
-func (fake *FakeLRPClient) DesireArgsForCall(i int) (context.Context, string, *opi.LRP, []shared.Option) {
+func (fake *FakeLRPClient) DesireArgsForCall(i int) (context.Context, string, *api.LRP, []shared.Option) {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	argsForCall := fake.desireArgsForCall[i]
@@ -119,12 +119,12 @@ func (fake *FakeLRPClient) DesireReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeLRPClient) Get(arg1 context.Context, arg2 opi.LRPIdentifier) (*opi.LRP, error) {
+func (fake *FakeLRPClient) Get(arg1 context.Context, arg2 api.LRPIdentifier) (*api.LRP, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
 		arg1 context.Context
-		arg2 opi.LRPIdentifier
+		arg2 api.LRPIdentifier
 	}{arg1, arg2})
 	stub := fake.GetStub
 	fakeReturns := fake.getReturns
@@ -145,51 +145,51 @@ func (fake *FakeLRPClient) GetCallCount() int {
 	return len(fake.getArgsForCall)
 }
 
-func (fake *FakeLRPClient) GetCalls(stub func(context.Context, opi.LRPIdentifier) (*opi.LRP, error)) {
+func (fake *FakeLRPClient) GetCalls(stub func(context.Context, api.LRPIdentifier) (*api.LRP, error)) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = stub
 }
 
-func (fake *FakeLRPClient) GetArgsForCall(i int) (context.Context, opi.LRPIdentifier) {
+func (fake *FakeLRPClient) GetArgsForCall(i int) (context.Context, api.LRPIdentifier) {
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
 	argsForCall := fake.getArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeLRPClient) GetReturns(result1 *opi.LRP, result2 error) {
+func (fake *FakeLRPClient) GetReturns(result1 *api.LRP, result2 error) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
 	fake.getReturns = struct {
-		result1 *opi.LRP
+		result1 *api.LRP
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeLRPClient) GetReturnsOnCall(i int, result1 *opi.LRP, result2 error) {
+func (fake *FakeLRPClient) GetReturnsOnCall(i int, result1 *api.LRP, result2 error) {
 	fake.getMutex.Lock()
 	defer fake.getMutex.Unlock()
 	fake.GetStub = nil
 	if fake.getReturnsOnCall == nil {
 		fake.getReturnsOnCall = make(map[int]struct {
-			result1 *opi.LRP
+			result1 *api.LRP
 			result2 error
 		})
 	}
 	fake.getReturnsOnCall[i] = struct {
-		result1 *opi.LRP
+		result1 *api.LRP
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeLRPClient) Update(arg1 context.Context, arg2 *opi.LRP) error {
+func (fake *FakeLRPClient) Update(arg1 context.Context, arg2 *api.LRP) error {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
 		arg1 context.Context
-		arg2 *opi.LRP
+		arg2 *api.LRP
 	}{arg1, arg2})
 	stub := fake.UpdateStub
 	fakeReturns := fake.updateReturns
@@ -210,13 +210,13 @@ func (fake *FakeLRPClient) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeLRPClient) UpdateCalls(stub func(context.Context, *opi.LRP) error) {
+func (fake *FakeLRPClient) UpdateCalls(stub func(context.Context, *api.LRP) error) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakeLRPClient) UpdateArgsForCall(i int) (context.Context, *opi.LRP) {
+func (fake *FakeLRPClient) UpdateArgsForCall(i int) (context.Context, *api.LRP) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]

@@ -1,9 +1,9 @@
 package integration_test
 
 import (
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -129,7 +129,7 @@ var _ = Describe("StatefulSets", func() {
 		})
 
 		It("lists all StatefulSets matching the specified LRP identifier", func() {
-			statefulSets, err := statefulSetClient.GetByLRPIdentifier(ctx, opi.LRPIdentifier{GUID: guid, Version: "42"})
+			statefulSets, err := statefulSetClient.GetByLRPIdentifier(ctx, api.LRPIdentifier{GUID: guid, Version: "42"})
 
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() []string { return statefulSetNames(statefulSets) }).Should(ConsistOf("one", "two"))
@@ -171,7 +171,7 @@ var _ = Describe("StatefulSets", func() {
 
 			containers = []corev1.Container{
 				{
-					Name:    "not-opi",
+					Name:    "not-application",
 					Image:   "eirini/busybox",
 					Command: []string{"echo", "hi"},
 					Resources: corev1.ResourceRequirements{
@@ -181,7 +181,7 @@ var _ = Describe("StatefulSets", func() {
 					},
 				},
 				{
-					Name:    stset.OPIContainerName,
+					Name:    stset.ApplicationContainerName,
 					Image:   "eirini/busybox",
 					Command: []string{"echo", "hi"},
 					Resources: corev1.ResourceRequirements{
@@ -212,7 +212,7 @@ var _ = Describe("StatefulSets", func() {
 			return millis
 		}
 
-		It("patches CPU request onto an OPI container only on a StatefulSet", func() {
+		It("patches CPU request onto an app container only on a StatefulSet", func() {
 			Expect(getCPURequests(newStatefulSet)).To(Equal([]int64{120, 321}))
 
 			Eventually(func() []int64 {
@@ -222,11 +222,11 @@ var _ = Describe("StatefulSets", func() {
 			}).Should(Equal([]int64{120, 321}))
 		})
 
-		When("the stateful set doesn't have an opi container", func() {
+		When("the stateful set doesn't have an application container", func() {
 			BeforeEach(func() {
 				containers = []corev1.Container{
 					{
-						Name:    "not-opi",
+						Name:    "not-application",
 						Image:   "eirini/busybox",
 						Command: []string{"echo", "hi"},
 						Resources: corev1.ResourceRequirements{

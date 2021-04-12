@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	"code.cloudfoundry.org/eirini/k8s/reconciler/reconcilerfakes"
-	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	eiriniv1scheme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
 	"code.cloudfoundry.org/lager/lagertest"
@@ -87,8 +87,8 @@ var _ = Describe("reconciler.LRP", func() {
 		Expect(lrp.TargetInstances).To(Equal(10))
 		Expect(lrp.PrivateRegistry).To(BeNil())
 		Expect(lrp.AppURIs).To(ConsistOf(
-			opi.Route{Hostname: "foo.io", Port: 8080},
-			opi.Route{Hostname: "bar.io", Port: 9090},
+			api.Route{Hostname: "foo.io", Port: 8080},
+			api.Route{Hostname: "bar.io", Port: 9090},
 		))
 	})
 
@@ -167,8 +167,8 @@ var _ = Describe("reconciler.LRP", func() {
 			_, lrp := desirer.UpdateArgsForCall(0)
 			Expect(lrp.TargetInstances).To(Equal(10))
 			Expect(lrp.AppURIs).To(ConsistOf(
-				opi.Route{Hostname: "foo.io", Port: 8080},
-				opi.Route{Hostname: "bar.io", Port: 9090},
+				api.Route{Hostname: "foo.io", Port: 8080},
+				api.Route{Hostname: "bar.io", Port: 9090},
 			))
 		})
 	})

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -44,7 +44,7 @@ func NewStopper(
 	}
 }
 
-func (s *Stopper) Stop(ctx context.Context, identifier opi.LRPIdentifier) error {
+func (s *Stopper) Stop(ctx context.Context, identifier api.LRPIdentifier) error {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		return s.stop(ctx, identifier)
 	})
@@ -52,7 +52,7 @@ func (s *Stopper) Stop(ctx context.Context, identifier opi.LRPIdentifier) error 
 	return errors.Wrap(err, "failed to delete statefulset")
 }
 
-func (s *Stopper) stop(ctx context.Context, identifier opi.LRPIdentifier) error {
+func (s *Stopper) stop(ctx context.Context, identifier api.LRPIdentifier) error {
 	logger := s.logger.Session("stop", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
 	statefulSet, err := s.getStatefulSet(ctx, identifier)
 
@@ -77,7 +77,7 @@ func (s *Stopper) stop(ctx context.Context, identifier opi.LRPIdentifier) error 
 	return nil
 }
 
-func (s *Stopper) StopInstance(ctx context.Context, identifier opi.LRPIdentifier, index uint) error {
+func (s *Stopper) StopInstance(ctx context.Context, identifier api.LRPIdentifier, index uint) error {
 	logger := s.logger.Session("stopInstance", lager.Data{"guid": identifier.GUID, "version": identifier.Version, "index": index})
 	statefulset, err := s.getStatefulSet(ctx, identifier)
 

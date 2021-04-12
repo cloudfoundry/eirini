@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
-	"code.cloudfoundry.org/eirini/opi"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
@@ -37,7 +37,7 @@ func NewTask(logger lager.Logger, client client.Client, taskDesirer TaskDesirer,
 }
 
 type TaskDesirer interface {
-	Desire(ctx context.Context, namespace string, task *opi.Task, opts ...shared.Option) error
+	Desire(ctx context.Context, namespace string, task *api.Task, opts ...shared.Option) error
 }
 
 func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
@@ -58,7 +58,7 @@ func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconc
 		return reconcile.Result{}, fmt.Errorf("could not fetch task: %w", err)
 	}
 
-	err = t.taskDesirer.Desire(ctx, task.Namespace, toOpiTask(task), t.setOwnerFn(task))
+	err = t.taskDesirer.Desire(ctx, task.Namespace, toAPITask(task), t.setOwnerFn(task))
 	if errors.IsAlreadyExists(err) {
 		logger.Info("task-already-exists")
 
@@ -91,8 +91,8 @@ func (t *Task) setOwnerFn(task *eiriniv1.Task) func(interface{}) error {
 	}
 }
 
-func toOpiTask(task *eiriniv1.Task) *opi.Task {
-	opiTask := &opi.Task{
+func toAPITask(task *eiriniv1.Task) *api.Task {
+	apiTask := &api.Task{
 		GUID:               task.Spec.GUID,
 		Name:               task.Spec.Name,
 		Image:              task.Spec.Image,
@@ -111,12 +111,12 @@ func toOpiTask(task *eiriniv1.Task) *opi.Task {
 	}
 
 	if task.Spec.PrivateRegistry != nil {
-		opiTask.PrivateRegistry = &opi.PrivateRegistry{
+		apiTask.PrivateRegistry = &api.PrivateRegistry{
 			Username: task.Spec.PrivateRegistry.Username,
 			Password: task.Spec.PrivateRegistry.Password,
 			Server:   util.ParseImageRegistryHost(task.Spec.Image),
 		}
 	}
 
-	return opiTask
+	return apiTask
 }

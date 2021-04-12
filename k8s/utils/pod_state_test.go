@@ -1,8 +1,8 @@
 package utils_test
 
 import (
+	"code.cloudfoundry.org/eirini/api"
 	. "code.cloudfoundry.org/eirini/k8s/utils"
-	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -12,7 +12,7 @@ var _ = Describe("PodState", func() {
 	When("the container statuses are not available:", func() {
 		It("should return 'UNKNOWN' state", func() {
 			pod := corev1.Pod{}
-			Expect(GetPodState(pod)).To(Equal(opi.UnknownState))
+			Expect(GetPodState(pod)).To(Equal(api.UnknownState))
 		})
 	})
 
@@ -24,7 +24,7 @@ var _ = Describe("PodState", func() {
 					Phase:             corev1.PodUnknown,
 				},
 			}
-			Expect(GetPodState(pod)).To(Equal(opi.UnknownState))
+			Expect(GetPodState(pod)).To(Equal(api.UnknownState))
 		})
 	})
 
@@ -47,7 +47,7 @@ var _ = Describe("PodState", func() {
 					Phase: corev1.PodPending,
 				},
 			}
-			Expect(GetPodState(pod)).To(Equal(opi.PendingState))
+			Expect(GetPodState(pod)).To(Equal(api.PendingState))
 		})
 
 		When("the container state is not waiting", func() {
@@ -64,7 +64,7 @@ var _ = Describe("PodState", func() {
 						Phase: corev1.PodPending,
 					},
 				}
-				Expect(GetPodState(pod)).To(Equal(opi.PendingState))
+				Expect(GetPodState(pod)).To(Equal(api.PendingState))
 			})
 		})
 
@@ -90,7 +90,7 @@ var _ = Describe("PodState", func() {
 							Phase: corev1.PodPending,
 						},
 					}
-					Expect(GetPodState(pod)).To(Equal(opi.CrashedState))
+					Expect(GetPodState(pod)).To(Equal(api.CrashedState))
 				})
 			})
 		})
@@ -116,7 +116,7 @@ var _ = Describe("PodState", func() {
 						Phase: corev1.PodPending,
 					},
 				}
-				Expect(GetPodState(pod)).To(Equal(opi.CrashedState))
+				Expect(GetPodState(pod)).To(Equal(api.CrashedState))
 			})
 		})
 	})
@@ -144,7 +144,7 @@ var _ = Describe("PodState", func() {
 						Phase: corev1.PodRunning,
 					},
 				}
-				Expect(GetPodState(pod)).To(Equal(opi.PendingState))
+				Expect(GetPodState(pod)).To(Equal(api.PendingState))
 			})
 		})
 		When("and all containers are Running and Ready", func() {
@@ -168,7 +168,7 @@ var _ = Describe("PodState", func() {
 						Phase: corev1.PodRunning,
 					},
 				}
-				Expect(GetPodState(pod)).To(Equal(opi.RunningState))
+				Expect(GetPodState(pod)).To(Equal(api.RunningState))
 			})
 		})
 
@@ -196,7 +196,7 @@ var _ = Describe("PodState", func() {
 						Phase: corev1.PodRunning,
 					},
 				}
-				Expect(GetPodState(pod)).To(Equal(opi.CrashedState))
+				Expect(GetPodState(pod)).To(Equal(api.CrashedState))
 			})
 		})
 	})
@@ -222,7 +222,7 @@ var _ = Describe("PodState", func() {
 						Phase: corev1.PodFailed,
 					},
 				}
-				Expect(GetPodState(pod)).To(Equal(opi.CrashedState))
+				Expect(GetPodState(pod)).To(Equal(api.CrashedState))
 			})
 		})
 
@@ -238,7 +238,7 @@ var _ = Describe("PodState", func() {
 						Phase: corev1.PodFailed,
 					},
 				}
-				Expect(GetPodState(pod)).To(Equal(opi.CrashedState))
+				Expect(GetPodState(pod)).To(Equal(api.CrashedState))
 			})
 		})
 	})
@@ -252,7 +252,7 @@ var _ = Describe("PodState", func() {
 					}},
 				},
 			}
-			Expect(GetPodState(pod)).To(Equal(opi.UnknownState))
+			Expect(GetPodState(pod)).To(Equal(api.UnknownState))
 		})
 	})
 })

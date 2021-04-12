@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -38,7 +38,7 @@ func NewUpdater(
 	}
 }
 
-func (u *Updater) Update(ctx context.Context, lrp *opi.LRP) error {
+func (u *Updater) Update(ctx context.Context, lrp *api.LRP) error {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		return u.update(ctx, lrp)
 	})
@@ -46,10 +46,10 @@ func (u *Updater) Update(ctx context.Context, lrp *opi.LRP) error {
 	return errors.Wrap(err, "failed to update statefulset")
 }
 
-func (u *Updater) update(ctx context.Context, lrp *opi.LRP) error {
+func (u *Updater) update(ctx context.Context, lrp *api.LRP) error {
 	logger := u.logger.Session("update", lager.Data{"guid": lrp.GUID, "version": lrp.Version})
 
-	statefulSet, err := u.getStatefulSet(ctx, opi.LRPIdentifier{GUID: lrp.GUID, Version: lrp.Version})
+	statefulSet, err := u.getStatefulSet(ctx, api.LRPIdentifier{GUID: lrp.GUID, Version: lrp.Version})
 	if err != nil {
 		logger.Error("failed-to-get-statefulset", err)
 
@@ -83,7 +83,7 @@ func (u *Updater) update(ctx context.Context, lrp *opi.LRP) error {
 	return nil
 }
 
-func (u *Updater) getUpdatedStatefulSetObj(sts *appsv1.StatefulSet, routes []opi.Route, instances int, lastUpdated, image string) (*appsv1.StatefulSet, error) {
+func (u *Updater) getUpdatedStatefulSetObj(sts *appsv1.StatefulSet, routes []api.Route, instances int, lastUpdated, image string) (*appsv1.StatefulSet, error) {
 	updatedSts := sts.DeepCopy()
 
 	uris, err := json.Marshal(routes)
@@ -98,7 +98,7 @@ func (u *Updater) getUpdatedStatefulSetObj(sts *appsv1.StatefulSet, routes []opi
 
 	if image != "" {
 		for i, container := range updatedSts.Spec.Template.Spec.Containers {
-			if container.Name == OPIContainerName {
+			if container.Name == ApplicationContainerName {
 				updatedSts.Spec.Template.Spec.Containers[i].Image = image
 			}
 		}

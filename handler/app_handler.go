@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"github.com/julienschmidt/httprouter"
 )
@@ -92,7 +92,7 @@ func (a *App) Get(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	loggerSession := a.logger.Session("get-app", lager.Data{"guid": ps.ByName("process_guid"), "version": ps.ByName("version_guid")})
 	loggerSession.Debug("requested")
 
-	identifier := opi.LRPIdentifier{
+	identifier := api.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
 	}
@@ -128,7 +128,7 @@ func (a *App) GetInstances(w http.ResponseWriter, r *http.Request, ps httprouter
 	loggerSession := a.logger.Session("get-app-instances", lager.Data{"guid": ps.ByName("process_guid"), "version": ps.ByName("version_guid")})
 	loggerSession.Debug("requested")
 
-	identifier := opi.LRPIdentifier{
+	identifier := api.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
 	}
@@ -180,7 +180,7 @@ func (a *App) Stop(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	loggerSession := a.logger.Session("stop-app", lager.Data{"guid": ps.ByName("process_guid"), "version": ps.ByName("version")})
 	loggerSession.Debug("requested")
 
-	identifier := opi.LRPIdentifier{
+	identifier := api.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
 	}
@@ -197,7 +197,7 @@ func (a *App) StopInstance(w http.ResponseWriter, r *http.Request, ps httprouter
 	loggerSession := a.logger.Session("stop-app-instance", lager.Data{"guid": ps.ByName("process_guid"), "version": ps.ByName("version_guid")})
 	loggerSession.Debug("requested")
 
-	identifier := opi.LRPIdentifier{
+	identifier := api.LRPIdentifier{
 		GUID:    ps.ByName("process_guid"),
 		Version: ps.ByName("version_guid"),
 	}

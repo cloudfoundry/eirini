@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"code.cloudfoundry.org/eirini/opi"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/util"
 	"github.com/pkg/errors"
 )
@@ -33,7 +33,7 @@ func truncateString(str string, num int) string {
 	return str
 }
 
-func GetStatefulsetName(lrp *opi.LRP) (string, error) {
+func GetStatefulsetName(lrp *api.LRP) (string, error) {
 	nameSuffix, err := util.Hash(fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version))
 	if err != nil {
 		return "", errors.Wrap(err, "failed to generate hash")

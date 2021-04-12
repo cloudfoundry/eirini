@@ -1,8 +1,8 @@
 package utils_test
 
 import (
+	"code.cloudfoundry.org/eirini/api"
 	. "code.cloudfoundry.org/eirini/k8s/utils"
-	"code.cloudfoundry.org/eirini/opi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -28,8 +28,8 @@ var _ = Describe("Names", func() {
 
 	Describe("GetStatefulsetName", func() {
 		It("calculates the name of an app's backing statefulset", func() {
-			statefulsetName, err := GetStatefulsetName(&opi.LRP{
-				LRPIdentifier: opi.LRPIdentifier{
+			statefulsetName, err := GetStatefulsetName(&api.LRP{
+				LRPIdentifier: api.LRPIdentifier{
 					GUID:    "guid",
 					Version: "version",
 				},
@@ -42,8 +42,8 @@ var _ = Describe("Names", func() {
 
 		When("the prefix is too long", func() {
 			It("calculates the name of an app's backing statefulset", func() {
-				statefulsetName, err := GetStatefulsetName(&opi.LRP{
-					LRPIdentifier: opi.LRPIdentifier{
+				statefulsetName, err := GetStatefulsetName(&api.LRP{
+					LRPIdentifier: api.LRPIdentifier{
 						GUID:    "guid",
 						Version: "version",
 					},

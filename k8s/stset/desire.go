@@ -3,10 +3,10 @@ package stset
 import (
 	"context"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/utils"
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/lager"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
@@ -22,7 +22,7 @@ import (
 //counterfeiter:generate . PodDisruptionBudgetUpdater
 
 type LRPToStatefulSetConverter interface {
-	Convert(statefulSetName string, lrp *opi.LRP, privateRegistrySecret *corev1.Secret) (*appsv1.StatefulSet, error)
+	Convert(statefulSetName string, lrp *api.LRP, privateRegistrySecret *corev1.Secret) (*appsv1.StatefulSet, error)
 }
 
 type SecretsClient interface {
@@ -36,7 +36,7 @@ type StatefulSetCreator interface {
 }
 
 type PodDisruptionBudgetUpdater interface {
-	Update(ctx context.Context, stset *appsv1.StatefulSet, lrp *opi.LRP) error
+	Update(ctx context.Context, stset *appsv1.StatefulSet, lrp *api.LRP) error
 }
 
 type Desirer struct {
@@ -63,7 +63,7 @@ func NewDesirer(
 	}
 }
 
-func (d *Desirer) Desire(ctx context.Context, namespace string, lrp *opi.LRP, opts ...shared.Option) error {
+func (d *Desirer) Desire(ctx context.Context, namespace string, lrp *api.LRP, opts ...shared.Option) error {
 	logger := d.logger.Session("desire", lager.Data{"guid": lrp.GUID, "version": lrp.Version, "namespace": namespace})
 
 	statefulSetName, err := utils.GetStatefulsetName(lrp)
@@ -125,7 +125,7 @@ func (d *Desirer) setSecretOwner(ctx context.Context, privateRegistrySecret *cor
 	return err
 }
 
-func (d *Desirer) createRegistryCredsSecretIfRequired(ctx context.Context, namespace string, lrp *opi.LRP) (*corev1.Secret, error) {
+func (d *Desirer) createRegistryCredsSecretIfRequired(ctx context.Context, namespace string, lrp *api.LRP) (*corev1.Secret, error) {
 	if lrp.PrivateRegistry == nil {
 		return nil, nil
 	}
@@ -153,7 +153,7 @@ func (d *Desirer) cleanupAndError(ctx context.Context, stsetCreationError error,
 	return resultError
 }
 
-func generateRegistryCredsSecret(lrp *opi.LRP) (*corev1.Secret, error) {
+func generateRegistryCredsSecret(lrp *api.LRP) (*corev1.Secret, error) {
 	dockerConfig := dockerutils.NewDockerConfig(
 		lrp.PrivateRegistry.Server,
 		lrp.PrivateRegistry.Username,

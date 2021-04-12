@@ -25,11 +25,11 @@ var _ = Describe("InstanceIndexInjector", func() {
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
 					{
-						Name:  stset.OPIContainerName,
+						Name:  stset.ApplicationContainerName,
 						Image: "eirini/dorini",
 					},
 					{
-						Name:  "not-opi",
+						Name:  "not-application",
 						Image: "eirini/dorini",
 					},
 				},
@@ -61,11 +61,11 @@ var _ = Describe("InstanceIndexInjector", func() {
 		return ""
 	}
 
-	It("sets CF_INSTANCE_INDEX in the opi container environment", func() {
-		Eventually(func() string { return getCFInstanceIndex(pod, stset.OPIContainerName) }).Should(Equal("0"))
+	It("sets CF_INSTANCE_INDEX in the application container environment", func() {
+		Eventually(func() string { return getCFInstanceIndex(pod, stset.ApplicationContainerName) }).Should(Equal("0"))
 	})
 
-	It("does not set CF_INSTANCE_INDEX on the non-opi container", func() {
-		Expect(getCFInstanceIndex(pod, "not-opi")).To(Equal(""))
+	It("does not set CF_INSTANCE_INDEX on the non-application container", func() {
+		Expect(getCFInstanceIndex(pod, "not-application")).To(Equal(""))
 	})
 })

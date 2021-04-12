@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/eirini"
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/utils"
-	"code.cloudfoundry.org/eirini/opi"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
@@ -23,7 +23,7 @@ const (
 )
 
 type PodGetter interface {
-	GetByLRPIdentifier(ctx context.Context, id opi.LRPIdentifier) ([]corev1.Pod, error)
+	GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifier) ([]corev1.Pod, error)
 }
 
 type EventGetter interface {
@@ -54,13 +54,13 @@ func NewGetter(
 	}
 }
 
-func (g *Getter) Get(ctx context.Context, identifier opi.LRPIdentifier) (*opi.LRP, error) {
+func (g *Getter) Get(ctx context.Context, identifier api.LRPIdentifier) (*api.LRP, error) {
 	logger := g.logger.Session("get", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
 
 	return g.getLRP(ctx, logger, identifier)
 }
 
-func (g *Getter) GetInstances(ctx context.Context, identifier opi.LRPIdentifier) ([]*opi.Instance, error) {
+func (g *Getter) GetInstances(ctx context.Context, identifier api.LRPIdentifier) ([]*api.Instance, error) {
 	logger := g.logger.Session("get-instance", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
 	if _, err := g.getLRP(ctx, logger, identifier); errors.Is(err, eirini.ErrNotFound) {
 		return nil, err
@@ -73,7 +73,7 @@ func (g *Getter) GetInstances(ctx context.Context, identifier opi.LRPIdentifier)
 		return nil, errors.Wrap(err, "failed to list pods")
 	}
 
-	instances := []*opi.Instance{}
+	instances := []*api.Instance{}
 
 	for _, pod := range pods {
 		events, err := g.eventGetter.GetByPod(ctx, pod)
@@ -101,12 +101,12 @@ func (g *Getter) GetInstances(ctx context.Context, identifier opi.LRPIdentifier)
 
 		var state, placementError string
 		if hasInsufficientMemory(events) {
-			state, placementError = opi.ErrorState, opi.InsufficientMemoryError
+			state, placementError = api.ErrorState, api.InsufficientMemoryError
 		} else {
 			state = utils.GetPodState(pod)
 		}
 
-		instance := opi.Instance{
+		instance := api.Instance{
 			Since:          since,
 			Index:          index,
 			State:          state,
@@ -118,7 +118,7 @@ func (g *Getter) GetInstances(ctx context.Context, identifier opi.LRPIdentifier)
 	return instances, nil
 }
 
-func (g *Getter) getLRP(ctx context.Context, logger lager.Logger, identifier opi.LRPIdentifier) (*opi.LRP, error) {
+func (g *Getter) getLRP(ctx context.Context, logger lager.Logger, identifier api.LRPIdentifier) (*api.LRP, error) {
 	statefulset, err := g.getStatefulSet(ctx, identifier)
 	if err != nil {
 		logger.Error("failed-to-get-statefulset", err)

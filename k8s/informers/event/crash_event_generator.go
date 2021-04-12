@@ -45,7 +45,7 @@ func (g DefaultCrashEventGenerator) Generate(ctx context.Context, pod *v1.Pod, l
 		return events.CrashEvent{}, false
 	}
 
-	appStatus := getOPIContainerStatus(pod.Status.ContainerStatuses)
+	appStatus := getApplicationContainerStatus(pod.Status.ContainerStatuses)
 	if appStatus == nil {
 		logger.Debug("skipping-eirini-pod-has-no-opi-container-statuses")
 
@@ -112,9 +112,9 @@ func generateReport(
 	}
 }
 
-func getOPIContainerStatus(statuses []v1.ContainerStatus) *v1.ContainerStatus {
+func getApplicationContainerStatus(statuses []v1.ContainerStatus) *v1.ContainerStatus {
 	for _, status := range statuses {
-		if status.Name == stset.OPIContainerName {
+		if status.Name == stset.ApplicationContainerName {
 			return &status
 		}
 	}

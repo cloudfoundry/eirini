@@ -4,30 +4,30 @@ package stsetfakes
 import (
 	"sync"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	v1 "k8s.io/api/apps/v1"
 )
 
 type FakeStatefulSetToLRPConverter struct {
-	ConvertStub        func(v1.StatefulSet) (*opi.LRP, error)
+	ConvertStub        func(v1.StatefulSet) (*api.LRP, error)
 	convertMutex       sync.RWMutex
 	convertArgsForCall []struct {
 		arg1 v1.StatefulSet
 	}
 	convertReturns struct {
-		result1 *opi.LRP
+		result1 *api.LRP
 		result2 error
 	}
 	convertReturnsOnCall map[int]struct {
-		result1 *opi.LRP
+		result1 *api.LRP
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetToLRPConverter) Convert(arg1 v1.StatefulSet) (*opi.LRP, error) {
+func (fake *FakeStatefulSetToLRPConverter) Convert(arg1 v1.StatefulSet) (*api.LRP, error) {
 	fake.convertMutex.Lock()
 	ret, specificReturn := fake.convertReturnsOnCall[len(fake.convertArgsForCall)]
 	fake.convertArgsForCall = append(fake.convertArgsForCall, struct {
@@ -52,7 +52,7 @@ func (fake *FakeStatefulSetToLRPConverter) ConvertCallCount() int {
 	return len(fake.convertArgsForCall)
 }
 
-func (fake *FakeStatefulSetToLRPConverter) ConvertCalls(stub func(v1.StatefulSet) (*opi.LRP, error)) {
+func (fake *FakeStatefulSetToLRPConverter) ConvertCalls(stub func(v1.StatefulSet) (*api.LRP, error)) {
 	fake.convertMutex.Lock()
 	defer fake.convertMutex.Unlock()
 	fake.ConvertStub = stub
@@ -65,28 +65,28 @@ func (fake *FakeStatefulSetToLRPConverter) ConvertArgsForCall(i int) v1.Stateful
 	return argsForCall.arg1
 }
 
-func (fake *FakeStatefulSetToLRPConverter) ConvertReturns(result1 *opi.LRP, result2 error) {
+func (fake *FakeStatefulSetToLRPConverter) ConvertReturns(result1 *api.LRP, result2 error) {
 	fake.convertMutex.Lock()
 	defer fake.convertMutex.Unlock()
 	fake.ConvertStub = nil
 	fake.convertReturns = struct {
-		result1 *opi.LRP
+		result1 *api.LRP
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetToLRPConverter) ConvertReturnsOnCall(i int, result1 *opi.LRP, result2 error) {
+func (fake *FakeStatefulSetToLRPConverter) ConvertReturnsOnCall(i int, result1 *api.LRP, result2 error) {
 	fake.convertMutex.Lock()
 	defer fake.convertMutex.Unlock()
 	fake.ConvertStub = nil
 	if fake.convertReturnsOnCall == nil {
 		fake.convertReturnsOnCall = make(map[int]struct {
-			result1 *opi.LRP
+			result1 *api.LRP
 			result2 error
 		})
 	}
 	fake.convertReturnsOnCall[i] = struct {
-		result1 *opi.LRP
+		result1 *api.LRP
 		result2 error
 	}{result1, result2}
 }

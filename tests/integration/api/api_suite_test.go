@@ -1,4 +1,4 @@
-package opi_test
+package api_test
 
 import (
 	"bytes"
@@ -20,10 +20,10 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func TestOpi(t *testing.T) {
+func TestAPI(t *testing.T) {
 	SetDefaultEventuallyTimeout(time.Minute)
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Opi Suite")
+	RunSpecs(t, "API Suite")
 }
 
 const secretName = "certs-secret"
@@ -36,12 +36,12 @@ var (
 	session              *gexec.Session
 	url                  string
 	apiConfig            *eirini.APIConfig
-	opiEnvOverride       []string
+	apiEnvOverride       []string
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
 	eiriniBins = integration.NewEiriniBinaries()
-	eiriniBins.OPI.Build()
+	eiriniBins.API.Build()
 
 	data, err := json.Marshal(eiriniBins)
 	Expect(err).NotTo(HaveOccurred())
@@ -70,11 +70,11 @@ var _ = BeforeEach(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	apiConfig = integration.DefaultAPIConfig(fixture.Namespace, fixture.NextAvailablePort())
-	opiEnvOverride = []string{}
+	apiEnvOverride = []string{}
 })
 
 var _ = JustBeforeEach(func() {
-	session, eiriniConfigFilePath = eiriniBins.OPI.Run(apiConfig, opiEnvOverride...)
+	session, eiriniConfigFilePath = eiriniBins.API.Run(apiConfig, apiEnvOverride...)
 
 	url = fmt.Sprintf("https://localhost:%d/", apiConfig.TLSPort)
 	Eventually(func() error {

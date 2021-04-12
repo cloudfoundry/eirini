@@ -4,18 +4,18 @@ package stsetfakes
 import (
 	"sync"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/eirini/opi"
 	v1 "k8s.io/api/apps/v1"
 	v1a "k8s.io/api/core/v1"
 )
 
 type FakeLRPToStatefulSetConverter struct {
-	ConvertStub        func(string, *opi.LRP, *v1a.Secret) (*v1.StatefulSet, error)
+	ConvertStub        func(string, *api.LRP, *v1a.Secret) (*v1.StatefulSet, error)
 	convertMutex       sync.RWMutex
 	convertArgsForCall []struct {
 		arg1 string
-		arg2 *opi.LRP
+		arg2 *api.LRP
 		arg3 *v1a.Secret
 	}
 	convertReturns struct {
@@ -30,12 +30,12 @@ type FakeLRPToStatefulSetConverter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeLRPToStatefulSetConverter) Convert(arg1 string, arg2 *opi.LRP, arg3 *v1a.Secret) (*v1.StatefulSet, error) {
+func (fake *FakeLRPToStatefulSetConverter) Convert(arg1 string, arg2 *api.LRP, arg3 *v1a.Secret) (*v1.StatefulSet, error) {
 	fake.convertMutex.Lock()
 	ret, specificReturn := fake.convertReturnsOnCall[len(fake.convertArgsForCall)]
 	fake.convertArgsForCall = append(fake.convertArgsForCall, struct {
 		arg1 string
-		arg2 *opi.LRP
+		arg2 *api.LRP
 		arg3 *v1a.Secret
 	}{arg1, arg2, arg3})
 	stub := fake.ConvertStub
@@ -57,13 +57,13 @@ func (fake *FakeLRPToStatefulSetConverter) ConvertCallCount() int {
 	return len(fake.convertArgsForCall)
 }
 
-func (fake *FakeLRPToStatefulSetConverter) ConvertCalls(stub func(string, *opi.LRP, *v1a.Secret) (*v1.StatefulSet, error)) {
+func (fake *FakeLRPToStatefulSetConverter) ConvertCalls(stub func(string, *api.LRP, *v1a.Secret) (*v1.StatefulSet, error)) {
 	fake.convertMutex.Lock()
 	defer fake.convertMutex.Unlock()
 	fake.ConvertStub = stub
 }
 
-func (fake *FakeLRPToStatefulSetConverter) ConvertArgsForCall(i int) (string, *opi.LRP, *v1a.Secret) {
+func (fake *FakeLRPToStatefulSetConverter) ConvertArgsForCall(i int) (string, *api.LRP, *v1a.Secret) {
 	fake.convertMutex.RLock()
 	defer fake.convertMutex.RUnlock()
 	argsForCall := fake.convertArgsForCall[i]

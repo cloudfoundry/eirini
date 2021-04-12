@@ -19,9 +19,9 @@ import (
 const DefaultApplicationServiceAccount = "eirini"
 
 func CreateRandomNamespace(clientset kubernetes.Interface) string {
-	namespace := fmt.Sprintf("opi-integration-test-%s-%d", GenerateGUID(), ginkgoconfig.GinkgoConfig.ParallelNode)
+	namespace := fmt.Sprintf("integration-test-%s-%d", GenerateGUID(), ginkgoconfig.GinkgoConfig.ParallelNode)
 	for namespaceExists(namespace, clientset) {
-		namespace = fmt.Sprintf("opi-integration-test-%s-%d", GenerateGUID(), ginkgoconfig.GinkgoConfig.ParallelNode)
+		namespace = fmt.Sprintf("integration-test-%s-%d", GenerateGUID(), ginkgoconfig.GinkgoConfig.ParallelNode)
 	}
 	createNamespace(namespace, clientset)
 
