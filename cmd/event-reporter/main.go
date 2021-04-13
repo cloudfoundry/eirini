@@ -2,9 +2,7 @@ package main
 
 import (
 	"crypto/tls"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
@@ -18,8 +16,6 @@ import (
 	"code.cloudfoundry.org/tlsconfig"
 	"github.com/cloudfoundry/tps/cc_client"
 	"github.com/jessevdk/go-flags"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
@@ -39,7 +35,8 @@ func main() {
 	_, err := flags.ParseArgs(&opts, os.Args)
 	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
-	cfg, err := readConfigFile(opts.ConfigFile)
+	var cfg eirini.EventReporterConfig
+	err = cmdcommons.ReadConfigFile(opts.ConfigFile, &cfg)
 	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
@@ -101,18 +98,6 @@ func main() {
 
 	err = mgr.Start(ctrl.SetupSignalHandler())
 	cmdcommons.ExitfIfError(err, "Failed to start manager")
-}
-
-func readConfigFile(path string) (*eirini.EventReporterConfig, error) {
-	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read file")
-	}
-
-	var conf eirini.EventReporterConfig
-	err = yaml.Unmarshal(fileBytes, &conf)
-
-	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
 }
 
 func createTLSConfig() (*tls.Config, error) {

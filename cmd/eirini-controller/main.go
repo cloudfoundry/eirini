@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
@@ -21,8 +19,6 @@ import (
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/jessevdk/go-flags"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -52,7 +48,8 @@ func main() {
 	_, err := flags.ParseArgs(&opts, os.Args)
 	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
-	cfg, err := readConfigFile(opts.ConfigFile)
+	var cfg eirini.ControllerConfig
+	err = cmdcommons.ReadConfigFile(opts.ConfigFile, &cfg)
 	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", cfg.ConfigPath)
@@ -121,23 +118,11 @@ func main() {
 	cmdcommons.ExitfIfError(err, "Failed to start manager")
 }
 
-func readConfigFile(path string) (*eirini.ControllerConfig, error) {
-	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read file")
-	}
-
-	var conf eirini.ControllerConfig
-	err = yaml.Unmarshal(fileBytes, &conf)
-
-	return &conf, errors.Wrap(err, "failed to unmarshal yaml")
-}
-
 func createLRPReconciler(
 	logger lager.Logger,
 	controllerClient runtimeclient.Client,
 	clientset kubernetes.Interface,
-	cfg *eirini.ControllerConfig,
+	cfg eirini.ControllerConfig,
 	scheme *runtime.Scheme,
 	latestMigration int,
 ) (*reconciler.LRP, error) {
@@ -180,7 +165,7 @@ func createTaskReconciler(
 	logger lager.Logger,
 	controllerClient runtimeclient.Client,
 	clientset kubernetes.Interface,
-	cfg *eirini.ControllerConfig,
+	cfg eirini.ControllerConfig,
 	scheme *runtime.Scheme,
 	latestMigrationIndex int,
 ) *reconciler.Task {

@@ -30,7 +30,6 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 		}
 		certDir, _ = tests.GenerateKeyPairDir("tls", "my-domain")
 
-		eiriniBins.InstanceIndexEnvInjector.ExtraArgs = []string{}
 		env := fmt.Sprintf("%s=%s", eirini.EnvInstanceEnvInjectorCertDir, certDir)
 		session, configFilePath = eiriniBins.InstanceIndexEnvInjector.Run(config, env)
 	})

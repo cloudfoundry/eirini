@@ -1,10 +1,8 @@
 package main
 
 import (
-	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
@@ -15,8 +13,6 @@ import (
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/jessevdk/go-flags"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	kscheme "k8s.io/client-go/kubernetes/scheme"
@@ -38,7 +34,8 @@ func main() {
 	_, err := flags.ParseArgs(&opts, os.Args)
 	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
-	cfg, err := readConfigFile(opts.ConfigFile)
+	var cfg eirini.TaskReporterConfig
+	err = cmdcommons.ReadConfigFile(opts.ConfigFile, &cfg)
 	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
@@ -116,18 +113,6 @@ func initTaskDeleter(clientset kubernetes.Interface, workloadsNamespace string) 
 	)
 
 	return &deleter
-}
-
-func readConfigFile(path string) (eirini.TaskReporterConfig, error) {
-	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
-	if err != nil {
-		return eirini.TaskReporterConfig{}, errors.Wrap(err, "failed to read file")
-	}
-
-	var conf eirini.TaskReporterConfig
-	err = yaml.Unmarshal(fileBytes, &conf)
-
-	return conf, errors.Wrap(err, "failed to unmarshal yaml")
 }
 
 func createHTTPClient(cfg eirini.TaskReporterConfig) (*http.Client, error) {

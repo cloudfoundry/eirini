@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/migrations"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 
 	// Kubernetes has a tricky way to add authentication
@@ -14,6 +17,19 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 )
+
+func ReadConfigFile(path string, conf interface{}) error {
+	if path == "" {
+		return nil
+	}
+
+	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return errors.Wrap(err, "failed to read file")
+	}
+
+	return errors.Wrap(yaml.Unmarshal(fileBytes, conf), "failed to unmarshal yaml")
+}
 
 func CreateKubeClient(kubeConfigPath string) kubernetes.Interface {
 	klog.SetOutput(os.Stdout)

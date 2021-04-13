@@ -7,6 +7,7 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/bifrost"
+	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
@@ -21,6 +22,10 @@ import (
 	"github.com/jessevdk/go-flags"
 	"k8s.io/client-go/kubernetes"
 )
+
+type options struct {
+	ConfigFile string `short:"c" long:"config" description:"Config for running the eirini api"`
+}
 
 func main() {
 	var opts options

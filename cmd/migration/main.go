@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
@@ -12,8 +10,6 @@ import (
 	"code.cloudfoundry.org/eirini/migrations"
 	"code.cloudfoundry.org/lager"
 	"github.com/jessevdk/go-flags"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 type options struct {
@@ -25,7 +21,8 @@ func main() {
 	_, err := flags.ParseArgs(&opts, os.Args)
 	cmdcommons.ExitfIfError(err, "Failed to parse args")
 
-	cfg, err := readConfigFile(opts.ConfigFile)
+	var cfg eirini.MigrationConfig
+	err = cmdcommons.ReadConfigFile(opts.ConfigFile, &cfg)
 	cmdcommons.ExitfIfError(err, "Failed to read config file")
 
 	clientset := cmdcommons.CreateKubeClient(cfg.ConfigPath)
@@ -42,20 +39,4 @@ func main() {
 
 	err = executor.Migrate(context.Background(), logger)
 	cmdcommons.ExitfIfError(err, "Migration failed")
-}
-
-func readConfigFile(path string) (eirini.MigrationConfig, error) {
-	if path == "" {
-		return eirini.MigrationConfig{}, nil
-	}
-
-	fileBytes, err := ioutil.ReadFile(filepath.Clean(path))
-	if err != nil {
-		return eirini.MigrationConfig{}, errors.Wrap(err, "failed to read file")
-	}
-
-	var conf eirini.MigrationConfig
-	err = yaml.Unmarshal(fileBytes, &conf)
-
-	return conf, errors.Wrap(err, "failed to unmarshal yaml")
 }
