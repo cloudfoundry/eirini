@@ -12,7 +12,6 @@ import (
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
-	"code.cloudfoundry.org/eirini/k8s/patching"
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
@@ -316,30 +315,6 @@ var _ = Describe("Tasks", func() {
 			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
 		})
 
-		When("cancelling a task with docker lifecycle", func() {
-			BeforeEach(func() {
-				request.Lifecycle.DockerLifecycle.Image = "eiriniuser/notdora"
-				request.Lifecycle.DockerLifecycle.RegistryUsername = "eiriniuser"
-				request.Lifecycle.DockerLifecycle.RegistryPassword = tests.GetEiriniDockerHubPassword()
-			})
-
-			It("deletes the docker registry secret", func() {
-				Eventually(func() ([]string, error) {
-					secrets, err := fixture.Clientset.CoreV1().Secrets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-					if err != nil {
-						return nil, err
-					}
-
-					secretNames := []string{}
-					for _, secret := range secrets.Items {
-						secretNames = append(secretNames, secret.Name)
-					}
-
-					return secretNames, nil
-				}).Should(Not(ContainElement(HavePrefix("my-app-my-space-registry-secret-"))))
-			})
-		})
-
 		When("CC TLS is disabled and CC certs not configured", func() {
 			BeforeEach(func() {
 				cloudControllerServer.Close()
@@ -407,40 +382,6 @@ var _ = Describe("Tasks", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(tasks).To(ConsistOf(cf.TaskResponse{GUID: request.GUID}))
-		})
-
-		When("the task is marked as completed", func() {
-			JustBeforeEach(func() {
-				allJobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				job := allJobs.Items[0]
-
-				labelPatch := patching.NewLabel(jobs.LabelTaskCompleted, "true")
-
-				_, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).Patch(
-					context.Background(),
-					job.Name,
-					labelPatch.Type(),
-					labelPatch.GetPatchBytes(),
-					metav1.PatchOptions{},
-				)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("does not return it", func() {
-				httpRequest, err := http.NewRequest("GET", fmt.Sprintf("%s/tasks", url), nil)
-				Expect(err).NotTo(HaveOccurred())
-				resp, err := httpClient.Do(httpRequest)
-				Expect(err).NotTo(HaveOccurred())
-				defer resp.Body.Close()
-				Expect(resp.StatusCode).To(Equal(http.StatusOK))
-
-				var tasks cf.TasksResponse
-				err = json.NewDecoder(resp.Body).Decode(&tasks)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(tasks).To(BeEmpty())
-			})
 		})
 	})
 })

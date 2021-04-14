@@ -9,6 +9,8 @@ import (
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
+	"code.cloudfoundry.org/eirini/k8s/patching"
+	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
 	"code.cloudfoundry.org/eirini/util"
@@ -18,10 +20,11 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("LRPClient", func() {
+var _ = Describe("Task Client", func() {
 	var (
 		taskClient *k8s.TaskClient
 		task       *api.Task
@@ -86,6 +89,14 @@ var _ = Describe("LRPClient", func() {
 					"Type":   Equal(batchv1.JobComplete),
 					"Status": Equal(corev1.ConditionTrue),
 				})),
+			)
+		})
+
+		It("sets the latest migration index", func() {
+			allJobs := integration.ListJobs(fixture.Clientset, fixture.Namespace, taskGUID)()
+			job := allJobs[0]
+			Expect(job.Annotations).To(
+				HaveKeyWithValue(shared.AnnotationLatestMigration, "123"),
 			)
 		})
 
@@ -201,6 +212,31 @@ var _ = Describe("LRPClient", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(tasks).To(BeEmpty())
 		})
+
+		When("the task is marked as completed", func() {
+			JustBeforeEach(func() {
+				allJobs, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				job := allJobs.Items[0]
+
+				labelPatch := patching.NewLabel(jobs.LabelTaskCompleted, "true")
+
+				_, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).Patch(
+					context.Background(),
+					job.Name,
+					labelPatch.Type(),
+					labelPatch.GetPatchBytes(),
+					metav1.PatchOptions{},
+				)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("does not list it", func() {
+				actualTasks, err := taskClient.List(context.Background())
+				Expect(err).NotTo(HaveOccurred())
+				Expect(actualTasks).To(BeEmpty())
+			})
+		})
 	})
 
 	Describe("Delete", func() {
@@ -212,6 +248,38 @@ var _ = Describe("LRPClient", func() {
 			_, err := taskClient.Delete(context.Background(), taskGUID)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(integration.ListJobs(fixture.Clientset, fixture.Namespace, taskGUID)).Should(BeEmpty())
+		})
+
+		When("the task image lives in a private registry", func() {
+			var privateRegistrySecret string
+
+			BeforeEach(func() {
+				task.Image = "eiriniuser/notdora:latest"
+				task.Command = []string{"/bin/echo", "hello"}
+				task.PrivateRegistry = &api.PrivateRegistry{
+					Username: "eiriniuser",
+					Password: tests.GetEiriniDockerHubPassword(),
+					Server:   util.DockerHubHost,
+				}
+			})
+
+			JustBeforeEach(func() {
+				privateRegistrySecret = integration.GetRegistrySecretName(fixture.Clientset, fixture.Namespace, taskGUID, jobs.PrivateRegistrySecretGenerateName)
+			})
+
+			It("deletes the image pull secret", func() {
+				_, err := taskClient.Delete(context.Background(), taskGUID)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func() bool {
+					_, err := fixture.Clientset.
+						CoreV1().
+						Secrets(fixture.Namespace).
+						Get(context.Background(), privateRegistrySecret, metav1.GetOptions{})
+
+					return k8serrors.IsNotFound(err)
+				}).Should(BeTrue())
+			})
 		})
 	})
 })
