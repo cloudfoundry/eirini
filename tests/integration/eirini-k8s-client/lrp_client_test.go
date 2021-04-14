@@ -538,7 +538,7 @@ var _ = Describe("LRPClient", func() {
 		When("one of the instances if failing", func() {
 			BeforeEach(func() {
 				lrp = createLRP("odin")
-				lrp.Health = api.Healtcheck{
+				lrp.Health = api.Healthcheck{
 					Type: "port",
 					Port: 3000,
 				}

@@ -32,7 +32,7 @@ type LRPSpec struct {
 	Sidecars               []Sidecar         `json:"sidecars,omitempty"`
 	PrivateRegistry        *PrivateRegistry  `json:"privateRegistry,omitempty"`
 	Env                    map[string]string `json:"env,omitempty"`
-	Health                 Healtcheck        `json:"health"`
+	Health                 Healthcheck       `json:"health"`
 	Ports                  []int32           `json:"ports,omitempty"`
 	Instances              int               `json:"instances"`
 	MemoryMB               int64             `json:"memoryMB"`
@@ -70,7 +70,7 @@ type VolumeMount struct {
 	ClaimName string `json:"claimName"`
 }
 
-type Healtcheck struct {
+type Healthcheck struct {
 	Type      string `json:"type"`
 	Port      int32  `json:"port"`
 	Endpoint  string `json:"endpoint"`

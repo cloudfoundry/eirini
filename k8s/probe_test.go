@@ -18,7 +18,7 @@ var _ = Describe("PrrobeCreator", func() {
 
 	BeforeEach(func() {
 		lrp = &api.LRP{
-			Health: api.Healtcheck{
+			Health: api.Healthcheck{
 				Endpoint:  "/healthz",
 				Port:      8080,
 				TimeoutMs: 3000,

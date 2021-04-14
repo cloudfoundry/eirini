@@ -38,7 +38,7 @@ type LRP struct {
 	Sidecars               []Sidecar
 	PrivateRegistry        *PrivateRegistry
 	Env                    map[string]string
-	Health                 Healtcheck
+	Health                 Healthcheck
 	Ports                  []int32
 	TargetInstances        int
 	RunningInstances       int
@@ -82,7 +82,7 @@ type Instance struct {
 	PlacementError string
 }
 
-type Healtcheck struct {
+type Healthcheck struct {
 	Type      string
 	Port      int32
 	Endpoint  string

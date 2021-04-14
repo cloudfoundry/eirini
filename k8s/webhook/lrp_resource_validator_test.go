@@ -84,7 +84,7 @@ var _ = Describe("LRPResourceValidator", func() {
 					Env: map[string]string{
 						"FOO": "BAR",
 					},
-					Health: eiriniv1.Healtcheck{
+					Health: eiriniv1.Healthcheck{
 						Type:      "http",
 						Port:      8080,
 						Endpoint:  "/end",

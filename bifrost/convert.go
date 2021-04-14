@@ -42,7 +42,7 @@ func (c *APIConverter) ConvertLRP(request cf.DesireLRPRequest) (api.LRP, error) 
 		env[eirini.EnvCFInstancePorts] = fmt.Sprintf(`[{"external":%d,"internal":%d}]`, port, port)
 	}
 
-	healthcheck := api.Healtcheck{
+	healthcheck := api.Healthcheck{
 		Type:      request.HealthCheckType,
 		Endpoint:  request.HealthCheckHTTPEndpoint,
 		TimeoutMs: request.HealthCheckTimeoutMs,
