@@ -53,8 +53,62 @@ var _ = Describe("reconciler.LRP", func() {
 			lrp.Spec.Version = "the-lrp-version"
 			lrp.Spec.Command = []string{"ls", "-la"}
 			lrp.Spec.Instances = 10
+			lrp.Spec.ProcessType = "web"
+			lrp.Spec.AppName = "the-app"
+			lrp.Spec.AppGUID = "the-app-guid"
+			lrp.Spec.OrgName = "the-org"
+			lrp.Spec.OrgGUID = "the-org-guid"
+			lrp.Spec.SpaceName = "the-space"
+			lrp.Spec.SpaceGUID = "the-space-guid"
+			lrp.Spec.Image = "eirini/dorini"
+			lrp.Spec.Env = map[string]string{
+				"FOO": "BAR",
+			}
+			lrp.Spec.Ports = []int32{8080, 9090}
+			lrp.Spec.MemoryMB = 1024
+			lrp.Spec.DiskMB = 512
+			lrp.Spec.CPUWeight = 128
+			lrp.Spec.LastUpdated = "now"
 			lrp.Spec.AppRoutes = []eiriniv1.Route{
 				{Hostname: "foo.io", Port: 8080}, {Hostname: "bar.io", Port: 9090},
+			}
+			lrp.Spec.Sidecars = []eiriniv1.Sidecar{
+				{
+					Name:     "hello-sidecar",
+					Command:  []string{"sh", "-c", "echo hello"},
+					MemoryMB: 8,
+					Env: map[string]string{
+						"SIDE": "BUS",
+					},
+				},
+				{
+					Name:     "bye-sidecar",
+					Command:  []string{"sh", "-c", "echo bye"},
+					MemoryMB: 16,
+					Env: map[string]string{
+						"SIDE": "CAR",
+					},
+				},
+			}
+			lrp.Spec.VolumeMounts = []eiriniv1.VolumeMount{
+				{
+					MountPath: "/path/to/mount",
+					ClaimName: "claim-q1",
+				},
+				{
+					MountPath: "/path/in/the/other/direction",
+					ClaimName: "claim-c2",
+				},
+			}
+			lrp.Spec.Health = eiriniv1.Healthcheck{
+				Type:      "http",
+				Port:      9090,
+				Endpoint:  "/heath",
+				TimeoutMs: 80,
+			}
+
+			lrp.Spec.UserDefinedAnnotations = map[string]string{
+				"user-annotaions.io": "yes",
 			}
 
 			return nil
@@ -86,10 +140,67 @@ var _ = Describe("reconciler.LRP", func() {
 		Expect(lrp.Command).To(ConsistOf("ls", "-la"))
 		Expect(lrp.TargetInstances).To(Equal(10))
 		Expect(lrp.PrivateRegistry).To(BeNil())
+		Expect(lrp.ProcessType).To(Equal("web"))
+		Expect(lrp.AppName).To(Equal("the-app"))
+		Expect(lrp.AppGUID).To(Equal("the-app-guid"))
+		Expect(lrp.OrgName).To(Equal("the-org"))
+		Expect(lrp.OrgGUID).To(Equal("the-org-guid"))
+		Expect(lrp.SpaceName).To(Equal("the-space"))
+		Expect(lrp.SpaceGUID).To(Equal("the-space-guid"))
+		Expect(lrp.Image).To(Equal("eirini/dorini"))
+		Expect(lrp.Env).To(Equal(map[string]string{
+			"FOO": "BAR",
+		}))
+		Expect(lrp.Ports).To(Equal([]int32{8080, 9090}))
+		Expect(lrp.MemoryMB).To(Equal(int64(1024)))
+		Expect(lrp.DiskMB).To(Equal(int64(512)))
+		Expect(lrp.CPUWeight).To(Equal(uint8(128)))
+		Expect(lrp.LastUpdated).To(Equal("now"))
+		Expect(lrp.AppURIs).To(Equal([]api.Route{
+			{Hostname: "foo.io", Port: 8080},
+			{Hostname: "bar.io", Port: 9090},
+		}))
 		Expect(lrp.AppURIs).To(ConsistOf(
 			api.Route{Hostname: "foo.io", Port: 8080},
 			api.Route{Hostname: "bar.io", Port: 9090},
 		))
+		Expect(lrp.Sidecars).To(Equal([]api.Sidecar{
+			{
+				Name:     "hello-sidecar",
+				Command:  []string{"sh", "-c", "echo hello"},
+				MemoryMB: 8,
+				Env: map[string]string{
+					"SIDE": "BUS",
+				},
+			},
+			{
+				Name:     "bye-sidecar",
+				Command:  []string{"sh", "-c", "echo bye"},
+				MemoryMB: 16,
+				Env: map[string]string{
+					"SIDE": "CAR",
+				},
+			},
+		}))
+		Expect(lrp.VolumeMounts).To(Equal([]api.VolumeMount{
+			{
+				MountPath: "/path/to/mount",
+				ClaimName: "claim-q1",
+			},
+			{
+				MountPath: "/path/in/the/other/direction",
+				ClaimName: "claim-c2",
+			},
+		}))
+		Expect(lrp.Health).To(Equal(api.Healthcheck{
+			Type:      "http",
+			Port:      9090,
+			Endpoint:  "/heath",
+			TimeoutMs: 80,
+		}))
+		Expect(lrp.UserDefinedAnnotations).To(Equal(map[string]string{
+			"user-annotaions.io": "yes",
+		}))
 	})
 
 	It("sets an owner reference in the statefulset", func() {

@@ -25,6 +25,8 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		lrp                               *api.LRP
 		statefulSet                       *appsv1.StatefulSet
 		privateRegistrySecret             *corev1.Secret
+		livenessProbe                     *corev1.Probe
+		readinessProbe                    *corev1.Probe
 	)
 
 	BeforeEach(func() {
@@ -34,6 +36,12 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		readinessProbeCreator = new(stsetfakes.FakeProbeCreator)
 		lrp = createLRP("Baldur", []api.Route{{Hostname: "my.example.route", Port: 1000}})
 		privateRegistrySecret = nil
+
+		livenessProbe = &corev1.Probe{}
+		livenessProbeCreator.Returns(livenessProbe)
+
+		readinessProbe = &corev1.Probe{}
+		readinessProbeCreator.Returns(readinessProbe)
 	})
 
 	JustBeforeEach(func() {
@@ -106,6 +114,14 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 
 	It("should deny privilegeEscalation", func() {
 		Expect(*statefulSet.Spec.Template.Spec.Containers[0].SecurityContext.AllowPrivilegeEscalation).To(Equal(false))
+	})
+
+	It("should set the liveness probe", func() {
+		Expect(statefulSet.Spec.Template.Spec.Containers[0].LivenessProbe).To(Equal(livenessProbe))
+	})
+
+	It("should set the readiness probe", func() {
+		Expect(statefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe).To(Equal(readinessProbe))
 	})
 
 	It("should not automount service account token", func() {
