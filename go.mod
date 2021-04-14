@@ -10,14 +10,12 @@ replace (
 require (
 	cloud.google.com/go v0.81.0 // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
-	code.cloudfoundry.org/garden v0.0.0-20210208153517-580cadd489d2 // indirect
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
 	code.cloudfoundry.org/tlsconfig v0.0.0-20200131000646-bbe0f8da39b3
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/Microsoft/go-winio v0.4.17 // indirect
 	github.com/cloudfoundry/tps v0.0.0-20210303221408-6295d5712990
-	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/containers/image v3.0.2+incompatible
 	github.com/containers/storage v1.25.0 // indirect
 	github.com/docker/distribution v2.7.1+incompatible
@@ -28,7 +26,6 @@ require (
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/go-logr/logr v0.4.0
 	github.com/gofrs/flock v0.8.0
-	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/go-cmp v0.5.5
 	github.com/google/gofuzz v1.2.0 // indirect
@@ -41,7 +38,6 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.6.8
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/jinzhu/copier v0.2.9
 	github.com/julienschmidt/httprouter v1.3.0
@@ -53,7 +49,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/common v0.20.0
-	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
 	golang.org/x/mod v0.4.2 // indirect
