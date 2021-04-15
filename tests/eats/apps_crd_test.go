@@ -3,10 +3,8 @@ package eats_test
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"time"
 
-	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/pkg/apis/eirini"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/prometheus"
@@ -27,7 +25,6 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		lrpGUID          string
 		lrpVersion       string
 		lrp              *eiriniv1.LRP
-		appListOpts      metav1.ListOptions
 		prometheusClient api.Client
 		prometheusAPI    prometheusv1.API
 	)
@@ -75,9 +72,6 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		lrpName = tests.GenerateGUID()
 		lrpGUID = tests.GenerateGUID()
 		lrpVersion = tests.GenerateGUID()
-		appListOpts = metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
-		}
 
 		var connErr error
 		prometheusClient, connErr = api.NewClient(api.Config{
@@ -137,10 +131,6 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 				Create(context.Background(), lrp, metav1.CreateOptions{})
 
 			appServiceName = exposeLRP(fixture.Namespace, lrpGUID, 8080)
-		})
-
-		AfterEach(func() {
-			unexposeLRP(fixture.Namespace, appServiceName)
 		})
 
 		It("succeeds", func() {
@@ -234,10 +224,7 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 	})
 
 	Describe("Update an app", func() {
-		var (
-			clientErr      error
-			appServiceName string
-		)
+		var clientErr error
 
 		BeforeEach(func() {
 			_, err := fixture.EiriniClientset.
@@ -258,15 +245,9 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 				EiriniV1().
 				LRPs(fixture.Namespace).
 				Update(context.Background(), lrp, metav1.UpdateOptions{})
-
-			appServiceName = exposeLRP(fixture.Namespace, lrpGUID, 8080)
 		})
 
-		AfterEach(func() {
-			unexposeLRP(fixture.Namespace, appServiceName)
-		})
-
-		When("instance count is updated", func() {
+		When("updating the instance count", func() {
 			BeforeEach(func() {
 				lrp.Spec.Instances = 3
 			})
@@ -275,31 +256,20 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 				Expect(clientErr).NotTo(HaveOccurred())
 			})
 
-			It("serves responses from 3 distinct containers", func() {
-				guids := map[string]bool{}
-				re := regexp.MustCompile(`CF_INSTANCE_GUID=(.*)`)
+			It("updates the LRP Status replicas", func() {
 				Eventually(func() int {
-					envvars, err := pingLRPFn(fixture.Namespace, appServiceName, 8080, "/env")()
-					if err != nil {
-						return 0
-					}
-					matches := re.FindStringSubmatch(envvars)
-					if len(matches) == 2 {
-						guids[matches[1]] = true
-					}
-
-					return len(guids)
+					return int(getLRP().Status.Replicas)
 				}).Should(Equal(3))
 			})
+		})
 
-			When("immutable property is updated", func() {
-				BeforeEach(func() {
-					lrp.Spec.Command = []string{"you", "shall", "not", "pass"}
-				})
+		When("updating an immutable property", func() {
+			BeforeEach(func() {
+				lrp.Spec.Command = []string{"you", "shall", "not", "pass"}
+			})
 
-				It("fails", func() {
-					Expect(clientErr).To(MatchError(ContainSubstring("Changing immutable fields not allowed: Command")))
-				})
+			It("fails", func() {
+				Expect(clientErr).To(MatchError(ContainSubstring("Changing immutable fields not allowed: Command")))
 			})
 		})
 	})
@@ -315,10 +285,6 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 			Expect(err).NotTo(HaveOccurred())
 
 			appServiceName = exposeLRP(fixture.Namespace, lrpGUID, 8080, "/")
-		})
-
-		AfterEach(func() {
-			unexposeLRP(fixture.Namespace, appServiceName)
 		})
 
 		JustBeforeEach(func() {
@@ -341,40 +307,6 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 
 				return err
 			}, "2s").Should(HaveOccurred())
-		})
-	})
-
-	Describe("App status", func() {
-		When("an app instance becomes unready", func() {
-			BeforeEach(func() {
-				_, err := fixture.EiriniClientset.
-					EiriniV1().
-					LRPs(fixture.Namespace).
-					Create(context.Background(), lrp, metav1.CreateOptions{})
-				Expect(err).NotTo(HaveOccurred())
-
-				Eventually(func() int32 {
-					return getLRP().Status.Replicas
-				}).Should(Equal(int32(1)))
-			})
-
-			JustBeforeEach(func() {
-				Expect(fixture.Clientset.
-					CoreV1().
-					Pods(fixture.Namespace).
-					DeleteCollection(context.Background(), metav1.DeleteOptions{}, appListOpts),
-				).To(Succeed())
-			})
-
-			It("is reflected in the LRP status", func() {
-				Eventually(func() int32 {
-					return getLRP().Status.Replicas
-				}).Should(Equal(int32(0)))
-
-				Eventually(func() int32 {
-					return getLRP().Status.Replicas
-				}).Should(Equal(int32(1)))
-			})
 		})
 	})
 })

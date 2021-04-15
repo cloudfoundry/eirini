@@ -1,20 +1,15 @@
 package eats_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
@@ -23,6 +18,7 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 		lrpGUID        string
 		lrpVersion     string
 		lrpProcessGUID string
+		appServiceName string
 	)
 
 	BeforeEach(func() {
@@ -37,6 +33,7 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 
 		JustBeforeEach(func() {
 			desireRespStatusCode = desireApp(lrpGUID, lrpVersion, namespace)
+			appServiceName = exposeLRP(fixture.Namespace, lrpGUID, 8080)
 		})
 
 		AfterEach(func() {
@@ -48,21 +45,8 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 			Expect(desireRespStatusCode).To(Equal(http.StatusAccepted))
 		})
 
-		It("deploys the LRP to the specified namespace", func() {
-			Expect(getStatefulSet(lrpGUID, lrpVersion).Namespace).To(Equal(fixture.Namespace))
-			Eventually(func() bool {
-				return getPodReadiness(lrpGUID, lrpVersion)
-			}).Should(BeTrue(), "LRP Pod not ready")
-		})
-
-		When("a namespace is not specified", func() {
-			BeforeEach(func() {
-				namespace = ""
-			})
-
-			It("deploys the LRP to the workloads namespace", func() {
-				Expect(getStatefulSet(lrpGUID, lrpVersion).Namespace).To(Equal(fixture.GetEiriniWorkloadsNamespace()))
-			})
+		It("runs the application", func() {
+			Eventually(pingLRPFn(fixture.Namespace, appServiceName, 8080, "/")).Should(ContainSubstring("Hi, I'm not Dora!"))
 		})
 
 		When("the app already exist", func() {
@@ -84,14 +68,7 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 				privateImageAppVersion = tests.GenerateGUID()
 			})
 
-			AfterEach(func() {
-				unexposeLRP(fixture.Namespace, appServiceName)
-
-				_, err := stopLRP(lrpGUID, lrpVersion)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("creates a secret for the private registry credentials", func() {
+			It("creates a running application", func() {
 				lrp := createLrpRequest(privateImageAppGUID, privateImageAppVersion)
 				lrp.Namespace = namespace
 				lrp.Lifecycle = cf.Lifecycle{
@@ -240,59 +217,6 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 			Expect(lrpsAnnotations[lrpProcessGUID]).To(Equal("111111"))
 			Expect(lrpsAnnotations[anotherProcessGUID]).To(Equal("222222"))
 		})
-
-		When("non-eirini statefulSets exist", func() {
-			var otherStatefulSetName string
-
-			BeforeEach(func() {
-				otherStatefulSetName = tests.GenerateGUID()
-
-				_, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).Create(context.Background(), &appsv1.StatefulSet{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: otherStatefulSetName,
-					},
-					Spec: appsv1.StatefulSetSpec{
-						Template: corev1.PodTemplateSpec{
-							ObjectMeta: metav1.ObjectMeta{
-								Labels: map[string]string{"foo": "bar"},
-							},
-						},
-						Selector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{"foo": "bar"},
-						},
-					},
-				}, metav1.CreateOptions{})
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			AfterEach(func() {
-				backgroundPropagation := metav1.DeletePropagationBackground
-
-				err := fixture.Clientset.
-					AppsV1().
-					StatefulSets(fixture.Namespace).
-					DeleteCollection(
-						context.Background(),
-						metav1.DeleteOptions{
-							PropagationPolicy: &backgroundPropagation,
-						},
-						metav1.ListOptions{
-							FieldSelector: "metadata.name=" + otherStatefulSetName,
-						},
-					)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("does not list them", func() {
-				lrps, err := getLRPs()
-				Expect(err).NotTo(HaveOccurred())
-
-				for _, lrp := range lrps {
-					Expect(lrp.GUID).NotTo(BeEmpty(), fmt.Sprintf("%#v does not look like an LRP", lrp))
-					Expect(lrp.Version).NotTo(BeEmpty(), fmt.Sprintf("%#v does not look like an LRP", lrp))
-				}
-			})
-		})
 	})
 
 	Describe("Get an app", func() {
@@ -321,48 +245,64 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 	})
 
 	Describe("Stop an app", func() {
+		var (
+			stopErr      error
+			stopResponse *http.Response
+		)
+
 		BeforeEach(func() {
 			desireApp(lrpGUID, lrpVersion, namespace)
 		})
 
-		AfterEach(func() {
-			_, err := stopLRP(lrpGUID, lrpVersion)
-			Expect(err).NotTo(HaveOccurred())
+		JustBeforeEach(func() {
+			stopResponse, stopErr = stopLRP(lrpGUID, lrpVersion)
 		})
 
-		It("successfully stops the app", func() {
-			_, err := stopLRP(lrpGUID, lrpVersion)
-			Expect(err).NotTo(HaveOccurred())
-			_, err = getLRP(lrpGUID, lrpVersion)
+		It("succeeds", func() {
+			Expect(stopErr).NotTo(HaveOccurred())
+		})
+
+		It("deletes the LRP", func() {
+			_, err := getLRP(lrpGUID, lrpVersion)
 			Expect(err).To(MatchError("404 Not Found"))
 		})
 
 		When("the app doesn't exist", func() {
+			BeforeEach(func() {
+				lrpGUID = "does-not-exist"
+			})
+
 			It("succeeds", func() {
-				response, err := stopLRP("does-not-exist", lrpVersion)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(response.StatusCode).To(Equal(http.StatusOK))
+				Expect(stopErr).NotTo(HaveOccurred())
+				Expect(stopResponse.StatusCode).To(Equal(http.StatusOK))
 			})
 		})
 	})
 
 	Describe("Stop an app instance", func() {
+		var (
+			stopResponse *http.Response
+			stopErr      error
+			instanceID   int
+		)
+
 		BeforeEach(func() {
 			desireAppWithInstances(lrpGUID, lrpVersion, namespace, 3)
 			Eventually(func() []*cf.Instance {
 				return getRunningInstances(lrpGUID, lrpVersion)
 			}).Should(HaveLen(3))
+			instanceID = 1
 		})
 
-		AfterEach(func() {
-			_, err := stopLRP(lrpGUID, lrpVersion)
-			Expect(err).NotTo(HaveOccurred())
+		JustBeforeEach(func() {
+			stopResponse, stopErr = stopLRPInstance(lrpGUID, lrpVersion, instanceID)
+		})
+
+		It("succeeds", func() {
+			Expect(stopErr).NotTo(HaveOccurred())
 		})
 
 		It("successfully stops the instance", func() {
-			_, err := stopLRPInstance(lrpGUID, lrpVersion, 1)
-			Expect(err).NotTo(HaveOccurred())
-
 			Eventually(func() []*cf.Instance {
 				return getRunningInstances(lrpGUID, lrpVersion)
 			}).Should(ConsistOf(
@@ -380,38 +320,51 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 		})
 
 		When("the app does not exist", func() {
+			BeforeEach(func() {
+				lrpGUID = "does-not-exist"
+			})
 			It("succeeds", func() {
-				resp, err := stopLRPInstance("does-not-exist", lrpVersion, 1)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(resp.StatusCode).To(Equal(http.StatusOK))
+				Expect(stopErr).NotTo(HaveOccurred())
+				Expect(stopResponse.StatusCode).To(Equal(http.StatusOK))
 			})
 		})
 
 		When("the app instance does not exist", func() {
+			BeforeEach(func() {
+				instanceID = 99
+			})
+
 			It("should return 400", func() {
-				resp, err := stopLRPInstance(lrpGUID, lrpVersion, 99)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+				Expect(stopErr).NotTo(HaveOccurred())
+				Expect(stopResponse.StatusCode).To(Equal(http.StatusBadRequest))
 			})
 		})
 
 		When("the app instance is a negative number", func() {
+			BeforeEach(func() {
+				instanceID = -1
+			})
+
 			It("should return 400", func() {
-				resp, err := stopLRPInstance(lrpGUID, lrpVersion, -1)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+				Expect(stopErr).NotTo(HaveOccurred())
+				Expect(stopResponse.StatusCode).To(Equal(http.StatusBadRequest))
 			})
 		})
 	})
 
 	Describe("Get instances", func() {
+		var (
+			getInstanceErr       error
+			getInstancesResponse *cf.GetInstancesResponse
+		)
+
 		JustBeforeEach(func() {
 			desireAppWithInstances(lrpGUID, lrpVersion, namespace, 3)
+			getInstancesResponse, getInstanceErr = getInstances(lrpGUID, lrpVersion)
 		})
 
-		AfterEach(func() {
-			_, err := stopLRP(lrpGUID, lrpVersion)
-			Expect(err).NotTo(HaveOccurred())
+		It("succeeds", func() {
+			Expect(getInstanceErr).NotTo(HaveOccurred())
 		})
 
 		It("returns the app instances", func() {
@@ -442,10 +395,13 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 		})
 
 		When("the app doesn't exist", func() {
+			JustBeforeEach(func() {
+				getInstancesResponse, getInstanceErr = getInstances("does-not-exist", lrpVersion)
+			})
+
 			It("returns a 404", func() {
-				resp, err := getInstances("does-not-exist", lrpVersion)
-				Expect(err).To(MatchError("404 Not Found"))
-				Expect(resp.Error).To(Equal("failed to get instances for app: not found"))
+				Expect(getInstanceErr).To(MatchError("404 Not Found"))
+				Expect(getInstancesResponse.Error).To(Equal("failed to get instances for app: not found"))
 			})
 		})
 	})
@@ -498,14 +454,4 @@ func getRunningInstances(appGUID, version string) []*cf.Instance {
 
 func processGUID(guid, version string) string {
 	return fmt.Sprintf("%s-%s", guid, version)
-}
-
-func getStatefulSet(guid, version string) *appsv1.StatefulSet {
-	statefulSets, err := fixture.Clientset.AppsV1().StatefulSets("").List(context.Background(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, guid, stset.LabelVersion, version),
-	})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(statefulSets.Items).To(HaveLen(1))
-
-	return &statefulSets.Items[0]
 }

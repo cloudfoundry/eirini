@@ -2,6 +2,7 @@ package eirini_controller_test
 
 import (
 	"context"
+	"fmt"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
@@ -23,6 +24,12 @@ var _ = Describe("App", func() {
 		lrpVersion string
 		lrp        *eiriniv1.LRP
 	)
+
+	isStatefulSetReady := func() bool {
+		stset := integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+
+		return stset.Status.ReadyReplicas == *stset.Spec.Replicas
+	}
 
 	BeforeEach(func() {
 		lrpName = tests.GenerateGUID()
@@ -63,9 +70,7 @@ var _ = Describe("App", func() {
 				return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 			}).ShouldNot(BeNil())
 
-			Eventually(func() bool {
-				return getPodReadiness(lrpGUID, lrpVersion)
-			}).Should(BeTrue(), "LRP Pod not ready")
+			Eventually(isStatefulSetReady).Should(BeTrue(), "LRP Statefulset not ready")
 
 			return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 		}
@@ -262,6 +267,45 @@ var _ = Describe("App", func() {
 			Eventually(func() *appsv1.StatefulSet {
 				return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
 			}).Should(BeNil())
+		})
+	})
+
+	Describe("App status", func() {
+		getLRPReplicas := func() int {
+			l, err := fixture.EiriniClientset.
+				EiriniV1().
+				LRPs(fixture.Namespace).
+				Get(context.Background(), lrpName, metav1.GetOptions{})
+
+			Expect(err).NotTo(HaveOccurred())
+
+			return int(l.Status.Replicas)
+		}
+
+		When("an app instance becomes unready", func() {
+			JustBeforeEach(func() {
+				_, err := fixture.EiriniClientset.
+					EiriniV1().
+					LRPs(fixture.Namespace).
+					Create(context.Background(), lrp, metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(getLRPReplicas).Should(Equal(1))
+
+				appListOpts := metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
+				}
+				Expect(fixture.Clientset.
+					CoreV1().
+					Pods(fixture.Namespace).
+					DeleteCollection(context.Background(), metav1.DeleteOptions{}, appListOpts),
+				).To(Succeed())
+			})
+
+			It("is reflected in the LRP status replicas", func() {
+				Eventually(getLRPReplicas).Should(Equal(0))
+				Eventually(getLRPReplicas).Should(Equal(1))
+			})
 		})
 	})
 })

@@ -1,21 +1,17 @@
 package eirini_controller_test
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"testing"
 	"time"
 
 	"code.cloudfoundry.org/eirini"
-	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
@@ -70,27 +66,3 @@ var _ = AfterEach(func() {
 
 	fixture.TearDown()
 })
-
-func getPodReadiness(lrpGUID, lrpVersion string) bool {
-	pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
-	})
-	Expect(err).NotTo(HaveOccurred())
-
-	if len(pods.Items) != 1 {
-		return false
-	}
-
-	containerStatuses := pods.Items[0].Status.ContainerStatuses
-	if len(containerStatuses) == 0 {
-		return false
-	}
-
-	for _, cs := range containerStatuses {
-		if cs.Ready == false {
-			return false
-		}
-	}
-
-	return true
-}

@@ -636,9 +636,41 @@ fi;`,
 			})
 
 			It("does not list LRPs in foreign namespaces", func() {
-				listedLRPs, err := extraNSClient.List(context.Background())
+				extraListedLRPs, err := extraNSClient.List(context.Background())
 				Expect(err).NotTo(HaveOccurred())
-				Expect(listedLRPs).To(BeEmpty())
+				Expect(extraListedLRPs).To(BeEmpty())
+			})
+		})
+
+		When("non-eirini statefulSets exist", func() {
+			var otherStatefulSetName string
+
+			BeforeEach(func() {
+				otherStatefulSetName = tests.GenerateGUID()
+
+				_, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).Create(context.Background(), &appsv1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: otherStatefulSetName,
+					},
+					Spec: appsv1.StatefulSetSpec{
+						Template: corev1.PodTemplateSpec{
+							ObjectMeta: metav1.ObjectMeta{
+								Labels: map[string]string{"foo": "bar"},
+							},
+						},
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{"foo": "bar"},
+						},
+					},
+				}, metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("does not list them", func() {
+				for _, lrp := range listedLRPs {
+					Expect(lrp.GUID).NotTo(BeEmpty(), fmt.Sprintf("%#v does not look like an LRP", lrp))
+					Expect(lrp.Version).NotTo(BeEmpty(), fmt.Sprintf("%#v does not look like an LRP", lrp))
+				}
 			})
 		})
 	})

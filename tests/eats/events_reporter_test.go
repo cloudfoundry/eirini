@@ -38,11 +38,6 @@ var _ = Describe("EventsReporter [needs-logs-for: eirini-api, eirini-event-repor
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		_, err := stopLRP(guid, version)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
 	When("the app starts successfully", func() {
 		BeforeEach(func() {
 			statusCode := desireLRP(cf.DesireLRPRequest{
@@ -62,10 +57,6 @@ var _ = Describe("EventsReporter [needs-logs-for: eirini-api, eirini-event-repor
 			Expect(statusCode).To(Equal(http.StatusAccepted))
 
 			appServiceName = exposeLRP(fixture.Namespace, guid, 8080, "/")
-		})
-
-		AfterEach(func() {
-			unexposeLRP(fixture.Namespace, appServiceName)
 		})
 
 		It("does not report a crash event for running apps", func() {

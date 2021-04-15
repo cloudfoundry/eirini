@@ -114,30 +114,6 @@ func getLRPs() ([]cf.DesiredLRPSchedulingInfo, error) {
 	return desiredLRPSchedulingInfoResponse.DesiredLrpSchedulingInfos, nil
 }
 
-func getPodReadiness(lrpGUID, lrpVersion string) bool {
-	pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
-	})
-	Expect(err).NotTo(HaveOccurred())
-
-	if len(pods.Items) != 1 {
-		return false
-	}
-
-	containerStatuses := pods.Items[0].Status.ContainerStatuses
-	if len(containerStatuses) == 0 {
-		return false
-	}
-
-	for _, cs := range containerStatuses {
-		if cs.Ready == false {
-			return false
-		}
-	}
-
-	return true
-}
-
 func getInstances(processGUID, versionGUID string) (*cf.GetInstancesResponse, error) {
 	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps/%s/%s/instances", tests.GetEiriniAddress(), processGUID, versionGUID), nil)
 	if err != nil {
@@ -291,8 +267,4 @@ func pingLRPFn(namespace, serviceName string, appPort int32, pingPath string) fu
 
 		return string(content), nil
 	}
-}
-
-func unexposeLRP(namespace, serviceName string) {
-	ExpectWithOffset(1, fixture.Clientset.CoreV1().Services(namespace).Delete(context.Background(), serviceName, metav1.DeleteOptions{})).To(Succeed())
 }

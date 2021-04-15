@@ -61,23 +61,6 @@ var _ = Describe("PodCrashEvents [needs-logs-for: eirini-api, eirini-controller]
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		AfterEach(func() {
-			backgroundPropagation := metav1.DeletePropagationBackground
-
-			err := fixture.EiriniClientset.
-				EiriniV1().
-				LRPs(fixture.Namespace).
-				DeleteCollection(context.Background(),
-					metav1.DeleteOptions{
-						PropagationPolicy: &backgroundPropagation,
-					},
-					metav1.ListOptions{
-						FieldSelector: "metadata.name=" + lrpName,
-					},
-				)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
 		It("creates crash events", func() {
 			eventsClient := fixture.Clientset.CoreV1().Events(fixture.Namespace)
 			getEvents := func() []corev1.Event {
