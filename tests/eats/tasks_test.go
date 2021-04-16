@@ -1,30 +1,29 @@
 package eats_test
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 
-	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	batchv1 "k8s.io/api/batch/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Tasks [needs-logs-for: eirini-api, eirini-task-reporter]", func() {
 	var (
 		guid               string
 		completionCallback string
+		taskServiceName    string
+		port               int32
 	)
 
 	BeforeEach(func() {
 		completionCallback = "http://example.com/"
 		guid = tests.GenerateGUID()
+		port = 8080
 	})
 
 	JustBeforeEach(func() {
@@ -34,22 +33,16 @@ var _ = Describe("Tasks [needs-logs-for: eirini-api, eirini-task-reporter]", fun
 			CompletionCallback: completionCallback,
 			Lifecycle: cf.Lifecycle{
 				DockerLifecycle: &cf.DockerLifecycle{
-					Image: "eirini/busybox",
-					Command: []string{
-						"/bin/sleep",
-						"0.2",
-					},
+					Image: "eirini/dorini",
 				},
 			},
 		})
+
+		taskServiceName = exposeAsService(fixture.Namespace, guid, port)
 	})
 
-	Describe("Running a task", func() {
-		It("creates a job", func() {
-			job := getJob(guid)
-			Expect(job).NotTo(BeNil())
-			Expect(job.Labels[jobs.LabelGUID]).To(Equal(guid))
-		})
+	It("runs the task", func() {
+		Eventually(requestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
 	})
 
 	Describe("Getting a task", func() {
@@ -67,9 +60,13 @@ var _ = Describe("Tasks [needs-logs-for: eirini-api, eirini-task-reporter]", fun
 	})
 
 	Describe("Cancelling a task", func() {
-		It("deletes the job", func() {
-			Expect(cancelTask(guid)).To(Succeed())
-			Expect(getJob(guid)).To(BeNil())
+		It("kills the task", func() {
+			// better to check Task status here, once that is available
+			Eventually(func() error {
+				_, err := requestServiceFn(fixture.Namespace, taskServiceName, port, "/")()
+
+				return err
+			}, "20s").Should(HaveOccurred())
 		})
 
 		It("returns an error on cancelling a non-existent task", func() {
@@ -153,19 +150,4 @@ func cancelTask(guid string) error {
 	defer response.Body.Close()
 
 	return nil
-}
-
-func getJob(taskGUID string) *batchv1.Job {
-	jobs, err := fixture.Clientset.BatchV1().Jobs("").List(context.Background(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", jobs.LabelGUID, taskGUID),
-	})
-	Expect(err).NotTo(HaveOccurred())
-
-	if len(jobs.Items) == 0 {
-		return nil
-	}
-
-	Expect(jobs.Items).To(HaveLen(1))
-
-	return &jobs.Items[0]
 }

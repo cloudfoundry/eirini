@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -20,8 +19,6 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
-	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,11 +28,8 @@ var _ = Describe("TaskReporter", func() {
 	var (
 		cloudControllerServer *ghttp.Server
 		handlers              []http.HandlerFunc
-		configFile            string
-		session               *gexec.Session
 		taskDesirer           jobs.Desirer
 		task                  *api.Task
-		config                *eirini.TaskReporterConfig
 		ttlSeconds            int
 		taskSubmittedAt       time.Time
 		ctx                   context.Context
@@ -101,17 +95,11 @@ var _ = Describe("TaskReporter", func() {
 	JustBeforeEach(func() {
 		cloudControllerServer.AppendHandlers(handlers...)
 
-		session, configFile = eiriniBins.TaskReporter.Run(config, envVarOverrides...)
-		Eventually(session).Should(gbytes.Say("Starting workers"))
 		Expect(taskDesirer.Desire(ctx, fixture.Namespace, task)).To(Succeed())
 		taskSubmittedAt = time.Now()
 	})
 
 	AfterEach(func() {
-		if session != nil {
-			session.Kill()
-		}
-		Expect(os.Remove(configFile)).To(Succeed())
 		cloudControllerServer.Close()
 	})
 
@@ -205,6 +193,10 @@ var _ = Describe("TaskReporter", func() {
 		It("tries for a total of [callbackRetryLimit] times", func() {
 			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(config.CompletionCallbackRetryLimit))
 			Consistently(cloudControllerServer.ReceivedRequests, "2s").Should(HaveLen(config.CompletionCallbackRetryLimit))
+		})
+
+		It("eventually deletes the job", func() {
+			Eventually(getTaskJobsFn(task.GUID)).Should(BeEmpty())
 		})
 	})
 

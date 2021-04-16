@@ -33,7 +33,7 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 
 		JustBeforeEach(func() {
 			desireRespStatusCode = desireApp(lrpGUID, lrpVersion, namespace)
-			appServiceName = exposeLRP(fixture.Namespace, lrpGUID, 8080)
+			appServiceName = exposeAsService(fixture.Namespace, lrpGUID, 8080)
 		})
 
 		AfterEach(func() {
@@ -46,7 +46,7 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 		})
 
 		It("runs the application", func() {
-			Eventually(pingLRPFn(fixture.Namespace, appServiceName, 8080, "/")).Should(ContainSubstring("Hi, I'm not Dora!"))
+			Eventually(requestServiceFn(fixture.Namespace, appServiceName, 8080, "/")).Should(ContainSubstring("Hi, I'm not Dora!"))
 		})
 
 		When("the app already exist", func() {
@@ -80,9 +80,9 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 				}
 
 				Expect(desireLRP(lrp)).To(Equal(http.StatusAccepted))
-				appServiceName = exposeLRP(fixture.Namespace, privateImageAppGUID, 8080)
+				appServiceName = exposeAsService(fixture.Namespace, privateImageAppGUID, 8080)
 
-				Eventually(pingLRPFn(fixture.Namespace, appServiceName, 8080, "/")).Should(ContainSubstring("Hi, I'm not Dora!"))
+				Eventually(requestServiceFn(fixture.Namespace, appServiceName, 8080, "/")).Should(ContainSubstring("Hi, I'm not Dora!"))
 			})
 		})
 	})

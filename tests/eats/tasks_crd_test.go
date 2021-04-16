@@ -46,18 +46,6 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 		}
 	})
 
-	AfterEach(func() {
-		err := fixture.EiriniClientset.
-			EiriniV1().
-			Tasks(fixture.Namespace).
-			DeleteCollection(
-				context.Background(),
-				metav1.DeleteOptions{},
-				metav1.ListOptions{FieldSelector: "metadata.name=" + taskName},
-			)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
 	Describe("Creating a Task CRD", func() {
 		JustBeforeEach(func() {
 			_, err := fixture.EiriniClientset.
@@ -67,11 +55,11 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 
-			taskServiceName = exposeLRP(fixture.Namespace, taskGUID, port)
+			taskServiceName = exposeAsService(fixture.Namespace, taskGUID, port)
 		})
 
 		It("runs the task", func() {
-			Eventually(pingLRPFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
+			Eventually(requestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
 		})
 
 		When("the task image lives in a private registry", func() {
@@ -85,7 +73,7 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 			})
 
 			It("runs the task", func() {
-				Eventually(pingLRPFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
+				Eventually(requestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
 			})
 		})
 	})
@@ -98,8 +86,8 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 				Create(context.Background(), task, metav1.CreateOptions{})
 
 			Expect(err).NotTo(HaveOccurred())
-			taskServiceName = exposeLRP(fixture.Namespace, taskGUID, port)
-			Eventually(pingLRPFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
+			taskServiceName = exposeAsService(fixture.Namespace, taskGUID, port)
+			Eventually(requestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
 		})
 
 		JustBeforeEach(func() {
@@ -110,10 +98,10 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("kills the job container", func() {
+		It("kills the task", func() {
 			// better to check Task status here, once that is available
 			Eventually(func() error {
-				_, err := pingLRPFn(fixture.Namespace, taskServiceName, port, "/")()
+				_, err := requestServiceFn(fixture.Namespace, taskServiceName, port, "/")()
 
 				return err
 			}, "20s").Should(HaveOccurred())

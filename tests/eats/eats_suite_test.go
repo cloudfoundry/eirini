@@ -200,7 +200,7 @@ func desireTask(taskRequest cf.TaskRequest) {
 	Expect(response).To(HaveHTTPStatus(http.StatusAccepted))
 }
 
-func exposeLRP(namespace, guid string, appPort int32, pingPath ...string) string {
+func exposeAsService(namespace, guid string, appPort int32, pingPath ...string) string {
 	service, err := fixture.Clientset.CoreV1().Services(namespace).Create(context.Background(), &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "service-" + guid,
@@ -220,7 +220,7 @@ func exposeLRP(namespace, guid string, appPort int32, pingPath ...string) string
 
 	if len(pingPath) > 0 {
 		EventuallyWithOffset(1, func() error {
-			_, err := pingLRPFn(namespace, service.Name, appPort, pingPath[0])()
+			_, err := requestServiceFn(namespace, service.Name, appPort, pingPath[0])()
 
 			return err
 		}).Should(Succeed())
@@ -229,7 +229,7 @@ func exposeLRP(namespace, guid string, appPort int32, pingPath ...string) string
 	return service.Name
 }
 
-func pingLRPFn(namespace, serviceName string, appPort int32, pingPath string) func() (string, error) {
+func requestServiceFn(namespace, serviceName string, port int32, pingPath string) func() (string, error) {
 	client := &http.Client{
 		Timeout: time.Second,
 		Transport: &http.Transport{
@@ -246,7 +246,7 @@ func pingLRPFn(namespace, serviceName string, appPort int32, pingPath string) fu
 
 		pingURL := &url.URL{
 			Scheme: "http",
-			Host:   fmt.Sprintf("%s.%s:%d", serviceName, namespace, appPort),
+			Host:   fmt.Sprintf("%s.%s:%d", serviceName, namespace, port),
 			Path:   pingPath,
 		}
 
