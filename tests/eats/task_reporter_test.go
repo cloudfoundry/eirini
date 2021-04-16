@@ -59,7 +59,7 @@ var _ = Describe("Tasks Reporter [needs-logs-for: eirini-api, eirini-task-report
 
 		// Make sure the task eventually completes
 		time.AfterFunc(10*time.Second, func() {
-			requestServiceFn(fixture.Namespace, taskServiceName, port, "/exit")()
+			_, _ = requestServiceFn(fixture.Namespace, taskServiceName, port, "/exit")()
 		})
 	})
 
