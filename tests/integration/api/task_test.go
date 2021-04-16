@@ -36,7 +36,7 @@ var _ = Describe("Tasks", func() {
 		body, err := json.Marshal(request)
 		Expect(err).NotTo(HaveOccurred())
 
-		httpRequest, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", url, request.GUID), bytes.NewReader(body))
+		httpRequest, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, request.GUID), bytes.NewReader(body))
 		Expect(err).NotTo(HaveOccurred())
 
 		response, err = httpClient.Do(httpRequest)
@@ -292,7 +292,7 @@ var _ = Describe("Tasks", func() {
 			}).Should(HaveLen(1))
 
 			// Cancel the task
-			httpRequest, err := http.NewRequest("DELETE", fmt.Sprintf("%s/tasks/%s", url, request.GUID), nil)
+			httpRequest, err := http.NewRequest("DELETE", fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, request.GUID), nil)
 			Expect(err).NotTo(HaveOccurred())
 			resp, err := httpClient.Do(httpRequest)
 			Expect(err).NotTo(HaveOccurred())
@@ -370,7 +370,7 @@ var _ = Describe("Tasks", func() {
 		})
 
 		It("returns all tasks", func() {
-			httpRequest, err := http.NewRequest("GET", fmt.Sprintf("%s/tasks", url), nil)
+			httpRequest, err := http.NewRequest("GET", fmt.Sprintf("%s/tasks", eiriniAPIUrl), nil)
 			Expect(err).NotTo(HaveOccurred())
 			resp, err := httpClient.Do(httpRequest)
 			Expect(err).NotTo(HaveOccurred())

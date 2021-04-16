@@ -24,7 +24,7 @@ var _ = Describe("ListAppTest", func() {
 	})
 
 	It("will list apps", func() {
-		apps := listLRPs(httpClient, url)
+		apps := listLRPs(httpClient, eiriniAPIUrl)
 
 		Expect(apps).To(HaveLen(1))
 		Expect(apps[0].GUID).To(Equal(configuredNamespaceAppGUID))
@@ -47,7 +47,7 @@ func desireLRPWithGUID(guid, namespace string) {
 		NumInstances: 1,
 	}
 
-	response := desireLRP(httpClient, url, request)
+	response := desireLRP(httpClient, eiriniAPIUrl, request)
 	defer response.Body.Close()
 	Expect(response.StatusCode).To(Equal(http.StatusAccepted))
 }

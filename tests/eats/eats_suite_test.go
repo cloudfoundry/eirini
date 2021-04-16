@@ -2,23 +2,17 @@ package eats_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"net/url"
 	"testing"
 	"time"
 
-	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
@@ -198,73 +192,4 @@ func desireTask(taskRequest cf.TaskRequest) {
 	defer response.Body.Close()
 
 	Expect(response).To(HaveHTTPStatus(http.StatusAccepted))
-}
-
-func exposeAsService(namespace, guid string, appPort int32, pingPath ...string) string {
-	service, err := fixture.Clientset.CoreV1().Services(namespace).Create(context.Background(), &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "service-" + guid,
-		},
-		Spec: corev1.ServiceSpec{
-			Ports: []corev1.ServicePort{
-				{
-					Port: appPort,
-				},
-			},
-			Selector: map[string]string{
-				stset.LabelGUID: guid,
-			},
-		},
-	}, metav1.CreateOptions{})
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-	if len(pingPath) > 0 {
-		EventuallyWithOffset(1, func() error {
-			_, err := requestServiceFn(namespace, service.Name, appPort, pingPath[0])()
-
-			return err
-		}).Should(Succeed())
-	}
-
-	return service.Name
-}
-
-func requestServiceFn(namespace, serviceName string, port int32, pingPath string) func() (string, error) {
-	client := &http.Client{
-		Timeout: time.Second,
-		Transport: &http.Transport{
-			DisableKeepAlives: true,
-		},
-	}
-
-	return func() (_ string, err error) {
-		defer func() {
-			if err != nil {
-				fmt.Fprintf(GinkgoWriter, "pingLRPFn error: %v", err)
-			}
-		}()
-
-		pingURL := &url.URL{
-			Scheme: "http",
-			Host:   fmt.Sprintf("%s.%s:%d", serviceName, namespace, port),
-			Path:   pingPath,
-		}
-
-		resp, err := client.Get(pingURL.String())
-		if err != nil {
-			return "", err
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("request failed: %s", resp.Status)
-		}
-
-		content, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return "", err
-		}
-
-		return string(content), nil
-	}
 }

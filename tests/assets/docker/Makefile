@@ -1,4 +1,4 @@
-PUBLIC_IMAGES = custom-port dorini busybox
+PUBLIC_IMAGES = custom-port dorini busybox busybox-root
 PRIVATE_IMAGES = notdora
 ALL_IMAGES = $(PUBLIC_IMAGES) $(PRIVATE_IMAGES)
 
@@ -26,6 +26,12 @@ $(PRIVATE_IMAGES):
 push:
 	$(foreach img, $(PUBLIC_IMAGES), docker push eirini/$(img):$(TAG);)
 	$(foreach img, $(PRIVATE_IMAGES), docker push eiriniuser/$(img):$(TAG);)
+
+push-%:
+	docker push eirini/$*:$(TAG)
+
+push-notdora:
+	docker push eiriniuser/notdora:$(TAG)
 
 clean:
 	docker container prune --force

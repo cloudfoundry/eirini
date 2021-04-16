@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -16,6 +17,7 @@ func main() {
 
 	http.HandleFunc("/", HelloHandler)
 	http.HandleFunc("/env", EnvHandler)
+	http.HandleFunc("/ls", LsHandler)
 	http.HandleFunc("/exit", ExitHandler)
 
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
@@ -30,6 +32,28 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 func EnvHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, strings.Join(os.Environ(), "\n"))
+}
+
+func LsHandler(w http.ResponseWriter, r *http.Request) {
+	paths := r.URL.Query()["path"]
+	if len(paths) != 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "one path value expected, found %d in %v", len(paths), paths)
+
+		return
+	}
+
+	files, err := ioutil.ReadDir(paths[0])
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "could not list %s: %s", paths[0], err.Error())
+
+		return
+	}
+
+	for _, file := range files {
+		fmt.Fprintln(w, file.Name())
+	}
 }
 
 func ExitHandler(w http.ResponseWriter, r *http.Request) {

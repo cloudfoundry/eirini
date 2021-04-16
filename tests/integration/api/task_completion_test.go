@@ -56,7 +56,7 @@ var _ = Describe("Tasks completion", func() {
 			},
 			CompletionCallback: "http://example.com",
 		}
-		response, err := httpDo("POST", fmt.Sprintf("%s/tasks/%s", url, taskGUID), taskRequest)
+		response, err := httpDo("POST", fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, taskGUID), taskRequest)
 		Expect(err).NotTo(HaveOccurred())
 		defer response.Body.Close()
 	})
@@ -81,7 +81,7 @@ var _ = Describe("Tasks completion", func() {
 })
 
 func listTasks() ([]cf.TaskResponse, error) {
-	response, err := httpDo("GET", fmt.Sprintf("%s/tasks", url), nil)
+	response, err := httpDo("GET", fmt.Sprintf("%s/tasks", eiriniAPIUrl), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func listTasks() ([]cf.TaskResponse, error) {
 }
 
 func getTask(guid string) (cf.TaskResponse, error) {
-	response, err := httpDo("GET", fmt.Sprintf("%s/tasks/%s", url, guid), nil)
+	response, err := httpDo("GET", fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, guid), nil)
 	if err != nil {
 		return cf.TaskResponse{}, err
 	}

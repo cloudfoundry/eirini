@@ -38,11 +38,13 @@ var _ = Describe("Tasks [needs-logs-for: eirini-api, eirini-task-reporter]", fun
 			},
 		})
 
-		taskServiceName = exposeAsService(fixture.Namespace, guid, port)
+		taskServiceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, guid, port)
 	})
 
-	It("runs the task", func() {
-		Eventually(requestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
+	Describe("Desiring a task", func() {
+		It("runs the task", func() {
+			Eventually(tests.RequestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
+		})
 	})
 
 	Describe("Getting a task", func() {
@@ -63,7 +65,7 @@ var _ = Describe("Tasks [needs-logs-for: eirini-api, eirini-task-reporter]", fun
 		It("kills the task", func() {
 			// better to check Task status here, once that is available
 			Eventually(func() error {
-				_, err := requestServiceFn(fixture.Namespace, taskServiceName, port, "/")()
+				_, err := tests.RequestServiceFn(fixture.Namespace, taskServiceName, port, "/")()
 
 				return err
 			}, "20s").Should(HaveOccurred())

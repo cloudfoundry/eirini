@@ -130,7 +130,7 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 				LRPs(fixture.Namespace).
 				Create(context.Background(), lrp, metav1.CreateOptions{})
 
-			appServiceName = exposeAsService(fixture.Namespace, lrpGUID, 8080)
+			appServiceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, lrpGUID, 8080)
 		})
 
 		It("succeeds", func() {
@@ -138,7 +138,7 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 		})
 
 		It("starts the app", func() {
-			Eventually(requestServiceFn(fixture.Namespace, appServiceName, 8080, "/")).Should(ContainSubstring("Hi, I'm not Dora!"))
+			Eventually(tests.RequestServiceFn(fixture.Namespace, appServiceName, 8080, "/")).Should(ContainSubstring("Hi, I'm not Dora!"))
 		})
 
 		It("updates the CRD status", func() {
@@ -284,7 +284,7 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 				Create(context.Background(), lrp, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			appServiceName = exposeAsService(fixture.Namespace, lrpGUID, 8080, "/")
+			appServiceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, lrpGUID, 8080, "/")
 		})
 
 		JustBeforeEach(func() {
@@ -297,13 +297,13 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 
 		It("should stop", func() {
 			Eventually(func() error {
-				_, err := requestServiceFn(fixture.Namespace, appServiceName, 8080, "/")()
+				_, err := tests.RequestServiceFn(fixture.Namespace, appServiceName, 8080, "/")()
 
 				return err
 			}).Should(HaveOccurred())
 
 			Consistently(func() error {
-				_, err := requestServiceFn(fixture.Namespace, appServiceName, 8080, "/")()
+				_, err := tests.RequestServiceFn(fixture.Namespace, appServiceName, 8080, "/")()
 
 				return err
 			}, "2s").Should(HaveOccurred())

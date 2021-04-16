@@ -3,43 +3,56 @@ package api_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
+	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Desire App", func() {
+var _ = FDescribe("Desire App", func() {
 	var (
-		body     string
+		lrp      cf.DesireLRPRequest
 		response *http.Response
 	)
 
+	isStatefulSetReady := func() bool {
+		stset := integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrp.GUID, lrp.Version)
+
+		return stset.Status.ReadyReplicas == *stset.Spec.Replicas
+	}
+
 	BeforeEach(func() {
-		body = fmt.Sprintf(`{
-			"guid": "the-app-guid",
-			"version": "0.0.0",
-			"namespace": "%s",
-			"ports" : [8080],
-			"disk_mb": 512,
-			"lifecycle": {
-				"docker_lifecycle": {
-				"image": "eirini/busybox",
-				"command": ["/bin/sleep", "100"]
-				}
+		lrp = cf.DesireLRPRequest{
+			GUID:         "the-app-guid",
+			Version:      "0.0.0",
+			Namespace:    fixture.Namespace,
+			Ports:        []int32{8080},
+			NumInstances: 1,
+			DiskMB:       512,
+			Lifecycle: cf.Lifecycle{
+				DockerLifecycle: &cf.DockerLifecycle{
+					Image:   "eirini/busybox",
+					Command: []string{"/bin/sleep", "100"},
+				},
 			},
-			"instances": 1
-		}`, fixture.Namespace)
+		}
 	})
 
 	JustBeforeEach(func() {
-		desireAppReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/the-app-guid", url), bytes.NewReader([]byte(body)))
+		lrpRequestBytes, err := json.Marshal(lrp)
 		Expect(err).NotTo(HaveOccurred())
+
+		desireAppReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/the-app-guid", eiriniAPIUrl), bytes.NewReader(lrpRequestBytes))
+		Expect(err).NotTo(HaveOccurred())
+
 		response, err = httpClient.Do(desireAppReq)
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -48,22 +61,13 @@ var _ = Describe("Desire App", func() {
 		Expect(response.StatusCode).To(Equal(http.StatusAccepted))
 	})
 
-	When("disk_mb isn't specified", func() {
+	It("successfully runs the lrp", func() {
+		Eventually(isStatefulSetReady).Should(BeTrue())
+	})
+
+	When("disk_mb is specified as 0", func() {
 		BeforeEach(func() {
-			body = `{
-			"guid": "the-app-guid",
-			"version": "0.0.0",
-			"ports" : [8080],
-		  "lifecycle": {
-				"docker_lifecycle": {
-				  "image": "foo",
-					"command": ["bar", "baz"]
-				}
-			},
-			"user_defined_annotations": {
-			  "prometheus.io/scrape": "yes, please"
-			}
-		}`
+			lrp.DiskMB = 0
 		})
 
 		It("should return a 400 Bad Request HTTP code", func() {
@@ -71,21 +75,9 @@ var _ = Describe("Desire App", func() {
 		})
 	})
 
-	When("no app namespaces is explicitly requested", func() {
+	When("no app namespace is explicitly requested", func() {
 		BeforeEach(func() {
-			body = `{
-					"guid": "the-app-guid",
-					"version": "0.0.0",
-					"ports" : [8080],
-					"disk_mb": 512,
-					"lifecycle": {
-						"docker_lifecycle": {
-						"image": "eirini/busybox",
-						"command": ["/bin/sleep", "100"]
-						}
-					},
-					"instances": 1
-				}`
+			lrp.Namespace = ""
 		})
 
 		It("creates create the app in the default namespace", func() {
@@ -101,19 +93,7 @@ var _ = Describe("Desire App", func() {
 		BeforeEach(func() {
 			generateRegistryCredsSecret("registry-secret", "https://index.docker.io/v1/", "eiriniuser", tests.GetEiriniDockerHubPassword())
 			apiConfig.RegistrySecretName = "registry-secret"
-			body = `{
-					"guid": "the-app-guid",
-					"version": "0.0.0",
-					"ports" : [8080],
-					"disk_mb": 512,
-					"lifecycle": {
-						"docker_lifecycle": {
-						"image": "eiriniuser/notdora",
-						"command": ["/bin/sleep", "100"]
-						}
-					},
-					"instances": 1
-				}`
+			lrp.Lifecycle.DockerLifecycle.Image = "eiriniuser/notdora"
 		})
 
 		It("should return a 202 Accepted HTTP code", func() {
@@ -132,43 +112,33 @@ var _ = Describe("Desire App", func() {
 
 	When("AllowRunImageAsRoot is true", func() {
 		BeforeEach(func() {
+			lrp.Lifecycle.DockerLifecycle.Image = "eirini/busybox-root"
 			apiConfig.AllowRunImageAsRoot = true
 		})
 
-		It("doesn't set `runAsNonRoot` in the PodSecurityContext", func() {
-			statefulsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(statefulsets.Items[0].Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(BeNil())
+		It("successfully runs the lrp", func() {
+			Eventually(isStatefulSetReady).Should(BeTrue())
 		})
 	})
 
 	Describe("automounting serviceacccount token", func() {
 		const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
-		var podMountPaths []string
+		var serviceName string
 
-		JustBeforeEach(func() {
-			Eventually(func() ([]corev1.Pod, error) {
-				pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-				if err != nil {
-					return nil, err
-				}
-
-				return pods.Items, nil
-			}).ShouldNot(BeEmpty())
-
-			pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(pods.Items).To(HaveLen(1))
-
-			podMountPaths = []string{}
-			for _, podMount := range pods.Items[0].Spec.Containers[0].VolumeMounts {
-				podMountPaths = append(podMountPaths, podMount.MountPath)
+		BeforeEach(func() {
+			lrp.Lifecycle.DockerLifecycle = &cf.DockerLifecycle{
+				Image: "eirini/dorini",
 			}
 		})
 
+		JustBeforeEach(func() {
+			serviceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, lrp.GUID, 8080, "/")
+		})
+
 		It("does not mount the service account token", func() {
-			Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
+			result, err := tests.RequestServiceFn(fixture.Namespace, serviceName, 8080, fmt.Sprintf("/ls?path=%s", serviceAccountTokenMountPath))()
+			Expect(err).To(MatchError(ContainSubstring("Internal Server Error")))
+			Expect(result).To(ContainSubstring("no such file or directory"))
 		})
 
 		When("unsafe_allow_automount_service_account_token is set", func() {
@@ -177,7 +147,8 @@ var _ = Describe("Desire App", func() {
 			})
 
 			It("mounts the service account token (because this is how K8S works by default)", func() {
-				Expect(podMountPaths).To(ContainElement(serviceAccountTokenMountPath))
+				_, err := tests.RequestServiceFn(fixture.Namespace, serviceName, 8080, fmt.Sprintf("/ls?path=%s", serviceAccountTokenMountPath))()
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			When("the app service account has its automountServiceAccountToken set to false", func() {
@@ -196,7 +167,9 @@ var _ = Describe("Desire App", func() {
 				})
 
 				It("does not mount the service account token", func() {
-					Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
+					result, err := tests.RequestServiceFn(fixture.Namespace, serviceName, 8080, fmt.Sprintf("/ls?path=%s", serviceAccountTokenMountPath))()
+					Expect(err).To(MatchError(ContainSubstring("Internal Server Error")))
+					Expect(result).To(ContainSubstring("no such file or directory"))
 				})
 			})
 		})

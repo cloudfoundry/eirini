@@ -48,16 +48,19 @@ var _ = Describe("LRPClient", func() {
 	})
 
 	Describe("Desire", func() {
-		var statefulset *appsv1.StatefulSet
+		var desireErr error
 
 		JustBeforeEach(func() {
-			err := lrpClient.Desire(ctx, fixture.Namespace, lrp)
-			Expect(err).ToNot(HaveOccurred())
-			statefulset = getStatefulSetForLRP(lrp)
+			desireErr = lrpClient.Desire(ctx, fixture.Namespace, lrp)
+		})
+
+		It("succeeds", func() {
+			Expect(desireErr).NotTo(HaveOccurred())
 		})
 
 		// join all tests in a single with By()
 		It("should create a StatefulSet object", func() {
+			statefulset := getStatefulSetForLRP(lrp)
 			Expect(statefulset.Name).To(ContainSubstring(lrp.GUID))
 			Expect(statefulset.Namespace).To(Equal(fixture.Namespace))
 			Expect(statefulset.Spec.Template.Spec.ImagePullSecrets).To(ConsistOf(corev1.LocalObjectReference{Name: "registry-secret"}))
@@ -77,6 +80,7 @@ var _ = Describe("LRPClient", func() {
 		})
 
 		It("sets the latest migration index annotation", func() {
+			statefulset := getStatefulSetForLRP(lrp)
 			Expect(statefulset.Annotations).To(HaveKeyWithValue(shared.AnnotationLatestMigration, strconv.Itoa(123)))
 		})
 
@@ -104,6 +108,7 @@ var _ = Describe("LRPClient", func() {
 		})
 
 		It("should create a pod disruption budget for the lrp", func() {
+			statefulset := getStatefulSetForLRP(lrp)
 			pdb, err := podDisruptionBudgets().Get(context.Background(), statefulset.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pdb).NotTo(BeNil())
@@ -131,6 +136,7 @@ var _ = Describe("LRPClient", func() {
 			})
 
 			DescribeTable("sets appropriate annotations to statefulset", func(key, value string) {
+				statefulset := getStatefulSetForLRP(lrp)
 				Expect(statefulset.Annotations).To(HaveKeyWithValue(key, value))
 			},
 				Entry("SpaceName", stset.AnnotationSpaceName, "odin-space"),
@@ -140,6 +146,7 @@ var _ = Describe("LRPClient", func() {
 			)
 
 			It("sets appropriate labels to statefulset", func() {
+				statefulset := getStatefulSetForLRP(lrp)
 				Expect(statefulset.Labels).To(HaveKeyWithValue(stset.LabelGUID, lrp.LRPIdentifier.GUID))
 				Expect(statefulset.Labels).To(HaveKeyWithValue(stset.LabelVersion, lrp.LRPIdentifier.Version))
 				Expect(statefulset.Labels).To(HaveKeyWithValue(stset.LabelSourceType, "APP"))
@@ -182,6 +189,7 @@ var _ = Describe("LRPClient", func() {
 			})
 
 			It("creates a private registry secret", func() {
+				statefulset := getStatefulSetForLRP(lrp)
 				Expect(statefulset.Spec.Template.Spec.ImagePullSecrets).To(HaveLen(2))
 				privateRegistrySecretName := statefulset.Spec.Template.Spec.ImagePullSecrets[1].Name
 				secret, err := getSecret(fixture.Namespace, privateRegistrySecretName)
@@ -248,6 +256,7 @@ var _ = Describe("LRPClient", func() {
 			})
 
 			It("still creates a statefulset, with 0 replicas", func() {
+				statefulset := getStatefulSetForLRP(lrp)
 				Expect(statefulset.Name).To(ContainSubstring(lrp.GUID))
 				Expect(statefulset.Spec.Replicas).To(Equal(int32ptr(0)))
 			})
@@ -271,10 +280,12 @@ var _ = Describe("LRPClient", func() {
 			})
 
 			It("deploys the app with the sidcar container", func() {
+				statefulset := getStatefulSetForLRP(lrp)
 				Expect(statefulset.Spec.Template.Spec.Containers).To(HaveLen(2))
 			})
 
 			It("sets resource limits on the sidecar container", func() {
+				statefulset := getStatefulSetForLRP(lrp)
 				containers := statefulset.Spec.Template.Spec.Containers
 				for _, container := range containers {
 					if container.Name == "the-sidecar" {
@@ -302,6 +313,7 @@ var _ = Describe("LRPClient", func() {
 			})
 
 			It("sets them on the pod template", func() {
+				statefulset := getStatefulSetForLRP(lrp)
 				Expect(statefulset.Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "yes, please"))
 			})
 		})

@@ -34,7 +34,7 @@ var (
 	httpClient           *http.Client
 	eiriniConfigFilePath string
 	session              *gexec.Session
-	url                  string
+	eiriniAPIUrl         string
 	apiConfig            *eirini.APIConfig
 	apiEnvOverride       []string
 )
@@ -76,9 +76,9 @@ var _ = BeforeEach(func() {
 var _ = JustBeforeEach(func() {
 	session, eiriniConfigFilePath = eiriniBins.API.Run(apiConfig, apiEnvOverride...)
 
-	url = fmt.Sprintf("https://localhost:%d/", apiConfig.TLSPort)
+	eiriniAPIUrl = fmt.Sprintf("https://localhost:%d/", apiConfig.TLSPort)
 	Eventually(func() error {
-		_, getErr := httpClient.Get(url)
+		_, getErr := httpClient.Get(eiriniAPIUrl)
 
 		return getErr
 	}).Should(Succeed())

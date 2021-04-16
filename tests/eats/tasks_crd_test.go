@@ -55,11 +55,11 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 
-			taskServiceName = exposeAsService(fixture.Namespace, taskGUID, port)
+			taskServiceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, taskGUID, port)
 		})
 
 		It("runs the task", func() {
-			Eventually(requestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
+			Eventually(tests.RequestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
 		})
 
 		When("the task image lives in a private registry", func() {
@@ -73,7 +73,7 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 			})
 
 			It("runs the task", func() {
-				Eventually(requestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
+				Eventually(tests.RequestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
 			})
 		})
 	})
@@ -86,8 +86,8 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 				Create(context.Background(), task, metav1.CreateOptions{})
 
 			Expect(err).NotTo(HaveOccurred())
-			taskServiceName = exposeAsService(fixture.Namespace, taskGUID, port)
-			Eventually(requestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
+			taskServiceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, taskGUID, port)
+			Eventually(tests.RequestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
 		})
 
 		JustBeforeEach(func() {
@@ -101,7 +101,7 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 		It("kills the task", func() {
 			// better to check Task status here, once that is available
 			Eventually(func() error {
-				_, err := requestServiceFn(fixture.Namespace, taskServiceName, port, "/")()
+				_, err := tests.RequestServiceFn(fixture.Namespace, taskServiceName, port, "/")()
 
 				return err
 			}, "20s").Should(HaveOccurred())

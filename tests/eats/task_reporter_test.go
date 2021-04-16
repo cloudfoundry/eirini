@@ -55,11 +55,11 @@ var _ = Describe("Tasks Reporter [needs-logs-for: eirini-api, eirini-task-report
 
 		desireTask(taskRequest)
 
-		taskServiceName = exposeAsService(fixture.Namespace, taskGUID, port, "/")
+		taskServiceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, taskGUID, port, "/")
 
 		// Make sure the task eventually completes
 		time.AfterFunc(10*time.Second, func() {
-			_, _ = requestServiceFn(fixture.Namespace, taskServiceName, port, "/exit")()
+			_, _ = tests.RequestServiceFn(fixture.Namespace, taskServiceName, port, "/exit")()
 		})
 	})
 

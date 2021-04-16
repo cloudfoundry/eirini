@@ -51,14 +51,14 @@ var _ = Describe("InstanceIndexEnvInjector [needs-logs-for: eirini-api, instance
 			Create(context.Background(), lrp, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		appServiceName = exposeAsService(fixture.Namespace, lrpGUID, 8080, "/")
+		appServiceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, lrpGUID, 8080, "/")
 	})
 
 	It("creates pods with CF_INSTANCE_INDEX set to 0, 1 and 2", func() {
 		guids := map[string]bool{}
 		re := regexp.MustCompile(`CF_INSTANCE_INDEX=(.*)`)
 		Eventually(func() int {
-			envvars, err := requestServiceFn(fixture.Namespace, appServiceName, 8080, "/env")()
+			envvars, err := tests.RequestServiceFn(fixture.Namespace, appServiceName, 8080, "/env")()
 			if err != nil {
 				return 0
 			}

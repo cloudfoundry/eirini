@@ -3,8 +3,15 @@ package tests
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
+	"time"
 
+	"code.cloudfoundry.org/eirini/k8s/stset"
+
+	//nolint:revive
+	. "github.com/onsi/ginkgo"
 	ginkgoconfig "github.com/onsi/ginkgo/config"
 
 	//nolint:revive
@@ -138,4 +145,69 @@ func GetApplicationServiceAccount() string {
 	}
 
 	return DefaultApplicationServiceAccount
+}
+
+func ExposeAsService(clientset kubernetes.Interface, namespace, guid string, appPort int32, pingPath ...string) string {
+	service, err := clientset.CoreV1().Services(namespace).Create(context.Background(), &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "service-" + guid,
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Port: appPort,
+				},
+			},
+			Selector: map[string]string{
+				stset.LabelGUID: guid,
+			},
+		},
+	}, metav1.CreateOptions{})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	if len(pingPath) > 0 {
+		EventuallyWithOffset(1, func() error {
+			_, err := RequestServiceFn(namespace, service.Name, appPort, pingPath[0])()
+
+			return err
+		}).Should(Succeed())
+	}
+
+	return service.Name
+}
+
+func RequestServiceFn(namespace, serviceName string, port int32, requestPath string) func() (string, error) {
+	client := &http.Client{
+		Timeout: time.Second,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+		},
+	}
+
+	return func() (_ string, err error) {
+		defer func() {
+			if err != nil {
+				fmt.Fprintf(GinkgoWriter, "pingLRPFn error: %v", err)
+			}
+		}()
+
+		requestURL := fmt.Sprintf("http://%s.%s:%d/%s", serviceName, namespace, port, requestPath)
+
+		resp, err := client.Get(requestURL)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		content, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return string(content), fmt.Errorf("request failed: %s", resp.Status)
+		}
+
+		return string(content), nil
+	}
 }

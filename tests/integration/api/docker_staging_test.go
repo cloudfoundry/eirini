@@ -160,7 +160,7 @@ func desireStaging(httpClient rest.HTTPClient, stagingRequest cf.StagingRequest)
 		return 0, err
 	}
 
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/stage/some-guid", url), bytes.NewReader(data))
+	request, err := http.NewRequest("POST", fmt.Sprintf("%s/stage/some-guid", eiriniAPIUrl), bytes.NewReader(data))
 	if err != nil {
 		return 0, err
 	}

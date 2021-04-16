@@ -56,7 +56,7 @@ var _ = Describe("EventsReporter [needs-logs-for: eirini-api, eirini-event-repor
 			})
 			Expect(statusCode).To(Equal(http.StatusAccepted))
 
-			appServiceName = exposeAsService(fixture.Namespace, guid, 8080, "/")
+			appServiceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, guid, 8080, "/")
 		})
 
 		It("does not report a crash event for running apps", func() {
