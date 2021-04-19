@@ -8,33 +8,27 @@ import (
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
-	"github.com/jinzhu/copier"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("App", func() {
 	var (
-		lrpName    string
-		lrpGUID    string
-		lrpVersion string
-		lrp        *eiriniv1.LRP
+		lrpName     string
+		lrpGUID     string
+		lrpVersion  string
+		lrp         *eiriniv1.LRP
+		createErr   error
+		serviceName string
 	)
-
-	isStatefulSetReady := func() bool {
-		stset := integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
-
-		return stset.Status.ReadyReplicas == *stset.Spec.Replicas
-	}
 
 	BeforeEach(func() {
 		lrpName = tests.GenerateGUID()
 		lrpGUID = tests.GenerateGUID()
 		lrpVersion = tests.GenerateGUID()
+		serviceName = ""
 
 		lrp = &eiriniv1.LRP{
 			ObjectMeta: metav1.ObjectMeta{
@@ -62,38 +56,46 @@ var _ = Describe("App", func() {
 		}
 	})
 
-	Describe("desiring an app", func() {
-		var createErr error
-
-		getRunningStatefulset := func() *appsv1.StatefulSet {
-			Eventually(func() *appsv1.StatefulSet {
-				return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
-			}).ShouldNot(BeNil())
-
-			Eventually(isStatefulSetReady).Should(BeTrue(), "LRP Statefulset not ready")
-
-			return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
+	JustBeforeEach(func() {
+		lrp, createErr = fixture.EiriniClientset.
+			EiriniV1().
+			LRPs(fixture.Namespace).
+			Create(context.Background(), lrp, metav1.CreateOptions{})
+		if createErr == nil {
+			serviceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, lrpGUID, 8080, "/")
 		}
+	})
 
-		JustBeforeEach(func() {
-			lrp, createErr = fixture.EiriniClientset.
-				EiriniV1().
-				LRPs(fixture.Namespace).
-				Create(context.Background(), lrp, metav1.CreateOptions{})
-		})
-
-		It("creates a statefulset for the app", func() {
+	Describe("desiring an app", func() {
+		It("create the application", func() {
 			Expect(createErr).NotTo(HaveOccurred())
-			st := getRunningStatefulset()
-			Expect(st.Labels[stset.LabelGUID]).To(Equal(lrp.Spec.GUID))
+
+			output, err := tests.RequestServiceFn(fixture.Namespace, serviceName, 8080, "/")()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).To(ContainSubstring("Dora"))
 		})
 
 		It("sets the runAsNonRoot in the PodSecurityContext", func() {
-			st := getRunningStatefulset()
-			Expect(st.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(BeTrue()))
+			stsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(stsets.Items).To(HaveLen(1))
+			Expect(stsets.Items[0].Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(PointTo(BeTrue()))
 		})
 
-		When("DiskMB is not set", func() {
+		When("AllowRunImageAsRoot is true", func() {
+			BeforeEach(func() {
+				config.AllowRunImageAsRoot = true
+			})
+
+			It("doesn't set `runAsNonRoot` in the PodSecurityContext", func() {
+				stsets, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(stsets.Items).To(HaveLen(1))
+				Expect(stsets.Items[0].Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(BeNil())
+			})
+		})
+
+		When("DiskMB is zero", func() {
 			BeforeEach(func() {
 				lrp.Spec.DiskMB = 0
 			})
@@ -103,43 +105,13 @@ var _ = Describe("App", func() {
 			})
 		})
 
-		When("AllowRunImageAsRoot is true", func() {
-			BeforeEach(func() {
-				config.AllowRunImageAsRoot = true
-			})
-
-			It("doesn't set `runAsNonRoot` in the PodSecurityContext", func() {
-				st := getRunningStatefulset()
-				Expect(st.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(BeNil())
-			})
-		})
-
 		Describe("automounting serviceacccount token", func() {
 			const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
-			var podMountPaths []string
-
-			JustBeforeEach(func() {
-				Eventually(func() ([]corev1.Pod, error) {
-					pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-					if err != nil {
-						return nil, err
-					}
-
-					return pods.Items, nil
-				}).ShouldNot(BeEmpty())
-
-				pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(pods.Items).To(HaveLen(1))
-
-				podMountPaths = []string{}
-				for _, podMount := range pods.Items[0].Spec.Containers[0].VolumeMounts {
-					podMountPaths = append(podMountPaths, podMount.MountPath)
-				}
-			})
 
 			It("does not mount the service account token", func() {
-				Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
+				result, err := tests.RequestServiceFn(fixture.Namespace, serviceName, 8080, fmt.Sprintf("/ls?path=%s", serviceAccountTokenMountPath))()
+				Expect(err).To(MatchError(ContainSubstring("Internal Server Error")))
+				Expect(result).To(ContainSubstring("no such file or directory"))
 			})
 
 			When("unsafe_allow_automount_service_account_token is set", func() {
@@ -148,7 +120,8 @@ var _ = Describe("App", func() {
 				})
 
 				It("mounts the service account token (because this is how K8S works by default)", func() {
-					Expect(podMountPaths).To(ContainElement(serviceAccountTokenMountPath))
+					_, err := tests.RequestServiceFn(fixture.Namespace, serviceName, 8080, fmt.Sprintf("/ls?path=%s", serviceAccountTokenMountPath))()
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				When("the app service account has its automountServiceAccountToken set to false", func() {
@@ -167,7 +140,9 @@ var _ = Describe("App", func() {
 					})
 
 					It("does not mount the service account token", func() {
-						Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
+						result, err := tests.RequestServiceFn(fixture.Namespace, serviceName, 8080, fmt.Sprintf("/ls?path=%s", serviceAccountTokenMountPath))()
+						Expect(err).To(MatchError(ContainSubstring("Internal Server Error")))
+						Expect(result).To(ContainSubstring("no such file or directory"))
 					})
 				})
 			})
@@ -178,84 +153,36 @@ var _ = Describe("App", func() {
 		var updatedLRP *eiriniv1.LRP
 
 		BeforeEach(func() {
-			updatedLRP = &eiriniv1.LRP{}
-			Expect(copier.Copy(updatedLRP, lrp)).To(Succeed())
+			updatedLRP = lrp.DeepCopy()
+			updatedLRP.Spec.Instances = 3
 		})
 
 		JustBeforeEach(func() {
-			_, err := fixture.EiriniClientset.
-				EiriniV1().
-				LRPs(fixture.Namespace).
-				Create(context.Background(), lrp, metav1.CreateOptions{})
-			Expect(err).NotTo(HaveOccurred())
-
-			Eventually(func() int32 {
-				lrp = integration.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName)
-
-				return lrp.Status.Replicas
-			}).Should(Equal(int32(1)))
+			Expect(createErr).NotTo(HaveOccurred())
 			updatedLRP.ResourceVersion = integration.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName).ResourceVersion
 
-			_, err = fixture.EiriniClientset.
+			_, err := fixture.EiriniClientset.
 				EiriniV1().
 				LRPs(fixture.Namespace).
 				Update(context.Background(), updatedLRP, metav1.UpdateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		When("routes are updated", func() {
-			BeforeEach(func() {
-				updatedLRP.Spec.AppRoutes = []eiriniv1.Route{{Hostname: "another-hostname-1", Port: 8080}}
-			})
-
-			It("updates the underlying statefulset", func() {
-				Eventually(func() string {
-					return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion).Annotations[stset.AnnotationRegisteredRoutes]
-				}).Should(MatchJSON(`[{"hostname": "another-hostname-1", "port": 8080}]`))
-			})
+		It("updates the underlying statefulset", func() {
+			Eventually(func() int32 {
+				return *integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion).Spec.Replicas
+			}).Should(Equal(int32(3)))
 		})
 
-		When("the image is updated", func() {
-			BeforeEach(func() {
-				updatedLRP.Spec.Image = "eirini/custom-port"
-			})
-
-			It("updates the underlying statefulset", func() {
-				Eventually(func() string {
-					return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion).Spec.Template.Spec.Containers[0].Image
-				}).Should(Equal("eirini/custom-port"))
-			})
-		})
-
-		When("instance count is updated", func() {
-			BeforeEach(func() {
-				updatedLRP.Spec.Instances = 3
-			})
-
-			It("updates the underlying statefulset", func() {
-				Eventually(func() int32 {
-					return *integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion).Spec.Replicas
-				}).Should(Equal(int32(3)))
-
-				Eventually(func() int32 {
-					return integration.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName).Status.Replicas
-				}).Should(Equal(int32(3)))
-			})
+		It("updates the LRP custom resource status", func() {
+			Eventually(func() int32 {
+				return integration.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName).Status.Replicas
+			}).Should(Equal(int32(3)))
 		})
 	})
 
 	Describe("Stop an app", func() {
 		JustBeforeEach(func() {
-			_, err := fixture.EiriniClientset.
-				EiriniV1().
-				LRPs(fixture.Namespace).
-				Create(context.Background(), lrp, metav1.CreateOptions{})
-			Expect(err).NotTo(HaveOccurred())
-
-			Eventually(func() int32 {
-				return integration.GetLRP(fixture.EiriniClientset, fixture.Namespace, lrpName).Status.Replicas
-			}).Should(Equal(int32(1)))
-
 			Expect(fixture.EiriniClientset.
 				EiriniV1().
 				LRPs(fixture.Namespace).
@@ -263,10 +190,12 @@ var _ = Describe("App", func() {
 			).To(Succeed())
 		})
 
-		It("deletes the underlying statefulset", func() {
-			Eventually(func() *appsv1.StatefulSet {
-				return integration.GetStatefulSet(fixture.Clientset, fixture.Namespace, lrpGUID, lrpVersion)
-			}).Should(BeNil())
+		It("stops the application", func() {
+			Eventually(func() error {
+				_, err := tests.RequestServiceFn(fixture.Namespace, serviceName, 8080, "/")()
+
+				return err
+			}).Should(MatchError(ContainSubstring("context deadline exceeded")))
 		})
 	})
 
@@ -284,14 +213,6 @@ var _ = Describe("App", func() {
 
 		When("an app instance becomes unready", func() {
 			JustBeforeEach(func() {
-				_, err := fixture.EiriniClientset.
-					EiriniV1().
-					LRPs(fixture.Namespace).
-					Create(context.Background(), lrp, metav1.CreateOptions{})
-				Expect(err).NotTo(HaveOccurred())
-
-				Eventually(getLRPReplicas).Should(Equal(1))
-
 				appListOpts := metav1.ListOptions{
 					LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
 				}

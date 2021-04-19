@@ -3,10 +3,8 @@ package eirini_controller_test
 import (
 	"context"
 
-	"code.cloudfoundry.org/eirini/k8s/jobs"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
-	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,9 +12,10 @@ import (
 
 var _ = Describe("Tasks", func() {
 	var (
-		taskName string
-		taskGUID string
-		task     *eiriniv1.Task
+		taskName    string
+		taskGUID    string
+		task        *eiriniv1.Task
+		serviceName string
 	)
 
 	BeforeEach(func() {
@@ -38,8 +37,8 @@ var _ = Describe("Tasks", func() {
 				Env: map[string]string{
 					"FOO": "BAR",
 				},
-				Image:   "eirini/busybox",
-				Command: []string{"sh", "-c", "sleep 1"},
+				Image:   "eirini/dorini",
+				Command: []string{"/notdora"},
 			},
 		}
 	})
@@ -49,18 +48,14 @@ var _ = Describe("Tasks", func() {
 			EiriniV1().
 			Tasks(fixture.Namespace).
 			Create(context.Background(), task, metav1.CreateOptions{})
-
 		Expect(err).NotTo(HaveOccurred())
 
-		Eventually(integration.ListJobs(fixture.Clientset, fixture.Namespace, taskGUID)).Should(HaveLen(1))
+		serviceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, taskGUID, 8080, "/")
 	})
 
 	Describe("task creation", func() {
-		It("creates a corresponding job in the same namespace", func() {
-			allJobs := integration.ListJobs(fixture.Clientset, fixture.Namespace, taskGUID)()
-			job := allJobs[0]
-			Expect(job.Spec.Template.Spec.Containers).To(HaveLen(1))
-			Expect(allJobs[0].Labels).To(HaveKeyWithValue(jobs.LabelGUID, taskGUID))
+		It("runs the task", func() {
+			Expect(tests.RequestServiceFn(fixture.Namespace, serviceName, 8080, "/")()).To(ContainSubstring("not Dora"))
 		})
 	})
 
@@ -73,8 +68,12 @@ var _ = Describe("Tasks", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("deletes the job", func() {
-			Eventually(integration.ListJobs(fixture.Clientset, fixture.Namespace, taskGUID)).Should(HaveLen(0))
+		It("stops the task", func() {
+			Eventually(func() error {
+				_, err := tests.RequestServiceFn(fixture.Namespace, serviceName, 8080, "/")()
+
+				return err
+			}).Should(MatchError(ContainSubstring("context deadline exceeded")))
 		})
 	})
 })
