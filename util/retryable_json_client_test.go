@@ -25,7 +25,7 @@ var _ = Describe("RetryableJSONClient", func() {
 	BeforeEach(func() {
 		data = TestData{Value: "foo"}
 		server = ghttp.NewServer()
-		retryableJSONClient = util.NewRetryableJSONClientWithConfig(http.DefaultClient, 3, time.Millisecond)
+		retryableJSONClient = util.NewRetryableJSONClientWithConfig(http.DefaultClient, 3, time.Millisecond, GinkgoWriter)
 	})
 
 	AfterEach(func() {

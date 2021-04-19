@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -15,10 +17,11 @@ type RetryableJSONClient struct {
 	httpClient *retryablehttp.Client
 }
 
-func NewRetryableJSONClientWithConfig(httpClient *http.Client, retries int, maxDelay time.Duration) *RetryableJSONClient {
+func NewRetryableJSONClientWithConfig(httpClient *http.Client, retries int, maxDelay time.Duration, logWriter io.Writer) *RetryableJSONClient {
 	client := NewRetryableJSONClient(httpClient)
 	client.httpClient.RetryMax = retries
 	client.httpClient.RetryWaitMax = maxDelay
+	client.httpClient.Logger = log.New(logWriter, "", log.LstdFlags)
 
 	return client
 }
