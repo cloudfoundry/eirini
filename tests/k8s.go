@@ -12,7 +12,6 @@ import (
 
 	//nolint:revive
 	. "github.com/onsi/ginkgo"
-	ginkgoconfig "github.com/onsi/ginkgo/config"
 
 	//nolint:revive
 	. "github.com/onsi/gomega"
@@ -26,9 +25,9 @@ import (
 const DefaultApplicationServiceAccount = "eirini"
 
 func CreateRandomNamespace(clientset kubernetes.Interface) string {
-	namespace := fmt.Sprintf("integration-test-%s-%d", GenerateGUID(), ginkgoconfig.GinkgoConfig.ParallelNode)
+	namespace := fmt.Sprintf("integration-test-%s-%d", GenerateGUID(), GinkgoParallelNode())
 	for namespaceExists(namespace, clientset) {
-		namespace = fmt.Sprintf("integration-test-%s-%d", GenerateGUID(), ginkgoconfig.GinkgoConfig.ParallelNode)
+		namespace = fmt.Sprintf("integration-test-%s-%d", GenerateGUID(), GinkgoParallelNode())
 	}
 	createNamespace(namespace, clientset)
 

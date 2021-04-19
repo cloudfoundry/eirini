@@ -252,18 +252,27 @@ var _ = Describe("Task", func() {
 		})
 
 		When("cloud controller notification takes forever", func() {
-			It("still succeeds", func(done Done) {
-				jsonClient.PostStub = func(context.Context, string, interface{}) error {
-					<-make(chan interface{}) // block forever
+			It("still succeeds", func() {
+				done := make(chan interface{})
+				post := make(chan interface{})
+				defer close(post)
 
-					return nil
-				}
+				go func() {
+					defer GinkgoRecover()
 
-				err = taskBifrost.CancelTask(ctx, taskGUID)
+					jsonClient.PostStub = func(context.Context, string, interface{}) error {
+						<-post // block forever
 
-				Expect(err).NotTo(HaveOccurred())
+						return nil
+					}
 
-				close(done)
+					err = taskBifrost.CancelTask(ctx, taskGUID)
+
+					Expect(err).NotTo(HaveOccurred())
+					close(done)
+				}()
+
+				Eventually(done).Should(BeClosed())
 			})
 		})
 	})
