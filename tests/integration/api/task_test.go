@@ -205,6 +205,7 @@ var _ = Describe("Tasks", func() {
 		It("stops the job", func() {
 			Eventually(func() error {
 				_, err := tests.RequestServiceFn(serviceNameSpace, serviceName, servicePort, "/")()
+
 				return err
 			}).Should(MatchError(ContainSubstring("context deadline exceeded")))
 		})
