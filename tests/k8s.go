@@ -187,7 +187,7 @@ func RequestServiceFn(namespace, serviceName string, port int32, requestPath str
 	return func() (_ string, err error) {
 		defer func() {
 			if err != nil {
-				fmt.Fprintf(GinkgoWriter, "pingLRPFn error: %v", err)
+				fmt.Fprintf(GinkgoWriter, "RequestServiceFn error: %v", err)
 			}
 		}()
 

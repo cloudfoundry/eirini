@@ -11,7 +11,6 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
-	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
@@ -19,18 +18,38 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
-	. "github.com/onsi/gomega/gstruct"
-	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Tasks", func() {
 	var (
-		request  cf.TaskRequest
-		jobsList *batchv1.JobList
-		response *http.Response
+		request          cf.TaskRequest
+		response         *http.Response
+		serviceName      string
+		serviceNameSpace string
+		servicePort      int32
+		taskGUID         string
 	)
+
+	BeforeEach(func() {
+		taskGUID = tests.GenerateGUID()
+		request = cf.TaskRequest{
+			GUID:        taskGUID,
+			AppName:     "my_app",
+			AppGUID:     "guid-1234",
+			Name:        "my_task",
+			SpaceName:   "my_space",
+			Namespace:   fixture.Namespace,
+			Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
+			Lifecycle: cf.Lifecycle{
+				DockerLifecycle: &cf.DockerLifecycle{
+					Image: "eirini/dorini",
+				},
+			},
+		}
+		serviceNameSpace = fixture.Namespace
+		servicePort = 8080
+	})
 
 	JustBeforeEach(func() {
 		body, err := json.Marshal(request)
@@ -41,83 +60,27 @@ var _ = Describe("Tasks", func() {
 
 		response, err = httpClient.Do(httpRequest)
 		Expect(err).NotTo(HaveOccurred())
+
+		serviceName = tests.ExposeAsService(fixture.Clientset, serviceNameSpace, request.GUID, servicePort, "/")
 	})
 
 	Describe("desiring", func() {
 		const serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
-		var taskGUID string
 
-		BeforeEach(func() {
-			taskGUID = tests.GenerateGUID()
-			request = cf.TaskRequest{
-				GUID:        taskGUID,
-				AppName:     "my_app",
-				AppGUID:     "guid-1234",
-				Name:        "my_task",
-				SpaceName:   "my_space",
-				Namespace:   fixture.Namespace,
-				Environment: []cf.EnvironmentVariable{{Name: "my-env", Value: "my-value"}},
-				Lifecycle: cf.Lifecycle{
-					DockerLifecycle: &cf.DockerLifecycle{
-						Image:   "eirini/busybox",
-						Command: []string{"/bin/echo", "hello"},
-					},
-				},
-			}
+		It("starts the task", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+			out, err := tests.RequestServiceFn(fixture.Namespace, serviceName, servicePort, "/")()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(ContainSubstring("not Dora"))
 		})
 
-		It("creates the job successfully", func() {
-			Expect(response.StatusCode).To(Equal(http.StatusAccepted))
+		It("sets the correct latest migration index", func() {
+			jobsList, err := fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(func() ([]batchv1.Job, error) {
-				var err error
-				jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-
-				return jobsList.Items, err
-			}).Should(HaveLen(1))
-
-			By("creating a job for the task", func() {
-				Expect(jobsList.Items).To(HaveLen(1))
-				Expect(jobsList.Items[0].Name).To(HavePrefix("my-app-my-space-my-task"))
-			})
-
-			By("not mounting the service account token", func() {
-				Eventually(func() ([]corev1.Pod, error) {
-					pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-					if err != nil {
-						return nil, err
-					}
-
-					return pods.Items, nil
-				}).ShouldNot(BeEmpty())
-
-				pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(pods.Items).To(HaveLen(1))
-
-				podMountPaths := []string{}
-				for _, podMount := range pods.Items[0].Spec.Containers[0].VolumeMounts {
-					podMountPaths = append(podMountPaths, podMount.MountPath)
-				}
-				Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
-			})
-
-			By("completing the task", func() {
-				Eventually(func() []batchv1.JobCondition {
-					jobsList, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-
-					return jobsList.Items[0].Status.Conditions
-				}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(batchv1.JobComplete),
-					"Status": Equal(corev1.ConditionTrue),
-				})))
-			})
-
-			By("setting the latest migration index", func() {
-				Expect(jobsList.Items[0].Annotations).To(
-					HaveKeyWithValue(shared.AnnotationLatestMigration, strconv.Itoa(cmdcommons.GetLatestMigrationIndex())),
-				)
-			})
+			Expect(jobsList.Items[0].Annotations).To(
+				HaveKeyWithValue(shared.AnnotationLatestMigration, strconv.Itoa(cmdcommons.GetLatestMigrationIndex())),
+			)
 		})
 
 		When("the task uses a private Docker registry", func() {
@@ -125,118 +88,73 @@ var _ = Describe("Tasks", func() {
 				request.Lifecycle.DockerLifecycle.Image = "eiriniuser/notdora"
 				request.Lifecycle.DockerLifecycle.RegistryUsername = "eiriniuser"
 				request.Lifecycle.DockerLifecycle.RegistryPassword = tests.GetEiriniDockerHubPassword()
+				servicePort = 8888
 			})
 
-			It("creates a job that completes", func() {
-				Eventually(func() ([]batchv1.Job, error) {
-					var err error
-					jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-
-					return jobsList.Items, err
-				}).Should(HaveLen(1))
-				Expect(jobsList.Items[0].Labels).To(HaveKeyWithValue(jobs.LabelAppGUID, "guid-1234"))
-
-				Eventually(func() []batchv1.JobCondition {
-					jobsList, _ = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-
-					return jobsList.Items[0].Status.Conditions
-				}).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(batchv1.JobComplete),
-					"Status": Equal(corev1.ConditionTrue),
-				})))
+			It("starts the task", func() {
+				Eventually(tests.RequestServiceFn(fixture.Namespace, serviceName, servicePort, "/")).Should(ContainSubstring("not Dora"))
 			})
 		})
 
-		When("unsafe_allow_automount_service_account_token is set", func() {
-			BeforeEach(func() {
-				apiConfig.UnsafeAllowAutomountServiceAccountToken = true
+		Describe("mounting service account tokens", func() {
+			It("does not mount the service account token", func() {
+				result, err := tests.RequestServiceFn(fixture.Namespace, serviceName, servicePort, fmt.Sprintf("/ls?path=%s", serviceAccountTokenMountPath))()
+				Expect(err).To(MatchError(ContainSubstring("Internal Server Error")))
+				Expect(result).To(ContainSubstring("no such file or directory"))
 			})
 
-			getPods := func() []corev1.Pod {
-				var podItems []corev1.Pod
-				Eventually(func() ([]corev1.Pod, error) {
-					var err error
-					pods, err := fixture.Clientset.CoreV1().Pods(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-					if err != nil {
-						return nil, err
-					}
-
-					podItems = pods.Items
-
-					return podItems, nil
-				}).ShouldNot(BeEmpty())
-
-				return podItems
-			}
-
-			It("mounts the service account token (because this is how K8S works by default)", func() {
-				pods := getPods()
-				Expect(pods).To(HaveLen(1))
-
-				podMountPaths := []string{}
-				for _, podMount := range pods[0].Spec.Containers[0].VolumeMounts {
-					podMountPaths = append(podMountPaths, podMount.MountPath)
-				}
-				Expect(podMountPaths).To(ContainElement(serviceAccountTokenMountPath))
-			})
-
-			When("the app/task service account has its automountServiceAccountToken set to false", func() {
+			When("unsafe_allow_automount_service_account_token is set", func() {
 				BeforeEach(func() {
-					Eventually(func() error {
+					apiConfig.UnsafeAllowAutomountServiceAccountToken = true
+				})
+
+				It("mounts the service account token (because this is how K8S works by default)", func() {
+					_, err := tests.RequestServiceFn(fixture.Namespace, serviceName, servicePort, fmt.Sprintf("/ls?path=%s", serviceAccountTokenMountPath))()
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				When("the service account has its automountServiceAccountToken set to false", func() {
+					updateServiceaccount := func() error {
 						appServiceAccount, err := fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Get(context.Background(), tests.GetApplicationServiceAccount(), metav1.GetOptions{})
-						if err != nil {
-							return err
-						}
+						Expect(err).NotTo(HaveOccurred())
 						automountServiceAccountToken := false
 						appServiceAccount.AutomountServiceAccountToken = &automountServiceAccountToken
 						_, err = fixture.Clientset.CoreV1().ServiceAccounts(fixture.Namespace).Update(context.Background(), appServiceAccount, metav1.UpdateOptions{})
-						if err != nil {
-							return err
-						}
 
-						return nil
-					}).Should(Succeed())
-				})
-
-				It("does not mount the service account token", func() {
-					pods := getPods()
-					Expect(pods).To(HaveLen(1))
-
-					podMountPaths := []string{}
-					for _, podMount := range pods[0].Spec.Containers[0].VolumeMounts {
-						podMountPaths = append(podMountPaths, podMount.MountPath)
+						return err
 					}
-					Expect(podMountPaths).NotTo(ContainElement(serviceAccountTokenMountPath))
+
+					BeforeEach(func() {
+						Eventually(updateServiceaccount, "5s").Should(Succeed())
+					})
+
+					It("does not mount the service account token", func() {
+						result, err := tests.RequestServiceFn(fixture.Namespace, serviceName, servicePort, fmt.Sprintf("/ls?path=%s", serviceAccountTokenMountPath))()
+						Expect(err).To(MatchError(ContainSubstring("Internal Server Error")))
+						Expect(result).To(ContainSubstring("no such file or directory"))
+					})
 				})
 			})
 		})
 
 		When("no task namespaces is explicitly requested", func() {
+			var extraNs string
+
 			BeforeEach(func() {
-				request = cf.TaskRequest{
-					GUID:      tests.GenerateGUID(),
-					Namespace: "",
-					Lifecycle: cf.Lifecycle{
-						DockerLifecycle: &cf.DockerLifecycle{
-							Image:   "eirini/busybox",
-							Command: []string{"/bin/echo", "hello"},
-						},
-					},
-				}
+				extraNs = fixture.CreateExtraNamespace()
+				apiConfig.DefaultWorkloadsNamespace = extraNs
+				serviceNameSpace = extraNs
+
+				request.Namespace = ""
 			})
 
 			It("creates create the task in the default namespace", func() {
 				Expect(response.StatusCode).To(Equal(http.StatusAccepted))
 
-				Eventually(func() ([]batchv1.Job, error) {
-					var err error
-					jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-
-					return jobsList.Items, err
-				}).Should(HaveLen(1))
+				jobsList, err := fixture.Clientset.BatchV1().Jobs(extraNs).List(context.Background(), metav1.ListOptions{})
+				Expect(err).NotTo(HaveOccurred())
 
 				Expect(jobsList.Items).To(HaveLen(1))
-				Expect(jobsList.Items[0].Name).To(Equal(request.GUID))
 			})
 		})
 	})
@@ -254,64 +172,44 @@ var _ = Describe("Tasks", func() {
 			Expect(err).ToNot(HaveOccurred())
 			cloudControllerServer.HTTPTestServer.StartTLS()
 
-			guid := tests.GenerateGUID()
-
 			cloudControllerServer.AppendHandlers(
 				ghttp.CombineHandlers(
 					ghttp.VerifyRequest("POST", "/"),
 					ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
-						TaskGUID:      guid,
+						TaskGUID:      taskGUID,
 						Failed:        true,
 						FailureReason: "task was cancelled",
 					}),
 				),
 			)
 
-			request = cf.TaskRequest{
-				GUID:      guid,
-				AppName:   "my_app",
-				SpaceName: "my_space",
-				Namespace: fixture.Namespace,
-				Lifecycle: cf.Lifecycle{
-					DockerLifecycle: &cf.DockerLifecycle{
-						Image:   "eirini/busybox",
-						Command: []string{"/bin/sleep", "100"},
-					},
-				},
-				CompletionCallback: cloudControllerServer.URL(),
-			}
+			request.CompletionCallback = cloudControllerServer.URL()
 		})
 
 		JustBeforeEach(func() {
-			// Ensure the job is created
-			Eventually(func() ([]batchv1.Job, error) {
-				var err error
-				jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-
-				return jobsList.Items, err
-			}).Should(HaveLen(1))
-
-			// Cancel the task
 			httpRequest, err := http.NewRequest("DELETE", fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, request.GUID), nil)
 			Expect(err).NotTo(HaveOccurred())
-			resp, err := httpClient.Do(httpRequest)
+
+			response, err = httpClient.Do(httpRequest)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
 		})
 
 		AfterEach(func() {
 			cloudControllerServer.Close()
 		})
 
-		It("deletes the job and notifies the Cloud Controller", func() {
-			// Ensure the job is deleted
-			Eventually(func() ([]batchv1.Job, error) {
-				var err error
-				jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
+		It("returns statusNoContent", func() {
+			Expect(response.StatusCode).To(Equal(http.StatusNoContent))
+		})
 
-				return jobsList.Items, err
-			}).Should(BeEmpty())
+		It("stops the job", func() {
+			Eventually(func() error {
+				_, err := tests.RequestServiceFn(serviceNameSpace, serviceName, servicePort, "/")()
+				return err
+			}).Should(MatchError(ContainSubstring("context deadline exceeded")))
+		})
 
+		It("notifies the Cloud Controller", func() {
 			Eventually(cloudControllerServer.ReceivedRequests).Should(HaveLen(1))
 		})
 
@@ -343,32 +241,6 @@ var _ = Describe("Tasks", func() {
 	})
 
 	Describe("listing", func() {
-		BeforeEach(func() {
-			guid := tests.GenerateGUID()
-
-			request = cf.TaskRequest{
-				GUID:      guid,
-				AppName:   "my_app",
-				SpaceName: "my_space",
-				Namespace: fixture.Namespace,
-				Lifecycle: cf.Lifecycle{
-					DockerLifecycle: &cf.DockerLifecycle{
-						Image:   "eirini/busybox",
-						Command: []string{"/bin/sleep", "100"},
-					},
-				},
-			}
-		})
-
-		JustBeforeEach(func() {
-			Eventually(func() ([]batchv1.Job, error) {
-				var err error
-				jobsList, err = fixture.Clientset.BatchV1().Jobs(fixture.Namespace).List(context.Background(), metav1.ListOptions{})
-
-				return jobsList.Items, err
-			}).Should(HaveLen(1))
-		})
-
 		It("returns all tasks", func() {
 			httpRequest, err := http.NewRequest("GET", fmt.Sprintf("%s/tasks", eiriniAPIUrl), nil)
 			Expect(err).NotTo(HaveOccurred())
