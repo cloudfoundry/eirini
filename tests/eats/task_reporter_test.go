@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
@@ -58,9 +57,7 @@ var _ = Describe("Tasks Reporter [needs-logs-for: eirini-api, eirini-task-report
 		taskServiceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, taskGUID, port, "/")
 
 		// Make sure the task eventually completes
-		time.AfterFunc(10*time.Second, func() {
-			_, _ = tests.RequestServiceFn(fixture.Namespace, taskServiceName, port, "/exit")()
-		})
+		_, _ = tests.RequestServiceFn(fixture.Namespace, taskServiceName, port, "/exit")()
 	})
 
 	It("notifies the cloud controller", func() {
