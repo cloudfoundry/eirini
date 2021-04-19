@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = FDescribe("Desire App", func() {
+var _ = Describe("Desire App", func() {
 	var (
 		lrp      cf.DesireLRPRequest
 		response *http.Response
