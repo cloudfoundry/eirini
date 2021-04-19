@@ -19,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Tasks completion", func() {
+var _ = Describe("Tasks completion with respect to TTL", func() {
 	var (
 		taskReporterConfig  *eirini.TaskReporterConfig
 		taskReporterSession *gexec.Session
@@ -70,7 +70,7 @@ var _ = Describe("Tasks completion", func() {
 		Expect(getJob(taskGUID)).NotTo(BeNil())
 	})
 
-	It("does not get a completed tasks that has not reached its ttl", func() {
+	It("does not get a completed task that has not reached its ttl", func() {
 		Eventually(func() error {
 			_, err := getTask(taskGUID)
 
