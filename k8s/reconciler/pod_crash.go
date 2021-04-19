@@ -13,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -23,7 +24,8 @@ const (
 	labelInstanceIndex     = "cloudfoundry.org/instance_index"
 	action                 = "crashing"
 	lrpKind                = "LRP"
-	statefulSetKind        = "StatefulSet"
+	replicaSetKind         = "ReplicaSet"
+	deploymentKind         = "Deployment"
 )
 
 //counterfeiter:generate . CrashEventGenerator
@@ -46,17 +48,19 @@ type PodCrash struct {
 	crashEventGenerator CrashEventGenerator
 	eventsClient        EventsClient
 	statefulSetGetter   StatefulSetGetter
+	clientset           kubernetes.Interface
 }
 
 func NewPodCrash(
 	logger lager.Logger, client client.Client, crashEventGenerator CrashEventGenerator,
-	eventsClient EventsClient, statefulSetGetter StatefulSetGetter) *PodCrash {
+	eventsClient EventsClient, statefulSetGetter StatefulSetGetter, clientset kubernetes.Interface) *PodCrash {
 	return &PodCrash{
 		logger:              logger,
 		pods:                client,
 		crashEventGenerator: crashEventGenerator,
 		eventsClient:        eventsClient,
 		statefulSetGetter:   statefulSetGetter,
+		clientset:           clientset,
 	}
 }
 
@@ -85,23 +89,37 @@ func (r PodCrash) Reconcile(ctx context.Context, request reconcile.Request) (rec
 		return reconcile.Result{}, nil
 	}
 
-	statefulSetRef, err := r.getOwner(pod, statefulSetKind)
+	replicaSetRef, err := r.getOwner(pod, replicaSetKind)
 	if err != nil {
-		logger.Debug("pod-without-statefulset-owner")
+		logger.Debug("pod-without-replicaset-owner")
 
 		return reconcile.Result{}, nil //nolint:nilerr
 	}
 
-	statefulSet, err := r.statefulSetGetter.Get(ctx, pod.Namespace, statefulSetRef.Name)
+	replicaSet, err := r.clientset.AppsV1().ReplicaSets(pod.Namespace).Get(ctx, replicaSetRef.Name, metav1.GetOptions{})
 	if err != nil {
-		logger.Error("failed-to-get-stateful-set", err)
+		logger.Debug("failet-to-get-replica-set")
+
+		return reconcile.Result{}, nil //nolint:nilerr
+	}
+
+	deploymentRef, err := r.getOwner(replicaSet, deploymentKind)
+	if err != nil {
+		logger.Debug("replicaset-without-deployment-owner")
+
+		return reconcile.Result{}, nil //nolint:nilerr
+	}
+
+	deployment, err := r.statefulSetGetter.Get(ctx, pod.Namespace, deploymentRef.Name)
+	if err != nil {
+		logger.Error("failed-to-get-deployment", err)
 
 		return reconcile.Result{}, errors.Wrap(err, "failed to get stateful set")
 	}
 
-	lrpRef, err := r.getOwner(statefulSet, lrpKind)
+	lrpRef, err := r.getOwner(deployment, lrpKind)
 	if err != nil {
-		logger.Debug("statefulset-without-lrp-owner", lager.Data{"statefulset-name": statefulSet.Name})
+		logger.Debug("statefulset-without-lrp-owner", lager.Data{"statefulset-name": deployment.Name})
 
 		return reconcile.Result{}, nil //nolint:nilerr
 	}

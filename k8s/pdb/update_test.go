@@ -23,7 +23,7 @@ var _ = Describe("PDB", func() {
 	var (
 		creator   *pdb.Updater
 		k8sClient *pdbfakes.FakeK8sClient
-		stSet     *appsv1.StatefulSet
+		stSet     *appsv1.Deployment
 		lrp       *api.LRP
 		ctx       context.Context
 	)
@@ -32,7 +32,7 @@ var _ = Describe("PDB", func() {
 		k8sClient = new(pdbfakes.FakeK8sClient)
 		creator = pdb.NewUpdater(k8sClient)
 
-		stSet = &appsv1.StatefulSet{
+		stSet = &appsv1.Deployment{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "name",
 				Namespace: "namespace",

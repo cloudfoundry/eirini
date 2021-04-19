@@ -11,25 +11,25 @@ import (
 )
 
 type FakeStatefulSetByLRPIdentifierGetter struct {
-	GetByLRPIdentifierStub        func(context.Context, api.LRPIdentifier) ([]v1.StatefulSet, error)
+	GetByLRPIdentifierStub        func(context.Context, api.LRPIdentifier) ([]v1.Deployment, error)
 	getByLRPIdentifierMutex       sync.RWMutex
 	getByLRPIdentifierArgsForCall []struct {
 		arg1 context.Context
 		arg2 api.LRPIdentifier
 	}
 	getByLRPIdentifierReturns struct {
-		result1 []v1.StatefulSet
+		result1 []v1.Deployment
 		result2 error
 	}
 	getByLRPIdentifierReturnsOnCall map[int]struct {
-		result1 []v1.StatefulSet
+		result1 []v1.Deployment
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifier(arg1 context.Context, arg2 api.LRPIdentifier) ([]v1.StatefulSet, error) {
+func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifier(arg1 context.Context, arg2 api.LRPIdentifier) ([]v1.Deployment, error) {
 	fake.getByLRPIdentifierMutex.Lock()
 	ret, specificReturn := fake.getByLRPIdentifierReturnsOnCall[len(fake.getByLRPIdentifierArgsForCall)]
 	fake.getByLRPIdentifierArgsForCall = append(fake.getByLRPIdentifierArgsForCall, struct {
@@ -55,7 +55,7 @@ func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierCallCount() 
 	return len(fake.getByLRPIdentifierArgsForCall)
 }
 
-func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierCalls(stub func(context.Context, api.LRPIdentifier) ([]v1.StatefulSet, error)) {
+func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierCalls(stub func(context.Context, api.LRPIdentifier) ([]v1.Deployment, error)) {
 	fake.getByLRPIdentifierMutex.Lock()
 	defer fake.getByLRPIdentifierMutex.Unlock()
 	fake.GetByLRPIdentifierStub = stub
@@ -68,28 +68,28 @@ func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierArgsForCall(
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierReturns(result1 []v1.StatefulSet, result2 error) {
+func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierReturns(result1 []v1.Deployment, result2 error) {
 	fake.getByLRPIdentifierMutex.Lock()
 	defer fake.getByLRPIdentifierMutex.Unlock()
 	fake.GetByLRPIdentifierStub = nil
 	fake.getByLRPIdentifierReturns = struct {
-		result1 []v1.StatefulSet
+		result1 []v1.Deployment
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierReturnsOnCall(i int, result1 []v1.StatefulSet, result2 error) {
+func (fake *FakeStatefulSetByLRPIdentifierGetter) GetByLRPIdentifierReturnsOnCall(i int, result1 []v1.Deployment, result2 error) {
 	fake.getByLRPIdentifierMutex.Lock()
 	defer fake.getByLRPIdentifierMutex.Unlock()
 	fake.GetByLRPIdentifierStub = nil
 	if fake.getByLRPIdentifierReturnsOnCall == nil {
 		fake.getByLRPIdentifierReturnsOnCall = make(map[int]struct {
-			result1 []v1.StatefulSet
+			result1 []v1.Deployment
 			result2 error
 		})
 	}
 	fake.getByLRPIdentifierReturnsOnCall[i] = struct {
-		result1 []v1.StatefulSet
+		result1 []v1.Deployment
 		result2 error
 	}{result1, result2}
 }

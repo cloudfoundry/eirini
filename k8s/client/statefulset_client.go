@@ -26,25 +26,25 @@ func NewStatefulSet(clientSet kubernetes.Interface, workloadsNamespace string) *
 	}
 }
 
-func (c *StatefulSet) Create(ctx context.Context, namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error) {
+func (c *StatefulSet) Create(ctx context.Context, namespace string, statefulSet *appsv1.Deployment) (*appsv1.Deployment, error) {
 	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
 	defer cancel()
 
-	return c.clientSet.AppsV1().StatefulSets(namespace).Create(ctx, statefulSet, metav1.CreateOptions{})
+	return c.clientSet.AppsV1().Deployments(namespace).Create(ctx, statefulSet, metav1.CreateOptions{})
 }
 
-func (c *StatefulSet) Get(ctx context.Context, namespace, name string) (*appsv1.StatefulSet, error) {
+func (c *StatefulSet) Get(ctx context.Context, namespace, name string) (*appsv1.Deployment, error) {
 	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
 	defer cancel()
 
-	return c.clientSet.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
+	return c.clientSet.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 }
 
-func (c *StatefulSet) GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.StatefulSet, error) {
+func (c *StatefulSet) GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.Deployment, error) {
 	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
 	defer cancel()
 
-	statefulSetList, err := c.clientSet.AppsV1().StatefulSets(c.workloadsNamespace).List(ctx, metav1.ListOptions{
+	statefulSetList, err := c.clientSet.AppsV1().Deployments(c.workloadsNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", stset.LabelSourceType, sourceType),
 	})
 	if err != nil {
@@ -54,11 +54,11 @@ func (c *StatefulSet) GetBySourceType(ctx context.Context, sourceType string) ([
 	return statefulSetList.Items, nil
 }
 
-func (c *StatefulSet) GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifier) ([]appsv1.StatefulSet, error) {
+func (c *StatefulSet) GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifier) ([]appsv1.Deployment, error) {
 	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
 	defer cancel()
 
-	statefulSetList, err := c.clientSet.AppsV1().StatefulSets(c.workloadsNamespace).List(ctx, metav1.ListOptions{
+	statefulSetList, err := c.clientSet.AppsV1().Deployments(c.workloadsNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf(
 			"%s=%s,%s=%s",
 			stset.LabelGUID, id.GUID,
@@ -72,20 +72,20 @@ func (c *StatefulSet) GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifi
 	return statefulSetList.Items, nil
 }
 
-func (c *StatefulSet) Update(ctx context.Context, namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error) {
+func (c *StatefulSet) Update(ctx context.Context, namespace string, statefulSet *appsv1.Deployment) (*appsv1.Deployment, error) {
 	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
 	defer cancel()
 
-	return c.clientSet.AppsV1().StatefulSets(namespace).Update(ctx, statefulSet, metav1.UpdateOptions{})
+	return c.clientSet.AppsV1().Deployments(namespace).Update(ctx, statefulSet, metav1.UpdateOptions{})
 }
 
-func (c *StatefulSet) SetAnnotation(ctx context.Context, statefulSet *appsv1.StatefulSet, key, value string) (*appsv1.StatefulSet, error) {
+func (c *StatefulSet) SetAnnotation(ctx context.Context, statefulSet *appsv1.Deployment, key, value string) (*appsv1.Deployment, error) {
 	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
 	defer cancel()
 
 	annotation := patching.NewAnnotation(key, value)
 
-	return c.clientSet.AppsV1().StatefulSets(statefulSet.Namespace).Patch(
+	return c.clientSet.AppsV1().Deployments(statefulSet.Namespace).Patch(
 		ctx,
 		statefulSet.Name,
 		annotation.Type(),
@@ -94,13 +94,13 @@ func (c *StatefulSet) SetAnnotation(ctx context.Context, statefulSet *appsv1.Sta
 	)
 }
 
-func (c *StatefulSet) SetCPURequest(ctx context.Context, statefulSet *appsv1.StatefulSet, cpuRequest *resource.Quantity) (*appsv1.StatefulSet, error) {
+func (c *StatefulSet) SetCPURequest(ctx context.Context, statefulSet *appsv1.Deployment, cpuRequest *resource.Quantity) (*appsv1.Deployment, error) {
 	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
 	defer cancel()
 
 	cpuRequestPatch := patching.NewCPURequestPatch(statefulSet, cpuRequest)
 
-	return c.clientSet.AppsV1().StatefulSets(statefulSet.Namespace).Patch(
+	return c.clientSet.AppsV1().Deployments(statefulSet.Namespace).Patch(
 		ctx,
 		statefulSet.Name,
 		cpuRequestPatch.Type(),
@@ -115,7 +115,7 @@ func (c *StatefulSet) Delete(ctx context.Context, namespace string, name string)
 
 	backgroundPropagation := metav1.DeletePropagationBackground
 
-	return c.clientSet.AppsV1().StatefulSets(namespace).Delete(ctx, name, metav1.DeleteOptions{
+	return c.clientSet.AppsV1().Deployments(namespace).Delete(ctx, name, metav1.DeleteOptions{
 		PropagationPolicy: &backgroundPropagation,
 	})
 }

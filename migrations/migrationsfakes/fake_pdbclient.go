@@ -26,12 +26,12 @@ type FakePDBClient struct {
 		result1 *v1beta1.PodDisruptionBudget
 		result2 error
 	}
-	SetOwnerStub        func(context.Context, *v1beta1.PodDisruptionBudget, *v1.StatefulSet) (*v1beta1.PodDisruptionBudget, error)
+	SetOwnerStub        func(context.Context, *v1beta1.PodDisruptionBudget, *v1.Deployment) (*v1beta1.PodDisruptionBudget, error)
 	setOwnerMutex       sync.RWMutex
 	setOwnerArgsForCall []struct {
 		arg1 context.Context
 		arg2 *v1beta1.PodDisruptionBudget
-		arg3 *v1.StatefulSet
+		arg3 *v1.Deployment
 	}
 	setOwnerReturns struct {
 		result1 *v1beta1.PodDisruptionBudget
@@ -111,13 +111,13 @@ func (fake *FakePDBClient) GetReturnsOnCall(i int, result1 *v1beta1.PodDisruptio
 	}{result1, result2}
 }
 
-func (fake *FakePDBClient) SetOwner(arg1 context.Context, arg2 *v1beta1.PodDisruptionBudget, arg3 *v1.StatefulSet) (*v1beta1.PodDisruptionBudget, error) {
+func (fake *FakePDBClient) SetOwner(arg1 context.Context, arg2 *v1beta1.PodDisruptionBudget, arg3 *v1.Deployment) (*v1beta1.PodDisruptionBudget, error) {
 	fake.setOwnerMutex.Lock()
 	ret, specificReturn := fake.setOwnerReturnsOnCall[len(fake.setOwnerArgsForCall)]
 	fake.setOwnerArgsForCall = append(fake.setOwnerArgsForCall, struct {
 		arg1 context.Context
 		arg2 *v1beta1.PodDisruptionBudget
-		arg3 *v1.StatefulSet
+		arg3 *v1.Deployment
 	}{arg1, arg2, arg3})
 	stub := fake.SetOwnerStub
 	fakeReturns := fake.setOwnerReturns
@@ -138,13 +138,13 @@ func (fake *FakePDBClient) SetOwnerCallCount() int {
 	return len(fake.setOwnerArgsForCall)
 }
 
-func (fake *FakePDBClient) SetOwnerCalls(stub func(context.Context, *v1beta1.PodDisruptionBudget, *v1.StatefulSet) (*v1beta1.PodDisruptionBudget, error)) {
+func (fake *FakePDBClient) SetOwnerCalls(stub func(context.Context, *v1beta1.PodDisruptionBudget, *v1.Deployment) (*v1beta1.PodDisruptionBudget, error)) {
 	fake.setOwnerMutex.Lock()
 	defer fake.setOwnerMutex.Unlock()
 	fake.SetOwnerStub = stub
 }
 
-func (fake *FakePDBClient) SetOwnerArgsForCall(i int) (context.Context, *v1beta1.PodDisruptionBudget, *v1.StatefulSet) {
+func (fake *FakePDBClient) SetOwnerArgsForCall(i int) (context.Context, *v1beta1.PodDisruptionBudget, *v1.Deployment) {
 	fake.setOwnerMutex.RLock()
 	defer fake.setOwnerMutex.RUnlock()
 	argsForCall := fake.setOwnerArgsForCall[i]

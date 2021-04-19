@@ -34,7 +34,7 @@ func NewUpdater(pdbClient K8sClient) *Updater {
 	}
 }
 
-func (c *Updater) Update(ctx context.Context, statefulSet *appsv1.StatefulSet, lrp *api.LRP) error {
+func (c *Updater) Update(ctx context.Context, statefulSet *appsv1.Deployment, lrp *api.LRP) error {
 	if lrp.TargetInstances > 1 {
 		return c.createPDB(ctx, statefulSet, lrp)
 	}
@@ -42,7 +42,7 @@ func (c *Updater) Update(ctx context.Context, statefulSet *appsv1.StatefulSet, l
 	return c.deletePDB(ctx, statefulSet)
 }
 
-func (c *Updater) createPDB(ctx context.Context, statefulSet *appsv1.StatefulSet, lrp *api.LRP) error {
+func (c *Updater) createPDB(ctx context.Context, statefulSet *appsv1.Deployment, lrp *api.LRP) error {
 	minAvailable := intstr.FromString(PdbMinAvailableInstances)
 
 	pdb := &v1beta1.PodDisruptionBudget{
@@ -73,7 +73,7 @@ func (c *Updater) createPDB(ctx context.Context, statefulSet *appsv1.StatefulSet
 	return errors.Wrap(err, "failed to create pod distruption budget")
 }
 
-func (c *Updater) deletePDB(ctx context.Context, statefulSet *appsv1.StatefulSet) error {
+func (c *Updater) deletePDB(ctx context.Context, statefulSet *appsv1.Deployment) error {
 	err := c.pdbClient.Delete(ctx, statefulSet.Namespace, statefulSet.Name)
 
 	if k8serrors.IsNotFound(err) {

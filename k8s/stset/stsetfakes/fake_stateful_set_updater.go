@@ -10,32 +10,32 @@ import (
 )
 
 type FakeStatefulSetUpdater struct {
-	UpdateStub        func(context.Context, string, *v1.StatefulSet) (*v1.StatefulSet, error)
+	UpdateStub        func(context.Context, string, *v1.Deployment) (*v1.Deployment, error)
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
 		arg1 context.Context
 		arg2 string
-		arg3 *v1.StatefulSet
+		arg3 *v1.Deployment
 	}
 	updateReturns struct {
-		result1 *v1.StatefulSet
+		result1 *v1.Deployment
 		result2 error
 	}
 	updateReturnsOnCall map[int]struct {
-		result1 *v1.StatefulSet
+		result1 *v1.Deployment
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetUpdater) Update(arg1 context.Context, arg2 string, arg3 *v1.StatefulSet) (*v1.StatefulSet, error) {
+func (fake *FakeStatefulSetUpdater) Update(arg1 context.Context, arg2 string, arg3 *v1.Deployment) (*v1.Deployment, error) {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
 		arg1 context.Context
 		arg2 string
-		arg3 *v1.StatefulSet
+		arg3 *v1.Deployment
 	}{arg1, arg2, arg3})
 	stub := fake.UpdateStub
 	fakeReturns := fake.updateReturns
@@ -56,41 +56,41 @@ func (fake *FakeStatefulSetUpdater) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakeStatefulSetUpdater) UpdateCalls(stub func(context.Context, string, *v1.StatefulSet) (*v1.StatefulSet, error)) {
+func (fake *FakeStatefulSetUpdater) UpdateCalls(stub func(context.Context, string, *v1.Deployment) (*v1.Deployment, error)) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakeStatefulSetUpdater) UpdateArgsForCall(i int) (context.Context, string, *v1.StatefulSet) {
+func (fake *FakeStatefulSetUpdater) UpdateArgsForCall(i int) (context.Context, string, *v1.Deployment) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeStatefulSetUpdater) UpdateReturns(result1 *v1.StatefulSet, result2 error) {
+func (fake *FakeStatefulSetUpdater) UpdateReturns(result1 *v1.Deployment, result2 error) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = nil
 	fake.updateReturns = struct {
-		result1 *v1.StatefulSet
+		result1 *v1.Deployment
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulSetUpdater) UpdateReturnsOnCall(i int, result1 *v1.StatefulSet, result2 error) {
+func (fake *FakeStatefulSetUpdater) UpdateReturnsOnCall(i int, result1 *v1.Deployment, result2 error) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = nil
 	if fake.updateReturnsOnCall == nil {
 		fake.updateReturnsOnCall = make(map[int]struct {
-			result1 *v1.StatefulSet
+			result1 *v1.Deployment
 			result2 error
 		})
 	}
 	fake.updateReturnsOnCall[i] = struct {
-		result1 *v1.StatefulSet
+		result1 *v1.Deployment
 		result2 error
 	}{result1, result2}
 }

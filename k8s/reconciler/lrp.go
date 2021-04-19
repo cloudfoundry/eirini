@@ -35,7 +35,7 @@ type LRPDesirer interface {
 }
 
 type StatefulSetGetter interface {
-	Get(ctx context.Context, namespace, name string) (*appsv1.StatefulSet, error)
+	Get(ctx context.Context, namespace, name string) (*appsv1.Deployment, error)
 }
 
 func NewLRP(logger lager.Logger, lrps client.Client, desirer LRPDesirer, statefulsetGetter StatefulSetGetter, scheme *runtime.Scheme) *LRP {

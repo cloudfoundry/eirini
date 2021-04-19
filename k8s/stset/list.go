@@ -13,11 +13,11 @@ import (
 //counterfeiter:generate . StatefulSetsBySourceTypeGetter
 
 type StatefulSetToLRPConverter interface {
-	Convert(s appsv1.StatefulSet) (*api.LRP, error)
+	Convert(s appsv1.Deployment) (*api.LRP, error)
 }
 
 type StatefulSetsBySourceTypeGetter interface {
-	GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.StatefulSet, error)
+	GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.Deployment, error)
 }
 
 type Lister struct {
@@ -58,7 +58,7 @@ func (l *Lister) List(ctx context.Context) ([]*api.LRP, error) {
 	return lrps, nil
 }
 
-func (l *Lister) statefulSetsToLRPs(statefulSets []appsv1.StatefulSet) ([]*api.LRP, error) {
+func (l *Lister) statefulSetsToLRPs(statefulSets []appsv1.Deployment) ([]*api.LRP, error) {
 	lrps := []*api.LRP{}
 
 	for _, s := range statefulSets {

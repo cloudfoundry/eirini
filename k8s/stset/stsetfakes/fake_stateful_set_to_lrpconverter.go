@@ -10,10 +10,10 @@ import (
 )
 
 type FakeStatefulSetToLRPConverter struct {
-	ConvertStub        func(v1.StatefulSet) (*api.LRP, error)
+	ConvertStub        func(v1.Deployment) (*api.LRP, error)
 	convertMutex       sync.RWMutex
 	convertArgsForCall []struct {
-		arg1 v1.StatefulSet
+		arg1 v1.Deployment
 	}
 	convertReturns struct {
 		result1 *api.LRP
@@ -27,11 +27,11 @@ type FakeStatefulSetToLRPConverter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulSetToLRPConverter) Convert(arg1 v1.StatefulSet) (*api.LRP, error) {
+func (fake *FakeStatefulSetToLRPConverter) Convert(arg1 v1.Deployment) (*api.LRP, error) {
 	fake.convertMutex.Lock()
 	ret, specificReturn := fake.convertReturnsOnCall[len(fake.convertArgsForCall)]
 	fake.convertArgsForCall = append(fake.convertArgsForCall, struct {
-		arg1 v1.StatefulSet
+		arg1 v1.Deployment
 	}{arg1})
 	stub := fake.ConvertStub
 	fakeReturns := fake.convertReturns
@@ -52,13 +52,13 @@ func (fake *FakeStatefulSetToLRPConverter) ConvertCallCount() int {
 	return len(fake.convertArgsForCall)
 }
 
-func (fake *FakeStatefulSetToLRPConverter) ConvertCalls(stub func(v1.StatefulSet) (*api.LRP, error)) {
+func (fake *FakeStatefulSetToLRPConverter) ConvertCalls(stub func(v1.Deployment) (*api.LRP, error)) {
 	fake.convertMutex.Lock()
 	defer fake.convertMutex.Unlock()
 	fake.ConvertStub = stub
 }
 
-func (fake *FakeStatefulSetToLRPConverter) ConvertArgsForCall(i int) v1.StatefulSet {
+func (fake *FakeStatefulSetToLRPConverter) ConvertArgsForCall(i int) v1.Deployment {
 	fake.convertMutex.RLock()
 	defer fake.convertMutex.RUnlock()
 	argsForCall := fake.convertArgsForCall[i]

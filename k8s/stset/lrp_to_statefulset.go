@@ -50,7 +50,7 @@ func NewLRPToStatefulSetConverter(
 	}
 }
 
-func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *api.LRP, privateRegistrySecret *corev1.Secret) (*appsv1.StatefulSet, error) {
+func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *api.LRP, privateRegistrySecret *corev1.Secret) (*appsv1.Deployment, error) {
 	envs := shared.MapToEnvVar(lrp.Env)
 	fieldEnvs := []corev1.EnvVar{
 		{
@@ -121,13 +121,12 @@ func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *api.LRP, private
 
 	sidecarContainers := getSidecarContainers(lrp)
 	containers = append(containers, sidecarContainers...)
-	statefulSet := &appsv1.StatefulSet{
+	statefulSet := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: statefulSetName,
 		},
-		Spec: appsv1.StatefulSetSpec{
-			PodManagementPolicy: "Parallel",
-			Replicas:            int32ptr(lrp.TargetInstances),
+		Spec: appsv1.DeploymentSpec{
+			Replicas: int32ptr(lrp.TargetInstances),
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers:         containers,

@@ -42,7 +42,7 @@ func (c *PodDisruptionBudget) Delete(ctx context.Context, namespace string, name
 	return c.clientSet.PolicyV1beta1().PodDisruptionBudgets(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
-func (c *PodDisruptionBudget) SetOwner(ctx context.Context, pdb *policyv1beta1.PodDisruptionBudget, owner *appsv1.StatefulSet) (*policyv1beta1.PodDisruptionBudget, error) {
+func (c *PodDisruptionBudget) SetOwner(ctx context.Context, pdb *policyv1beta1.PodDisruptionBudget, owner *appsv1.Deployment) (*policyv1beta1.PodDisruptionBudget, error) {
 	ctx, cancel := context.WithTimeout(ctx, k8sTimeout)
 	defer cancel()
 

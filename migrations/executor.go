@@ -19,8 +19,8 @@ import (
 //counterfeiter:generate . StatefulsetsClient
 
 type StatefulsetsClient interface {
-	GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.StatefulSet, error)
-	SetAnnotation(ctx context.Context, statefulSet *appsv1.StatefulSet, key, value string) (*appsv1.StatefulSet, error)
+	GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.Deployment, error)
+	SetAnnotation(ctx context.Context, statefulSet *appsv1.Deployment, key, value string) (*appsv1.Deployment, error)
 }
 
 //counterfeiter:generate . JobsClient
@@ -161,9 +161,9 @@ func (e *Executor) migrateObjects(ctx context.Context, logger lager.Logger, obje
 }
 
 func (e *Executor) setStatefulSetAnnotation(ctx context.Context, obj runtime.Object, seq int) error {
-	stSet, ok := obj.(*appsv1.StatefulSet)
+	stSet, ok := obj.(*appsv1.Deployment)
 	if !ok {
-		return fmt.Errorf("expected *appsv1.StatefulSet, got %T", obj)
+		return fmt.Errorf("expected *appsv1.Deployment, got %T", obj)
 	}
 
 	if _, err := e.stSetClient.SetAnnotation(ctx, stSet, shared.AnnotationLatestMigration, strconv.Itoa(seq)); err != nil {

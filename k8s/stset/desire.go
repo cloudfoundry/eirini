@@ -22,7 +22,7 @@ import (
 //counterfeiter:generate . PodDisruptionBudgetUpdater
 
 type LRPToStatefulSetConverter interface {
-	Convert(statefulSetName string, lrp *api.LRP, privateRegistrySecret *corev1.Secret) (*appsv1.StatefulSet, error)
+	Convert(statefulSetName string, lrp *api.LRP, privateRegistrySecret *corev1.Secret) (*appsv1.Deployment, error)
 }
 
 type SecretsClient interface {
@@ -32,11 +32,11 @@ type SecretsClient interface {
 }
 
 type StatefulSetCreator interface {
-	Create(ctx context.Context, namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
+	Create(ctx context.Context, namespace string, statefulSet *appsv1.Deployment) (*appsv1.Deployment, error)
 }
 
 type PodDisruptionBudgetUpdater interface {
-	Update(ctx context.Context, stset *appsv1.StatefulSet, lrp *api.LRP) error
+	Update(ctx context.Context, stset *appsv1.Deployment, lrp *api.LRP) error
 }
 
 type Desirer struct {
@@ -115,7 +115,7 @@ func (d *Desirer) Desire(ctx context.Context, namespace string, lrp *api.LRP, op
 	return nil
 }
 
-func (d *Desirer) setSecretOwner(ctx context.Context, privateRegistrySecret *corev1.Secret, stSet *appsv1.StatefulSet) error {
+func (d *Desirer) setSecretOwner(ctx context.Context, privateRegistrySecret *corev1.Secret, stSet *appsv1.Deployment) error {
 	if privateRegistrySecret == nil {
 		return nil
 	}

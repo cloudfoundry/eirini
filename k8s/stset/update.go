@@ -14,7 +14,7 @@ import (
 //counterfeiter:generate . StatefulSetUpdater
 
 type StatefulSetUpdater interface {
-	Update(ctx context.Context, namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
+	Update(ctx context.Context, namespace string, statefulSet *appsv1.Deployment) (*appsv1.Deployment, error)
 }
 
 type Updater struct {
@@ -83,7 +83,7 @@ func (u *Updater) update(ctx context.Context, lrp *api.LRP) error {
 	return nil
 }
 
-func (u *Updater) getUpdatedStatefulSetObj(sts *appsv1.StatefulSet, routes []api.Route, instances int, lastUpdated, image string) (*appsv1.StatefulSet, error) {
+func (u *Updater) getUpdatedStatefulSetObj(sts *appsv1.Deployment, routes []api.Route, instances int, lastUpdated, image string) (*appsv1.Deployment, error) {
 	updatedSts := sts.DeepCopy()
 
 	uris, err := json.Marshal(routes)

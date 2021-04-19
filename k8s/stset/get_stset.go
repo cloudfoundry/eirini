@@ -13,13 +13,13 @@ import (
 //counterfeiter:generate . StatefulSetByLRPIdentifierGetter
 
 type StatefulSetByLRPIdentifierGetter interface {
-	GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifier) ([]appsv1.StatefulSet, error)
+	GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifier) ([]appsv1.Deployment, error)
 }
 
-type getStatefulSetFunc func(ctx context.Context, identifier api.LRPIdentifier) (*appsv1.StatefulSet, error)
+type getStatefulSetFunc func(ctx context.Context, identifier api.LRPIdentifier) (*appsv1.Deployment, error)
 
 func newGetStatefulSetFunc(stSetGetter StatefulSetByLRPIdentifierGetter) getStatefulSetFunc {
-	return func(ctx context.Context, identifier api.LRPIdentifier) (*appsv1.StatefulSet, error) {
+	return func(ctx context.Context, identifier api.LRPIdentifier) (*appsv1.Deployment, error) {
 		statefulSets, err := stSetGetter.GetByLRPIdentifier(ctx, identifier)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to list statefulsets")

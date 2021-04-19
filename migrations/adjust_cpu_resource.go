@@ -14,7 +14,7 @@ import (
 //counterfeiter:generate . CPURequestSetter
 
 type CPURequestSetter interface {
-	SetCPURequest(ctx context.Context, stSet *appsv1.StatefulSet, cpuRequest *resource.Quantity) (*appsv1.StatefulSet, error)
+	SetCPURequest(ctx context.Context, stSet *appsv1.Deployment, cpuRequest *resource.Quantity) (*appsv1.Deployment, error)
 }
 
 func NewAdjustCPURequest(cpuRequestSetter CPURequestSetter) AdjustCPURequest {
@@ -36,7 +36,7 @@ type originalRequest struct {
 }
 
 func (m AdjustCPURequest) Apply(ctx context.Context, o runtime.Object) error {
-	stSet, ok := o.(*appsv1.StatefulSet)
+	stSet, ok := o.(*appsv1.Deployment)
 	if !ok {
 		return fmt.Errorf("expected *v1.StatefulSet, got: %T", o)
 	}

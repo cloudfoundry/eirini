@@ -14,7 +14,7 @@ import (
 
 type PDBClient interface {
 	Get(ctx context.Context, namespace, name string) (*v1beta1.PodDisruptionBudget, error)
-	SetOwner(ctx context.Context, pdb *v1beta1.PodDisruptionBudget, owner *appsv1.StatefulSet) (*v1beta1.PodDisruptionBudget, error)
+	SetOwner(ctx context.Context, pdb *v1beta1.PodDisruptionBudget, owner *appsv1.Deployment) (*v1beta1.PodDisruptionBudget, error)
 }
 
 type AdoptPDB struct {
@@ -28,7 +28,7 @@ func NewAdoptPDB(pdbClient PDBClient) AdoptPDB {
 }
 
 func (m AdoptPDB) Apply(ctx context.Context, obj runtime.Object) error {
-	stSet, ok := obj.(*appsv1.StatefulSet)
+	stSet, ok := obj.(*appsv1.Deployment)
 	if !ok {
 		return fmt.Errorf("expected *v1.StatefulSet, got: %T", obj)
 	}

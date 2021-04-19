@@ -18,15 +18,15 @@ type PodClient interface {
 }
 
 type PodDisruptionBudgetClient interface {
-	Update(ctx context.Context, stset *appsv1.StatefulSet, lrp *api.LRP) error
+	Update(ctx context.Context, stset *appsv1.Deployment, lrp *api.LRP) error
 }
 
 type StatefulSetClient interface {
-	Create(ctx context.Context, namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
-	Update(ctx context.Context, namespace string, statefulSet *appsv1.StatefulSet) (*appsv1.StatefulSet, error)
+	Create(ctx context.Context, namespace string, statefulSet *appsv1.Deployment) (*appsv1.Deployment, error)
+	Update(ctx context.Context, namespace string, statefulSet *appsv1.Deployment) (*appsv1.Deployment, error)
 	Delete(ctx context.Context, namespace string, name string) error
-	GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.StatefulSet, error)
-	GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifier) ([]appsv1.StatefulSet, error)
+	GetBySourceType(ctx context.Context, sourceType string) ([]appsv1.Deployment, error)
+	GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifier) ([]appsv1.Deployment, error)
 }
 
 type SecretsClient interface {

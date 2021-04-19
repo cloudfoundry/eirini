@@ -10,41 +10,41 @@ import (
 )
 
 type FakeStatefulsetsClient struct {
-	GetBySourceTypeStub        func(context.Context, string) ([]v1.StatefulSet, error)
+	GetBySourceTypeStub        func(context.Context, string) ([]v1.Deployment, error)
 	getBySourceTypeMutex       sync.RWMutex
 	getBySourceTypeArgsForCall []struct {
 		arg1 context.Context
 		arg2 string
 	}
 	getBySourceTypeReturns struct {
-		result1 []v1.StatefulSet
+		result1 []v1.Deployment
 		result2 error
 	}
 	getBySourceTypeReturnsOnCall map[int]struct {
-		result1 []v1.StatefulSet
+		result1 []v1.Deployment
 		result2 error
 	}
-	SetAnnotationStub        func(context.Context, *v1.StatefulSet, string, string) (*v1.StatefulSet, error)
+	SetAnnotationStub        func(context.Context, *v1.Deployment, string, string) (*v1.Deployment, error)
 	setAnnotationMutex       sync.RWMutex
 	setAnnotationArgsForCall []struct {
 		arg1 context.Context
-		arg2 *v1.StatefulSet
+		arg2 *v1.Deployment
 		arg3 string
 		arg4 string
 	}
 	setAnnotationReturns struct {
-		result1 *v1.StatefulSet
+		result1 *v1.Deployment
 		result2 error
 	}
 	setAnnotationReturnsOnCall map[int]struct {
-		result1 *v1.StatefulSet
+		result1 *v1.Deployment
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStatefulsetsClient) GetBySourceType(arg1 context.Context, arg2 string) ([]v1.StatefulSet, error) {
+func (fake *FakeStatefulsetsClient) GetBySourceType(arg1 context.Context, arg2 string) ([]v1.Deployment, error) {
 	fake.getBySourceTypeMutex.Lock()
 	ret, specificReturn := fake.getBySourceTypeReturnsOnCall[len(fake.getBySourceTypeArgsForCall)]
 	fake.getBySourceTypeArgsForCall = append(fake.getBySourceTypeArgsForCall, struct {
@@ -70,7 +70,7 @@ func (fake *FakeStatefulsetsClient) GetBySourceTypeCallCount() int {
 	return len(fake.getBySourceTypeArgsForCall)
 }
 
-func (fake *FakeStatefulsetsClient) GetBySourceTypeCalls(stub func(context.Context, string) ([]v1.StatefulSet, error)) {
+func (fake *FakeStatefulsetsClient) GetBySourceTypeCalls(stub func(context.Context, string) ([]v1.Deployment, error)) {
 	fake.getBySourceTypeMutex.Lock()
 	defer fake.getBySourceTypeMutex.Unlock()
 	fake.GetBySourceTypeStub = stub
@@ -83,38 +83,38 @@ func (fake *FakeStatefulsetsClient) GetBySourceTypeArgsForCall(i int) (context.C
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeStatefulsetsClient) GetBySourceTypeReturns(result1 []v1.StatefulSet, result2 error) {
+func (fake *FakeStatefulsetsClient) GetBySourceTypeReturns(result1 []v1.Deployment, result2 error) {
 	fake.getBySourceTypeMutex.Lock()
 	defer fake.getBySourceTypeMutex.Unlock()
 	fake.GetBySourceTypeStub = nil
 	fake.getBySourceTypeReturns = struct {
-		result1 []v1.StatefulSet
+		result1 []v1.Deployment
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulsetsClient) GetBySourceTypeReturnsOnCall(i int, result1 []v1.StatefulSet, result2 error) {
+func (fake *FakeStatefulsetsClient) GetBySourceTypeReturnsOnCall(i int, result1 []v1.Deployment, result2 error) {
 	fake.getBySourceTypeMutex.Lock()
 	defer fake.getBySourceTypeMutex.Unlock()
 	fake.GetBySourceTypeStub = nil
 	if fake.getBySourceTypeReturnsOnCall == nil {
 		fake.getBySourceTypeReturnsOnCall = make(map[int]struct {
-			result1 []v1.StatefulSet
+			result1 []v1.Deployment
 			result2 error
 		})
 	}
 	fake.getBySourceTypeReturnsOnCall[i] = struct {
-		result1 []v1.StatefulSet
+		result1 []v1.Deployment
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulsetsClient) SetAnnotation(arg1 context.Context, arg2 *v1.StatefulSet, arg3 string, arg4 string) (*v1.StatefulSet, error) {
+func (fake *FakeStatefulsetsClient) SetAnnotation(arg1 context.Context, arg2 *v1.Deployment, arg3 string, arg4 string) (*v1.Deployment, error) {
 	fake.setAnnotationMutex.Lock()
 	ret, specificReturn := fake.setAnnotationReturnsOnCall[len(fake.setAnnotationArgsForCall)]
 	fake.setAnnotationArgsForCall = append(fake.setAnnotationArgsForCall, struct {
 		arg1 context.Context
-		arg2 *v1.StatefulSet
+		arg2 *v1.Deployment
 		arg3 string
 		arg4 string
 	}{arg1, arg2, arg3, arg4})
@@ -137,41 +137,41 @@ func (fake *FakeStatefulsetsClient) SetAnnotationCallCount() int {
 	return len(fake.setAnnotationArgsForCall)
 }
 
-func (fake *FakeStatefulsetsClient) SetAnnotationCalls(stub func(context.Context, *v1.StatefulSet, string, string) (*v1.StatefulSet, error)) {
+func (fake *FakeStatefulsetsClient) SetAnnotationCalls(stub func(context.Context, *v1.Deployment, string, string) (*v1.Deployment, error)) {
 	fake.setAnnotationMutex.Lock()
 	defer fake.setAnnotationMutex.Unlock()
 	fake.SetAnnotationStub = stub
 }
 
-func (fake *FakeStatefulsetsClient) SetAnnotationArgsForCall(i int) (context.Context, *v1.StatefulSet, string, string) {
+func (fake *FakeStatefulsetsClient) SetAnnotationArgsForCall(i int) (context.Context, *v1.Deployment, string, string) {
 	fake.setAnnotationMutex.RLock()
 	defer fake.setAnnotationMutex.RUnlock()
 	argsForCall := fake.setAnnotationArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
-func (fake *FakeStatefulsetsClient) SetAnnotationReturns(result1 *v1.StatefulSet, result2 error) {
+func (fake *FakeStatefulsetsClient) SetAnnotationReturns(result1 *v1.Deployment, result2 error) {
 	fake.setAnnotationMutex.Lock()
 	defer fake.setAnnotationMutex.Unlock()
 	fake.SetAnnotationStub = nil
 	fake.setAnnotationReturns = struct {
-		result1 *v1.StatefulSet
+		result1 *v1.Deployment
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStatefulsetsClient) SetAnnotationReturnsOnCall(i int, result1 *v1.StatefulSet, result2 error) {
+func (fake *FakeStatefulsetsClient) SetAnnotationReturnsOnCall(i int, result1 *v1.Deployment, result2 error) {
 	fake.setAnnotationMutex.Lock()
 	defer fake.setAnnotationMutex.Unlock()
 	fake.SetAnnotationStub = nil
 	if fake.setAnnotationReturnsOnCall == nil {
 		fake.setAnnotationReturnsOnCall = make(map[int]struct {
-			result1 *v1.StatefulSet
+			result1 *v1.Deployment
 			result2 error
 		})
 	}
 	fake.setAnnotationReturnsOnCall[i] = struct {
-		result1 *v1.StatefulSet
+		result1 *v1.Deployment
 		result2 error
 	}{result1, result2}
 }

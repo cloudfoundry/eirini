@@ -114,7 +114,7 @@ var _ = Describe("reconciler.LRP", func() {
 			return nil
 		}
 		controllerClient.StatusReturns(statusClient)
-		statefulsetGetter.GetReturns(&appsv1.StatefulSet{}, nil)
+		statefulsetGetter.GetReturns(&appsv1.Deployment{}, nil)
 		desirer.GetReturns(nil, eirini.ErrNotFound)
 	})
 
@@ -211,7 +211,7 @@ var _ = Describe("reconciler.LRP", func() {
 		Expect(setOwnerFns).To(HaveLen(1))
 		setOwnerFn := setOwnerFns[0]
 
-		st := &appsv1.StatefulSet{ObjectMeta: v1.ObjectMeta{Namespace: "some-ns"}}
+		st := &appsv1.Deployment{ObjectMeta: v1.ObjectMeta{Namespace: "some-ns"}}
 		Expect(setOwnerFn(st)).To(Succeed())
 		Expect(st.ObjectMeta.OwnerReferences).To(HaveLen(1))
 		Expect(st.ObjectMeta.OwnerReferences[0].Kind).To(Equal("LRP"))
@@ -292,7 +292,7 @@ var _ = Describe("reconciler.LRP", func() {
 			controllerClient.StatusReturns(statusWriter)
 
 			desirer.GetReturns(nil, nil)
-			statefulsetGetter.GetReturns(&appsv1.StatefulSet{Status: appsv1.StatefulSetStatus{ReadyReplicas: 9}}, nil)
+			statefulsetGetter.GetReturns(&appsv1.Deployment{Status: appsv1.DeploymentStatus{ReadyReplicas: 9}}, nil)
 		})
 
 		It("the CRD status is updated accordingly", func() {

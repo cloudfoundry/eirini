@@ -11,11 +11,11 @@ import (
 )
 
 type FakePodDisruptionBudgetUpdater struct {
-	UpdateStub        func(context.Context, *v1.StatefulSet, *api.LRP) error
+	UpdateStub        func(context.Context, *v1.Deployment, *api.LRP) error
 	updateMutex       sync.RWMutex
 	updateArgsForCall []struct {
 		arg1 context.Context
-		arg2 *v1.StatefulSet
+		arg2 *v1.Deployment
 		arg3 *api.LRP
 	}
 	updateReturns struct {
@@ -28,12 +28,12 @@ type FakePodDisruptionBudgetUpdater struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePodDisruptionBudgetUpdater) Update(arg1 context.Context, arg2 *v1.StatefulSet, arg3 *api.LRP) error {
+func (fake *FakePodDisruptionBudgetUpdater) Update(arg1 context.Context, arg2 *v1.Deployment, arg3 *api.LRP) error {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
 	fake.updateArgsForCall = append(fake.updateArgsForCall, struct {
 		arg1 context.Context
-		arg2 *v1.StatefulSet
+		arg2 *v1.Deployment
 		arg3 *api.LRP
 	}{arg1, arg2, arg3})
 	stub := fake.UpdateStub
@@ -55,13 +55,13 @@ func (fake *FakePodDisruptionBudgetUpdater) UpdateCallCount() int {
 	return len(fake.updateArgsForCall)
 }
 
-func (fake *FakePodDisruptionBudgetUpdater) UpdateCalls(stub func(context.Context, *v1.StatefulSet, *api.LRP) error) {
+func (fake *FakePodDisruptionBudgetUpdater) UpdateCalls(stub func(context.Context, *v1.Deployment, *api.LRP) error) {
 	fake.updateMutex.Lock()
 	defer fake.updateMutex.Unlock()
 	fake.UpdateStub = stub
 }
 
-func (fake *FakePodDisruptionBudgetUpdater) UpdateArgsForCall(i int) (context.Context, *v1.StatefulSet, *api.LRP) {
+func (fake *FakePodDisruptionBudgetUpdater) UpdateArgsForCall(i int) (context.Context, *v1.Deployment, *api.LRP) {
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	argsForCall := fake.updateArgsForCall[i]
