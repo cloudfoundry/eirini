@@ -82,7 +82,7 @@ main() {
   fi
 
   echo "Checking out latest stable cf-for-k8s..."
-  checkout_stable_cf4k8s
+  checkout_cf4k8s_develop
 
   if [ "$skip_docker_build" != "true" ]; then
     if [ "$#" == "0" ]; then
@@ -116,14 +116,14 @@ is_cloud_controller() {
   [[ "$component" =~ cloud.controller ]] || [[ "$component" =~ "ccng" ]] || [[ "$component" =~ "capi" ]] || [[ "$component" =~ "cc" ]]
 }
 
-checkout_stable_cf4k8s() {
+checkout_cf4k8s_develop() {
   pushd "$CF4K8S_DIR"
   {
     echo "Cleaning dirty state in cf-for-k8s..."
     git checkout . && git clean -ffd
     echo "Checking out pending-prs branch"
-    git checkout pending-prs
-    git pull ef pending-prs
+    git checkout develop
+    git pull ef develop
   }
   popd
 }
