@@ -19,13 +19,10 @@ CLUSTER_NAME=${CLUSTER_NAME:-cf-for-k8s}
 CF_DOMAIN=${CF_DOMAIN:-vcap.me}
 EIRINI_RELEASE_BASEDIR=${EIRINI_RELEASE_BASEDIR:-$HOME/workspace/eirini-release}
 EIRINI_CI_BASEDIR=${EIRINI_CI_BASEDIR:-$HOME/workspace/eirini-ci}
-EIRINI_RENDER_DIR=$(mktemp -d)
 CF4K8S_DIR="$HOME/workspace/cf-for-k8s"
 VALUES_FILE="$SCRIPT_DIR/values/$CLUSTER_NAME.cf-values.yml"
 
 source "$SCRIPT_DIR/assets/cf4k8s/cc-commons.sh"
-
-trap "rm -rf $EIRINI_RENDER_DIR" EXIT
 
 main() {
   use_local_cc="false"
@@ -120,22 +117,34 @@ EOF
 }
 
 build-eirini() {
-  pushd "$CF4K8S_DIR"
-  {
-    if [[ "$use_local_eirini" == "true" ]]; then
-      echo "🔨 Building local eirini yamls"
-      # generate eirini yamls
-      "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$EIRINI_RENDER_DIR"
-      # patch generated eirini yamls into cf-for-k8s
-      rm -rf "./build/eirini/_vendir/eirini"
-      mv "$EIRINI_RENDER_DIR/templates" "./build/eirini/_vendir/eirini"
-    fi
+  if [[ "$use_local_eirini" == "true" ]]; then
+    EIRINI_RENDER_DIR=$(mktemp -d)
+    trap "rm -rf $EIRINI_RENDER_DIR" EXIT
 
-    echo "🏞  Rendering eirini with ytt"
-    # generate config/eirini/_ytt_lib/eirini/rendered.yml
-    ./build/eirini/build.sh
-  }
-  popd
+    echo "🔨 Building local eirini yamls"
+    "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$EIRINI_RENDER_DIR"
+
+    echo "🏞  Rendering eirini with ytt and kbld"
+    ytt --ignore-unknown-comments \
+      -f "$EIRINI_RENDER_DIR/templates/core" \
+      -f "$EIRINI_RENDER_DIR/templates/events" \
+      -f "$EIRINI_RENDER_DIR/templates/workloads" \
+      -f "$CF4K8S_DIR/build/eirini/overlays" |
+      DOCKER_BUILDKIT=1 kbld -f - -f "$SCRIPT_DIR/kbld-local-eirini.yml" \
+        >"$CF4K8S_DIR/config/eirini/_ytt_lib/eirini/rendered.yml"
+
+    echo "📦 Loading our images on kind"
+    for img in $(grep -oh "kbld:.*" "$CF4K8S_DIR/config/eirini/_ytt_lib/eirini/rendered.yml"); do
+      kind load docker-image --name cf-for-k8s "$img"
+    done
+  else
+    pushd "$CF4K8S_DIR"
+    {
+      echo "🏞  Rendering eirini with ytt and kbld"
+      ./build/eirini/build.sh
+    }
+    popd
+  fi
 }
 
 build-cc() {
