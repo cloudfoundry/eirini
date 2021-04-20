@@ -87,12 +87,7 @@ func (g *Getter) GetInstances(ctx context.Context, identifier api.LRPIdentifier)
 			continue
 		}
 
-		index, err := util.ParseAppIndex(pod.Name)
-		if err != nil {
-			logger.Error("failed-to-parse-app-index", err)
-
-			return nil, errors.Wrap(err, "failed to parse pod index")
-		}
+		index, _ := util.ParseAppIndex(pod.Name)
 
 		since := int64(0)
 		if pod.Status.StartTime != nil {

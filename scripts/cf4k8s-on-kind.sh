@@ -144,7 +144,7 @@ build-cc() {
     # build & bump cc
     build_ccng_image
     push-to-docker
-    sed -i "s|ccng: .*$|ccng: $CCNG_IMAGE:$TAG|" "$HOME/workspace/capi-k8s-release/values/images.yml"
+    sed -i "s|ccng: .*$|ccng: $CCNG_IMAGE:$TAG|" "$HOME/workspace/capi-k8s-release/config/values/images.yml"
     "$HOME/workspace/capi-k8s-release/scripts/bump-cf-for-k8s.sh"
   fi
 }
