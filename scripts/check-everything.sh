@@ -45,16 +45,12 @@ run_unit_tests() {
 }
 
 run_integration_tests() {
-  local kubeconfig="$HOME/.kube/config"
-
-  if [[ "$use_kind" == "true" ]]; then
-    local cluster_name="integration-tests"
-    kubeconfig="$HOME/.kube/$cluster_name.yml"
-    ensure_kind_cluster "$cluster_name"
-  fi
+  local cluster_name="integration-tests"
+  export KUBECONFIG="$HOME/.kube/$cluster_name.yml"
+  ensure_kind_cluster "$cluster_name"
 
   echo "#########################################"
-  echo "Running integration tests on $(KUBECONFIG=$kubeconfig kubectl config current-context)"
+  echo "Running integration tests on $(kubectl config current-context)"
   echo "#########################################"
   echo
 
@@ -64,13 +60,13 @@ run_integration_tests() {
   local src_dir
   src_dir=$(mktemp -d)
   cp -a "$EIRINI_DIR" "$src_dir"
-  cp "$kubeconfig" "$src_dir"
+  cp "$KUBECONFIG" "$src_dir"
   trap "rm -rf $src_dir" EXIT
 
-  KUBECONFIG="$kubeconfig" kubectl apply -f "$EIRINI_RELEASE_BASEDIR/helm/templates/core/lrp-crd.yml"
-  KUBECONFIG="$kubeconfig" kubectl apply -f "$EIRINI_RELEASE_BASEDIR/helm/templates/core/task-crd.yml"
+  kubectl apply -f "$EIRINI_RELEASE_BASEDIR/helm/templates/core/lrp-crd.yml"
+  kubectl apply -f "$EIRINI_RELEASE_BASEDIR/helm/templates/core/task-crd.yml"
 
-  KUBECONFIG="$kubeconfig" telepresence \
+  telepresence \
     --method container \
     --new-deployment "$service_name" \
     --expose 10000 \
@@ -81,7 +77,7 @@ run_integration_tests() {
     --rm \
     -v "$src_dir":/usr/src/app \
     -v "$HOME"/.cache:/root/.cache \
-    -e INTEGRATION_KUBECONFIG="/usr/src/app/$(basename $kubeconfig)" \
+    -e INTEGRATION_KUBECONFIG="/usr/src/app/$(basename $KUBECONFIG)" \
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
     -e TELEPRESENCE_EXPOSE_PORT_START=10000 \
     -e TELEPRESENCE_SERVICE_NAME="$service_name" \
@@ -91,22 +87,20 @@ run_integration_tests() {
 }
 
 run_eats() {
-  local kubeconfig="$HOME/.kube/config"
-
-  if [[ "$use_kind" == "true" ]]; then
-    local cluster_name="eats"
-    kubeconfig="$HOME/.kube/$cluster_name.yml"
-    ensure_kind_cluster "$cluster_name"
-  fi
+  local cluster_name="eats"
+  export KUBECONFIG="$HOME/.kube/$cluster_name.yml"
+  ensure_kind_cluster "$cluster_name"
 
   echo "#########################################"
-  echo "Running EATs against deployed eirini on $(KUBECONFIG=$kubeconfig kubectl config current-context)"
+  echo "Running EATs against deployed eirini on $(kubectl config current-context)"
   echo "#########################################"
   echo
 
   if [[ "$redeploy" == "true" ]]; then
-    KUBECONFIG="$kubeconfig" skaffold delete || true
-    KUBECONFIG="$kubeconfig" "$RUN_DIR/skaffold" run
+    regenerate_secrets
+    redeploy_wiremock
+    redeploy_prometheus
+    redeploy_eirini
   fi
 
   local service_name
@@ -115,10 +109,10 @@ run_eats() {
   local src_dir
   src_dir=$(mktemp -d)
   cp -a "$EIRINI_DIR" "$src_dir"
-  cp "$kubeconfig" "$src_dir"
+  cp "$KUBECONFIG" "$src_dir"
   trap "rm -rf $src_dir" EXIT
 
-  KUBECONFIG="$kubeconfig" telepresence \
+  telepresence \
     --method container \
     --new-deployment "$service_name" \
     --docker-run \
@@ -130,9 +124,40 @@ run_eats() {
     -e EIRINI_SYSTEM_NS=eirini-core \
     -e EIRINI_WORKLOADS_NS=eirini-workloads \
     -e EIRINIUSER_PASSWORD="$EIRINIUSER_PASSWORD" \
-    -e INTEGRATION_KUBECONFIG="/usr/src/app/$(basename $kubeconfig)" \
+    -e INTEGRATION_KUBECONFIG="/usr/src/app/$(basename $KUBECONFIG)" \
     eirini/ci \
     /usr/src/app/scripts/run_eats_tests.sh "$@"
+}
+
+regenerate_secrets() {
+  wiremock_keystore_password=${WIREMOCK_KEYSTORE_PASSWORD:-$(pass eirini/ci/wiremock-keystore-password)}
+  "$EIRINI_RELEASE_BASEDIR/scripts/generate-secrets.sh" "*.eirini-core.svc" "$wiremock_keystore_password"
+
+}
+
+redeploy_wiremock() {
+  kapp -y delete -a wiremock
+  kapp -y deploy -a wiremock -f "$EIRINI_RELEASE_BASEDIR/scripts/assets/wiremock.yml"
+}
+
+redeploy_prometheus() {
+  kapp -y delete -a prometheus
+  helm -n eirini-core template prometheus prometheus-community/prometheus | kapp -y deploy -a prometheus -f -
+}
+
+redeploy_eirini() {
+  render_dir=$(mktemp -d)
+  trap "rm -rf $render_dir" EXIT
+  ca_bundle="$(kubectl get secret -n eirini-core instance-index-env-injector-certs -o jsonpath="{.data['tls\.ca']}")"
+  "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" eirini-core "$render_dir" \
+    --values "$EIRINI_RELEASE_BASEDIR/scripts/assets/value-overrides.yml" \
+    --set "webhook_ca_bundle=$ca_bundle,resource_validator_ca_bundle=$ca_bundle"
+  DOCKER_BUILDKIT=1 kbld -f "$render_dir" -f "$RUN_DIR/kbld-local-eirini.yml" >"$render_dir/rendered.yml"
+  for img in $(grep -oh "kbld:.*" "$render_dir/rendered.yml"); do
+    kind load docker-image --name eats "$img"
+  done
+  kapp -y delete -a eirini
+  kapp -y deploy -a eirini -f "$render_dir/rendered.yml"
 }
 
 run_linter() {
@@ -168,10 +193,6 @@ print_message() {
 }
 
 run_everything() {
-  if [[ "$use_kind" == "false" ]]; then
-    print_message "Running all tests in parallel against a targeted cluster is unsafe. Bailing out!" $RED
-    exit 1
-  fi
   print_message "about to run tests in parallel, it will be awesome" $GREEN
   print_message "ctrl-d panes when they are done" $RED
   local do_not_deploy="-n "
@@ -196,7 +217,6 @@ Options:
   -i  integration tests
   -l  golangci-lint
   -n  do not redeploy eirini when running eats
-  -r  use targeted remote cluster rather than local kind
   -u  unit tests
 EOF
   )
@@ -206,7 +226,6 @@ EOF
     run_integration_tests="false" \
     run_linter="false" \
     redeploy="true" \
-    use_kind="true" \
     run_subset="false"
 
   while getopts "auiefrnhl" opt; do
@@ -216,9 +235,6 @@ EOF
         ;;
       a)
         run_subset="false"
-        ;;
-      r)
-        use_kind="false"
         ;;
       u)
         run_unit_tests="true"

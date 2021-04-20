@@ -1,0 +1,40 @@
+---
+apiVersion: kbld.k14s.io/v1alpha1
+kind: Config
+sources:
+- imageRepo: eirini/api
+  path: .
+  docker:
+    build:
+      file: docker/api/Dockerfile
+      rawOptions: ["--build-arg", "GIT_SHA=api-dirty", "--tag", "api"]
+- imageRepo: eirini/eirini-controller
+  path: .
+  docker:
+    build:
+      file: docker/eirini-controller/Dockerfile
+      rawOptions: ["--build-arg", "GIT_SHA=eirini-controller-dirty", "--tag", "eirini-controller"]
+- imageRepo: eirini/event-reporter
+  path: .
+  docker:
+    build:
+      file: docker/event-reporter/Dockerfile
+      rawOptions: ["--build-arg", "GIT_SHA=event-reporter-dirty", "--tag", "event-reporter"]
+- imageRepo: eirini/task-reporter
+  path: .
+  docker:
+    build:
+      file: docker/task-reporter/Dockerfile
+      rawOptions: ["--build-arg", "GIT_SHA=task-reporter-dirty", "--tag", "task-reporter"]
+- imageRepo: eirini/instance-index-env-injector
+  path: .
+  docker:
+    build:
+      file: docker/instance-index-env-injector/Dockerfile
+      rawOptions: ["--build-arg", "GIT_SHA=instance-index-env-injector-dirty", "--tag", "instance-index-env-injector"]
+- imageRepo: eirini/migration
+  path: .
+  docker:
+    build:
+      file: docker/migration/Dockerfile
+      rawOptions: ["--build-arg", "GIT_SHA=migration-dirty", "--tag", "migration"]
