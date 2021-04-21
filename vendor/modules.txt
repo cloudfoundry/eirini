@@ -38,7 +38,7 @@ github.com/Azure/go-autorest/logger
 github.com/Azure/go-autorest/tracing
 # github.com/BurntSushi/toml v0.3.1
 github.com/BurntSushi/toml
-# github.com/Microsoft/go-winio v0.4.17
+# github.com/Microsoft/go-winio v0.4.18
 ## explicit
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
@@ -302,7 +302,7 @@ github.com/sirupsen/logrus
 github.com/spf13/pflag
 # github.com/square/certstrap v1.2.0
 github.com/square/certstrap/pkix
-# golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+# golang.org/x/crypto v0.0.0-20210415154028-4f45737414dc
 ## explicit
 golang.org/x/crypto/pkcs12
 golang.org/x/crypto/pkcs12/internal/rc2
@@ -311,7 +311,7 @@ golang.org/x/crypto/ssh/terminal
 ## explicit
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20210410081132-afb366fc7cd1
+# golang.org/x/net v0.0.0-20210420210106-798c2154c571
 ## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -332,7 +332,7 @@ golang.org/x/oauth2/google/internal/externalaccount
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20210414055047-fe65e336abe0
+# golang.org/x/sys v0.0.0-20210420205809-ac73e9fd8988
 ## explicit
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
