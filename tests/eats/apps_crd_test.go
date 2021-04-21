@@ -101,7 +101,6 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", fu
 				Ports:                  []int32{8080},
 				VolumeMounts:           []eiriniv1.VolumeMount{},
 				UserDefinedAnnotations: map[string]string{},
-				AppRoutes:              []eiriniv1.Route{{Hostname: "app-hostname-1", Port: 8080}},
 			},
 		}
 	})

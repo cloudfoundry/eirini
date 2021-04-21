@@ -49,7 +49,6 @@ var _ = Describe("PodCrashEvents [needs-logs-for: eirini-api, eirini-controller]
 					DiskMB:    256,
 					CPUWeight: 10,
 					Instances: 1,
-					AppRoutes: []eiriniv1.Route{{Hostname: "app-hostname-1", Port: 8080}},
 					Command:   []string{"sh", "-c", `sleep 1; exit 3`},
 				},
 			}

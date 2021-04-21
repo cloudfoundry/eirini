@@ -69,9 +69,6 @@ var _ = Describe("reconciler.LRP", func() {
 			lrp.Spec.DiskMB = 512
 			lrp.Spec.CPUWeight = 128
 			lrp.Spec.LastUpdated = "now"
-			lrp.Spec.AppRoutes = []eiriniv1.Route{
-				{Hostname: "foo.io", Port: 8080}, {Hostname: "bar.io", Port: 9090},
-			}
 			lrp.Spec.Sidecars = []eiriniv1.Sidecar{
 				{
 					Name:     "hello-sidecar",

@@ -108,9 +108,6 @@ var _ = Describe("LRPResourceValidator", func() {
 					UserDefinedAnnotations: map[string]string{
 						"user-annotations.io": "aaa",
 					},
-					AppRoutes: []eiriniv1.Route{
-						{Hostname: "aa.com", Port: 8080},
-					},
 				},
 			}
 		}
@@ -150,16 +147,6 @@ var _ = Describe("LRPResourceValidator", func() {
 	When("the image is updated", func() {
 		BeforeEach(func() {
 			updatedLRP.Spec.Image = "some-other-image"
-		})
-
-		It("allows the change", func() {
-			expectAllowResponse(resp)
-		})
-	})
-
-	When("the app routes are updated", func() {
-		BeforeEach(func() {
-			updatedLRP.Spec.AppRoutes = append(updatedLRP.Spec.AppRoutes, eiriniv1.Route{Hostname: "bb.com", Port: 8080})
 		})
 
 		It("allows the change", func() {

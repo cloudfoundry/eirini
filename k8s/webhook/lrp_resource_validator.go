@@ -25,7 +25,6 @@ func NewLRPResourceValidator(logger lager.Logger, decoder *admission.Decoder) *L
 		decoder: decoder,
 		lrpMutableFields: []string{
 			"Image",
-			"AppRoutes",
 			"Instances",
 		},
 	}

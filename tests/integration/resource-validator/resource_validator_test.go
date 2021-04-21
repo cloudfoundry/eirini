@@ -44,7 +44,6 @@ var _ = Describe("ResourceValidator", func() {
 					Ports:                  []int32{8080},
 					VolumeMounts:           []eiriniv1.VolumeMount{{MountPath: "path", ClaimName: "name"}},
 					UserDefinedAnnotations: map[string]string{},
-					AppRoutes:              []eiriniv1.Route{{Hostname: "app-hostname-1", Port: 8080}},
 				},
 			},
 			metav1.CreateOptions{},
@@ -76,16 +75,6 @@ var _ = Describe("ResourceValidator", func() {
 		BeforeEach(func() {
 			lrp.Spec.Image = "busybox"
 		})
-		It("allows the change", func() {
-			Expect(validationError).NotTo(HaveOccurred())
-		})
-	})
-
-	When("the app routes are updated", func() {
-		BeforeEach(func() {
-			lrp.Spec.AppRoutes[0].Port = 1234
-		})
-
 		It("allows the change", func() {
 			Expect(validationError).NotTo(HaveOccurred())
 		})

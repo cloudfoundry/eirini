@@ -41,7 +41,6 @@ type LRPSpec struct {
 	VolumeMounts           []VolumeMount     `json:"volumeMounts,omitempty"`
 	LastUpdated            string            `json:"lastUpdated"`
 	UserDefinedAnnotations map[string]string `json:"userDefinedAnnotations,omitempty"`
-	AppRoutes              []Route           `json:"appRoutes"`
 }
 
 type LRPStatus struct {

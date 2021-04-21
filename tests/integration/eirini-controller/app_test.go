@@ -51,7 +51,6 @@ var _ = Describe("App", func() {
 				Ports:                  []int32{8080},
 				VolumeMounts:           []eiriniv1.VolumeMount{},
 				UserDefinedAnnotations: map[string]string{},
-				AppRoutes:              []eiriniv1.Route{{Hostname: "app-hostname-1", Port: 8080}},
 			},
 		}
 	})
