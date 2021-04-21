@@ -171,13 +171,6 @@ var _ = Describe("API Converter", func() {
 			Expect(lrp.Env).To(HaveKeyWithValue("LANG", "en_US.UTF-8"))
 		})
 
-		It("sets the app routes", func() {
-			Expect(lrp.AppURIs).To(ConsistOf(
-				api.Route{Hostname: "bumblebee.example.com", Port: 8000},
-				api.Route{Hostname: "transformers.example.com", Port: 7070},
-			))
-		})
-
 		It("should set the ports", func() {
 			Expect(lrp.Ports).To(Equal([]int32{8000, 8888}))
 		})

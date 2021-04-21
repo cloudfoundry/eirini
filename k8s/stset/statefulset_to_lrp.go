@@ -1,10 +1,7 @@
 package stset
 
 import (
-	"encoding/json"
-
 	"code.cloudfoundry.org/eirini/api"
-	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -20,15 +17,6 @@ func (f StatefulSetToLRP) Convert(s appsv1.StatefulSet) (*api.LRP, error) {
 }
 
 func MapStatefulSetToLRP(s appsv1.StatefulSet) (*api.LRP, error) {
-	stRoutes := s.Annotations[AnnotationRegisteredRoutes]
-
-	var uris []api.Route
-
-	err := json.Unmarshal([]byte(stRoutes), &uris)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal uris")
-	}
-
 	ports := []int32{}
 	container := s.Spec.Template.Spec.Containers[0]
 
@@ -60,7 +48,6 @@ func MapStatefulSetToLRP(s appsv1.StatefulSet) (*api.LRP, error) {
 		TargetInstances:  int(*s.Spec.Replicas),
 		Ports:            ports,
 		LastUpdated:      s.Annotations[AnnotationLastUpdated],
-		AppURIs:          uris,
 		AppGUID:          s.Annotations[AnnotationAppID],
 		MemoryMB:         memory,
 		DiskMB:           disk,

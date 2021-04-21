@@ -476,32 +476,6 @@ var _ = Describe("LRPClient", func() {
 			})
 		})
 
-		Describe("updating routes", func() {
-			var (
-				routesBefore []api.Route
-				routesAfter  []api.Route
-				statefulset  *appsv1.StatefulSet
-			)
-
-			BeforeEach(func() {
-				routesBefore = []api.Route{{Hostname: "host1", Port: 123}}
-				routesAfter = []api.Route{{Hostname: "host2", Port: 456}}
-			})
-
-			JustBeforeEach(func() {
-				lrp.AppURIs = routesBefore
-				Expect(lrpClient.Desire(ctx, fixture.Namespace, lrp)).To(Succeed())
-
-				lrp.AppURIs = routesAfter
-				Expect(lrpClient.Update(ctx, lrp)).To(Succeed())
-				statefulset = getStatefulSetForLRP(lrp)
-			})
-
-			It("updates the routes", func() {
-				Expect(statefulset.Annotations[stset.AnnotationRegisteredRoutes]).To(MatchJSON(`[{"hostname": "host2", "port": 456}]`))
-			})
-		})
-
 		Describe("updating image", func() {
 			var (
 				imageBefore string
@@ -700,7 +674,6 @@ func createLRP(name string) *api.LRP {
 		SpaceName:       "space-foo",
 		TargetInstances: 2,
 		Image:           "eirini/busybox",
-		AppURIs:         []api.Route{{Hostname: "foo.example.com", Port: 8080}},
 		LRPIdentifier:   api.LRPIdentifier{GUID: tests.GenerateGUID(), Version: tests.GenerateGUID()},
 		LRP:             "metadata",
 		DiskMB:          2047,

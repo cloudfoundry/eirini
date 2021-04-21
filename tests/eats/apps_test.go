@@ -1,7 +1,6 @@
 package eats_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -124,26 +123,6 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 
 			It("successfully updates the LRP", func() {
 				Expect(lrp.Instances).To(BeNumerically("==", 2))
-			})
-		})
-
-		When("updating the routes", func() {
-			var updatedRoutes []tests.RouteInfo
-
-			BeforeEach(func() {
-				updatedRoutes = []tests.RouteInfo{{Hostname: "updated-host", Port: 4321}}
-				desiredLRPUpdate = cf.DesiredLRPUpdate{
-					Routes: map[string]json.RawMessage{
-						"cf-router": tests.MarshalRoutes(updatedRoutes),
-					},
-				}
-			})
-
-			It("successfully updates the LRP", func() {
-				Expect(lrp.Routes).To(SatisfyAll(
-					HaveLen(1),
-					HaveKeyWithValue("cf-router", tests.MarshalRoutes(updatedRoutes))),
-				)
 			})
 		})
 

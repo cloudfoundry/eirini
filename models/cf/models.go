@@ -155,10 +155,9 @@ type UpdateDesiredLRPRequest struct {
 }
 
 type DesiredLRPUpdate struct {
-	Instances  int                        `json:"instances"`
-	Routes     map[string]json.RawMessage `json:"routes"`
-	Annotation string                     `json:"annotation"`
-	Image      string                     `json:"image"`
+	Instances  int    `json:"instances"`
+	Annotation string `json:"annotation"`
+	Image      string `json:"image"`
 }
 
 type GetInstancesResponse struct {

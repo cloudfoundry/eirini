@@ -156,14 +156,6 @@ var _ = Describe("reconciler.LRP", func() {
 		Expect(lrp.DiskMB).To(Equal(int64(512)))
 		Expect(lrp.CPUWeight).To(Equal(uint8(128)))
 		Expect(lrp.LastUpdated).To(Equal("now"))
-		Expect(lrp.AppURIs).To(Equal([]api.Route{
-			{Hostname: "foo.io", Port: 8080},
-			{Hostname: "bar.io", Port: 9090},
-		}))
-		Expect(lrp.AppURIs).To(ConsistOf(
-			api.Route{Hostname: "foo.io", Port: 8080},
-			api.Route{Hostname: "bar.io", Port: 9090},
-		))
 		Expect(lrp.Sidecars).To(Equal([]api.Sidecar{
 			{
 				Name:     "hello-sidecar",
@@ -277,10 +269,6 @@ var _ = Describe("reconciler.LRP", func() {
 			Expect(desirer.UpdateCallCount()).To(Equal(1))
 			_, lrp := desirer.UpdateArgsForCall(0)
 			Expect(lrp.TargetInstances).To(Equal(10))
-			Expect(lrp.AppURIs).To(ConsistOf(
-				api.Route{Hostname: "foo.io", Port: 8080},
-				api.Route{Hostname: "bar.io", Port: 9090},
-			))
 		})
 	})
 

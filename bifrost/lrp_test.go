@@ -2,7 +2,6 @@ package bifrost_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 
 	"code.cloudfoundry.org/eirini/api"
@@ -179,40 +178,19 @@ var _ = Describe("Bifrost LRP", func() {
 		var updateRequest cf.UpdateDesiredLRPRequest
 
 		BeforeEach(func() {
-			updatedRoutes := []map[string]interface{}{
-				{
-					"hostname": "my.route",
-					"port":     8080,
-				},
-				{
-					"hostname": "my.other.route",
-					"port":     7777,
-				},
-			}
-
-			routesJSON, marshalErr := json.Marshal(updatedRoutes)
-			Expect(marshalErr).ToNot(HaveOccurred())
-
 			updateRequest = cf.UpdateDesiredLRPRequest{
 				GUID:    "guid_1234",
 				Version: "version_1234",
 				Update: cf.DesiredLRPUpdate{
 					Instances:  5,
 					Annotation: "21421321.3",
-					Routes: map[string]json.RawMessage{
-						"cf-router": json.RawMessage(routesJSON),
-					},
-					Image: "the/image",
+					Image:      "the/image",
 				},
 			}
 
 			lrpClient.GetReturns(&api.LRP{
 				TargetInstances: 2,
 				LastUpdated:     "whenever",
-				AppURIs: []api.Route{
-					{Hostname: "my.route", Port: 8080},
-					{Hostname: "your.route", Port: 5555},
-				},
 			}, nil)
 
 			lrpClient.UpdateReturns(nil)
@@ -238,10 +216,6 @@ var _ = Describe("Bifrost LRP", func() {
 			_, lrp := lrpClient.UpdateArgsForCall(0)
 			Expect(lrp.TargetInstances).To(Equal(int(5)))
 			Expect(lrp.LastUpdated).To(Equal("21421321.3"))
-			Expect(lrp.AppURIs).To(Equal([]api.Route{
-				{Hostname: "my.route", Port: 8080},
-				{Hostname: "my.other.route", Port: 7777},
-			}))
 			Expect(lrp.Image).To(Equal("the/image"))
 		})
 
@@ -252,18 +226,6 @@ var _ = Describe("Bifrost LRP", func() {
 
 			It("should propagate the error", func() {
 				Expect(err).To(MatchError(ContainSubstring("failed to update")))
-			})
-		})
-
-		Context("When there are no routes provided", func() {
-			BeforeEach(func() {
-				updateRequest.Update.Routes = map[string]json.RawMessage{}
-			})
-
-			It("should update it to an empty array", func() {
-				Expect(lrpClient.UpdateCallCount()).To(Equal(1))
-				_, lrp := lrpClient.UpdateArgsForCall(0)
-				Expect(lrp.AppURIs).To(BeEmpty())
 			})
 		})
 
@@ -300,11 +262,7 @@ var _ = Describe("Bifrost LRP", func() {
 				lrp = &api.LRP{
 					TargetInstances: 5,
 					LastUpdated:     "1234.5",
-					AppURIs: []api.Route{
-						{Hostname: "route1.io", Port: 6666},
-						{Hostname: "route2.io", Port: 9999},
-					},
-					Image: "the/image",
+					Image:           "the/image",
 				}
 
 				lrpClient.GetReturns(lrp, nil)
@@ -324,7 +282,6 @@ var _ = Describe("Bifrost LRP", func() {
 				Expect(desiredLRP.ProcessGUID).To(Equal("guid_1234-version_1234"))
 				Expect(desiredLRP.Instances).To(Equal(int32(5)))
 				Expect(desiredLRP.Annotation).To(Equal("1234.5"))
-				Expect(desiredLRP.Routes).To(HaveKeyWithValue("cf-router", json.RawMessage(`[{"hostname":"route1.io","port":6666},{"hostname":"route2.io","port":9999}]`)))
 				Expect(desiredLRP.Image).To(Equal("the/image"))
 			})
 		})

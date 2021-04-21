@@ -157,10 +157,6 @@ func toAPILrp(lrp *eiriniv1.LRP) (*api.LRP, error) {
 
 	apiLrp.TargetInstances = lrp.Spec.Instances
 
-	if err := copier.Copy(&apiLrp.AppURIs, lrp.Spec.AppRoutes); err != nil {
-		return nil, errors.Wrap(err, "failed to copy app routes")
-	}
-
 	if lrp.Spec.PrivateRegistry != nil {
 		apiLrp.PrivateRegistry.Server = util.ParseImageRegistryHost(lrp.Spec.Image)
 	}

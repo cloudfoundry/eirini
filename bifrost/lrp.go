@@ -2,7 +2,6 @@ package bifrost
 
 import (
 	"context"
-	"encoding/json"
 
 	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
@@ -87,11 +86,6 @@ func (l *LRP) Update(ctx context.Context, request cf.UpdateDesiredLRPRequest) er
 	lrp.TargetInstances = request.Update.Instances
 	lrp.LastUpdated = request.Update.Annotation
 
-	lrp.AppURIs, err = getURIs(request.Update)
-	if err != nil {
-		return err
-	}
-
 	lrp.Image = request.Update.Image
 
 	return errors.Wrap(l.LRPClient.Update(ctx, lrp), "failed to update")
@@ -108,16 +102,6 @@ func (l *LRP) GetApp(ctx context.Context, identifier api.LRPIdentifier) (cf.Desi
 		Instances:   int32(lrp.TargetInstances),
 		Annotation:  lrp.LastUpdated,
 		Image:       lrp.Image,
-	}
-
-	if len(lrp.AppURIs) > 0 {
-		data, err := json.Marshal(lrp.AppURIs)
-		if err != nil {
-			return cf.DesiredLRP{}, errors.Wrap(err, "failed to marshal app uris")
-		}
-
-		lrpRoutes := map[string]json.RawMessage{"cf-router": data}
-		desiredLRP.Routes = lrpRoutes
 	}
 
 	return desiredLRP, nil
@@ -152,20 +136,4 @@ func (l *LRP) GetInstances(ctx context.Context, identifier api.LRPIdentifier) ([
 	}
 
 	return cfInstances, nil
-}
-
-func getURIs(update cf.DesiredLRPUpdate) ([]api.Route, error) {
-	cfRouterRoutes, hasRoutes := update.Routes["cf-router"]
-	if !hasRoutes {
-		return []api.Route{}, nil
-	}
-
-	var routes []api.Route
-
-	err := json.Unmarshal(cfRouterRoutes, &routes)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal routes")
-	}
-
-	return routes, nil
 }

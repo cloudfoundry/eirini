@@ -23,13 +23,12 @@ var _ = Describe("Statefulset to LRP Converter", func() {
 					stset.LabelGUID: "Bald-guid",
 				},
 				Annotations: map[string]string{
-					stset.AnnotationProcessGUID:      "Baldur-guid",
-					stset.AnnotationLastUpdated:      "last-updated-some-time-ago",
-					stset.AnnotationRegisteredRoutes: `[{"hostname":"my.example.route","port":8080}]`,
-					stset.AnnotationAppID:            "guid_1234",
-					stset.AnnotationVersion:          "version_1234",
-					stset.AnnotationAppName:          "Baldur",
-					stset.AnnotationSpaceName:        "space-foo",
+					stset.AnnotationProcessGUID: "Baldur-guid",
+					stset.AnnotationLastUpdated: "last-updated-some-time-ago",
+					stset.AnnotationAppID:       "guid_1234",
+					stset.AnnotationVersion:     "version_1234",
+					stset.AnnotationAppName:     "Baldur",
+					stset.AnnotationSpaceName:   "space-foo",
 				},
 			},
 			Spec: appsv1.StatefulSetSpec{
@@ -116,10 +115,6 @@ var _ = Describe("Statefulset to LRP Converter", func() {
 		Expect(lrp.LastUpdated).To(Equal("last-updated-some-time-ago"))
 	})
 
-	It("should set the correct LRP AppURIs", func() {
-		Expect(lrp.AppURIs).To(ConsistOf(api.Route{Hostname: "my.example.route", Port: 8080}))
-	})
-
 	It("should set the correct LRP AppGUID", func() {
 		Expect(lrp.AppGUID).To(Equal("guid_1234"))
 	})
@@ -136,19 +131,5 @@ var _ = Describe("Statefulset to LRP Converter", func() {
 				MountPath: "/some/path",
 			},
 		}))
-	})
-
-	When("route marshalling fails", func() {
-		It("should return the error", func() {
-			statefulset := appsv1.StatefulSet{
-				ObjectMeta: meta.ObjectMeta{
-					Annotations: map[string]string{
-						stset.AnnotationRegisteredRoutes: `[{`,
-					},
-				},
-			}
-			_, err := stset.MapStatefulSetToLRP(statefulset)
-			Expect(err).To(MatchError(ContainSubstring("failed to unmarshal uris")))
-		})
 	})
 })

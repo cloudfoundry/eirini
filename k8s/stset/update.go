@@ -2,7 +2,6 @@ package stset
 
 import (
 	"context"
-	"encoding/json"
 
 	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/lager"
@@ -57,7 +56,6 @@ func (u *Updater) update(ctx context.Context, lrp *api.LRP) error {
 	}
 
 	updatedStatefulSet, err := u.getUpdatedStatefulSetObj(statefulSet,
-		lrp.AppURIs,
 		lrp.TargetInstances,
 		lrp.LastUpdated,
 		lrp.Image,
@@ -83,18 +81,12 @@ func (u *Updater) update(ctx context.Context, lrp *api.LRP) error {
 	return nil
 }
 
-func (u *Updater) getUpdatedStatefulSetObj(sts *appsv1.StatefulSet, routes []api.Route, instances int, lastUpdated, image string) (*appsv1.StatefulSet, error) {
+func (u *Updater) getUpdatedStatefulSetObj(sts *appsv1.StatefulSet, instances int, lastUpdated, image string) (*appsv1.StatefulSet, error) {
 	updatedSts := sts.DeepCopy()
-
-	uris, err := json.Marshal(routes)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal routes")
-	}
 
 	count := int32(instances)
 	updatedSts.Spec.Replicas = &count
 	updatedSts.Annotations[AnnotationLastUpdated] = lastUpdated
-	updatedSts.Annotations[AnnotationRegisteredRoutes] = string(uris)
 
 	if image != "" {
 		for i, container := range updatedSts.Spec.Template.Spec.Containers {

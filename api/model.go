@@ -47,7 +47,6 @@ type LRP struct {
 	CPUWeight              uint8
 	VolumeMounts           []VolumeMount
 	LRP                    string
-	AppURIs                []Route
 	LastUpdated            string
 	UserDefinedAnnotations map[string]string
 }
@@ -57,11 +56,6 @@ type Sidecar struct {
 	Command  []string
 	MemoryMB int64
 	Env      map[string]string
-}
-
-type Route struct {
-	Hostname string `json:"hostname"`
-	Port     int32  `json:"port"`
 }
 
 type PrivateRegistry struct {

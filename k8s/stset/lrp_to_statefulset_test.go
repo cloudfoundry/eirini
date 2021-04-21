@@ -34,7 +34,7 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		allowRunImageAsRoot = false
 		livenessProbeCreator = new(stsetfakes.FakeProbeCreator)
 		readinessProbeCreator = new(stsetfakes.FakeProbeCreator)
-		lrp = createLRP("Baldur", []api.Route{{Hostname: "my.example.route", Port: 1000}})
+		lrp = createLRP("Baldur")
 		privateRegistrySecret = nil
 
 		livenessProbe = &corev1.Probe{}
@@ -69,7 +69,6 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		Entry("AppID", stset.AnnotationAppID, "premium_app_guid_1234"),
 		Entry("Version", stset.AnnotationVersion, "version_1234"),
 		Entry("OriginalRequest", stset.AnnotationOriginalRequest, "original request"),
-		Entry("RegisteredRoutes", stset.AnnotationRegisteredRoutes, `[{"hostname":"my.example.route","port":1000}]`),
 		Entry("SpaceName", stset.AnnotationSpaceName, "space-foo"),
 		Entry("SpaceGUID", stset.AnnotationSpaceGUID, "space-guid"),
 		Entry("OrgName", stset.AnnotationOrgName, "org-foo"),
@@ -86,7 +85,6 @@ var _ = Describe("LRP to StatefulSet Converter", func() {
 		Entry("AppID", stset.AnnotationAppID, "premium_app_guid_1234"),
 		Entry("Version", stset.AnnotationVersion, "version_1234"),
 		Entry("OriginalRequest", stset.AnnotationOriginalRequest, "original request"),
-		Entry("RegisteredRoutes", stset.AnnotationRegisteredRoutes, `[{"hostname":"my.example.route","port":1000}]`),
 		Entry("SpaceName", stset.AnnotationSpaceName, "space-foo"),
 		Entry("SpaceGUID", stset.AnnotationSpaceGUID, "space-guid"),
 		Entry("OrgName", stset.AnnotationOrgName, "org-foo"),

@@ -43,7 +43,6 @@ var _ = Describe("Update", func() {
 			SpaceName:       "space-foo",
 			TargetInstances: 5,
 			LastUpdated:     "now",
-			AppURIs:         []api.Route{{Hostname: "new-route.io", Port: 6666}},
 			Image:           "new/image",
 		}
 
@@ -55,9 +54,8 @@ var _ = Describe("Update", func() {
 					Name:      "baldur",
 					Namespace: "the-namespace",
 					Annotations: map[string]string{
-						stset.AnnotationProcessGUID:      "Baldur-guid",
-						stset.AnnotationLastUpdated:      "never",
-						stset.AnnotationRegisteredRoutes: `[{"hostname":"myroute.io","port":1000}]`,
+						stset.AnnotationProcessGUID: "Baldur-guid",
+						stset.AnnotationLastUpdated: "never",
 					},
 				},
 				Spec: appsv1.StatefulSetSpec{
@@ -92,7 +90,6 @@ var _ = Describe("Update", func() {
 		_, namespace, st := statefulSetUpdater.UpdateArgsForCall(0)
 		Expect(namespace).To(Equal("the-namespace"))
 		Expect(st.GetAnnotations()).To(HaveKeyWithValue(stset.AnnotationLastUpdated, "now"))
-		Expect(st.GetAnnotations()).To(HaveKeyWithValue(stset.AnnotationRegisteredRoutes, `[{"hostname":"new-route.io","port":6666}]`))
 		Expect(st.GetAnnotations()).NotTo(HaveKey("another"))
 		Expect(*st.Spec.Replicas).To(Equal(int32(5)))
 		Expect(st.Spec.Template.Spec.Containers[0].Image).To(Equal("another/image"))

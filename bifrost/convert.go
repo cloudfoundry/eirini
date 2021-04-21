@@ -1,7 +1,6 @@
 package bifrost
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"code.cloudfoundry.org/eirini"
@@ -64,15 +63,9 @@ func (c *APIConverter) ConvertLRP(request cf.DesireLRPRequest) (api.LRP, error) 
 		return api.LRP{}, err
 	}
 
-	routes, err := getRequestedRoutes(request)
-	if err != nil {
-		return api.LRP{}, err
-	}
-
 	return api.LRP{
 		AppName:                request.AppName,
 		AppGUID:                request.AppGUID,
-		AppURIs:                routes,
 		LastUpdated:            request.LastUpdated,
 		OrgName:                request.OrganizationName,
 		OrgGUID:                request.OrganizationGUID,
@@ -137,28 +130,6 @@ func (c *APIConverter) ConvertTask(taskGUID string, request cf.TaskRequest) (api
 	task.Env = mergeEnvs(request.Environment, env)
 
 	return task, nil
-}
-
-func getRequestedRoutes(request cf.DesireLRPRequest) ([]api.Route, error) {
-	jsonRoutes := request.Routes
-	if jsonRoutes == nil {
-		return []api.Route{}, nil
-	}
-
-	if _, ok := jsonRoutes["cf-router"]; !ok {
-		return []api.Route{}, nil
-	}
-
-	cfRouterRoutes := jsonRoutes["cf-router"]
-
-	var routes []api.Route
-
-	err := json.Unmarshal(cfRouterRoutes, &routes)
-	if err != nil {
-		return nil, err
-	}
-
-	return routes, nil
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {

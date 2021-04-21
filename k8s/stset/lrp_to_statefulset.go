@@ -1,13 +1,11 @@
 package stset
 
 import (
-	"encoding/json"
 	"strconv"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
-	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -178,16 +176,10 @@ func (c *LRPToStatefulSet) Convert(statefulSetName string, lrp *api.LRP, private
 	statefulSet.Spec.Template.Labels = labels
 	statefulSet.Labels = labels
 
-	uris, err := json.Marshal(lrp.AppURIs)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal app uris")
-	}
-
 	annotations := map[string]string{
 		AnnotationSpaceName:              lrp.SpaceName,
 		AnnotationSpaceGUID:              lrp.SpaceGUID,
 		AnnotationOriginalRequest:        lrp.LRP,
-		AnnotationRegisteredRoutes:       string(uris),
 		AnnotationAppID:                  lrp.AppGUID,
 		AnnotationVersion:                lrp.Version,
 		AnnotationLastUpdated:            lrp.LastUpdated,

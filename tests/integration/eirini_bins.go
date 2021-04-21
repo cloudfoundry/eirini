@@ -23,9 +23,6 @@ import (
 
 type EiriniBinaries struct {
 	API                      Binary `json:"api"`
-	RouteCollector           Binary `json:"route_collector"`
-	RouteStatefulsetInformer Binary `json:"route_stateful_set_informer"`
-	RoutePodInformer         Binary `json:"route_pod_informer"`
 	EventsReporter           Binary `json:"events_reporter"`
 	TaskReporter             Binary `json:"task_reporter"`
 	EiriniController         Binary `json:"eirini_controller"`
@@ -44,9 +41,6 @@ func NewEiriniBinaries() EiriniBinaries {
 
 	bins.setBinsPath()
 	bins.API = NewBinary("code.cloudfoundry.org/eirini/cmd/api", bins.BinsPath, bins.CertsPath)
-	bins.RouteCollector = NewBinary("code.cloudfoundry.org/eirini/cmd/route-collector", bins.BinsPath, bins.CertsPath)
-	bins.RouteStatefulsetInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-statefulset-informer", bins.BinsPath, bins.CertsPath)
-	bins.RoutePodInformer = NewBinary("code.cloudfoundry.org/eirini/cmd/route-pod-informer", bins.BinsPath, bins.CertsPath)
 	bins.EventsReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/event-reporter", bins.BinsPath, bins.CertsPath)
 	bins.TaskReporter = NewBinary("code.cloudfoundry.org/eirini/cmd/task-reporter", bins.BinsPath, bins.CertsPath)
 	bins.EiriniController = NewBinary("code.cloudfoundry.org/eirini/cmd/eirini-controller", bins.BinsPath, bins.CertsPath)
