@@ -2,12 +2,13 @@ package stset
 
 import (
 	"context"
-	"fmt"
+	"sort"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 )
@@ -21,6 +22,7 @@ type StatefulSetDeleter interface {
 
 type PodDeleter interface {
 	Delete(ctx context.Context, namespace, name string) error
+	GetByLRPIdentifier(ctx context.Context, id api.LRPIdentifier) ([]corev1.Pod, error)
 }
 
 type Stopper struct {
@@ -97,7 +99,19 @@ func (s *Stopper) StopInstance(ctx context.Context, identifier api.LRPIdentifier
 		return eirini.ErrInvalidInstanceIndex
 	}
 
-	err = s.podDeleter.Delete(ctx, statefulset.Namespace, fmt.Sprintf("%s-%d", statefulset.Name, index))
+	pods, err := s.podDeleter.GetByLRPIdentifier(ctx, identifier)
+	if err != nil {
+		return errors.Wrap(err, "failed to get pods")
+	}
+
+	sort.Slice(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
+	indexToPod := map[uint]string{}
+	for i, pod := range pods {
+		indexToPod[uint(i)] = pod.Name
+	}
+
+	podName := indexToPod[index]
+	err = s.podDeleter.Delete(ctx, statefulset.Namespace, podName)
 	if k8serrors.IsNotFound(err) {
 		logger.Debug("pod-does-not-exist")
 

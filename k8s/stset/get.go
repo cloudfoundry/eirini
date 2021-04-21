@@ -2,12 +2,12 @@ package stset
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/utils"
-	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -73,6 +73,11 @@ func (g *Getter) GetInstances(ctx context.Context, identifier api.LRPIdentifier)
 		return nil, errors.Wrap(err, "failed to list pods")
 	}
 
+	sort.Slice(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
+	podToInstanceID := map[string]int{}
+	for i, pod := range pods {
+		podToInstanceID[pod.Name] = i
+	}
 	instances := []*api.Instance{}
 
 	for _, pod := range pods {
@@ -87,7 +92,7 @@ func (g *Getter) GetInstances(ctx context.Context, identifier api.LRPIdentifier)
 			continue
 		}
 
-		index, _ := util.ParseAppIndex(pod.Name)
+		index := podToInstanceID[pod.Name]
 
 		since := int64(0)
 		if pod.Status.StartTime != nil {
