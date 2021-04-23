@@ -2,7 +2,7 @@ package stset
 
 import (
 	"context"
-	"sort"
+	"strconv"
 	"strings"
 
 	"code.cloudfoundry.org/eirini"
@@ -60,6 +60,17 @@ func (g *Getter) Get(ctx context.Context, identifier api.LRPIdentifier) (*api.LR
 	return g.getLRP(ctx, logger, identifier)
 }
 
+func podToInstanceID(podName string) (int, error) {
+	nameSegments := strings.Split(podName, "-")
+	instanceName := nameSegments[len(nameSegments)-1]
+	instanceNumber, err := strconv.ParseInt(instanceName, 36, 32)
+	if err != nil {
+		return 0, errors.Wrapf(err, "could not parse instanceName %q as a 36-base number", instanceName)
+	}
+
+	return int(instanceNumber), nil
+}
+
 func (g *Getter) GetInstances(ctx context.Context, identifier api.LRPIdentifier) ([]*api.Instance, error) {
 	logger := g.logger.Session("get-instance", lager.Data{"guid": identifier.GUID, "version": identifier.Version})
 	if _, err := g.getLRP(ctx, logger, identifier); errors.Is(err, eirini.ErrNotFound) {
@@ -73,13 +84,7 @@ func (g *Getter) GetInstances(ctx context.Context, identifier api.LRPIdentifier)
 		return nil, errors.Wrap(err, "failed to list pods")
 	}
 
-	sort.Slice(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
-	podToInstanceID := map[string]int{}
-	for i, pod := range pods {
-		podToInstanceID[pod.Name] = i
-	}
 	instances := []*api.Instance{}
-
 	for _, pod := range pods {
 		events, err := g.eventGetter.GetByPod(ctx, pod)
 		if err != nil {
@@ -92,7 +97,11 @@ func (g *Getter) GetInstances(ctx context.Context, identifier api.LRPIdentifier)
 			continue
 		}
 
-		index := podToInstanceID[pod.Name]
+		index, err := podToInstanceID(pod.Name)
+		if err != nil {
+			logger.Error("failed-to-convert-pod-name", err)
+			continue
+		}
 
 		since := int64(0)
 		if pod.Status.StartTime != nil {

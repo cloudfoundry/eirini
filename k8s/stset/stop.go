@@ -2,7 +2,7 @@ package stset
 
 import (
 	"context"
-	"sort"
+	"fmt"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/api"
@@ -104,13 +104,24 @@ func (s *Stopper) StopInstance(ctx context.Context, identifier api.LRPIdentifier
 		return errors.Wrap(err, "failed to get pods")
 	}
 
-	sort.Slice(pods, func(i, j int) bool { return pods[i].Name < pods[j].Name })
-	indexToPod := map[uint]string{}
-	for i, pod := range pods {
-		indexToPod[uint(i)] = pod.Name
+	podName := ""
+	for _, pod := range pods {
+		podIndex, err := podToInstanceID(pod.Name)
+		if err != nil {
+			logger.Error("could-not-parse-pod-index", err)
+			continue
+		}
+
+		if uint(podIndex) == index {
+			podName = pod.Name
+		}
 	}
 
-	podName := indexToPod[index]
+	if podName == "" {
+		logger.Debug("failed-to-find-pod", lager.Data{"index": index})
+		return fmt.Errorf("failed to find pod with index %d", index)
+	}
+
 	err = s.podDeleter.Delete(ctx, statefulset.Namespace, podName)
 	if k8serrors.IsNotFound(err) {
 		logger.Debug("pod-does-not-exist")
