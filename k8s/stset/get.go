@@ -61,8 +61,7 @@ func (g *Getter) Get(ctx context.Context, identifier api.LRPIdentifier) (*api.LR
 }
 
 func podToInstanceID(podName string) (int, error) {
-	nameSegments := strings.Split(podName, "-")
-	instanceName := nameSegments[len(nameSegments)-1]
+	instanceName := podName[len(podName)-5:]
 	instanceNumber, err := strconv.ParseInt(instanceName, 36, 32)
 	if err != nil {
 		return 0, errors.Wrapf(err, "could not parse instanceName %q as a 36-base number", instanceName)
