@@ -95,10 +95,6 @@ func (s *Stopper) StopInstance(ctx context.Context, identifier api.LRPIdentifier
 		return err
 	}
 
-	if int32(index) >= *statefulset.Spec.Replicas {
-		return eirini.ErrInvalidInstanceIndex
-	}
-
 	pods, err := s.podDeleter.GetByLRPIdentifier(ctx, identifier)
 	if err != nil {
 		return errors.Wrap(err, "failed to get pods")
