@@ -20,7 +20,7 @@ main() {
 
   pushd "$BASEDIR"/tests/integration >/dev/null || exit 1
   {
-    ginkgo -mod=vendor -p $nodes -r -keepGoing -tags=integration -randomizeAllSpecs -randomizeSuites -timeout=20m "$@"
+    ginkgo -mod=vendor -p $nodes -r -keepGoing -tags=integration -randomizeAllSpecs -randomizeSuites -timeout=20m -slowSpecThreshold=25 "$@"
   }
   popd >/dev/null || exit 1
 }

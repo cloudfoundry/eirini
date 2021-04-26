@@ -10,7 +10,7 @@ fi
 
 main() {
   pushd "$BASEDIR"/tests/eats >/dev/null || exit 1
-  ginkgo -mod=vendor -p -r -keepGoing -randomizeAllSpecs -randomizeSuites -timeout=20m "$@"
+  ginkgo -mod=vendor -p -r -keepGoing -randomizeAllSpecs -randomizeSuites -timeout=20m -slowSpecThreshold=30 "$@"
   popd >/dev/null || exit 1
 }
 
