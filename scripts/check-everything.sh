@@ -152,7 +152,7 @@ redeploy_eirini() {
   "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" eirini-core "$render_dir" \
     --values "$EIRINI_RELEASE_BASEDIR/scripts/assets/value-overrides.yml" \
     --set "webhook_ca_bundle=$ca_bundle,resource_validator_ca_bundle=$ca_bundle"
-  DOCKER_BUILDKIT=1 kbld -f "$render_dir" -f "$RUN_DIR/kbld-local-eirini.yml" >"$render_dir/rendered.yml"
+  kbld -f "$render_dir" -f "$RUN_DIR/kbld-local-eirini.yml" >"$render_dir/rendered.yml"
   for img in $(grep -oh "kbld:.*" "$render_dir/rendered.yml"); do
     kind load docker-image --name eats "$img"
   done

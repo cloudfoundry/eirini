@@ -130,7 +130,7 @@ build-eirini() {
       -f "$EIRINI_RENDER_DIR/templates/events" \
       -f "$EIRINI_RENDER_DIR/templates/workloads" \
       -f "$CF4K8S_DIR/build/eirini/overlays" |
-      DOCKER_BUILDKIT=1 kbld -f - -f "$SCRIPT_DIR/kbld-local-eirini.yml" \
+      kbld -f - -f "$SCRIPT_DIR/kbld-local-eirini.yml" \
         >"$CF4K8S_DIR/config/eirini/_ytt_lib/eirini/rendered.yml"
 
     echo "📦 Loading our images on kind"

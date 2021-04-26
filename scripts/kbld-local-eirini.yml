@@ -8,33 +8,39 @@ sources:
     build:
       file: docker/api/Dockerfile
       rawOptions: ["--build-arg", "GIT_SHA=api-dirty", "--tag", "api"]
+      buildkit: true
 - imageRepo: eirini/eirini-controller
   path: .
   docker:
     build:
       file: docker/eirini-controller/Dockerfile
       rawOptions: ["--build-arg", "GIT_SHA=eirini-controller-dirty", "--tag", "eirini-controller"]
+      buildkit: true
 - imageRepo: eirini/event-reporter
   path: .
   docker:
     build:
       file: docker/event-reporter/Dockerfile
       rawOptions: ["--build-arg", "GIT_SHA=event-reporter-dirty", "--tag", "event-reporter"]
+      buildkit: true
 - imageRepo: eirini/task-reporter
   path: .
   docker:
     build:
       file: docker/task-reporter/Dockerfile
       rawOptions: ["--build-arg", "GIT_SHA=task-reporter-dirty", "--tag", "task-reporter"]
+      buildkit: true
 - imageRepo: eirini/instance-index-env-injector
   path: .
   docker:
     build:
       file: docker/instance-index-env-injector/Dockerfile
       rawOptions: ["--build-arg", "GIT_SHA=instance-index-env-injector-dirty", "--tag", "instance-index-env-injector"]
+      buildkit: true
 - imageRepo: eirini/migration
   path: .
   docker:
     build:
       file: docker/migration/Dockerfile
       rawOptions: ["--build-arg", "GIT_SHA=migration-dirty", "--tag", "migration"]
+      buildkit: true
