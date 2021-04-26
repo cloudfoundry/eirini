@@ -45,7 +45,7 @@ var _ = AfterSuite(func() {
 func TestK8sClient(t *testing.T) {
 	SetDefaultEventuallyTimeout(4 * time.Minute)
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Integration Suite")
+	RunSpecs(t, "K8s Client")
 }
 
 func getStatefulSet(ns, name string) *appsv1.StatefulSet {
