@@ -124,11 +124,19 @@ build-eirini() {
     echo "🔨 Building local eirini yamls"
     "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" cf-system "$EIRINI_RENDER_DIR"
 
+    echo "🏍  Vendoring local templates"
+    mv "$EIRINI_RENDER_DIR/templates" "$EIRINI_RENDER_DIR/eirini"
+    pushd "$CF4K8S_DIR"
+    {
+      vendir sync -d "build/eirini/_vendir=$EIRINI_RENDER_DIR"
+    }
+    popd
+
     echo "🏞  Rendering eirini with ytt and kbld"
     ytt --ignore-unknown-comments \
-      -f "$EIRINI_RENDER_DIR/templates/core" \
-      -f "$EIRINI_RENDER_DIR/templates/events" \
-      -f "$EIRINI_RENDER_DIR/templates/workloads" \
+      -f "$CF4K8S_DIR/build/eirini/_vendir/eirini/core" \
+      -f "$CF4K8S_DIR/build/eirini/_vendir/eirini/events" \
+      -f "$CF4K8S_DIR/build/eirini/_vendir/eirini/workloads" \
       -f "$CF4K8S_DIR/build/eirini/overlays" |
       kbld -f - -f "$SCRIPT_DIR/kbld-local-eirini.yml" \
         >"$CF4K8S_DIR/config/eirini/_ytt_lib/eirini/rendered.yml"
