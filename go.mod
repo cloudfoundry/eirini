@@ -40,22 +40,23 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/jinzhu/copier v0.3.0
+	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
-	github.com/onsi/ginkgo v1.16.1
+	github.com/onsi/ginkgo v1.16.2
 	github.com/onsi/gomega v1.11.0
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/common v0.23.0
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
+	golang.org/x/crypto v0.0.0-20210503195802-e9a32991a82e // indirect
 	golang.org/x/mod v0.4.2 // indirect
-	golang.org/x/net v0.0.0-20210427231257-85d9c07bbe3a // indirect
+	golang.org/x/net v0.0.0-20210504132125-bbd867fde50d // indirect
 	golang.org/x/oauth2 v0.0.0-20210427180440-81ed05c6b58c // indirect
-	golang.org/x/sys v0.0.0-20210426230700-d19ff857e887 // indirect
-	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
+	golang.org/x/sys v0.0.0-20210503173754-0981d6026fa6 // indirect
+	golang.org/x/term v0.0.0-20210503060354-a79de5458b56 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/genproto v0.0.0-20210406143921-e86de6bf7a46 // indirect

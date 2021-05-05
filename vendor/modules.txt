@@ -193,7 +193,8 @@ github.com/jessevdk/go-flags
 github.com/jinzhu/copier
 # github.com/josharian/intern v1.0.0
 github.com/josharian/intern
-# github.com/json-iterator/go v1.1.10
+# github.com/json-iterator/go v1.1.11
+## explicit
 github.com/json-iterator/go
 # github.com/julienschmidt/httprouter v1.3.0
 ## explicit
@@ -222,7 +223,7 @@ github.com/nxadm/tail/ratelimiter
 github.com/nxadm/tail/util
 github.com/nxadm/tail/watch
 github.com/nxadm/tail/winfile
-# github.com/onsi/ginkgo v1.16.1
+# github.com/onsi/ginkgo v1.16.2
 ## explicit
 github.com/onsi/ginkgo
 github.com/onsi/ginkgo/config
@@ -300,7 +301,7 @@ github.com/sirupsen/logrus
 github.com/spf13/pflag
 # github.com/square/certstrap v1.2.0
 github.com/square/certstrap/pkix
-# golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b
+# golang.org/x/crypto v0.0.0-20210503195802-e9a32991a82e
 ## explicit
 golang.org/x/crypto/pkcs12
 golang.org/x/crypto/pkcs12/internal/rc2
@@ -309,7 +310,7 @@ golang.org/x/crypto/ssh/terminal
 ## explicit
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20210427231257-85d9c07bbe3a
+# golang.org/x/net v0.0.0-20210504132125-bbd867fde50d
 ## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -331,14 +332,14 @@ golang.org/x/oauth2/google/internal/externalaccount
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20210426230700-d19ff857e887
+# golang.org/x/sys v0.0.0-20210503173754-0981d6026fa6
 ## explicit
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.0.0-20210422114643-f5beecf764ed
+# golang.org/x/term v0.0.0-20210503060354-a79de5458b56
 ## explicit
 golang.org/x/term
 # golang.org/x/text v0.3.6
