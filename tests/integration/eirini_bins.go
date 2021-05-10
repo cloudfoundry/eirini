@@ -104,11 +104,11 @@ func (b *Binary) Run(config interface{}, envVars ...string) (*gexec.Session, str
 		configFile = tests.WriteTempFile(configBytes, filepath.Base(b.BinPath)+"-config.yaml")
 	}
 
-	defaultEnv := []string{
+	env := []string{
 		fmt.Sprintf("%s=%s", eirini.EnvCCCertDir, b.CertsPath),
 		fmt.Sprintf("%s=%s", eirini.EnvServerCertDir, b.CertsPath),
 	}
-	env := append(defaultEnv, envVars...)
+	env = append(env, envVars...)
 
 	return b.RunWithConfig(configFile, env...), configFile
 }

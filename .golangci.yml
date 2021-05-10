@@ -161,7 +161,9 @@ linters:
     - wsl
 
 issues:
-  exclude-use-default: true
+  exclude:
+    - "exported (method|function|type|const|var) (.+) should have comment"
+    - "comment on exported (method|function|type|const|var) (.+) should be of the form"
   exclude-rules:
     - path: _test\.go
       linters:
