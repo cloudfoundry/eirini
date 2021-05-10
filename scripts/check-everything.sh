@@ -148,7 +148,7 @@ redeploy_prometheus() {
 redeploy_eirini() {
   render_dir=$(mktemp -d)
   trap "rm -rf $render_dir" EXIT
-  ca_bundle="$(kubectl get secret -n eirini-core instance-index-env-injector-certs -o jsonpath="{.data['tls\.ca']}")"
+  ca_bundle="$(kubectl get secret -n eirini-core eirini-instance-index-env-injector-certs -o jsonpath="{.data['tls\.ca']}")"
   "$EIRINI_RELEASE_BASEDIR/scripts/render-templates.sh" eirini-core "$render_dir" \
     --values "$EIRINI_RELEASE_BASEDIR/scripts/assets/value-overrides.yml" \
     --set "webhook_ca_bundle=$ca_bundle,resource_validator_ca_bundle=$ca_bundle"
