@@ -90,6 +90,11 @@ linters:
     desc: |
       scopelint is deprecated
 
+  - name: tagliatelle
+    desc: |
+      complains about our json and yaml tags not being in camel case. Changing
+      these would be a massive pain
+
   - name: unparam
     desc: |
       Didn't like it complaining about always using port 8080 in a function
@@ -143,6 +148,7 @@ linters:
     - nolintlint
     - prealloc
     - predeclared
+    - promlinter
     - revive
     - rowserrcheck
     - sqlclosecheck
