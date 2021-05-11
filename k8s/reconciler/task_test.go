@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	"code.cloudfoundry.org/eirini/k8s/reconciler/reconcilerfakes"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
@@ -18,126 +17,120 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 var _ = Describe("Task", func() {
 	var (
-		taskReconciler   *reconciler.Task
-		reconcileResult  reconcile.Result
-		reconcileErr     error
-		controllerClient *reconcilerfakes.FakeClient
-		namespacedName   types.NamespacedName
-		taskDesirer      *reconcilerfakes.FakeTaskDesirer
-		scheme           *runtime.Scheme
+		taskReconciler  *reconciler.Task
+		reconcileResult reconcile.Result
+		reconcileErr    error
+		taskClient      *reconcilerfakes.FakeTasksRuntimeClient
+		namespacedName  types.NamespacedName
+		workloadClient  *reconcilerfakes.FakeWorkloadClient
+		scheme          *runtime.Scheme
+		task            *eiriniv1.Task
 	)
 
 	BeforeEach(func() {
-		controllerClient = new(reconcilerfakes.FakeClient)
+		taskClient = new(reconcilerfakes.FakeTasksRuntimeClient)
 		namespacedName = types.NamespacedName{
 			Namespace: "my-namespace",
 			Name:      "my-name",
 		}
-		taskDesirer = new(reconcilerfakes.FakeTaskDesirer)
+		workloadClient = new(reconcilerfakes.FakeWorkloadClient)
 
 		scheme = eiriniv1scheme.Scheme
 		logger := lagertest.NewTestLogger("task-reconciler")
-		taskReconciler = reconciler.NewTask(logger, controllerClient, taskDesirer, scheme)
+		taskReconciler = reconciler.NewTask(logger, taskClient, workloadClient, scheme)
+		task = &eiriniv1.Task{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      namespacedName.Name,
+				Namespace: namespacedName.Namespace,
+			},
+			Spec: eiriniv1.TaskSpec{
+				GUID:               "guid",
+				Name:               "my-name",
+				Image:              "my/image",
+				CompletionCallback: "callback",
+				Env:                map[string]string{"foo": "bar"},
+				Command:            []string{"foo", "baz"},
+				AppName:            "jim",
+				AppGUID:            "app-guid",
+				OrgName:            "organ",
+				OrgGUID:            "orgid",
+				SpaceName:          "spacan",
+				SpaceGUID:          "spacid",
+				MemoryMB:           768,
+				DiskMB:             512,
+				CPUWeight:          13,
+			},
+		}
+		taskClient.GetTaskReturns(task, nil)
+		workloadClient.GetStatusReturns(eiriniv1.TaskStatus{
+			ExecutionStatus: eiriniv1.TaskStarting,
+		}, nil)
 	})
 
 	JustBeforeEach(func() {
 		reconcileResult, reconcileErr = taskReconciler.Reconcile(context.Background(), reconcile.Request{NamespacedName: namespacedName})
 	})
 
-	Context("creating a job", func() {
-		BeforeEach(func() {
-			controllerClient.GetStub = func(ctx context.Context, namespacedName types.NamespacedName, obj client.Object) error {
-				task, ok := obj.(*eiriniv1.Task)
-				Expect(ok).To(BeTrue())
+	It("creates the job in the CR's namespace", func() {
+		Expect(reconcileErr).NotTo(HaveOccurred())
 
-				task.Name = namespacedName.Name
-				task.Namespace = namespacedName.Namespace
-				task.Spec.GUID = "my-task-guid"
-				task.Spec.Name = "my-task-name"
-				task.Spec.Image = "my-task-image"
-				task.Spec.CompletionCallback = "my-task-completion-callback"
-				task.Spec.PrivateRegistry = &eiriniv1.PrivateRegistry{
-					Username: "pr-username",
-					Password: "pr-password",
-				}
-				task.Spec.Env = map[string]string{"foo": "2", "bar": "coffee"}
-				task.Spec.Command = []string{"beam", "me", "up"}
-				task.Spec.AppName = "arthur"
-				task.Spec.AppGUID = "arthur-guid"
-				task.Spec.OrgName = "my-org"
-				task.Spec.OrgGUID = "org-guid"
-				task.Spec.SpaceName = "my-space"
-				task.Spec.SpaceGUID = "space-guid"
-				task.Spec.MemoryMB = 1234
-				task.Spec.DiskMB = 4312
-				task.Spec.CPUWeight = 14
-
-				return nil
-			}
+		By("invoking the task desirer", func() {
+			Expect(workloadClient.DesireCallCount()).To(Equal(1))
+			_, namespace, apiTask, _ := workloadClient.DesireArgsForCall(0)
+			Expect(namespace).To(Equal("my-namespace"))
+			Expect(apiTask.GUID).To(Equal(task.Spec.GUID))
+			Expect(apiTask.Name).To(Equal(task.Spec.Name))
+			Expect(apiTask.Image).To(Equal(task.Spec.Image))
+			Expect(apiTask.CompletionCallback).To(Equal(task.Spec.CompletionCallback))
+			Expect(apiTask.Env).To(Equal(task.Spec.Env))
+			Expect(apiTask.Command).To(Equal(task.Spec.Command))
+			Expect(apiTask.AppName).To(Equal(task.Spec.AppName))
+			Expect(apiTask.AppGUID).To(Equal(task.Spec.AppGUID))
+			Expect(apiTask.OrgName).To(Equal(task.Spec.OrgName))
+			Expect(apiTask.OrgGUID).To(Equal(task.Spec.OrgGUID))
+			Expect(apiTask.SpaceName).To(Equal(task.Spec.SpaceName))
+			Expect(apiTask.SpaceGUID).To(Equal(task.Spec.SpaceGUID))
+			Expect(apiTask.MemoryMB).To(Equal(task.Spec.MemoryMB))
+			Expect(apiTask.DiskMB).To(Equal(task.Spec.DiskMB))
+			Expect(apiTask.CPUWeight).To(Equal(task.Spec.CPUWeight))
 		})
 
-		It("creates the job in the CR's namespace", func() {
-			Expect(reconcileErr).NotTo(HaveOccurred())
-
-			By("looking up the task CR", func() {
-				Expect(controllerClient.GetCallCount()).To(Equal(1))
-				_, name, _ := controllerClient.GetArgsForCall(0)
-				Expect(name).To(Equal(types.NamespacedName{
-					Namespace: "my-namespace",
-					Name:      "my-name",
-				}))
-			})
-
-			By("invoking the task desirer", func() {
-				Expect(taskDesirer.DesireCallCount()).To(Equal(1))
-				_, namespace, task, _ := taskDesirer.DesireArgsForCall(0)
-				Expect(namespace).To(Equal("my-namespace"))
-				Expect(task.GUID).To(Equal("my-task-guid"))
-				Expect(task.Name).To(Equal("my-task-name"))
-				Expect(task.Image).To(Equal("my-task-image"))
-				Expect(task.CompletionCallback).To(Equal("my-task-completion-callback"))
-				Expect(task.PrivateRegistry).To(Equal(&api.PrivateRegistry{
-					Server:   "index.docker.io/v1/",
-					Username: "pr-username",
-					Password: "pr-password",
-				}))
-				Expect(task.Env).To(Equal(map[string]string{"foo": "2", "bar": "coffee"}))
-				Expect(task.Command).To(Equal([]string{"beam", "me", "up"}))
-				Expect(task.AppName).To(Equal("arthur"))
-				Expect(task.AppGUID).To(Equal("arthur-guid"))
-				Expect(task.OrgName).To(Equal("my-org"))
-				Expect(task.OrgGUID).To(Equal("org-guid"))
-				Expect(task.SpaceName).To(Equal("my-space"))
-				Expect(task.SpaceGUID).To(Equal("space-guid"))
-				Expect(task.MemoryMB).To(BeNumerically("==", 1234))
-				Expect(task.DiskMB).To(BeNumerically("==", 4312))
-				Expect(task.CPUWeight).To(BeNumerically("==", 14))
-			})
-
-			By("sets an owner reference in the statefulset", func() {
-				Expect(taskDesirer.DesireCallCount()).To(Equal(1))
-				_, _, _, setOwnerFns := taskDesirer.DesireArgsForCall(0)
-				Expect(setOwnerFns).To(HaveLen(1))
-				setOwnerFn := setOwnerFns[0]
-
-				job := &batchv1.Job{ObjectMeta: metav1.ObjectMeta{Namespace: "my-namespace"}}
-				Expect(setOwnerFn(job)).To(Succeed())
-				Expect(job.ObjectMeta.OwnerReferences).To(HaveLen(1))
-				Expect(job.ObjectMeta.OwnerReferences[0].Kind).To(Equal("Task"))
-				Expect(job.ObjectMeta.OwnerReferences[0].Name).To(Equal("my-name"))
-			})
+		By("updating the task execution status", func() {
+			Expect(taskClient.UpdateTaskStatusCallCount()).To(Equal(1))
+			_, actualTask, status := taskClient.UpdateTaskStatusArgsForCall(0)
+			Expect(actualTask).To(Equal(task))
+			Expect(status.ExecutionStatus).To(Equal(eiriniv1.TaskStarting))
 		})
+
+		By("sets an owner reference in the job", func() {
+			Expect(workloadClient.DesireCallCount()).To(Equal(1))
+			_, _, _, setOwnerFns := workloadClient.DesireArgsForCall(0)
+			Expect(setOwnerFns).To(HaveLen(1))
+			setOwnerFn := setOwnerFns[0]
+
+			job := &batchv1.Job{ObjectMeta: metav1.ObjectMeta{Namespace: "my-namespace"}}
+			Expect(setOwnerFn(job)).To(Succeed())
+			Expect(job.ObjectMeta.OwnerReferences).To(HaveLen(1))
+			Expect(job.ObjectMeta.OwnerReferences[0].Kind).To(Equal("Task"))
+			Expect(job.ObjectMeta.OwnerReferences[0].Name).To(Equal("my-name"))
+		})
+	})
+
+	It("loads the task using names from request", func() {
+		Expect(taskClient.GetTaskCallCount()).To(Equal(1))
+		_, namespace, name := taskClient.GetTaskArgsForCall(0)
+		Expect(namespace).To(Equal("my-namespace"))
+		Expect(name).To(Equal("my-name"))
 	})
 
 	When("the task cannot be found", func() {
 		BeforeEach(func() {
-			controllerClient.GetReturns(errors.NewNotFound(schema.GroupResource{}, "foo"))
+			taskClient.GetTaskReturns(nil, errors.NewNotFound(schema.GroupResource{}, "foo"))
 		})
 
 		It("neither requeues nor returns an error", func() {
@@ -148,7 +141,7 @@ var _ = Describe("Task", func() {
 
 	When("getting the task returns another error", func() {
 		BeforeEach(func() {
-			controllerClient.GetReturns(fmt.Errorf("some problem"))
+			taskClient.GetTaskReturns(nil, fmt.Errorf("some problem"))
 		})
 
 		It("returns an error", func() {
@@ -156,24 +149,64 @@ var _ = Describe("Task", func() {
 		})
 	})
 
+	It("gets the new task status", func() {
+		Expect(workloadClient.GetStatusCallCount()).To(Equal(1))
+		_, guid := workloadClient.GetStatusArgsForCall(0)
+		Expect(guid).To(Equal("guid"))
+	})
+
+	It("updates the task with the new status", func() {
+		Expect(taskClient.UpdateTaskStatusCallCount()).To(Equal(1))
+		_, _, newStatus := taskClient.UpdateTaskStatusArgsForCall(0)
+		Expect(newStatus.ExecutionStatus).To(Equal(eiriniv1.TaskStarting))
+	})
+
+	When("gettin the task status returns an error", func() {
+		BeforeEach(func() {
+			workloadClient.GetStatusReturns(eiriniv1.TaskStatus{}, fmt.Errorf("potato"))
+		})
+
+		It("returns an error", func() {
+			Expect(reconcileErr).To(MatchError(ContainSubstring("potato")))
+		})
+	})
+
+	When("updating the task status returns an error", func() {
+		BeforeEach(func() {
+			taskClient.UpdateTaskStatusReturns(fmt.Errorf("crumpets"))
+		})
+
+		It("returns an error", func() {
+			Expect(reconcileErr).To(MatchError(ContainSubstring("crumpets")))
+		})
+	})
+
+	When("there is a private registry set", func() {
+		BeforeEach(func() {
+			task.Spec.PrivateRegistry = &eiriniv1.PrivateRegistry{
+				Username: "admin",
+				Password: "p4ssw0rd",
+			}
+		})
+
+		It("passes the private registry details to the desirer", func() {
+			Expect(workloadClient.DesireCallCount()).To(Equal(1))
+			_, _, apiTask, _ := workloadClient.DesireArgsForCall(0)
+			Expect(apiTask.PrivateRegistry).ToNot(BeNil())
+			Expect(apiTask.PrivateRegistry.Username).To(Equal("admin"))
+			Expect(apiTask.PrivateRegistry.Password).To(Equal("p4ssw0rd"))
+			Expect(apiTask.PrivateRegistry.Server).To(Equal("index.docker.io/v1/"))
+		})
+	})
+
 	When("desiring the task returns an error", func() {
 		BeforeEach(func() {
-			taskDesirer.DesireReturns(fmt.Errorf("some error"))
+			workloadClient.DesireReturns(fmt.Errorf("some error"))
 		})
 
 		It("returns an error", func() {
 			Expect(reconcileErr).To(MatchError(ContainSubstring("some error")))
-		})
-	})
-
-	When("the task already exists", func() {
-		BeforeEach(func() {
-			taskDesirer.DesireReturns(errors.NewAlreadyExists(schema.GroupResource{}, "the-task"))
-		})
-
-		It("does not error or requeue", func() {
-			Expect(reconcileResult.Requeue).To(BeFalse())
-			Expect(reconcileErr).ToNot(HaveOccurred())
+			Expect(taskClient.UpdateTaskStatusCallCount()).To(Equal(0))
 		})
 	})
 })

@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -18,6 +19,7 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 		taskDeleteOpts  metav1.DeleteOptions
 		taskServiceName string
 		port            int32
+		ctx             context.Context
 	)
 
 	BeforeEach(func() {
@@ -30,13 +32,12 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 				Name: taskName,
 			},
 			Spec: eiriniv1.TaskSpec{
-				Name:               taskName,
-				GUID:               taskGUID,
-				AppGUID:            "the-app-guid",
-				AppName:            "wavey",
-				SpaceName:          "the-space",
-				OrgName:            "the-org",
-				CompletionCallback: "http://example.com/complete",
+				Name:      taskName,
+				GUID:      taskGUID,
+				AppGUID:   "the-app-guid",
+				AppName:   "wavey",
+				SpaceName: "the-space",
+				OrgName:   "the-org",
 				Env: map[string]string{
 					"FOO": "BAR",
 				},
@@ -44,14 +45,28 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 				Command: []string{"/notdora"},
 			},
 		}
+
+		ctx = context.Background()
 	})
+
+	getTaskStatus := func() (eiriniv1.TaskStatus, error) {
+		runningTask, err := fixture.EiriniClientset.
+			EiriniV1().
+			Tasks(fixture.Namespace).
+			Get(ctx, taskName, metav1.GetOptions{})
+		if err != nil {
+			return eiriniv1.TaskStatus{}, err
+		}
+
+		return runningTask.Status, nil
+	}
 
 	Describe("Creating a Task CRD", func() {
 		JustBeforeEach(func() {
 			_, err := fixture.EiriniClientset.
 				EiriniV1().
 				Tasks(fixture.Namespace).
-				Create(context.Background(), task, metav1.CreateOptions{})
+				Create(ctx, task, metav1.CreateOptions{})
 
 			Expect(err).NotTo(HaveOccurred())
 
@@ -60,6 +75,10 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 
 		It("runs the task", func() {
 			Eventually(tests.RequestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
+			Eventually(getTaskStatus).Should(MatchFields(IgnoreExtras, Fields{
+				"ExecutionStatus": Equal(eiriniv1.TaskRunning),
+				"StartTime":       Not(BeZero()),
+			}))
 		})
 
 		When("the task image lives in a private registry", func() {
@@ -74,6 +93,36 @@ var _ = Describe("Tasks CRD [needs-logs-for: eirini-controller]", func() {
 
 			It("runs the task", func() {
 				Eventually(tests.RequestServiceFn(fixture.Namespace, taskServiceName, port, "/")).Should(ContainSubstring("Dora!"))
+			})
+		})
+
+		When("the task completes successfully", func() {
+			BeforeEach(func() {
+				task.Spec.Image = "eirini/busybox"
+				task.Spec.Command = []string{"echo", "hello"}
+			})
+
+			It("marks the Task as succeeded", func() {
+				Eventually(getTaskStatus).Should(MatchFields(IgnoreExtras, Fields{
+					"ExecutionStatus": Equal(eiriniv1.TaskSucceeded),
+					"StartTime":       Not(BeZero()),
+					"EndTime":         Not(BeZero()),
+				}))
+			})
+		})
+
+		When("the task fails", func() {
+			BeforeEach(func() {
+				task.Spec.Image = "eirini/busybox"
+				task.Spec.Command = []string{"false"}
+			})
+
+			It("marks the Task as failed", func() {
+				Eventually(getTaskStatus).Should(MatchFields(IgnoreExtras, Fields{
+					"ExecutionStatus": Equal(eiriniv1.TaskFailed),
+					"StartTime":       Not(BeZero()),
+					"EndTime":         Not(BeZero()),
+				}))
 			})
 		})
 	})

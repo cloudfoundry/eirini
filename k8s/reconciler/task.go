@@ -14,40 +14,46 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-//counterfeiter:generate . TaskDesirer
-
 type Task struct {
-	client      client.Client
-	taskDesirer TaskDesirer
-	scheme      *runtime.Scheme
-	logger      lager.Logger
+	taskClient     TasksRuntimeClient
+	workloadClient WorkloadClient
+	scheme         *runtime.Scheme
+	logger         lager.Logger
 }
 
-func NewTask(logger lager.Logger, client client.Client, taskDesirer TaskDesirer, scheme *runtime.Scheme) *Task {
+//counterfeiter:generate . TasksRuntimeClient
+
+type TasksRuntimeClient interface {
+	UpdateTaskStatus(context.Context, *eiriniv1.Task, eiriniv1.TaskStatus) error
+	GetTask(context.Context, string, string) (*eiriniv1.Task, error)
+}
+
+//counterfeiter:generate . WorkloadClient
+
+type WorkloadClient interface {
+	Desire(ctx context.Context, namespace string, task *api.Task, opts ...shared.Option) error
+	GetStatus(ctx context.Context, taskGUID string) (eiriniv1.TaskStatus, error)
+}
+
+func NewTask(logger lager.Logger, client TasksRuntimeClient, workloadClient WorkloadClient, scheme *runtime.Scheme) *Task {
 	return &Task{
-		client:      client,
-		taskDesirer: taskDesirer,
-		scheme:      scheme,
-		logger:      logger,
+		taskClient:     client,
+		workloadClient: workloadClient,
+		scheme:         scheme,
+		logger:         logger,
 	}
 }
 
-type TaskDesirer interface {
-	Desire(ctx context.Context, namespace string, task *api.Task, opts ...shared.Option) error
-}
-
 func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
-	task := &eiriniv1.Task{}
 	logger := t.logger.Session("reconcile-task", lager.Data{"request": request})
 	logger.Debug("start")
 
-	err := t.client.Get(ctx, request.NamespacedName, task)
+	task, err := t.taskClient.GetTask(ctx, request.NamespacedName.Namespace, request.NamespacedName.Name)
 	if errors.IsNotFound(err) {
-		logger.Error("no-such-task", err)
+		logger.Debug("task-not-found")
 
 		return reconcile.Result{}, nil
 	}
@@ -58,20 +64,23 @@ func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconc
 		return reconcile.Result{}, fmt.Errorf("could not fetch task: %w", err)
 	}
 
-	err = t.taskDesirer.Desire(ctx, task.Namespace, toAPITask(task), t.setOwnerFn(task))
-	if errors.IsAlreadyExists(err) {
-		logger.Info("task-already-exists")
-
-		return reconcile.Result{}, nil
-	}
-
-	if err != nil {
+	err = t.workloadClient.Desire(ctx, task.Namespace, toAPITask(task), t.setOwnerFn(task))
+	if err != nil && !errors.IsAlreadyExists(err) {
 		logger.Error("desire-task-failed", err)
 
 		return reconcile.Result{}, exterrors.Wrap(err, "failed to desire task")
 	}
 
-	logger.Debug("task-desired-successfully")
+	status, err := t.workloadClient.GetStatus(ctx, task.Spec.GUID)
+	if err != nil {
+		logger.Error("failed-to-get-task-status", err)
+
+		return reconcile.Result{}, exterrors.Wrap(err, "failed to get task status")
+	}
+
+	if err := t.taskClient.UpdateTaskStatus(ctx, task, status); err != nil {
+		return reconcile.Result{}, exterrors.Wrap(err, "failed to update task status")
+	}
 
 	return reconcile.Result{}, nil
 }

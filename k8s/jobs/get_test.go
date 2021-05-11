@@ -72,7 +72,7 @@ var _ = Describe("Get", func() {
 		})
 
 		It("returns not found error", func() {
-			Expect(err).To(Equal(eirini.ErrNotFound))
+			Expect(err).To(MatchError(eirini.ErrNotFound))
 		})
 	})
 

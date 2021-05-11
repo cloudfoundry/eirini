@@ -102,6 +102,18 @@ func (c *FakeTasks) Update(ctx context.Context, task *eiriniv1.Task, opts v1.Upd
 	return obj.(*eiriniv1.Task), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeTasks) UpdateStatus(ctx context.Context, task *eiriniv1.Task, opts v1.UpdateOptions) (*eiriniv1.Task, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(tasksResource, "status", c.ns, task), &eiriniv1.Task{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*eiriniv1.Task), err
+}
+
 // Delete takes name of the task and deletes it. Returns an error if one occurs.
 func (c *FakeTasks) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.

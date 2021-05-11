@@ -5,15 +5,16 @@ import (
 )
 
 // +genclient
-// +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:subresource:status
 
 // Task describes a short-lived job running alongside an LRP
 type Task struct {
 	meta_v1.TypeMeta   `json:",inline"`
 	meta_v1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec TaskSpec `json:"spec"`
+	Spec   TaskSpec   `json:"spec"`
+	Status TaskStatus `json:"status"`
 }
 
 type TaskSpec struct {
@@ -42,4 +43,19 @@ type TaskList struct {
 	meta_v1.ListMeta `json:"metadata"`
 
 	Items []Task `json:"items"`
+}
+
+type ExecutionStatus string
+
+const (
+	TaskStarting  ExecutionStatus = "starting"
+	TaskRunning   ExecutionStatus = "running"
+	TaskSucceeded ExecutionStatus = "succeeded"
+	TaskFailed    ExecutionStatus = "failed"
+)
+
+type TaskStatus struct {
+	StartTime       *meta_v1.Time   `json:"start_time"`
+	EndTime         *meta_v1.Time   `json:"end_time"`
+	ExecutionStatus ExecutionStatus `json:"execution_status"`
 }

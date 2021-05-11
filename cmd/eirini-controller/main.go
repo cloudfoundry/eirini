@@ -12,6 +12,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/pdb"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
+	"code.cloudfoundry.org/eirini/k8s/runtimeclient"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	eirinischeme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
@@ -29,7 +30,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
-	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	ctrlruntimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -55,7 +56,7 @@ func main() {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", cfg.ConfigPath)
 	cmdcommons.ExitfIfError(err, "Failed to build kubeconfig")
 
-	controllerClient, err := runtimeclient.New(kubeConfig, runtimeclient.Options{Scheme: eirinischeme.Scheme})
+	controllerClient, err := ctrlruntimeclient.New(kubeConfig, ctrlruntimeclient.Options{Scheme: eirinischeme.Scheme})
 	cmdcommons.ExitfIfError(err, "Failed to create k8s runtime client")
 
 	clientset, err := kubernetes.NewForConfig(kubeConfig)
@@ -120,7 +121,7 @@ func main() {
 
 func createLRPReconciler(
 	logger lager.Logger,
-	controllerClient runtimeclient.Client,
+	controllerClient ctrlruntimeclient.Client,
 	clientset kubernetes.Interface,
 	cfg eirini.ControllerConfig,
 	scheme *runtime.Scheme,
@@ -163,7 +164,7 @@ func createLRPReconciler(
 
 func createTaskReconciler(
 	logger lager.Logger,
-	controllerClient runtimeclient.Client,
+	controllerClient ctrlruntimeclient.Client,
 	clientset kubernetes.Interface,
 	cfg eirini.ControllerConfig,
 	scheme *runtime.Scheme,
@@ -175,20 +176,21 @@ func createTaskReconciler(
 		cfg.UnsafeAllowAutomountServiceAccountToken,
 		latestMigrationIndex,
 	)
-	taskDesirer := jobs.NewDesirer(
+	workloadClient := k8s.NewTaskClient(
 		logger,
-		taskToJobConverter,
 		client.NewJob(clientset, cfg.WorkloadsNamespace),
 		client.NewSecret(clientset),
+		taskToJobConverter,
 	)
+	tasksClient := runtimeclient.NewTasks(controllerClient)
 
-	return reconciler.NewTask(logger, controllerClient, &taskDesirer, scheme)
+	return reconciler.NewTask(logger, tasksClient, workloadClient, scheme)
 }
 
 func createPodCrashReconciler(
 	logger lager.Logger,
 	workloadsNamespace string,
-	controllerClient runtimeclient.Client,
+	controllerClient ctrlruntimeclient.Client,
 	clientset kubernetes.Interface) *reconciler.PodCrash {
 	eventsClient := client.NewEvent(clientset)
 	statefulSetClient := client.NewStatefulSet(clientset, workloadsNamespace)

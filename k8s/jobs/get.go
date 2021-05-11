@@ -2,18 +2,17 @@ package jobs
 
 import (
 	"context"
-	"fmt"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/api"
 	"github.com/pkg/errors"
-	batch "k8s.io/api/batch/v1"
+	batchv1 "k8s.io/api/batch/v1"
 )
 
 //counterfeiter:generate . JobGetter
 
 type JobGetter interface {
-	GetByGUID(ctx context.Context, guid string, includeCompleted bool) ([]batch.Job, error)
+	GetByGUID(ctx context.Context, guid string, includeCompleted bool) ([]batchv1.Job, error)
 }
 
 type Getter struct {
@@ -34,12 +33,21 @@ func (g *Getter) Get(ctx context.Context, taskGUID string) (*api.Task, error) {
 		return nil, errors.Wrap(err, "failed to get job")
 	}
 
+	job, err := getSingleJob(jobs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get task with GUID %q", taskGUID)
+	}
+
+	return toTask(job), nil
+}
+
+func getSingleJob(jobs []batchv1.Job) (batchv1.Job, error) {
 	switch len(jobs) {
 	case 0:
-		return nil, eirini.ErrNotFound
+		return batchv1.Job{}, eirini.ErrNotFound
 	case 1:
-		return toTask(jobs[0]), nil
+		return jobs[0], nil
 	default:
-		return nil, fmt.Errorf("multiple jobs found for task GUID %q", taskGUID)
+		return batchv1.Job{}, errors.New("multiple jobs found for task")
 	}
 }

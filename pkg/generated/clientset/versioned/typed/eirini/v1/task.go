@@ -40,6 +40,7 @@ type TasksGetter interface {
 type TaskInterface interface {
 	Create(ctx context.Context, task *v1.Task, opts metav1.CreateOptions) (*v1.Task, error)
 	Update(ctx context.Context, task *v1.Task, opts metav1.UpdateOptions) (*v1.Task, error)
+	UpdateStatus(ctx context.Context, task *v1.Task, opts metav1.UpdateOptions) (*v1.Task, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Task, error)
@@ -128,6 +129,22 @@ func (c *tasks) Update(ctx context.Context, task *v1.Task, opts metav1.UpdateOpt
 		Namespace(c.ns).
 		Resource("tasks").
 		Name(task.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(task).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *tasks) UpdateStatus(ctx context.Context, task *v1.Task, opts metav1.UpdateOptions) (result *v1.Task, err error) {
+	result = &v1.Task{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("tasks").
+		Name(task.Name).
+		SubResource("status").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(task).
 		Do(ctx).
