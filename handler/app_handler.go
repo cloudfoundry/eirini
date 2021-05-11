@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/api"
@@ -202,13 +201,9 @@ func (a *App) StopInstance(w http.ResponseWriter, r *http.Request, ps httprouter
 		Version: ps.ByName("version_guid"),
 	}
 
-	index, err := strconv.ParseUint(ps.ByName("instance"), 10, 32)
-	if err != nil {
-		loggerSession.Error("parsing-instance-index-failed", err)
-		w.WriteHeader(http.StatusBadRequest)
-	}
+	index := ps.ByName("instance")
 
-	if err := a.lrpBifrost.StopInstance(r.Context(), identifier, uint(index)); err != nil {
+	if err := a.lrpBifrost.StopInstance(r.Context(), identifier, index); err != nil {
 		loggerSession.Error("bifrost-failed", err)
 
 		statusCode := http.StatusInternalServerError

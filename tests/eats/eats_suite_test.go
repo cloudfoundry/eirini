@@ -156,8 +156,8 @@ func stopLRP(processGUID, versionGUID string) (*http.Response, error) {
 	return fixture.GetEiriniHTTPClient().Do(request)
 }
 
-func stopLRPInstance(processGUID, versionGUID string, instance int) (*http.Response, error) {
-	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop/%d", tests.GetEiriniAddress(), processGUID, versionGUID, instance), nil)
+func stopLRPInstance(processGUID, versionGUID string, instance string) (*http.Response, error) {
+	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop/%s", tests.GetEiriniAddress(), processGUID, versionGUID, instance), nil)
 	if err != nil {
 		return nil, err
 	}

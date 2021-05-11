@@ -25,7 +25,7 @@ type LRPClient interface {
 	GetInstances(ctx context.Context, identifier api.LRPIdentifier) ([]*api.Instance, error)
 	Update(ctx context.Context, lrp *api.LRP) error
 	Stop(ctx context.Context, identifier api.LRPIdentifier) error
-	StopInstance(ctx context.Context, identifier api.LRPIdentifier, index uint) error
+	StopInstance(ctx context.Context, identifier api.LRPIdentifier, index string) error
 }
 
 type LRPNamespacer interface {
@@ -127,7 +127,7 @@ func (l *LRP) Stop(ctx context.Context, identifier api.LRPIdentifier) error {
 	return errors.Wrap(l.LRPClient.Stop(ctx, identifier), "failed to stop app")
 }
 
-func (l *LRP) StopInstance(ctx context.Context, identifier api.LRPIdentifier, index uint) error {
+func (l *LRP) StopInstance(ctx context.Context, identifier api.LRPIdentifier, index string) error {
 	if err := l.LRPClient.StopInstance(ctx, identifier, index); err != nil {
 		return errors.Wrap(err, "failed to stop instance")
 	}

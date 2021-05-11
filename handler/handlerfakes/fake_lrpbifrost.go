@@ -64,12 +64,12 @@ type FakeLRPBifrost struct {
 	stopReturnsOnCall map[int]struct {
 		result1 error
 	}
-	StopInstanceStub        func(context.Context, api.LRPIdentifier, uint) error
+	StopInstanceStub        func(context.Context, api.LRPIdentifier, string) error
 	stopInstanceMutex       sync.RWMutex
 	stopInstanceArgsForCall []struct {
 		arg1 context.Context
 		arg2 api.LRPIdentifier
-		arg3 uint
+		arg3 string
 	}
 	stopInstanceReturns struct {
 		result1 error
@@ -361,13 +361,13 @@ func (fake *FakeLRPBifrost) StopReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeLRPBifrost) StopInstance(arg1 context.Context, arg2 api.LRPIdentifier, arg3 uint) error {
+func (fake *FakeLRPBifrost) StopInstance(arg1 context.Context, arg2 api.LRPIdentifier, arg3 string) error {
 	fake.stopInstanceMutex.Lock()
 	ret, specificReturn := fake.stopInstanceReturnsOnCall[len(fake.stopInstanceArgsForCall)]
 	fake.stopInstanceArgsForCall = append(fake.stopInstanceArgsForCall, struct {
 		arg1 context.Context
 		arg2 api.LRPIdentifier
-		arg3 uint
+		arg3 string
 	}{arg1, arg2, arg3})
 	stub := fake.StopInstanceStub
 	fakeReturns := fake.stopInstanceReturns
@@ -388,13 +388,13 @@ func (fake *FakeLRPBifrost) StopInstanceCallCount() int {
 	return len(fake.stopInstanceArgsForCall)
 }
 
-func (fake *FakeLRPBifrost) StopInstanceCalls(stub func(context.Context, api.LRPIdentifier, uint) error) {
+func (fake *FakeLRPBifrost) StopInstanceCalls(stub func(context.Context, api.LRPIdentifier, string) error) {
 	fake.stopInstanceMutex.Lock()
 	defer fake.stopInstanceMutex.Unlock()
 	fake.StopInstanceStub = stub
 }
 
-func (fake *FakeLRPBifrost) StopInstanceArgsForCall(i int) (context.Context, api.LRPIdentifier, uint) {
+func (fake *FakeLRPBifrost) StopInstanceArgsForCall(i int) (context.Context, api.LRPIdentifier, string) {
 	fake.stopInstanceMutex.RLock()
 	defer fake.stopInstanceMutex.RUnlock()
 	argsForCall := fake.stopInstanceArgsForCall[i]

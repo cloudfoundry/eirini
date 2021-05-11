@@ -76,7 +76,7 @@ type VolumeMount struct {
 }
 
 type Instance struct {
-	Index          int
+	Index          string
 	Since          int64
 	State          string
 	PlacementError string

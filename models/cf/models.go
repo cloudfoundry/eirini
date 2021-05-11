@@ -168,7 +168,7 @@ type GetInstancesResponse struct {
 }
 
 type Instance struct {
-	Index          int    `json:"index"`
+	Index          string `json:"index"`
 	Since          int64  `json:"since"`
 	State          string `json:"state"`
 	PlacementError string `json:"placement_error,omitempty"`

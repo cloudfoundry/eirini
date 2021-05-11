@@ -5,7 +5,9 @@ import (
 	"context"
 	"sync"
 
+	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/stset"
+	v1 "k8s.io/api/core/v1"
 )
 
 type FakePodDeleter struct {
@@ -21,6 +23,20 @@ type FakePodDeleter struct {
 	}
 	deleteReturnsOnCall map[int]struct {
 		result1 error
+	}
+	GetByLRPIdentifierStub        func(context.Context, api.LRPIdentifier) ([]v1.Pod, error)
+	getByLRPIdentifierMutex       sync.RWMutex
+	getByLRPIdentifierArgsForCall []struct {
+		arg1 context.Context
+		arg2 api.LRPIdentifier
+	}
+	getByLRPIdentifierReturns struct {
+		result1 []v1.Pod
+		result2 error
+	}
+	getByLRPIdentifierReturnsOnCall map[int]struct {
+		result1 []v1.Pod
+		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -89,11 +105,78 @@ func (fake *FakePodDeleter) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakePodDeleter) GetByLRPIdentifier(arg1 context.Context, arg2 api.LRPIdentifier) ([]v1.Pod, error) {
+	fake.getByLRPIdentifierMutex.Lock()
+	ret, specificReturn := fake.getByLRPIdentifierReturnsOnCall[len(fake.getByLRPIdentifierArgsForCall)]
+	fake.getByLRPIdentifierArgsForCall = append(fake.getByLRPIdentifierArgsForCall, struct {
+		arg1 context.Context
+		arg2 api.LRPIdentifier
+	}{arg1, arg2})
+	stub := fake.GetByLRPIdentifierStub
+	fakeReturns := fake.getByLRPIdentifierReturns
+	fake.recordInvocation("GetByLRPIdentifier", []interface{}{arg1, arg2})
+	fake.getByLRPIdentifierMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakePodDeleter) GetByLRPIdentifierCallCount() int {
+	fake.getByLRPIdentifierMutex.RLock()
+	defer fake.getByLRPIdentifierMutex.RUnlock()
+	return len(fake.getByLRPIdentifierArgsForCall)
+}
+
+func (fake *FakePodDeleter) GetByLRPIdentifierCalls(stub func(context.Context, api.LRPIdentifier) ([]v1.Pod, error)) {
+	fake.getByLRPIdentifierMutex.Lock()
+	defer fake.getByLRPIdentifierMutex.Unlock()
+	fake.GetByLRPIdentifierStub = stub
+}
+
+func (fake *FakePodDeleter) GetByLRPIdentifierArgsForCall(i int) (context.Context, api.LRPIdentifier) {
+	fake.getByLRPIdentifierMutex.RLock()
+	defer fake.getByLRPIdentifierMutex.RUnlock()
+	argsForCall := fake.getByLRPIdentifierArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakePodDeleter) GetByLRPIdentifierReturns(result1 []v1.Pod, result2 error) {
+	fake.getByLRPIdentifierMutex.Lock()
+	defer fake.getByLRPIdentifierMutex.Unlock()
+	fake.GetByLRPIdentifierStub = nil
+	fake.getByLRPIdentifierReturns = struct {
+		result1 []v1.Pod
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakePodDeleter) GetByLRPIdentifierReturnsOnCall(i int, result1 []v1.Pod, result2 error) {
+	fake.getByLRPIdentifierMutex.Lock()
+	defer fake.getByLRPIdentifierMutex.Unlock()
+	fake.GetByLRPIdentifierStub = nil
+	if fake.getByLRPIdentifierReturnsOnCall == nil {
+		fake.getByLRPIdentifierReturnsOnCall = make(map[int]struct {
+			result1 []v1.Pod
+			result2 error
+		})
+	}
+	fake.getByLRPIdentifierReturnsOnCall[i] = struct {
+		result1 []v1.Pod
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakePodDeleter) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
+	fake.getByLRPIdentifierMutex.RLock()
+	defer fake.getByLRPIdentifierMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

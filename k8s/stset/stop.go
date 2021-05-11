@@ -79,7 +79,7 @@ func (s *Stopper) stop(ctx context.Context, identifier api.LRPIdentifier) error 
 	return nil
 }
 
-func (s *Stopper) StopInstance(ctx context.Context, identifier api.LRPIdentifier, index uint) error {
+func (s *Stopper) StopInstance(ctx context.Context, identifier api.LRPIdentifier, index string) error {
 	logger := s.logger.Session("stopInstance", lager.Data{"guid": identifier.GUID, "version": identifier.Version, "index": index})
 	statefulset, err := s.getStatefulSet(ctx, identifier)
 
@@ -102,20 +102,16 @@ func (s *Stopper) StopInstance(ctx context.Context, identifier api.LRPIdentifier
 
 	podName := ""
 	for _, pod := range pods {
-		podIndex, err := podToInstanceID(pod.Name)
-		if err != nil {
-			logger.Error("could-not-parse-pod-index", err)
-			continue
-		}
+		podIndex := podToInstanceID(pod.Name)
 
-		if uint(podIndex) == index {
+		if podIndex == index {
 			podName = pod.Name
 		}
 	}
 
 	if podName == "" {
 		logger.Debug("failed-to-find-pod", lager.Data{"index": index})
-		return fmt.Errorf("failed to find pod with index %d", index)
+		return fmt.Errorf("failed to find pod with index %s", index)
 	}
 
 	err = s.podDeleter.Delete(ctx, statefulset.Namespace, podName)

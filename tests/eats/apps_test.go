@@ -283,7 +283,7 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 		var (
 			stopResponse *http.Response
 			stopErr      error
-			instanceID   int
+			instanceID   string
 		)
 
 		BeforeEach(func() {
@@ -291,7 +291,7 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 			Eventually(func() []*cf.Instance {
 				return getRunningInstances(lrpGUID, lrpVersion)
 			}).Should(HaveLen(3))
-			instanceID = 1
+			instanceID = getRunningInstances(lrpGUID, lrpVersion)[0].Index
 		})
 
 		JustBeforeEach(func() {
@@ -307,12 +307,12 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 				return getRunningInstances(lrpGUID, lrpVersion)
 			}).Should(ConsistOf(
 				gstruct.PointTo(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-					"Index": Equal(0),
+					"Index": HaveLen(5),
 					"State": Equal("RUNNING"),
 					"Since": BeNumerically(">", 0),
 				})),
 				gstruct.PointTo(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-					"Index": Equal(2),
+					"Index": HaveLen(5),
 					"State": Equal("RUNNING"),
 					"Since": BeNumerically(">", 0),
 				})),
@@ -331,7 +331,7 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 
 		When("the app instance does not exist", func() {
 			BeforeEach(func() {
-				instanceID = 99
+				instanceID = "none"
 			})
 
 			It("should return 400", func() {
@@ -340,16 +340,16 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 			})
 		})
 
-		When("the app instance is a negative number", func() {
-			BeforeEach(func() {
-				instanceID = -1
-			})
+		// When("the app instance is a negative number", func() {
+		// 	BeforeEach(func() {
+		// 		instanceID = -1
+		// 	})
 
-			It("should return 400", func() {
-				Expect(stopErr).NotTo(HaveOccurred())
-				Expect(stopResponse.StatusCode).To(Equal(http.StatusBadRequest))
-			})
-		})
+		// 	It("should return 400", func() {
+		// 		Expect(stopErr).NotTo(HaveOccurred())
+		// 		Expect(stopResponse.StatusCode).To(Equal(http.StatusBadRequest))
+		// 	})
+		// })
 	})
 
 	Describe("Get instances", func() {
@@ -377,17 +377,17 @@ var _ = Describe("Apps [needs-logs-for: eirini-api]", func() {
 				return resp.Instances
 			}).Should(ConsistOf(
 				gstruct.PointTo(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-					"Index": Equal(0),
+					"Index": HaveLen(5),
 					"State": Equal("RUNNING"),
 					"Since": BeNumerically(">", 0),
 				})),
 				gstruct.PointTo(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-					"Index": Equal(1),
+					"Index": HaveLen(5),
 					"State": Equal("RUNNING"),
 					"Since": BeNumerically(">", 0),
 				})),
 				gstruct.PointTo(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-					"Index": Equal(2),
+					"Index": HaveLen(5),
 					"State": Equal("RUNNING"),
 					"Since": BeNumerically(">", 0),
 				})),

@@ -19,7 +19,7 @@ type LRPBifrost interface {
 	List(ctx context.Context) ([]cf.DesiredLRPSchedulingInfo, error)
 	Update(ctx context.Context, update cf.UpdateDesiredLRPRequest) error
 	Stop(ctx context.Context, identifier api.LRPIdentifier) error
-	StopInstance(ctx context.Context, identifier api.LRPIdentifier, index uint) error
+	StopInstance(ctx context.Context, identifier api.LRPIdentifier, index string) error
 	GetApp(ctx context.Context, identifier api.LRPIdentifier) (cf.DesiredLRP, error)
 	GetInstances(ctx context.Context, identifier api.LRPIdentifier) ([]*cf.Instance, error)
 }

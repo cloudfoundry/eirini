@@ -369,7 +369,7 @@ var _ = Describe("Bifrost LRP", func() {
 
 	Describe("Stop an app instance", func() {
 		JustBeforeEach(func() {
-			err = lrpBifrost.StopInstance(context.Background(), api.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, 1)
+			err = lrpBifrost.StopInstance(context.Background(), api.LRPIdentifier{GUID: "guid_1234", Version: "version_1234"}, "1")
 		})
 
 		It("should not return an error", func() {
@@ -402,9 +402,9 @@ var _ = Describe("Bifrost LRP", func() {
 
 		BeforeEach(func() {
 			apiInstances = []*api.Instance{
-				{Index: 0, Since: 123, State: api.RunningState},
-				{Index: 1, Since: 345, State: api.CrashedState},
-				{Index: 2, Since: 678, State: api.ErrorState, PlacementError: "this is not the place"},
+				{Index: "0", Since: 123, State: api.RunningState},
+				{Index: "1", Since: 345, State: api.CrashedState},
+				{Index: "2", Since: 678, State: api.ErrorState, PlacementError: "this is not the place"},
 			}
 
 			lrpClient.GetInstancesReturns(apiInstances, nil)
@@ -427,9 +427,9 @@ var _ = Describe("Bifrost LRP", func() {
 
 		It("should return all running instances", func() {
 			Expect(instances).To(Equal([]*cf.Instance{
-				{Index: 0, Since: 123, State: api.RunningState},
-				{Index: 1, Since: 345, State: api.CrashedState},
-				{Index: 2, Since: 678, State: api.ErrorState, PlacementError: "this is not the place"},
+				{Index: "0", Since: 123, State: api.RunningState},
+				{Index: "1", Since: 345, State: api.CrashedState},
+				{Index: "2", Since: 678, State: api.ErrorState, PlacementError: "this is not the place"},
 			}))
 		})
 

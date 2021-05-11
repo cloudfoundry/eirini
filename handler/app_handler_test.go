@@ -359,9 +359,9 @@ var _ = Describe("AppHandler", func() {
 			path = "/apps/guid_1234/version_1234/instances"
 
 			instances := []*cf.Instance{
-				{Index: 0, Since: 123, State: "RUNNING"},
-				{Index: 1, Since: 456, State: "RUNNING"},
-				{Index: 2, Since: 789, State: "UNCLAIMED", PlacementError: "this is not the place"},
+				{Index: "0", Since: 123, State: "RUNNING"},
+				{Index: "1", Since: 456, State: "RUNNING"},
+				{Index: "2", Since: 789, State: "UNCLAIMED", PlacementError: "this is not the place"},
 			}
 			lrpBifrost.GetInstancesReturns(instances, nil)
 		})

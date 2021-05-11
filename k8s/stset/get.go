@@ -2,7 +2,6 @@ package stset
 
 import (
 	"context"
-	"strconv"
 	"strings"
 
 	"code.cloudfoundry.org/eirini"
@@ -60,14 +59,8 @@ func (g *Getter) Get(ctx context.Context, identifier api.LRPIdentifier) (*api.LR
 	return g.getLRP(ctx, logger, identifier)
 }
 
-func podToInstanceID(podName string) (int, error) {
-	instanceName := podName[len(podName)-5:]
-	instanceNumber, err := strconv.ParseInt(instanceName, 36, 32)
-	if err != nil {
-		return 0, errors.Wrapf(err, "could not parse instanceName %q as a 36-base number", instanceName)
-	}
-
-	return int(instanceNumber), nil
+func podToInstanceID(podName string) string {
+	return podName[len(podName)-5:]
 }
 
 func (g *Getter) GetInstances(ctx context.Context, identifier api.LRPIdentifier) ([]*api.Instance, error) {
@@ -96,11 +89,7 @@ func (g *Getter) GetInstances(ctx context.Context, identifier api.LRPIdentifier)
 			continue
 		}
 
-		index, err := podToInstanceID(pod.Name)
-		if err != nil {
-			logger.Error("failed-to-convert-pod-name", err)
-			continue
-		}
+		index := podToInstanceID(pod.Name)
 
 		since := int64(0)
 		if pod.Status.StartTime != nil {
