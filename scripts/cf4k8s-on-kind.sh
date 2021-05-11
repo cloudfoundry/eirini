@@ -29,9 +29,10 @@ trap "rm -rf $EIRINI_RENDER_DIR" EXIT
 
 main() {
   use_local_cc="false"
+  use_local_metrics="false"
   use_local_eirini="false"
   delete_environment="false"
-  while getopts "cdeh" opt; do
+  while getopts "cdehm" opt; do
     case ${opt} in
       h)
         echo "$USAGE"
@@ -39,6 +40,9 @@ main() {
         ;;
       c)
         use_local_cc="true"
+        ;;
+      m)
+        use_local_metrics="true"
         ;;
       d)
         delete_environment="true"
@@ -64,6 +68,7 @@ main() {
   generate-values-file
   build-eirini
   build-cc
+  build-metrics
   deploy
 }
 
@@ -146,6 +151,19 @@ build-cc() {
     push-to-docker
     sed -i "s|ccng: .*$|ccng: $CCNG_IMAGE:$TAG|" "$HOME/workspace/capi-k8s-release/config/values/images.yml"
     "$HOME/workspace/capi-k8s-release/scripts/bump-cf-for-k8s.sh"
+  fi
+}
+
+build-metrics() {
+  if [[ "$use_local_metrics" == "true" ]]; then
+    echo "🔨 Building local metrics proxy"
+    # build & bump metric
+    tag=$(
+      tr -dc A-Za-z0-9 </dev/urandom | head -c 8
+      echo ''
+    )
+    DOCKER_ORG=eirini "$HOME/workspace/metric-proxy/hack/build-dev-image.sh" "$tag"
+    "$HOME/workspace/metric-proxy/hack/bump-cf-for-k8s.sh"
   fi
 }
 
