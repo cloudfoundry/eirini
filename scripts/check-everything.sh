@@ -142,6 +142,8 @@ redeploy_wiremock() {
 
 redeploy_prometheus() {
   kapp -y delete -a prometheus
+  helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+  helm repo update
   helm -n eirini-core template prometheus prometheus-community/prometheus | kapp -y deploy -a prometheus -f -
 }
 
