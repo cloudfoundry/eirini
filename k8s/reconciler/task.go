@@ -18,15 +18,15 @@ import (
 )
 
 type Task struct {
-	taskClient     TasksRuntimeClient
+	taskCrClient   TasksCrClient
 	workloadClient WorkloadClient
 	scheme         *runtime.Scheme
 	logger         lager.Logger
 }
 
-//counterfeiter:generate . TasksRuntimeClient
+//counterfeiter:generate . TasksCrClient
 
-type TasksRuntimeClient interface {
+type TasksCrClient interface {
 	UpdateTaskStatus(context.Context, *eiriniv1.Task, eiriniv1.TaskStatus) error
 	GetTask(context.Context, string, string) (*eiriniv1.Task, error)
 }
@@ -38,9 +38,9 @@ type WorkloadClient interface {
 	GetStatus(ctx context.Context, taskGUID string) (eiriniv1.TaskStatus, error)
 }
 
-func NewTask(logger lager.Logger, client TasksRuntimeClient, workloadClient WorkloadClient, scheme *runtime.Scheme) *Task {
+func NewTask(logger lager.Logger, taskCrClient TasksCrClient, workloadClient WorkloadClient, scheme *runtime.Scheme) *Task {
 	return &Task{
-		taskClient:     client,
+		taskCrClient:   taskCrClient,
 		workloadClient: workloadClient,
 		scheme:         scheme,
 		logger:         logger,
@@ -51,7 +51,7 @@ func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconc
 	logger := t.logger.Session("reconcile-task", lager.Data{"request": request})
 	logger.Debug("start")
 
-	task, err := t.taskClient.GetTask(ctx, request.NamespacedName.Namespace, request.NamespacedName.Name)
+	task, err := t.taskCrClient.GetTask(ctx, request.NamespacedName.Namespace, request.NamespacedName.Name)
 	if errors.IsNotFound(err) {
 		logger.Debug("task-not-found")
 
@@ -78,7 +78,7 @@ func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconc
 		return reconcile.Result{}, exterrors.Wrap(err, "failed to get task status")
 	}
 
-	if err := t.taskClient.UpdateTaskStatus(ctx, task, status); err != nil {
+	if err := t.taskCrClient.UpdateTaskStatus(ctx, task, status); err != nil {
 		return reconcile.Result{}, exterrors.Wrap(err, "failed to update task status")
 	}
 

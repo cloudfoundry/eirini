@@ -3,7 +3,7 @@ package integration_test
 import (
 	"time"
 
-	"code.cloudfoundry.org/eirini/k8s/runtimeclient"
+	"code.cloudfoundry.org/eirini/k8s/crclient"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,12 +13,12 @@ import (
 var _ = Describe("Tasks", func() {
 	var (
 		task       *eiriniv1.Task
-		taskClient *runtimeclient.Tasks
+		taskClient *crclient.Tasks
 	)
 
 	BeforeEach(func() {
 		task = createTask(fixture.Namespace, "a-task")
-		taskClient = runtimeclient.NewTasks(fixture.RuntimeClient)
+		taskClient = crclient.NewTasks(fixture.RuntimeClient)
 	})
 
 	Describe("GetTask", func() {

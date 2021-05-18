@@ -25,7 +25,7 @@ var _ = Describe("Task", func() {
 		taskReconciler  *reconciler.Task
 		reconcileResult reconcile.Result
 		reconcileErr    error
-		taskClient      *reconcilerfakes.FakeTasksRuntimeClient
+		tasksCrClient   *reconcilerfakes.FakeTasksCrClient
 		namespacedName  types.NamespacedName
 		workloadClient  *reconcilerfakes.FakeWorkloadClient
 		scheme          *runtime.Scheme
@@ -33,7 +33,7 @@ var _ = Describe("Task", func() {
 	)
 
 	BeforeEach(func() {
-		taskClient = new(reconcilerfakes.FakeTasksRuntimeClient)
+		tasksCrClient = new(reconcilerfakes.FakeTasksCrClient)
 		namespacedName = types.NamespacedName{
 			Namespace: "my-namespace",
 			Name:      "my-name",
@@ -42,7 +42,7 @@ var _ = Describe("Task", func() {
 
 		scheme = eiriniv1scheme.Scheme
 		logger := lagertest.NewTestLogger("task-reconciler")
-		taskReconciler = reconciler.NewTask(logger, taskClient, workloadClient, scheme)
+		taskReconciler = reconciler.NewTask(logger, tasksCrClient, workloadClient, scheme)
 		task = &eiriniv1.Task{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      namespacedName.Name,
@@ -66,7 +66,7 @@ var _ = Describe("Task", func() {
 				CPUWeight:          13,
 			},
 		}
-		taskClient.GetTaskReturns(task, nil)
+		tasksCrClient.GetTaskReturns(task, nil)
 		workloadClient.GetStatusReturns(eiriniv1.TaskStatus{
 			ExecutionStatus: eiriniv1.TaskStarting,
 		}, nil)
@@ -101,8 +101,8 @@ var _ = Describe("Task", func() {
 		})
 
 		By("updating the task execution status", func() {
-			Expect(taskClient.UpdateTaskStatusCallCount()).To(Equal(1))
-			_, actualTask, status := taskClient.UpdateTaskStatusArgsForCall(0)
+			Expect(tasksCrClient.UpdateTaskStatusCallCount()).To(Equal(1))
+			_, actualTask, status := tasksCrClient.UpdateTaskStatusArgsForCall(0)
 			Expect(actualTask).To(Equal(task))
 			Expect(status.ExecutionStatus).To(Equal(eiriniv1.TaskStarting))
 		})
@@ -122,15 +122,15 @@ var _ = Describe("Task", func() {
 	})
 
 	It("loads the task using names from request", func() {
-		Expect(taskClient.GetTaskCallCount()).To(Equal(1))
-		_, namespace, name := taskClient.GetTaskArgsForCall(0)
+		Expect(tasksCrClient.GetTaskCallCount()).To(Equal(1))
+		_, namespace, name := tasksCrClient.GetTaskArgsForCall(0)
 		Expect(namespace).To(Equal("my-namespace"))
 		Expect(name).To(Equal("my-name"))
 	})
 
 	When("the task cannot be found", func() {
 		BeforeEach(func() {
-			taskClient.GetTaskReturns(nil, errors.NewNotFound(schema.GroupResource{}, "foo"))
+			tasksCrClient.GetTaskReturns(nil, errors.NewNotFound(schema.GroupResource{}, "foo"))
 		})
 
 		It("neither requeues nor returns an error", func() {
@@ -141,7 +141,7 @@ var _ = Describe("Task", func() {
 
 	When("getting the task returns another error", func() {
 		BeforeEach(func() {
-			taskClient.GetTaskReturns(nil, fmt.Errorf("some problem"))
+			tasksCrClient.GetTaskReturns(nil, fmt.Errorf("some problem"))
 		})
 
 		It("returns an error", func() {
@@ -156,8 +156,8 @@ var _ = Describe("Task", func() {
 	})
 
 	It("updates the task with the new status", func() {
-		Expect(taskClient.UpdateTaskStatusCallCount()).To(Equal(1))
-		_, _, newStatus := taskClient.UpdateTaskStatusArgsForCall(0)
+		Expect(tasksCrClient.UpdateTaskStatusCallCount()).To(Equal(1))
+		_, _, newStatus := tasksCrClient.UpdateTaskStatusArgsForCall(0)
 		Expect(newStatus.ExecutionStatus).To(Equal(eiriniv1.TaskStarting))
 	})
 
@@ -173,7 +173,7 @@ var _ = Describe("Task", func() {
 
 	When("updating the task status returns an error", func() {
 		BeforeEach(func() {
-			taskClient.UpdateTaskStatusReturns(fmt.Errorf("crumpets"))
+			tasksCrClient.UpdateTaskStatusReturns(fmt.Errorf("crumpets"))
 		})
 
 		It("returns an error", func() {
@@ -206,7 +206,7 @@ var _ = Describe("Task", func() {
 
 		It("returns an error", func() {
 			Expect(reconcileErr).To(MatchError(ContainSubstring("some error")))
-			Expect(taskClient.UpdateTaskStatusCallCount()).To(Equal(0))
+			Expect(tasksCrClient.UpdateTaskStatusCallCount()).To(Equal(0))
 		})
 	})
 })

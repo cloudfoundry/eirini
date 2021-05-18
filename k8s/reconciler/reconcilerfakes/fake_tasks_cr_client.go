@@ -9,7 +9,7 @@ import (
 	v1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 )
 
-type FakeTasksRuntimeClient struct {
+type FakeTasksCrClient struct {
 	GetTaskStub        func(context.Context, string, string) (*v1.Task, error)
 	getTaskMutex       sync.RWMutex
 	getTaskArgsForCall []struct {
@@ -42,7 +42,7 @@ type FakeTasksRuntimeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeTasksRuntimeClient) GetTask(arg1 context.Context, arg2 string, arg3 string) (*v1.Task, error) {
+func (fake *FakeTasksCrClient) GetTask(arg1 context.Context, arg2 string, arg3 string) (*v1.Task, error) {
 	fake.getTaskMutex.Lock()
 	ret, specificReturn := fake.getTaskReturnsOnCall[len(fake.getTaskArgsForCall)]
 	fake.getTaskArgsForCall = append(fake.getTaskArgsForCall, struct {
@@ -63,26 +63,26 @@ func (fake *FakeTasksRuntimeClient) GetTask(arg1 context.Context, arg2 string, a
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeTasksRuntimeClient) GetTaskCallCount() int {
+func (fake *FakeTasksCrClient) GetTaskCallCount() int {
 	fake.getTaskMutex.RLock()
 	defer fake.getTaskMutex.RUnlock()
 	return len(fake.getTaskArgsForCall)
 }
 
-func (fake *FakeTasksRuntimeClient) GetTaskCalls(stub func(context.Context, string, string) (*v1.Task, error)) {
+func (fake *FakeTasksCrClient) GetTaskCalls(stub func(context.Context, string, string) (*v1.Task, error)) {
 	fake.getTaskMutex.Lock()
 	defer fake.getTaskMutex.Unlock()
 	fake.GetTaskStub = stub
 }
 
-func (fake *FakeTasksRuntimeClient) GetTaskArgsForCall(i int) (context.Context, string, string) {
+func (fake *FakeTasksCrClient) GetTaskArgsForCall(i int) (context.Context, string, string) {
 	fake.getTaskMutex.RLock()
 	defer fake.getTaskMutex.RUnlock()
 	argsForCall := fake.getTaskArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeTasksRuntimeClient) GetTaskReturns(result1 *v1.Task, result2 error) {
+func (fake *FakeTasksCrClient) GetTaskReturns(result1 *v1.Task, result2 error) {
 	fake.getTaskMutex.Lock()
 	defer fake.getTaskMutex.Unlock()
 	fake.GetTaskStub = nil
@@ -92,7 +92,7 @@ func (fake *FakeTasksRuntimeClient) GetTaskReturns(result1 *v1.Task, result2 err
 	}{result1, result2}
 }
 
-func (fake *FakeTasksRuntimeClient) GetTaskReturnsOnCall(i int, result1 *v1.Task, result2 error) {
+func (fake *FakeTasksCrClient) GetTaskReturnsOnCall(i int, result1 *v1.Task, result2 error) {
 	fake.getTaskMutex.Lock()
 	defer fake.getTaskMutex.Unlock()
 	fake.GetTaskStub = nil
@@ -108,7 +108,7 @@ func (fake *FakeTasksRuntimeClient) GetTaskReturnsOnCall(i int, result1 *v1.Task
 	}{result1, result2}
 }
 
-func (fake *FakeTasksRuntimeClient) UpdateTaskStatus(arg1 context.Context, arg2 *v1.Task, arg3 v1.TaskStatus) error {
+func (fake *FakeTasksCrClient) UpdateTaskStatus(arg1 context.Context, arg2 *v1.Task, arg3 v1.TaskStatus) error {
 	fake.updateTaskStatusMutex.Lock()
 	ret, specificReturn := fake.updateTaskStatusReturnsOnCall[len(fake.updateTaskStatusArgsForCall)]
 	fake.updateTaskStatusArgsForCall = append(fake.updateTaskStatusArgsForCall, struct {
@@ -129,26 +129,26 @@ func (fake *FakeTasksRuntimeClient) UpdateTaskStatus(arg1 context.Context, arg2 
 	return fakeReturns.result1
 }
 
-func (fake *FakeTasksRuntimeClient) UpdateTaskStatusCallCount() int {
+func (fake *FakeTasksCrClient) UpdateTaskStatusCallCount() int {
 	fake.updateTaskStatusMutex.RLock()
 	defer fake.updateTaskStatusMutex.RUnlock()
 	return len(fake.updateTaskStatusArgsForCall)
 }
 
-func (fake *FakeTasksRuntimeClient) UpdateTaskStatusCalls(stub func(context.Context, *v1.Task, v1.TaskStatus) error) {
+func (fake *FakeTasksCrClient) UpdateTaskStatusCalls(stub func(context.Context, *v1.Task, v1.TaskStatus) error) {
 	fake.updateTaskStatusMutex.Lock()
 	defer fake.updateTaskStatusMutex.Unlock()
 	fake.UpdateTaskStatusStub = stub
 }
 
-func (fake *FakeTasksRuntimeClient) UpdateTaskStatusArgsForCall(i int) (context.Context, *v1.Task, v1.TaskStatus) {
+func (fake *FakeTasksCrClient) UpdateTaskStatusArgsForCall(i int) (context.Context, *v1.Task, v1.TaskStatus) {
 	fake.updateTaskStatusMutex.RLock()
 	defer fake.updateTaskStatusMutex.RUnlock()
 	argsForCall := fake.updateTaskStatusArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeTasksRuntimeClient) UpdateTaskStatusReturns(result1 error) {
+func (fake *FakeTasksCrClient) UpdateTaskStatusReturns(result1 error) {
 	fake.updateTaskStatusMutex.Lock()
 	defer fake.updateTaskStatusMutex.Unlock()
 	fake.UpdateTaskStatusStub = nil
@@ -157,7 +157,7 @@ func (fake *FakeTasksRuntimeClient) UpdateTaskStatusReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeTasksRuntimeClient) UpdateTaskStatusReturnsOnCall(i int, result1 error) {
+func (fake *FakeTasksCrClient) UpdateTaskStatusReturnsOnCall(i int, result1 error) {
 	fake.updateTaskStatusMutex.Lock()
 	defer fake.updateTaskStatusMutex.Unlock()
 	fake.UpdateTaskStatusStub = nil
@@ -171,7 +171,7 @@ func (fake *FakeTasksRuntimeClient) UpdateTaskStatusReturnsOnCall(i int, result1
 	}{result1}
 }
 
-func (fake *FakeTasksRuntimeClient) Invocations() map[string][][]interface{} {
+func (fake *FakeTasksCrClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.getTaskMutex.RLock()
@@ -185,7 +185,7 @@ func (fake *FakeTasksRuntimeClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeTasksRuntimeClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakeTasksCrClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -197,4 +197,4 @@ func (fake *FakeTasksRuntimeClient) recordInvocation(key string, args []interfac
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ reconciler.TasksRuntimeClient = new(FakeTasksRuntimeClient)
+var _ reconciler.TasksCrClient = new(FakeTasksCrClient)

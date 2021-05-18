@@ -8,11 +8,11 @@ import (
 	cmdcommons "code.cloudfoundry.org/eirini/cmd"
 	"code.cloudfoundry.org/eirini/k8s"
 	"code.cloudfoundry.org/eirini/k8s/client"
+	"code.cloudfoundry.org/eirini/k8s/crclient"
 	eirinievent "code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/pdb"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
-	"code.cloudfoundry.org/eirini/k8s/runtimeclient"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	eirinischeme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
@@ -182,9 +182,9 @@ func createTaskReconciler(
 		client.NewSecret(clientset),
 		taskToJobConverter,
 	)
-	tasksClient := runtimeclient.NewTasks(controllerClient)
+	tasksCrClient := crclient.NewTasks(controllerClient)
 
-	return reconciler.NewTask(logger, tasksClient, workloadClient, scheme)
+	return reconciler.NewTask(logger, tasksCrClient, workloadClient, scheme)
 }
 
 func createPodCrashReconciler(
