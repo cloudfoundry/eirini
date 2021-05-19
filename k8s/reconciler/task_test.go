@@ -159,6 +159,40 @@ var _ = Describe("Task", func() {
 		Expect(newStatus.ExecutionStatus).To(Equal(eiriniv1.TaskStarting))
 	})
 
+	When("the task has completed successfully", func() {
+		BeforeEach(func() {
+			now := metav1.Now()
+			task = &eiriniv1.Task{
+				Status: eiriniv1.TaskStatus{
+					ExecutionStatus: eiriniv1.TaskSucceeded,
+					EndTime:         &now,
+				},
+			}
+			tasksCrClient.GetTaskReturns(task, nil)
+		})
+
+		It("does not desire the task again", func() {
+			Expect(workloadClient.DesireCallCount()).To(Equal(0))
+		})
+	})
+
+	When("the task has failed", func() {
+		BeforeEach(func() {
+			now := metav1.Now()
+			task = &eiriniv1.Task{
+				Status: eiriniv1.TaskStatus{
+					ExecutionStatus: eiriniv1.TaskFailed,
+					EndTime:         &now,
+				},
+			}
+			tasksCrClient.GetTaskReturns(task, nil)
+		})
+
+		It("does not desire the task again", func() {
+			Expect(workloadClient.DesireCallCount()).To(Equal(0))
+		})
+	})
+
 	When("gettin the task status returns an error", func() {
 		BeforeEach(func() {
 			workloadClient.GetStatusReturns(eiriniv1.TaskStatus{}, fmt.Errorf("potato"))

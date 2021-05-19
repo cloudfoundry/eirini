@@ -64,6 +64,10 @@ func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconc
 		return reconcile.Result{}, fmt.Errorf("could not fetch task: %w", err)
 	}
 
+	if taskHasCompleted(task) {
+		return reconcile.Result{}, nil
+	}
+
 	err = t.workloadClient.Desire(ctx, task.Namespace, toAPITask(task), t.setOwnerFn(task))
 	if err != nil && !errors.IsAlreadyExists(err) {
 		logger.Error("desire-task-failed", err)
@@ -98,6 +102,12 @@ func (t *Task) setOwnerFn(task *eiriniv1.Task) func(interface{}) error {
 
 		return nil
 	}
+}
+
+func taskHasCompleted(task *eiriniv1.Task) bool {
+	return task.Status.EndTime != nil &&
+		(task.Status.ExecutionStatus == eiriniv1.TaskFailed ||
+			task.Status.ExecutionStatus == eiriniv1.TaskSucceeded)
 }
 
 func toAPITask(task *eiriniv1.Task) *api.Task {
