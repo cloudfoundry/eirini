@@ -19,30 +19,35 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-//counterfeiter:generate . LRPDesirer
+//counterfeiter:generate . LRPWorkloadCLient
 //counterfeiter:generate -o reconcilerfakes/fake_controller_runtime_client.go sigs.k8s.io/controller-runtime/pkg/client.Client
 //counterfeiter:generate -o reconcilerfakes/fake_status_writer.go sigs.k8s.io/controller-runtime/pkg/client.StatusWriter
 //counterfeiter:generate . StatefulSetGetter
+//counterfeiter:generate . LRPsCrClient
 
-type LRPDesirer interface {
+type LRPWorkloadCLient interface {
 	Desire(ctx context.Context, namespace string, lrp *api.LRP, opts ...shared.Option) error
 	Get(ctx context.Context, identifier api.LRPIdentifier) (*api.LRP, error)
 	Update(ctx context.Context, lrp *api.LRP) error
+}
+
+type LRPsCrClient interface {
+	UpdateLRPStatus(context.Context, *eiriniv1.LRP, eiriniv1.LRPStatus) error
+	GetLRP(context.Context, string, string) (*eiriniv1.LRP, error)
 }
 
 type StatefulSetGetter interface {
 	Get(ctx context.Context, namespace, name string) (*appsv1.StatefulSet, error)
 }
 
-func NewLRP(logger lager.Logger, lrps client.Client, desirer LRPDesirer, statefulsetGetter StatefulSetGetter, scheme *runtime.Scheme) *LRP {
+func NewLRP(logger lager.Logger, lrpsCrClient LRPsCrClient, workloadClient LRPWorkloadCLient, statefulsetGetter StatefulSetGetter, scheme *runtime.Scheme) *LRP {
 	return &LRP{
 		logger:            logger,
-		lrps:              lrps,
-		desirer:           desirer,
+		lrpsCrClient:      lrpsCrClient,
+		desirer:           workloadClient,
 		scheme:            scheme,
 		statefulsetGetter: statefulsetGetter,
 	}
@@ -50,8 +55,8 @@ func NewLRP(logger lager.Logger, lrps client.Client, desirer LRPDesirer, statefu
 
 type LRP struct {
 	logger            lager.Logger
-	lrps              client.Client
-	desirer           LRPDesirer
+	lrpsCrClient      LRPsCrClient
+	desirer           LRPWorkloadCLient
 	scheme            *runtime.Scheme
 	statefulsetGetter StatefulSetGetter
 }
@@ -63,8 +68,8 @@ func (r *LRP) Reconcile(ctx context.Context, request reconcile.Request) (reconci
 			"namespace": request.NamespacedName.Namespace,
 		})
 
-	lrp := &eiriniv1.LRP{}
-	if err := r.lrps.Get(ctx, request.NamespacedName, lrp); err != nil {
+	lrp, err := r.lrpsCrClient.GetLRP(ctx, request.Namespace, request.Name)
+	if err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Error("lrp-not-found", err)
 
@@ -76,7 +81,7 @@ func (r *LRP) Reconcile(ctx context.Context, request reconcile.Request) (reconci
 		return reconcile.Result{}, errors.Wrap(err, "failed to get lrp")
 	}
 
-	err := r.do(ctx, lrp)
+	err = r.do(ctx, lrp)
 	if err != nil {
 		logger.Error("failed-to-reconcile", err)
 	}
@@ -129,9 +134,7 @@ func (r *LRP) updateStatus(ctx context.Context, lrp *eiriniv1.LRP, appLRP *api.L
 		return errors.Wrap(err, "failed to get stateful set")
 	}
 
-	lrp.Status.Replicas = st.Status.ReadyReplicas
-
-	return r.lrps.Status().Update(ctx, lrp)
+	return r.lrpsCrClient.UpdateLRPStatus(ctx, lrp, eiriniv1.LRPStatus{Replicas: st.Status.ReadyReplicas})
 }
 
 func (r *LRP) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {

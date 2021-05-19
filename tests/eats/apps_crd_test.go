@@ -19,7 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var _ = Describe("Apps CRDs [needs-logs-for: eirini-api, eirini-controller]", func() {
+var _ = Describe("Apps CRDs [needs-logs-for: eirini-controller]", func() {
 	var (
 		lrpName          string
 		lrpGUID          string

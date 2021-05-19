@@ -27,7 +27,7 @@ var _ = Describe("Task", func() {
 		reconcileErr    error
 		tasksCrClient   *reconcilerfakes.FakeTasksCrClient
 		namespacedName  types.NamespacedName
-		workloadClient  *reconcilerfakes.FakeWorkloadClient
+		workloadClient  *reconcilerfakes.FakeTaskWorkloadClient
 		scheme          *runtime.Scheme
 		task            *eiriniv1.Task
 	)
@@ -38,7 +38,7 @@ var _ = Describe("Task", func() {
 			Namespace: "my-namespace",
 			Name:      "my-name",
 		}
-		workloadClient = new(reconcilerfakes.FakeWorkloadClient)
+		workloadClient = new(reconcilerfakes.FakeTaskWorkloadClient)
 
 		scheme = eiriniv1scheme.Scheme
 		logger := lagertest.NewTestLogger("task-reconciler")

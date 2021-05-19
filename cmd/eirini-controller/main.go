@@ -137,7 +137,7 @@ func createLRPReconciler(
 		k8s.CreateLivenessProbe,
 		k8s.CreateReadinessProbe,
 	)
-	lrpClient := k8s.NewLRPClient(
+	workloadClient := k8s.NewLRPClient(
 		logger.Session("stateful-set-desirer"),
 		client.NewSecret(clientset),
 		client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
@@ -148,15 +148,17 @@ func createLRPReconciler(
 		stset.NewStatefulSetToLRPConverter(),
 	)
 
-	decoratedLRPClient, err := prometheus.NewLRPClientDecorator(logger.Session("prometheus-decorator"), lrpClient, metrics.Registry, clock.RealClock{})
+	decoratedWorkloadClient, err := prometheus.NewLRPClientDecorator(logger.Session("prometheus-decorator"), workloadClient, metrics.Registry, clock.RealClock{})
 	if err != nil {
 		return nil, err
 	}
 
+	lrpsCrClient := crclient.NewLRPs(controllerClient)
+
 	return reconciler.NewLRP(
 		logger,
-		controllerClient,
-		decoratedLRPClient,
+		lrpsCrClient,
+		decoratedWorkloadClient,
 		client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
 		scheme,
 	), nil

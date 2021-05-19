@@ -11,7 +11,7 @@ import (
 	v1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 )
 
-type FakeWorkloadClient struct {
+type FakeTaskWorkloadClient struct {
 	DesireStub        func(context.Context, string, *api.Task, ...shared.Option) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
@@ -44,7 +44,7 @@ type FakeWorkloadClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeWorkloadClient) Desire(arg1 context.Context, arg2 string, arg3 *api.Task, arg4 ...shared.Option) error {
+func (fake *FakeTaskWorkloadClient) Desire(arg1 context.Context, arg2 string, arg3 *api.Task, arg4 ...shared.Option) error {
 	fake.desireMutex.Lock()
 	ret, specificReturn := fake.desireReturnsOnCall[len(fake.desireArgsForCall)]
 	fake.desireArgsForCall = append(fake.desireArgsForCall, struct {
@@ -66,26 +66,26 @@ func (fake *FakeWorkloadClient) Desire(arg1 context.Context, arg2 string, arg3 *
 	return fakeReturns.result1
 }
 
-func (fake *FakeWorkloadClient) DesireCallCount() int {
+func (fake *FakeTaskWorkloadClient) DesireCallCount() int {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	return len(fake.desireArgsForCall)
 }
 
-func (fake *FakeWorkloadClient) DesireCalls(stub func(context.Context, string, *api.Task, ...shared.Option) error) {
+func (fake *FakeTaskWorkloadClient) DesireCalls(stub func(context.Context, string, *api.Task, ...shared.Option) error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = stub
 }
 
-func (fake *FakeWorkloadClient) DesireArgsForCall(i int) (context.Context, string, *api.Task, []shared.Option) {
+func (fake *FakeTaskWorkloadClient) DesireArgsForCall(i int) (context.Context, string, *api.Task, []shared.Option) {
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	argsForCall := fake.desireArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
-func (fake *FakeWorkloadClient) DesireReturns(result1 error) {
+func (fake *FakeTaskWorkloadClient) DesireReturns(result1 error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = nil
@@ -94,7 +94,7 @@ func (fake *FakeWorkloadClient) DesireReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeWorkloadClient) DesireReturnsOnCall(i int, result1 error) {
+func (fake *FakeTaskWorkloadClient) DesireReturnsOnCall(i int, result1 error) {
 	fake.desireMutex.Lock()
 	defer fake.desireMutex.Unlock()
 	fake.DesireStub = nil
@@ -108,7 +108,7 @@ func (fake *FakeWorkloadClient) DesireReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeWorkloadClient) GetStatus(arg1 context.Context, arg2 string) (v1.TaskStatus, error) {
+func (fake *FakeTaskWorkloadClient) GetStatus(arg1 context.Context, arg2 string) (v1.TaskStatus, error) {
 	fake.getStatusMutex.Lock()
 	ret, specificReturn := fake.getStatusReturnsOnCall[len(fake.getStatusArgsForCall)]
 	fake.getStatusArgsForCall = append(fake.getStatusArgsForCall, struct {
@@ -128,26 +128,26 @@ func (fake *FakeWorkloadClient) GetStatus(arg1 context.Context, arg2 string) (v1
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeWorkloadClient) GetStatusCallCount() int {
+func (fake *FakeTaskWorkloadClient) GetStatusCallCount() int {
 	fake.getStatusMutex.RLock()
 	defer fake.getStatusMutex.RUnlock()
 	return len(fake.getStatusArgsForCall)
 }
 
-func (fake *FakeWorkloadClient) GetStatusCalls(stub func(context.Context, string) (v1.TaskStatus, error)) {
+func (fake *FakeTaskWorkloadClient) GetStatusCalls(stub func(context.Context, string) (v1.TaskStatus, error)) {
 	fake.getStatusMutex.Lock()
 	defer fake.getStatusMutex.Unlock()
 	fake.GetStatusStub = stub
 }
 
-func (fake *FakeWorkloadClient) GetStatusArgsForCall(i int) (context.Context, string) {
+func (fake *FakeTaskWorkloadClient) GetStatusArgsForCall(i int) (context.Context, string) {
 	fake.getStatusMutex.RLock()
 	defer fake.getStatusMutex.RUnlock()
 	argsForCall := fake.getStatusArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeWorkloadClient) GetStatusReturns(result1 v1.TaskStatus, result2 error) {
+func (fake *FakeTaskWorkloadClient) GetStatusReturns(result1 v1.TaskStatus, result2 error) {
 	fake.getStatusMutex.Lock()
 	defer fake.getStatusMutex.Unlock()
 	fake.GetStatusStub = nil
@@ -157,7 +157,7 @@ func (fake *FakeWorkloadClient) GetStatusReturns(result1 v1.TaskStatus, result2 
 	}{result1, result2}
 }
 
-func (fake *FakeWorkloadClient) GetStatusReturnsOnCall(i int, result1 v1.TaskStatus, result2 error) {
+func (fake *FakeTaskWorkloadClient) GetStatusReturnsOnCall(i int, result1 v1.TaskStatus, result2 error) {
 	fake.getStatusMutex.Lock()
 	defer fake.getStatusMutex.Unlock()
 	fake.GetStatusStub = nil
@@ -173,7 +173,7 @@ func (fake *FakeWorkloadClient) GetStatusReturnsOnCall(i int, result1 v1.TaskSta
 	}{result1, result2}
 }
 
-func (fake *FakeWorkloadClient) Invocations() map[string][][]interface{} {
+func (fake *FakeTaskWorkloadClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.desireMutex.RLock()
@@ -187,7 +187,7 @@ func (fake *FakeWorkloadClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeWorkloadClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakeTaskWorkloadClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -199,4 +199,4 @@ func (fake *FakeWorkloadClient) recordInvocation(key string, args []interface{})
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ reconciler.WorkloadClient = new(FakeWorkloadClient)
+var _ reconciler.TaskWorkloadClient = new(FakeTaskWorkloadClient)

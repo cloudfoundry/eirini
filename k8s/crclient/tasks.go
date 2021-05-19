@@ -28,7 +28,6 @@ func (t *Tasks) GetTask(ctx context.Context, namespace, name string) (*eiriniv1.
 
 func (t *Tasks) UpdateTaskStatus(ctx context.Context, task *eiriniv1.Task, newStatus eiriniv1.TaskStatus) error {
 	newTask := task.DeepCopy()
-	newTask.Status.ExecutionStatus = newStatus.ExecutionStatus
 	newTask.Status = newStatus
 
 	return t.controllerClient.Status().Patch(ctx, newTask, client.MergeFrom(task))

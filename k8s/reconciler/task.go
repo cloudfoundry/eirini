@@ -19,7 +19,7 @@ import (
 
 type Task struct {
 	taskCrClient   TasksCrClient
-	workloadClient WorkloadClient
+	workloadClient TaskWorkloadClient
 	scheme         *runtime.Scheme
 	logger         lager.Logger
 }
@@ -31,14 +31,14 @@ type TasksCrClient interface {
 	GetTask(context.Context, string, string) (*eiriniv1.Task, error)
 }
 
-//counterfeiter:generate . WorkloadClient
+//counterfeiter:generate . TaskWorkloadClient
 
-type WorkloadClient interface {
+type TaskWorkloadClient interface {
 	Desire(ctx context.Context, namespace string, task *api.Task, opts ...shared.Option) error
 	GetStatus(ctx context.Context, taskGUID string) (eiriniv1.TaskStatus, error)
 }
 
-func NewTask(logger lager.Logger, taskCrClient TasksCrClient, workloadClient WorkloadClient, scheme *runtime.Scheme) *Task {
+func NewTask(logger lager.Logger, taskCrClient TasksCrClient, workloadClient TaskWorkloadClient, scheme *runtime.Scheme) *Task {
 	return &Task{
 		taskCrClient:   taskCrClient,
 		workloadClient: workloadClient,

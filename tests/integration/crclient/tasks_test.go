@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"context"
 	"time"
 
 	"code.cloudfoundry.org/eirini/k8s/crclient"
@@ -12,25 +13,37 @@ import (
 
 var _ = Describe("Tasks", func() {
 	var (
-		task       *eiriniv1.Task
-		taskClient *crclient.Tasks
+		task          *eiriniv1.Task
+		tasksCrClient *crclient.Tasks
 	)
 
 	BeforeEach(func() {
-		task = createTask(fixture.Namespace, "a-task")
-		taskClient = crclient.NewTasks(fixture.RuntimeClient)
+		task = &eiriniv1.Task{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "a-task",
+			},
+			Spec: eiriniv1.TaskSpec{
+				Command: []string{"echo"},
+			},
+		}
+
+		var err error
+		task, err = fixture.EiriniClientset.EiriniV1().Tasks(fixture.Namespace).Create(context.Background(), task, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		tasksCrClient = crclient.NewTasks(fixture.RuntimeClient)
 	})
 
 	Describe("GetTask", func() {
 		It("gets a Task by namespace and name", func() {
-			actualTask, err := taskClient.GetTask(ctx, fixture.Namespace, task.Name)
+			actualTask, err := tasksCrClient.GetTask(ctx, fixture.Namespace, task.Name)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(actualTask).To(Equal(task))
 		})
 
 		When("the task doesn't exist", func() {
 			It("fails", func() {
-				_, err := taskClient.GetTask(ctx, fixture.Namespace, "a-non-existing-task")
+				_, err := tasksCrClient.GetTask(ctx, fixture.Namespace, "a-non-existing-task")
 				Expect(err).To(MatchError(ContainSubstring(`"a-non-existing-task" not found`)))
 			})
 		})
@@ -42,38 +55,29 @@ var _ = Describe("Tasks", func() {
 			startTime := metaTime(now)
 			endTime := metaTime(now.Add(time.Hour))
 
-			err := taskClient.UpdateTaskStatus(ctx, task, eiriniv1.TaskStatus{
+			err := tasksCrClient.UpdateTaskStatus(ctx, task, eiriniv1.TaskStatus{
 				ExecutionStatus: eiriniv1.TaskRunning,
 				StartTime:       startTime,
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			updatedTask, err := taskClient.GetTask(ctx, fixture.Namespace, task.Name)
+			updatedTask, err := tasksCrClient.GetTask(ctx, fixture.Namespace, task.Name)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(updatedTask.Status.ExecutionStatus).To(Equal(eiriniv1.TaskRunning))
 			Expect(updatedTask.Status.StartTime).To(Equal(startTime))
 
-			err = taskClient.UpdateTaskStatus(ctx, task, eiriniv1.TaskStatus{
+			err = tasksCrClient.UpdateTaskStatus(ctx, task, eiriniv1.TaskStatus{
 				ExecutionStatus: eiriniv1.TaskFailed,
 				EndTime:         endTime,
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			updatedTask, err = taskClient.GetTask(ctx, fixture.Namespace, task.Name)
+			updatedTask, err = tasksCrClient.GetTask(ctx, fixture.Namespace, task.Name)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(updatedTask.Status.ExecutionStatus).To(Equal(eiriniv1.TaskFailed))
 			Expect(updatedTask.Status.StartTime).To(Equal(startTime))
 			Expect(updatedTask.Status.EndTime).To(Equal(endTime))
 		})
-
-		When("an error occurs", func() {
-			It("fails", func() {
-				// ???
-			})
-		})
-	})
-
-	Describe("GetJobForTask", func() {
 	})
 })
 
