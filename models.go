@@ -70,6 +70,7 @@ type APIConfig struct {
 type ControllerConfig struct {
 	CommonConfig   `yaml:",inline"`
 	PrometheusPort int `yaml:"prometheus_port"`
+	TaskTTLSeconds int `yaml:"task_ttl_seconds"`
 
 	LeaderElectionID        string
 	LeaderElectionNamespace string

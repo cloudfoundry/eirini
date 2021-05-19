@@ -185,7 +185,7 @@ func createTaskReconciler(
 	)
 	tasksCrClient := crclient.NewTasks(controllerClient)
 
-	return reconciler.NewTask(logger, tasksCrClient, workloadClient, scheme)
+	return reconciler.NewTask(logger, tasksCrClient, workloadClient, scheme, cfg.TaskTTLSeconds)
 }
 
 func createPodCrashReconciler(

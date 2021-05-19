@@ -12,6 +12,20 @@ import (
 )
 
 type FakeTaskWorkloadClient struct {
+	DeleteStub        func(context.Context, string) (string, error)
+	deleteMutex       sync.RWMutex
+	deleteArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	deleteReturns struct {
+		result1 string
+		result2 error
+	}
+	deleteReturnsOnCall map[int]struct {
+		result1 string
+		result2 error
+	}
 	DesireStub        func(context.Context, string, *api.Task, ...shared.Option) error
 	desireMutex       sync.RWMutex
 	desireArgsForCall []struct {
@@ -42,6 +56,71 @@ type FakeTaskWorkloadClient struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeTaskWorkloadClient) Delete(arg1 context.Context, arg2 string) (string, error) {
+	fake.deleteMutex.Lock()
+	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
+	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.DeleteStub
+	fakeReturns := fake.deleteReturns
+	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
+	fake.deleteMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeTaskWorkloadClient) DeleteCallCount() int {
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
+	return len(fake.deleteArgsForCall)
+}
+
+func (fake *FakeTaskWorkloadClient) DeleteCalls(stub func(context.Context, string) (string, error)) {
+	fake.deleteMutex.Lock()
+	defer fake.deleteMutex.Unlock()
+	fake.DeleteStub = stub
+}
+
+func (fake *FakeTaskWorkloadClient) DeleteArgsForCall(i int) (context.Context, string) {
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
+	argsForCall := fake.deleteArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeTaskWorkloadClient) DeleteReturns(result1 string, result2 error) {
+	fake.deleteMutex.Lock()
+	defer fake.deleteMutex.Unlock()
+	fake.DeleteStub = nil
+	fake.deleteReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeTaskWorkloadClient) DeleteReturnsOnCall(i int, result1 string, result2 error) {
+	fake.deleteMutex.Lock()
+	defer fake.deleteMutex.Unlock()
+	fake.DeleteStub = nil
+	if fake.deleteReturnsOnCall == nil {
+		fake.deleteReturnsOnCall = make(map[int]struct {
+			result1 string
+			result2 error
+		})
+	}
+	fake.deleteReturnsOnCall[i] = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeTaskWorkloadClient) Desire(arg1 context.Context, arg2 string, arg3 *api.Task, arg4 ...shared.Option) error {
@@ -176,6 +255,8 @@ func (fake *FakeTaskWorkloadClient) GetStatusReturnsOnCall(i int, result1 v1.Tas
 func (fake *FakeTaskWorkloadClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.deleteMutex.RLock()
+	defer fake.deleteMutex.RUnlock()
 	fake.desireMutex.RLock()
 	defer fake.desireMutex.RUnlock()
 	fake.getStatusMutex.RLock()

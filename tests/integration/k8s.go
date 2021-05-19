@@ -143,6 +143,7 @@ func DefaultControllerConfig(namespace string) *eirini.ControllerConfig {
 			RegistrySecretName:        "registry-secret",
 			WorkloadsNamespace:        namespace,
 		},
+		TaskTTLSeconds:          5,
 		LeaderElectionID:        fmt.Sprintf("test-eirini-%d", ginkgo.GinkgoParallelNode()),
 		LeaderElectionNamespace: namespace,
 	}
@@ -242,4 +243,16 @@ func GetLRP(clientset eiriniclient.Interface, namespace, lrpName string) *eirini
 	Expect(err).NotTo(HaveOccurred())
 
 	return l
+}
+
+func GetTaskExecutionStatus(clientset eiriniclient.Interface, namespace, taskName string) func() eiriniv1.ExecutionStatus {
+	return func() eiriniv1.ExecutionStatus {
+		task, err := clientset.
+			EiriniV1().
+			Tasks(namespace).
+			Get(context.Background(), taskName, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		return task.Status.ExecutionStatus
+	}
 }

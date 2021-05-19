@@ -3,6 +3,7 @@ package reconciler_test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	"code.cloudfoundry.org/eirini/k8s/reconciler/reconcilerfakes"
@@ -30,6 +31,7 @@ var _ = Describe("Task", func() {
 		workloadClient  *reconcilerfakes.FakeTaskWorkloadClient
 		scheme          *runtime.Scheme
 		task            *eiriniv1.Task
+		ttlSeconds      int
 	)
 
 	BeforeEach(func() {
@@ -42,7 +44,8 @@ var _ = Describe("Task", func() {
 
 		scheme = eiriniv1scheme.Scheme
 		logger := lagertest.NewTestLogger("task-reconciler")
-		taskReconciler = reconciler.NewTask(logger, tasksCrClient, workloadClient, scheme)
+		ttlSeconds = 30
+		taskReconciler = reconciler.NewTask(logger, tasksCrClient, workloadClient, scheme, ttlSeconds)
 		task = &eiriniv1.Task{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      namespacedName.Name,
@@ -159,7 +162,7 @@ var _ = Describe("Task", func() {
 		Expect(newStatus.ExecutionStatus).To(Equal(eiriniv1.TaskStarting))
 	})
 
-	When("the task has completed successfully", func() {
+	When("the task has previously completed successfully", func() {
 		BeforeEach(func() {
 			now := metav1.Now()
 			task = &eiriniv1.Task{
@@ -174,11 +177,40 @@ var _ = Describe("Task", func() {
 		It("does not desire the task again", func() {
 			Expect(workloadClient.DesireCallCount()).To(Equal(0))
 		})
+
+		When("the task has exceeded the ttl", func() {
+			BeforeEach(func() {
+				earlier := metav1.NewTime(time.Now().Add(-time.Minute))
+				task = &eiriniv1.Task{
+					Status: eiriniv1.TaskStatus{
+						ExecutionStatus: eiriniv1.TaskSucceeded,
+						EndTime:         &earlier,
+					},
+				}
+				tasksCrClient.GetTaskReturns(task, nil)
+			})
+
+			It("deletes the task", func() {
+				Expect(workloadClient.DeleteCallCount()).To(Equal(1))
+			})
+
+			When("deleting the task fails", func() {
+				BeforeEach(func() {
+					workloadClient.DeleteReturns("", fmt.Errorf("boom"))
+				})
+
+				It("returns an error", func() {
+					Expect(reconcileErr).To(MatchError(ContainSubstring("boom")))
+				})
+			})
+		})
 	})
 
-	When("the task has failed", func() {
+	When("the task has previously failed", func() {
+		var now metav1.Time
+
 		BeforeEach(func() {
-			now := metav1.Now()
+			now = metav1.Now()
 			task = &eiriniv1.Task{
 				Status: eiriniv1.TaskStatus{
 					ExecutionStatus: eiriniv1.TaskFailed,
@@ -190,6 +222,23 @@ var _ = Describe("Task", func() {
 
 		It("does not desire the task again", func() {
 			Expect(workloadClient.DesireCallCount()).To(Equal(0))
+		})
+
+		When("the task has exceeded the ttl", func() {
+			BeforeEach(func() {
+				earlier := metav1.NewTime(time.Now().Add(-time.Minute))
+				task = &eiriniv1.Task{
+					Status: eiriniv1.TaskStatus{
+						ExecutionStatus: eiriniv1.TaskFailed,
+						EndTime:         &earlier,
+					},
+				}
+				tasksCrClient.GetTaskReturns(task, nil)
+			})
+
+			It("deletes the task", func() {
+				Expect(workloadClient.DeleteCallCount()).To(Equal(1))
+			})
 		})
 	})
 
@@ -210,6 +259,34 @@ var _ = Describe("Task", func() {
 
 		It("returns an error", func() {
 			Expect(reconcileErr).To(MatchError(ContainSubstring("crumpets")))
+		})
+	})
+
+	When("the task has completed successfully", func() {
+		BeforeEach(func() {
+			now := metav1.Now()
+			workloadClient.GetStatusReturns(eiriniv1.TaskStatus{
+				ExecutionStatus: eiriniv1.TaskSucceeded,
+				EndTime:         &now,
+			}, nil)
+		})
+
+		It("requeues the event after the ttl", func() {
+			Expect(reconcileResult.RequeueAfter).To(Equal(time.Duration(ttlSeconds) * time.Second))
+		})
+	})
+
+	When("the task has failed", func() {
+		BeforeEach(func() {
+			now := metav1.Now()
+			workloadClient.GetStatusReturns(eiriniv1.TaskStatus{
+				ExecutionStatus: eiriniv1.TaskFailed,
+				EndTime:         &now,
+			}, nil)
+		})
+
+		It("requeues the event after the ttl", func() {
+			Expect(reconcileResult.RequeueAfter).To(Equal(time.Duration(ttlSeconds) * time.Second))
 		})
 	})
 

@@ -5,6 +5,7 @@ import (
 
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
+	"code.cloudfoundry.org/eirini/tests/integration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,18 +49,44 @@ var _ = Describe("Tasks", func() {
 			Tasks(fixture.Namespace).
 			Create(context.Background(), task, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-
-		serviceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, taskGUID, 8080, "/")
 	})
 
 	Describe("task creation", func() {
+		JustBeforeEach(func() {
+			serviceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, taskGUID, 8080, "/")
+		})
+
 		It("runs the task", func() {
 			Expect(tests.RequestServiceFn(fixture.Namespace, serviceName, 8080, "/")()).To(ContainSubstring("not Dora"))
 		})
 	})
 
+	FDescribe("task time to live", func() {
+		BeforeEach(func() {
+			task.Spec.Image = "eirini/busybox"
+			task.Spec.Command = []string{"/bin/sh", "-c", "sleep 1"}
+		})
+
+		It("deletes the job after the ttl has expired", func() {
+			Eventually(integration.GetTaskExecutionStatus(fixture.EiriniClientset,
+				fixture.Namespace,
+				taskName,
+			)).Should(Equal(eiriniv1.TaskSucceeded))
+
+			Eventually(integration.ListJobs(fixture.Clientset,
+				fixture.Namespace,
+				taskGUID,
+			)).Should(BeEmpty())
+			Consistently(integration.ListJobs(fixture.Clientset,
+				fixture.Namespace,
+				taskGUID,
+			)).Should(BeEmpty())
+		})
+	})
+
 	Describe("task deletion", func() {
 		JustBeforeEach(func() {
+			serviceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, taskGUID, 8080, "/")
 			err := fixture.EiriniClientset.
 				EiriniV1().
 				Tasks(fixture.Namespace).

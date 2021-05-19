@@ -64,10 +64,6 @@ func (d *Deleter) getJobByGUID(ctx context.Context, logger lager.Logger, guid st
 func (d *Deleter) delete(ctx context.Context, logger lager.Logger, job batchv1.Job) (string, error) {
 	callbackURL := job.Annotations[AnnotationCompletionCallback]
 
-	if len(job.OwnerReferences) != 0 {
-		return callbackURL, nil
-	}
-
 	if err := d.jobDeleter.Delete(ctx, job.Namespace, job.Name); err != nil {
 		logger.Error("failed-to-delete-job", err)
 

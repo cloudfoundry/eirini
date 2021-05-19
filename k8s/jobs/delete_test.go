@@ -84,23 +84,6 @@ var _ = Describe("Delete", func() {
 		Expect(includeCompleted).To(Equal(true))
 	})
 
-	When("the job has an owner", func() {
-		BeforeEach(func() {
-			job.OwnerReferences = []metav1.OwnerReference{
-				{
-					Kind:       "Something",
-					APIVersion: "example.org",
-					Name:       "the-something",
-				},
-			}
-			jobGetter.GetByGUIDReturns([]batchv1.Job{job}, nil)
-		})
-
-		It("does not delete the job", func() {
-			Expect(jobDeleter.DeleteCallCount()).To(Equal(0))
-		})
-	})
-
 	When("the job does not exist", func() {
 		BeforeEach(func() {
 			jobGetter.GetByGUIDReturns([]batchv1.Job{}, nil)

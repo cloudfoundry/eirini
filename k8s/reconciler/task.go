@@ -3,6 +3,7 @@ package reconciler
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
@@ -22,6 +23,7 @@ type Task struct {
 	workloadClient TaskWorkloadClient
 	scheme         *runtime.Scheme
 	logger         lager.Logger
+	ttlSeconds     int
 }
 
 //counterfeiter:generate . TasksCrClient
@@ -36,14 +38,16 @@ type TasksCrClient interface {
 type TaskWorkloadClient interface {
 	Desire(ctx context.Context, namespace string, task *api.Task, opts ...shared.Option) error
 	GetStatus(ctx context.Context, taskGUID string) (eiriniv1.TaskStatus, error)
+	Delete(ctx context.Context, guid string) (string, error)
 }
 
-func NewTask(logger lager.Logger, taskCrClient TasksCrClient, workloadClient TaskWorkloadClient, scheme *runtime.Scheme) *Task {
+func NewTask(logger lager.Logger, taskCrClient TasksCrClient, workloadClient TaskWorkloadClient, scheme *runtime.Scheme, ttlSeconds int) *Task {
 	return &Task{
 		taskCrClient:   taskCrClient,
 		workloadClient: workloadClient,
 		scheme:         scheme,
 		logger:         logger,
+		ttlSeconds:     ttlSeconds,
 	}
 }
 
@@ -64,8 +68,8 @@ func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconc
 		return reconcile.Result{}, fmt.Errorf("could not fetch task: %w", err)
 	}
 
-	if taskHasCompleted(task) {
-		return reconcile.Result{}, nil
+	if taskHasCompleted(task.Status) {
+		return t.handleExpiredTask(ctx, logger, task)
 	}
 
 	err = t.workloadClient.Desire(ctx, task.Namespace, toAPITask(task), t.setOwnerFn(task))
@@ -86,6 +90,25 @@ func (t *Task) Reconcile(ctx context.Context, request reconcile.Request) (reconc
 		return reconcile.Result{}, exterrors.Wrap(err, "failed to update task status")
 	}
 
+	if taskHasCompleted(status) {
+		return reconcile.Result{RequeueAfter: time.Duration(t.ttlSeconds) * time.Second}, nil
+	}
+
+	return reconcile.Result{}, nil
+}
+
+func (t *Task) handleExpiredTask(ctx context.Context, logger lager.Logger, task *eiriniv1.Task) (reconcile.Result, error) {
+	if t.taskHasExpired(task) {
+		logger.Debug("deleting-expired-task")
+
+		_, err := t.workloadClient.Delete(ctx, task.Spec.GUID)
+		if err != nil {
+			return reconcile.Result{}, exterrors.Wrap(err, "failed to delete task")
+		}
+	}
+
+	logger.Debug("task-already-completed")
+
 	return reconcile.Result{}, nil
 }
 
@@ -104,10 +127,16 @@ func (t *Task) setOwnerFn(task *eiriniv1.Task) func(interface{}) error {
 	}
 }
 
-func taskHasCompleted(task *eiriniv1.Task) bool {
-	return task.Status.EndTime != nil &&
-		(task.Status.ExecutionStatus == eiriniv1.TaskFailed ||
-			task.Status.ExecutionStatus == eiriniv1.TaskSucceeded)
+func taskHasCompleted(status eiriniv1.TaskStatus) bool {
+	return status.EndTime != nil &&
+		(status.ExecutionStatus == eiriniv1.TaskFailed ||
+			status.ExecutionStatus == eiriniv1.TaskSucceeded)
+}
+
+func (t *Task) taskHasExpired(task *eiriniv1.Task) bool {
+	ttlExpire := metav1.NewTime(time.Now().Add(-time.Duration(t.ttlSeconds) * time.Second))
+
+	return task.Status.EndTime.Before(&ttlExpire)
 }
 
 func toAPITask(task *eiriniv1.Task) *api.Task {
