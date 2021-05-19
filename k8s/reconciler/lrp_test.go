@@ -24,22 +24,20 @@ import (
 
 var _ = Describe("reconciler.LRP", func() {
 	var (
-		logger            *lagertest.TestLogger
-		lrpsCrClient      *reconcilerfakes.FakeLRPsCrClient
-		statefulsetGetter *reconcilerfakes.FakeStatefulSetGetter
-		workloadClient    *reconcilerfakes.FakeLRPWorkloadCLient
-		scheme            *runtime.Scheme
-		lrpreconciler     *reconciler.LRP
-		resultErr         error
+		logger         *lagertest.TestLogger
+		lrpsCrClient   *reconcilerfakes.FakeLRPsCrClient
+		workloadClient *reconcilerfakes.FakeLRPWorkloadCLient
+		scheme         *runtime.Scheme
+		lrpreconciler  *reconciler.LRP
+		resultErr      error
 	)
 
 	BeforeEach(func() {
 		lrpsCrClient = new(reconcilerfakes.FakeLRPsCrClient)
 		workloadClient = new(reconcilerfakes.FakeLRPWorkloadCLient)
-		statefulsetGetter = new(reconcilerfakes.FakeStatefulSetGetter)
 		logger = lagertest.NewTestLogger("lrp-reconciler")
 		scheme = eiriniv1scheme.Scheme
-		lrpreconciler = reconciler.NewLRP(logger, lrpsCrClient, workloadClient, statefulsetGetter, scheme)
+		lrpreconciler = reconciler.NewLRP(logger, lrpsCrClient, workloadClient, scheme)
 
 		lrpsCrClient.GetLRPReturns(&eiriniv1.LRP{
 			ObjectMeta: metav1.ObjectMeta{
@@ -107,7 +105,6 @@ var _ = Describe("reconciler.LRP", func() {
 			},
 		}, nil)
 
-		statefulsetGetter.GetReturns(&appsv1.StatefulSet{}, nil)
 		workloadClient.GetReturns(nil, eirini.ErrNotFound)
 	})
 
@@ -203,6 +200,46 @@ var _ = Describe("reconciler.LRP", func() {
 		Expect(st.ObjectMeta.OwnerReferences[0].Name).To(Equal("some-lrp"))
 	})
 
+	It("does not update the LRP CR", func() {
+		Expect(lrpsCrClient.UpdateLRPStatusCallCount()).To(BeZero())
+	})
+
+	When("the statefulset for the LRP already exists", func() {
+		BeforeEach(func() {
+			workloadClient.GetReturns(&api.LRP{
+				LRPIdentifier: api.LRPIdentifier{
+					GUID:    "the-lrp-guid",
+					Version: "the-lrp-version",
+				},
+			}, nil)
+
+			workloadClient.GetStatusReturns(eiriniv1.LRPStatus{
+				Replicas: 9,
+			}, nil)
+		})
+
+		It("updates the CR status accordingly", func() {
+			Expect(resultErr).NotTo(HaveOccurred())
+
+			Expect(lrpsCrClient.UpdateLRPStatusCallCount()).To(Equal(1))
+			_, actualLrp, actualLrpStatus := lrpsCrClient.UpdateLRPStatusArgsForCall(0)
+			Expect(actualLrp.Name).To(Equal("some-lrp"))
+			Expect(actualLrpStatus.Replicas).To(Equal(int32(9)))
+		})
+
+		When("gettting the LRP status fails", func() {
+			BeforeEach(func() {
+				workloadClient.GetStatusReturns(eiriniv1.LRPStatus{}, errors.New("boom"))
+			})
+
+			It("does not update the statefulset status", func() {
+				Expect(resultErr).To(MatchError(ContainSubstring("boom")))
+				Expect(workloadClient.UpdateCallCount()).To(Equal(1))
+				Expect(lrpsCrClient.UpdateLRPStatusCallCount()).To(BeZero())
+			})
+		})
+	})
+
 	When("private registry credentials are specified in the LRP CRD", func() {
 		BeforeEach(func() {
 			lrpsCrClient.GetLRPReturns(&eiriniv1.LRP{
@@ -256,34 +293,6 @@ var _ = Describe("reconciler.LRP", func() {
 			Expect(workloadClient.UpdateCallCount()).To(Equal(1))
 			_, lrp := workloadClient.UpdateArgsForCall(0)
 			Expect(lrp.TargetInstances).To(Equal(10))
-		})
-	})
-
-	When("an app instance becomes unready", func() {
-		BeforeEach(func() {
-			workloadClient.GetReturns(nil, nil)
-			statefulsetGetter.GetReturns(&appsv1.StatefulSet{Status: appsv1.StatefulSetStatus{ReadyReplicas: 9}}, nil)
-		})
-
-		It("updates the CR status accordingly", func() {
-			Expect(resultErr).NotTo(HaveOccurred())
-
-			Expect(lrpsCrClient.UpdateLRPStatusCallCount()).To(Equal(1))
-			_, actualLrp, actualLrpStatus := lrpsCrClient.UpdateLRPStatusArgsForCall(0)
-			Expect(actualLrp.Name).To(Equal("some-lrp"))
-			Expect(actualLrpStatus.Replicas).To(Equal(int32(9)))
-		})
-
-		When("statefulset getter fails to get the statefulset", func() {
-			BeforeEach(func() {
-				statefulsetGetter.GetReturns(nil, errors.New("boom"))
-			})
-
-			It("does not update the statefulset status", func() {
-				Expect(resultErr).To(MatchError(ContainSubstring("boom")))
-				Expect(workloadClient.UpdateCallCount()).To(Equal(1))
-				Expect(lrpsCrClient.UpdateLRPStatusCallCount()).To(BeZero())
-			})
 		})
 	})
 

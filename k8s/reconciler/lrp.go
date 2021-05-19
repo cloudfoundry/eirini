@@ -7,14 +7,12 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
-	"code.cloudfoundry.org/eirini/k8s/utils"
 	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,13 +23,13 @@ import (
 //counterfeiter:generate . LRPWorkloadCLient
 //counterfeiter:generate -o reconcilerfakes/fake_controller_runtime_client.go sigs.k8s.io/controller-runtime/pkg/client.Client
 //counterfeiter:generate -o reconcilerfakes/fake_status_writer.go sigs.k8s.io/controller-runtime/pkg/client.StatusWriter
-//counterfeiter:generate . StatefulSetGetter
 //counterfeiter:generate . LRPsCrClient
 
 type LRPWorkloadCLient interface {
 	Desire(ctx context.Context, namespace string, lrp *api.LRP, opts ...shared.Option) error
 	Get(ctx context.Context, identifier api.LRPIdentifier) (*api.LRP, error)
 	Update(ctx context.Context, lrp *api.LRP) error
+	GetStatus(ctx context.Context, identifier api.LRPIdentifier) (eiriniv1.LRPStatus, error)
 }
 
 type LRPsCrClient interface {
@@ -39,26 +37,20 @@ type LRPsCrClient interface {
 	GetLRP(context.Context, string, string) (*eiriniv1.LRP, error)
 }
 
-type StatefulSetGetter interface {
-	Get(ctx context.Context, namespace, name string) (*appsv1.StatefulSet, error)
-}
-
-func NewLRP(logger lager.Logger, lrpsCrClient LRPsCrClient, workloadClient LRPWorkloadCLient, statefulsetGetter StatefulSetGetter, scheme *runtime.Scheme) *LRP {
+func NewLRP(logger lager.Logger, lrpsCrClient LRPsCrClient, workloadClient LRPWorkloadCLient, scheme *runtime.Scheme) *LRP {
 	return &LRP{
-		logger:            logger,
-		lrpsCrClient:      lrpsCrClient,
-		desirer:           workloadClient,
-		scheme:            scheme,
-		statefulsetGetter: statefulsetGetter,
+		logger:         logger,
+		lrpsCrClient:   lrpsCrClient,
+		workloadClient: workloadClient,
+		scheme:         scheme,
 	}
 }
 
 type LRP struct {
-	logger            lager.Logger
-	lrpsCrClient      LRPsCrClient
-	desirer           LRPWorkloadCLient
-	scheme            *runtime.Scheme
-	statefulsetGetter StatefulSetGetter
+	logger         lager.Logger
+	lrpsCrClient   LRPsCrClient
+	workloadClient LRPWorkloadCLient
+	scheme         *runtime.Scheme
 }
 
 func (r *LRP) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
@@ -90,7 +82,7 @@ func (r *LRP) Reconcile(ctx context.Context, request reconcile.Request) (reconci
 }
 
 func (r *LRP) do(ctx context.Context, lrp *eiriniv1.LRP) error {
-	_, err := r.desirer.Get(ctx, api.LRPIdentifier{
+	_, err := r.workloadClient.Get(ctx, api.LRPIdentifier{
 		GUID:    lrp.Spec.GUID,
 		Version: lrp.Spec.Version,
 	})
@@ -100,7 +92,7 @@ func (r *LRP) do(ctx context.Context, lrp *eiriniv1.LRP) error {
 			return errors.Wrap(parseErr, "failed to parse the crd spec to the lrp model")
 		}
 
-		return errors.Wrap(r.desirer.Desire(ctx, lrp.Namespace, appLRP, r.setOwnerFn(lrp)), "failed to desire lrp")
+		return errors.Wrap(r.workloadClient.Desire(ctx, lrp.Namespace, appLRP, r.setOwnerFn(lrp)), "failed to desire lrp")
 	}
 
 	if err != nil {
@@ -114,27 +106,25 @@ func (r *LRP) do(ctx context.Context, lrp *eiriniv1.LRP) error {
 
 	var errs *multierror.Error
 
-	err = r.updateStatus(ctx, lrp, appLRP)
+	err = r.updateStatus(ctx, lrp)
 	errs = multierror.Append(errs, errors.Wrap(err, "failed to update lrp status"))
 
-	err = r.desirer.Update(ctx, appLRP)
+	err = r.workloadClient.Update(ctx, appLRP)
 	errs = multierror.Append(errs, errors.Wrap(err, "failed to update app"))
 
 	return errs.ErrorOrNil()
 }
 
-func (r *LRP) updateStatus(ctx context.Context, lrp *eiriniv1.LRP, appLRP *api.LRP) error {
-	statefulSetName, err := utils.GetStatefulsetName(appLRP)
+func (r *LRP) updateStatus(ctx context.Context, lrp *eiriniv1.LRP) error {
+	lrpStatus, err := r.workloadClient.GetStatus(ctx, api.LRPIdentifier{
+		GUID:    lrp.Spec.GUID,
+		Version: lrp.Spec.Version,
+	})
 	if err != nil {
 		return err
 	}
 
-	st, err := r.statefulsetGetter.Get(ctx, lrp.Namespace, statefulSetName)
-	if err != nil {
-		return errors.Wrap(err, "failed to get stateful set")
-	}
-
-	return r.lrpsCrClient.UpdateLRPStatus(ctx, lrp, eiriniv1.LRPStatus{Replicas: st.Status.ReadyReplicas})
+	return r.lrpsCrClient.UpdateLRPStatus(ctx, lrp, lrpStatus)
 }
 
 func (r *LRP) setOwnerFn(lrp *eiriniv1.LRP) func(interface{}) error {

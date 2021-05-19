@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/lager"
 	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +39,12 @@ type EventsClient interface {
 	Create(ctx context.Context, namespace string, event *corev1.Event) (*corev1.Event, error)
 	Update(ctx context.Context, namespace string, event *corev1.Event) (*corev1.Event, error)
 	GetByInstanceAndReason(ctx context.Context, namespace string, ownerRef metav1.OwnerReference, instanceIndex int, reason string) (*corev1.Event, error)
+}
+
+//counterfeiter:generate . StatefulSetGetter
+
+type StatefulSetGetter interface {
+	Get(ctx context.Context, namespace, name string) (*appsv1.StatefulSet, error)
 }
 
 type PodCrash struct {

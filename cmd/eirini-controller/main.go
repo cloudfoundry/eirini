@@ -159,7 +159,6 @@ func createLRPReconciler(
 		logger,
 		lrpsCrClient,
 		decoratedWorkloadClient,
-		client.NewStatefulSet(clientset, cfg.WorkloadsNamespace),
 		scheme,
 	), nil
 }

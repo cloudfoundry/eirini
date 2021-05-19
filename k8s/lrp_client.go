@@ -45,6 +45,7 @@ type LRPClient struct {
 	stset.Stopper
 	stset.Updater
 	stset.Getter
+	stset.StatusGetter
 }
 
 func NewLRPClient(
@@ -56,13 +57,13 @@ func NewLRPClient(
 	events EventsClient,
 	lrpToStatefulSetConverter stset.LRPToStatefulSetConverter,
 	statefulSetToLRPConverter stset.StatefulSetToLRPConverter,
-
 ) *LRPClient {
 	return &LRPClient{
-		Desirer: stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSetConverter, pdbClient),
-		Lister:  stset.NewLister(logger, statefulSets, statefulSetToLRPConverter),
-		Stopper: stset.NewStopper(logger, statefulSets, statefulSets, pods),
-		Updater: stset.NewUpdater(logger, statefulSets, statefulSets, pdbClient),
-		Getter:  stset.NewGetter(logger, statefulSets, pods, events, statefulSetToLRPConverter),
+		Desirer:      stset.NewDesirer(logger, secrets, statefulSets, lrpToStatefulSetConverter, pdbClient),
+		Lister:       stset.NewLister(logger, statefulSets, statefulSetToLRPConverter),
+		Stopper:      stset.NewStopper(logger, statefulSets, statefulSets, pods),
+		Updater:      stset.NewUpdater(logger, statefulSets, statefulSets, pdbClient),
+		Getter:       stset.NewGetter(logger, statefulSets, pods, events, statefulSetToLRPConverter),
+		StatusGetter: stset.NewStatusGetter(logger, statefulSets),
 	}
 }

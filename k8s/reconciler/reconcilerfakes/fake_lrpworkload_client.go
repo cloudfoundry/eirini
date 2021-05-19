@@ -8,6 +8,7 @@ import (
 	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/reconciler"
 	"code.cloudfoundry.org/eirini/k8s/shared"
+	v1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 )
 
 type FakeLRPWorkloadCLient struct {
@@ -37,6 +38,20 @@ type FakeLRPWorkloadCLient struct {
 	}
 	getReturnsOnCall map[int]struct {
 		result1 *api.LRP
+		result2 error
+	}
+	GetStatusStub        func(context.Context, api.LRPIdentifier) (v1.LRPStatus, error)
+	getStatusMutex       sync.RWMutex
+	getStatusArgsForCall []struct {
+		arg1 context.Context
+		arg2 api.LRPIdentifier
+	}
+	getStatusReturns struct {
+		result1 v1.LRPStatus
+		result2 error
+	}
+	getStatusReturnsOnCall map[int]struct {
+		result1 v1.LRPStatus
 		result2 error
 	}
 	UpdateStub        func(context.Context, *api.LRP) error
@@ -184,6 +199,71 @@ func (fake *FakeLRPWorkloadCLient) GetReturnsOnCall(i int, result1 *api.LRP, res
 	}{result1, result2}
 }
 
+func (fake *FakeLRPWorkloadCLient) GetStatus(arg1 context.Context, arg2 api.LRPIdentifier) (v1.LRPStatus, error) {
+	fake.getStatusMutex.Lock()
+	ret, specificReturn := fake.getStatusReturnsOnCall[len(fake.getStatusArgsForCall)]
+	fake.getStatusArgsForCall = append(fake.getStatusArgsForCall, struct {
+		arg1 context.Context
+		arg2 api.LRPIdentifier
+	}{arg1, arg2})
+	stub := fake.GetStatusStub
+	fakeReturns := fake.getStatusReturns
+	fake.recordInvocation("GetStatus", []interface{}{arg1, arg2})
+	fake.getStatusMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeLRPWorkloadCLient) GetStatusCallCount() int {
+	fake.getStatusMutex.RLock()
+	defer fake.getStatusMutex.RUnlock()
+	return len(fake.getStatusArgsForCall)
+}
+
+func (fake *FakeLRPWorkloadCLient) GetStatusCalls(stub func(context.Context, api.LRPIdentifier) (v1.LRPStatus, error)) {
+	fake.getStatusMutex.Lock()
+	defer fake.getStatusMutex.Unlock()
+	fake.GetStatusStub = stub
+}
+
+func (fake *FakeLRPWorkloadCLient) GetStatusArgsForCall(i int) (context.Context, api.LRPIdentifier) {
+	fake.getStatusMutex.RLock()
+	defer fake.getStatusMutex.RUnlock()
+	argsForCall := fake.getStatusArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeLRPWorkloadCLient) GetStatusReturns(result1 v1.LRPStatus, result2 error) {
+	fake.getStatusMutex.Lock()
+	defer fake.getStatusMutex.Unlock()
+	fake.GetStatusStub = nil
+	fake.getStatusReturns = struct {
+		result1 v1.LRPStatus
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeLRPWorkloadCLient) GetStatusReturnsOnCall(i int, result1 v1.LRPStatus, result2 error) {
+	fake.getStatusMutex.Lock()
+	defer fake.getStatusMutex.Unlock()
+	fake.GetStatusStub = nil
+	if fake.getStatusReturnsOnCall == nil {
+		fake.getStatusReturnsOnCall = make(map[int]struct {
+			result1 v1.LRPStatus
+			result2 error
+		})
+	}
+	fake.getStatusReturnsOnCall[i] = struct {
+		result1 v1.LRPStatus
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeLRPWorkloadCLient) Update(arg1 context.Context, arg2 *api.LRP) error {
 	fake.updateMutex.Lock()
 	ret, specificReturn := fake.updateReturnsOnCall[len(fake.updateArgsForCall)]
@@ -253,6 +333,8 @@ func (fake *FakeLRPWorkloadCLient) Invocations() map[string][][]interface{} {
 	defer fake.desireMutex.RUnlock()
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
+	fake.getStatusMutex.RLock()
+	defer fake.getStatusMutex.RUnlock()
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
