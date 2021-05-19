@@ -1,9 +1,0 @@
-apiVersion: eirini.cloudfoundry.org/v1
-kind: LRP
-metadata:
-  name: test-lrp
-spec:
-  GUID: asdf123
-  diskMB: 1024
-status:
-  replicas: 99
