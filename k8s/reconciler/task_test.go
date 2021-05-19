@@ -49,21 +49,20 @@ var _ = Describe("Task", func() {
 				Namespace: namespacedName.Namespace,
 			},
 			Spec: eiriniv1.TaskSpec{
-				GUID:               "guid",
-				Name:               "my-name",
-				Image:              "my/image",
-				CompletionCallback: "callback",
-				Env:                map[string]string{"foo": "bar"},
-				Command:            []string{"foo", "baz"},
-				AppName:            "jim",
-				AppGUID:            "app-guid",
-				OrgName:            "organ",
-				OrgGUID:            "orgid",
-				SpaceName:          "spacan",
-				SpaceGUID:          "spacid",
-				MemoryMB:           768,
-				DiskMB:             512,
-				CPUWeight:          13,
+				GUID:      "guid",
+				Name:      "my-name",
+				Image:     "my/image",
+				Env:       map[string]string{"foo": "bar"},
+				Command:   []string{"foo", "baz"},
+				AppName:   "jim",
+				AppGUID:   "app-guid",
+				OrgName:   "organ",
+				OrgGUID:   "orgid",
+				SpaceName: "spacan",
+				SpaceGUID: "spacid",
+				MemoryMB:  768,
+				DiskMB:    512,
+				CPUWeight: 13,
 			},
 		}
 		tasksCrClient.GetTaskReturns(task, nil)
@@ -86,7 +85,6 @@ var _ = Describe("Task", func() {
 			Expect(apiTask.GUID).To(Equal(task.Spec.GUID))
 			Expect(apiTask.Name).To(Equal(task.Spec.Name))
 			Expect(apiTask.Image).To(Equal(task.Spec.Image))
-			Expect(apiTask.CompletionCallback).To(Equal(task.Spec.CompletionCallback))
 			Expect(apiTask.Env).To(Equal(task.Spec.Env))
 			Expect(apiTask.Command).To(Equal(task.Spec.Command))
 			Expect(apiTask.AppName).To(Equal(task.Spec.AppName))

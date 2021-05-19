@@ -102,21 +102,20 @@ func (t *Task) setOwnerFn(task *eiriniv1.Task) func(interface{}) error {
 
 func toAPITask(task *eiriniv1.Task) *api.Task {
 	apiTask := &api.Task{
-		GUID:               task.Spec.GUID,
-		Name:               task.Spec.Name,
-		Image:              task.Spec.Image,
-		CompletionCallback: task.Spec.CompletionCallback,
-		Env:                task.Spec.Env,
-		Command:            task.Spec.Command,
-		AppName:            task.Spec.AppName,
-		AppGUID:            task.Spec.AppGUID,
-		OrgName:            task.Spec.OrgName,
-		OrgGUID:            task.Spec.OrgGUID,
-		SpaceName:          task.Spec.SpaceName,
-		SpaceGUID:          task.Spec.SpaceGUID,
-		MemoryMB:           task.Spec.MemoryMB,
-		DiskMB:             task.Spec.DiskMB,
-		CPUWeight:          task.Spec.CPUWeight,
+		GUID:      task.Spec.GUID,
+		Name:      task.Spec.Name,
+		Image:     task.Spec.Image,
+		Env:       task.Spec.Env,
+		Command:   task.Spec.Command,
+		AppName:   task.Spec.AppName,
+		AppGUID:   task.Spec.AppGUID,
+		OrgName:   task.Spec.OrgName,
+		OrgGUID:   task.Spec.OrgGUID,
+		SpaceName: task.Spec.SpaceName,
+		SpaceGUID: task.Spec.SpaceGUID,
+		MemoryMB:  task.Spec.MemoryMB,
+		DiskMB:    task.Spec.DiskMB,
+		CPUWeight: task.Spec.CPUWeight,
 	}
 
 	if task.Spec.PrivateRegistry != nil {

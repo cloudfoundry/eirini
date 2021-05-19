@@ -76,15 +76,7 @@ func (r Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (r
 
 	pod := &corev1.Pod{}
 	if err := r.runtimeClient.Get(ctx, request.NamespacedName, pod); err != nil {
-		if apierrors.IsNotFound(err) {
-			logger.Error("pod does not exist", err)
-
-			return reconcile.Result{}, nil
-		}
-
-		logger.Error("failed to get pod", err)
-
-		return reconcile.Result{}, errors.Wrap(err, "failed to get pod")
+		return handlePodGetError(logger, err)
 	}
 
 	if !r.taskContainerHasTerminated(logger, pod) {
@@ -107,13 +99,21 @@ func (r Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (r
 		return reconcile.Result{}, nil
 	}
 
+	job := jobsForPods[0]
+
+	if jobOwnedByTask(job) {
+		logger.Debug("ignoring job owned by a Task CR")
+
+		return reconcile.Result{}, nil
+	}
+
 	if err = r.reportIfRequired(ctx, pod); err != nil {
 		logger.Error("completion-callback-failed", err, lager.Data{"tries": pod.Annotations[jobs.AnnotationTaskCompletionReportCounter]})
 
 		return reconcile.Result{}, err
 	}
 
-	if _, err = r.jobs.SetLabel(ctx, &jobsForPods[0], jobs.LabelTaskCompleted, jobs.TaskCompletedTrue); err != nil {
+	if _, err = r.jobs.SetLabel(ctx, &job, jobs.LabelTaskCompleted, jobs.TaskCompletedTrue); err != nil {
 		return reconcile.Result{}, errors.Wrap(err, "failed to label the job as completed")
 	}
 
@@ -197,6 +197,18 @@ func (r Reconciler) taskHasExpired(logger lager.Logger, pod *corev1.Pod) bool {
 	return status.State.Terminated.FinishedAt.Time.Before(ttlExpire)
 }
 
+func handlePodGetError(logger lager.Logger, err error) (reconcile.Result, error) {
+	if apierrors.IsNotFound(err) {
+		logger.Error("pod does not exist", err)
+
+		return reconcile.Result{}, nil
+	}
+
+	logger.Error("failed to get pod", err)
+
+	return reconcile.Result{}, errors.Wrap(err, "failed to get pod")
+}
+
 func parseIntOrZero(s string) int {
 	value, err := strconv.Atoi(s)
 	if err != nil {
@@ -204,4 +216,14 @@ func parseIntOrZero(s string) int {
 	}
 
 	return value
+}
+
+func jobOwnedByTask(job batchv1.Job) bool {
+	for _, ref := range job.GetOwnerReferences() {
+		if ref.Kind == "Task" {
+			return true
+		}
+	}
+
+	return false
 }

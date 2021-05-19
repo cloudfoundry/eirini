@@ -35,7 +35,8 @@ var _ = Describe("Task Completion Reconciler", func() {
 		taskDeleter   *taskfakes.FakeDeleter
 		reconciler    *task.Reconciler
 		pod           *corev1.Pod
-		job           batchv1.Job
+		jobslice      []batchv1.Job
+		getByGUIDErr  error
 		ttl           int
 	)
 
@@ -92,15 +93,19 @@ var _ = Describe("Task Completion Reconciler", func() {
 			return nil
 		}
 
-		job = batchv1.Job{
-			ObjectMeta: metav1.ObjectMeta{
-				Labels: map[string]string{},
+		jobslice = []batchv1.Job{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{},
+				},
 			},
 		}
-		jobsClient.GetByGUIDReturns([]batchv1.Job{job}, nil)
+		getByGUIDErr = nil
 	})
 
 	JustBeforeEach(func() {
+		jobsClient.GetByGUIDReturns(jobslice, getByGUIDErr)
+
 		reconcileRes, reconcileErr = reconciler.Reconcile(context.Background(), reconcile.Request{
 			NamespacedName: k8stypes.NamespacedName{
 				Name:      "the-task-pod",
@@ -244,9 +249,26 @@ var _ = Describe("Task Completion Reconciler", func() {
 		})
 	})
 
+	When("job is owned by a task cr", func() {
+		BeforeEach(func() {
+			jobslice[0].ObjectMeta.OwnerReferences = []metav1.OwnerReference{
+				{
+					Kind: "Task",
+				},
+			}
+		})
+
+		It("exits immediately doing nothing", func() {
+			Expect(reconcileErr).To(BeNil())
+			Expect(taskReporter.ReportCallCount()).To(BeZero())
+			Expect(taskDeleter.DeleteCallCount()).To(BeZero())
+		})
+	})
+
 	When("fetching the job fails", func() {
 		BeforeEach(func() {
-			jobsClient.GetByGUIDReturns([]batchv1.Job{}, errors.New("fetch-job-failure"))
+			jobslice = []batchv1.Job{}
+			getByGUIDErr = errors.New("fetch-job-failure")
 		})
 
 		It("returns the error", func() {
@@ -264,7 +286,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 	When("when the job for the pod no longer exists (because it has been deleted during a previous reconciliation event)", func() {
 		BeforeEach(func() {
-			jobsClient.GetByGUIDReturns([]batchv1.Job{}, nil)
+			jobslice = []batchv1.Job{}
 		})
 
 		It("does not return an error", func() {
