@@ -61,7 +61,7 @@ var _ = Describe("Tasks", func() {
 		})
 	})
 
-	FDescribe("task time to live", func() {
+	Describe("task time to live", func() {
 		BeforeEach(func() {
 			task.Spec.Image = "eirini/busybox"
 			task.Spec.Command = []string{"/bin/sh", "-c", "sleep 1"}
