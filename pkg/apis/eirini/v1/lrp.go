@@ -1,3 +1,4 @@
+// +kubebuilder:validation:Optional
 package v1
 
 import (
@@ -8,7 +9,11 @@ import (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:shortName=lrp
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:JSONPath=.spec.instances,type=integer,name=Replicas
+// +kubebuilder:printcolumn:JSONPath=.status.replicas,type=integer,name=Ready
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type LRP struct {
 	meta_v1.TypeMeta   `json:",inline"`
 	meta_v1.ObjectMeta `json:"metadata,omitempty"`
@@ -18,25 +23,31 @@ type LRP struct {
 }
 
 type LRPSpec struct {
-	GUID                   string            `json:"GUID"`
-	Version                string            `json:"version"`
-	ProcessType            string            `json:"processType"`
-	AppName                string            `json:"appName"`
-	AppGUID                string            `json:"appGUID"`
-	OrgName                string            `json:"orgName"`
-	OrgGUID                string            `json:"orgGUID"`
-	SpaceName              string            `json:"spaceName"`
-	SpaceGUID              string            `json:"spaceGUID"`
-	Image                  string            `json:"image"`
-	Command                []string          `json:"command,omitempty"`
-	Sidecars               []Sidecar         `json:"sidecars,omitempty"`
-	PrivateRegistry        *PrivateRegistry  `json:"privateRegistry,omitempty"`
-	Env                    map[string]string `json:"env,omitempty"`
-	Health                 Healthcheck       `json:"health"`
-	Ports                  []int32           `json:"ports,omitempty"`
-	Instances              int               `json:"instances"`
-	MemoryMB               int64             `json:"memoryMB"`
-	DiskMB                 int64             `json:"diskMB"`
+	// +kubebuilder:validation:Required
+	GUID        string `json:"GUID"`
+	Version     string `json:"version"`
+	ProcessType string `json:"processType"`
+	AppName     string `json:"appName"`
+	AppGUID     string `json:"appGUID"`
+	OrgName     string `json:"orgName"`
+	OrgGUID     string `json:"orgGUID"`
+	SpaceName   string `json:"spaceName"`
+	SpaceGUID   string `json:"spaceGUID"`
+	// +kubebuilder:validation:Required
+	Image           string            `json:"image"`
+	Command         []string          `json:"command,omitempty"`
+	Sidecars        []Sidecar         `json:"sidecars,omitempty"`
+	PrivateRegistry *PrivateRegistry  `json:"privateRegistry,omitempty"`
+	Env             map[string]string `json:"env,omitempty"`
+	Health          Healthcheck       `json:"health"`
+	Ports           []int32           `json:"ports,omitempty"`
+	// +kubebuilder:default:=1
+	Instances int   `json:"instances"`
+	MemoryMB  int64 `json:"memoryMB"`
+	// +kubebuilder:validation:Minimum:=1
+	// +kubebuilder:validation:Required
+	DiskMB int64 `json:"diskMB"`
+	// +kubebuilder:validation:Format:=uint8
 	CPUWeight              uint8             `json:"cpuWeight"`
 	VolumeMounts           []VolumeMount     `json:"volumeMounts,omitempty"`
 	LastUpdated            string            `json:"lastUpdated"`
@@ -53,7 +64,9 @@ type Route struct {
 }
 
 type Sidecar struct {
-	Name     string            `json:"name"`
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// +kubebuilder:validation:Required
 	Command  []string          `json:"command"`
 	MemoryMB int64             `json:"memoryMB"`
 	Env      map[string]string `json:"env,omitempty"`
@@ -70,10 +83,11 @@ type VolumeMount struct {
 }
 
 type Healthcheck struct {
-	Type      string `json:"type"`
-	Port      int32  `json:"port"`
-	Endpoint  string `json:"endpoint"`
-	TimeoutMs uint   `json:"timeoutMs"`
+	Type     string `json:"type"`
+	Port     int32  `json:"port"`
+	Endpoint string `json:"endpoint"`
+	// +kubebuilder:validation:Format:=uint8
+	TimeoutMs uint `json:"timeoutMs"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

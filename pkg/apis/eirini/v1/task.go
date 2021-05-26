@@ -6,7 +6,10 @@ import (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:shortName=task
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:JSONPath=.status.execution_status,type=string,name=State
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Task describes a short-lived job running alongside an LRP
 type Task struct {
@@ -18,21 +21,25 @@ type Task struct {
 }
 
 type TaskSpec struct {
-	GUID            string            `json:"guid"`
-	Name            string            `json:"name"`
+	// +kubebuilder:validation:Required
+	GUID string `json:"GUID"`
+	Name string `json:"name"`
+	// +kubebuilder:validation:Required
 	Image           string            `json:"image"`
 	PrivateRegistry *PrivateRegistry  `json:"privateRegistry,omitempty"`
 	Env             map[string]string `json:"env,omitempty"`
-	Command         []string          `json:"command,omitempty"`
-	AppName         string            `json:"appName"`
-	AppGUID         string            `json:"appGuid"`
-	OrgName         string            `json:"orgName"`
-	OrgGUID         string            `json:"orgGuid"`
-	SpaceName       string            `json:"spaceName"`
-	SpaceGUID       string            `json:"spaceGuid"`
-	MemoryMB        int64             `json:"memoryMB"`
-	DiskMB          int64             `json:"diskMB"`
-	CPUWeight       uint8             `json:"cpuWeight"`
+	// +kubebuilder:validation:Required
+	Command   []string `json:"command,omitempty"`
+	AppName   string   `json:"appName"`
+	AppGUID   string   `json:"appGUID"`
+	OrgName   string   `json:"orgName"`
+	OrgGUID   string   `json:"orgGUID"`
+	SpaceName string   `json:"spaceName"`
+	SpaceGUID string   `json:"spaceGUID"`
+	MemoryMB  int64    `json:"memoryMB"`
+	DiskMB    int64    `json:"diskMB"`
+	// +kubebuilder:validation:Format:=uint8
+	CPUWeight uint8 `json:"cpuWeight"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -54,7 +61,9 @@ const (
 )
 
 type TaskStatus struct {
-	StartTime       *meta_v1.Time   `json:"start_time"`
-	EndTime         *meta_v1.Time   `json:"end_time"`
+	StartTime *meta_v1.Time `json:"start_time"`
+	EndTime   *meta_v1.Time `json:"end_time"`
+	// +kubebuilder:validation:Enum=starting;running;succeeded;failed
+	// +kubebuilder:default=starting
 	ExecutionStatus ExecutionStatus `json:"execution_status"`
 }
