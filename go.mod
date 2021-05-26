@@ -9,7 +9,7 @@ replace (
 
 require (
 	cloud.google.com/go v0.82.0 // indirect
-	code.cloudfoundry.org/bbs v0.0.0-20210518201003-0800739607f5 // indirect
+	code.cloudfoundry.org/bbs v0.0.0-20210519145251-c06235088f64 // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
@@ -29,7 +29,7 @@ require (
 	github.com/go-logr/logr v0.4.0
 	github.com/gofrs/flock v0.8.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/google/go-cmp v0.5.5
+	github.com/google/go-cmp v0.5.6
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
@@ -54,11 +54,12 @@ require (
 	github.com/prometheus/common v0.25.0
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
-	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
-	golang.org/x/sys v0.0.0-20210514084401-e8d321eab015 // indirect
+	golang.org/x/net v0.0.0-20210525063256-abc453219eb5 // indirect
+	golang.org/x/sys v0.0.0-20210525143221-35b2ab0089ea // indirect
 	golang.org/x/term v0.0.0-20210503060354-a79de5458b56 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
-	gomodules.xyz/jsonpatch/v2 v2.1.0
+	golang.org/x/tools v0.1.2 // indirect
+	gomodules.xyz/jsonpatch/v2 v2.2.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/api v0.21.1
@@ -67,8 +68,8 @@ require (
 	k8s.io/client-go v1.5.2
 	k8s.io/code-generator v0.21.1
 	k8s.io/klog v1.0.0
-	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e // indirect
-	k8s.io/utils v0.0.0-20210517184530-5a248b5acedc // indirect
+	k8s.io/kube-openapi v0.0.0-20210524163139-412c2b45c7d3 // indirect
+	k8s.io/utils v0.0.0-20210521133846-da695404a2bc // indirect
 	sigs.k8s.io/controller-runtime v0.8.3
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.1 // indirect
 )
