@@ -104,7 +104,6 @@ var _ = Describe("LRPResourceValidator", func() {
 							ClaimName: "the-claim",
 						},
 					},
-					LastUpdated: "now",
 					UserDefinedAnnotations: map[string]string{
 						"user-annotations.io": "aaa",
 					},

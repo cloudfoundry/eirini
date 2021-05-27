@@ -60,11 +60,10 @@ var _ = Describe("reconciler.LRP", func() {
 				Env: map[string]string{
 					"FOO": "BAR",
 				},
-				Ports:       []int32{8080, 9090},
-				MemoryMB:    1024,
-				DiskMB:      512,
-				CPUWeight:   128,
-				LastUpdated: "now",
+				Ports:     []int32{8080, 9090},
+				MemoryMB:  1024,
+				DiskMB:    512,
+				CPUWeight: 128,
 				Sidecars: []eiriniv1.Sidecar{
 					{
 						Name:     "hello-sidecar",
@@ -145,7 +144,6 @@ var _ = Describe("reconciler.LRP", func() {
 		Expect(lrp.MemoryMB).To(Equal(int64(1024)))
 		Expect(lrp.DiskMB).To(Equal(int64(512)))
 		Expect(lrp.CPUWeight).To(Equal(uint8(128)))
-		Expect(lrp.LastUpdated).To(Equal("now"))
 		Expect(lrp.Sidecars).To(Equal([]api.Sidecar{
 			{
 				Name:     "hello-sidecar",

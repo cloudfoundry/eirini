@@ -50,7 +50,6 @@ type LRPSpec struct {
 	// +kubebuilder:validation:Format:=uint8
 	CPUWeight              uint8             `json:"cpuWeight"`
 	VolumeMounts           []VolumeMount     `json:"volumeMounts,omitempty"`
-	LastUpdated            string            `json:"lastUpdated"`
 	UserDefinedAnnotations map[string]string `json:"userDefinedAnnotations,omitempty"`
 }
 

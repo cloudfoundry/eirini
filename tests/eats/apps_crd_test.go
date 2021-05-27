@@ -97,7 +97,6 @@ var _ = Describe("Apps CRDs [needs-logs-for: eirini-controller]", func() {
 				DiskMB:                 256,
 				CPUWeight:              10,
 				Instances:              1,
-				LastUpdated:            "a long time ago in a galaxy far, far away",
 				Ports:                  []int32{8080},
 				VolumeMounts:           []eiriniv1.VolumeMount{},
 				UserDefinedAnnotations: map[string]string{},
