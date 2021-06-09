@@ -284,7 +284,6 @@ func (m *moduleSpec) Get() interface{} {
 
 var errVmoduleSyntax = errors.New("syntax error: expect comma-separated list of filename=N")
 
-// Set will sets module value
 // Syntax: -vmodule=recordio=2,file=1,gfs*=3
 func (m *moduleSpec) Set(value string) error {
 	var filter []modulePat
@@ -363,7 +362,6 @@ func (t *traceLocation) Get() interface{} {
 
 var errTraceSyntax = errors.New("syntax error: expect file.go:234")
 
-// Set will sets backtrace value
 // Syntax: -log_backtrace_at=gopherflakes.go:234
 // Note that unlike vmodule the file extension is included here.
 func (t *traceLocation) Set(value string) error {
@@ -710,7 +708,7 @@ func (l *loggingT) println(s severity, logr logr.Logger, filter LogFilter, args 
 		args = filter.Filter(args)
 	}
 	fmt.Fprintln(buf, args...)
-	l.output(s, logr, buf, 0 /* depth */, file, line, false)
+	l.output(s, logr, buf, file, line, false)
 }
 
 func (l *loggingT) print(s severity, logr logr.Logger, filter LogFilter, args ...interface{}) {
@@ -732,7 +730,7 @@ func (l *loggingT) printDepth(s severity, logr logr.Logger, filter LogFilter, de
 	if buf.Bytes()[buf.Len()-1] != '\n' {
 		buf.WriteByte('\n')
 	}
-	l.output(s, logr, buf, depth, file, line, false)
+	l.output(s, logr, buf, file, line, false)
 }
 
 func (l *loggingT) printf(s severity, logr logr.Logger, filter LogFilter, format string, args ...interface{}) {
@@ -750,7 +748,7 @@ func (l *loggingT) printf(s severity, logr logr.Logger, filter LogFilter, format
 	if buf.Bytes()[buf.Len()-1] != '\n' {
 		buf.WriteByte('\n')
 	}
-	l.output(s, logr, buf, 0 /* depth */, file, line, false)
+	l.output(s, logr, buf, file, line, false)
 }
 
 // printWithFileLine behaves like print but uses the provided file and line number.  If
@@ -771,7 +769,7 @@ func (l *loggingT) printWithFileLine(s severity, logr logr.Logger, filter LogFil
 	if buf.Bytes()[buf.Len()-1] != '\n' {
 		buf.WriteByte('\n')
 	}
-	l.output(s, logr, buf, 2 /* depth */, file, line, alsoToStderr)
+	l.output(s, logr, buf, file, line, alsoToStderr)
 }
 
 // if loggr is specified, will call loggr.Error, otherwise output with logging module.
@@ -780,7 +778,7 @@ func (l *loggingT) errorS(err error, loggr logr.Logger, filter LogFilter, depth 
 		msg, keysAndValues = filter.FilterS(msg, keysAndValues)
 	}
 	if loggr != nil {
-		logr.WithCallDepth(loggr, depth+2).Error(err, msg, keysAndValues...)
+		loggr.Error(err, msg, keysAndValues...)
 		return
 	}
 	l.printS(err, errorLog, depth+1, msg, keysAndValues...)
@@ -792,7 +790,7 @@ func (l *loggingT) infoS(loggr logr.Logger, filter LogFilter, depth int, msg str
 		msg, keysAndValues = filter.FilterS(msg, keysAndValues)
 	}
 	if loggr != nil {
-		logr.WithCallDepth(loggr, depth+2).Info(msg, keysAndValues...)
+		loggr.Info(msg, keysAndValues...)
 		return
 	}
 	l.printS(nil, infoLog, depth+1, msg, keysAndValues...)
@@ -827,8 +825,6 @@ func kvListFormat(b *bytes.Buffer, keysAndValues ...interface{}) {
 		switch v.(type) {
 		case string, error:
 			b.WriteString(fmt.Sprintf("%s=%q", k, v))
-		case []byte:
-			b.WriteString(fmt.Sprintf("%s=%+q", k, v))
 		default:
 			if _, ok := v.(fmt.Stringer); ok {
 				b.WriteString(fmt.Sprintf("%s=%q", k, v))
@@ -859,13 +855,12 @@ func (rb *redirectBuffer) Write(bytes []byte) (n int, err error) {
 // SetLogger will set the backing logr implementation for klog.
 // If set, all log lines will be suppressed from the regular Output, and
 // redirected to the logr implementation.
+// All log lines include the 'severity', 'file' and 'line' values attached as
+// structured logging values.
 // Use as:
 //   ...
 //   klog.SetLogger(zapr.NewLogger(zapLog))
 func SetLogger(logr logr.Logger) {
-	logging.mu.Lock()
-	defer logging.mu.Unlock()
-
 	logging.logr = logr
 }
 
@@ -904,7 +899,7 @@ func LogToStderr(stderr bool) {
 }
 
 // output writes the data to the log files and releases the buffer.
-func (l *loggingT) output(s severity, log logr.Logger, buf *buffer, depth int, file string, line int, alsoToStderr bool) {
+func (l *loggingT) output(s severity, log logr.Logger, buf *buffer, file string, line int, alsoToStderr bool) {
 	l.mu.Lock()
 	if l.traceLocation.isSet() {
 		if l.traceLocation.match(file, line) {
@@ -916,9 +911,9 @@ func (l *loggingT) output(s severity, log logr.Logger, buf *buffer, depth int, f
 		// TODO: set 'severity' and caller information as structured log info
 		// keysAndValues := []interface{}{"severity", severityName[s], "file", file, "line", line}
 		if s == errorLog {
-			logr.WithCallDepth(l.logr, depth+3).Error(nil, string(data))
+			l.logr.Error(nil, string(data))
 		} else {
-			logr.WithCallDepth(log, depth+3).Info(string(data))
+			log.Info(string(data))
 		}
 	} else if l.toStderr {
 		os.Stderr.Write(data)
