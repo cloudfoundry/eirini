@@ -10,8 +10,6 @@ import (
 	"os"
 	"sync"
 
-	eiriniclient "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
-	eirinischeme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,7 +18,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -30,8 +27,6 @@ const (
 
 type Fixture struct {
 	Clientset         kubernetes.Interface
-	EiriniClientset   eiriniclient.Interface
-	RuntimeClient     runtimeclient.Client
 	Namespace         string
 	PspName           string
 	KubeConfigPath    string
@@ -71,17 +66,9 @@ func NewFixture(writer io.Writer) *Fixture {
 	clientset, err := kubernetes.NewForConfig(config)
 	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
 
-	lrpclientset, err := eiriniclient.NewForConfig(config)
-	Expect(err).NotTo(HaveOccurred(), "failed to create clientset")
-
-	runtimeClient, err := runtimeclient.New(config, runtimeclient.Options{Scheme: eirinischeme.Scheme})
-	Expect(err).NotTo(HaveOccurred(), "failed to create runtime client")
-
 	return &Fixture{
 		KubeConfigPath:    kubeConfigPath,
 		Clientset:         clientset,
-		EiriniClientset:   lrpclientset,
-		RuntimeClient:     runtimeClient,
 		Writer:            writer,
 		nextAvailablePort: basePortNumber + portRange*GinkgoParallelNode(),
 		portMux:           &sync.Mutex{},

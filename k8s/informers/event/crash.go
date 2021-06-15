@@ -21,6 +21,7 @@ const (
 
 //counterfeiter:generate . CrashEventGenerator
 //counterfeiter:generate . CrashEmitter
+//counterfeiter:generate -o eventfakes/fake_controller_runtime_client.go sigs.k8s.io/controller-runtime/pkg/client.Client
 
 type CrashEventGenerator interface {
 	Generate(context.Context, *corev1.Pod, lager.Logger) (events.CrashEvent, bool)

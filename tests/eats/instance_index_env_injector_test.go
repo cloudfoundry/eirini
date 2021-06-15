@@ -1,53 +1,26 @@
 package eats_test
 
 import (
-	"context"
+	"net/http"
 	"regexp"
 
-	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/eirini/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("InstanceIndexEnvInjector [needs-logs-for: eirini-api, instance-index-env-injector]", func() {
-	var (
-		lrpGUID        string
-		appServiceName string
-	)
+	var appServiceName string
 
 	BeforeEach(func() {
-		lrpGUID = tests.GenerateGUID()
+		lrpGUID := tests.GenerateGUID()
+		lrpVersion := tests.GenerateGUID()
 
-		lrp := &eiriniv1.LRP{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: tests.GenerateGUID(),
-			},
-			Spec: eiriniv1.LRPSpec{
-				GUID:                   lrpGUID,
-				Version:                tests.GenerateGUID(),
-				Image:                  "eirini/dorini",
-				AppGUID:                "the-app-guid",
-				AppName:                "k-2so",
-				SpaceName:              "s",
-				OrgName:                "o",
-				Env:                    map[string]string{"FOO": "BAR"},
-				MemoryMB:               256,
-				DiskMB:                 256,
-				CPUWeight:              10,
-				Instances:              3,
-				Ports:                  []int32{8080},
-				VolumeMounts:           []eiriniv1.VolumeMount{},
-				UserDefinedAnnotations: map[string]string{},
-			},
-		}
-
-		_, err := fixture.EiriniClientset.
-			EiriniV1().
-			LRPs(fixture.Namespace).
-			Create(context.Background(), lrp, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		lrp := createLrpRequest(lrpGUID, lrpVersion)
+		lrp.Namespace = fixture.Namespace
+		lrp.NumInstances = 3
+		statusCode := desireLRP(lrp)
+		Expect(statusCode).To(Equal(http.StatusAccepted))
 
 		appServiceName = tests.ExposeAsService(fixture.Clientset, fixture.Namespace, lrpGUID, 8080, "/")
 	})

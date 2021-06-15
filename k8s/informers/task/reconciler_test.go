@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
+	"code.cloudfoundry.org/eirini/k8s/informers/event/eventfakes"
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
 	"code.cloudfoundry.org/eirini/k8s/informers/task/taskfakes"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
-	"code.cloudfoundry.org/eirini/k8s/reconciler/reconcilerfakes"
 	"code.cloudfoundry.org/lager/lagertest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,7 +28,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 		reconcileRes  reconcile.Result
 		reconcileErr  error
 		logger        *lagertest.TestLogger
-		runtimeClient *reconcilerfakes.FakeClient
+		runtimeClient *eventfakes.FakeClient
 		jobsClient    *taskfakes.FakeJobsClient
 		podsClient    *taskfakes.FakePodsClient
 		taskReporter  *taskfakes.FakeReporter
@@ -42,7 +42,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("reconciler-test")
-		runtimeClient = new(reconcilerfakes.FakeClient)
+		runtimeClient = new(eventfakes.FakeClient)
 		jobsClient = new(taskfakes.FakeJobsClient)
 		podsClient = new(taskfakes.FakePodsClient)
 		taskReporter = new(taskfakes.FakeReporter)

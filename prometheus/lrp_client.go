@@ -6,7 +6,6 @@ import (
 
 	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/shared"
-	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
 	"code.cloudfoundry.org/lager"
 	prometheus_api "github.com/prometheus/client_golang/prometheus"
 	"k8s.io/apimachinery/pkg/util/clock"
@@ -25,7 +24,6 @@ type LRPClient interface {
 	Desire(ctx context.Context, namespace string, lrp *api.LRP, opts ...shared.Option) error
 	Get(ctx context.Context, identifier api.LRPIdentifier) (*api.LRP, error)
 	Update(ctx context.Context, lrp *api.LRP) error
-	GetStatus(ctx context.Context, identifier api.LRPIdentifier) (eiriniv1.LRPStatus, error)
 }
 
 type LRPClientDecorator struct {

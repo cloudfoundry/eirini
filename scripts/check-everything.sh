@@ -6,6 +6,7 @@ IFS=$'\n\t'
 RUN_DIR="$(cd "$(dirname "$0")" && pwd)"
 EIRINI_DIR="$RUN_DIR/.."
 EIRINI_RELEASE_BASEDIR="$EIRINI_DIR/../eirini-release"
+EIRINI_CONTROLLER_BASEDIR="$EIRINI_DIR/../eirini-controller"
 
 if [ -z ${EIRINIUSER_PASSWORD+x} ]; then
   EIRINIUSER_PASSWORD="$(pass eirini/docker-hub)"
@@ -63,8 +64,8 @@ run_integration_tests() {
   cp "$KUBECONFIG" "$src_dir"
   trap "rm -rf $src_dir" EXIT
 
-  kubectl apply -f "$EIRINI_RELEASE_BASEDIR/helm/templates/core/lrp-crd.yml"
-  kubectl apply -f "$EIRINI_RELEASE_BASEDIR/helm/templates/core/task-crd.yml"
+  kubectl apply -f "$EIRINI_CONTROLLER_BASEDIR/deployment/helm/templates/core/lrp-crd.yml"
+  kubectl apply -f "$EIRINI_CONTROLLER_BASEDIR/deployment/helm/templates/core/task-crd.yml"
 
   telepresence \
     --method container \

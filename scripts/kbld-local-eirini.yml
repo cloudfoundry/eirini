@@ -9,13 +9,6 @@ sources:
       file: docker/api/Dockerfile
       rawOptions: ["--build-arg", "GIT_SHA=api-dirty", "--tag", "api"]
       buildkit: true
-- imageRepo: eirini/eirini-controller
-  path: .
-  docker:
-    build:
-      file: docker/eirini-controller/Dockerfile
-      rawOptions: ["--build-arg", "GIT_SHA=eirini-controller-dirty", "--tag", "eirini-controller"]
-      buildkit: true
 - imageRepo: eirini/event-reporter
   path: .
   docker:

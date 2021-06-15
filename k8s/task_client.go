@@ -22,7 +22,6 @@ type TaskClient struct {
 	jobs.Getter
 	jobs.Deleter
 	jobs.Lister
-	jobs.StatusGetter
 }
 
 func NewTaskClient(
@@ -32,10 +31,9 @@ func NewTaskClient(
 	taskToJobConverter jobs.TaskToJobConverter,
 ) *TaskClient {
 	return &TaskClient{
-		Desirer:      jobs.NewDesirer(logger, taskToJobConverter, jobClient, secretsClient),
-		Getter:       jobs.NewGetter(jobClient),
-		Deleter:      jobs.NewDeleter(logger, jobClient, jobClient),
-		Lister:       jobs.NewLister(jobClient),
-		StatusGetter: jobs.NewStatusGetter(logger, jobClient),
+		Desirer: jobs.NewDesirer(logger, taskToJobConverter, jobClient, secretsClient),
+		Getter:  jobs.NewGetter(jobClient),
+		Deleter: jobs.NewDeleter(logger, jobClient, jobClient),
+		Lister:  jobs.NewLister(jobClient),
 	}
 }

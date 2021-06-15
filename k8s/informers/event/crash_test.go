@@ -9,7 +9,6 @@ import (
 	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/k8s/informers/event/eventfakes"
-	"code.cloudfoundry.org/eirini/k8s/reconciler/reconcilerfakes"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
@@ -30,7 +29,7 @@ var _ = Describe("Event", func() {
 		eventGenerator   *eventfakes.FakeCrashEventGenerator
 		crashEmitter     *eventfakes.FakeCrashEmitter
 		crashReconciler  *event.CrashReconciler
-		controllerClient *reconcilerfakes.FakeClient
+		controllerClient *eventfakes.FakeClient
 		pod              *corev1.Pod
 		getPodError      error
 		crashEvent       events.CrashEvent
@@ -57,7 +56,7 @@ var _ = Describe("Event", func() {
 			},
 		}
 
-		controllerClient = new(reconcilerfakes.FakeClient)
+		controllerClient = new(eventfakes.FakeClient)
 
 		logger = lagertest.NewTestLogger("crash-event-logger-test")
 

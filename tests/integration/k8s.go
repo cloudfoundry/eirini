@@ -15,8 +15,6 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	eiriniv1 "code.cloudfoundry.org/eirini/pkg/apis/eirini/v1"
-	eiriniclient "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/tlsconfig"
 	"github.com/onsi/ginkgo"
@@ -232,27 +230,4 @@ func GetStatefulSet(clientset kubernetes.Interface, namespace, guid, version str
 	Expect(stsList.Items).To(HaveLen(1))
 
 	return &stsList.Items[0]
-}
-
-func GetLRP(clientset eiriniclient.Interface, namespace, lrpName string) *eiriniv1.LRP {
-	l, err := clientset.
-		EiriniV1().
-		LRPs(namespace).
-		Get(context.Background(), lrpName, metav1.GetOptions{})
-
-	Expect(err).NotTo(HaveOccurred())
-
-	return l
-}
-
-func GetTaskExecutionStatus(clientset eiriniclient.Interface, namespace, taskName string) func() eiriniv1.ExecutionStatus {
-	return func() eiriniv1.ExecutionStatus {
-		task, err := clientset.
-			EiriniV1().
-			Tasks(namespace).
-			Get(context.Background(), taskName, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
-
-		return task.Status.ExecutionStatus
-	}
 }
