@@ -3,12 +3,12 @@ module code.cloudfoundry.org/eirini
 go 1.16
 
 require (
-	cloud.google.com/go v0.83.0 // indirect
-	code.cloudfoundry.org/bbs v0.0.0-20210602190646-ae0ad34dfda9 // indirect
+	cloud.google.com/go v0.84.0 // indirect
+	code.cloudfoundry.org/bbs v0.0.0-20210615140220-2942e7d25726 // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
-	code.cloudfoundry.org/tlsconfig v0.0.0-20200131000646-bbe0f8da39b3
+	code.cloudfoundry.org/tlsconfig v0.0.0-20210615191307-5d92ef3894a7
 	github.com/Azure/go-autorest/autorest v0.11.19 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.14 // indirect
 	github.com/cloudfoundry/tps v0.0.0-20210303221408-6295d5712990
@@ -40,11 +40,13 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
-	github.com/prometheus/common v0.28.0
+	github.com/prometheus/common v0.29.0
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
-	golang.org/x/sys v0.0.0-20210608053332-aa57babbf139 // indirect
-	golang.org/x/term v0.0.0-20210503060354-a79de5458b56 // indirect
-	golang.org/x/time v0.0.0-20210608053304-ed9ce3a009e4 // indirect
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
+	golang.org/x/oauth2 v0.0.0-20210615190721-d04028783cf1 // indirect
+	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect
+	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
+	golang.org/x/tools v0.1.3 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.21.1
