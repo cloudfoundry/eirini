@@ -184,25 +184,14 @@ issues:
     - path: _suite_test\.go
       linters:
       - gochecknoglobals
-    - path: cmd/simulator/main\.go
-      linters:
-      - gomnd
-    - path: tests/k8s\.go
+    - path: tests/.*\.go
       linters:
       - gomnd
       - funlen
       - gosec
       - golint
       - stylecheck
-    - path: tests/integration/k8s\.go
-      linters:
-        - golint
-        - revive
-        - stylecheck
-        - gomnd
-    - path: tests/eats/eats_suite_test.go
-      linters:
-      - gosec
+      - revive
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 

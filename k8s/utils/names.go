@@ -10,8 +10,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const sanitizedNameMaxLen = 40
+
 func SanitizeName(name, fallback string) string {
-	return SanitizeNameWithMaxStringLen(name, fallback, 40)
+	return SanitizeNameWithMaxStringLen(name, fallback, sanitizedNameMaxLen)
 }
 
 func SanitizeNameWithMaxStringLen(name, fallback string, maxStringLen int) string {

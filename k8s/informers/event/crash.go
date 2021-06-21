@@ -80,7 +80,7 @@ func (c *CrashReconciler) Reconcile(ctx context.Context, request reconcile.Reque
 		return reconcile.Result{}, nil
 	}
 
-	if strconv.FormatInt(event.CrashTimestamp, 10) == pod.Annotations[stset.AnnotationLastReportedAppCrash] {
+	if strconv.FormatInt(event.CrashTimestamp, 10) == pod.Annotations[stset.AnnotationLastReportedAppCrash] { // nolint:gomnd
 		logger.Debug("event-already-sent")
 
 		return reconcile.Result{}, nil
@@ -102,7 +102,7 @@ func (c *CrashReconciler) Reconcile(ctx context.Context, request reconcile.Reque
 		newPod.Annotations = map[string]string{}
 	}
 
-	newPod.Annotations[stset.AnnotationLastReportedAppCrash] = strconv.FormatInt(event.CrashTimestamp, 10)
+	newPod.Annotations[stset.AnnotationLastReportedAppCrash] = strconv.FormatInt(event.CrashTimestamp, 10) // nolint:gomnd
 
 	if err = c.client.Patch(ctx, newPod, client.MergeFrom(pod)); err != nil {
 		logger.Error("failed-to-set-last-crash-time-on-pod", err)

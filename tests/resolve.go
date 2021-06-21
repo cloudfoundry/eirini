@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 
-	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/gomega"
 )
 

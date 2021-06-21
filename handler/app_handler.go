@@ -202,7 +202,7 @@ func (a *App) StopInstance(w http.ResponseWriter, r *http.Request, ps httprouter
 		Version: ps.ByName("version_guid"),
 	}
 
-	index, err := strconv.ParseUint(ps.ByName("instance"), 10, 32)
+	index, err := strconv.ParseUint(ps.ByName("instance"), 10, 32) // nolint:gomnd
 	if err != nil {
 		loggerSession.Error("parsing-instance-index-failed", err)
 		w.WriteHeader(http.StatusBadRequest)

@@ -5,10 +5,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/ginkgo"
-
-	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/gomega"
 )
 

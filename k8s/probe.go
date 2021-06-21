@@ -6,13 +6,18 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+const (
+	livenessFailureThreshold  = 4
+	readinessFailureThreshold = 1
+)
+
 func CreateLivenessProbe(lrp *api.LRP) *v1.Probe {
 	initialDelay := toSeconds(lrp.Health.TimeoutMs)
 
 	if lrp.Health.Type == "http" {
-		return createHTTPProbe(lrp, initialDelay, 4)
+		return createHTTPProbe(lrp, initialDelay, livenessFailureThreshold)
 	} else if lrp.Health.Type == "port" {
-		return createPortProbe(lrp, initialDelay, 4)
+		return createPortProbe(lrp, initialDelay, livenessFailureThreshold)
 	}
 
 	return nil
@@ -20,9 +25,9 @@ func CreateLivenessProbe(lrp *api.LRP) *v1.Probe {
 
 func CreateReadinessProbe(lrp *api.LRP) *v1.Probe {
 	if lrp.Health.Type == "http" {
-		return createHTTPProbe(lrp, 0, 1)
+		return createHTTPProbe(lrp, 0, readinessFailureThreshold)
 	} else if lrp.Health.Type == "port" {
-		return createPortProbe(lrp, 0, 1)
+		return createPortProbe(lrp, 0, readinessFailureThreshold)
 	}
 
 	return nil

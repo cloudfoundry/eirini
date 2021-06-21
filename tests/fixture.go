@@ -13,11 +13,7 @@ import (
 	eiriniclient "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned"
 	eirinischeme "code.cloudfoundry.org/eirini/pkg/generated/clientset/versioned/scheme"
 	"github.com/hashicorp/go-multierror"
-
-	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/ginkgo"
-
-	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

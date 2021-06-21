@@ -9,11 +9,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
-
-	//nolint:revive
 	. "github.com/onsi/ginkgo"
-
-	//nolint:revive
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1beta1"

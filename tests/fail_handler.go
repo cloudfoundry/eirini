@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/ginkgo"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,7 +64,7 @@ func getRelatedEiriniPodsNames(testText string) []string {
 	}
 
 	match := regEx.FindStringSubmatch(testText)
-	if len(match) < 2 { //nolint:gomnd
+	if len(match) < 2 {
 		// no Eirini logs have been requested by the test
 		return []string{}
 	}

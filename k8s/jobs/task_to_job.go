@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	taskContainerName = "opi-task"
-	parallelism       = 1
-	completions       = 1
+	taskContainerName   = "opi-task"
+	parallelism         = 1
+	completions         = 1
+	sanitizedNameMaxLen = 50
 )
 
 type Converter struct {
@@ -107,7 +108,7 @@ func (m *Converter) toJob(task *api.Task) *batch.Job {
 		sanitizedName = fmt.Sprintf("%s-%s", sanitizedName, task.Name)
 	}
 
-	job.Name = utils.SanitizeNameWithMaxStringLen(sanitizedName, task.GUID, 50)
+	job.Name = utils.SanitizeNameWithMaxStringLen(sanitizedName, task.GUID, sanitizedNameMaxLen)
 
 	job.Labels = map[string]string{
 		LabelGUID:    task.GUID,

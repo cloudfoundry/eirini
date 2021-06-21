@@ -11,11 +11,7 @@ import (
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests"
 	"github.com/gofrs/flock"
-
-	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/ginkgo"
-
-	// nolint:golint,stylecheck,revive
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"gopkg.in/yaml.v2"
