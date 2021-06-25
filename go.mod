@@ -46,7 +46,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210622215436-a8dc77f794b6 // indirect
 	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22 // indirect
 	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect
-	golang.org/x/tools v0.1.3 // indirect
+	golang.org/x/tools v0.1.4 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.21.2
@@ -56,7 +56,7 @@ require (
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.9.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d // indirect
-	sigs.k8s.io/controller-runtime v0.9.1
+	sigs.k8s.io/controller-runtime v0.9.2
 	sigs.k8s.io/controller-tools v0.6.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.1 // indirect
 )
