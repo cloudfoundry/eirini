@@ -128,7 +128,7 @@ github.com/go-openapi/jsonreference
 github.com/go-openapi/swag
 # github.com/gobuffalo/flect v0.2.2
 github.com/gobuffalo/flect
-# github.com/gofrs/flock v0.8.0
+# github.com/gofrs/flock v0.8.1
 ## explicit
 github.com/gofrs/flock
 # github.com/gogo/protobuf v1.3.2
@@ -409,7 +409,8 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/protobuf v1.26.0
+# google.golang.org/protobuf v1.27.0
+## explicit
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
