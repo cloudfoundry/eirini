@@ -1,4 +1,4 @@
-# cloud.google.com/go v0.86.0
+# cloud.google.com/go v0.87.0
 ## explicit
 cloud.google.com/go/compute/metadata
 # code.cloudfoundry.org/bbs v0.0.0-20210615140220-2942e7d25726
@@ -140,7 +140,8 @@ github.com/google/go-cmp/cmp/internal/value
 ## explicit
 github.com/google/gofuzz
 github.com/google/gofuzz/bytesource
-# github.com/google/uuid v1.2.0
+# github.com/google/uuid v1.3.0
+## explicit
 github.com/google/uuid
 # github.com/googleapis/gnostic v0.5.5
 github.com/googleapis/gnostic/compiler
@@ -219,7 +220,7 @@ github.com/onsi/ginkgo/reporters/stenographer
 github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable
 github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty
 github.com/onsi/ginkgo/types
-# github.com/onsi/gomega v1.13.0
+# github.com/onsi/gomega v1.14.0
 ## explicit
 github.com/onsi/gomega
 github.com/onsi/gomega/format
@@ -274,7 +275,7 @@ github.com/sirupsen/logrus
 github.com/spf13/pflag
 # github.com/square/certstrap v1.2.0
 github.com/square/certstrap/pkix
-# golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
+# golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
 ## explicit
 golang.org/x/crypto/pkcs12
 golang.org/x/crypto/pkcs12/internal/rc2
@@ -335,7 +336,8 @@ golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 # golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6
 golang.org/x/time/rate
-# golang.org/x/tools v0.1.4
+# golang.org/x/tools v0.1.5
+## explicit
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/gcimporter
@@ -692,7 +694,7 @@ k8s.io/klog/v2
 # k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d
 ## explicit
 k8s.io/kube-openapi/pkg/util/proto
-# k8s.io/utils v0.0.0-20210629042839-4a2b36d8d73f
+# k8s.io/utils v0.0.0-20210709001253-0e1f9d693477
 ## explicit
 k8s.io/utils/buffer
 k8s.io/utils/integer

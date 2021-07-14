@@ -5,7 +5,7 @@ go 1.16
 replace github.com/go-logr/logr v1.0.0 => github.com/go-logr/logr v0.4.0
 
 require (
-	cloud.google.com/go v0.86.0 // indirect
+	cloud.google.com/go v0.87.0 // indirect
 	code.cloudfoundry.org/bbs v0.0.0-20210615140220-2942e7d25726 // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/lager v2.0.0+incompatible
@@ -27,6 +27,7 @@ require (
 	github.com/gofrs/flock v0.8.1
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
@@ -37,16 +38,17 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
 	github.com/onsi/ginkgo v1.16.4
-	github.com/onsi/gomega v1.13.0
+	github.com/onsi/gomega v1.14.0
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prometheus/common v0.29.0 // indirect
 	github.com/prometheus/procfs v0.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
+	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect
+	golang.org/x/tools v0.1.5 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.21.2
@@ -54,7 +56,7 @@ require (
 	k8s.io/client-go v0.21.2
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d // indirect
-	k8s.io/utils v0.0.0-20210629042839-4a2b36d8d73f // indirect
+	k8s.io/utils v0.0.0-20210709001253-0e1f9d693477 // indirect
 	sigs.k8s.io/controller-runtime v0.9.2
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 )
