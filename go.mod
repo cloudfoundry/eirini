@@ -45,18 +45,18 @@ require (
 	github.com/prometheus/common v0.29.0 // indirect
 	github.com/prometheus/procfs v0.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
+	golang.org/x/net v0.0.0-20210716203947-853a461950ff // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect
 	golang.org/x/tools v0.1.5 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.21.2
-	k8s.io/apimachinery v0.21.2
-	k8s.io/client-go v0.21.2
-	k8s.io/klog/v2 v2.9.0
+	k8s.io/api v0.21.3
+	k8s.io/apiextensions-apiserver v0.21.3 // indirect
+	k8s.io/apimachinery v0.21.3
+	k8s.io/client-go v0.21.3
+	k8s.io/klog/v2 v2.10.0
 	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d // indirect
 	k8s.io/utils v0.0.0-20210709001253-0e1f9d693477 // indirect
 	sigs.k8s.io/controller-runtime v0.9.2
-	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 )
