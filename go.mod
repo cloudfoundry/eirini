@@ -5,15 +5,15 @@ go 1.16
 replace github.com/go-logr/logr v1.0.0 => github.com/go-logr/logr v0.4.0
 
 require (
-	cloud.google.com/go v0.87.0 // indirect
-	code.cloudfoundry.org/bbs v0.0.0-20210615140220-2942e7d25726 // indirect
+	cloud.google.com/go v0.88.0 // indirect
+	code.cloudfoundry.org/bbs v0.0.0-20210727125654-2ad50317f7ed // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c
 	code.cloudfoundry.org/tlsconfig v0.0.0-20210615191307-5d92ef3894a7
 	github.com/Azure/go-autorest/autorest v0.11.19 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.14 // indirect
-	github.com/cloudfoundry/tps v0.0.0-20210616213320-c94668a51b6a
+	github.com/cloudfoundry/tps v0.0.0-20210722181435-236f39adc602
 	github.com/containers/image v3.0.2+incompatible
 	github.com/containers/storage v1.32.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible
@@ -42,13 +42,13 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
-	github.com/prometheus/common v0.29.0 // indirect
-	github.com/prometheus/procfs v0.7.0 // indirect
+	github.com/prometheus/common v0.30.0 // indirect
+	github.com/prometheus/procfs v0.7.1 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
-	golang.org/x/net v0.0.0-20210716203947-853a461950ff // indirect
+	golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985 // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect
-	golang.org/x/tools v0.1.5 // indirect
+	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.21.3
@@ -57,6 +57,6 @@ require (
 	k8s.io/client-go v0.21.3
 	k8s.io/klog/v2 v2.10.0
 	k8s.io/kube-openapi v0.0.0-20210527164424-3c818078ee3d // indirect
-	k8s.io/utils v0.0.0-20210709001253-0e1f9d693477 // indirect
-	sigs.k8s.io/controller-runtime v0.9.2
+	k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471 // indirect
+	sigs.k8s.io/controller-runtime v0.9.3
 )
