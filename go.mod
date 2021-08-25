@@ -2,7 +2,7 @@ module code.cloudfoundry.org/eirini
 
 go 1.17
 
-replace github.com/go-logr/logr v1.0.0 => github.com/go-logr/logr v0.4.0
+replace github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
 
 require (
 	cloud.google.com/go v0.93.3 // indirect
