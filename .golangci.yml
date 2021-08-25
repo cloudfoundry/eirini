@@ -29,6 +29,11 @@ linters:
       *some* might be incorrect. Unfortunately we do need to perform some of
       those multiplications.
 
+  - name: errname
+    desc: |
+      error types should be [xX]xxError. error vars should be errXxx.
+      nah.
+
   - name: exhaustivestruct
     desc: |
       exhaustivestruct is meant for special checking only. It verifies that all
