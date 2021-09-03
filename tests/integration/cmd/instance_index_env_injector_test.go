@@ -51,7 +51,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 			_, err := net.Dial("tcp", fmt.Sprintf(":%d", config.Port))
 
 			return err
-		}).Should(Succeed())
+		}, "10s").Should(Succeed())
 
 		Consistently(session).ShouldNot(gexec.Exit())
 	})
