@@ -2,11 +2,14 @@ module code.cloudfoundry.org/eirini
 
 go 1.17
 
-replace github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
+replace (
+	github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
+	k8s.io/klog/v2 => k8s.io/klog/v2 v2.10.0
+)
 
 require (
-	cloud.google.com/go v0.94.0 // indirect
-	code.cloudfoundry.org/bbs v0.0.0-20210727125654-2ad50317f7ed // indirect
+	cloud.google.com/go v0.94.1 // indirect
+	code.cloudfoundry.org/bbs v0.0.0-20210901222458-044174eef746 // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	code.cloudfoundry.org/runtimeschema v0.0.0-20210817192503-36a2cb16a206
@@ -55,7 +58,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.22.1 // indirect
 	k8s.io/apimachinery v0.22.1
 	k8s.io/client-go v0.22.1
-	k8s.io/klog/v2 v2.10.0
+	k8s.io/klog/v2 v2.20.0
 	k8s.io/kube-openapi v0.0.0-20210817084001-7fbd8d59e5b8 // indirect
 	k8s.io/utils v0.0.0-20210820185131-d34e5cb4466e // indirect
 	sigs.k8s.io/controller-runtime v0.10.0
