@@ -9,7 +9,7 @@ replace (
 
 require (
 	cloud.google.com/go v0.97.0 // indirect
-	code.cloudfoundry.org/bbs v0.0.0-20210930161309-ead33eef4af3 // indirect
+	code.cloudfoundry.org/bbs v0.0.0-20211011164901-97e4a3a95ca8 // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	code.cloudfoundry.org/runtimeschema v0.0.0-20210817192503-36a2cb16a206
@@ -39,7 +39,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
-	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.9.1
@@ -47,9 +47,9 @@ require (
 	github.com/prometheus/common v0.31.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/net v0.0.0-20211005215030-d2e5035098b3 // indirect
+	golang.org/x/net v0.0.0-20211011170408-caeb26a5c8c0 // indirect
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1 // indirect
-	golang.org/x/sys v0.0.0-20211004093028-2c5d950f24ef // indirect
+	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0
