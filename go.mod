@@ -47,9 +47,9 @@ require (
 	github.com/prometheus/common v0.31.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/net v0.0.0-20211011170408-caeb26a5c8c0 // indirect
+	golang.org/x/net v0.0.0-20211019232329-c6ed85c7a12d // indirect
 	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1 // indirect
-	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
+	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0
@@ -59,7 +59,7 @@ require (
 	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.22.2
 	k8s.io/klog/v2 v2.20.0
-	k8s.io/kube-openapi v0.0.0-20210929172449-94abcedd1aa4 // indirect
+	k8s.io/kube-openapi v0.0.0-20211014175136-b3fe75cc9b2f // indirect
 	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b // indirect
 	sigs.k8s.io/controller-runtime v0.10.2
 )
@@ -70,7 +70,7 @@ require (
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
-	github.com/Microsoft/go-winio v0.5.0 // indirect
+	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

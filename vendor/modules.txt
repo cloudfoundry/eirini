@@ -47,7 +47,7 @@ github.com/Azure/go-autorest/tracing
 ## explicit; go 1.16
 github.com/BurntSushi/toml
 github.com/BurntSushi/toml/internal
-# github.com/Microsoft/go-winio v0.5.0
+# github.com/Microsoft/go-winio v0.5.1
 ## explicit; go 1.12
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
@@ -309,7 +309,7 @@ golang.org/x/crypto/pkcs12/internal/rc2
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20211011170408-caeb26a5c8c0
+# golang.org/x/net v0.0.0-20211019232329-c6ed85c7a12d
 ## explicit; go 1.17
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -331,7 +331,7 @@ golang.org/x/oauth2/google/internal/externalaccount
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac
+# golang.org/x/sys v0.0.0-20211019181941-9d821ace8654
 ## explicit; go 1.17
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
@@ -731,7 +731,7 @@ k8s.io/component-base/config/v1alpha1
 # k8s.io/klog/v2 v2.20.0 => k8s.io/klog/v2 v2.10.0
 ## explicit; go 1.13
 k8s.io/klog/v2
-# k8s.io/kube-openapi v0.0.0-20210929172449-94abcedd1aa4
+# k8s.io/kube-openapi v0.0.0-20211014175136-b3fe75cc9b2f
 ## explicit; go 1.12
 k8s.io/kube-openapi/pkg/util/proto
 # k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
