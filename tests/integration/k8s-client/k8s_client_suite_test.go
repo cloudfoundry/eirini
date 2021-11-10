@@ -2,11 +2,9 @@ package integration_test
 
 import (
 	"context"
-	"strconv"
 	"testing"
 	"time"
 
-	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/tests"
@@ -213,23 +211,6 @@ func createEvent(ns, name string, involvedObject corev1.ObjectReference) *corev1
 			Namespace: ns,
 		},
 		InvolvedObject: involvedObject,
-	}, metav1.CreateOptions{})
-	Expect(err).NotTo(HaveOccurred())
-
-	return event
-}
-
-func createCrashEvent(ns, name string, involvedObject corev1.ObjectReference, crash events.CrashEvent) *corev1.Event {
-	event, err := fixture.Clientset.CoreV1().Events(ns).Create(context.Background(), &corev1.Event{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
-			Labels: map[string]string{
-				"cloudfoundry.org/instance_index": strconv.Itoa(crash.Index),
-			},
-		},
-		InvolvedObject: involvedObject,
-		Reason:         crash.Reason,
 	}, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 

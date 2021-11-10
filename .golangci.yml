@@ -112,9 +112,23 @@ linters:
     desc: |
       deprecated as of 1.41.0, replaced by revive
 
+  - name: tenv
+    desc: |
+      this linter would only make sense if we were using gotest
+
+  - name: varnamelen
+    desc: |
+      the linter is too agressive
+
+  - name: ireturn
+    desc: |
+      lots of k8s libraries return interfaces so wrapping them is annoyingly reported by this linter
+
   enable:
     - asciicheck
+    - bidichk
     - bodyclose
+    - contextcheck
     - cyclop
     - deadcode
     - depguard
@@ -152,6 +166,7 @@ linters:
     - nakedret
     - nestif
     - nilerr
+    - nilnil
     - nlreturn
     - nolintlint
     - prealloc
@@ -197,6 +212,9 @@ issues:
       - golint
       - stylecheck
       - revive
+    - path: util/lager_logr.go
+      linters:
+      - ireturn
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 

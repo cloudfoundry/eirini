@@ -1,10 +1,8 @@
 package integration_test
 
 import (
-	"code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/tests"
-	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -51,53 +49,6 @@ var _ = Describe("Events", func() {
 
 				return eventNames(events)
 			}).Should(ConsistOf("the-event"))
-		})
-	})
-
-	Describe("GetByInstanceAndReason", func() {
-		var ownerRef corev1.ObjectReference
-
-		BeforeEach(func() {
-			ownerRef = corev1.ObjectReference{
-				Name:      "the-owner",
-				Namespace: fixture.Namespace,
-				UID:       types.UID(tests.GenerateGUID()),
-				Kind:      "the-kind",
-			}
-
-			createCrashEvent(fixture.Namespace, "the-crash-event", ownerRef, events.CrashEvent{
-				AppCrashedRequest: cc_messages.AppCrashedRequest{
-					Index:  42,
-					Reason: "the-reason",
-				},
-			})
-
-			createCrashEvent(fixture.Namespace, "another-crash-event", ownerRef, events.CrashEvent{
-				AppCrashedRequest: cc_messages.AppCrashedRequest{
-					Index:  43,
-					Reason: "the-reason",
-				},
-			})
-
-			createCrashEvent(fixture.Namespace, "yet-another-crash-event", ownerRef, events.CrashEvent{
-				AppCrashedRequest: cc_messages.AppCrashedRequest{
-					Index:  42,
-					Reason: "another-reason",
-				},
-			})
-		})
-
-		It("lists the events beloging to an LRP instance with a specific reason", func() {
-			Eventually(func() string {
-				event, err := eventClient.GetByInstanceAndReason(ctx, fixture.Namespace, metav1.OwnerReference{
-					Name: ownerRef.Name,
-					UID:  ownerRef.UID,
-					Kind: ownerRef.Kind,
-				}, 42, "the-reason")
-				Expect(err).NotTo(HaveOccurred())
-
-				return event.Name
-			}).Should(Equal("the-crash-event"))
 		})
 	})
 

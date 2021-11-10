@@ -127,7 +127,7 @@ func (d *Desirer) setSecretOwner(ctx context.Context, privateRegistrySecret *cor
 
 func (d *Desirer) createRegistryCredsSecretIfRequired(ctx context.Context, namespace string, lrp *api.LRP) (*corev1.Secret, error) {
 	if lrp.PrivateRegistry == nil {
-		return nil, nil
+		return nil, nil // nolint:nilnil
 	}
 
 	secret, err := generateRegistryCredsSecret(lrp)

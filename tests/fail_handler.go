@@ -56,14 +56,9 @@ func printPodsLogs(clientset kubernetes.Interface, eiriniPodsNames []string) {
 }
 
 func getRelatedEiriniPodsNames(testText string) []string {
-	regEx, err := regexp.Compile(describeLogsRegEx)
-	if err != nil {
-		fmt.Fprintf(GinkgoWriter, "Failed to compile Desribe regular expression %q: %v", describeLogsRegEx, err)
-
-		return []string{}
-	}
-
+	regEx := regexp.MustCompile(describeLogsRegEx)
 	match := regEx.FindStringSubmatch(testText)
+
 	if len(match) < 2 {
 		// no Eirini logs have been requested by the test
 		return []string{}
