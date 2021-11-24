@@ -17,7 +17,7 @@ code.cloudfoundry.org/lager/lagertest
 # code.cloudfoundry.org/runtimeschema v0.0.0-20210817192503-36a2cb16a206
 ## explicit
 code.cloudfoundry.org/runtimeschema/cc_messages
-# code.cloudfoundry.org/tlsconfig v0.0.0-20210615191307-5d92ef3894a7
+# code.cloudfoundry.org/tlsconfig v0.0.0-20211123175040-23cc9f05b6b3
 ## explicit; go 1.16
 code.cloudfoundry.org/tlsconfig
 code.cloudfoundry.org/tlsconfig/certtest
@@ -93,7 +93,7 @@ github.com/docker/distribution/registry/client/auth/challenge
 github.com/docker/distribution/registry/client/transport
 github.com/docker/distribution/registry/storage/cache
 github.com/docker/distribution/registry/storage/cache/memory
-# github.com/docker/docker v20.10.10+incompatible
+# github.com/docker/docker v20.10.11+incompatible
 ## explicit
 github.com/docker/docker/api/types/versions
 github.com/docker/docker/pkg/homedir
@@ -263,7 +263,7 @@ github.com/onsi/gomega/types
 # github.com/opencontainers/go-digest v1.0.0
 ## explicit; go 1.13
 github.com/opencontainers/go-digest
-# github.com/opencontainers/image-spec v1.0.1
+# github.com/opencontainers/image-spec v1.0.2
 ## explicit
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
@@ -300,7 +300,7 @@ github.com/spf13/pflag
 # github.com/square/certstrap v1.2.0
 ## explicit
 github.com/square/certstrap/pkix
-# golang.org/x/crypto v0.0.0-20211115234514-b4de73f9ece8
+# golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
 ## explicit; go 1.17
 golang.org/x/crypto/pkcs12
 golang.org/x/crypto/pkcs12/internal/rc2
@@ -309,7 +309,7 @@ golang.org/x/crypto/pkcs12/internal/rc2
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20211116231205-47ca1ff31462
+# golang.org/x/net v0.0.0-20211123203042-d83791d6bcd9
 ## explicit; go 1.17
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -331,7 +331,7 @@ golang.org/x/oauth2/google/internal/externalaccount
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20211116061358-0a5406a5449c
+# golang.org/x/sys v0.0.0-20211123173158-ef496fb156ab
 ## explicit; go 1.17
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
@@ -449,7 +449,7 @@ gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 ## explicit
 gopkg.in/yaml.v3
-# k8s.io/api v0.22.3
+# k8s.io/api v0.22.4
 ## explicit; go 1.16
 k8s.io/api/admission/v1
 k8s.io/api/admission/v1beta1
@@ -496,11 +496,11 @@ k8s.io/api/scheduling/v1beta1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.22.3
+# k8s.io/apiextensions-apiserver v0.22.4
 ## explicit; go 1.16
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
-# k8s.io/apimachinery v0.22.3
+# k8s.io/apimachinery v0.22.4
 ## explicit; go 1.16
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
@@ -548,7 +548,7 @@ k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/client-go v0.22.3
+# k8s.io/client-go v0.22.4
 ## explicit; go 1.16
 k8s.io/client-go/applyconfigurations/admissionregistration/v1
 k8s.io/client-go/applyconfigurations/admissionregistration/v1beta1
@@ -724,7 +724,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/component-base v0.22.3
+# k8s.io/component-base v0.22.4
 ## explicit; go 1.16
 k8s.io/component-base/config
 k8s.io/component-base/config/v1alpha1
