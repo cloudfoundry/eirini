@@ -14,7 +14,7 @@ import (
 	"code.cloudfoundry.org/eirini/util"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/tlsconfig"
-	"github.com/cloudfoundry/tps/cc_client"
+	"code.cloudfoundry.org/tps/cc_client"
 	"github.com/jessevdk/go-flags"
 	corev1 "k8s.io/api/core/v1"
 	kscheme "k8s.io/client-go/kubernetes/scheme"

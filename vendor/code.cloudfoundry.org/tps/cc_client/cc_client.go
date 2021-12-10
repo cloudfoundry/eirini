@@ -18,13 +18,15 @@ import (
 )
 
 const (
-	appCrashedPath           = "/internal/v4/apps/%s/crashed"
-	appCrashedRequestTimeout = 5 * time.Second
+	appCrashedPath      = "/internal/v4/apps/%s/crashed"
+	appReschedulingPath = "/internal/v4/apps/%s/rescheduling"
+	ccRequestTimeout    = 5 * time.Second
 )
 
 //go:generate counterfeiter -o fakes/fake_cc_client.go . CcClient
 type CcClient interface {
 	AppCrashed(guid string, appCrashed cc_messages.AppCrashedRequest, logger lager.Logger) error
+	AppRescheduling(guid string, appRescheduling cc_messages.AppReschedulingRequest, logger lager.Logger) error
 }
 
 type ccClient struct {
@@ -74,7 +76,7 @@ func NewTLSConfig(certFile string, keyFile string, caCertFile string) (*tls.Conf
 
 func NewCcClient(baseURI string, tlsConfig *tls.Config) CcClient {
 	httpClient := &http.Client{
-		Timeout: appCrashedRequestTimeout,
+		Timeout: ccRequestTimeout,
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			Dial: (&net.Dialer{
@@ -87,7 +89,7 @@ func NewCcClient(baseURI string, tlsConfig *tls.Config) CcClient {
 	}
 
 	return &ccClient{
-		ccURI:      urljoiner.Join(baseURI, appCrashedPath),
+		ccURI:      baseURI,
 		httpClient: httpClient,
 	}
 }
@@ -101,7 +103,8 @@ func (cc *ccClient) AppCrashed(guid string, appCrashed cc_messages.AppCrashedReq
 		return err
 	}
 
-	request, err := http.NewRequest("POST", fmt.Sprintf(cc.ccURI, guid), bytes.NewReader(payload))
+	url := fmt.Sprintf(urljoiner.Join(cc.ccURI, appCrashedPath), guid)
+	request, err := http.NewRequest("POST", url, bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
@@ -121,5 +124,38 @@ func (cc *ccClient) AppCrashed(guid string, appCrashed cc_messages.AppCrashedReq
 	}
 
 	logger.Debug("delivered-app-crashed-response")
+	return nil
+}
+
+func (cc *ccClient) AppRescheduling(guid string, appRescheduling cc_messages.AppReschedulingRequest, logger lager.Logger) error {
+	logger = logger.Session("cc-client")
+	logger.Debug("delivering-app-rescheduling-response", lager.Data{"app_rescheduling": appRescheduling})
+
+	payload, err := json.Marshal(appRescheduling)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf(urljoiner.Join(cc.ccURI, appReschedulingPath), guid)
+	request, err := http.NewRequest("POST", url, bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+
+	request.Header.Set("content-type", "application/json")
+
+	response, err := cc.httpClient.Do(request)
+	if err != nil {
+		logger.Error("deliver-app-rescheduling-response-failed", err)
+		return err
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return &BadResponseError{response.StatusCode}
+	}
+
+	logger.Debug("delivered-app-rescheduling-response")
 	return nil
 }

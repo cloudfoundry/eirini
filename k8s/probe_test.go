@@ -38,7 +38,7 @@ var _ = Describe("PrrobeCreator", func() {
 
 			It("creates a probe with HTTPGet action", func() {
 				Expect(probe).To(Equal(&v1.Probe{
-					Handler: v1.Handler{
+					ProbeHandler: v1.ProbeHandler{
 						HTTPGet: &v1.HTTPGetAction{
 							Path: "/healthz",
 							Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
@@ -57,7 +57,7 @@ var _ = Describe("PrrobeCreator", func() {
 
 			It("creates a probe with TCPSocket action", func() {
 				Expect(probe).To(Equal(&v1.Probe{
-					Handler: v1.Handler{
+					ProbeHandler: v1.ProbeHandler{
 						TCPSocket: &v1.TCPSocketAction{
 							Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
 						},
@@ -102,7 +102,7 @@ var _ = Describe("PrrobeCreator", func() {
 
 			It("should create a probe with a HTTP GET action", func() {
 				Expect(probe).To(Equal(&v1.Probe{
-					Handler: v1.Handler{
+					ProbeHandler: v1.ProbeHandler{
 						HTTPGet: &v1.HTTPGetAction{
 							Path: "/healthz",
 							Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
@@ -121,7 +121,7 @@ var _ = Describe("PrrobeCreator", func() {
 
 			It("should create a probe with a TCPSocket action", func() {
 				Expect(probe).To(Equal(&v1.Probe{
-					Handler: v1.Handler{
+					ProbeHandler: v1.ProbeHandler{
 						TCPSocket: &v1.TCPSocketAction{
 							Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
 						},

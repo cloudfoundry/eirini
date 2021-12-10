@@ -4,20 +4,21 @@ go 1.17
 
 replace (
 	github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
+	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.5
 	k8s.io/klog/v2 => k8s.io/klog/v2 v2.10.0
 )
 
 require (
-	cloud.google.com/go v0.97.0 // indirect
+	cloud.google.com/go v0.99.0 // indirect
 	code.cloudfoundry.org/bbs v0.0.0-20211111162920-83003cff4ff1 // indirect
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	code.cloudfoundry.org/runtimeschema v0.0.0-20210817192503-36a2cb16a206
 	code.cloudfoundry.org/tlsconfig v0.0.0-20211123175040-23cc9f05b6b3
-	github.com/Azure/go-autorest/autorest v0.11.22 // indirect
+	code.cloudfoundry.org/tps v0.0.0-20210909223736-1b7791ea46f7
+	github.com/Azure/go-autorest/autorest v0.11.23 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.17 // indirect
 	github.com/BurntSushi/toml v0.4.1 // indirect
-	github.com/cloudfoundry/tps v0.0.0-20210818195015-ff89d9b70916
 	github.com/containers/image v3.0.2+incompatible
 	github.com/containers/storage v1.32.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible
@@ -54,13 +55,13 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.22.4
-	k8s.io/apiextensions-apiserver v0.22.4 // indirect
-	k8s.io/apimachinery v0.22.4
-	k8s.io/client-go v0.22.4
+	k8s.io/api v0.23.0
+	k8s.io/apiextensions-apiserver v0.23.0 // indirect
+	k8s.io/apimachinery v0.23.0
+	k8s.io/client-go v0.23.0
 	k8s.io/klog/v2 v2.30.0
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
-	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect
+	k8s.io/utils v0.0.0-20211208161948-7d6a63dca704 // indirect
 	sigs.k8s.io/controller-runtime v0.10.3
 )
 
@@ -79,11 +80,11 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt/v4 v4.1.0 // indirect
+	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/googleapis/gnostic v0.5.5 // indirect
+	github.com/googleapis/gnostic v0.5.7 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
@@ -105,7 +106,8 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	k8s.io/component-base v0.22.4 // indirect
+	k8s.io/component-base v0.23.0 // indirect
+	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
