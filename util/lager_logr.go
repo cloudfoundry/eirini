@@ -11,16 +11,16 @@ type LagerLogr struct {
 }
 
 func NewLagerLogr(logger lager.Logger) logr.Logger {
-	return LagerLogr{
-		logger: logger,
-	}
+	return logr.New(LagerLogr{logger: logger})
 }
 
-func (l LagerLogr) Enabled() bool {
+func (l LagerLogr) Init(info logr.RuntimeInfo) {}
+
+func (l LagerLogr) Enabled(level int) bool {
 	return true
 }
 
-func (l LagerLogr) Info(msg string, kvs ...interface{}) {
+func (l LagerLogr) Info(level int, msg string, kvs ...interface{}) {
 	l.logger.Info(msg, toLagerData(kvs))
 }
 
@@ -28,17 +28,13 @@ func (l LagerLogr) Error(err error, msg string, kvs ...interface{}) {
 	l.logger.Error(msg, err, toLagerData(kvs))
 }
 
-func (l LagerLogr) V(_ int) logr.Logger {
-	return l
-}
-
-func (l LagerLogr) WithValues(kvs ...interface{}) logr.Logger {
+func (l LagerLogr) WithValues(kvs ...interface{}) logr.LogSink {
 	l.logger = l.logger.WithData(toLagerData(kvs))
 
 	return l
 }
 
-func (l LagerLogr) WithName(name string) logr.Logger {
+func (l LagerLogr) WithName(name string) logr.LogSink {
 	l.logger = l.logger.Session(name)
 
 	return l

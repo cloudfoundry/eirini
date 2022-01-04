@@ -57,12 +57,6 @@ var _ = Describe("LagerLogr", func() {
 		})
 	})
 
-	Describe("V", func() {
-		It("returns the same logger", func() {
-			Expect(lagerLogr.V(42)).To(BeIdenticalTo(lagerLogr))
-		})
-	})
-
 	Describe("WithValues", func() {
 		It("adds data to the lager logger", func() {
 			lagerLogr.WithValues("additional-key", "additional-value")

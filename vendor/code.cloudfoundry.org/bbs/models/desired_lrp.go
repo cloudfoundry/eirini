@@ -1,6 +1,7 @@
 package models
 
 import (
+	bytes "bytes"
 	"encoding/json"
 	"net/url"
 	"regexp"
@@ -387,6 +388,28 @@ func (desired *DesiredLRPUpdate) SetAnnotation(annotation string) {
 func (desired DesiredLRPUpdate) AnnotationExists() bool {
 	_, ok := desired.GetOptionalAnnotation().(*DesiredLRPUpdate_Annotation)
 	return ok
+}
+
+func (desired DesiredLRPUpdate) IsRoutesGroupUpdated(routes *Routes, routerGroup string) bool {
+	if desired.Routes == nil {
+		return false
+	}
+
+	if routes == nil {
+		return true
+	}
+
+	desiredRoutes, desiredRoutesPresent := (*desired.Routes)[routerGroup]
+	requestRoutes, requestRoutesPresent := (*routes)[routerGroup]
+	if desiredRoutesPresent != requestRoutesPresent {
+		return true
+	}
+
+	if desiredRoutesPresent && requestRoutesPresent {
+		return !bytes.Equal(*desiredRoutes, *requestRoutes)
+	}
+
+	return true
 }
 
 type internalDesiredLRPUpdate struct {
