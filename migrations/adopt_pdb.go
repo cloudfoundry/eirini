@@ -6,15 +6,15 @@ import (
 
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 //counterfeiter:generate . PDBClient
 
 type PDBClient interface {
-	Get(ctx context.Context, namespace, name string) (*v1beta1.PodDisruptionBudget, error)
-	SetOwner(ctx context.Context, pdb *v1beta1.PodDisruptionBudget, owner *appsv1.StatefulSet) (*v1beta1.PodDisruptionBudget, error)
+	Get(ctx context.Context, namespace, name string) (*policyv1.PodDisruptionBudget, error)
+	SetOwner(ctx context.Context, pdb *policyv1.PodDisruptionBudget, owner *appsv1.StatefulSet) (*policyv1.PodDisruptionBudget, error)
 }
 
 type AdoptPDB struct {

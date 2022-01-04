@@ -13,7 +13,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
@@ -118,17 +118,17 @@ func getPod(ns, name string) *corev1.Pod {
 	return pod
 }
 
-func listPDBs(ns string) []policyv1beta1.PodDisruptionBudget {
-	pdbs, err := fixture.Clientset.PolicyV1beta1().PodDisruptionBudgets(ns).List(context.Background(), metav1.ListOptions{})
+func listPDBs(ns string) []policyv1.PodDisruptionBudget {
+	pdbs, err := fixture.Clientset.PolicyV1().PodDisruptionBudgets(ns).List(context.Background(), metav1.ListOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	return pdbs.Items
 }
 
-func createPDB(ns, name string) *policyv1beta1.PodDisruptionBudget {
-	pdb, err := fixture.Clientset.PolicyV1beta1().PodDisruptionBudgets(ns).Create(
+func createPDB(ns, name string) *policyv1.PodDisruptionBudget {
+	pdb, err := fixture.Clientset.PolicyV1().PodDisruptionBudgets(ns).Create(
 		context.Background(),
-		&policyv1beta1.PodDisruptionBudget{
+		&policyv1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},

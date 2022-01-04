@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -56,11 +56,11 @@ var _ = Describe("Adopt PDB Migration", func() {
 		}
 
 		half := intstr.FromString("50%")
-		pdb := &policyv1beta1.PodDisruptionBudget{
+		pdb := &policyv1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "my-stset",
 			},
-			Spec: policyv1beta1.PodDisruptionBudgetSpec{
+			Spec: policyv1.PodDisruptionBudgetSpec{
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
 						stset.LabelGUID:       "stset-guid",
@@ -75,14 +75,14 @@ var _ = Describe("Adopt PDB Migration", func() {
 
 		_, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).Create(context.Background(), stSet, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = fixture.Clientset.PolicyV1beta1().PodDisruptionBudgets(fixture.Namespace).Create(context.Background(), pdb, metav1.CreateOptions{})
+		_, err = fixture.Clientset.PolicyV1().PodDisruptionBudgets(fixture.Namespace).Create(context.Background(), pdb, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("sets the owner reference on the pdb", func() {
 		stSet, err := fixture.Clientset.AppsV1().StatefulSets(fixture.Namespace).Get(context.Background(), "my-stset", metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		pdb, err := fixture.Clientset.PolicyV1beta1().PodDisruptionBudgets(fixture.Namespace).Get(context.Background(), "my-stset", metav1.GetOptions{})
+		pdb, err := fixture.Clientset.PolicyV1().PodDisruptionBudgets(fixture.Namespace).Get(context.Background(), "my-stset", metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(pdb.OwnerReferences).To(HaveLen(1))
 		Expect(pdb.OwnerReferences[0].UID).To(Equal(stSet.UID))
