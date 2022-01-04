@@ -6,23 +6,23 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/eirini/k8s/pdb"
-	v1 "k8s.io/api/policy/v1"
+	"k8s.io/api/policy/v1beta1"
 )
 
 type FakeK8sClient struct {
-	CreateStub        func(context.Context, string, *v1.PodDisruptionBudget) (*v1.PodDisruptionBudget, error)
+	CreateStub        func(context.Context, string, *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
 		arg1 context.Context
 		arg2 string
-		arg3 *v1.PodDisruptionBudget
+		arg3 *v1beta1.PodDisruptionBudget
 	}
 	createReturns struct {
-		result1 *v1.PodDisruptionBudget
+		result1 *v1beta1.PodDisruptionBudget
 		result2 error
 	}
 	createReturnsOnCall map[int]struct {
-		result1 *v1.PodDisruptionBudget
+		result1 *v1beta1.PodDisruptionBudget
 		result2 error
 	}
 	DeleteStub        func(context.Context, string, string) error
@@ -42,13 +42,13 @@ type FakeK8sClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeK8sClient) Create(arg1 context.Context, arg2 string, arg3 *v1.PodDisruptionBudget) (*v1.PodDisruptionBudget, error) {
+func (fake *FakeK8sClient) Create(arg1 context.Context, arg2 string, arg3 *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error) {
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
 		arg1 context.Context
 		arg2 string
-		arg3 *v1.PodDisruptionBudget
+		arg3 *v1beta1.PodDisruptionBudget
 	}{arg1, arg2, arg3})
 	stub := fake.CreateStub
 	fakeReturns := fake.createReturns
@@ -69,41 +69,41 @@ func (fake *FakeK8sClient) CreateCallCount() int {
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakeK8sClient) CreateCalls(stub func(context.Context, string, *v1.PodDisruptionBudget) (*v1.PodDisruptionBudget, error)) {
+func (fake *FakeK8sClient) CreateCalls(stub func(context.Context, string, *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = stub
 }
 
-func (fake *FakeK8sClient) CreateArgsForCall(i int) (context.Context, string, *v1.PodDisruptionBudget) {
+func (fake *FakeK8sClient) CreateArgsForCall(i int) (context.Context, string, *v1beta1.PodDisruptionBudget) {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
 	argsForCall := fake.createArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeK8sClient) CreateReturns(result1 *v1.PodDisruptionBudget, result2 error) {
+func (fake *FakeK8sClient) CreateReturns(result1 *v1beta1.PodDisruptionBudget, result2 error) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = nil
 	fake.createReturns = struct {
-		result1 *v1.PodDisruptionBudget
+		result1 *v1beta1.PodDisruptionBudget
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeK8sClient) CreateReturnsOnCall(i int, result1 *v1.PodDisruptionBudget, result2 error) {
+func (fake *FakeK8sClient) CreateReturnsOnCall(i int, result1 *v1beta1.PodDisruptionBudget, result2 error) {
 	fake.createMutex.Lock()
 	defer fake.createMutex.Unlock()
 	fake.CreateStub = nil
 	if fake.createReturnsOnCall == nil {
 		fake.createReturnsOnCall = make(map[int]struct {
-			result1 *v1.PodDisruptionBudget
+			result1 *v1beta1.PodDisruptionBudget
 			result2 error
 		})
 	}
 	fake.createReturnsOnCall[i] = struct {
-		result1 *v1.PodDisruptionBudget
+		result1 *v1beta1.PodDisruptionBudget
 		result2 error
 	}{result1, result2}
 }

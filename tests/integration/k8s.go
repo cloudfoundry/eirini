@@ -24,7 +24,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	policyv1 "k8s.io/api/policy/v1"
+	policyv1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -181,7 +181,7 @@ func CreateTestServer(certPath, keyPath, caCertPath string) (*ghttp.Server, erro
 }
 
 func GetPDBItems(clientset kubernetes.Interface, namespace, lrpGUID, lrpVersion string) ([]policyv1.PodDisruptionBudget, error) {
-	pdbList, err := clientset.PolicyV1().PodDisruptionBudgets(namespace).List(context.Background(), metav1.ListOptions{
+	pdbList, err := clientset.PolicyV1beta1().PodDisruptionBudgets(namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", stset.LabelGUID, lrpGUID, stset.LabelVersion, lrpVersion),
 	})
 	if err != nil {

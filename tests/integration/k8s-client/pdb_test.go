@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
-	policyv1 "k8s.io/api/policy/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -19,7 +19,7 @@ var _ = Describe("PodDisruptionBudgets", func() {
 	Describe("Get", func() {
 		BeforeEach(func() {
 			createPDB(fixture.Namespace, "foo")
-			Eventually(func() []policyv1.PodDisruptionBudget { return listPDBs(fixture.Namespace) }).ShouldNot(BeEmpty())
+			Eventually(func() []policyv1beta1.PodDisruptionBudget { return listPDBs(fixture.Namespace) }).ShouldNot(BeEmpty())
 		})
 
 		It("can get a PDB by namespace and name", func() {
@@ -32,7 +32,7 @@ var _ = Describe("PodDisruptionBudgets", func() {
 
 	Describe("Create", func() {
 		It("creates a PDB", func() {
-			_, err := pdbClient.Create(ctx, fixture.Namespace, &policyv1.PodDisruptionBudget{
+			_, err := pdbClient.Create(ctx, fixture.Namespace, &policyv1beta1.PodDisruptionBudget{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
@@ -52,18 +52,18 @@ var _ = Describe("PodDisruptionBudgets", func() {
 		})
 
 		It("deletes a PDB", func() {
-			Eventually(func() []policyv1.PodDisruptionBudget { return listPDBs(fixture.Namespace) }).ShouldNot(BeEmpty())
+			Eventually(func() []policyv1beta1.PodDisruptionBudget { return listPDBs(fixture.Namespace) }).ShouldNot(BeEmpty())
 
 			err := pdbClient.Delete(ctx, fixture.Namespace, "foo")
 
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(func() []policyv1.PodDisruptionBudget { return listPDBs(fixture.Namespace) }).Should(BeEmpty())
+			Eventually(func() []policyv1beta1.PodDisruptionBudget { return listPDBs(fixture.Namespace) }).Should(BeEmpty())
 		})
 	})
 
 	Describe("set owner", func() {
 		var (
-			pdb   *policyv1.PodDisruptionBudget
+			pdb   *policyv1beta1.PodDisruptionBudget
 			stSet *appsv1.StatefulSet
 		)
 
@@ -72,7 +72,7 @@ var _ = Describe("PodDisruptionBudgets", func() {
 			stSet.UID = "my-uid"
 			stSet.OwnerReferences = []metav1.OwnerReference{}
 			pdb = createPDB(fixture.Namespace, "foo")
-			Eventually(func() []policyv1.PodDisruptionBudget { return listPDBs(fixture.Namespace) }).ShouldNot(BeEmpty())
+			Eventually(func() []policyv1beta1.PodDisruptionBudget { return listPDBs(fixture.Namespace) }).ShouldNot(BeEmpty())
 		})
 
 		It("updates owner info", func() {

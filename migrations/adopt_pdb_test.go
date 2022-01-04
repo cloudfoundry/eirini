@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	policyv1 "k8s.io/api/policy/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -18,7 +18,7 @@ var _ = Describe("PDB Adoption", func() {
 	var (
 		adoptPDBMigration migrations.AdoptPDB
 		stSet             runtime.Object
-		pdb               *policyv1.PodDisruptionBudget
+		pdb               *policyv1beta1.PodDisruptionBudget
 		pdbClient         *migrationsfakes.FakePDBClient
 		migrateErr        error
 	)
@@ -39,7 +39,7 @@ var _ = Describe("PDB Adoption", func() {
 			},
 		}
 
-		pdb = &policyv1.PodDisruptionBudget{
+		pdb = &policyv1beta1.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "my-stateful-set",
 				Namespace: "my-namespace",

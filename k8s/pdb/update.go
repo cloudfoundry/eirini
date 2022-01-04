@@ -7,7 +7,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	policyv1 "k8s.io/api/policy/v1"
+	"k8s.io/api/policy/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -18,7 +18,7 @@ import (
 //counterfeiter:generate . K8sClient
 
 type K8sClient interface {
-	Create(ctx context.Context, namespace string, podDisruptionBudget *policyv1.PodDisruptionBudget) (*policyv1.PodDisruptionBudget, error)
+	Create(ctx context.Context, namespace string, podDisruptionBudget *v1beta1.PodDisruptionBudget) (*v1beta1.PodDisruptionBudget, error)
 	Delete(ctx context.Context, namespace string, name string) error
 }
 
@@ -45,7 +45,7 @@ func (c *Updater) Update(ctx context.Context, statefulSet *appsv1.StatefulSet, l
 func (c *Updater) createPDB(ctx context.Context, statefulSet *appsv1.StatefulSet, lrp *api.LRP) error {
 	minAvailable := intstr.FromString(PdbMinAvailableInstances)
 
-	pdb := &policyv1.PodDisruptionBudget{
+	pdb := &v1beta1.PodDisruptionBudget{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      statefulSet.Name,
 			Namespace: statefulSet.Namespace,
@@ -54,7 +54,7 @@ func (c *Updater) createPDB(ctx context.Context, statefulSet *appsv1.StatefulSet
 				stset.LabelVersion: lrp.Version,
 			},
 		},
-		Spec: policyv1.PodDisruptionBudgetSpec{
+		Spec: v1beta1.PodDisruptionBudgetSpec{
 			MinAvailable: &minAvailable,
 			Selector:     stset.StatefulSetLabelSelector(lrp),
 		},
