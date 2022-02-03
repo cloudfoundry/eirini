@@ -43,7 +43,7 @@ func (l LagerLogr) WithName(name string) logr.LogSink {
 func toLagerData(kvs []interface{}) lager.Data {
 	data := lager.Data{}
 	for i := 0; i < len(kvs); i += 2 {
-		data[kvs[i].(string)] = kvs[i+1]
+		data[kvs[i].(string)] = kvs[i+1] //nolint:forcetypeassert
 	}
 
 	return data

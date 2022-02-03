@@ -71,11 +71,11 @@ linters:
       in the go.mod files. Since importing kubernetes packages is a nighmare we
       actually need the replace directive.
 
-  - name: interfacer
+  - name: interfacer [deprecated]
     desc: |
       interfacer is deprecated
 
-  - name: maligned
+  - name: maligned [deprecated]
     desc: |
       maligned is deprecated
 
@@ -91,7 +91,7 @@ linters:
       paralleltest seems to think all tests should be parallel. We'll let
       ginkgo decide that.
 
-  - name: scopelint
+  - name: scopelint [deprecated]
     desc: |
       scopelint is deprecated
 
@@ -108,7 +108,7 @@ linters:
     desc: |
       we don't believe in wrapping all errors, especially from our interfaces
 
-  - name: golint
+  - name: golint [deprecated]
     desc: |
       deprecated as of 1.41.0, replaced by revive
 
@@ -128,13 +128,16 @@ linters:
     - asciicheck
     - bidichk
     - bodyclose
+    - containedctx
     - contextcheck
     - cyclop
     - deadcode
+    - decorder
     - depguard
     - dogsled
     - dupl
     - errcheck
+    - errchkjson
     - errorlint
     - exhaustive
     - exportloopref
@@ -157,11 +160,13 @@ linters:
     - gosec
     - gosimple
     - govet
+    - grouper
     - ifshort
     - importas
     - ineffassign
     - lll
     - makezero
+    - maintidx
     - misspell
     - nakedret
     - nestif

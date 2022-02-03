@@ -81,7 +81,7 @@ var _ = Describe("API", func() {
 					return err
 				}, "10s").Should(Succeed())
 
-				httpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{}
+				httpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{} //nolint:forcetypeassert
 				_, err := makeRequest()
 				Expect(err).To(MatchError(ContainSubstring("remote error: tls: bad certificate")))
 			})
@@ -111,7 +111,7 @@ var _ = Describe("API", func() {
 					return err
 				}, "10s").Should(Succeed())
 
-				httpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{clientCert}
+				httpClient.Transport.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{clientCert} //nolint:forcetypeassert
 
 				_, err := makeRequest()
 				Expect(err).To(MatchError(

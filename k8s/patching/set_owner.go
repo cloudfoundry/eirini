@@ -35,7 +35,7 @@ func (p SetOwnerPatch) GetPatchBytes() []byte {
 		},
 	}
 
-	bytes, _ := json.Marshal(m)
+	bytes, _ := json.Marshal(m) //nolint:errchkjson
 
 	return bytes
 }

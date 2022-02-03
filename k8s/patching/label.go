@@ -31,7 +31,7 @@ func (p LabelPatch) GetPatchBytes() []byte {
 		},
 	}
 
-	bytes, _ := json.Marshal(m)
+	bytes, _ := json.Marshal(m) //nolint:errchkjson
 
 	return bytes
 }
