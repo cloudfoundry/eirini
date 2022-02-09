@@ -1,4 +1,4 @@
-# cloud.google.com/go/compute v1.1.0
+# cloud.google.com/go/compute v1.2.0
 ## explicit; go 1.11
 cloud.google.com/go/compute/metadata
 # code.cloudfoundry.org/bbs v0.0.0-20220201190201-8c00ba18ea23
@@ -80,7 +80,7 @@ github.com/containers/image/types
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/docker/distribution v2.7.1+incompatible
+# github.com/docker/distribution v2.8.0+incompatible
 ## explicit
 github.com/docker/distribution
 github.com/docker/distribution/digestset
@@ -297,7 +297,7 @@ github.com/spf13/pflag
 # github.com/square/certstrap v1.2.0
 ## explicit
 github.com/square/certstrap/pkix
-# golang.org/x/crypto v0.0.0-20220131195533-30dcbda58838
+# golang.org/x/crypto v0.0.0-20220208233918-bba287dce954
 ## explicit; go 1.17
 golang.org/x/crypto/pkcs12
 golang.org/x/crypto/pkcs12/internal/rc2
@@ -328,7 +328,7 @@ golang.org/x/oauth2/google/internal/externalaccount
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27
+# golang.org/x/sys v0.0.0-20220207234003-57398862261d
 ## explicit; go 1.17
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
