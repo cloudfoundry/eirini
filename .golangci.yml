@@ -124,6 +124,12 @@ linters:
     desc: |
       lots of k8s libraries return interfaces so wrapping them is annoyingly reported by this linter
 
+  - name: nolintlint
+    desc: |
+      nilerr is disabled while linters catch up with go-1.18, and then nolintlint complains about
+      where we've ignored nilerr. So turn it off for now. Can be re-enabled when nilerr is no
+      longer ignored for go-1.18
+
   enable:
     - asciicheck
     - bidichk
@@ -173,7 +179,6 @@ linters:
     - nilerr
     - nilnil
     - nlreturn
-    - nolintlint
     - prealloc
     - predeclared
     - promlinter
