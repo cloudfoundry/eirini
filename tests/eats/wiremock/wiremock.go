@@ -122,7 +122,7 @@ func (w *Wiremock) postWithResponse(path string, body interface{}) (*http.Respon
 		return nil, err
 	}
 
-	resp, err := retryOnTemporaryError(func() (*http.Response, error) {
+	resp, err := retryOnTimeoutError(func() (*http.Response, error) {
 		return http.Post(fmt.Sprintf("%s/__admin/%s", w.httpAddress, path), "application/json", bytes.NewReader(bodyJSON))
 	}, 5, time.Second)
 	if err != nil {
@@ -141,17 +141,17 @@ func (w *Wiremock) postWithResponse(path string, body interface{}) (*http.Respon
 	return resp, nil
 }
 
-func retryOnTemporaryError(fn func() (*http.Response, error), times int, wait time.Duration) (*http.Response, error) {
+func retryOnTimeoutError(fn func() (*http.Response, error), times int, wait time.Duration) (*http.Response, error) {
 	resp, err := fn()
 	if err == nil || times < 1 {
 		return resp, err
 	}
 
 	var netErr net.Error
-	if errors.As(err, &netErr) && netErr.Temporary() {
+	if errors.As(err, &netErr) && netErr.Timeout() {
 		time.Sleep(wait)
 
-		return retryOnTemporaryError(fn, times-1, wait)
+		return retryOnTimeoutError(fn, times-1, wait)
 	}
 
 	return resp, err
