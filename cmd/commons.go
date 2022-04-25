@@ -11,9 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
-
-	// Kubernetes has a tricky way to add authentication
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // turn on auth for client go
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 )
