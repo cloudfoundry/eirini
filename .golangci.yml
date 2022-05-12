@@ -34,10 +34,14 @@ linters:
       error types should be [xX]xxError. error vars should be errXxx.
       nah.
 
-  - name: exhaustivestruct
+  - name: exhaustivestruct [deprecated]
     desc: |
       exhaustivestruct is meant for special checking only. It verifies that all
       fields are set in struct construction, and so is not useful for us
+
+  - name: exhaustruct
+    desc: |
+      see exhaustivestruct
 
   - name: funlen
     desc: |
@@ -130,6 +134,18 @@ linters:
       where we've ignored nilerr. So turn it off for now. Can be re-enabled when nilerr is no
       longer ignored for go-1.18
 
+  - name: execinquery
+    desc: |
+      we don't use SQL
+
+  - name: nonamedreturns
+    desc: |
+      we use named returns sometimes
+
+  - name: nosprintfhostport
+    desc: |
+      we do not construct urls in the production code
+
   enable:
     - asciicheck
     - bidichk
@@ -211,6 +227,7 @@ issues:
       - gomnd
       - gochecknoglobals
       - gosec
+      - forcetypeassert
     - path: _suite_test\.go
       linters:
       - gochecknoglobals

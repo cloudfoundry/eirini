@@ -8,7 +8,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/lager"
 	prometheus_api "github.com/prometheus/client_golang/prometheus"
-	"k8s.io/apimachinery/pkg/util/clock"
+	"k8s.io/utils/clock"
 )
 
 const (

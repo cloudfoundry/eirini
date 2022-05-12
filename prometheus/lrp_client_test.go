@@ -17,7 +17,7 @@ import (
 	"github.com/onsi/gomega/types"
 	prometheus_api "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
-	"k8s.io/apimachinery/pkg/util/clock"
+	clock "k8s.io/utils/clock/testing"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
