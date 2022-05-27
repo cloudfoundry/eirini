@@ -5,9 +5,9 @@ import (
 	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/k8s/stset/stsetfakes"
+	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pkg/errors"
@@ -28,7 +28,7 @@ var _ = Describe("Stop", func() {
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("test-stop-statefulset")
+		logger = tests.NewTestLogger("test-stop-statefulset")
 		statefulSetGetter = new(stsetfakes.FakeStatefulSetByLRPIdentifierGetter)
 		statefulSetDeleter = new(stsetfakes.FakeStatefulSetDeleter)
 		podDeleter = new(stsetfakes.FakePodDeleter)

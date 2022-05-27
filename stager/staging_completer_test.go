@@ -6,9 +6,9 @@ import (
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/stager"
 	"code.cloudfoundry.org/eirini/stager/stagerfakes"
-	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 )
@@ -34,7 +34,7 @@ var _ = Describe("StagingCompleter", func() {
 		}
 
 		callbackClient = new(stagerfakes.FakeCallbackClient)
-		logger := lagertest.NewTestLogger("test")
+		logger := tests.NewTestLogger("test")
 		stagingCompleter = stager.NewCallbackStagingCompleter(logger, callbackClient)
 	})
 

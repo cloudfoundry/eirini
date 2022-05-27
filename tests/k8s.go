@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1beta1"
@@ -21,9 +21,9 @@ import (
 const DefaultApplicationServiceAccount = "eirini"
 
 func CreateRandomNamespace(clientset kubernetes.Interface) string {
-	namespace := fmt.Sprintf("integration-test-%s-%d", GenerateGUID(), GinkgoParallelNode())
+	namespace := fmt.Sprintf("integration-test-%s-%d", GenerateGUID(), GinkgoParallelProcess())
 	for namespaceExists(namespace, clientset) {
-		namespace = fmt.Sprintf("integration-test-%s-%d", GenerateGUID(), GinkgoParallelNode())
+		namespace = fmt.Sprintf("integration-test-%s-%d", GenerateGUID(), GinkgoParallelProcess())
 	}
 	createNamespace(namespace, clientset)
 

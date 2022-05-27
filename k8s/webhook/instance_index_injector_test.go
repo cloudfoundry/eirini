@@ -7,9 +7,9 @@ import (
 
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/k8s/webhook"
+	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gomodules.xyz/jsonpatch/v2"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -30,7 +30,7 @@ var _ = Describe("InstanceIndexInjector", func() {
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("instance-index-injector")
+		logger = tests.NewTestLogger("instance-index-injector")
 		decoder, err := admission.NewDecoder(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
 

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -75,5 +75,5 @@ func GetTelepresencePort() int {
 	portNo, err := strconv.Atoi(startPort)
 	Expect(err).NotTo(HaveOccurred())
 
-	return portNo + GinkgoParallelNode() - 1
+	return portNo + GinkgoParallelProcess() - 1
 }

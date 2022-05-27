@@ -7,20 +7,20 @@ import (
 	"code.cloudfoundry.org/eirini/api"
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	"code.cloudfoundry.org/eirini/tests"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("API Converter", func() {
 	var (
-		logger    *lagertest.TestLogger
+		logger    *tests.TestLogger
 		err       error
 		converter *bifrost.APIConverter
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("converter-test")
+		logger = tests.NewTestLogger("converter-test")
 	})
 
 	JustBeforeEach(func() {

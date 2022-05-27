@@ -12,7 +12,7 @@ import (
 	"code.cloudfoundry.org/cfhttp/v2"
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests/eats/wiremock"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 	rbacv1 "k8s.io/api/rbac/v1"

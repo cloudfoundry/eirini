@@ -18,9 +18,8 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
-	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
@@ -36,7 +35,7 @@ var _ = Describe("Events", func() {
 
 		capiServer *ghttp.Server
 		certDir    string
-		logger     *lagertest.TestLogger
+		logger     *tests.TestLogger
 		config     *eirini.EventReporterConfig
 		ctx        context.Context
 	)
@@ -44,7 +43,7 @@ var _ = Describe("Events", func() {
 	BeforeEach(func() {
 		var err error
 		ctx = context.Background()
-		logger = lagertest.NewTestLogger("events")
+		logger = tests.NewTestLogger("events")
 
 		certDir, _ = tests.GenerateKeyPairDir("tls", "localhost")
 		capiServer, err = integration.CreateTestServer(
@@ -61,7 +60,7 @@ var _ = Describe("Events", func() {
 			},
 			WorkloadsNamespace:      fixture.Namespace,
 			CcInternalAPI:           capiServer.URL(),
-			LeaderElectionID:        fmt.Sprintf("test-event-reporter-%d", GinkgoParallelNode()),
+			LeaderElectionID:        fmt.Sprintf("test-event-reporter-%d", GinkgoParallelProcess()),
 			LeaderElectionNamespace: fixture.Namespace,
 		}
 
@@ -171,7 +170,7 @@ var _ = Describe("Events", func() {
 						WorkloadsNamespace:      fixture.Namespace,
 						CcInternalAPI:           noTLSCapiServer.URL(),
 						CCTLSDisabled:           true,
-						LeaderElectionID:        fmt.Sprintf("test-event-reporter-%d", GinkgoParallelNode()),
+						LeaderElectionID:        fmt.Sprintf("test-event-reporter-%d", GinkgoParallelProcess()),
 						LeaderElectionNamespace: fixture.Namespace,
 					}
 				})

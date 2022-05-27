@@ -10,9 +10,9 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/k8s/informers/event/eventfakes"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -25,7 +25,7 @@ import (
 
 var _ = Describe("Event", func() {
 	var (
-		logger           *lagertest.TestLogger
+		logger           *tests.TestLogger
 		eventGenerator   *eventfakes.FakeCrashEventGenerator
 		crashEmitter     *eventfakes.FakeCrashEmitter
 		crashReconciler  *event.CrashReconciler
@@ -58,7 +58,7 @@ var _ = Describe("Event", func() {
 
 		controllerClient = new(eventfakes.FakeClient)
 
-		logger = lagertest.NewTestLogger("crash-event-logger-test")
+		logger = tests.NewTestLogger("crash-event-logger-test")
 
 		eventGenerator = new(eventfakes.FakeCrashEventGenerator)
 		eventGenerator.GenerateReturns(crashEvent, true)

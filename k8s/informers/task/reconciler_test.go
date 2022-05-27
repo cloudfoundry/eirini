@@ -9,8 +9,8 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
 	"code.cloudfoundry.org/eirini/k8s/informers/task/taskfakes"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	"code.cloudfoundry.org/eirini/tests"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	batchv1 "k8s.io/api/batch/v1"
@@ -27,7 +27,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 	var (
 		reconcileRes  reconcile.Result
 		reconcileErr  error
-		logger        *lagertest.TestLogger
+		logger        *tests.TestLogger
 		runtimeClient *eventfakes.FakeClient
 		jobsClient    *taskfakes.FakeJobsClient
 		podsClient    *taskfakes.FakePodsClient
@@ -41,7 +41,7 @@ var _ = Describe("Task Completion Reconciler", func() {
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("reconciler-test")
+		logger = tests.NewTestLogger("reconciler-test")
 		runtimeClient = new(eventfakes.FakeClient)
 		jobsClient = new(taskfakes.FakeJobsClient)
 		podsClient = new(taskfakes.FakePodsClient)

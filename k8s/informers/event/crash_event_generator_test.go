@@ -10,9 +10,9 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/client"
 	"code.cloudfoundry.org/eirini/k8s/informers/event"
 	"code.cloudfoundry.org/eirini/k8s/stset"
-	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,13 +26,13 @@ var crashTime = meta.Time{Time: time.Now()}
 var _ = Describe("CrashEventGenerator", func() {
 	var (
 		clientset *fake.Clientset
-		logger    *lagertest.TestLogger
+		logger    *tests.TestLogger
 		pod       *v1.Pod
 		generator event.DefaultCrashEventGenerator
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("crash-event-logger-test")
+		logger = tests.NewTestLogger("crash-event-logger-test")
 		clientset = fake.NewSimpleClientset()
 		eventsClient := client.NewEvent(clientset)
 		generator = event.NewDefaultCrashEventGenerator(eventsClient)

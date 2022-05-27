@@ -11,15 +11,15 @@ import (
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/handler/handlerfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	"code.cloudfoundry.org/eirini/tests"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("StageHandler", func() {
 	var (
 		ts     *httptest.Server
-		logger *lagertest.TestLogger
+		logger *tests.TestLogger
 
 		dockerStagingClient *handlerfakes.FakeStagingBifrost
 		bifrostTaskClient   *handlerfakes.FakeTaskBifrost
@@ -30,7 +30,7 @@ var _ = Describe("StageHandler", func() {
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("test")
+		logger = tests.NewTestLogger("test")
 		dockerStagingClient = new(handlerfakes.FakeStagingBifrost)
 		bifrostTaskClient = new(handlerfakes.FakeTaskBifrost)
 	})
@@ -90,7 +90,6 @@ var _ = Describe("StageHandler", func() {
 		})
 
 		Context("and the lifecycle type is unsupported", func() {
-
 			BeforeEach(func() {
 				body = `{
 				"app_guid": "our-app-id",

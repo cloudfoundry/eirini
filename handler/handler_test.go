@@ -8,8 +8,8 @@ import (
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/handler/handlerfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	"code.cloudfoundry.org/eirini/tests"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -29,7 +29,7 @@ var _ = Describe("Handler", func() {
 		dockerStagingBifrost = new(handlerfakes.FakeStagingBifrost)
 		taskBifrost = new(handlerfakes.FakeTaskBifrost)
 
-		lager := lagertest.NewTestLogger("handler-test")
+		lager := tests.NewTestLogger("handler-test")
 		handlerClient = New(lrpBifrost, dockerStagingBifrost, taskBifrost, lager)
 	})
 

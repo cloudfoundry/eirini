@@ -3,7 +3,7 @@ package migrations_test
 import (
 	"code.cloudfoundry.org/eirini/migrations"
 	"code.cloudfoundry.org/eirini/migrations/migrationsfakes"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

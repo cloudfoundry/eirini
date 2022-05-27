@@ -39,7 +39,8 @@ type StagingBifrost interface {
 func New(lrpBifrost LRPBifrost,
 	dockerStagingBifrost StagingBifrost,
 	taskBifrost TaskBifrost,
-	lager lager.Logger) http.Handler {
+	lager lager.Logger,
+) http.Handler {
 	handler := httprouter.New()
 
 	appHandler := NewAppHandler(lrpBifrost, lager)

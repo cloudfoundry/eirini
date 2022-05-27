@@ -7,8 +7,8 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/informers/task"
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	"code.cloudfoundry.org/eirini/tests"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	corev1 "k8s.io/api/core/v1"
@@ -19,7 +19,7 @@ var _ = Describe("Reporter", func() {
 	var (
 		reporter task.StateReporter
 		server   *ghttp.Server
-		logger   *lagertest.TestLogger
+		logger   *tests.TestLogger
 		pod      *corev1.Pod
 		handlers []http.HandlerFunc
 		err      error
@@ -55,7 +55,7 @@ var _ = Describe("Reporter", func() {
 	}
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("task-reporter-test")
+		logger = tests.NewTestLogger("task-reporter-test")
 
 		server = ghttp.NewServer()
 		handlers = []http.HandlerFunc{

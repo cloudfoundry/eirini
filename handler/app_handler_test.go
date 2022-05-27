@@ -13,9 +13,9 @@ import (
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/handler/handlerfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/eirini/tests"
 	"github.com/julienschmidt/httprouter"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 )
@@ -23,13 +23,13 @@ import (
 var _ = Describe("AppHandler", func() {
 	var (
 		lrpBifrost *handlerfakes.FakeLRPBifrost
-		lager      *lagertest.TestLogger
+		lager      *tests.TestLogger
 		ts         *httptest.Server
 	)
 
 	BeforeEach(func() {
 		lrpBifrost = new(handlerfakes.FakeLRPBifrost)
-		lager = lagertest.NewTestLogger("app-handler-test")
+		lager = tests.NewTestLogger("app-handler-test")
 		ts = httptest.NewServer(New(lrpBifrost, nil, nil, lager))
 	})
 

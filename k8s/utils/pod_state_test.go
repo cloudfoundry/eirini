@@ -3,7 +3,7 @@ package utils_test
 import (
 	"code.cloudfoundry.org/eirini/api"
 	. "code.cloudfoundry.org/eirini/k8s/utils"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 )

@@ -5,9 +5,9 @@ import (
 
 	. "code.cloudfoundry.org/eirini/events"
 	"code.cloudfoundry.org/eirini/events/eventsfakes"
-	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -21,7 +21,7 @@ var _ = Describe("Crashreporter", func() {
 
 	BeforeEach(func() {
 		ccClient = new(eventsfakes.FakeCcClient)
-		crashEmitter = NewCcCrashEmitter(lagertest.NewTestLogger("tester"), ccClient)
+		crashEmitter = NewCcCrashEmitter(tests.NewTestLogger("tester"), ccClient)
 
 		crashEvent = CrashEvent{
 			ProcessGUID: "some-guid",

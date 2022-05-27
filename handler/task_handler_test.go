@@ -10,8 +10,8 @@ import (
 	. "code.cloudfoundry.org/eirini/handler"
 	"code.cloudfoundry.org/eirini/handler/handlerfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	"code.cloudfoundry.org/eirini/tests"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 )
@@ -19,7 +19,7 @@ import (
 var _ = Describe("TaskHandler", func() {
 	var (
 		ts          *httptest.Server
-		logger      *lagertest.TestLogger
+		logger      *tests.TestLogger
 		taskBifrost *handlerfakes.FakeTaskBifrost
 
 		response *http.Response
@@ -29,7 +29,7 @@ var _ = Describe("TaskHandler", func() {
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("test")
+		logger = tests.NewTestLogger("test")
 		taskBifrost = new(handlerfakes.FakeTaskBifrost)
 
 		method = "POST"
@@ -38,7 +38,7 @@ var _ = Describe("TaskHandler", func() {
 	})
 
 	JustBeforeEach(func() {
-		logger = lagertest.NewTestLogger("test")
+		logger = tests.NewTestLogger("test")
 		handler := New(nil, nil, taskBifrost, logger)
 		ts = httptest.NewServer(handler)
 		req, err := http.NewRequest(method, ts.URL+path, bytes.NewReader([]byte(body)))

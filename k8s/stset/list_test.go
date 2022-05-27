@@ -3,9 +3,9 @@ package stset_test
 import (
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/k8s/stset/stsetfakes"
+	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -22,7 +22,7 @@ var _ = Describe("List", func() {
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("test-list-statefulset")
+		logger = tests.NewTestLogger("test-list-statefulset")
 		statefulSetGetter = new(stsetfakes.FakeStatefulSetsBySourceTypeGetter)
 		statefulsetToLRPConverter = new(stsetfakes.FakeStatefulSetToLRPConverter)
 

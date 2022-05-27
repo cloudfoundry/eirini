@@ -11,8 +11,8 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/prometheus"
 	"code.cloudfoundry.org/eirini/prometheus/prometheusfakes"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	"code.cloudfoundry.org/eirini/tests"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	prometheus_api "github.com/prometheus/client_golang/prometheus"
@@ -28,7 +28,7 @@ var _ = Describe("LRP Client Prometheus Decorator", func() {
 		desireOpts []shared.Option
 		lrp        *api.LRP
 		desireErr  error
-		logger     *lagertest.TestLogger
+		logger     *tests.TestLogger
 		registry   metrics.RegistererGatherer
 		fakeClock  *clock.FakePassiveClock
 		t0         time.Time

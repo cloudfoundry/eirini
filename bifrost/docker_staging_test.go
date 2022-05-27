@@ -8,8 +8,8 @@ import (
 	"code.cloudfoundry.org/eirini/bifrost"
 	"code.cloudfoundry.org/eirini/bifrost/bifrostfakes"
 	"code.cloudfoundry.org/eirini/models/cf"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	"code.cloudfoundry.org/eirini/tests"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
@@ -52,7 +52,7 @@ var _ = Describe("DockerStager", func() {
 
 		JustBeforeEach(func() {
 			stager = bifrost.DockerStaging{
-				Logger:               lagertest.NewTestLogger(""),
+				Logger:               tests.NewTestLogger(""),
 				ImageMetadataFetcher: fetcher.Spy,
 				ImageRefParser:       parser.Spy,
 				StagingCompleter:     stagingCompleter,

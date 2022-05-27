@@ -5,8 +5,8 @@ import (
 
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/k8s/jobs/jobsfakes"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	"code.cloudfoundry.org/eirini/tests"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
@@ -35,7 +35,7 @@ var _ = Describe("Delete", func() {
 		jobDeleter = new(jobsfakes.FakeJobDeleter)
 
 		deleter = jobs.NewDeleter(
-			lagertest.NewTestLogger("deletetask"),
+			tests.NewTestLogger("deletetask"),
 			jobGetter,
 			jobDeleter,
 		)

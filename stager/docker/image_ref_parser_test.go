@@ -2,7 +2,7 @@ package docker_test
 
 import (
 	"code.cloudfoundry.org/eirini/stager/docker"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

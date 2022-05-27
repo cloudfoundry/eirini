@@ -7,7 +7,7 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
@@ -26,7 +26,7 @@ var _ = Describe("InstanceIndexEnvInjector", func() {
 			KubeConfig: eirini.KubeConfig{
 				ConfigPath: fixture.KubeConfigPath,
 			},
-			Port: int32(8080 + GinkgoParallelNode()),
+			Port: int32(8080 + GinkgoParallelProcess()),
 		}
 		certDir, _ = tests.GenerateKeyPairDir("tls", "my-domain")
 

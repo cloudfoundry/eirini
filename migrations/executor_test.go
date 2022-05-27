@@ -8,8 +8,8 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/migrations"
 	"code.cloudfoundry.org/eirini/migrations/migrationsfakes"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	"code.cloudfoundry.org/eirini/tests"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -30,7 +30,7 @@ var _ = Describe("Migration Executor", func() {
 		migrationStep8    *migrationsfakes.FakeMigrationStep
 		stSetv5           *appsv1.StatefulSet
 		jobv5             *batchv1.Job
-		logger            *lagertest.TestLogger
+		logger            *tests.TestLogger
 	)
 
 	expectNoMigrationOccurred := func() {
@@ -86,7 +86,7 @@ var _ = Describe("Migration Executor", func() {
 		migrationProvider = new(migrationsfakes.FakeMigrationProvider)
 		migrationProvider.ProvideReturns([]migrations.MigrationStep{migrationStep4, migrationStep5, migrationStep6, migrationStep7, migrationStep8})
 
-		logger = lagertest.NewTestLogger("migration-test")
+		logger = tests.NewTestLogger("migration-test")
 		executor = migrations.NewExecutor(stSetClient, jobClient, migrationProvider)
 	})
 

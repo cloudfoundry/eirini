@@ -9,9 +9,9 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/shared/sharedfakes"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/k8s/stset/stsetfakes"
+	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/apps/v1"
@@ -37,7 +37,7 @@ var _ = Describe("Desirer", func() {
 	)
 
 	BeforeEach(func() {
-		logger = lagertest.NewTestLogger("statefulset-desirer")
+		logger = tests.NewTestLogger("statefulset-desirer")
 		secrets = new(stsetfakes.FakeSecretsClient)
 		statefulSets = new(stsetfakes.FakeStatefulSetCreator)
 		lrpToStatefulSetConverter = new(stsetfakes.FakeLRPToStatefulSetConverter)

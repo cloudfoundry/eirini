@@ -12,7 +12,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/jobs"
 	"code.cloudfoundry.org/eirini/models/cf"
 	"code.cloudfoundry.org/eirini/tests"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	batchv1 "k8s.io/api/batch/v1"
@@ -34,7 +34,7 @@ var _ = Describe("Tasks completion with respect to TTL", func() {
 			WorkloadsNamespace:           fixture.Namespace,
 			CompletionCallbackRetryLimit: 3,
 			TTLSeconds:                   600,
-			LeaderElectionID:             fmt.Sprintf("test-task-reporter-%d", GinkgoParallelNode()),
+			LeaderElectionID:             fmt.Sprintf("test-task-reporter-%d", GinkgoParallelProcess()),
 			LeaderElectionNamespace:      fixture.Namespace,
 		}
 	})

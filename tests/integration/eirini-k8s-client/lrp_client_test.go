@@ -12,9 +12,7 @@ import (
 	"code.cloudfoundry.org/eirini/k8s/shared"
 	"code.cloudfoundry.org/eirini/k8s/stset"
 	"code.cloudfoundry.org/eirini/tests"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	appsv1 "k8s.io/api/apps/v1"
@@ -684,7 +682,7 @@ func createLRP(name string) *api.LRP {
 }
 
 func createLrpClient(workloadsNamespace string, allowRunImageAsRoot bool) *k8s.LRPClient {
-	logger := lagertest.NewTestLogger("test-" + workloadsNamespace)
+	logger := tests.NewTestLogger("test-" + workloadsNamespace)
 
 	lrpToStatefulSetConverter := stset.NewLRPToStatefulSetConverter(
 		tests.GetApplicationServiceAccount(),

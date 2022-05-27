@@ -7,7 +7,7 @@ import (
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/tests"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
@@ -28,7 +28,7 @@ var _ = Describe("TaskReporter", func() {
 				ConfigPath: fixture.KubeConfigPath,
 			},
 			CCTLSDisabled:           false,
-			LeaderElectionID:        fmt.Sprintf("test-task-reporter-%d", GinkgoParallelNode()),
+			LeaderElectionID:        fmt.Sprintf("test-task-reporter-%d", GinkgoParallelProcess()),
 			LeaderElectionNamespace: fixture.Namespace,
 		}
 	})

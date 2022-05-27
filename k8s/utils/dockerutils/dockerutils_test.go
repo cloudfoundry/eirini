@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"code.cloudfoundry.org/eirini/k8s/utils/dockerutils"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

@@ -8,9 +8,9 @@ if [ -z ${EIRINIUSER_PASSWORD+x} ]; then
   EIRINIUSER_PASSWORD="$(pass eirini/docker-hub)"
 fi
 
-nodes=""
+nodes="-p"
 if [[ "${NODES:-}" != "" ]]; then
-  nodes="-nodes $NODES"
+  nodes="--nodes $NODES"
 fi
 
 main() {
@@ -20,7 +20,7 @@ main() {
 
   pushd "$BASEDIR"/tests/integration >/dev/null || exit 1
   {
-    ginkgo -mod=vendor -p $nodes -r -keepGoing -tags=integration -randomizeAllSpecs -randomizeSuites -timeout=20m -slowSpecThreshold=25 "$@"
+    go run github.com/onsi/ginkgo/v2/ginkgo --mod=vendor $nodes -r --keep-going --tags=integration --randomize-all --randomize-suites --timeout=20m --slow-spec-threshold=25s $@
   }
   popd >/dev/null || exit 1
 }

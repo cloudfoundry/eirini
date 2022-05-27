@@ -16,8 +16,7 @@ import (
 	"code.cloudfoundry.org/eirini/tests"
 	"code.cloudfoundry.org/eirini/tests/integration"
 	"code.cloudfoundry.org/eirini/util"
-	"code.cloudfoundry.org/lager/lagertest"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	batchv1 "k8s.io/api/batch/v1"
@@ -55,13 +54,13 @@ var _ = Describe("TaskReporter", func() {
 			WorkloadsNamespace:           fixture.Namespace,
 			CompletionCallbackRetryLimit: 3,
 			TTLSeconds:                   ttlSeconds,
-			LeaderElectionID:             fmt.Sprintf("test-task-reporter-%d", GinkgoParallelNode()),
+			LeaderElectionID:             fmt.Sprintf("test-task-reporter-%d", GinkgoParallelProcess()),
 			LeaderElectionNamespace:      fixture.Namespace,
 		}
 
 		taskToJobConverter := jobs.NewTaskToJobConverter("", "", false, 1234)
 		taskDesirer = jobs.NewDesirer(
-			lagertest.NewTestLogger("test-task-desirer"),
+			tests.NewTestLogger("test-task-desirer"),
 			taskToJobConverter,
 			client.NewJob(fixture.Clientset, fixture.Namespace),
 			client.NewSecret(fixture.Clientset),
