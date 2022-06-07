@@ -19,6 +19,7 @@ type RouteSelectionConditionFunction func(httpRequest *http.Request) bool
 
 // Route binds a HTTP Method,Path,Consumes combination to a RouteFunction.
 type Route struct {
+	ExtensionProperties
 	Method   string
 	Produces []string
 	Consumes []string
@@ -69,7 +70,7 @@ func (r *Route) postBuild() {
 func (r *Route) wrapRequestResponse(httpWriter http.ResponseWriter, httpRequest *http.Request, pathParams map[string]string) (*Request, *Response) {
 	wrappedRequest := NewRequest(httpRequest)
 	wrappedRequest.pathParameters = pathParams
-	wrappedRequest.selectedRoutePath = r.Path
+	wrappedRequest.selectedRoute = r
 	wrappedResponse := NewResponse(httpWriter)
 	wrappedResponse.requestAccept = httpRequest.Header.Get(HEADER_Accept)
 	wrappedResponse.routeProduces = r.Produces
@@ -167,11 +168,11 @@ func tokenizePath(path string) []string {
 }
 
 // for debugging
-func (r Route) String() string {
+func (r *Route) String() string {
 	return r.Method + " " + r.Path
 }
 
 // EnableContentEncoding (default=false) allows for GZIP or DEFLATE encoding of responses. Overrides the container.contentEncodingEnabled value.
-func (r Route) EnableContentEncoding(enabled bool) {
+func (r *Route) EnableContentEncoding(enabled bool) {
 	r.contentEncodingEnabled = &enabled
 }
