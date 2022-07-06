@@ -2,7 +2,10 @@ module code.cloudfoundry.org/eirini
 
 go 1.18
 
-replace github.com/hashicorp/consul => github.com/hashicorp/consul v1.12.0
+replace (
+	github.com/hashicorp/consul => github.com/hashicorp/consul v1.12.0
+	github.com/square/certstrap => github.com/square/certstrap v1.2.0
+)
 
 require (
 	code.cloudfoundry.org/cfhttp/v2 v2.0.1-0.20210513172332-4c5ee488a657
