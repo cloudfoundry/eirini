@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"code.cloudfoundry.org/eirini"
 	"code.cloudfoundry.org/eirini/bifrost"
@@ -22,6 +23,8 @@ import (
 	"github.com/jessevdk/go-flags"
 	"k8s.io/client-go/kubernetes"
 )
+
+const readHaderTimeout = 30 * time.Second
 
 type options struct {
 	ConfigFile string `short:"c" long:"config" description:"Config for running the eirini api"`
@@ -69,9 +72,10 @@ func serveTLS(cfg eirini.APIConfig, handler http.Handler, logger lager.Logger) {
 	cmdcommons.ExitfIfError(err, "Failed to build TLS config")
 
 	server = &http.Server{
-		Addr:      fmt.Sprintf("0.0.0.0:%d", cfg.TLSPort),
-		Handler:   handler,
-		TLSConfig: tlsConfig,
+		Addr:              fmt.Sprintf("0.0.0.0:%d", cfg.TLSPort),
+		Handler:           handler,
+		TLSConfig:         tlsConfig,
+		ReadHeaderTimeout: readHaderTimeout,
 	}
 	logger.Fatal("api-crashed",
 		server.ListenAndServeTLS(crtPath, keyPath))
@@ -79,8 +83,9 @@ func serveTLS(cfg eirini.APIConfig, handler http.Handler, logger lager.Logger) {
 
 func servePlaintext(cfg eirini.APIConfig, handler http.Handler, logger lager.Logger) {
 	server := &http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%d", cfg.PlaintextPort),
-		Handler: handler,
+		Addr:              fmt.Sprintf("0.0.0.0:%d", cfg.PlaintextPort),
+		Handler:           handler,
+		ReadHeaderTimeout: readHaderTimeout,
 	}
 	logger.Fatal("api-crashed", server.ListenAndServe())
 }
