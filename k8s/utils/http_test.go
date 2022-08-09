@@ -33,7 +33,7 @@ var _ = Describe("Utils/Http", func() {
 	Describe("POST", func() {
 		BeforeEach(func() {
 			handler = ghttp.CombineHandlers(
-				ghttp.VerifyRequest("POST", "/this/is/POTATO"),
+				ghttp.VerifyRequest(http.MethodPost, "/this/is/POTATO"),
 				ghttp.VerifyJSON(`{"foo": "bar"}`),
 				ghttp.VerifyHeaderKV("Content-Type", "application/json"),
 			)

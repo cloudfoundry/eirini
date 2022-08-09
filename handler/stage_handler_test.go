@@ -48,7 +48,7 @@ var _ = Describe("StageHandler", func() {
 
 	Context("When an app is submitted for staging", func() {
 		BeforeEach(func() {
-			method = "POST"
+			method = http.MethodPost
 			path = "/stage/guid_1234"
 			body = `{
 				"app_guid": "our-app-id",

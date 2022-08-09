@@ -103,7 +103,7 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			req, err := http.NewRequest("PUT", ts.URL+path, bytes.NewReader([]byte(body)))
+			req, err := http.NewRequest(http.MethodPut, ts.URL+path, bytes.NewReader([]byte(body)))
 			Expect(err).NotTo(HaveOccurred())
 
 			client := &http.Client{}
@@ -289,7 +289,7 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			req, err := http.NewRequest("GET", ts.URL+path, nil)
+			req, err := http.NewRequest(http.MethodGet, ts.URL+path, nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			client := &http.Client{}
@@ -367,7 +367,7 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			req, err := http.NewRequest("GET", ts.URL+path, nil)
+			req, err := http.NewRequest(http.MethodGet, ts.URL+path, nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			client := &http.Client{}
@@ -471,7 +471,7 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			req, err := http.NewRequest("POST", ts.URL+path, bytes.NewReader([]byte(body)))
+			req, err := http.NewRequest(http.MethodPost, ts.URL+path, bytes.NewReader([]byte(body)))
 			Expect(err).NotTo(HaveOccurred())
 
 			client := &http.Client{}
@@ -544,7 +544,7 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			req, err := http.NewRequest("PUT", ts.URL+path, nil)
+			req, err := http.NewRequest(http.MethodPut, ts.URL+path, nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			client := &http.Client{}
@@ -590,7 +590,7 @@ var _ = Describe("AppHandler", func() {
 		})
 
 		JustBeforeEach(func() {
-			req, err := http.NewRequest("PUT", ts.URL+path, nil)
+			req, err := http.NewRequest(http.MethodPut, ts.URL+path, nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			client := &http.Client{}

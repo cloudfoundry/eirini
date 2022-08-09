@@ -26,7 +26,7 @@ var _ = Describe("EventsReporter [needs-logs-for: eirini-api, eirini-event-repor
 		version = tests.GenerateGUID()
 
 		expectedRequest = wiremock.RequestMatcher{
-			Method: "POST",
+			Method: http.MethodPost,
 			URL:    fmt.Sprintf("/internal/v4/apps/%s-%s/crashed", guid, version),
 		}
 		err := fixture.Wiremock.AddStub(wiremock.Stub{

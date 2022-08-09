@@ -138,7 +138,7 @@ var _ = Describe("Events", func() {
 			JustBeforeEach(func() {
 				processGUID := fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version)
 				capiServer.RouteToHandler(
-					"POST",
+					http.MethodPost,
 					fmt.Sprintf("/internal/v4/apps/%s/crashed", processGUID),
 					func(w http.ResponseWriter, req *http.Request) {
 						bytes, err := io.ReadAll(req.Body)
@@ -193,7 +193,7 @@ var _ = Describe("Events", func() {
 			JustBeforeEach(func() {
 				processGUID := fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version)
 				capiServer.RouteToHandler(
-					"POST",
+					http.MethodPost,
 					fmt.Sprintf("/internal/v4/apps/%s/crashed", processGUID),
 					func(w http.ResponseWriter, req *http.Request) {
 						bytes, err := io.ReadAll(req.Body)
@@ -216,7 +216,7 @@ var _ = Describe("Events", func() {
 			JustBeforeEach(func() {
 				processGUID := fmt.Sprintf("%s-%s", lrp.GUID, lrp.Version)
 				capiServer.RouteToHandler(
-					"POST",
+					http.MethodPost,
 					fmt.Sprintf("/internal/v4/apps/%s/crashed", processGUID),
 					func(w http.ResponseWriter, req *http.Request) {
 						bytes, err := io.ReadAll(req.Body)

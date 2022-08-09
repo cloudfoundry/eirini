@@ -37,7 +37,7 @@ var _ = Describe("RetryableJSONClient", func() {
 
 		BeforeEach(func() {
 			server.AppendHandlers(ghttp.CombineHandlers(
-				ghttp.VerifyRequest("POST", "/"),
+				ghttp.VerifyRequest(http.MethodPost, "/"),
 				ghttp.VerifyJSONRepresenting(data),
 				ghttp.VerifyHeaderKV("Content-Type", "application/json"),
 			))
@@ -69,7 +69,7 @@ var _ = Describe("RetryableJSONClient", func() {
 
 		When("the server fails to handle the request", func() {
 			BeforeEach(func() {
-				server.RouteToHandler("POST", "/", ghttp.RespondWith(500, nil))
+				server.RouteToHandler(http.MethodPost, "/", ghttp.RespondWith(500, nil))
 			})
 
 			It("retries", func() {
@@ -83,7 +83,7 @@ var _ = Describe("RetryableJSONClient", func() {
 
 		When("the request is not ok", func() {
 			BeforeEach(func() {
-				server.RouteToHandler("POST", "/", ghttp.RespondWith(400, nil))
+				server.RouteToHandler(http.MethodPost, "/", ghttp.RespondWith(400, nil))
 			})
 
 			It("doesn't retry", func() {

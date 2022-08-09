@@ -55,7 +55,7 @@ var _ = Describe("Tasks", func() {
 		body, err := json.Marshal(request)
 		Expect(err).NotTo(HaveOccurred())
 
-		httpRequest, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, request.GUID), bytes.NewReader(body))
+		httpRequest, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, request.GUID), bytes.NewReader(body))
 		Expect(err).NotTo(HaveOccurred())
 
 		response, err = httpClient.Do(httpRequest)
@@ -174,7 +174,7 @@ var _ = Describe("Tasks", func() {
 
 			cloudControllerServer.AppendHandlers(
 				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("POST", "/"),
+					ghttp.VerifyRequest(http.MethodPost, "/"),
 					ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
 						TaskGUID:      taskGUID,
 						Failed:        true,
@@ -187,7 +187,7 @@ var _ = Describe("Tasks", func() {
 		})
 
 		JustBeforeEach(func() {
-			httpRequest, err := http.NewRequest("DELETE", fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, request.GUID), nil)
+			httpRequest, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, request.GUID), nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			response, err = httpClient.Do(httpRequest)
@@ -220,7 +220,7 @@ var _ = Describe("Tasks", func() {
 				cloudControllerServer = ghttp.NewServer()
 				cloudControllerServer.AppendHandlers(
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("POST", "/"),
+						ghttp.VerifyRequest(http.MethodPost, "/"),
 						ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
 							TaskGUID:      request.GUID,
 							Failed:        true,
@@ -243,7 +243,7 @@ var _ = Describe("Tasks", func() {
 
 	Describe("listing", func() {
 		It("returns all tasks", func() {
-			httpRequest, err := http.NewRequest("GET", fmt.Sprintf("%s/tasks", eiriniAPIUrl), nil)
+			httpRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/tasks", eiriniAPIUrl), nil)
 			Expect(err).NotTo(HaveOccurred())
 			resp, err := httpClient.Do(httpRequest)
 			Expect(err).NotTo(HaveOccurred())

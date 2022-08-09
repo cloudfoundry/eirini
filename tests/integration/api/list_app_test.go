@@ -53,7 +53,7 @@ func desireLRPWithGUID(guid, namespace string) {
 }
 
 func listLRPs(httpClient rest.HTTPClient, url string) []cf.DesiredLRPSchedulingInfo {
-	listRequest, err := http.NewRequest("GET", fmt.Sprintf("%s/apps", url), nil)
+	listRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/apps", url), nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	response, err := httpClient.Do(listRequest)

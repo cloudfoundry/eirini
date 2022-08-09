@@ -59,7 +59,7 @@ var _ = Describe("Handler", func() {
 
 		Context("PUT /apps/:process_guid", func() {
 			BeforeEach(func() {
-				method = "PUT"
+				method = http.MethodPut
 				path = "/apps/myguid"
 				expectedStatus = http.StatusAccepted
 			})
@@ -71,7 +71,7 @@ var _ = Describe("Handler", func() {
 
 		Context("GET /apps", func() {
 			BeforeEach(func() {
-				method = "GET"
+				method = http.MethodGet
 				path = "/apps"
 				expectedStatus = http.StatusOK
 			})
@@ -83,7 +83,7 @@ var _ = Describe("Handler", func() {
 
 		Context("POST /apps/:process_guid", func() {
 			BeforeEach(func() {
-				method = "POST"
+				method = http.MethodPost
 				path = "/apps/myguid"
 				expectedStatus = http.StatusOK
 			})
@@ -95,7 +95,7 @@ var _ = Describe("Handler", func() {
 
 		Context("GET /apps/:process_guid", func() {
 			BeforeEach(func() {
-				method = "GET"
+				method = http.MethodGet
 				path = "/apps/myguid/myversion"
 				expectedStatus = http.StatusOK
 
@@ -109,7 +109,7 @@ var _ = Describe("Handler", func() {
 
 		Context("GET /apps/:process_guid/instances", func() {
 			BeforeEach(func() {
-				method = "GET"
+				method = http.MethodGet
 				path = "/apps/my-guid/myversion/instances"
 				expectedStatus = http.StatusOK
 			})
@@ -121,7 +121,7 @@ var _ = Describe("Handler", func() {
 
 		Context("PUT /apps/:process_guid/stop", func() {
 			BeforeEach(func() {
-				method = "PUT"
+				method = http.MethodPut
 				path = "/apps/myguid/myversion/stop"
 				expectedStatus = http.StatusOK
 			})
@@ -133,7 +133,7 @@ var _ = Describe("Handler", func() {
 
 		Context("PUT /apps/:process_guid/stop/:instance", func() {
 			BeforeEach(func() {
-				method = "PUT"
+				method = http.MethodPut
 				path = "/apps/myguid/myversion/stop/1"
 				expectedStatus = http.StatusOK
 			})
@@ -145,7 +145,7 @@ var _ = Describe("Handler", func() {
 
 		Context("POST /stage/:staging_guid", func() {
 			BeforeEach(func() {
-				method = "POST"
+				method = http.MethodPost
 				path = "/stage/stage_123"
 				body = `{"lifecycle" : { "docker_lifecycle": { } }}`
 				expectedStatus = http.StatusAccepted
@@ -158,7 +158,7 @@ var _ = Describe("Handler", func() {
 
 		Context("POST /tasks/:id", func() {
 			BeforeEach(func() {
-				method = "POST"
+				method = http.MethodPost
 				path = "/tasks/stage_123"
 				expectedStatus = http.StatusAccepted
 				body = `{"lifecycle" : {
@@ -175,7 +175,7 @@ var _ = Describe("Handler", func() {
 
 		Context("DELETE /tasks/:id", func() {
 			BeforeEach(func() {
-				method = "DELETE"
+				method = http.MethodDelete
 				path = "/tasks/task_123"
 				expectedStatus = http.StatusNoContent
 			})

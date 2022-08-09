@@ -32,7 +32,7 @@ var _ = Describe("TaskHandler", func() {
 		logger = tests.NewTestLogger("test")
 		taskBifrost = new(handlerfakes.FakeTaskBifrost)
 
-		method = "POST"
+		method = http.MethodPost
 		path = "/tasks/guid_1234"
 		body = ""
 	})
@@ -55,7 +55,7 @@ var _ = Describe("TaskHandler", func() {
 
 	Describe("Run", func() {
 		BeforeEach(func() {
-			method = "POST"
+			method = http.MethodPost
 			path = "/tasks/guid_1234"
 			body = `{
 				"guid": "some-guid",
@@ -134,7 +134,7 @@ var _ = Describe("TaskHandler", func() {
 
 	Describe("Cancel", func() {
 		BeforeEach(func() {
-			method = "DELETE"
+			method = http.MethodDelete
 			path = "/tasks/guid_1234"
 			body = ""
 		})
@@ -166,7 +166,7 @@ var _ = Describe("TaskHandler", func() {
 
 	Describe("Get", func() {
 		BeforeEach(func() {
-			method = "GET"
+			method = http.MethodGet
 			path = "/tasks/guid_1234"
 			body = ""
 
@@ -210,7 +210,7 @@ var _ = Describe("TaskHandler", func() {
 
 	Describe("List", func() {
 		BeforeEach(func() {
-			method = "GET"
+			method = http.MethodGet
 			path = "/tasks"
 			body = ""
 

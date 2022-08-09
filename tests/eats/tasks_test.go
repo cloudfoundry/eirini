@@ -112,7 +112,7 @@ func httpDo(method, url string) (*http.Response, error) {
 }
 
 func getTask(guid string) (cf.TaskResponse, error) {
-	response, err := httpDo("GET", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), guid))
+	response, err := httpDo(http.MethodGet, fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), guid))
 	if err != nil {
 		return cf.TaskResponse{}, err
 	}
@@ -128,7 +128,7 @@ func getTask(guid string) (cf.TaskResponse, error) {
 }
 
 func listTasks() ([]cf.TaskResponse, error) {
-	response, err := httpDo("GET", fmt.Sprintf("%s/tasks", tests.GetEiriniAddress()))
+	response, err := httpDo(http.MethodGet, fmt.Sprintf("%s/tasks", tests.GetEiriniAddress()))
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func listTasks() ([]cf.TaskResponse, error) {
 }
 
 func cancelTask(guid string) error {
-	response, err := httpDo("DELETE", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), guid))
+	response, err := httpDo(http.MethodDelete, fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), guid))
 	if err != nil {
 		return err
 	}

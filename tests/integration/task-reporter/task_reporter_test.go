@@ -85,7 +85,7 @@ var _ = Describe("TaskReporter", func() {
 
 		handlers = []http.HandlerFunc{
 			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("POST", "/the-callback"),
+				ghttp.VerifyRequest(http.MethodPost, "/the-callback"),
 				ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{TaskGUID: taskGUID}),
 			),
 		}
@@ -153,7 +153,7 @@ var _ = Describe("TaskReporter", func() {
 
 			handlers = []http.HandlerFunc{
 				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("POST", "/the-callback"),
+					ghttp.VerifyRequest(http.MethodPost, "/the-callback"),
 					ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
 						TaskGUID:      task.GUID,
 						Failed:        true,
@@ -178,11 +178,11 @@ var _ = Describe("TaskReporter", func() {
 			cloudControllerServer.SetAllowUnhandledRequests(true)
 			handlers = []http.HandlerFunc{
 				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("POST", "/the-callback"),
+					ghttp.VerifyRequest(http.MethodPost, "/the-callback"),
 					ghttp.RespondWith(http.StatusInternalServerError, nil),
 				),
 				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("POST", "/the-callback"),
+					ghttp.VerifyRequest(http.MethodPost, "/the-callback"),
 					ghttp.RespondWith(http.StatusInternalServerError, nil),
 				),
 			}
@@ -239,7 +239,7 @@ var _ = Describe("TaskReporter", func() {
 			config.CompletionCallbackRetryLimit = 0
 			handlers = []http.HandlerFunc{
 				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("POST", "/the-callback"),
+					ghttp.VerifyRequest(http.MethodPost, "/the-callback"),
 					ghttp.RespondWith(http.StatusInternalServerError, nil),
 				),
 			}

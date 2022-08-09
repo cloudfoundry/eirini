@@ -94,7 +94,7 @@ var _ = AfterEach(func() {
 func desireLRP(httpClient rest.HTTPClient, url string, lrpRequest cf.DesireLRPRequest) *http.Response {
 	body, err := json.Marshal(lrpRequest)
 	Expect(err).NotTo(HaveOccurred())
-	desireLrpReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s", url, lrpRequest.GUID), bytes.NewReader(body))
+	desireLrpReq, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/apps/%s", url, lrpRequest.GUID), bytes.NewReader(body))
 	Expect(err).NotTo(HaveOccurred())
 	response, err := httpClient.Do(desireLrpReq)
 	Expect(err).NotTo(HaveOccurred())

@@ -50,7 +50,7 @@ var _ = Describe("Desire App", func() {
 		lrpRequestBytes, err := json.Marshal(lrp)
 		Expect(err).NotTo(HaveOccurred())
 
-		desireAppReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/the-app-guid", eiriniAPIUrl), bytes.NewReader(lrpRequestBytes))
+		desireAppReq, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/apps/the-app-guid", eiriniAPIUrl), bytes.NewReader(lrpRequestBytes))
 		Expect(err).NotTo(HaveOccurred())
 
 		response, err = httpClient.Do(desireAppReq)

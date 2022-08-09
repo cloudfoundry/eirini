@@ -56,7 +56,7 @@ var _ = Describe("Tasks completion with respect to TTL", func() {
 			},
 			CompletionCallback: "http://example.com",
 		}
-		response, err := httpDo("POST", fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, taskGUID), taskRequest)
+		response, err := httpDo(http.MethodPost, fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, taskGUID), taskRequest)
 		Expect(err).NotTo(HaveOccurred())
 		defer response.Body.Close()
 	})
@@ -81,7 +81,7 @@ var _ = Describe("Tasks completion with respect to TTL", func() {
 })
 
 func listTasks() ([]cf.TaskResponse, error) {
-	response, err := httpDo("GET", fmt.Sprintf("%s/tasks", eiriniAPIUrl), nil)
+	response, err := httpDo(http.MethodGet, fmt.Sprintf("%s/tasks", eiriniAPIUrl), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func listTasks() ([]cf.TaskResponse, error) {
 }
 
 func getTask(guid string) (cf.TaskResponse, error) {
-	response, err := httpDo("GET", fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, guid), nil)
+	response, err := httpDo(http.MethodGet, fmt.Sprintf("%s/tasks/%s", eiriniAPIUrl, guid), nil)
 	if err != nil {
 		return cf.TaskResponse{}, err
 	}

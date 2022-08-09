@@ -43,7 +43,7 @@ var _ = Describe("Tasks Reporter [needs-logs-for: eirini-api, eirini-task-report
 	JustBeforeEach(func() {
 		err := fixture.Wiremock.AddStub(wiremock.Stub{
 			Request: wiremock.RequestMatcher{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    fmt.Sprintf("/%s", taskGUID),
 			},
 			Response: wiremock.Response{
@@ -62,7 +62,7 @@ var _ = Describe("Tasks Reporter [needs-logs-for: eirini-api, eirini-task-report
 
 	It("notifies the cloud controller", func() {
 		requestMatcher := wiremock.RequestMatcher{
-			Method: "POST",
+			Method: http.MethodPost,
 			URL:    fmt.Sprintf("/%s", taskGUID),
 		}
 		Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "2m").Should(Equal(1))
@@ -86,7 +86,7 @@ var _ = Describe("Tasks Reporter [needs-logs-for: eirini-api, eirini-task-report
 
 		It("retries", func() {
 			requestMatcher := wiremock.RequestMatcher{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    fmt.Sprintf("/%s", taskGUID),
 			}
 			Eventually(fixture.Wiremock.GetCountFn(requestMatcher), "1m").Should(BeNumerically(">", 1))

@@ -59,7 +59,7 @@ var _ = Describe("Reporter", func() {
 
 		server = ghttp.NewServer()
 		handlers = []http.HandlerFunc{
-			ghttp.VerifyRequest("POST", "/the-callback-url"),
+			ghttp.VerifyRequest(http.MethodPost, "/the-callback-url"),
 			ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
 				TaskGUID: "the-task-guid",
 			}),
@@ -118,7 +118,7 @@ var _ = Describe("Reporter", func() {
 			}
 
 			handlers = []http.HandlerFunc{
-				ghttp.VerifyRequest("POST", "/the-callback-url"),
+				ghttp.VerifyRequest(http.MethodPost, "/the-callback-url"),
 				ghttp.VerifyJSONRepresenting(cf.TaskCompletedRequest{
 					TaskGUID:      "the-task-guid",
 					Failed:        true,
@@ -137,7 +137,7 @@ var _ = Describe("Reporter", func() {
 			server.Reset()
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("POST", "/the-callback-url"),
+					ghttp.VerifyRequest(http.MethodPost, "/the-callback-url"),
 					ghttp.RespondWith(http.StatusBadGateway, "potato"),
 				),
 			)

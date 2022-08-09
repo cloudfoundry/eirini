@@ -33,7 +33,7 @@ var _ = Describe("Docker Staging", func() {
 		capiServer.HTTPTestServer.StartTLS()
 
 		capiServer.RouteToHandler(
-			"POST",
+			http.MethodPost,
 			"/staging/completed",
 			func(w http.ResponseWriter, req *http.Request) {
 				bytes, err := io.ReadAll(req.Body)
@@ -73,7 +73,7 @@ var _ = Describe("Docker Staging", func() {
 	When("image lives in a private registry", func() {
 		BeforeEach(func() {
 			capiServer.RouteToHandler(
-				"POST",
+				http.MethodPost,
 				"/staging/completed",
 				func(w http.ResponseWriter, req *http.Request) {
 					bytes, err := io.ReadAll(req.Body)
@@ -125,7 +125,7 @@ var _ = Describe("Docker Staging", func() {
 	When("the image is invalid", func() {
 		BeforeEach(func() {
 			capiServer.RouteToHandler(
-				"POST",
+				http.MethodPost,
 				"/staging/completed",
 				func(w http.ResponseWriter, req *http.Request) {
 					bytes, err := io.ReadAll(req.Body)
@@ -160,7 +160,7 @@ func desireStaging(httpClient rest.HTTPClient, stagingRequest cf.StagingRequest)
 		return 0, err
 	}
 
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/stage/some-guid", eiriniAPIUrl), bytes.NewReader(data))
+	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/stage/some-guid", eiriniAPIUrl), bytes.NewReader(data))
 	if err != nil {
 		return 0, err
 	}

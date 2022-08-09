@@ -146,7 +146,12 @@ linters:
     desc: |
       we do not construct urls in the production code
 
+  - name: nosnakecase
+    desc: |
+      we don't mind underscores in package names
+
   enable:
+    - asasalint
     - asciicheck
     - bidichk
     - bodyclose
@@ -187,8 +192,8 @@ linters:
     - importas
     - ineffassign
     - lll
-    - makezero
     - maintidx
+    - makezero
     - misspell
     - nakedret
     - nestif
@@ -210,6 +215,7 @@ linters:
     - typecheck
     - unconvert
     - unused
+    - usestdlibvars
     - varcheck
     - wastedassign
     - whitespace

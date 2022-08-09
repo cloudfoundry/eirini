@@ -60,7 +60,7 @@ var _ = AfterEach(func() {
 })
 
 func getLRP(processGUID, versionGUID string) (cf.DesiredLRP, error) {
-	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps/%s/%s", tests.GetEiriniAddress(), processGUID, versionGUID), nil)
+	request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/apps/%s/%s", tests.GetEiriniAddress(), processGUID, versionGUID), nil)
 	if err != nil {
 		return cf.DesiredLRP{}, err
 	}
@@ -84,7 +84,7 @@ func getLRP(processGUID, versionGUID string) (cf.DesiredLRP, error) {
 }
 
 func getLRPs() ([]cf.DesiredLRPSchedulingInfo, error) {
-	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps", tests.GetEiriniAddress()), nil)
+	request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/apps", tests.GetEiriniAddress()), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func getLRPs() ([]cf.DesiredLRPSchedulingInfo, error) {
 }
 
 func getInstances(processGUID, versionGUID string) (*cf.GetInstancesResponse, error) {
-	request, err := http.NewRequest("GET", fmt.Sprintf("%s/apps/%s/%s/instances", tests.GetEiriniAddress(), processGUID, versionGUID), nil)
+	request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/apps/%s/%s/instances", tests.GetEiriniAddress(), processGUID, versionGUID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func getInstances(processGUID, versionGUID string) (*cf.GetInstancesResponse, er
 func desireLRP(lrpRequest cf.DesireLRPRequest) int {
 	body, err := json.Marshal(lrpRequest)
 	Expect(err).NotTo(HaveOccurred())
-	desireLrpReq, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s", tests.GetEiriniAddress(), lrpRequest.GUID), bytes.NewReader(body))
+	desireLrpReq, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/apps/%s", tests.GetEiriniAddress(), lrpRequest.GUID), bytes.NewReader(body))
 	Expect(err).NotTo(HaveOccurred())
 	response, err := fixture.GetEiriniHTTPClient().Do(desireLrpReq)
 	Expect(err).NotTo(HaveOccurred())
@@ -148,7 +148,7 @@ func desireLRP(lrpRequest cf.DesireLRPRequest) int {
 }
 
 func stopLRP(processGUID, versionGUID string) (*http.Response, error) {
-	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop", tests.GetEiriniAddress(), processGUID, versionGUID), nil)
+	request, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/apps/%s/%s/stop", tests.GetEiriniAddress(), processGUID, versionGUID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func stopLRP(processGUID, versionGUID string) (*http.Response, error) {
 }
 
 func stopLRPInstance(processGUID, versionGUID string, instance int) (*http.Response, error) {
-	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/apps/%s/%s/stop/%d", tests.GetEiriniAddress(), processGUID, versionGUID, instance), nil)
+	request, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/apps/%s/%s/stop/%d", tests.GetEiriniAddress(), processGUID, versionGUID, instance), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func updateLRP(updateRequest cf.UpdateDesiredLRPRequest) (*http.Response, error)
 		return nil, err
 	}
 
-	updateLrpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/apps/%s", tests.GetEiriniAddress(), updateRequest.GUID), bytes.NewReader(body))
+	updateLrpReq, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/apps/%s", tests.GetEiriniAddress(), updateRequest.GUID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func desireTask(taskRequest cf.TaskRequest) {
 	data, err := json.Marshal(taskRequest)
 	Expect(err).NotTo(HaveOccurred())
 
-	request, err := http.NewRequest("POST", fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), taskRequest.GUID), bytes.NewReader(data))
+	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/tasks/%s", tests.GetEiriniAddress(), taskRequest.GUID), bytes.NewReader(data))
 	Expect(err).NotTo(HaveOccurred())
 
 	response, err := fixture.GetEiriniHTTPClient().Do(request)

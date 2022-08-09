@@ -12,7 +12,7 @@ import (
 )
 
 func Post(ctx context.Context, client *http.Client, uri string, body interface{}) error {
-	return do(ctx, client, "POST", uri, body)
+	return do(ctx, client, http.MethodPost, uri, body)
 }
 
 func do(ctx context.Context, client *http.Client, method string, uri string, body interface{}) error {
