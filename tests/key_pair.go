@@ -2,7 +2,6 @@ package tests
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 
@@ -29,17 +28,17 @@ func GenerateKeyPairDir(name, domain string) (string, []byte) {
 	certData, keyData, err := cert.CertificatePEMAndPrivateKey()
 	Expect(err).NotTo(HaveOccurred())
 
-	tmpDir, err := ioutil.TempDir("", "")
+	tmpDir, err := os.MkdirTemp("", "")
 	Expect(err).ToNot(HaveOccurred())
-	err = ioutil.WriteFile(path.Join(tmpDir, fmt.Sprintf("%s.crt", name)), certData, os.ModePerm)
+	err = os.WriteFile(path.Join(tmpDir, fmt.Sprintf("%s.crt", name)), certData, os.ModePerm)
 	Expect(err).ToNot(HaveOccurred())
-	err = ioutil.WriteFile(path.Join(tmpDir, fmt.Sprintf("%s.key", name)), keyData, os.ModePerm)
+	err = os.WriteFile(path.Join(tmpDir, fmt.Sprintf("%s.key", name)), keyData, os.ModePerm)
 	Expect(err).ToNot(HaveOccurred())
 
 	caBytes, err := authority.CertificatePEM()
 	Expect(err).NotTo(HaveOccurred())
 
-	err = ioutil.WriteFile(path.Join(tmpDir, fmt.Sprintf("%s.ca", name)), caBytes, os.ModePerm)
+	err = os.WriteFile(path.Join(tmpDir, fmt.Sprintf("%s.ca", name)), caBytes, os.ModePerm)
 	Expect(err).ToNot(HaveOccurred())
 
 	return tmpDir, caBytes

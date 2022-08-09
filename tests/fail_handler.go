@@ -3,7 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"regexp"
 	"strings"
 
@@ -93,7 +93,7 @@ func getSinglePodLog(clientset kubernetes.Interface, podName string) (string, er
 	}
 	defer logStream.Close()
 
-	logBytes, err := ioutil.ReadAll(logStream)
+	logBytes, err := io.ReadAll(logStream)
 	if err != nil {
 		return "", err
 	}

@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -90,7 +89,7 @@ func CreateSecretWithStringData(namespace, secretName string, clientset kubernet
 }
 
 func MakeTestHTTPClient(certsPath string) (*http.Client, error) {
-	bs, err := ioutil.ReadFile(filepath.Join(certsPath, "tls.ca"))
+	bs, err := os.ReadFile(filepath.Join(certsPath, "tls.ca"))
 	if err != nil {
 		return nil, err
 	}
@@ -153,12 +152,12 @@ func CreateConfigFile(config interface{}) (*os.File, error) {
 		return nil, err
 	}
 
-	configFile, err := ioutil.TempFile("", "config.yml")
+	configFile, err := os.CreateTemp("", "config.yml")
 	if err != nil {
 		return nil, err
 	}
 
-	err = ioutil.WriteFile(configFile.Name(), yamlBytes, os.ModePerm)
+	err = os.WriteFile(configFile.Name(), yamlBytes, os.ModePerm)
 
 	return configFile, err
 }

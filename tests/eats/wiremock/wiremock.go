@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"time"
@@ -130,7 +130,7 @@ func (w *Wiremock) postWithResponse(path string, body interface{}) (*http.Respon
 	}
 
 	if resp.StatusCode >= http.StatusMultipleChoices {
-		respondeBody, err := ioutil.ReadAll(resp.Body)
+		respondeBody, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}

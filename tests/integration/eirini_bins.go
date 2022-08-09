@@ -2,7 +2,6 @@ package integration
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -65,7 +64,7 @@ func (b *EiriniBinaries) setBinsPath() {
 		b.ExternalBinsPath = false
 
 		var err error
-		binsPath, err = ioutil.TempDir("", "bins")
+		binsPath, err = os.MkdirTemp("", "bins")
 		Expect(err).NotTo(HaveOccurred())
 	}
 

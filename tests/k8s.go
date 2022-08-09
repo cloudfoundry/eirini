@@ -3,7 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -194,7 +194,7 @@ func RequestServiceFn(namespace, serviceName string, port int32, requestPath str
 		}
 		defer resp.Body.Close()
 
-		content, err := ioutil.ReadAll(resp.Body)
+		content, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "", err
 		}

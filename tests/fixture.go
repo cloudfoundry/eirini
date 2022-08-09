@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"sync"
 
@@ -42,7 +41,7 @@ func makeKubeConfigCopy() string {
 		return ""
 	}
 
-	tmpKubeConfig, err := ioutil.TempFile("", "kube.cfg")
+	tmpKubeConfig, err := os.CreateTemp("", "kube.cfg")
 	Expect(err).NotTo(HaveOccurred())
 
 	defer tmpKubeConfig.Close()

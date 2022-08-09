@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -405,7 +405,7 @@ var _ = Describe("AppHandler", func() {
 						}
 					]
 				}`
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(body)).To(MatchJSON(expectedResponse))
 		})
@@ -422,7 +422,7 @@ var _ = Describe("AppHandler", func() {
 						"process_guid": "guid_1234-version_1234",
 						"instances": []
 					}`
-				body, err := ioutil.ReadAll(response.Body)
+				body, err := io.ReadAll(response.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(body)).To(MatchJSON(expectedResponse))
 			})
@@ -443,7 +443,7 @@ var _ = Describe("AppHandler", func() {
 						"instances": []
 					}`
 				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
-				body, err := ioutil.ReadAll(response.Body)
+				body, err := io.ReadAll(response.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(body)).To(MatchJSON(expectedResponse))
 			})
@@ -679,7 +679,7 @@ func createSchedulingInfos() []cf.DesiredLRPSchedulingInfo {
 }
 
 func readBody(body *bytes.Buffer) ([]byte, error) {
-	bytes, err := ioutil.ReadAll(body)
+	bytes, err := io.ReadAll(body)
 	if err != nil {
 		return nil, err
 	}

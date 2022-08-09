@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 
@@ -109,7 +109,7 @@ var _ = Describe("StageHandler", func() {
 			})
 
 			It("should return the error in the response body", func() {
-				bytes, _ := ioutil.ReadAll(response.Body)
+				bytes, _ := io.ReadAll(response.Body)
 				stagingError := cf.Error{}
 				err := json.Unmarshal(bytes, &stagingError)
 				Expect(err).ToNot(HaveOccurred())
@@ -131,7 +131,7 @@ var _ = Describe("StageHandler", func() {
 			})
 
 			It("should return a high level error in the response body", func() {
-				bytes, _ := ioutil.ReadAll(response.Body)
+				bytes, _ := io.ReadAll(response.Body)
 				stagingError := cf.Error{}
 				err := json.Unmarshal(bytes, &stagingError)
 				Expect(err).ToNot(HaveOccurred())
@@ -155,7 +155,7 @@ var _ = Describe("StageHandler", func() {
 			})
 
 			It("should return the error in the response body", func() {
-				bytes, _ := ioutil.ReadAll(response.Body)
+				bytes, _ := io.ReadAll(response.Body)
 				stagingError := cf.Error{}
 				err := json.Unmarshal(bytes, &stagingError)
 				Expect(err).ToNot(HaveOccurred())

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path/filepath"
 
@@ -36,7 +36,7 @@ var _ = Describe("Docker Staging", func() {
 			"POST",
 			"/staging/completed",
 			func(w http.ResponseWriter, req *http.Request) {
-				bytes, err := ioutil.ReadAll(req.Body)
+				bytes, err := io.ReadAll(req.Body)
 				Expect(err).NotTo(HaveOccurred())
 				request := &cc_messages.StagingResponseForCC{}
 				Expect(json.Unmarshal(bytes, request)).To(Succeed())
@@ -76,7 +76,7 @@ var _ = Describe("Docker Staging", func() {
 				"POST",
 				"/staging/completed",
 				func(w http.ResponseWriter, req *http.Request) {
-					bytes, err := ioutil.ReadAll(req.Body)
+					bytes, err := io.ReadAll(req.Body)
 					Expect(err).NotTo(HaveOccurred())
 					request := &cc_messages.StagingResponseForCC{}
 					Expect(json.Unmarshal(bytes, request)).To(Succeed())
@@ -128,7 +128,7 @@ var _ = Describe("Docker Staging", func() {
 				"POST",
 				"/staging/completed",
 				func(w http.ResponseWriter, req *http.Request) {
-					bytes, err := ioutil.ReadAll(req.Body)
+					bytes, err := io.ReadAll(req.Body)
 					Expect(err).NotTo(HaveOccurred())
 					request := &cc_messages.StagingResponseForCC{}
 					Expect(json.Unmarshal(bytes, request)).To(Succeed())

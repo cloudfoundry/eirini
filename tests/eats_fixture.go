@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -76,7 +75,7 @@ func (f *EATSFixture) GetEiriniHTTPClient() *http.Client {
 }
 
 func (f *EATSFixture) makeTestHTTPClient() (*http.Client, error) {
-	bs, err := ioutil.ReadFile(f.eiriniCertPath)
+	bs, err := os.ReadFile(f.eiriniCertPath)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +101,7 @@ func (f *EATSFixture) makeTestHTTPClient() (*http.Client, error) {
 }
 
 func (f *EATSFixture) downloadEiriniCertificates() (string, string) {
-	certFile, err := ioutil.TempFile("", "cert-")
+	certFile, err := os.CreateTemp("", "cert-")
 	Expect(err).NotTo(HaveOccurred())
 
 	defer certFile.Close()
@@ -113,7 +112,7 @@ func (f *EATSFixture) downloadEiriniCertificates() (string, string) {
 	_, err = certFile.WriteString(f.getSecret(eiriniSysNs, eiriniTLSSecretName, "tls.crt"))
 	Expect(err).NotTo(HaveOccurred())
 
-	keyFile, err := ioutil.TempFile("", "key-")
+	keyFile, err := os.CreateTemp("", "key-")
 	Expect(err).NotTo(HaveOccurred())
 
 	defer keyFile.Close()

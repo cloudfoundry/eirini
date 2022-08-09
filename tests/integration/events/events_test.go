@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -141,7 +141,7 @@ var _ = Describe("Events", func() {
 					"POST",
 					fmt.Sprintf("/internal/v4/apps/%s/crashed", processGUID),
 					func(w http.ResponseWriter, req *http.Request) {
-						bytes, err := ioutil.ReadAll(req.Body)
+						bytes, err := io.ReadAll(req.Body)
 						Expect(err).NotTo(HaveOccurred())
 						request := &cc_messages.AppCrashedRequest{}
 						Expect(json.Unmarshal(bytes, request)).To(Succeed())
@@ -196,7 +196,7 @@ var _ = Describe("Events", func() {
 					"POST",
 					fmt.Sprintf("/internal/v4/apps/%s/crashed", processGUID),
 					func(w http.ResponseWriter, req *http.Request) {
-						bytes, err := ioutil.ReadAll(req.Body)
+						bytes, err := io.ReadAll(req.Body)
 						Expect(err).NotTo(HaveOccurred())
 						request := &cc_messages.AppCrashedRequest{}
 						Expect(json.Unmarshal(bytes, request)).To(Succeed())
@@ -219,7 +219,7 @@ var _ = Describe("Events", func() {
 					"POST",
 					fmt.Sprintf("/internal/v4/apps/%s/crashed", processGUID),
 					func(w http.ResponseWriter, req *http.Request) {
-						bytes, err := ioutil.ReadAll(req.Body)
+						bytes, err := io.ReadAll(req.Body)
 						Expect(err).NotTo(HaveOccurred())
 						request := &cc_messages.AppCrashedRequest{}
 						Expect(json.Unmarshal(bytes, request)).To(Succeed())
