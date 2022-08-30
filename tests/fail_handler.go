@@ -20,7 +20,7 @@ const (
 
 func EatsFailHandler(message string, callerSkip ...int) {
 	fixture := NewFixture(GinkgoWriter)
-	printPodsLogs(fixture.Clientset, getRelatedEiriniPodsNames(CurrentGinkgoTestDescription().FullTestText))
+	printPodsLogs(fixture.Clientset, getRelatedEiriniPodsNames(CurrentSpecReport().FullText()))
 
 	Fail(message, callerSkip...)
 }
