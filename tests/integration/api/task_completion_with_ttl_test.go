@@ -141,7 +141,7 @@ func httpDo(method, url string, b interface{}) (*http.Response, error) {
 		return nil, err
 	}
 
-	if response.StatusCode >= 400 {
+	if response.StatusCode >= http.StatusBadRequest {
 		defer response.Body.Close()
 
 		return nil, errors.New(response.Status)

@@ -71,7 +71,7 @@ func getLRP(processGUID, versionGUID string) (cf.DesiredLRP, error) {
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode >= 400 {
+	if response.StatusCode >= http.StatusBadRequest {
 		return cf.DesiredLRP{}, errors.New(response.Status)
 	}
 
@@ -95,7 +95,7 @@ func getLRPs() ([]cf.DesiredLRPSchedulingInfo, error) {
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode >= 400 {
+	if response.StatusCode >= http.StatusBadRequest {
 		return nil, errors.New(response.Status)
 	}
 
@@ -127,7 +127,7 @@ func getInstances(processGUID, versionGUID string) (*cf.GetInstancesResponse, er
 		return nil, err
 	}
 
-	if response.StatusCode >= 400 {
+	if response.StatusCode >= http.StatusBadRequest {
 		return instancesResponse, errors.New(response.Status)
 	}
 
